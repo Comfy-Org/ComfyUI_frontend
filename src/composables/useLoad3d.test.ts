@@ -146,6 +146,12 @@ describe('useLoad3d', () => {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       remove: vi.fn(),
+      setGizmoEnabled: vi.fn(),
+      setGizmoMode: vi.fn(),
+      resetGizmoTransform: vi.fn(),
+      applyGizmoTransform: vi.fn(),
+      fitToViewer: vi.fn(),
+      setAnimationTime: vi.fn(),
       renderer: {
         domElement: mockCanvas
       } as Partial<Load3d['renderer']> as Load3d['renderer']
@@ -169,38 +175,6 @@ describe('useLoad3d', () => {
   })
 
   describe('initialization', () => {
-    it('should initialize with default values', () => {
-      const composable = useLoad3d(mockNode)
-
-      expect(composable.sceneConfig.value).toEqual({
-        showGrid: true,
-        backgroundColor: '#000000',
-        backgroundImage: '',
-        backgroundRenderMode: 'tiled'
-      })
-      expect(composable.modelConfig.value).toEqual({
-        upDirection: 'original',
-        materialMode: 'original',
-        showSkeleton: false
-      })
-      expect(composable.cameraConfig.value).toEqual({
-        cameraType: 'perspective',
-        fov: 75
-      })
-      expect(composable.lightConfig.value).toEqual({
-        intensity: 5,
-        hdri: {
-          enabled: false,
-          hdriPath: '',
-          showAsBackground: false,
-          intensity: 1
-        }
-      })
-      expect(composable.isRecording.value).toBe(false)
-      expect(composable.hasRecording.value).toBe(false)
-      expect(composable.loading.value).toBe(false)
-    })
-
     it('should initialize Load3d with container and node', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -229,8 +203,6 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.toggleGrid).toHaveBeenCalledWith(true)
       expect(mockLoad3d.setBackgroundColor).toHaveBeenCalledWith('#000000')
       expect(mockLoad3d.setBackgroundRenderMode).toHaveBeenCalledWith('tiled')
-      expect(mockLoad3d.setUpDirection).toHaveBeenCalledWith('original')
-      expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('original')
       expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('perspective')
       expect(mockLoad3d.setFOV).toHaveBeenCalledWith(75)
       expect(mockLoad3d.setLightIntensity).toHaveBeenCalledWith(5)
@@ -271,53 +243,29 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.renderer!.domElement.hidden).toBe(true)
     })
 
-    it('should load model if model_file widget exists', async () => {
+    it('should initialize without loading model (model loading is handled by Load3DConfiguration)', async () => {
       mockNode.widgets!.push({
         name: 'model_file',
         value: 'test.glb',
         type: 'text'
       } as IWidget)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        'subfolder',
-        'test.glb'
-      ])
-      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
-        '/api/view/test.glb'
-      )
-      vi.mocked(api.apiURL).mockReturnValue(
-        'http://localhost/api/view/test.glb'
-      )
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
-        'http://localhost/api/view/test.glb'
-      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
+      expect(nodeToLoad3dMap.has(mockNode)).toBe(true)
     })
 
-    it('should restore camera state after loading model', async () => {
-      mockNode.widgets!.push({
-        name: 'model_file',
-        value: 'test.glb',
-        type: 'text'
-      } as IWidget)
-      ;(mockNode.properties!['Camera Config'] as { state: unknown }).state = {
+    it('should restore camera config from node properties', async () => {
+      ;(
+        mockNode.properties!['Camera Config'] as Record<string, unknown>
+      ).state = {
         position: { x: 1, y: 2, z: 3 },
         target: { x: 0, y: 0, z: 0 }
       }
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        'subfolder',
-        'test.glb'
-      ])
-      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
-        '/api/view/test.glb'
-      )
-      vi.mocked(api.apiURL).mockReturnValue(
-        'http://localhost/api/view/test.glb'
-      )
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -325,7 +273,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
       await nextTick()
 
-      expect(mockLoad3d.setCameraState).toHaveBeenCalledWith({
+      expect(composable.cameraConfig.value.state).toEqual({
         position: { x: 1, y: 2, z: 3 },
         target: { x: 0, y: 0, z: 0 }
       })
@@ -460,11 +408,13 @@ describe('useLoad3d', () => {
 
       expect(mockLoad3d.setUpDirection).toHaveBeenCalledWith('+y')
       expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('wireframe')
-      expect(mockNode.properties['Model Config']).toEqual({
-        upDirection: '+y',
-        materialMode: 'wireframe',
-        showSkeleton: false
-      })
+      const savedModelConfig = mockNode.properties['Model Config'] as Record<
+        string,
+        unknown
+      >
+      expect(savedModelConfig.upDirection).toBe('+y')
+      expect(savedModelConfig.materialMode).toBe('wireframe')
+      expect(savedModelConfig.showSkeleton).toBe(false)
     })
 
     it('should update camera config when values change', async () => {
@@ -862,79 +812,72 @@ describe('useLoad3d', () => {
     })
   })
 
-  describe('getModelUrl', () => {
-    it('should handle http URLs directly', async () => {
-      mockNode.widgets!.push({
-        name: 'model_file',
-        value: 'http://example.com/model.glb',
-        type: 'text'
-      } as IWidget)
-
-      const composable = useLoad3d(mockNode)
-      const containerRef = document.createElement('div')
-
-      await composable.initializeLoad3d(containerRef)
-
-      expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
-        'http://example.com/model.glb'
-      )
-    })
-
-    it('should construct URL for local files', async () => {
-      mockNode.widgets!.push({
-        name: 'model_file',
-        value: 'models/test.glb',
-        type: 'text'
-      } as IWidget)
+  describe('handleModelDrop', () => {
+    it('should upload file, construct URL, and load model', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        'models',
-        'test.glb'
+        'uploaded',
+        'model.glb'
       ])
       vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
-        '/api/view/models/test.glb'
+        '/api/view/uploaded/model.glb'
       )
       vi.mocked(api.apiURL).mockReturnValue(
-        'http://localhost/api/view/models/test.glb'
+        'http://localhost/api/view/uploaded/model.glb'
       )
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
-
       await composable.initializeLoad3d(containerRef)
 
-      expect(Load3dUtils.splitFilePath).toHaveBeenCalledWith('models/test.glb')
-      expect(Load3dUtils.getResourceURL).toHaveBeenCalledWith(
-        'models',
-        'test.glb',
-        'input'
-      )
-      expect(api.apiURL).toHaveBeenCalledWith('/api/view/models/test.glb')
+      const file = new File([''], 'model.glb', {
+        type: 'model/gltf-binary'
+      })
+      await composable.handleModelDrop(file)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
       expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
-        'http://localhost/api/view/models/test.glb'
+        'http://localhost/api/view/uploaded/model.glb'
       )
     })
 
-    it('should use output type for preview mode', async () => {
-      mockNode.widgets = [
-        { name: 'model_file', value: 'test.glb', type: 'text' } as IWidget
-      ] // No width/height widgets
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'test.glb'])
+    it('should use resource folder for upload subfolder', async () => {
+      mockNode.properties['Resource Folder'] = 'subfolder'
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        'uploaded',
+        'model.glb'
+      ])
       vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
-        '/api/view/test.glb'
+        '/api/view/uploaded/model.glb'
       )
       vi.mocked(api.apiURL).mockReturnValue(
-        'http://localhost/api/view/test.glb'
+        'http://localhost/api/view/uploaded/model.glb'
       )
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
-
       await composable.initializeLoad3d(containerRef)
 
-      expect(Load3dUtils.getResourceURL).toHaveBeenCalledWith(
-        '',
-        'test.glb',
-        'output'
+      const file = new File([''], 'model.glb', {
+        type: 'model/gltf-binary'
+      })
+      await composable.handleModelDrop(file)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d/subfolder')
+    })
+
+    it('should not load model when load3d is not initialized', async () => {
+      const composable = useLoad3d(mockNode)
+
+      const file = new File([''], 'model.glb', {
+        type: 'model/gltf-binary'
+      })
+      await composable.handleModelDrop(file)
+
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.no3dScene'
       )
     })
   })
@@ -1069,6 +1012,243 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
 
       expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('existing.jpg')
+    })
+  })
+
+  describe('gizmo controls', () => {
+    it('should include default gizmo config in modelConfig', () => {
+      const composable = useLoad3d(mockNode)
+
+      expect(composable.modelConfig.value.gizmo).toEqual({
+        enabled: false,
+        mode: 'translate',
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      })
+    })
+
+    it('should restore gizmo config from node properties', async () => {
+      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+        {
+          enabled: true,
+          mode: 'rotate',
+          position: { x: 1, y: 2, z: 3 },
+          rotation: { x: 0.1, y: 0.2, z: 0.3 },
+          scale: { x: 2, y: 2, z: 2 }
+        }
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(composable.modelConfig.value.gizmo).toEqual({
+        enabled: true,
+        mode: 'rotate',
+        position: { x: 1, y: 2, z: 3 },
+        rotation: { x: 0.1, y: 0.2, z: 0.3 },
+        scale: { x: 2, y: 2, z: 2 }
+      })
+    })
+
+    it('should add default gizmo config when missing from saved config', async () => {
+      mockNode.properties!['Model Config'] = {
+        upDirection: 'original',
+        materialMode: 'original',
+        showSkeleton: false
+      }
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(composable.modelConfig.value.gizmo).toBeDefined()
+      expect(composable.modelConfig.value.gizmo!.enabled).toBe(false)
+    })
+
+    it('should add default scale when gizmo config lacks scale', async () => {
+      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+        {
+          enabled: false,
+          mode: 'translate',
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 }
+        }
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(composable.modelConfig.value.gizmo!.scale).toEqual({
+        x: 1,
+        y: 1,
+        z: 1
+      })
+    })
+
+    it('handleToggleGizmo should enable gizmo and update config', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleToggleGizmo(true)
+
+      expect(mockLoad3d.setGizmoEnabled).toHaveBeenCalledWith(true)
+      expect(composable.modelConfig.value.gizmo!.enabled).toBe(true)
+    })
+
+    it('handleToggleGizmo should disable gizmo and update config', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleToggleGizmo(true)
+      composable.handleToggleGizmo(false)
+
+      expect(mockLoad3d.setGizmoEnabled).toHaveBeenLastCalledWith(false)
+      expect(composable.modelConfig.value.gizmo!.enabled).toBe(false)
+    })
+
+    it('handleSetGizmoMode should set mode and update config', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleSetGizmoMode('rotate')
+
+      expect(mockLoad3d.setGizmoMode).toHaveBeenCalledWith('rotate')
+      expect(composable.modelConfig.value.gizmo!.mode).toBe('rotate')
+    })
+
+    it('handleResetGizmoTransform should call resetGizmoTransform', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleResetGizmoTransform()
+
+      expect(mockLoad3d.resetGizmoTransform).toHaveBeenCalled()
+    })
+
+    it('should persist gizmo config to node properties via modelConfig watcher', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleToggleGizmo(true)
+      composable.handleSetGizmoMode('rotate')
+      await nextTick()
+
+      const savedConfig = mockNode.properties['Model Config'] as {
+        gizmo: { enabled: boolean; mode: string }
+      }
+      expect(savedConfig.gizmo.enabled).toBe(true)
+      expect(savedConfig.gizmo.mode).toBe('rotate')
+    })
+
+    it('should register gizmoTransformChange event handler', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
+      const gizmoEventCall = addEventCalls.find(
+        ([event]) => event === 'gizmoTransformChange'
+      )
+      expect(gizmoEventCall).toBeDefined()
+    })
+
+    it('gizmoTransformChange event should update modelConfig', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
+      const gizmoEventCall = addEventCalls.find(
+        ([event]) => event === 'gizmoTransformChange'
+      )
+      const handler = gizmoEventCall![1] as (data: unknown) => void
+
+      handler({
+        position: { x: 5, y: 6, z: 7 },
+        rotation: { x: 0.5, y: 0.6, z: 0.7 },
+        scale: { x: 3, y: 3, z: 3 },
+        enabled: true,
+        mode: 'rotate'
+      })
+
+      expect(composable.modelConfig.value.gizmo!.position).toEqual({
+        x: 5,
+        y: 6,
+        z: 7
+      })
+      expect(composable.modelConfig.value.gizmo!.rotation).toEqual({
+        x: 0.5,
+        y: 0.6,
+        z: 0.7
+      })
+      expect(composable.modelConfig.value.gizmo!.scale).toEqual({
+        x: 3,
+        y: 3,
+        z: 3
+      })
+      expect(composable.modelConfig.value.gizmo!.enabled).toBe(true)
+      expect(composable.modelConfig.value.gizmo!.mode).toBe('rotate')
+    })
+
+    it('should reset gizmo config on model switch (not first load)', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleToggleGizmo(true)
+      composable.handleSetGizmoMode('rotate')
+
+      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
+      const loadingStartCall = addEventCalls.find(
+        ([event]) => event === 'modelLoadingStart'
+      )
+      const loadingStartHandler = loadingStartCall![1] as () => void
+
+      const loadingEndCall = addEventCalls.find(
+        ([event]) => event === 'modelLoadingEnd'
+      )
+      const loadingEndHandler = loadingEndCall![1] as () => void
+      loadingEndHandler()
+
+      loadingStartHandler()
+
+      expect(composable.modelConfig.value.gizmo).toEqual({
+        enabled: false,
+        mode: 'translate',
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      })
+    })
+
+    it('should not call gizmo methods when load3d is not initialized', () => {
+      const composable = useLoad3d(mockNode)
+
+      // These should not throw
+      composable.handleToggleGizmo(true)
+      composable.handleSetGizmoMode('rotate')
+      composable.handleResetGizmoTransform()
+
+      expect(mockLoad3d.setGizmoEnabled).not.toHaveBeenCalled()
+      expect(mockLoad3d.setGizmoMode).not.toHaveBeenCalled()
+      expect(mockLoad3d.resetGizmoTransform).not.toHaveBeenCalled()
     })
   })
 })
