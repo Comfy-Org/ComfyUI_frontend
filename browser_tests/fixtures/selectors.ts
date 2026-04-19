@@ -87,6 +87,7 @@ export const TestIds = {
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
+    subscribeToRunButton: 'subscribe-to-run-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',

@@ -1,5 +1,6 @@
 import type { Page, Route } from '@playwright/test'
 
+import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import {
   createBalance,
   createSubscriptionStatus,
@@ -181,10 +182,11 @@ export class SubscriptionHelper {
     tier: string = 'standard',
     cycle: string = 'monthly'
   ): Promise<void> {
+    const storageKey = PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
     await this.page.evaluate(
-      ([t, c]) => {
+      ([key, t, c]) => {
         localStorage.setItem(
-          'comfy.subscription.pending_checkout_attempt',
+          key,
           JSON.stringify({
             attempt_id: `test-${Date.now()}`,
             started_at_ms: Date.now(),
@@ -194,7 +196,7 @@ export class SubscriptionHelper {
           })
         )
       },
-      [tier, cycle] as const
+      [storageKey, tier, cycle] as const
     )
   }
 
