@@ -196,7 +196,7 @@ onMounted(() => {
             />
           </span>
           <img
-            src="/images/about/team.webp"
+            src="https://media.comfy.org/website/about/team.webp"
             alt="Comfy team"
             class="mt-2 w-full rounded-2xl object-cover"
             loading="lazy"
@@ -293,7 +293,7 @@ onMounted(() => {
           />
         </span>
         <img
-          src="/images/about/team.webp"
+          src="https://media.comfy.org/website/about/team.webp"
           alt="Comfy team"
           class="mt-2 w-full rounded-2xl object-cover"
           loading="lazy"

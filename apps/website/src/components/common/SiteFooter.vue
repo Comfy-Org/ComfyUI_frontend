@@ -17,7 +17,7 @@ const canvasRef = ref<HTMLCanvasElement>()
 useFrameScrub(canvasRef, {
   frameCount: 73,
   frameSrc: (i) =>
-    `/videos/footer-logo-seq/Logo${String(i).padStart(2, '0')}.webp`,
+    `https://media.comfy.org/website/homepage/footer-logo-seq/Logo${String(i).padStart(2, '0')}.webp`,
   scrollTrigger: (canvas) => ({
     trigger: canvas,
     start: 'top bottom',

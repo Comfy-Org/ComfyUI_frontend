@@ -18,11 +18,11 @@ const routes = getRoutes(locale)
       <!-- Left: video -->
       <div class="flex-1 overflow-hidden rounded-4xl">
         <VideoPlayer
-          src="/videos/customers/blackmath.webm"
-          poster="/videos/customers/blackmath-poster.webp"
+          src="https://media.comfy.org/website/customers/blackmath/video.webm"
+          poster="https://media.comfy.org/website/customers/blackmath/poster.webp"
           :tracks="[
             {
-              src: '/videos/customers/blackmath.vtt',
+              src: 'https://media.comfy.org/website/customers/blackmath/video.vtt',
               kind: 'subtitles',
               srclang: 'en',
               label: 'English'

@@ -14,28 +14,28 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const categories = [
   {
     label: t('useCase.vfx', locale),
-    leftSrc: '/images/homepage/use-case/left1.webm',
-    rightSrc: '/images/homepage/use-case/right1.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left1.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right1.webp'
   },
   {
     label: t('useCase.advertising', locale),
-    leftSrc: '/images/homepage/use-case/left2.webm',
-    rightSrc: '/images/homepage/use-case/right2.webm'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left2.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right2.webm'
   },
   {
     label: t('useCase.gaming', locale),
-    leftSrc: '/images/homepage/use-case/left3.webm',
-    rightSrc: '/images/homepage/use-case/right3.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left3.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right3.webp'
   },
   {
     label: t('useCase.ecommerce', locale),
-    leftSrc: '/images/homepage/use-case/left4.webm',
-    rightSrc: '/images/homepage/use-case/right4.webm'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left4.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right4.webm'
   },
   {
     label: t('useCase.more', locale),
-    leftSrc: '/images/homepage/use-case/left5.webm',
-    rightSrc: '/images/homepage/use-case/right5.webm'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left5.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right5.webm'
   }
 ]
 

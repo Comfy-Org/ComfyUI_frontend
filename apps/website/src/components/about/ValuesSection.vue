@@ -195,7 +195,7 @@ onMounted(() => {
             />
           </span>
           <img
-            src="/images/about/c-logo.webp"
+            src="https://media.comfy.org/website/about/c-logo.webp"
             alt="Comfy logo"
             class="mt-6 w-full"
           />
@@ -290,7 +290,7 @@ onMounted(() => {
           />
         </span>
         <img
-          src="/images/about/c-logo.webp"
+          src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
           class="mt-6 w-full max-w-xs"
         />

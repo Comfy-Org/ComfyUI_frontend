@@ -13,7 +13,8 @@ interface CustomerStory {
 export const customerStories: CustomerStory[] = [
   {
     slug: 'series-entertainment',
-    image: '/images/customers/series-entertainment/cover.webp',
+    image:
+      'https://media.comfy.org/website/customers/series-entertainment/cover.webp',
     category: 'customers.story.series-entertainment.category',
     title: 'customers.story.series-entertainment.title',
     body: 'customers.story.series-entertainment.body',
@@ -23,7 +24,8 @@ export const customerStories: CustomerStory[] = [
   },
   {
     slug: 'open-story-movement',
-    image: '/images/customers/open-story-movement/cover.webp',
+    image:
+      'https://media.comfy.org/website/customers/open-story-movement/cover.webp',
     category: 'customers.story.open-story-movement.category',
     title: 'customers.story.open-story-movement.title',
     body: 'customers.story.open-story-movement.body',
@@ -32,7 +34,8 @@ export const customerStories: CustomerStory[] = [
   },
   {
     slug: 'moment-factory',
-    image: '/images/customers/moment-factory/cover.webp',
+    image:
+      'https://media.comfy.org/website/customers/moment-factory/cover.webp',
     category: 'customers.story.moment-factory.category',
     title: 'customers.story.moment-factory.title',
     body: 'customers.story.moment-factory.body',
@@ -42,7 +45,7 @@ export const customerStories: CustomerStory[] = [
   },
   {
     slug: 'ubisoft-chord',
-    image: '/images/customers/ubisoft/cover.webp',
+    image: 'https://media.comfy.org/website/customers/ubisoft/cover.webp',
     category: 'customers.story.ubisoft-chord.category',
     title: 'customers.story.ubisoft-chord.title',
     body: 'customers.story.ubisoft-chord.body',

@@ -29,14 +29,16 @@ const badgeBase =
 const modelCards: ModelCard[] = [
   {
     titleKey: 'cloud.aiModels.card.seendance20',
-    imageSrc: '/images/cloud/ai-models/seedance-20.webm',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
     badgeIcon: '/icons/ai-models/bytedance.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
   },
   {
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
-    imageSrc: '/images/cloud/ai-models/nano-banana-pro.webp',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]',
@@ -44,21 +46,22 @@ const modelCards: ModelCard[] = [
   },
   {
     titleKey: 'cloud.aiModels.card.grokImagine',
-    imageSrc: '/images/cloud/ai-models/grok-video.webm',
+    imageSrc: 'https://media.comfy.org/website/cloud/ai-models/grok-video.webm',
     badgeIcon: '/icons/ai-models/grok.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
-    imageSrc: '/images/cloud/ai-models/qwen-image-edit.webp',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
-    imageSrc: '/images/cloud/ai-models/wan-22.webm',
+    imageSrc: 'https://media.comfy.org/website/cloud/ai-models/wan-22.webm',
     badgeIcon: '/icons/ai-models/wan.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'

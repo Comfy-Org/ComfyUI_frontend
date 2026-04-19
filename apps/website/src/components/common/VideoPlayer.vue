@@ -132,6 +132,7 @@ function seek(e: MouseEvent) {
       :src
       :poster
       :preload="autoplay ? 'auto' : 'metadata'"
+      crossorigin="anonymous"
       playsinline
       :autoplay
       muted

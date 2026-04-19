@@ -2150,8 +2150,9 @@ const translations = {
       '为了应对这一挑战，Series 利用 ComfyUI 扩展了工作流。通过在 ComfyUI 之上构建自定义的可复用工作流，Series 改变了创建角色、情感和视频的方式。最终打造出一个支持超过 100,000 个资产、交付 Netflix 游戏并持续为多个在研项目提供动力的可扩展生产系统。'
   },
   'customers.detail.series-entertainment.topic-1.block.2.src': {
-    en: '/images/customers/series-entertainment/series.webp',
-    'zh-CN': '/images/customers/series-entertainment/series.webp'
+    en: 'https://media.comfy.org/website/customers/series-entertainment/series.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/series-entertainment/series.webp'
   },
   'customers.detail.series-entertainment.topic-1.block.2.alt': {
     en: 'Series Entertainment game titles including Olympus Rising, Gilded Scales, Evergrove, and The Wandering Teahouse',
@@ -2234,8 +2235,9 @@ const translations = {
       'Series 使用 ComfyUI 构建了一个自定义头像系统，可在数秒内生成六种不同的情感：开心、悲伤、严肃、讽刺、思考和惊讶。这使得创建具有多种情感状态的表现力角色成为可能，而无需手动重新创建每个变体。'
   },
   'customers.detail.series-entertainment.topic-4.block.3.src': {
-    en: '/images/customers/series-entertainment/panel.webp',
-    'zh-CN': '/images/customers/series-entertainment/panel.webp'
+    en: 'https://media.comfy.org/website/customers/series-entertainment/panel.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/series-entertainment/panel.webp'
   },
   'customers.detail.series-entertainment.topic-4.block.3.alt': {
     en: 'ComfyUI Expression Editor node for facial expression manipulation',
@@ -2260,8 +2262,9 @@ const translations = {
       '管线范围从快速的 512×512 单情感测试到高分辨率批量生成，使团队能够快速实验并使用相同的工作流直接进入生产。'
   },
   'customers.detail.series-entertainment.topic-4.block.7.src': {
-    en: '/images/customers/series-entertainment/workflows.webp',
-    'zh-CN': '/images/customers/series-entertainment/workflows.webp'
+    en: 'https://media.comfy.org/website/customers/series-entertainment/workflows.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/series-entertainment/workflows.webp'
   },
   'customers.detail.series-entertainment.topic-4.block.7.alt': {
     en: 'ComfyUI workflow for facial expression manipulation and upscaling pipeline',
@@ -2281,8 +2284,9 @@ const translations = {
       '在多部 Netflix 作品中，Series 使用 ComfyUI 构建了工作流，确保角色和背景在复杂的分支叙事中保持一致。风格化和一致性管线帮助确保角色在场景、情感和故事路径之间保持视觉统一——即使资产数量不断增长。'
   },
   'customers.detail.series-entertainment.topic-4.block.10.src': {
-    en: '/images/customers/series-entertainment/consistency.webp',
-    'zh-CN': '/images/customers/series-entertainment/consistency.webp'
+    en: 'https://media.comfy.org/website/customers/series-entertainment/consistency.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/series-entertainment/consistency.webp'
   },
   'customers.detail.series-entertainment.topic-4.block.10.alt': {
     en: 'Consistent character across multiple scenes and emotional states',
@@ -2302,8 +2306,9 @@ const translations = {
       'Series 还将 ComfyUI 作为 AI 辅助动画管线的一部分，将故事开发直接连接到图像和视频生成。该管线包含机器人辅助视频生成，允许创作者反复运行相同的工作流以高效生产视频。使用这种方法，每位创作者可以规模化生成 Lorespark 视频，每周交付超过 <strong>15 分钟的最终视频</strong>。'
   },
   'customers.detail.series-entertainment.topic-4.block.13.src': {
-    en: '/images/customers/series-entertainment/batch.webp',
-    'zh-CN': '/images/customers/series-entertainment/batch.webp'
+    en: 'https://media.comfy.org/website/customers/series-entertainment/batch.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/series-entertainment/batch.webp'
   },
   'customers.detail.series-entertainment.topic-4.block.13.alt': {
     en: 'ComfyUI batch processing workflow using Nano Banana and Google Gemini',
@@ -2339,8 +2344,9 @@ const translations = {
       '最重要的是，ComfyUI 让 Series 专注于构建结构，而非依赖试错式提示。情感、一致性和生产逻辑都存在于工作流本身之中。'
   },
   'customers.detail.series-entertainment.topic-5.block.3.src': {
-    en: '/images/customers/series-entertainment/scale.webp',
-    'zh-CN': '/images/customers/series-entertainment/scale.webp'
+    en: 'https://media.comfy.org/website/customers/series-entertainment/scale.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/series-entertainment/scale.webp'
   },
   'customers.detail.series-entertainment.topic-5.block.3.alt': {
     en: 'Six variations of the same character generated with consistent style',
@@ -2391,8 +2397,9 @@ const translations = {
       '幕后的工程由 <strong>SYSTMS</strong> 负责，这是一家 AI 工作室，其口号"Engineering the Impossible"反映了他们使用开源基础设施构建定制创意管线的方法，包括像 ComfyUI 这样的基于节点的工作流工具。'
   },
   'customers.detail.open-story-movement.topic-1.block.2.src': {
-    en: '/images/customers/open-story-movement/cover.webp',
-    'zh-CN': '/images/customers/open-story-movement/cover.webp'
+    en: 'https://media.comfy.org/website/customers/open-story-movement/cover.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/open-story-movement/cover.webp'
   },
   'customers.detail.open-story-movement.topic-1.block.2.alt': {
     en: 'Doodles AI generative platform powered by PRISM 1.0',
@@ -2427,8 +2434,9 @@ const translations = {
       '通过强化学习，用户生成的内容成为 PRISM 未来迭代的训练数据的一部分。用户不仅仅是客户；他们是塑造品牌视觉 DNA 的协作者。'
   },
   'customers.detail.open-story-movement.topic-2.block.2.src': {
-    en: '/images/customers/open-story-movement/walls.webp',
-    'zh-CN': '/images/customers/open-story-movement/walls.webp'
+    en: 'https://media.comfy.org/website/customers/open-story-movement/walls.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/open-story-movement/walls.webp'
   },
   'customers.detail.open-story-movement.topic-2.block.2.alt': {
     en: 'Doodles community co-creation',
@@ -2468,8 +2476,9 @@ const translations = {
       'Doodles AI 展示了当开源工作流遇上专业创意方向时的可能性。ComfyUI 强大的基于节点的平台允许用户将开源模型、API 和其他工具的复杂系统打包成面向消费者的应用程序，使其成为此类项目的天然选择。'
   },
   'customers.detail.open-story-movement.topic-3.block.3.src': {
-    en: '/images/customers/open-story-movement/workflow.webp',
-    'zh-CN': '/images/customers/open-story-movement/workflow.webp'
+    en: 'https://media.comfy.org/website/customers/open-story-movement/workflow.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/open-story-movement/workflow.webp'
   },
   'customers.detail.open-story-movement.topic-3.block.3.alt': {
     en: 'ComfyUI workflow powering Doodles AI',
@@ -2494,8 +2503,9 @@ const translations = {
       'Doodles AI 以 PRISM 1.0 作为图像到图像模型推出，但路线图雄心勃勃：2D 和 3D 输出生成、带声音的视频、实时 AR 和游戏应用。原始 Doodles 持有者在发布当天获得 100 次免费生成——这是一个有意识的举措，旨在为社区注入活力，让他们用平台的输出刷遍每一条时间线。'
   },
   'customers.detail.open-story-movement.topic-4.block.1.src': {
-    en: '/images/customers/open-story-movement/dna.webp',
-    'zh-CN': '/images/customers/open-story-movement/dna.webp'
+    en: 'https://media.comfy.org/website/customers/open-story-movement/dna.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/open-story-movement/dna.webp'
   },
   'customers.detail.open-story-movement.topic-4.block.1.alt': {
     en: 'Doodles AI output examples',
@@ -2525,8 +2535,9 @@ const translations = {
       '对于在场外观望的艺术家来说，信息很明确：构建模块已经就位，社区正在建设，创作者和消费者之间的界限正在消失。问题不在于开源是否会重塑创意产业。而在于当它发生时，你是否在用它构建。'
   },
   'customers.detail.open-story-movement.topic-5.block.1.src': {
-    en: '/images/customers/open-story-movement/output.webp',
-    'zh-CN': '/images/customers/open-story-movement/output.webp'
+    en: 'https://media.comfy.org/website/customers/open-story-movement/output.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/open-story-movement/output.webp'
   },
   'customers.detail.open-story-movement.topic-5.block.1.alt': {
     en: 'Doodles AI creative output',
@@ -2566,8 +2577,9 @@ const translations = {
       '在使用 ComfyUI 之前，这一阶段更慢、更抽象，风险也更大。使用 ComfyUI 之后，它变得更快、更具体，从一开始就在空间上有了坚实的基础。'
   },
   'customers.detail.moment-factory.topic-1.block.2.src': {
-    en: '/images/customers/moment-factory/hero.webp',
-    'zh-CN': '/images/customers/moment-factory/hero.webp'
+    en: 'https://media.comfy.org/website/customers/moment-factory/hero.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/moment-factory/hero.webp'
   },
   'customers.detail.moment-factory.topic-1.block.2.alt': {
     en: 'Moment Factory architectural projection mapping',
@@ -2641,8 +2653,9 @@ const translations = {
       '20 多个主要艺术方向\n每个方向 20 到 40 次迭代\n风格从超写实到插画版画不等'
   },
   'customers.detail.moment-factory.topic-3.block.5.src': {
-    en: '/images/customers/moment-factory/variations.webp',
-    'zh-CN': '/images/customers/moment-factory/variations.webp'
+    en: 'https://media.comfy.org/website/customers/moment-factory/variations.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/moment-factory/variations.webp'
   },
   'customers.detail.moment-factory.topic-3.block.5.alt': {
     en: 'Grid of generated artistic variations',
@@ -2764,8 +2777,9 @@ const translations = {
       '那时它变得不可否认：这不仅仅是研发的强大工具，而是 Moment Factory 各团队思考、迭代和制作方式的一次转变。'
   },
   'customers.detail.moment-factory.topic-3.block.29.src': {
-    en: '/images/customers/moment-factory/demo.webp',
-    'zh-CN': '/images/customers/moment-factory/demo.webp'
+    en: 'https://media.comfy.org/website/customers/moment-factory/demo.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/moment-factory/demo.webp'
   },
   'customers.detail.moment-factory.topic-3.block.29.alt': {
     en: 'Moment Factory live projection mapping demo',
@@ -2817,8 +2831,9 @@ const translations = {
       '在那一刻变得清晰：实现可靠的建筑尺度生成式工作流需要一个足够灵活的系统，可以在创意过程中被重新构建。ComfyUI 提供了这种灵活性。'
   },
   'customers.detail.moment-factory.topic-4.block.7.src': {
-    en: '/images/customers/moment-factory/workflow.webp',
-    'zh-CN': '/images/customers/moment-factory/workflow.webp'
+    en: 'https://media.comfy.org/website/customers/moment-factory/workflow.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/moment-factory/workflow.webp'
   },
   'customers.detail.moment-factory.topic-4.block.7.alt': {
     en: 'ComfyUI node-based workflow',
@@ -2900,8 +2915,8 @@ const translations = {
       '模型权重和代码以仅限研究的许可证发布。除了研究之外，这是将 ComfyUI 集成到 AAA 级视频游戏制作工作流中的重要一步。'
   },
   'customers.detail.ubisoft-chord.topic-1.block.2.src': {
-    en: '/images/customers/ubisoft/cover.webp',
-    'zh-CN': '/images/customers/ubisoft/cover.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/cover.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/cover.webp'
   },
   'customers.detail.ubisoft-chord.topic-1.block.2.alt': {
     en: 'CHORD PBR material generation in ComfyUI',
@@ -2972,8 +2987,8 @@ const translations = {
     'zh-CN': 'CHORD 模型集成在一个更广泛的流水线中，由三个核心阶段组成。'
   },
   'customers.detail.ubisoft-chord.topic-4.block.1.src': {
-    en: '/images/customers/ubisoft/pipeline.webp',
-    'zh-CN': '/images/customers/ubisoft/pipeline.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/pipeline.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/pipeline.webp'
   },
   'customers.detail.ubisoft-chord.topic-4.block.1.alt': {
     en: 'The 3-stage generative base material pipeline',
@@ -3030,8 +3045,8 @@ const translations = {
       '育碧开源了 CHORD 模型权重、ComfyUI 自定义节点和示例工作流，涵盖流水线中的纹理图像生成阶段和图像到材质估算阶段。'
   },
   'customers.detail.ubisoft-chord.topic-5.block.1.src': {
-    en: '/images/customers/ubisoft/workflow.webp',
-    'zh-CN': '/images/customers/ubisoft/workflow.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/workflow.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/workflow.webp'
   },
   'customers.detail.ubisoft-chord.topic-5.block.1.alt': {
     en: 'CHORD example workflow in ComfyUI',
@@ -3061,8 +3076,8 @@ const translations = {
     'zh-CN': '输出示例'
   },
   'customers.detail.ubisoft-chord.topic-6.block.0.src': {
-    en: '/images/customers/ubisoft/example1.webp',
-    'zh-CN': '/images/customers/ubisoft/example1.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/example1.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example1.webp'
   },
   'customers.detail.ubisoft-chord.topic-6.block.0.alt': {
     en: 'CHORD PBR material example output 1',
@@ -3073,8 +3088,8 @@ const translations = {
     'zh-CN': '生成的 PBR 材质集，展示基础颜色、法线、高度、粗糙度和金属度贴图。'
   },
   'customers.detail.ubisoft-chord.topic-6.block.1.src': {
-    en: '/images/customers/ubisoft/example2.webp',
-    'zh-CN': '/images/customers/ubisoft/example2.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/example2.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example2.webp'
   },
   'customers.detail.ubisoft-chord.topic-6.block.1.alt': {
     en: 'CHORD PBR material example output 2',
@@ -3085,8 +3100,8 @@ const translations = {
     'zh-CN': '另一组生成的 PBR 材质集，展示 CHORD 可实现的多样纹理效果。'
   },
   'customers.detail.ubisoft-chord.topic-6.block.2.src': {
-    en: '/images/customers/ubisoft/example3.webp',
-    'zh-CN': '/images/customers/ubisoft/example3.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/example3.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example3.webp'
   },
   'customers.detail.ubisoft-chord.topic-6.block.2.alt': {
     en: 'CHORD PBR material example output 3',
@@ -3097,8 +3112,8 @@ const translations = {
     'zh-CN': '具有完整 PBR 通道分解的材质生成输出。'
   },
   'customers.detail.ubisoft-chord.topic-6.block.3.src': {
-    en: '/images/customers/ubisoft/example4.webp',
-    'zh-CN': '/images/customers/ubisoft/example4.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/example4.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example4.webp'
   },
   'customers.detail.ubisoft-chord.topic-6.block.3.alt': {
     en: 'CHORD PBR material example output 4',
@@ -3109,8 +3124,8 @@ const translations = {
     'zh-CN': '从单一输入纹理生成的高质量 PBR 纹理集。'
   },
   'customers.detail.ubisoft-chord.topic-6.block.4.src': {
-    en: '/images/customers/ubisoft/example5.webp',
-    'zh-CN': '/images/customers/ubisoft/example5.webp'
+    en: 'https://media.comfy.org/website/customers/ubisoft/example5.webp',
+    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example5.webp'
   },
   'customers.detail.ubisoft-chord.topic-6.block.4.alt': {
     en: 'CHORD PBR material example output 5',

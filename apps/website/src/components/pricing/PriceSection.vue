@@ -51,7 +51,7 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.free.feature1' },
       { text: 'pricing.plan.free.feature2' }
     ],
-    image: '/images/pricing/free.webp'
+    image: 'https://media.comfy.org/website/pricing/free.webp'
   },
   {
     id: 'standard',
@@ -67,7 +67,7 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.standard.feature1' },
       { text: 'pricing.plan.standard.feature2' }
     ],
-    image: '/images/pricing/standard.webp'
+    image: 'https://media.comfy.org/website/pricing/standard.webp'
   },
   {
     id: 'creator',
@@ -84,7 +84,7 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.creator.feature2', isComingSoon: true }
     ],
     nextUpKey: 'pricing.plan.creator.nextUp',
-    image: '/images/pricing/creator.webp',
+    image: 'https://media.comfy.org/website/pricing/creator.webp',
     isPopular: true
   },
   {
@@ -102,7 +102,7 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.pro.feature2', isComingSoon: true }
     ],
     nextUpKey: 'pricing.plan.pro.nextUp',
-    image: '/images/pricing/pro.webp'
+    image: 'https://media.comfy.org/website/pricing/pro.webp'
   },
   {
     id: 'enterprise',

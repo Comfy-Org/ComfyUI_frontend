@@ -36,7 +36,7 @@ useHeroAnimation({
         class="order-2 mt-8 w-full lg:order-1 lg:mt-0 lg:w-5/12"
       >
         <img
-          src="/images/about/c.webp"
+          src="https://media.comfy.org/website/about/c.webp"
           alt="Comfy 3D logo"
           class="mx-auto w-full max-w-md lg:max-w-none"
         />
@@ -75,16 +75,16 @@ useHeroAnimation({
     <!-- Video overlapping the hero graphic -->
     <div ref="videoRef" class="-mt-16 px-20 pb-40 lg:-mt-72">
       <VideoPlayer
-        src="/videos/about/co-founders.webm"
+        src="https://media.comfy.org/website/about/co-founders.webm"
         :tracks="[
           {
-            src: '/videos/about/co-founders.en.vtt',
+            src: 'https://media.comfy.org/website/about/co-founders.en.vtt',
             kind: 'subtitles',
             srclang: 'en',
             label: 'English'
           },
           {
-            src: '/videos/about/co-founders.desc.vtt',
+            src: 'https://media.comfy.org/website/about/co-founders.desc.vtt',
             kind: 'descriptions',
             srclang: 'en',
             label: 'Descriptions'

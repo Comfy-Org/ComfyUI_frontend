@@ -2,10 +2,22 @@
 import { onMounted, ref } from 'vue'
 
 const photos = [
-  { src: '/images/careers/team0.webp', alt: 'Team dinner' },
-  { src: '/images/careers/team1.webp', alt: 'Team working' },
-  { src: '/images/careers/team2.webp', alt: 'Team offsite' },
-  { src: '/images/careers/team3.webp', alt: 'Team on a boat' }
+  {
+    src: 'https://media.comfy.org/website/careers/team0.webp',
+    alt: 'Team dinner'
+  },
+  {
+    src: 'https://media.comfy.org/website/careers/team1.webp',
+    alt: 'Team working'
+  },
+  {
+    src: 'https://media.comfy.org/website/careers/team2.webp',
+    alt: 'Team offsite'
+  },
+  {
+    src: 'https://media.comfy.org/website/careers/team3.webp',
+    alt: 'Team on a boat'
+  }
 ]
 
 const loopedPhotos = [...photos, ...photos, ...photos]

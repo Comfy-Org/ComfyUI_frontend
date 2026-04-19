@@ -97,7 +97,7 @@ function handleSubmit() {
 
       <div ref="imageRef" class="mt-8 -ml-20 overflow-hidden rounded-2xl">
         <img
-          src="/images/contact/c-projection.webp"
+          src="https://media.comfy.org/website/contact/c-projection.webp"
           alt=""
           class="w-full rounded-2xl object-cover"
         />
