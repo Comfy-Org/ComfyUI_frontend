@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
@@ -165,7 +166,7 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
         .toBeCloseTo(rightEdge, 0)
       await expect
         .poll(async () => (await node.boundingBox())?.width)
-        .toBeGreaterThan(0)
+        .toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
     })
 
     test('NE resize clamps height, keeping bottom edge fixed', async ({
@@ -187,7 +188,7 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
         .toBeCloseTo(bottomEdge, 0)
       await expect
         .poll(async () => (await node.boundingBox())?.height)
-        .toBeGreaterThan(0)
+        .toBeLessThan(box.height)
     })
   })
 })
