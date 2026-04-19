@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { getPromotedWidgetCount } from '@e2e/helpers/promotedWidgets'
 
 test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
   test.describe('Nested subgraph configure order', () => {
@@ -187,6 +188,183 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         const seedWidget = outerNode.getByLabel('seed', { exact: true })
         await comfyExpect(seedWidget).toBeVisible()
+      })
+    }
+  )
+
+  // Exercises resolveSubgraphInputTarget lines 20-31: the branch where
+  // inputNode.isSubgraphNode() is true and the target widget is a
+  // PromotedWidgetView. The subgraph-nested-promotion workflow has inputs
+  // "value_1" and "value_1_1" on node 5 that connect to node 6 (an inner
+  // SubgraphNode), triggering this branch.
+  test.describe(
+    'Nested subgraph input target resolution',
+    { tag: ['@widget'] },
+    () => {
+      const WORKFLOW = 'subgraphs/subgraph-nested-promotion'
+      const OUTER_NODE_ID = '5'
+      const INNER_SUBGRAPH_NODE_ID = '6'
+
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      })
+
+      test('Nested SubgraphNode promoted widgets render without resolution failures', async ({
+        comfyPage
+      }) => {
+        const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
+          comfyPage.page
+        )
+
+        try {
+          await comfyPage.workflow.loadWorkflow(WORKFLOW)
+          await comfyPage.vueNodes.waitForNodes()
+
+          const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+          await comfyExpect(outerNode).toBeVisible()
+
+          await expect
+            .poll(() => getPromotedWidgetCount(comfyPage, OUTER_NODE_ID))
+            .toBeGreaterThan(0)
+
+          expect(warnings).toEqual([])
+        } finally {
+          dispose()
+        }
+      })
+
+      test('Subgraph input resolves through inner SubgraphNode with PromotedWidgetView', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate((outerNodeId) => {
+              const node = window.app!.canvas.graph!.getNodeById(outerNodeId)
+              if (
+                !node ||
+                typeof node.isSubgraphNode !== 'function' ||
+                !node.isSubgraphNode()
+              )
+                return null
+
+              const subgraph = node.subgraph
+              const inputSlot = subgraph.inputNode.slots.find(
+                (s: { name: string }) => s.name === 'value_1'
+              )
+              if (!inputSlot) return null
+
+              for (const linkId of inputSlot.linkIds) {
+                const link = subgraph.getLink(linkId)
+                if (!link) continue
+                const { inputNode } = link.resolve(subgraph)
+                if (!inputNode || !Array.isArray(inputNode.inputs)) continue
+
+                const targetInput = inputNode.inputs.find(
+                  (e) => e.link === linkId
+                )
+                if (!targetInput) continue
+
+                const widget = inputNode.getWidgetFromSlot(targetInput)
+
+                return {
+                  inputNodeId: String(inputNode.id),
+                  isSubgraphNode:
+                    typeof inputNode.isSubgraphNode === 'function' &&
+                    inputNode.isSubgraphNode(),
+                  targetInputName: targetInput.name,
+                  hasWidget: widget != null,
+                  isPromotedWidgetView:
+                    widget != null &&
+                    'sourceNodeId' in widget &&
+                    'sourceWidgetName' in widget
+                }
+              }
+              return null
+            }, OUTER_NODE_ID)
+          )
+          .toEqual({
+            inputNodeId: INNER_SUBGRAPH_NODE_ID,
+            isSubgraphNode: true,
+            targetInputName: 'value',
+            hasWidget: true,
+            isPromotedWidgetView: true
+          })
+      })
+
+      test('Promoted widgets from inner SubgraphNode carry correct source identity', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              ({ outerNodeId, innerNodeId }) => {
+                const node = window.app!.canvas.graph!.getNodeById(outerNodeId)
+                if (
+                  !node ||
+                  typeof node.isSubgraphNode !== 'function' ||
+                  !node.isSubgraphNode()
+                )
+                  return null
+
+                type WidgetWithSource = {
+                  sourceNodeId: string
+                  sourceWidgetName: string
+                }
+
+                return (node.widgets ?? [])
+                  .filter(
+                    (w): w is typeof w & WidgetWithSource =>
+                      'sourceNodeId' in w &&
+                      String(w.sourceNodeId) === innerNodeId
+                  )
+                  .map((w) => ({
+                    sourceNodeId: String(w.sourceNodeId),
+                    sourceWidgetName: String(w.sourceWidgetName)
+                  }))
+              },
+              {
+                outerNodeId: OUTER_NODE_ID,
+                innerNodeId: INNER_SUBGRAPH_NODE_ID
+              }
+            )
+          )
+          .toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                sourceNodeId: INNER_SUBGRAPH_NODE_ID,
+                sourceWidgetName: expect.any(String)
+              })
+            ])
+          )
+      })
+
+      test('Serialize and reload preserves nested promoted widget resolution', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, OUTER_NODE_ID))
+          .toBeGreaterThan(0)
+
+        const initialCount = await getPromotedWidgetCount(
+          comfyPage,
+          OUTER_NODE_ID
+        )
+
+        await comfyPage.subgraph.serializeAndReload()
+        await comfyPage.vueNodes.waitForNodes()
+
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, OUTER_NODE_ID))
+          .toBe(initialCount)
       })
     }
   )
