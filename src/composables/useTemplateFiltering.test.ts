@@ -751,6 +751,35 @@ describe('useTemplateFiltering', () => {
       expect(filteredTemplates.value[0].name).toBe('api-cloud')
     })
 
+    it('stale persisted model selection does not cause zero results', () => {
+      const cloudFlux: TemplateInfo = {
+        name: 'cloud-flux',
+        description: 'Flux on cloud',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['Flux'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+
+      const templates = ref([cloudFlux])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const {
+        selectedModels,
+        activeModels,
+        inactiveModels,
+        filteredTemplates,
+        filteredCount
+      } = useTemplateFiltering(templates, undefined, distributionFilter)
+
+      selectedModels.value = ['SD 1.5']
+
+      expect(activeModels.value).toEqual([])
+      expect(inactiveModels.value).toEqual(['SD 1.5'])
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('cloud-flux')
+    })
+
     it('mac distribution matches templates with mac includeOnDistributions', () => {
       const macTemplate: TemplateInfo = {
         name: 'mac-template',

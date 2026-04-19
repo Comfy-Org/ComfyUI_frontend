@@ -42,7 +42,7 @@ const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[],
-  currentScope?: Ref<string | null>,
+  _currentScope?: Ref<string | null>,
   distributionFilter?: Ref<TemplateIncludeOnDistributionEnum[]>
 ) {
   const settingStore = useSettingStore()
@@ -111,38 +111,29 @@ export function useTemplateFiltering(
   })
 
   // Compute which selected filters are actually applicable to the current scope
-  const activeModels = computed(() => {
-    if (!currentScope) {
-      return selectedModels.value
-    }
-    return selectedModels.value.filter((model) =>
+  const activeModels = computed(() =>
+    selectedModels.value.filter((model) =>
       availableModels.value.includes(model)
     )
-  })
+  )
 
-  const activeUseCases = computed(() => {
-    if (!currentScope) {
-      return selectedUseCases.value
-    }
-    return selectedUseCases.value.filter((useCase) =>
+  const activeUseCases = computed(() =>
+    selectedUseCases.value.filter((useCase) =>
       availableUseCases.value.includes(useCase)
     )
-  })
+  )
 
-  // Track which filters are inactive (selected but not applicable)
-  const inactiveModels = computed(() => {
-    if (!currentScope) return []
-    return selectedModels.value.filter(
+  const inactiveModels = computed(() =>
+    selectedModels.value.filter(
       (model) => !availableModels.value.includes(model)
     )
-  })
+  )
 
-  const inactiveUseCases = computed(() => {
-    if (!currentScope) return []
-    return selectedUseCases.value.filter(
+  const inactiveUseCases = computed(() =>
+    selectedUseCases.value.filter(
       (useCase) => !availableUseCases.value.includes(useCase)
     )
-  })
+  )
 
   const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
