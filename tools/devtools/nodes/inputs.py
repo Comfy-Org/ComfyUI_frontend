@@ -445,6 +445,31 @@ class NodeWithDynamicCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeWithComboControlWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "combo_option": (
+                    "COMBO",
+                    {
+                        "options": ["Option A", "Option B", "Option C"],
+                        "control_after_generate": True,
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node with a combo input that has control_after_generate, producing control widgets with a filter list"
+    OUTPUT_NODE = True
+
+    def execute(self, combo_option: str):
+        return (combo_option,)
+
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -468,6 +493,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
+    "DevToolsNodeWithComboControlWidget": NodeWithComboControlWidget,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -493,6 +519,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
+    "DevToolsNodeWithComboControlWidget": "Node With Combo Control Widget",
 }
 
 __all__ = [
@@ -512,6 +539,7 @@ __all__ = [
     "NodeWithValidation",
     "NodeWithV2ComboInput",
     "NodeWithNumericCombo",
+    "NodeWithComboControlWidget",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]
