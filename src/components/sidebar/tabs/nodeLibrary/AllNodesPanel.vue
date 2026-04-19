@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+  <div class="h-full flex-1 overflow-y-auto">
     <!-- Favorites section -->
     <h3
       class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"

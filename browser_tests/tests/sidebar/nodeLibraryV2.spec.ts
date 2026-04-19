@@ -148,7 +148,7 @@ test.describe('Node library sidebar V2', () => {
       await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
     })
 
-    test('Bookmark button right edge is within the visible panel area', async ({
+    test('Bookmark button is not clipped by the scroll container', async ({
       comfyPage
     }) => {
       const tab = comfyPage.menu.nodeLibraryTabV2
@@ -163,19 +163,26 @@ test.describe('Node library sidebar V2', () => {
       const bookmarkButton = node.getByRole('button', { name: 'Bookmark' })
       await expect(bookmarkButton).toBeVisible()
 
+      // clientWidth excludes the scrollbar, so checking against it proves the
+      // button sits inside the usable content area, not under the scrollbar.
+      const scrollContainer = node.locator(
+        'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " scrollbar-gutter-stable ")]'
+      )
       await expect
         .poll(async () => {
           const buttonBox = await bookmarkButton.boundingBox()
-          const containerBox = await tab.sidebarContent.boundingBox()
-          if (!buttonBox || !containerBox) return false
-          return (
-            buttonBox.x + buttonBox.width <= containerBox.x + containerBox.width
-          )
+          const containerRect = await scrollContainer.evaluate((element) => ({
+            left: element.getBoundingClientRect().left,
+            clientWidth: element.clientWidth
+          }))
+          if (!buttonBox) return false
+          const contentRight = containerRect.left + containerRect.clientWidth
+          return buttonBox.x + buttonBox.width <= contentRight
         })
         .toBe(true)
     })
 
-    test('Bookmark button is clickable and toggles bookmark state', async ({
+    test('Bookmark button click toggles bookmark state', async ({
       comfyPage
     }) => {
       const tab = comfyPage.menu.nodeLibraryTabV2
@@ -197,7 +204,7 @@ test.describe('Node library sidebar V2', () => {
         .toContain('KSamplerAdvanced')
     })
 
-    test('Bookmark button remains accessible after search populates results', async ({
+    test('Bookmark button is clickable after search populates many results', async ({
       comfyPage
     }) => {
       const tab = comfyPage.menu.nodeLibraryTabV2
@@ -205,26 +212,27 @@ test.describe('Node library sidebar V2', () => {
       await tab.searchInput.fill('e')
       await tab.searchInput.press('Enter')
 
-      const firstResult = tab.sidebarContent.getByRole('treeitem').first()
+      const firstResult = tab.sidebarContent
+        .getByRole('treeitem')
+        .filter({
+          has: comfyPage.page.getByRole('button', { name: 'Bookmark' })
+        })
+        .first()
       await expect(firstResult).toBeVisible()
 
       await firstResult.hover()
-
       const bookmarkButton = firstResult.getByRole('button', {
         name: 'Bookmark'
       })
-      await expect(bookmarkButton).toBeVisible()
+      await bookmarkButton.click()
 
       await expect
-        .poll(async () => {
-          const buttonBox = await bookmarkButton.boundingBox()
-          const containerBox = await tab.sidebarContent.boundingBox()
-          if (!buttonBox || !containerBox) return false
-          return (
-            buttonBox.x + buttonBox.width <= containerBox.x + containerBox.width
+        .poll(() =>
+          comfyPage.settings.getSetting<string[]>(
+            'Comfy.NodeLibrary.Bookmarks.V2'
           )
-        })
-        .toBe(true)
+        )
+        .not.toEqual([])
     })
   })
 })
