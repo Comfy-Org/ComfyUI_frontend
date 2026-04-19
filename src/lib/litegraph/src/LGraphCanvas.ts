@@ -3849,7 +3849,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this
         )
       }
-    } else if (isMiddlePointerInput(e)) {
+    } else if (e.button === 1) {
       this.dirty_canvas = true
       this.dragging_canvas = false
     } else if (e.button === 2) {
