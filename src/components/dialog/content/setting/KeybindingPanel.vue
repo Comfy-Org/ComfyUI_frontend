@@ -23,6 +23,8 @@
           item-class="text-sm gap-2"
           button-size="unset"
           button-class="size-10"
+          to="#keybinding-panel-actions"
+          align="end"
         >
           <template #button>
             <Button

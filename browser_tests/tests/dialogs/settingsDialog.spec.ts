@@ -131,6 +131,38 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     expect(switched).toBe(true)
   })
 
+  test('Boolean setting persists after page reload', async ({ comfyPage }) => {
+    const settingId = 'Comfy.Node.MiddleClickRerouteNode'
+    const initialValue = await comfyPage.settings.getSetting<boolean>(settingId)
+
+    try {
+      await comfyPage.settings.setSetting(settingId, !initialValue)
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.page.waitForFunction(
+        () => window.app && window.app.extensionManager
+      )
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => window.LiteGraph!.middle_click_slot_add_default_node
+          )
+        )
+        .toBe(!initialValue)
+    } finally {
+      await comfyPage.settings.setSetting(settingId, initialValue)
+    }
+  })
+
   test('Dropdown setting can be changed and persists', async ({
     comfyPage
   }) => {

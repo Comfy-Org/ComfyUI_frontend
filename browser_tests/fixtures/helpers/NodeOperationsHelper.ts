@@ -1,7 +1,10 @@
 import type { Locator } from '@playwright/test'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -120,6 +123,27 @@ export class NodeOperationsHelper {
     }
   }
 
+  async getSerializedGraph(): Promise<ComfyWorkflowJSON> {
+    return this.page.evaluate(
+      () => window.app!.graph.serialize() as ComfyWorkflowJSON
+    )
+  }
+
+  async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
+    await this.page.evaluate(
+      (d) => window.app!.loadGraphData(d, true, true, null),
+      data
+    )
+  }
+
+  async repositionNodes(
+    positions: Record<string, [number, number]>
+  ): Promise<void> {
+    const data = await this.getSerializedGraph()
+    applyNodePositions(data, positions)
+    await this.loadGraph(data)
+  }
+
   async resizeNode(
     nodePos: Position,
     nodeSize: Size,
@@ -200,5 +224,15 @@ export class NodeOperationsHelper {
     await dialogInput.fill('128')
     await dialogInput.press('Enter')
     await this.comfyPage.nextFrame()
+  }
+}
+
+function applyNodePositions(
+  data: ComfyWorkflowJSON,
+  positions: Record<string, [number, number]>
+): void {
+  for (const node of data.nodes) {
+    const pos = positions[String(node.id)]
+    if (pos) node.pos = pos
   }
 }
