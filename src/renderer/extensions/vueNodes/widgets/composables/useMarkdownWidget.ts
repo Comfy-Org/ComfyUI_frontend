@@ -105,7 +105,7 @@ function addMarkdownWidget(
   })
 
   inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
+    if (event.button === 1) {
       app.canvas.processMouseUp(event)
     }
   })

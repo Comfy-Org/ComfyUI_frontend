@@ -72,7 +72,7 @@ function addMultilineWidget(
   })
 
   inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
+    if (event.button === 1) {
       app.canvas.processMouseUp(event)
     }
   })
