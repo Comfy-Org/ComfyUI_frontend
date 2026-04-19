@@ -139,12 +139,9 @@ Always check for existing helpers and fixtures before implementing new ones:
 
 - **ComfyPage**: Main fixture with methods for canvas interaction and node management
 - **ComfyMouse**: Helper for precise mouse operations on the canvas
-- **Helpers**: Check `browser_tests/helpers/` for specialized helpers like:
-  - `actionbar.ts`: Interact with the action bar
-  - `manageGroupNode.ts`: Group node management operations
-  - `templates.ts`: Template workflows operations
-- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component helpers
-- **Utility Functions**: Check `browser_tests/utils/` and `browser_tests/fixtures/utils/` for shared utilities
+- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component page objects (e.g. `Actionbar.ts`, `Templates.ts`, `ContextMenu.ts`)
+- **Helper Classes**: Check `browser_tests/fixtures/helpers/` for domain-specific helper classes wired into ComfyPage (e.g. `CanvasHelper.ts`, `WorkflowHelper.ts`)
+- **Utility Functions**: Check `browser_tests/fixtures/utils/` for standalone utilities (e.g. `fitToView.ts`, `clipboardSpy.ts`, `builderTestUtils.ts`)
 
 Most common testing needs are already addressed by these helpers, which will make your tests more consistent and reliable.
 

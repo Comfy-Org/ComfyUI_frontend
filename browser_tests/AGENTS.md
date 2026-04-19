@@ -16,10 +16,13 @@ browser_tests/
 │   ├── selectors.ts      - Centralized TestIds
 │   ├── data/             - Static test data (mock API responses, workflow JSONs, node definitions)
 │   ├── components/       - Page object components (locators, user interactions)
+│   │   ├── Actionbar.ts
 │   │   ├── ContextMenu.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
-│   │   └── Topbar.ts
+│   │   ├── Templates.ts
+│   │   ├── Topbar.ts
+│   │   └── ...
 │   ├── helpers/          - Focused helper classes (domain-specific actions)
 │   │   ├── CanvasHelper.ts
 │   │   ├── CommandHelper.ts
@@ -28,8 +31,12 @@ browser_tests/
 │   │   ├── SettingsHelper.ts
 │   │   ├── WorkflowHelper.ts
 │   │   └── ...
-│   └── utils/            - Pure utility functions (no page dependency)
-├── helpers/          - Test-specific utilities
+│   └── utils/            - Standalone utility functions (used by tests or fixtures)
+│       ├── builderTestUtils.ts
+│       ├── clipboardSpy.ts
+│       ├── fitToView.ts
+│       ├── perfReporter.ts
+│       └── ...
 └── tests/            - Test files (*.spec.ts)
 ```
 
@@ -38,7 +45,7 @@ browser_tests/
 - **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
 - **`fixtures/components/`** — Page object components. Encapsulate locators and user interactions for a specific UI area.
 - **`fixtures/helpers/`** — Focused helper classes. Domain-specific actions that coordinate multiple page objects (e.g. canvas operations, workflow loading).
-- **`fixtures/utils/`** — Pure utility functions. No `Page` dependency; stateless helpers that can be used anywhere.
+- **`fixtures/utils/`** — Standalone utility functions. Shared helpers used by tests or fixtures (test setup, page injection, query helpers, etc.).
 
 ## Page Object Locator Style
 

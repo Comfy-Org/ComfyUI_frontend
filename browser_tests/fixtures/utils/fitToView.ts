@@ -9,8 +9,6 @@ interface FitToViewOptions {
 
 /**
  * Instantly fits the canvas view to graph content without waiting for UI animation.
- *
- * Lives outside the shared fixture to keep the default ComfyPage interactions user-oriented.
  */
 export async function fitToViewInstant(
   comfyPage: ComfyPage,

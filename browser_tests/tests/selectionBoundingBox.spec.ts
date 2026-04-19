@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { measureSelectionBounds } from '@e2e/fixtures/helpers/boundsUtils'
+import { measureSelectionBounds } from '@e2e/fixtures/utils/boundsUtils'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 const SUBGRAPH_ID = '2'

@@ -1,7 +1,7 @@
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
-import { writePerfReport } from '@e2e/helpers/perfReporter'
+import { writePerfReport } from '@e2e/fixtures/utils/perfReporter'
 import { restorePath } from '@e2e/utils/backupUtils'
 
 dotenvConfig()

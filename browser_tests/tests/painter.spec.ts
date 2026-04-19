@@ -7,7 +7,7 @@ import {
   drawStroke,
   hasCanvasContent,
   triggerSerialization
-} from '@e2e/helpers/painter'
+} from '@e2e/fixtures/utils/painter'
 
 test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

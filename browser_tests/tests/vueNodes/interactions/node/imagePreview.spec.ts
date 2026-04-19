@@ -5,7 +5,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
-} from '@e2e/helpers/promotedWidgets'
+} from '@e2e/fixtures/utils/promotedWidgets'
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {

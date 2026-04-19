@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { getPromotedWidgets } from '@e2e/helpers/promotedWidgets'
+import { getPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 const LEGACY_PREFIXED_WORKFLOW =

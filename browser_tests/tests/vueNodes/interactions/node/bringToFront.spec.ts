@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 test.describe(
   'Vue Node Bring to Front',
