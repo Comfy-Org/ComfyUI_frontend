@@ -194,22 +194,21 @@ const searchBoxRef = ref()
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
-const filteredWorkflows = ref<ComfyWorkflow[]>([])
+const filteredWorkflows = computed(() => {
+  if (searchQuery.value.length === 0) return []
+  const lowerQuery = searchQuery.value.toLocaleLowerCase()
+  return applyFilter(workflowStore.workflows).filter((workflow) =>
+    workflow.path.toLocaleLowerCase().includes(lowerQuery)
+  )
+})
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
 const handleSearch = async (query: string) => {
   if (query.length === 0) {
-    filteredWorkflows.value = []
     expandedKeys.value = {}
     return
   }
-  const lowerQuery = query.toLocaleLowerCase()
-  filteredWorkflows.value = applyFilter(workflowStore.workflows).filter(
-    (workflow) => {
-      return workflow.path.toLocaleLowerCase().includes(lowerQuery)
-    }
-  )
   await nextTick()
   expandNode(filteredRoot.value)
 }
