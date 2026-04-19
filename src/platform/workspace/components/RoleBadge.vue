@@ -1,24 +1,22 @@
 <template>
   <span
-    class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+    :class="
+      cn(
+        'rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase',
+        $attrs.class as string
+      )
+    "
   >
-    {{ roleBadgeLabel }}
+    {{ label }}
   </span>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { cn } from '@/utils/tailwindUtil'
 
-const { role } = defineProps<{
-  role: 'owner' | 'member'
+defineOptions({ inheritAttrs: false })
+
+defineProps<{
+  label: string
 }>()
-
-const { t } = useI18n()
-
-const roleBadgeLabel = computed(() =>
-  role === 'owner'
-    ? t('workspaceSwitcher.roleOwner')
-    : t('workspaceSwitcher.roleMember')
-)
 </script>
