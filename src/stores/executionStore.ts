@@ -576,6 +576,24 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToSessionWorkflowPath.value = next
   }
 
+  function rewriteSessionWorkflowPaths(
+    oldPath: string,
+    newPath: string,
+    workflowId?: string
+  ) {
+    let rewritten = false
+    const next = new Map(jobIdToSessionWorkflowPath.value)
+    for (const [jobId, path] of next) {
+      if (path !== oldPath) continue
+      if (workflowId && jobIdToWorkflowId.value.get(jobId) !== workflowId) {
+        continue
+      }
+      next.set(jobId, newPath)
+      rewritten = true
+    }
+    if (rewritten) jobIdToSessionWorkflowPath.value = next
+  }
+
   /**
    * Register or update a mapping from job ID to workflow ID.
    */
@@ -652,6 +670,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocatorIdToExecutionId,
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
-    ensureSessionWorkflowPath
+    ensureSessionWorkflowPath,
+    rewriteSessionWorkflowPaths
   }
 })
