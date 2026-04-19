@@ -11,6 +11,7 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
+  demos: '/demos',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   videos: '/videos',

@@ -1,0 +1,142 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import DemoHeroSection from '../../../components/demos/DemoHeroSection.vue'
+import ArcadeEmbed from '../../../components/demos/ArcadeEmbed.vue'
+import DemoTranscript from '../../../components/demos/DemoTranscript.vue'
+import DemoNavSection from '../../../components/demos/DemoNavSection.vue'
+import { demos, getDemoBySlug, getNextDemo } from '../../../config/demos'
+import { t } from '../../../i18n/translations'
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return demos.map((demo) => ({
+    params: { slug: demo.slug }
+  }))
+}
+
+const { slug } = Astro.params
+const demo = getDemoBySlug(slug as string)!
+const nextDemo = getNextDemo(slug as string)
+const title = t(demo.title, 'zh-CN')
+const description = t(demo.description, 'zh-CN')
+const canonicalURL = new URL(`/zh-CN/demos/${demo.slug}`, Astro.site)
+
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: title,
+  description,
+  image: new URL(demo.ogImage, Astro.site).href,
+  totalTime: demo.estimatedTime,
+  datePublished: demo.publishedDate,
+  dateModified: demo.modifiedDate,
+  author: {
+    '@type': 'Organization',
+    name: 'Comfy Org',
+    url: 'https://comfy.org'
+  }
+}
+
+const learningResourceJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LearningResource',
+  name: title,
+  description,
+  learningResourceType: 'interactive tutorial',
+  interactivityType: 'active',
+  educationalLevel: demo.difficulty === 'beginner'
+    ? 'Beginner'
+    : demo.difficulty === 'intermediate'
+      ? 'Intermediate'
+      : 'Advanced',
+  url: canonicalURL.href,
+  datePublished: demo.publishedDate,
+  dateModified: demo.modifiedDate,
+  author: {
+    '@type': 'Organization',
+    name: 'Comfy Org',
+    url: 'https://comfy.org'
+  }
+}
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://comfy.org/zh-CN'
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Demos',
+      item: 'https://comfy.org/zh-CN/demos'
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: title
+    }
+  ]
+}
+---
+
+<BaseLayout
+  title={`${title} — Comfy`}
+  description={description}
+  ogImage={demo.ogImage}
+>
+  <Fragment slot="head">
+    <meta property="article:published_time" content={demo.publishedDate} />
+    <meta property="article:modified_time" content={demo.modifiedDate} />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(howToJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(learningResourceJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbJsonLd)}
+    />
+    <link rel="preconnect" href="https://demo.arcade.software" />
+  </Fragment>
+
+  <DemoHeroSection
+    label={t(demo.category, 'zh-CN')}
+    title={title}
+    description={description}
+    difficulty={demo.difficulty}
+    estimatedTime={demo.estimatedTime}
+  />
+
+  <ArcadeEmbed
+    arcadeId={demo.arcadeId}
+    title={title}
+    locale="zh-CN"
+    client:load
+  />
+
+  {demo.transcript && (
+    <DemoTranscript
+      transcript={t(demo.transcript, 'zh-CN')}
+      locale="zh-CN"
+      client:visible
+    />
+  )}
+
+  <DemoNavSection
+    nextTitle={t(nextDemo.title, 'zh-CN')}
+    nextSlug={nextDemo.slug}
+    nextThumbnail={nextDemo.thumbnail}
+    locale="zh-CN"
+  />
+</BaseLayout>

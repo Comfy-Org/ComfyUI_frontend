@@ -2909,6 +2909,59 @@ const translations = {
     'zh-CN': 'jane@acme.org'
   },
 
+  'demos.category.templates': { en: 'TEMPLATES', 'zh-CN': '模板' },
+  'demos.category.gettingStarted': { en: 'GETTING STARTED', 'zh-CN': '入门' },
+
+  'demos.image-to-video.title': {
+    en: 'Create a Video from an Image',
+    'zh-CN': '从图片创建视频'
+  },
+  'demos.image-to-video.description': {
+    en: 'Learn how to use the Image to Video workflow template in ComfyUI to generate short video clips from a single image.',
+    'zh-CN':
+      '了解如何使用 ComfyUI 中的图片转视频工作流模板，从单张图片生成短视频。'
+  },
+  'demos.image-to-video.transcript': {
+    en: '<ol><li><strong>Open ComfyUI</strong> — Launch the application and you\'ll see the node-based workflow canvas where all your AI pipelines are built.</li><li><strong>Browse templates</strong> — Click the workflow templates button in the sidebar to browse available starting points.</li><li><strong>Select Image to Video</strong> — Find and select the "Image to Video" template from the list to load it onto your canvas.</li><li><strong>Upload your image</strong> — Click the image upload node and select the source image you want to animate.</li><li><strong>Run the workflow</strong> — Click the "Queue" button to execute the workflow and generate your video output.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开 ComfyUI</strong> — 启动应用程序，您将看到基于节点的工作流画布。</li><li><strong>浏览模板</strong> — 点击侧栏中的工作流模板按钮，浏览可用模板。</li><li><strong>选择图片转视频</strong> — 从列表中找到并选择"图片转视频"模板。</li><li><strong>上传图片</strong> — 点击图片上传节点，选择要动画化的源图片。</li><li><strong>运行工作流</strong> — 点击"排队"按钮执行工作流并生成视频输出。</li></ol>'
+  },
+
+  'demos.workflow-templates.title': {
+    en: 'Browse Workflow Templates',
+    'zh-CN': '浏览工作流模板'
+  },
+  'demos.workflow-templates.description': {
+    en: "Explore ComfyUI's built-in workflow templates to quickly get started with common AI generation tasks.",
+    'zh-CN': '探索 ComfyUI 内置的工作流模板，快速开始常见的 AI 生成任务。'
+  },
+  'demos.workflow-templates.transcript': {
+    en: '<ol><li><strong>Open the template browser</strong> — Click the templates icon in the ComfyUI sidebar to open the template library.</li><li><strong>Browse categories</strong> — Templates are organized by task: image generation, video, upscaling, and more.</li><li><strong>Preview a template</strong> — Hover over any template to see a preview of its workflow and expected output.</li><li><strong>Load and customize</strong> — Click to load a template, then modify parameters to fit your needs.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开模板浏览器</strong> — 点击 ComfyUI 侧栏中的模板图标。</li><li><strong>浏览分类</strong> — 模板按任务分类：图像生成、视频、放大等。</li><li><strong>预览模板</strong> — 将鼠标悬停在模板上查看预览。</li><li><strong>加载并自定义</strong> — 点击加载模板，然后修改参数。</li></ol>'
+  },
+
+  'demos.nav.nextDemo': { en: "What's Next", 'zh-CN': '下一个演示' },
+  'demos.nav.viewDemo': { en: 'View Demo', 'zh-CN': '查看演示' },
+  'demos.nav.allDemos': { en: 'All Demos', 'zh-CN': '所有演示' },
+  'demos.transcript.label': { en: 'Demo transcript', 'zh-CN': '演示文字记录' },
+  'demos.transcript.note': {
+    en: '(for accessibility & search)',
+    'zh-CN': '（无障碍和搜索）'
+  },
+  'demos.loading': {
+    en: 'Loading interactive demo…',
+    'zh-CN': '正在加载互动演示…'
+  },
+  'demos.noscript': {
+    en: 'This interactive demo requires JavaScript.',
+    'zh-CN': '此互动演示需要 JavaScript。'
+  },
+  'demos.noscript.link': {
+    en: 'View on Arcade →',
+    'zh-CN': '在 Arcade 上查看 →'
+  },
+
   'customers.story.whatsNext': {
     en: "What's next?",
     'zh-CN': '接下来看什么？'
