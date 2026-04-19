@@ -1,343 +1,499 @@
 <script setup lang="ts">
+import type { Locale, TranslationKey } from '../../i18n/translations'
+
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import BrandButton from '../common/BrandButton.vue'
+import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-type PlanTone = 'ink' | 'elevated'
-type CtaVariant = 'outline' | 'solid'
-
-interface PricingPlan {
-  id: 'free' | 'standard' | 'creator' | 'pro'
-  tone: PlanTone
-  ctaVariant: CtaVariant
-  ctaHref: string
-  isMostPopular?: boolean
-  label: string
-  summary: string
-  price: string
-  credits: string
-  estimate: string
-  cta: string
-  featureIntro?: string
-  features: string[]
-  nextUp?: string
-  artClass: string
+interface PlanFeature {
+  text: TranslationKey
+  isComingSoon?: boolean
 }
 
-const activePlan = ref<PricingPlan['id']>('free')
+interface PricingPlan {
+  id: string
+  labelKey: TranslationKey
+  summaryKey: TranslationKey
+  priceKey?: TranslationKey
+  creditsKey?: TranslationKey
+  estimateKey?: TranslationKey
+  ctaKey: TranslationKey
+  ctaHref: string
+  featureIntroKey?: TranslationKey
+  features: PlanFeature[]
+  nextUpKey?: TranslationKey
+  andMoreKey?: TranslationKey
+  image?: string
+  isPopular?: boolean
+  isEnterprise?: boolean
+}
 
 const plans: PricingPlan[] = [
   {
     id: 'free',
-    tone: 'ink',
-    ctaVariant: 'outline',
-    ctaHref: externalLinks.app,
-    label: t('pricing.plan.free.label', locale),
-    summary: t('pricing.plan.free.summary', locale),
-    price: t('pricing.plan.free.price', locale),
-    credits: t('pricing.plan.free.credits', locale),
-    estimate: t('pricing.plan.free.estimate', locale),
-    cta: t('pricing.plan.free.cta', locale),
+    labelKey: 'pricing.plan.free.label',
+    summaryKey: 'pricing.plan.free.summary',
+    priceKey: 'pricing.plan.free.price',
+    creditsKey: 'pricing.plan.free.credits',
+    estimateKey: 'pricing.plan.free.estimate',
+    ctaKey: 'pricing.plan.free.cta',
+    ctaHref: externalLinks.cloud,
     features: [
-      t('pricing.plan.free.feature1', locale),
-      t('pricing.plan.free.feature2', locale)
+      { text: 'pricing.plan.free.feature1' },
+      { text: 'pricing.plan.free.feature2' }
     ],
-    artClass:
-      'bg-linear-to-br from-primary-comfy-canvas via-primary-warm-white to-primary-warm-gray'
+    image: '/images/pricing/free.webp'
   },
   {
     id: 'standard',
-    tone: 'ink',
-    ctaVariant: 'solid',
-    ctaHref: externalLinks.app,
-    label: t('pricing.plan.standard.label', locale),
-    summary: t('pricing.plan.standard.summary', locale),
-    price: t('pricing.plan.standard.price', locale),
-    credits: t('pricing.plan.standard.credits', locale),
-    estimate: t('pricing.plan.standard.estimate', locale),
-    cta: t('pricing.plan.standard.cta', locale),
-    featureIntro: t('pricing.plan.standard.featureIntro', locale),
+    labelKey: 'pricing.plan.standard.label',
+    summaryKey: 'pricing.plan.standard.summary',
+    priceKey: 'pricing.plan.standard.price',
+    creditsKey: 'pricing.plan.standard.credits',
+    estimateKey: 'pricing.plan.standard.estimate',
+    ctaKey: 'pricing.plan.standard.cta',
+    ctaHref: externalLinks.cloud,
+    featureIntroKey: 'pricing.plan.standard.featureIntro',
     features: [
-      t('pricing.plan.standard.feature1', locale),
-      t('pricing.plan.standard.feature2', locale)
+      { text: 'pricing.plan.standard.feature1' },
+      { text: 'pricing.plan.standard.feature2' }
     ],
-    artClass:
-      'bg-linear-to-tr from-primary-comfy-canvas via-primary-warm-gray to-primary-warm-white'
+    image: '/images/pricing/standard.webp'
   },
   {
     id: 'creator',
-    tone: 'ink',
-    ctaVariant: 'solid',
-    ctaHref: externalLinks.app,
-    isMostPopular: true,
-    label: t('pricing.plan.creator.label', locale),
-    summary: t('pricing.plan.creator.summary', locale),
-    price: t('pricing.plan.creator.price', locale),
-    credits: t('pricing.plan.creator.credits', locale),
-    estimate: t('pricing.plan.creator.estimate', locale),
-    cta: t('pricing.plan.creator.cta', locale),
-    featureIntro: t('pricing.plan.creator.featureIntro', locale),
+    labelKey: 'pricing.plan.creator.label',
+    summaryKey: 'pricing.plan.creator.summary',
+    priceKey: 'pricing.plan.creator.price',
+    creditsKey: 'pricing.plan.creator.credits',
+    estimateKey: 'pricing.plan.creator.estimate',
+    ctaKey: 'pricing.plan.creator.cta',
+    ctaHref: externalLinks.cloud,
+    featureIntroKey: 'pricing.plan.creator.featureIntro',
     features: [
-      t('pricing.plan.creator.feature1', locale),
-      t('pricing.plan.creator.feature2', locale)
+      { text: 'pricing.plan.creator.feature1' },
+      { text: 'pricing.plan.creator.feature2', isComingSoon: true }
     ],
-    nextUp: t('pricing.plan.creator.nextUp', locale),
-    artClass:
-      'bg-linear-to-br from-secondary-mauve via-primary-comfy-ink to-primary-comfy-plum'
+    nextUpKey: 'pricing.plan.creator.nextUp',
+    image: '/images/pricing/creator.webp',
+    isPopular: true
   },
   {
     id: 'pro',
-    tone: 'ink',
-    ctaVariant: 'solid',
-    ctaHref: externalLinks.app,
-    label: t('pricing.plan.pro.label', locale),
-    summary: t('pricing.plan.pro.summary', locale),
-    price: t('pricing.plan.pro.price', locale),
-    credits: t('pricing.plan.pro.credits', locale),
-    estimate: t('pricing.plan.pro.estimate', locale),
-    cta: t('pricing.plan.pro.cta', locale),
-    featureIntro: t('pricing.plan.pro.featureIntro', locale),
+    labelKey: 'pricing.plan.pro.label',
+    summaryKey: 'pricing.plan.pro.summary',
+    priceKey: 'pricing.plan.pro.price',
+    creditsKey: 'pricing.plan.pro.credits',
+    estimateKey: 'pricing.plan.pro.estimate',
+    ctaKey: 'pricing.plan.pro.cta',
+    ctaHref: externalLinks.cloud,
+    featureIntroKey: 'pricing.plan.pro.featureIntro',
     features: [
-      t('pricing.plan.pro.feature1', locale),
-      t('pricing.plan.pro.feature2', locale)
+      { text: 'pricing.plan.pro.feature1' },
+      { text: 'pricing.plan.pro.feature2', isComingSoon: true }
     ],
-    nextUp: t('pricing.plan.pro.nextUp', locale),
-    artClass:
-      'bg-linear-to-br from-primary-comfy-ink via-primary-warm-gray to-primary-comfy-ink'
+    nextUpKey: 'pricing.plan.pro.nextUp',
+    image: '/images/pricing/pro.webp'
+  },
+  {
+    id: 'enterprise',
+    labelKey: 'pricing.enterprise.label',
+    summaryKey: 'pricing.enterprise.description',
+    ctaKey: 'pricing.enterprise.cta',
+    ctaHref: getRoutes(locale).cloudEnterprise,
+    featureIntroKey: 'pricing.enterprise.featureIntro',
+    features: [
+      { text: 'pricing.enterprise.feature1' },
+      { text: 'pricing.enterprise.feature2' },
+      { text: 'pricing.enterprise.feature3' },
+      { text: 'pricing.enterprise.feature4' }
+    ],
+    andMoreKey: 'pricing.enterprise.andMore',
+    isEnterprise: true
   }
 ]
 
-const enterpriseFeatures = [
-  t('pricing.enterprise.feature1', locale),
-  t('pricing.enterprise.feature2', locale),
-  t('pricing.enterprise.feature3', locale),
-  t('pricing.enterprise.feature4', locale)
-]
+const standardPlans = plans.filter((p) => !p.isEnterprise)
+const enterprisePlan = plans.find((p) => p.isEnterprise)!
 
-function getSurfaceClass(tone: PlanTone): string {
-  return tone === 'elevated'
-    ? 'bg-primary-warm-gray/45'
-    : 'bg-primary-comfy-ink'
-}
-
-function getButtonVariantClass(variant: CtaVariant): string {
-  if (variant === 'outline') {
-    return 'border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink'
-  }
-
-  return 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink hover:brightness-105'
-}
+const activePlanIndex = ref<number | null>(null)
 </script>
 
 <template>
-  <section class="px-4 pt-34 pb-20 lg:px-20 lg:pt-44 lg:pb-24">
-    <header class="mx-auto max-w-2xl text-center">
-      <h1 class="text-primary-warm-white text-4xl font-light lg:text-5xl">
+  <section class="px-4 py-16 lg:px-20 lg:py-24">
+    <!-- Header -->
+    <div class="mx-auto mb-12 max-w-3xl text-center lg:mb-16">
+      <h1
+        class="text-primary-comfy-canvas font-formula text-4xl font-light lg:text-6xl"
+      >
         {{ t('pricing.title', locale) }}
       </h1>
-      <p
-        class="text-primary-warm-white/80 mx-auto mt-5 max-w-2xl text-sm/relaxed lg:text-base/relaxed"
-      >
+      <p class="text-primary-comfy-canvas mt-4 text-base">
         {{ t('pricing.subtitle', locale) }}
       </p>
-    </header>
+    </div>
 
-    <!-- Mobile tab bar -->
-    <div class="mt-8 flex gap-2 lg:hidden">
+    <!-- Mobile plan tabs -->
+    <div class="scrollbar-none mb-6 flex gap-2 overflow-x-auto lg:hidden">
       <button
-        v-for="plan in plans"
-        :key="`tab-${plan.id}`"
+        v-for="(plan, index) in plans"
+        :key="plan.id"
         :class="
-          activePlan === plan.id
-            ? 'border-primary-comfy-yellow text-primary-comfy-yellow'
-            : 'border-primary-warm-white/30 text-primary-warm-white/60'
+          cn(
+            'shrink-0 rounded-full px-4 py-2 text-xs font-bold tracking-wider transition-colors',
+            activePlanIndex === index
+              ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+              : 'bg-transparency-white-t4 text-primary-comfy-canvas'
+          )
         "
-        class="flex-1 rounded-full border p-2 text-xs font-bold tracking-wider uppercase transition-colors"
-        @click="activePlan = plan.id"
+        @click="activePlanIndex = activePlanIndex === index ? null : index"
       >
-        {{ plan.label }}
+        <span class="ppformula-text-center">
+          {{ t(plan.labelKey, locale) }}
+        </span>
       </button>
     </div>
 
-    <!-- Plans grid -->
+    <!-- Desktop: 4-column grid / Mobile: single card -->
     <div
-      class="border-primary-warm-white/10 bg-primary-warm-white/8 mt-6 rounded-3xl border-2 p-1 lg:mt-12"
+      class="rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:grid-cols-4 lg:gap-2"
     >
-      <div class="grid gap-1 lg:grid-cols-4">
-        <article
-          v-for="plan in plans"
-          :key="plan.id"
-          :class="activePlan === plan.id ? 'flex' : 'hidden lg:flex'"
-          class="text-primary-comfy-canvas hover:text-primary-warm-white group [&:hover>div]:bg-secondary-cool-gray h-full flex-col gap-1 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:drop-shadow-2xl lg:row-span-4 lg:grid lg:grid-rows-subgrid"
-        >
-          <!-- Header: label + summary -->
-          <div :class="getSurfaceClass(plan.tone)" class="rounded-2xl p-5">
-            <div class="flex items-start justify-between gap-2">
-              <h2
-                class="text-primary-comfy-yellow text-sm leading-none font-bold"
-              >
-                {{ plan.label }}
-              </h2>
+      <div
+        v-for="plan in standardPlans"
+        :key="plan.id"
+        class="flex flex-col rounded-3xl"
+      >
+        <!-- Card content -->
+        <div class="flex grow flex-col">
+          <!-- Label + badge + Summary -->
+          <div
+            class="bg-primary-comfy-ink flex h-45 flex-col gap-8 rounded-4xl p-8"
+          >
+            <div class="flex items-center gap-2">
               <span
-                v-if="plan.isMostPopular"
-                class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-sm px-1.5 py-0.5 text-xs/tight font-bold tracking-wide"
+                class="text-primary-comfy-yellow translate-y-0.5 text-base font-bold tracking-wider"
               >
-                {{ t('pricing.badge.popular', locale) }}
+                {{ t(plan.labelKey, locale) }}
+              </span>
+              <span v-if="plan.isPopular" class="flex h-5 items-stretch">
+                <img
+                  src="/icons/node-left.svg"
+                  alt=""
+                  class="-mx-px self-stretch"
+                  aria-hidden="true"
+                />
+                <span
+                  class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center px-2 text-[10px] font-bold tracking-wider"
+                >
+                  <span class="ppformula-text-center">
+                    {{ t('pricing.badge.popular', locale) }}
+                  </span>
+                </span>
+                <img
+                  src="/icons/node-right.svg"
+                  alt=""
+                  class="-mx-px self-stretch"
+                  aria-hidden="true"
+                />
               </span>
             </div>
-
-            <p class="mt-4 text-sm/snug">
-              {{ plan.summary }}
+            <p class="text-primary-comfy-canvas text-base">
+              {{ t(plan.summaryKey, locale) }}
             </p>
           </div>
 
-          <!-- Pricing + CTA -->
+          <!-- Price, credits, estimate, CTA -->
           <div
-            :class="getSurfaceClass(plan.tone)"
-            class="flex flex-col rounded-2xl p-5"
+            class="bg-primary-comfy-ink flex h-100 flex-col justify-between rounded-4xl p-8"
           >
-            <div class="flex items-end gap-1.5">
+            <div class="flex flex-col gap-4">
+              <!-- Price -->
+              <div v-if="plan.priceKey" class="flex items-baseline gap-1">
+                <span
+                  class="text-primary-comfy-canvas font-formula text-6.5xl font-light"
+                >
+                  {{ t(plan.priceKey, locale) }}
+                </span>
+                <span class="text-primary-comfy-canvas text-sm">
+                  {{ t('pricing.plan.period', locale) }}
+                </span>
+              </div>
+
+              <!-- Credits -->
               <p
-                class="font-formula-condensed text-5xl leading-none tracking-tight"
+                v-if="plan.creditsKey"
+                class="text-primary-comfy-canvas text-sm"
               >
-                {{ plan.price }}
+                {{ t(plan.creditsKey, locale) }}
               </p>
-              <span class="pb-1.5 text-sm leading-none opacity-70">
+
+              <!-- Estimate -->
+              <p
+                v-if="plan.estimateKey"
+                class="text-primary-comfy-canvas/80 text-sm"
+              >
+                {{ t(plan.estimateKey, locale) }}
+              </p>
+            </div>
+            <!-- CTA -->
+            <BrandButton
+              :href="plan.ctaHref"
+              :label="t(plan.ctaKey, locale)"
+              variant="outline"
+              size="sm"
+              class-name="w-full text-center"
+            />
+          </div>
+
+          <!-- Features -->
+          <div class="bg-primary-comfy-ink h-66 rounded-4xl p-8">
+            <p
+              v-if="plan.featureIntroKey"
+              class="text-primary-comfy-canvas mb-3 text-sm font-semibold"
+            >
+              {{ t(plan.featureIntroKey, locale) }}
+            </p>
+            <ul class="space-y-2">
+              <li
+                v-for="feature in plan.features"
+                :key="feature.text"
+                class="flex items-start gap-2"
+              >
+                <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
+                <span class="text-primary-comfy-canvas text-sm">
+                  {{ t(feature.text, locale) }}
+                </span>
+              </li>
+            </ul>
+            <p
+              v-if="plan.nextUpKey"
+              class="text-primary-comfy-canvas/80 mt-4 text-sm"
+            >
+              {{ t(plan.nextUpKey, locale) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Card image -->
+        <img
+          :src="plan.image"
+          :alt="t(plan.labelKey, locale)"
+          class="aspect-video w-full rounded-4xl object-cover"
+        />
+      </div>
+    </div>
+
+    <!-- Mobile: single plan view -->
+    <div class="lg:hidden">
+      <div
+        v-for="(plan, index) in plans"
+        :key="plan.id"
+        :class="
+          cn(
+            'flex-col',
+            activePlanIndex !== null && activePlanIndex !== index
+              ? 'hidden'
+              : 'flex'
+          )
+        "
+      >
+        <!-- Main info card -->
+        <div class="bg-transparency-white-t4 rounded-3xl p-6">
+          <!-- Label + badge -->
+          <div class="flex items-center gap-2">
+            <span
+              class="text-primary-comfy-yellow text-xs font-bold tracking-wider"
+            >
+              {{ t(plan.labelKey, locale) }}
+            </span>
+            <span v-if="plan.isPopular" class="flex h-5 items-stretch">
+              <img
+                src="/icons/node-left.svg"
+                alt=""
+                class="-mx-px self-stretch"
+                aria-hidden="true"
+              />
+              <span
+                class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center px-2 text-[10px] font-bold tracking-wider"
+              >
+                <span class="ppformula-text-center">
+                  {{ t('pricing.badge.popular', locale) }}
+                </span>
+              </span>
+              <img
+                src="/icons/node-right.svg"
+                alt=""
+                class="-mx-px self-stretch"
+                aria-hidden="true"
+              />
+            </span>
+          </div>
+
+          <!-- Enterprise heading -->
+          <h2
+            v-if="plan.isEnterprise"
+            class="text-primary-comfy-canvas mt-3 text-2xl font-light"
+          >
+            {{ t('pricing.enterprise.heading', locale) }}
+          </h2>
+
+          <!-- Summary -->
+          <p class="text-primary-comfy-canvas mt-2 text-sm">
+            {{ t(plan.summaryKey, locale) }}
+          </p>
+
+          <!-- Price (standard plans only) -->
+          <template v-if="plan.priceKey">
+            <div class="mt-6 flex items-baseline gap-1">
+              <span
+                class="text-primary-comfy-canvas font-formula text-5xl font-light"
+              >
+                {{ t(plan.priceKey, locale) }}
+              </span>
+              <span class="text-primary-comfy-canvas/55 text-sm">
                 {{ t('pricing.plan.period', locale) }}
               </span>
             </div>
 
-            <p class="mt-4 text-sm/snug font-medium">
-              {{ plan.credits }}
-            </p>
-            <p class="mt-4 text-xs/relaxed opacity-60">
-              {{ plan.estimate }}
-            </p>
-
-            <a
-              :href="plan.ctaHref"
-              :class="getButtonVariantClass(plan.ctaVariant)"
-              class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-2xl border-2 text-xs font-bold tracking-wide uppercase transition-all duration-300 group-hover:-translate-y-0.5"
+            <p
+              v-if="plan.creditsKey"
+              class="text-primary-comfy-canvas mt-4 text-xs font-medium"
             >
-              {{ plan.cta }}
-            </a>
-          </div>
-
-          <!-- Features -->
-          <div :class="getSurfaceClass(plan.tone)" class="rounded-2xl p-5">
-            <p v-if="plan.featureIntro" class="mb-3 text-sm/snug font-semibold">
-              {{ plan.featureIntro }}
+              {{ t(plan.creditsKey, locale) }}
             </p>
 
-            <ul class="space-y-2.5">
-              <li
-                v-for="feature in plan.features"
-                :key="feature"
-                class="flex items-start gap-2"
-              >
-                <span
-                  class="text-primary-comfy-yellow mt-px text-xs leading-none"
-                >
-                  ✓
-                </span>
-                <span class="text-xs/relaxed">
-                  {{ feature }}
-                </span>
-              </li>
-            </ul>
-
-            <p v-if="plan.nextUp" class="mt-4 text-xs/relaxed opacity-50">
-              {{ plan.nextUp }}
+            <p
+              v-if="plan.estimateKey"
+              class="text-primary-comfy-canvas mt-2 text-xs"
+            >
+              {{ t(plan.estimateKey, locale) }}
             </p>
-          </div>
+          </template>
 
-          <!-- Desktop art panel -->
-          <div
-            :class="plan.artClass"
-            class="relative hidden h-28 overflow-hidden rounded-2xl lg:block"
-          >
-            <div
-              class="absolute inset-0 bg-[radial-gradient(circle_at_22%_28%,rgba(255,255,255,0.34),transparent_52%)]"
+          <!-- CTA -->
+          <div class="mt-6">
+            <BrandButton
+              :href="plan.ctaHref"
+              :label="t(plan.ctaKey, locale)"
+              variant="outline"
+              size="lg"
+              class-name="w-full text-center"
             />
           </div>
-        </article>
-      </div>
+        </div>
 
-      <!-- Mobile art strip -->
-      <div class="mt-1 grid grid-cols-4 gap-1 lg:hidden">
-        <div
-          v-for="plan in plans"
-          :key="`art-${plan.id}`"
-          :class="plan.artClass"
-          class="relative h-20 overflow-hidden rounded-2xl"
-        >
-          <div
-            class="absolute inset-0 bg-[radial-gradient(circle_at_22%_28%,rgba(255,255,255,0.34),transparent_52%)]"
+        <!-- Features card -->
+        <div class="bg-transparency-white-t4 mt-2 rounded-3xl p-6">
+          <p
+            v-if="plan.featureIntroKey"
+            class="text-primary-comfy-canvas mb-3 text-sm font-semibold"
+          >
+            {{ t(plan.featureIntroKey, locale) }}
+          </p>
+          <ul class="space-y-2">
+            <li
+              v-for="feature in plan.features"
+              :key="feature.text"
+              class="flex items-start gap-2"
+            >
+              <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
+              <span class="text-primary-comfy-canvas text-sm">
+                {{ t(feature.text, locale) }}
+              </span>
+            </li>
+          </ul>
+          <p
+            v-if="plan.nextUpKey"
+            class="text-primary-comfy-canvas mt-4 text-sm"
+          >
+            {{ t(plan.nextUpKey, locale) }}
+          </p>
+          <p
+            v-if="plan.andMoreKey"
+            class="text-primary-comfy-canvas mt-4 text-sm"
+          >
+            {{ t(plan.andMoreKey, locale) }}
+          </p>
+        </div>
+
+        <!-- Image (standard plans only) -->
+        <div v-if="plan.image" class="mt-2">
+          <img
+            :src="plan.image"
+            :alt="t(plan.labelKey, locale)"
+            class="aspect-21/9 w-full rounded-3xl object-cover"
           />
         </div>
       </div>
     </div>
 
-    <!-- Enterprise -->
+    <!-- Enterprise section (desktop only, mobile handled in plan loop) -->
     <div
-      class="border-primary-warm-white/10 bg-primary-warm-white/8 mt-4 rounded-3xl border-2 p-1"
+      class="bg-transparency-white-t4 rounded-5xl mt-8 hidden flex-col gap-8 p-2 lg:mt-2 lg:flex lg:flex-row"
     >
-      <div class="grid gap-1 lg:grid-cols-2">
-        <div class="bg-primary-comfy-ink rounded-2xl px-5 py-6 lg:p-7">
-          <p class="text-primary-comfy-yellow text-sm leading-none font-bold">
-            {{ t('pricing.enterprise.label', locale) }}
-          </p>
+      <!-- Left side -->
+      <div
+        class="bg-primary-comfy-ink flex flex-col items-start justify-between rounded-4xl p-8 lg:w-1/2"
+      >
+        <div>
+          <span
+            class="text-primary-comfy-yellow text-xs font-bold tracking-wider"
+          >
+            {{ t(enterprisePlan.labelKey, locale) }}
+          </span>
           <h2
-            class="text-primary-warm-white mt-4 max-w-sm text-3xl/tight font-light"
+            class="text-primary-comfy-canvas mt-3 text-2xl font-light lg:text-3xl"
           >
             {{ t('pricing.enterprise.heading', locale) }}
           </h2>
-          <p class="text-primary-warm-white/80 mt-4 max-w-sm text-sm/relaxed">
-            {{ t('pricing.enterprise.description', locale) }}
+          <p class="text-primary-comfy-canvas mt-3 text-sm">
+            {{ t(enterprisePlan.summaryKey, locale) }}
           </p>
+        </div>
+        <BrandButton
+          :href="enterprisePlan.ctaHref"
+          :label="t(enterprisePlan.ctaKey, locale)"
+          variant="outline"
+          size="lg"
+        />
+      </div>
 
-          <a
-            href="/contact"
-            class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink mt-8 inline-flex h-10 items-center justify-center rounded-xl border-2 px-6 text-xs font-bold tracking-wide uppercase transition-colors"
+      <!-- Right side -->
+      <div class="bg-primary-comfy-ink rounded-4xl p-8 lg:w-1/2">
+        <p
+          v-if="enterprisePlan.featureIntroKey"
+          class="text-primary-comfy-canvas mb-4 text-sm font-semibold"
+        >
+          {{ t(enterprisePlan.featureIntroKey, locale) }}
+        </p>
+        <ul class="space-y-3">
+          <li
+            v-for="feature in enterprisePlan.features"
+            :key="feature.text"
+            class="flex items-start gap-2"
           >
-            {{ t('pricing.enterprise.cta', locale) }}
-          </a>
-        </div>
-
-        <div class="bg-primary-comfy-ink rounded-2xl px-5 py-6 lg:p-7">
-          <p class="text-primary-warm-white text-sm/snug font-semibold">
-            {{ t('pricing.enterprise.featureIntro', locale) }}
-          </p>
-
-          <ul class="mt-4 space-y-3">
-            <li
-              v-for="feature in enterpriseFeatures"
-              :key="feature"
-              class="flex items-start gap-2"
-            >
-              <span
-                class="text-primary-comfy-yellow mt-px text-xs leading-none"
-              >
-                ✓
-              </span>
-              <span class="text-primary-warm-white/80 text-xs/relaxed">
-                {{ feature }}
-              </span>
-            </li>
-          </ul>
-
-          <p class="text-primary-warm-white/45 mt-5 text-xs/relaxed">
-            {{ t('pricing.enterprise.andMore', locale) }}
-          </p>
-        </div>
+            <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
+            <span class="text-primary-comfy-canvas text-sm">
+              {{ t(feature.text, locale) }}
+            </span>
+          </li>
+        </ul>
+        <p
+          v-if="enterprisePlan.andMoreKey"
+          class="text-primary-comfy-canvas/70 mt-4 text-sm"
+        >
+          {{ t(enterprisePlan.andMoreKey, locale) }}
+        </p>
       </div>
     </div>
 
-    <p class="text-primary-warm-white/60 mt-3 text-xs/relaxed">
+    <!-- Footnote -->
+    <p class="text-primary-comfy-canvas/70 mt-12 text-xs">
       {{ t('pricing.footnote', locale) }}
     </p>
   </section>

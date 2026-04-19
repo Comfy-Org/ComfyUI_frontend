@@ -15,7 +15,7 @@ const routes = computed(() => getRoutes(locale))
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-visible lg:pb-[min(15vw,25rem)]"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(15vw,25rem)]"
   >
     <!-- Illustration (overlaps text slightly; stacks above on mobile, right on lg) -->
     <div
