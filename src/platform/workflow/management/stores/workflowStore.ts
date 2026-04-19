@@ -21,6 +21,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -493,7 +494,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
+      const workflowId = workflow.activeState?.id ?? workflow.initialState?.id
       await workflow.rename(newPath)
+      useExecutionStore().rewriteSessionWorkflowPaths(
+        oldPath,
+        workflow.path,
+        workflowId ? String(workflowId) : undefined
+      )
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
