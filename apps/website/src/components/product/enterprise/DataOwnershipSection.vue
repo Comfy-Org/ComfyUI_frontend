@@ -23,7 +23,7 @@ useParallax([bottomRightRef], { trigger: sectionRef, y: 400 })
 <template>
   <section
     ref="sectionRef"
-    class="relative overflow-hidden px-4 py-24 lg:px-20 lg:py-32"
+    class="relative overflow-x-clip px-4 py-24 lg:px-20 lg:py-32"
   >
     <!-- Decorative images -->
     <div
