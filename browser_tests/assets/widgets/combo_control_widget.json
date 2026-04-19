@@ -6,7 +6,7 @@
       "id": 1,
       "type": "DevToolsNodeWithComboControlWidget",
       "pos": [20, 50],
-      "size": [315, 130],
+      "size": [400, 200],
       "flags": {},
       "order": 0,
       "mode": 0,
