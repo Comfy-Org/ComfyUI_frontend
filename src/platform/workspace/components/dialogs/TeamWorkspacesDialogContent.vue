@@ -60,12 +60,11 @@
                 >
                   {{ workspace.name }}
                 </span>
-                <span
+                <RoleBadge
                   v-if="tierLabels.get(workspace.id)"
-                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
-                >
-                  {{ tierLabels.get(workspace.id) }}
-                </span>
+                  class="shrink-0"
+                  :label="tierLabels.get(workspace.id)!"
+                />
               </div>
             </div>
             <span class="text-primary-foreground shrink-0 text-sm font-medium">
@@ -141,6 +140,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import RoleBadge from '@/platform/workspace/components/RoleBadge.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
