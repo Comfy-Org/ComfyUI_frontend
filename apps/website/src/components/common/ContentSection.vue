@@ -4,7 +4,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { hasKey, t } from '../../i18n/translations'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
 import { deriveSections } from '../../config/contentSections'
@@ -75,7 +75,7 @@ function scrollToSection(id: string) {
   <section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
     <div class="lg:flex lg:gap-16">
       <!-- Desktop sticky nav -->
-      <aside class="hidden lg:block lg:w-48 lg:shrink-0">
+      <aside class="scrollbar-none hidden lg:block lg:w-48 lg:shrink-0">
         <div class="sticky top-32">
           <CategoryNav
             :categories="categories"
@@ -206,6 +206,14 @@ function scrollToSection(id: string) {
               <p class="text-primary-comfy-canvas text-xs">
                 {{ t(key(section.id, `block.${i}.role`), locale) }}
               </p>
+              <template v-if="hasKey(key(section.id, `block.${i}.name2`))">
+                <p class="text-primary-comfy-canvas mt-4 text-sm font-semibold">
+                  {{ t(key(section.id, `block.${i}.name2`), locale) }}
+                </p>
+                <p class="text-primary-comfy-canvas text-xs">
+                  {{ t(key(section.id, `block.${i}.role2`), locale) }}
+                </p>
+              </template>
             </div>
           </template>
         </div>

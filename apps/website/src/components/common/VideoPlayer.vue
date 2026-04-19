@@ -18,7 +18,7 @@ const {
   autoplay = false
 } = defineProps<{
   locale?: Locale
-  src: string
+  src?: string
   tracks?: VideoTrack[]
   autoplay?: boolean
 }>()
@@ -49,7 +49,7 @@ function togglePlay() {
   const v = videoEl.value
   if (!v) return
   if (v.paused) {
-    v.play()
+    v.play().catch(() => {})
   } else {
     v.pause()
   }
@@ -77,9 +77,13 @@ function toggleFullscreen() {
   const v = videoEl.value
   if (!v) return
   if (document.fullscreenElement) {
-    document.exitFullscreen()
-  } else {
-    v.requestFullscreen()
+    document.exitFullscreen().catch(() => {})
+  } else if (v.requestFullscreen) {
+    v.requestFullscreen().catch(() => {})
+  } else if ('webkitEnterFullscreen' in v) {
+    ;(
+      v as HTMLVideoElement & { webkitEnterFullscreen: () => void }
+    ).webkitEnterFullscreen()
   }
 }
 
@@ -100,11 +104,17 @@ function onTimeUpdate() {
   duration.value = v.duration || 0
 }
 
+function onLoadedMetadata() {
+  onTimeUpdate()
+  hideAllSubtitles()
+}
+
 function seek(e: MouseEvent) {
   const v = videoEl.value
   const bar = e.currentTarget as HTMLElement
   if (!v || !bar) return
-  const ratio = e.offsetX / bar.clientWidth
+  const rect = bar.getBoundingClientRect()
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   v.currentTime = ratio * (v.duration || 0)
 }
 </script>
@@ -114,6 +124,7 @@ function seek(e: MouseEvent) {
     class="relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black"
   >
     <video
+      v-if="src"
       ref="videoEl"
       class="size-full object-cover"
       :src
@@ -122,10 +133,7 @@ function seek(e: MouseEvent) {
       :autoplay
       muted
       @timeupdate="onTimeUpdate"
-      @loadedmetadata="
-        onTimeUpdate()
-        hideAllSubtitles()
-      "
+      @loadedmetadata="onLoadedMetadata"
       @play="playing = true"
       @pause="playing = false"
       @ended="playing = false"
@@ -138,7 +146,6 @@ function seek(e: MouseEvent) {
         :srclang="track.srclang"
         :label="track.label"
       />
-      <track v-if="tracks.length === 0" kind="descriptions" />
     </video>
 
     <!-- Bottom control bar -->
@@ -181,8 +188,8 @@ function seek(e: MouseEvent) {
       </button>
 
       <!-- Progress bar -->
-      <div class="flex flex-1 cursor-pointer items-center" @click="seek">
-        <div class="h-1 w-full rounded-full bg-white/20">
+      <div class="flex flex-1 cursor-pointer items-center">
+        <div class="h-1 w-full rounded-full bg-white/20" @click="seek">
           <div
             class="bg-primary-comfy-yellow h-full rounded-full transition-[width] duration-150"
             :style="{ width: `${progress * 100}%` }"
