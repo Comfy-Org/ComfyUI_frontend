@@ -2,7 +2,13 @@ name: Resolve PR from workflow_run
 description: >
   Resolves the PR number from a workflow_run event using pull_requests[0]
   with a listPullRequestsAssociatedWithCommit fallback.
-  Verifies the workflow_run head SHA still matches the live PR head.
+  Skips closed/merged PRs and stale runs (head SHA mismatch).
+
+inputs:
+  token:
+    description: GitHub token for API calls
+    required: false
+    default: ${{ github.token }}
 
 outputs:
   skip:
@@ -12,10 +18,10 @@ outputs:
     description: The PR number (empty when skip is true)
     value: ${{ steps.resolve.outputs.number }}
   base:
-    description: The PR base branch
+    description: The PR base branch (empty when skip is true)
     value: ${{ steps.resolve.outputs.base }}
   head-sha:
-    description: The PR head SHA
+    description: The PR head SHA (empty when skip is true)
     value: ${{ steps.resolve.outputs.head-sha }}
 
 runs:
@@ -25,6 +31,7 @@ runs:
       id: resolve
       uses: actions/github-script@v8
       with:
+        github-token: ${{ inputs.token }}
         script: |
           let pr = context.payload.workflow_run.pull_requests?.[0];
           if (!pr) {
@@ -34,6 +41,19 @@ runs:
               commit_sha: context.payload.workflow_run.head_sha,
             });
             pr = prs.find(p => p.state === 'open');
+          }
+
+          // Fork PRs: pull_requests is empty and commit SHA may not be in
+          // the base repo graph. Fall back to pulls.list with head filter.
+          if (!pr && context.payload.workflow_run.head_repository?.owner?.login) {
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.payload.workflow_run.head_repository.owner.login}:${context.payload.workflow_run.head_branch}`,
+              per_page: 1,
+            });
+            pr = prs.find(p => p.head.sha === context.payload.workflow_run.head_sha);
           }
 
           if (!pr) {

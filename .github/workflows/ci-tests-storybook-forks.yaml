@@ -6,6 +6,10 @@ on:
     workflows: ['CI: Tests Storybook']
     types: [requested, completed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   deploy-and-comment-forked-pr:
     runs-on: ubuntu-latest
