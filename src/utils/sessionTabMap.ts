@@ -2,7 +2,7 @@ import type { ShallowRef } from 'vue'
 
 import { shallowRef } from 'vue'
 
-export interface SessionTabMap {
+interface SessionTabMap {
   readonly map: ShallowRef<Map<string, string>>
   set(key: string, value: string): void
 }
