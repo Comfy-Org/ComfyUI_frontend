@@ -2,31 +2,12 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
-  builderSaveAs,
-  openWorkflowFromSidebar,
+  saveCloseAndReopenInBuilder,
   setupBuilder
 } from '@e2e/helpers/builderTestUtils'
 
 const WIDGETS = ['seed', 'steps', 'cfg']
-
-async function saveCloseAndReopenInBuilder(
-  comfyPage: ComfyPage,
-  appMode: AppModeHelper,
-  workflowName: string
-) {
-  await appMode.steps.goToPreview()
-  await builderSaveAs(appMode, workflowName)
-  await appMode.saveAs.closeButton.click()
-  await expect(appMode.saveAs.successDialog).toBeHidden()
-
-  await appMode.footer.exitBuilder()
-  await openWorkflowFromSidebar(comfyPage, workflowName)
-  await appMode.enterBuilder()
-  await appMode.steps.goToInputs()
-}
 
 test.describe(
   'App builder input persistence after reload',

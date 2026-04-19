@@ -5,7 +5,12 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  InputWidgetConfig,
+  LinearInput,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -100,6 +105,29 @@ function createBuilderWorkflowWithOutputs(
   return workflow
 }
 
+function createWorkflowWithLinearData(
+  activeMode: string,
+  inputs: LinearInput[],
+  outputs: NodeId[]
+): LoadedComfyWorkflow {
+  const workflow = createBuilderWorkflow(activeMode)
+  workflow.changeTracker = createMockChangeTracker(
+    fromPartial<Partial<ChangeTracker>>({
+      activeState: {
+        last_node_id: 0,
+        last_link_id: 0,
+        nodes: [],
+        links: [],
+        groups: [],
+        config: {},
+        version: 0.4,
+        extra: { linearData: fromAny({ inputs, outputs }) }
+      }
+    })
+  )
+  return workflow
+}
+
 describe('appModeStore', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
   let store: ReturnType<typeof useAppModeStore>
@@ -164,6 +192,28 @@ describe('appModeStore', () => {
       )
       expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
     })
+
+    it('prunes selections from workflow state on entry', () => {
+      const node1 = { id: 1 }
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      )
+      workflowStore.activeWorkflow = createWorkflowWithLinearData(
+        'graph',
+        [
+          [1, 'seed'],
+          [99, 'steps']
+        ],
+        [1, 99]
+      )
+      store.selectedInputs = [[42, 'prompt']]
+      store.selectedOutputs = [42]
+
+      store.enterBuilder()
+
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
+      expect(store.selectedOutputs).toEqual([1])
+    })
   })
 
   describe('empty workflow dialog callbacks', () => {
@@ -203,31 +253,34 @@ describe('appModeStore', () => {
     })
   })
 
+  describe('exitBuilder', () => {
+    it('prunes selections from workflow state on exit', () => {
+      const node1 = { id: 1 }
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      )
+      workflowStore.activeWorkflow = createWorkflowWithLinearData(
+        'builder:inputs',
+        [
+          [1, 'seed'],
+          [99, 'steps']
+        ],
+        [1, 99]
+      )
+      store.selectedInputs = [[42, 'prompt']]
+      store.selectedOutputs = [42]
+
+      store.exitBuilder()
+
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
+      expect(store.selectedOutputs).toEqual([1])
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+    })
+  })
+
   describe('loadSelections pruning', () => {
     function mockNode(id: number) {
       return { id }
-    }
-
-    function workflowWithLinearData(
-      inputs: [number, string][],
-      outputs: number[]
-    ) {
-      const workflow = createBuilderWorkflow('app')
-      workflow.changeTracker = createMockChangeTracker(
-        fromPartial<Partial<ChangeTracker>>({
-          activeState: {
-            last_node_id: 0,
-            last_link_id: 0,
-            nodes: [],
-            links: [],
-            groups: [],
-            config: {},
-            version: 0.4,
-            extra: { linearData: { inputs, outputs } }
-          }
-        })
-      )
-      return workflow
     }
 
     it('removes inputs referencing deleted nodes on load', async () => {
@@ -295,7 +348,11 @@ describe('appModeStore', () => {
       // Initially nodes are not resolvable — pruning removes them
       mockResolveNode.mockReturnValue(undefined)
       const inputs: [number, string][] = [[1, 'seed']]
-      workflowStore.activeWorkflow = workflowWithLinearData(inputs, [1])
+      workflowStore.activeWorkflow = createWorkflowWithLinearData(
+        'app',
+        inputs,
+        [1]
+      )
       store.loadSelections({ inputs })
       await nextTick()
 
@@ -322,6 +379,49 @@ describe('appModeStore', () => {
 
       expect(store.selectedOutputs).toEqual([])
       expect(store.hasOutputs).toBe(false)
+    })
+  })
+
+  describe('loadSelections edge cases', () => {
+    it('handles empty or undefined data', () => {
+      store.loadSelections(undefined)
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+
+      store.loadSelections({})
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+    })
+  })
+
+  describe('pruneLinearData', () => {
+    it('returns empty selections for undefined data', () => {
+      expect(store.pruneLinearData(undefined)).toEqual({
+        inputs: [],
+        outputs: []
+      })
+    })
+
+    it('does not prune when rootGraph is empty', () => {
+      const originalRootGraph = app.rootGraph
+      Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
+
+      expect(
+        store.pruneLinearData({
+          inputs: [[1, 'seed']],
+          outputs: [1]
+        })
+      ).toEqual({
+        inputs: [[1, 'seed']],
+        outputs: [1]
+      })
+
+      Object.defineProperty(app, 'rootGraph', {
+        value: originalRootGraph,
+        writable: true
+      })
     })
   })
 
@@ -513,6 +613,18 @@ describe('appModeStore', () => {
       expect(store.selectedInputs[0][2]).toEqual({ height: 200 })
     })
 
+    it('merges existing config with new values', () => {
+      const existingConfig: InputWidgetConfig & { width: number } = {
+        height: 120,
+        width: 240
+      }
+      store.selectedInputs.push([1, 'prompt', existingConfig])
+
+      store.updateInputConfig(1 as NodeId, 'prompt', { height: 300 })
+
+      expect(store.selectedInputs[0][2]).toEqual({ height: 300, width: 240 })
+    })
+
     it('triggers linearData sync watcher', async () => {
       workflowStore.activeWorkflow = createBuilderWorkflow()
       store.selectedInputs.push([42, 'prompt'])
@@ -525,6 +637,17 @@ describe('appModeStore', () => {
         inputs: [[42, 'prompt', { height: 300 }]],
         outputs: []
       })
+    })
+  })
+
+  describe('removeSelectedInput', () => {
+    it('removes the matching input entry only', () => {
+      store.selectedInputs.push([1, 'prompt'])
+      store.selectedInputs.push([2, 'steps'])
+
+      store.removeSelectedInput({ name: 'steps' } as IBaseWidget, { id: 2 })
+
+      expect(store.selectedInputs).toEqual([[1, 'prompt']])
     })
   })
 
