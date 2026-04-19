@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Генерируйте видео с помощью Seedance 2.0, используя изображение первого кадра и, при необходимости, последнего кадра.",
+    "display_name": "ByteDance Seedance 2.0: от первого и последнего кадра к видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "first_frame": {
+        "name": "первый кадр",
+        "tooltip": "Изображение первого кадра для видео."
+      },
+      "last_frame": {
+        "name": "последний кадр",
+        "tooltip": "Изображение последнего кадра для видео."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
+      },
+      "watermark": {
+        "name": "водяной знак",
+        "tooltip": "Добавлять ли водяной знак к видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Генерируйте, редактируйте или расширяйте видео с помощью Seedance 2.0, используя референсные изображения, видео и аудио. Поддерживает мультимодальные референсы, видеомонтаж и расширение видео.",
+    "display_name": "ByteDance Seedance 2.0: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
+      },
+      "watermark": {
+        "name": "водяной знак",
+        "tooltip": "Добавлять ли водяной знак к видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Генерируйте видео с помощью моделей Seedance 2.0 на основе текстового промпта.",
+    "display_name": "ByteDance Seedance 2.0: текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
+      },
+      "watermark": {
+        "name": "водяной знак",
+        "tooltip": "Добавлять ли водяной знак к видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Создать видео с использованием промпта и первого и последнего кадров.",
     "display_name": "ByteDance - Преобразование первого-последнего кадра в видео",
@@ -5453,6 +5584,22 @@
       },
       "image": {
         "name": "изображение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Извлечь строку из JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -14761,6 +14908,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "Генерируйте музыку по текстовому запросу с помощью AI-модели Sonilo. Оставьте длительность 0, чтобы модель определила её из запроса.",
+    "display_name": "Sonilo: Текст в музыку",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Желаемая длительность в секундах. Установите 0, чтобы модель определила длительность из запроса. Максимум: 6 минут."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, описывающий музыку для генерации."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для воспроизводимости. В настоящее время игнорируется сервисом Sonilo, но сохраняется для согласованности графа."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Генерируйте музыку из видеоконтента с помощью AI-модели Sonilo. Анализирует видео и создает подходящую музыку.",
+    "display_name": "Sonilo: Видео в музыку",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Необязательный текстовый запрос для направления генерации музыки. Оставьте пустым для наилучшего качества — модель полностью проанализирует содержимое видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для воспроизводимости. В настоящее время игнорируется сервисом Sonilo, но сохраняется для согласованности графа."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Входное видео для генерации музыки. Максимальная длительность: 6 минут."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Разделяет аудио на левый и правый каналы.",
     "display_name": "Разделить аудиоканалы",
@@ -16025,6 +16224,10 @@
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
       }
     },
     "outputs": {
@@ -16076,6 +16279,10 @@
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
       }
     },
     "outputs": {

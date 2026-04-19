@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
+    "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image for the video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "display_name": "ByteDance Seedance 2.0 Reference to Video",
+    "description": "Generate, edit, or extend video using Seedance 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "display_name": "ByteDance Seedance 2.0 Text to Video",
+    "description": "Generate video using Seedance 2.0 models based on a text prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "display_name": "ByteDance First-Last-Frame to Video",
     "description": "Generate video using prompt and first and last frames.",
@@ -5453,6 +5584,22 @@
       },
       "alpha": {
         "name": "alpha"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Extract String from JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -14678,6 +14825,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "display_name": "Sonilo Text to Music",
+    "description": "Generate music from a text prompt using Sonilo's AI model. Leave duration at 0 to let the model infer it from the prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the music to generate."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Target duration in seconds. Set to 0 to let the model infer the duration from the prompt. Maximum: 6 minutes."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility. Currently ignored by the Sonilo service but kept for graph consistency."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "display_name": "Sonilo Video to Music",
+    "description": "Generate music from video content using Sonilo's AI model. Analyzes the video and creates matching music.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Input video to generate music from. Maximum duration: 6 minutes."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional text prompt to guide music generation. Leave empty for best quality - the model will fully analyze the video content."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility. Currently ignored by the Sonilo service but kept for graph consistency."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "display_name": "Split Audio Channels",
     "description": "Separates the audio into left and right channels.",
@@ -16005,6 +16204,10 @@
         "name": "thinking",
         "tooltip": "Operate in thinking mode if the model supports it."
       },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use the built in system prompt/template if the model has one."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
       },
@@ -16055,6 +16258,10 @@
       "thinking": {
         "name": "thinking",
         "tooltip": "Operate in thinking mode if the model supports it."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use the built in system prompt/template if the model has one."
       },
       "sampling_mode_min_p": {
         "name": "min_p"

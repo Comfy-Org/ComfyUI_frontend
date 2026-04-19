@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0 kullanarak bir ilk kare görseli ve isteğe bağlı son kare görseli ile video oluşturun.",
+    "display_name": "ByteDance Seedance 2.0 İlk-Son-Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Video için ilk kare görseli."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Video için son kare görseli."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0 ile referans görseller, videolar ve sesler kullanarak video oluşturun, düzenleyin veya uzatın. Çok modlu referans, video düzenleme ve video uzatma desteklenir.",
+    "display_name": "ByteDance Seedance 2.0 Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Seedance 2.0 modelleriyle metin istemine dayalı video oluşturun.",
+    "display_name": "ByteDance Seedance 2.0 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "İlk ve son kareleri kullanarak video oluşturun.",
     "display_name": "ByteDance İlk-Son-Kare'den Videoya",
@@ -5453,6 +5584,22 @@
       },
       "image": {
         "name": "görüntü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "JSON'dan Dize Çıkar",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -14761,6 +14908,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "Sonilo'nun yapay zeka modeliyle bir metin isteminden müzik oluşturun. Süreyi 0 olarak bırakın, model süreyi istemden çıkarsın.",
+    "display_name": "Sonilo Metinden Müzik Üret",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Hedef süre (saniye cinsinden). 0 olarak ayarlayın, model süreyi istemden çıkarsın. Maksimum: 6 dakika."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak müziği tanımlayan metin istemi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Tekrarlanabilirlik için tohum değeri. Şu anda Sonilo servisi tarafından dikkate alınmıyor, ancak grafik tutarlılığı için korunuyor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Sonilo'nun yapay zeka modeliyle video içeriğinden müzik oluşturun. Videoyu analiz eder ve uyumlu müzik üretir.",
+    "display_name": "Sonilo Videodan Müzik Üret",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Müzik üretimini yönlendirmek için isteğe bağlı metin istemi. En iyi kalite için boş bırakın - model video içeriğini tamamen analiz edecektir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Tekrarlanabilirlik için tohum değeri. Şu anda Sonilo servisi tarafından dikkate alınmıyor, ancak grafik tutarlılığı için korunuyor."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Müzik üretilecek giriş videosu. Maksimum süre: 6 dakika."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Sesi sol ve sağ kanallara ayırır.",
     "display_name": "Ses Kanallarını Ayır",
@@ -16025,6 +16224,10 @@
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
       }
     },
     "outputs": {
@@ -16076,6 +16279,10 @@
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
       }
     },
     "outputs": {

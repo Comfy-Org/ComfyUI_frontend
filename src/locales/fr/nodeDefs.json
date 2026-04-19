@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Générez une vidéo avec Seedance 2.0 à partir d'une image de première image et, optionnellement, d'une image de dernière image.",
+    "display_name": "ByteDance Seedance 2.0 Première-Dernière-Image vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_frame": {
+        "name": "première image",
+        "tooltip": "Image de la première image pour la vidéo."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de la dernière image pour la vidéo."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_generate_audio": {
+        "name": "générer_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Générez, éditez ou étendez une vidéo avec Seedance 2.0 à l'aide d'images, de vidéos et d'audios de référence. Prend en charge la référence multimodale, l'édition vidéo et l'extension vidéo.",
+    "display_name": "ByteDance Seedance 2.0 Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_generate_audio": {
+        "name": "générer_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Générez une vidéo avec les modèles Seedance 2.0 à partir d'un prompt textuel.",
+    "display_name": "ByteDance Seedance 2.0 Texte vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_generate_audio": {
+        "name": "générer_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Générer une vidéo en utilisant l'invite et les première et dernière images.",
     "display_name": "ByteDance Première-Dernière Image vers Vidéo",
@@ -5453,6 +5584,22 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Extraire une chaîne du JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -14761,6 +14908,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "Générez de la musique à partir d'une invite textuelle en utilisant le modèle IA de Sonilo. Laissez la durée à 0 pour que le modèle l'infère à partir de l'invite.",
+    "display_name": "Sonilo Texte en Musique",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Durée cible en secondes. Mettez 0 pour laisser le modèle inférer la durée à partir de l'invite. Maximum : 6 minutes."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant la musique à générer."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour la reproductibilité. Actuellement ignorée par le service Sonilo mais conservée pour la cohérence du graphe."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Générez de la musique à partir d'un contenu vidéo en utilisant le modèle IA de Sonilo. Analyse la vidéo et crée une musique correspondante.",
+    "display_name": "Sonilo Vidéo en Musique",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle optionnelle pour guider la génération musicale. Laissez vide pour une qualité optimale - le modèle analysera entièrement le contenu vidéo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour la reproductibilité. Actuellement ignorée par le service Sonilo mais conservée pour la cohérence du graphe."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vidéo d'entrée à partir de laquelle générer la musique. Durée maximale : 6 minutes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Sépare l'audio en canaux gauche et droit.",
     "display_name": "Séparer les canaux audio",
@@ -16025,6 +16224,10 @@
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
+      },
+      "use_default_template": {
+        "name": "utiliser le modèle par défaut",
+        "tooltip": "Utiliser l'invite/le modèle système intégré si le modèle en possède un."
       }
     },
     "outputs": {
@@ -16076,6 +16279,10 @@
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
+      },
+      "use_default_template": {
+        "name": "utiliser le modèle par défaut",
+        "tooltip": "Utiliser l'invite/le modèle système intégré si le modèle en possède un."
       }
     },
     "outputs": {

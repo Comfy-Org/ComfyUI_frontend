@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
+    "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول للفيديو."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير للفيديو."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "إنشاء أو تعديل أو تمديد فيديو باستخدام Seedance 2.0 مع صور أو فيديوهات أو صوتيات مرجعية. يدعم المراجع متعددة الوسائط، وتحرير الفيديو، وتمديد الفيديو.",
+    "display_name": "ByteDance Seedance 2.0 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "إنشاء فيديو باستخدام نماذج Seedance 2.0 بناءً على موجه نصي.",
+    "display_name": "ByteDance Seedance 2.0 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام المطالبة النصية والإطار الأول والأخير.",
     "display_name": "تحويل الإطار الأول-الأخير من ByteDance إلى فيديو",
@@ -5453,6 +5584,22 @@
       },
       "image": {
         "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "استخراج سلسلة من JSON",
+    "inputs": {
+      "json_string": {
+        "name": "سلسلة_json"
+      },
+      "key": {
+        "name": "مفتاح"
       }
     },
     "outputs": {
@@ -14761,6 +14908,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "إنشاء موسيقى من وصف نصي باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. اترك المدة ۰ ليقوم النموذج بتحديدها تلقائياً من الوصف.",
+    "display_name": "تحويل النص إلى موسيقى بواسطة Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "المدة المستهدفة بالثواني. ضع القيمة ۰ ليقوم النموذج بتحديد المدة تلقائياً من الوصف. الحد الأقصى: ٦ دقائق."
+      },
+      "prompt": {
+        "name": "الوصف",
+        "tooltip": "وصف نصي يصف الموسيقى المطلوب إنشاؤها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج. حالياً يتم تجاهلها من قبل خدمة Sonilo ولكنها موجودة للحفاظ على اتساق الرسم البياني."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "إنشاء موسيقى من محتوى الفيديو باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. يقوم بتحليل الفيديو وإنشاء موسيقى متوافقة.",
+    "display_name": "تحويل الفيديو إلى موسيقى بواسطة Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "prompt": {
+        "name": "الوصف",
+        "tooltip": "وصف نصي اختياري لتوجيه إنشاء الموسيقى. اتركه فارغاً للحصول على أفضل جودة - سيقوم النموذج بتحليل محتوى الفيديو بالكامل."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج. حالياً يتم تجاهلها من قبل خدمة Sonilo ولكنها موجودة للحفاظ على اتساق الرسم البياني."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال لإنشاء الموسيقى منه. الحد الأقصى للمدة: ٦ دقائق."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "يفصل الصوت إلى القناتين اليسرى واليمنى.",
     "display_name": "فصل قنوات الصوت",
@@ -16025,6 +16224,10 @@
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
+      },
+      "use_default_template": {
+        "name": "استخدام القالب الافتراضي",
+        "tooltip": "استخدم القالب/الوصف المدمج في النظام إذا كان النموذج يحتوي عليه."
       }
     },
     "outputs": {
@@ -16076,6 +16279,10 @@
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
+      },
+      "use_default_template": {
+        "name": "استخدام القالب الافتراضي",
+        "tooltip": "استخدم القالب/الوصف المدمج في النظام إذا كان النموذج يحتوي عليه."
       }
     },
     "outputs": {

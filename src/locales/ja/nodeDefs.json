@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像です。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像です。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0 を使い、リファレンス画像・動画・音声から動画を生成・編集・拡張します。マルチモーダルリファレンス、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.0 リファレンスから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "テキストプロンプトに基づいて Seedance 2.0 モデルで動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "プロンプトと最初・最後のフレームを使用して動画を生成します。",
     "display_name": "ByteDance 最初-最後フレームから動画生成",
@@ -5453,6 +5584,22 @@
       },
       "image": {
         "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "JSONから文字列を抽出",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -14761,6 +14908,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "SoniloのAIモデルを使ってテキストプロンプトから音楽を生成します。継続時間を0にすると、プロンプトから自動的に推定されます。",
+    "display_name": "Sonilo テキストから音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "目標の長さ（秒）。0に設定するとプロンプトから自動的に推定されます。最大：6分。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する音楽を説明するテキストプロンプト。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "SoniloのAIモデルを使って動画コンテンツから音楽を生成します。動画を解析し、マッチする音楽を作成します。",
+    "display_name": "Sonilo 動画から音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "音楽生成をガイドするためのオプションのテキストプロンプト。空欄の場合は最高品質となり、モデルが動画内容を完全に解析します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "音楽を生成する入力動画。最大長：6分。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "オーディオを左右のチャンネルに分離します。",
     "display_name": "オーディオチャンネル分割",
@@ -16025,6 +16224,10 @@
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
       }
     },
     "outputs": {
@@ -16076,6 +16279,10 @@
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
       }
     },
     "outputs": {
