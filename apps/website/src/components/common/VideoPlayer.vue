@@ -111,13 +111,10 @@ function onLoadedMetadata() {
   hideAllSubtitles()
 }
 
-function seek(e: MouseEvent) {
+function seek(value: number) {
   const v = videoEl.value
-  const bar = e.currentTarget as HTMLElement
-  if (!v || !bar) return
-  const rect = bar.getBoundingClientRect()
-  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-  v.currentTime = ratio * (v.duration || 0)
+  if (!v) return
+  v.currentTime = value
 }
 </script>
 
@@ -154,6 +151,7 @@ function seek(e: MouseEvent) {
 
     <!-- Bottom control bar -->
     <div
+      v-if="src"
       class="absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 lg:px-6 lg:py-5"
     >
       <!-- Play / Pause button -->
@@ -192,14 +190,21 @@ function seek(e: MouseEvent) {
       </button>
 
       <!-- Progress bar -->
-      <div class="flex flex-1 cursor-pointer items-center">
-        <div class="h-1 w-full rounded-full bg-white/20" @click="seek">
-          <div
-            class="bg-primary-comfy-yellow h-full rounded-full transition-[width] duration-150"
-            :style="{ width: `${progress * 100}%` }"
-          />
-        </div>
-      </div>
+      <input
+        type="range"
+        class="video-progress-range flex-1"
+        :value="currentTime"
+        :max="duration || 0"
+        step="0.1"
+        :aria-label="locale === 'zh-CN' ? '播放进度' : 'Seek'"
+        :aria-valuemin="0"
+        :aria-valuemax="duration || 0"
+        :aria-valuenow="currentTime"
+        :style="{
+          background: `linear-gradient(to right, var(--color-primary-comfy-yellow) ${progress * 100}%, rgb(255 255 255 / 0.2) ${progress * 100}%)`
+        }"
+        @input="seek(Number(($event.target as HTMLInputElement).value))"
+      />
 
       <!-- Timestamp -->
       <span class="shrink-0 text-xs text-white/80 lg:text-sm">{{
@@ -313,3 +318,37 @@ function seek(e: MouseEvent) {
     </div>
   </div>
 </template>
+
+<!-- Native range pseudo-elements cannot be styled with Tailwind utilities -->
+<style scoped>
+.video-progress-range {
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  cursor: pointer;
+  outline: none;
+}
+
+.video-progress-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+}
+
+.video-progress-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+}
+
+.video-progress-range::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+}
+
+.video-progress-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-primary-comfy-yellow);
+}
+</style>
