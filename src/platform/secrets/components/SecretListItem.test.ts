@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
 
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
@@ -14,6 +15,24 @@ vi.mock('../providers', () => ({
   },
   getProviderLogo: () => undefined
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  escapeParameter: true,
+  messages: {
+    en: {
+      g: {
+        edit: 'Edit',
+        delete: 'Delete'
+      },
+      secrets: {
+        createdAt: 'Created {date}',
+        lastUsed: 'Last used {date}'
+      }
+    }
+  }
+})
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
@@ -36,6 +55,7 @@ function renderComponent(props: {
   return render(SecretListItem, {
     props,
     global: {
+      plugins: [i18n],
       stubs: {
         Button: {
           template:
@@ -45,10 +65,6 @@ function renderComponent(props: {
       },
       directives: {
         tooltip: () => {}
-      },
-      mocks: {
-        $t: (key: string, params?: object) =>
-          `${key}${params ? JSON.stringify(params) : ''}`
       }
     }
   })
@@ -89,21 +105,44 @@ describe('SecretListItem', () => {
       const secret = createMockSecret({ created_at: '2024-01-15T10:00:00Z' })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.createdAt/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Created ${new Date(secret.created_at).toLocaleDateString()}`
+        )
+      ).toBeInTheDocument()
     })
 
     it('displays last used date when available', () => {
       const secret = createMockSecret({ last_used_at: '2024-01-20T10:00:00Z' })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.lastUsed/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Last used ${new Date(secret.last_used_at!).toLocaleDateString()}`
+        )
+      ).toBeInTheDocument()
     })
 
     it('hides last used when not available', () => {
       const secret = createMockSecret({ last_used_at: undefined })
       renderComponent({ secret })
 
-      expect(screen.queryByText(/secrets\.lastUsed/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/^Last used /)).not.toBeInTheDocument()
+    })
+
+    it('renders formatted dates without escaped slash entities', () => {
+      const secret = createMockSecret({
+        created_at: '2026-02-06T10:00:00Z',
+        last_used_at: '2026-04-17T10:00:00Z'
+      })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Created ${new Date(secret.created_at).toLocaleDateString()}`
+        )
+      ).toBeInTheDocument()
     })
 
     it('renders created date for ISO string with 4-digit fractional seconds', () => {
@@ -112,7 +151,11 @@ describe('SecretListItem', () => {
       })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.createdAt/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Created ${new Date(secret.created_at).toLocaleDateString()}`
+        )
+      ).toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -122,7 +165,11 @@ describe('SecretListItem', () => {
       })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.createdAt/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Created ${new Date(secret.created_at).toLocaleDateString()}`
+        )
+      ).toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -148,7 +195,11 @@ describe('SecretListItem', () => {
       })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.lastUsed/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Last used ${new Date(secret.last_used_at!).toLocaleDateString()}`
+        )
+      ).toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
   })
