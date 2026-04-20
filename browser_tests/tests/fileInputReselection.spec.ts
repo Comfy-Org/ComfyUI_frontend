@@ -21,9 +21,9 @@ test.describe('File input same-file reselection', () => {
     )
     const firstChooser = comfyPage.page.waitForEvent('filechooser')
     await uploadWidget.click()
-    await (await firstChooser).setFiles(
-      comfyPage.assetPath('test_upload_image.png')
-    )
+    await (
+      await firstChooser
+    ).setFiles(comfyPage.assetPath('test_upload_image.png'))
     await firstUpload
 
     await expect
@@ -40,9 +40,9 @@ test.describe('File input same-file reselection', () => {
     )
     const secondChooser = comfyPage.page.waitForEvent('filechooser')
     await uploadWidget.click()
-    await (await secondChooser).setFiles(
-      comfyPage.assetPath('test_upload_image.png')
-    )
+    await (
+      await secondChooser
+    ).setFiles(comfyPage.assetPath('test_upload_image.png'))
     await secondUpload
 
     await expect
