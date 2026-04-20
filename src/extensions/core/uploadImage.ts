@@ -59,9 +59,9 @@ app.registerExtension({
       return
     }
 
-    const fallback = FALLBACK_MEDIA_LOADER_INPUTS[nodeData?.name ?? '']
+    const fallback = FALLBACK_MEDIA_LOADER_INPUTS[nodeData.name]
     if (!fallback) return
-    const fallbackSpec = required[fallback.inputName] as InputSpec | undefined
+    const fallbackSpec = required[fallback.inputName]
     if (!fallbackSpec || !isComboInputSpec(fallbackSpec)) return
     // Synthesize the missing media-type flag so useImageUploadWidget picks the
     // right accept filter (image/* vs video/*) for the loader's media kind.
