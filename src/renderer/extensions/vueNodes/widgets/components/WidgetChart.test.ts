@@ -85,39 +85,36 @@ describe('WidgetChart', () => {
         datasets: [{ label: 'x', data: [1, 2] }]
       }
       renderChart(makeWidget(), data)
-      const parsed = JSON.parse(
-        screen.getByTestId('chart').dataset.chartData!
-      )
+      const parsed = JSON.parse(screen.getByTestId('chart').dataset.chartData!)
       expect(parsed.labels).toEqual(['a', 'b'])
       expect(parsed.datasets[0].label).toBe('x')
     })
 
     it('falls back to empty labels/datasets when value becomes null', async () => {
-      const { value } = renderChart(
-        makeWidget(),
-        { labels: ['a'], datasets: [{ label: 'x', data: [1] }] }
-      )
+      const { value } = renderChart(makeWidget(), {
+        labels: ['a'],
+        datasets: [{ label: 'x', data: [1] }]
+      })
       value.value = null as unknown as ChartData
       await nextTick()
 
-      const parsed = JSON.parse(
-        screen.getByTestId('chart').dataset.chartData!
-      )
+      const parsed = JSON.parse(screen.getByTestId('chart').dataset.chartData!)
       expect(parsed).toEqual({ labels: [], datasets: [] })
     })
 
     it('reactively updates the chart when model value changes', async () => {
-      const { value } = renderChart(
-        makeWidget(),
-        { labels: ['a'], datasets: [{ label: 'x', data: [1] }] }
-      )
+      const { value } = renderChart(makeWidget(), {
+        labels: ['a'],
+        datasets: [{ label: 'x', data: [1] }]
+      })
 
-      value.value = { labels: ['b', 'c'], datasets: [{ label: 'y', data: [2, 3] }] }
+      value.value = {
+        labels: ['b', 'c'],
+        datasets: [{ label: 'y', data: [2, 3] }]
+      }
       await nextTick()
 
-      const parsed = JSON.parse(
-        screen.getByTestId('chart').dataset.chartData!
-      )
+      const parsed = JSON.parse(screen.getByTestId('chart').dataset.chartData!)
       expect(parsed.labels).toEqual(['b', 'c'])
       expect(parsed.datasets[0].label).toBe('y')
     })

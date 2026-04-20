@@ -26,9 +26,9 @@ type MockPlaybackState = {
   onMetadataLoaded: ReturnType<typeof vi.fn>
 }
 
-const recorderState = vi.hoisted(() => ({} as Record<string, unknown>))
-const playbackState = vi.hoisted(() => ({} as Record<string, unknown>))
-const waveformState = vi.hoisted(() => ({} as Record<string, unknown>))
+const recorderState = vi.hoisted(() => ({}) as Record<string, unknown>)
+const playbackState = vi.hoisted(() => ({}) as Record<string, unknown>)
+const waveformState = vi.hoisted(() => ({}) as Record<string, unknown>)
 const capturedOptions = vi.hoisted(
   () =>
     ({
@@ -190,9 +190,7 @@ describe('WidgetRecordAudio', () => {
     it('calls startRecording when Start button is clicked', async () => {
       renderWidget()
       const user = userEvent.setup()
-      await user.click(
-        screen.getByRole('button', { name: /Start Recording/i })
-      )
+      await user.click(screen.getByRole('button', { name: /Start Recording/i }))
       expect(recorder.startRecording).toHaveBeenCalledTimes(1)
     })
 
@@ -224,9 +222,7 @@ describe('WidgetRecordAudio', () => {
       setRecorderMocks({ isRecording: ref(true) })
       renderWidget()
       const user = userEvent.setup()
-      await user.click(
-        screen.getByRole('button', { name: /Stop Recording/i })
-      )
+      await user.click(screen.getByRole('button', { name: /Stop Recording/i }))
       expect(recorder.stopRecording).toHaveBeenCalledTimes(1)
     })
 
@@ -278,9 +274,7 @@ describe('WidgetRecordAudio', () => {
     it('calls playback.stop when the stop playback button is clicked', async () => {
       renderWidget()
       const user = userEvent.setup()
-      await user.click(
-        screen.getByRole('button', { name: /Stop Playback/i })
-      )
+      await user.click(screen.getByRole('button', { name: /Stop Playback/i }))
       expect(playback.stop).toHaveBeenCalledTimes(1)
     })
   })
