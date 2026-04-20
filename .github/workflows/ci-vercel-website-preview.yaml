@@ -18,6 +18,7 @@ on:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
   PREVIEW_ALIAS_PREFIX: comfy-website-preview
 
 jobs:
@@ -37,10 +38,10 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel pull --yes --environment=preview
 
       - name: Build project artifacts
-        run: vercel build --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel build
 
       - name: Compute stable alias hostname
         id: alias
@@ -66,7 +67,6 @@ jobs:
       - name: Deploy project artifacts to Vercel
         id: deploy
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
           GIT_COMMIT_REF: ${{ github.event.pull_request.head.ref }}
           GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           GIT_AUTHOR_LOGIN: ${{ steps.head-commit.outputs.author }}
@@ -75,7 +75,6 @@ jobs:
           GIT_REPO: ${{ github.repository }}
         run: |
           URL=$(vercel deploy --prebuilt \
-            --token="$VERCEL_TOKEN" \
             --meta githubCommitRef="$GIT_COMMIT_REF" \
             --meta githubCommitSha="$GIT_COMMIT_SHA" \
             --meta githubCommitAuthorLogin="$GIT_AUTHOR_LOGIN" \
@@ -88,11 +87,10 @@ jobs:
         id: alias-set
         continue-on-error: true
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
           ALIAS_HOST: ${{ steps.alias.outputs.host }}
         run: |
-          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST" --token="$VERCEL_TOKEN"
+          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST"
 
       - name: Add deployment URLs to summary
         env:
@@ -144,15 +142,15 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel pull --yes --environment=production
 
       - name: Build project artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel build --prod
 
       - name: Deploy project artifacts to Vercel
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_WEBSITE_TOKEN }})
+          URL=$(vercel deploy --prebuilt --prod)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Add deployment URL to summary
