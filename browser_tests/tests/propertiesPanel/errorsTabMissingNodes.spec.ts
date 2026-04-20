@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { openErrorsTabViaSeeErrors } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -14,7 +14,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   })
 
   test('Should show MissingNodeCard in errors tab', async ({ comfyPage }) => {
-    await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_nodes')
+    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.missingNodeCard)
@@ -22,7 +22,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   })
 
   test('Should show missing node packs group', async ({ comfyPage }) => {
-    await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_nodes')
+    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
@@ -32,7 +32,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test('Should expand pack group to reveal node type names', async ({
     comfyPage
   }) => {
-    await openErrorsTabViaSeeErrors(
+    await loadWorkflowAndOpenErrorsTab(
       comfyPage,
       'missing/missing_nodes_in_subgraph'
     )
@@ -52,7 +52,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   })
 
   test('Should collapse expanded pack group', async ({ comfyPage }) => {
-    await openErrorsTabViaSeeErrors(
+    await loadWorkflowAndOpenErrorsTab(
       comfyPage,
       'missing/missing_nodes_in_subgraph'
     )
@@ -80,7 +80,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test('Locate node button is visible for expanded pack nodes', async ({
     comfyPage
   }) => {
-    await openErrorsTabViaSeeErrors(
+    await loadWorkflowAndOpenErrorsTab(
       comfyPage,
       'missing/missing_nodes_in_subgraph'
     )
