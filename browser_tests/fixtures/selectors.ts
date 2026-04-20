@@ -199,6 +199,13 @@ export const TestIds = {
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
   },
+  terminal: {
+    root: 'terminal-root',
+    host: 'terminal-host',
+    copyButton: 'terminal-copy-button',
+    errorMessage: 'terminal-error-message',
+    loadingSpinner: 'terminal-loading-spinner'
+  },
   imageCompare: {
     viewport: 'image-compare-viewport',
     empty: 'image-compare-empty',
@@ -241,4 +248,5 @@ export type TestIdValue =
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
   | (typeof TestIds.loading)[keyof typeof TestIds.loading]
   | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]
+  | (typeof TestIds.terminal)[keyof typeof TestIds.terminal]
   | (typeof TestIds.imageCompare)[keyof typeof TestIds.imageCompare]

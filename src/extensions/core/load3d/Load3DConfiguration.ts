@@ -167,13 +167,32 @@ class Load3DConfiguration {
 
   private loadModelConfig(): ModelConfig {
     if (this.properties && 'Model Config' in this.properties) {
-      return this.properties['Model Config'] as ModelConfig
+      const config = this.properties['Model Config'] as ModelConfig
+      if (!config.gizmo) {
+        config.gizmo = {
+          enabled: false,
+          mode: 'translate',
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
+      } else if (!config.gizmo.scale) {
+        config.gizmo.scale = { x: 1, y: 1, z: 1 }
+      }
+      return config
     }
 
     return {
       upDirection: 'original',
       materialMode: 'original',
-      showSkeleton: false
+      showSkeleton: false,
+      gizmo: {
+        enabled: false,
+        mode: 'translate',
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      }
     }
   }
 
