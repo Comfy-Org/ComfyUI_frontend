@@ -1,23 +1,23 @@
 import type { TranslationKey } from '../i18n/translations'
 
 interface Demo {
-  slug: string
-  arcadeId: string
-  category: TranslationKey
-  title: TranslationKey
-  description: TranslationKey
-  ogImage: string
-  thumbnail: string
-  estimatedTime: string
-  durationIso: string
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  tags: string[]
-  transcript?: TranslationKey
-  publishedDate: string
-  modifiedDate: string
+  readonly slug: string
+  readonly arcadeId: string
+  readonly category: TranslationKey
+  readonly title: TranslationKey
+  readonly description: TranslationKey
+  readonly ogImage: string
+  readonly thumbnail: string
+  readonly estimatedTime: TranslationKey
+  readonly durationIso: string
+  readonly difficulty: 'beginner' | 'intermediate' | 'advanced'
+  readonly tags: readonly string[]
+  readonly transcript?: TranslationKey
+  readonly publishedDate: string
+  readonly modifiedDate: string
 }
 
-export const demos: Demo[] = [
+export const demos: readonly Demo[] = [
   {
     slug: 'image-to-video',
     arcadeId: 'F3CTalnGnR4R0qJIVMNX',
@@ -27,7 +27,7 @@ export const demos: Demo[] = [
     transcript: 'demos.image-to-video.transcript',
     ogImage: '/images/demos/image-to-video-og.png',
     thumbnail: '/images/demos/image-to-video-thumb.webp',
-    estimatedTime: '~2 min',
+    estimatedTime: 'demos.duration.2min',
     durationIso: 'PT2M',
     difficulty: 'beginner',
     tags: ['templates', 'image', 'video'],
@@ -43,7 +43,7 @@ export const demos: Demo[] = [
     transcript: 'demos.workflow-templates.transcript',
     ogImage: '/images/demos/workflow-templates-og.png',
     thumbnail: '/images/demos/workflow-templates-thumb.webp',
-    estimatedTime: '~2 min',
+    estimatedTime: 'demos.duration.2min',
     durationIso: 'PT2M',
     difficulty: 'beginner',
     tags: ['getting-started', 'templates', 'workflow'],

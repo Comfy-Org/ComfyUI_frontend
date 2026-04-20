@@ -52,7 +52,7 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
         <span
           class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold"
         >
-          {{ estimatedTime }}
+          {{ t(estimatedTime as TranslationKey, locale) }}
         </span>
       </div>
     </div>

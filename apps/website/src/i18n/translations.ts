@@ -2961,6 +2961,7 @@ const translations = {
     en: 'View on Arcade →',
     'zh-CN': '在 Arcade 上查看 →'
   },
+  'demos.duration.2min': { en: '~2 min', 'zh-CN': '~2 分钟' },
   'demos.difficulty.beginner': { en: 'Beginner', 'zh-CN': '入门' },
   'demos.difficulty.intermediate': {
     en: 'Intermediate',
