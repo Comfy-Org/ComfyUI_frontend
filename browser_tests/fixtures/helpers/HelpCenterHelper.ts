@@ -131,6 +131,31 @@ export class HelpCenterHelper {
   }
 }
 
+/**
+ * Arms the `popup` listener, runs the action that triggers `window.open`,
+ * then waits for the popup's initial navigation to commit so `popup.url()`
+ * doesn't race and return `about:blank`. Returns a parsed `URL` and closes
+ * the popup.
+ *
+ * @example
+ * ```ts
+ * const url = await waitForPopup(page, () => button.click())
+ * expect(url.hostname).toBe('example.com')
+ * ```
+ */
+export async function waitForPopup(
+  page: Page,
+  action: () => Promise<void>
+): Promise<URL> {
+  const popupPromise = page.waitForEvent('popup')
+  await action()
+  const popup = await popupPromise
+  await popup.waitForLoadState('domcontentloaded')
+  const url = new URL(popup.url())
+  await popup.close()
+  return url
+}
+
 export function createMockRelease(
   overrides: Partial<ReleaseNote> = {}
 ): ReleaseNote {

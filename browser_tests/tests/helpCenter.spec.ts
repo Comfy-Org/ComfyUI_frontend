@@ -2,7 +2,8 @@ import { expect } from '@playwright/test'
 
 import {
   createMockRelease,
-  helpCenterFixture as test
+  helpCenterFixture as test,
+  waitForPopup
 } from '@e2e/fixtures/helpers/HelpCenterHelper'
 
 test.describe('Help Center', () => {
@@ -27,12 +28,11 @@ test.describe('Help Center', () => {
       await helpCenter.stubDocsPage()
       await helpCenter.open()
 
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.menuItem('docs').click()
-      const externalTab = await popupPromise
+      await waitForPopup(helpCenter.page, () =>
+        helpCenter.menuItem('docs').click()
+      )
 
       await expect(helpCenter.popup).toBeHidden()
-      await externalTab.close()
     })
   })
 
@@ -69,66 +69,56 @@ test.describe('Help Center', () => {
     test('Docs item opens docs.comfy.org/ in a new tab', async ({
       helpCenter
     }) => {
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.menuItem('docs').click()
-      const externalTab = await popupPromise
+      const url = await waitForPopup(helpCenter.page, () =>
+        helpCenter.menuItem('docs').click()
+      )
 
-      const url = new URL(externalTab.url())
       expect(url.hostname).toBe('docs.comfy.org')
       expect(url.pathname).toBe('/')
-      await externalTab.close()
     })
 
     test('Discord item opens comfy.org/discord in a new tab', async ({
       helpCenter
     }) => {
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.menuItem('discord').click()
-      const externalTab = await popupPromise
+      const url = await waitForPopup(helpCenter.page, () =>
+        helpCenter.menuItem('discord').click()
+      )
 
-      const url = new URL(externalTab.url())
       expect(url.hostname).toBe('www.comfy.org')
       expect(url.pathname).toBe('/discord')
-      await externalTab.close()
     })
 
     test('Github item opens the ComfyUI repo in a new tab', async ({
       helpCenter
     }) => {
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.menuItem('github').click()
-      const externalTab = await popupPromise
+      const url = await waitForPopup(helpCenter.page, () =>
+        helpCenter.menuItem('github').click()
+      )
 
-      const url = new URL(externalTab.url())
       expect(url.hostname).toBe('github.com')
       expect(url.pathname).toBe('/comfyanonymous/ComfyUI')
-      await externalTab.close()
     })
 
     test('Help & Support item opens the Zendesk support form with OSS tag', async ({
       helpCenter
     }) => {
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.menuItem('help').click()
-      const externalTab = await popupPromise
+      const url = await waitForPopup(helpCenter.page, () =>
+        helpCenter.menuItem('help').click()
+      )
 
-      const url = new URL(externalTab.url())
       expect(url.hostname).toBe('support.comfy.org')
       expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
-      await externalTab.close()
     })
 
     test('Give Feedback item opens Contact Support in OSS mode', async ({
       helpCenter
     }) => {
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.menuItem('feedback').click()
-      const externalTab = await popupPromise
+      const url = await waitForPopup(helpCenter.page, () =>
+        helpCenter.menuItem('feedback').click()
+      )
 
-      const url = new URL(externalTab.url())
       expect(url.hostname).toBe('support.comfy.org')
       expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
-      await externalTab.close()
     })
   })
 
@@ -170,17 +160,15 @@ test.describe('Help Center', () => {
       await comfyPage.setup({ mockReleases: false })
       await helpCenter.open()
 
-      const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.releaseItem('0.3.50').click()
-      const externalTab = await popupPromise
+      const url = await waitForPopup(helpCenter.page, () =>
+        helpCenter.releaseItem('0.3.50').click()
+      )
 
-      const url = new URL(externalTab.url())
       expect(url.hostname).toBe('docs.comfy.org')
       expect(url.pathname).toBe('/changelog')
       expect(url.hash).toBe('#v0-3-50')
 
       await expect(helpCenter.popup).toBeHidden()
-      await externalTab.close()
     })
   })
 })
