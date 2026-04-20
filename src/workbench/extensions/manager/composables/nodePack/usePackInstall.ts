@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -63,16 +62,6 @@ export function usePackInstall(
           '[usePackInstall] Some installations failed:',
           failures.map((f) => f.reason)
         )
-        useToastStore().add({
-          severity: 'error',
-          summary: t('manager.installFailureToast.summary'),
-          detail: t(
-            'manager.installFailureToast.detail',
-            { count: failures.length },
-            failures.length
-          ),
-          life: 8000
-        })
       }
     } finally {
       managerStore.installPack.clear()

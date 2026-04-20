@@ -1,4 +1,4 @@
-import { useEventListener, whenever } from '@vueuse/core'
+import { useDebounceFn, useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
@@ -6,6 +6,7 @@ import { ref, watch } from 'vue'
 import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -110,6 +111,30 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       partitionTaskLogs()
     },
     { deep: true }
+  )
+
+  const pendingFailureCount = ref(0)
+
+  const flushFailureToast = useDebounceFn(() => {
+    if (pendingFailureCount.value === 0) return
+    const count = pendingFailureCount.value
+    pendingFailureCount.value = 0
+    useToastStore().add({
+      severity: 'error',
+      summary: t('manager.installFailureToast.summary'),
+      detail: t('manager.installFailureToast.detail', { count }, count),
+      life: 8000
+    })
+  }, 300)
+
+  watch(
+    () => failedTasksIds.value.length,
+    (newCount, oldCount) => {
+      const delta = newCount - (oldCount ?? 0)
+      if (delta <= 0) return
+      pendingFailureCount.value += delta
+      void flushFailureToast()
+    }
   )
 
   const getPackId = (pack: ManagerPackInstalled) => pack.cnr_id || pack.aux_id

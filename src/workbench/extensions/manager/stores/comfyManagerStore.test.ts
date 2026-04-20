@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
@@ -55,6 +55,21 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
+const toastAddMock = vi.fn()
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({
+    add: toastAddMock
+  }))
+}))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string, params?: Record<string, unknown>) => {
+    if (params && 'count' in params) return `${key}:${String(params.count)}`
+    return key
+  }
+}))
+
 interface EnabledDisabledTestCase {
   desc: string
   installed: Record<string, ManagerPackInstalled>
@@ -79,6 +94,8 @@ describe('useComfyManagerStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    toastAddMock.mockClear()
+    vi.useFakeTimers()
     mockManagerService = {
       isLoading: ref(false),
       error: ref(null),
@@ -100,6 +117,10 @@ describe('useComfyManagerStore', () => {
     }
 
     vi.mocked(useComfyManagerService).mockReturnValue(mockManagerService)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   const testCases: EnabledDisabledTestCase[] = [
@@ -499,6 +520,87 @@ describe('useComfyManagerStore', () => {
       // Pack should be accessible by base name with version preserved
       expect(store.getInstalledPackVersion('disabled-pack')).toBe('2.0.0')
       expect(store.isPackInstalled('disabled-pack')).toBe(true)
+    })
+  })
+
+  describe('installation failure toast', () => {
+    const setTaskHistory = (
+      store: ReturnType<typeof useComfyManagerStore>,
+      history: Record<string, ManagerComponents['schemas']['TaskHistoryItem']>
+    ) => {
+      store.taskHistory = history
+    }
+
+    const errorTask = (
+      id: string
+    ): ManagerComponents['schemas']['TaskHistoryItem'] => ({
+      ui_id: id,
+      client_id: 'test',
+      kind: 'install',
+      result: 'failed',
+      status: { status_str: 'error', completed: false, messages: ['boom'] },
+      timestamp: new Date().toISOString()
+    })
+
+    const successTask = (
+      id: string
+    ): ManagerComponents['schemas']['TaskHistoryItem'] => ({
+      ui_id: id,
+      client_id: 'test',
+      kind: 'install',
+      result: 'success',
+      status: { status_str: 'success', completed: true, messages: [] },
+      timestamp: new Date().toISOString()
+    })
+
+    it('shows an error toast when a task fails', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      const message = toastAddMock.mock.calls[0][0]
+      expect(message.severity).toBe('error')
+      expect(message.summary).toBe('manager.installFailureToast.summary')
+      expect(message.detail).toBe('manager.installFailureToast.detail:1')
+    })
+
+    it('does not show a toast when all tasks succeed', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: successTask('a'), b: successTask('b') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
+    })
+
+    it('coalesces multiple failures that land in quick succession', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      setTaskHistory(store, { a: errorTask('a'), b: errorTask('b') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      expect(toastAddMock.mock.calls[0][0].detail).toBe(
+        'manager.installFailureToast.detail:2'
+      )
+    })
+
+    it('does not show a toast when failures are cleared via resetTaskState', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+      toastAddMock.mockClear()
+
+      store.resetTaskState()
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
     })
   })
 })
