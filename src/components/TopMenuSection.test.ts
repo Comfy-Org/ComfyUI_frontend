@@ -196,54 +196,6 @@ describe('TopMenuSection', () => {
     mockData.setShowConflictRedDot(false)
   })
 
-  describe('authentication state', () => {
-    function createLegacyTabBarWrapper() {
-      const pinia = createTestingPinia({ createSpy: vi.fn })
-      const settingStore = useSettingStore(pinia)
-      vi.mocked(settingStore.get).mockImplementation((key) =>
-        key === 'Comfy.UI.TabBarLayout' ? 'Legacy' : undefined
-      )
-      return createWrapper({ pinia })
-    }
-
-    describe('when user is logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = true
-      })
-
-      it('should display CurrentUserButton and not display LoginButton', () => {
-        const { container } = createLegacyTabBarWrapper()
-        expect(
-          container.querySelector('current-user-button-stub')
-        ).not.toBeNull()
-        expect(container.querySelector('login-button-stub')).toBeNull()
-      })
-    })
-
-    describe('when user is not logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = false
-      })
-
-      describe('on desktop platform', () => {
-        it('should display LoginButton and not display CurrentUserButton', () => {
-          mockData.isDesktop = true
-          const { container } = createLegacyTabBarWrapper()
-          expect(container.querySelector('login-button-stub')).not.toBeNull()
-          expect(container.querySelector('current-user-button-stub')).toBeNull()
-        })
-      })
-
-      describe('on web platform', () => {
-        it('should not display CurrentUserButton and not display LoginButton', () => {
-          const { container } = createLegacyTabBarWrapper()
-          expect(container.querySelector('current-user-button-stub')).toBeNull()
-          expect(container.querySelector('login-button-stub')).toBeNull()
-        })
-      })
-    })
-  })
-
   it('shows the active jobs label with the current count', async () => {
     createWrapper()
     const queueStore = useQueueStore()
@@ -557,7 +509,7 @@ describe('TopMenuSection', () => {
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.UseNewMenu') return 'Top'
-      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+      if (key === 'Comfy.UI.TabBarLayout') return 'Default'
       if (key === 'Comfy.RightSidePanel.IsOpen') return true
       return undefined
     })
