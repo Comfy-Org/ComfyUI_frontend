@@ -5,7 +5,6 @@
  * - Uses V2 draft store with per-draft keys
  * - Uses tab state composable for session pointers
  * - Adds 512ms debounce on graph change persistence
- * - Runs V1→V2 migration on first load
  */
 
 import { debounce } from 'es-toolkit'
@@ -30,7 +29,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import { clearAllV2Storage } from '../base/storageIO'
-import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -52,9 +50,6 @@ export function useWorkflowPersistenceV2() {
   const tabState = useWorkflowTabState()
   const toast = useToast()
   const { onUserLogout } = useCurrentUser()
-
-  // Run migration on module load, passing clientId for tab state migration
-  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
 
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {

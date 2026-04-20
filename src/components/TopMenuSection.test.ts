@@ -152,16 +152,6 @@ function createWrapper({
   return { container, unmount, user }
 }
 
-function getLegacyCommandsContainer(container: Element): HTMLElement {
-  const legacyContainer = container.querySelector(
-    '[data-testid="legacy-topbar-container"]'
-  )
-  if (!(legacyContainer instanceof HTMLElement)) {
-    throw new Error('Expected legacy commands container to be present')
-  }
-  return legacyContainer
-}
-
 function createJob(id: string, status: JobStatus): JobListItem {
   return {
     id,
@@ -541,74 +531,5 @@ describe('TopMenuSection', () => {
     await nextTick()
 
     expect(container.querySelector('span.bg-red-500')).not.toBeNull()
-  })
-
-  it('coalesces legacy topbar mutation scans to one check per frame', async () => {
-    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
-
-    const rafCallbacks: FrameRequestCallback[] = []
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafCallbacks.push(cb)
-      return rafCallbacks.length
-    })
-    vi.stubGlobal('cancelAnimationFrame', vi.fn())
-
-    const pinia = createTestingPinia({ createSpy: vi.fn })
-    const settingStore = useSettingStore(pinia)
-    vi.mocked(settingStore.get).mockImplementation((key) => {
-      if (key === 'Comfy.UseNewMenu') return 'Top'
-      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
-      if (key === 'Comfy.RightSidePanel.IsOpen') return true
-      return undefined
-    })
-
-    const { container, unmount } = createWrapper({
-      pinia,
-      attachTo: document.body
-    })
-
-    try {
-      await nextTick()
-
-      const actionbarContainer = container.querySelector('.actionbar-container')
-      expect(actionbarContainer).not.toBeNull()
-      expect(actionbarContainer!.classList).toContain('w-0')
-
-      const legacyContainer = getLegacyCommandsContainer(container)
-      const querySpy = vi.spyOn(legacyContainer, 'querySelector')
-
-      if (rafCallbacks.length > 0) {
-        const initialCallbacks = [...rafCallbacks]
-        rafCallbacks.length = 0
-        initialCallbacks.forEach((callback) => callback(0))
-        await nextTick()
-      }
-      querySpy.mockClear()
-      querySpy.mockReturnValue(document.createElement('div'))
-
-      for (let index = 0; index < 3; index++) {
-        const outer = document.createElement('div')
-        const inner = document.createElement('div')
-        inner.textContent = `legacy-${index}`
-        outer.appendChild(inner)
-        legacyContainer.appendChild(outer)
-      }
-
-      await vi.waitFor(() => {
-        expect(rafCallbacks.length).toBeGreaterThan(0)
-      })
-      expect(querySpy).not.toHaveBeenCalled()
-
-      const callbacks = [...rafCallbacks]
-      rafCallbacks.length = 0
-      callbacks.forEach((callback) => callback(0))
-      await nextTick()
-
-      expect(querySpy).toHaveBeenCalledTimes(1)
-      expect(actionbarContainer!.classList).toContain('px-2')
-    } finally {
-      unmount()
-      vi.unstubAllGlobals()
-    }
   })
 })

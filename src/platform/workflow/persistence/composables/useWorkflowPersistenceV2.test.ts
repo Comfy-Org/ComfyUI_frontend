@@ -110,10 +110,6 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-vi.mock('../migration/migrateV1toV2', () => ({
-  migrateV1toV2: vi.fn()
-}))
-
 type GraphChangedHandler = (() => void) | null
 
 const mocks = vi.hoisted(() => {
