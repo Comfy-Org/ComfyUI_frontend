@@ -123,21 +123,27 @@ describe('TextPreviewWidget', () => {
   })
 
   describe('Raw HTML sanitisation in modelValue', () => {
-    it('strips img tags with inline event handlers', () => {
+    it('drops img tags entirely (strict allowlist is <a> + <br> only)', () => {
       const { container } = renderPreview('<img src=x onerror="alert(1)">')
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const img = container.querySelector('img')
-      // DOMPurify removes on* handlers; an <img> with an onerror should be
-      // dropped entirely or at minimum have the handler stripped.
-      expect(img?.getAttribute('onerror')).toBeNull()
+      expect(img).toBeNull()
     })
 
-    it('strips script tags from raw HTML in modelValue', () => {
+    it('drops script tags from raw HTML in modelValue', () => {
       const { container } = renderPreview(
         'hello<script>window.__xss = true</script>world'
       )
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('script')).toBeNull()
+    })
+
+    it('drops iframe tags', () => {
+      const { container } = renderPreview(
+        '<iframe src="https://evil.example.com"></iframe>'
+      )
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('iframe')).toBeNull()
     })
 
     it('strips inline javascript: hrefs on anchors', () => {
@@ -148,6 +154,12 @@ describe('TextPreviewWidget', () => {
       const anchor = container.querySelector('a')
       const href = anchor?.getAttribute('href')
       expect(href === null || !href.startsWith('javascript:')).toBe(true)
+    })
+
+    it('preserves the <br> tag produced by nl2br', () => {
+      const { container } = renderPreview('line1\nline2')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('br')).toBeInTheDocument()
     })
   })
 

@@ -56,8 +56,12 @@ const formattedText = computed(() => {
       : safeLabel
   })
 
+  // Strict allowlist: this widget only needs anchors and line breaks. Raw
+  // websocket progress text flows into modelValue, so we drop every other
+  // tag (img, script, iframe, etc.) to keep the v-html trust boundary tight.
   return DOMPurify.sanitize(html, {
-    ADD_ATTR: ['target', 'rel']
+    ALLOWED_TAGS: ['a', 'br'],
+    ALLOWED_ATTR: ['href', 'target', 'rel']
   })
 })
 
