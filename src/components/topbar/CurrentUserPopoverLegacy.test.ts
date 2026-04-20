@@ -106,7 +106,7 @@ const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 const mockIsFreeTier = ref(false)
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: ref(true),
+    canAccessSubscriptionFeatures: ref(true),
     isFreeTier: mockIsFreeTier,
     subscriptionTierName: ref('Creator'),
     subscriptionTier: ref('CREATOR'),

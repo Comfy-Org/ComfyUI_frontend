@@ -69,7 +69,7 @@ export interface BillingState {
    * Convenience computed for checking if subscription is active.
    * Equivalent to `subscription.value?.isActive ?? false`
    */
-  isActiveSubscription: ComputedRef<boolean>
+  canAccessSubscriptionFeatures: ComputedRef<boolean>
   /**
    * Whether the current billing context has a FREE tier subscription.
    * Workspace-aware: reflects the active workspace's tier, not the user's personal tier.

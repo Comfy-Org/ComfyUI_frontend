@@ -80,7 +80,9 @@
       </Button>
       <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        v-if="
+          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+        "
         variant="gradient"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
@@ -90,7 +92,7 @@
       </Button>
       <!-- Add Credits (subscribed + personal or workspace owner only, paid tier) -->
       <Button
-        v-else-if="isActiveSubscription && permissions.canTopUp"
+        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -259,7 +261,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
   balance,
@@ -299,12 +301,14 @@ const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
 const showManagePlan = computed(
-  () => permissions.value.canManageSubscription && isActiveSubscription.value
+  () =>
+    permissions.value.canManageSubscription &&
+    canAccessSubscriptionFeatures.value
 )
 const showSubscribeAction = computed(
   () =>
     permissions.value.canManageSubscription &&
-    (!isActiveSubscription.value || isCancelled.value)
+    (!canAccessSubscriptionFeatures.value || isCancelled.value)
 )
 
 const handleOpenUserSettings = () => {

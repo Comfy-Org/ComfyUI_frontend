@@ -167,7 +167,7 @@
           <!-- Upsell Banner -->
           <MemberUpsellBanner
             v-if="isSingleSeatPlan"
-            :is-active-subscription="isActiveSubscription"
+            :can-access-subscription-features="canAccessSubscriptionFeatures"
             @show-plans="showSubscriptionDialog()"
           />
 
@@ -224,7 +224,7 @@ const {
   pendingInvites,
   permissions,
   uiConfig,
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   userPhotoUrl,
   isCurrentUser,
   selectMember,

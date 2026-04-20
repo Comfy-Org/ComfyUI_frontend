@@ -44,7 +44,7 @@ function useSubscriptionInternal() {
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
-  const isSubscribedOrIsNotCloud = computed(() => {
+  const canAccessSubscriptionFeatures = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
     return subscriptionStatus.value?.is_active ?? false
@@ -222,7 +222,7 @@ function useSubscriptionInternal() {
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
-      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
+      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       ...(subscriptionTier.value
         ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
         : {}),
@@ -257,7 +257,7 @@ function useSubscriptionInternal() {
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
       fetchStatus,
-      isActiveSubscription: isSubscribedOrIsNotCloud,
+      canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation: isSubscriptionEnabled
@@ -275,7 +275,7 @@ function useSubscriptionInternal() {
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isSubscribedOrIsNotCloud.value) {
+    if (!canAccessSubscriptionFeatures.value) {
       showSubscriptionDialog()
     }
   }
@@ -439,7 +439,7 @@ function useSubscriptionInternal() {
 
   return {
     // State
-    isActiveSubscription: isSubscribedOrIsNotCloud,
+    canAccessSubscriptionFeatures,
     isInitialized,
     isCancelled,
     formattedRenewalDate,

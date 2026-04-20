@@ -22,7 +22,7 @@ function createDeferredPromise<T>() {
   return { promise, resolve }
 }
 
-const mockIsActiveSubscription = ref(false)
+const mockCanAccessSubscriptionFeatures = ref(false)
 const mockSubscriptionTier = ref<
   'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
 >(null)
@@ -67,7 +67,9 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    ),
     isFreeTier: computed(() => false),
     subscriptionTier: computed(() => mockSubscriptionTier.value),
     isYearlySubscription: computed(() => mockIsYearlySubscription.value),
@@ -215,7 +217,7 @@ const onChooseTeamWorkspace = vi.fn()
 describe('PricingTable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockIsActiveSubscription.value = false
+    mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
     mockUserId.value = 'user-123'
@@ -231,7 +233,7 @@ describe('PricingTable', () => {
 
   describe('billing portal deep linking', () => {
     it('should call accessBillingPortal with yearly tier suffix when billing cycle is yearly (default)', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
       renderComponent()
@@ -256,7 +258,7 @@ describe('PricingTable', () => {
     })
 
     it('should call accessBillingPortal with different tiers correctly', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
       renderComponent()
@@ -273,7 +275,7 @@ describe('PricingTable', () => {
     })
 
     it('records the plan snapshot that was actually opened', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
       const portalOpen = createDeferredPromise<boolean>()
@@ -313,7 +315,7 @@ describe('PricingTable', () => {
     })
 
     it('does not record a pending upgrade when the billing portal does not open', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
       mockAccessBillingPortal.mockResolvedValueOnce(false)
 
@@ -333,7 +335,7 @@ describe('PricingTable', () => {
     })
 
     it('should use the latest userId value when it changes after mount', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
       mockUserId.value = 'user-early'
 
@@ -360,7 +362,7 @@ describe('PricingTable', () => {
     })
 
     it('should not call accessBillingPortal when clicking current plan', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'CREATOR'
 
       renderComponent()
@@ -377,7 +379,7 @@ describe('PricingTable', () => {
     })
 
     it('should initiate checkout instead of billing portal for new subscribers', async () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
 
       const windowOpenSpy = vi
         .spyOn(window, 'open')
@@ -407,7 +409,7 @@ describe('PricingTable', () => {
     })
 
     it('should pass correct tier for each subscription level', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'PRO'
 
       renderComponent()

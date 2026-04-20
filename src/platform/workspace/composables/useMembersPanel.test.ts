@@ -214,7 +214,7 @@ const {
   mockIsInPersonalWorkspace,
   mockPermissions,
   mockUiConfig,
-  mockIsActiveSubscription,
+  mockCanAccessSubscriptionFeatures,
   mockSubscription
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
@@ -248,7 +248,7 @@ const {
       workspaceMenuAction: 'delete' as 'leave' | 'delete' | null,
       workspaceMenuDisabledTooltip: null as string | null
     }),
-    mockIsActiveSubscription: ref(true),
+    mockCanAccessSubscriptionFeatures: ref(true),
     mockSubscription: ref<{ tier: string } | null>({ tier: 'PRO' })
   }
 })
@@ -295,7 +295,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: mockIsActiveSubscription,
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     subscription: mockSubscription,
     showSubscriptionDialog: mockShowSubscriptionDialog,
     getMaxSeats: (tierKey: string) => {
@@ -334,7 +334,7 @@ describe('useMembersPanel', () => {
     mockMembers.value = []
     mockPendingInvites.value = []
     mockIsInPersonalWorkspace.value = false
-    mockIsActiveSubscription.value = true
+    mockCanAccessSubscriptionFeatures.value = true
     mockSubscription.value = { tier: 'PRO' }
   })
 
@@ -352,7 +352,7 @@ describe('useMembersPanel', () => {
     })
 
     it('is true when no active subscription', async () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
       const panel = await setup()
       expect(panel.isSingleSeatPlan.value).toBe(true)
     })
