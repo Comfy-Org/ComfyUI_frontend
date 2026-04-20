@@ -640,36 +640,36 @@ describe(createPromotedWidgetView, () => {
     expect(handled).toBe(false)
   })
 
-  test('draw calls drawDisconnectedPlaceholder for unknown widget type', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    const innerNode = firstInnerNode(innerNodes)
-    const unknownWidget = {
-      name: 'unknownDraw',
-      type: 'unknown-type-xyz',
-      value: 'val',
-      options: {}
-    } as unknown as IBaseWidget
-    innerNode.widgets = [unknownWidget]
+  test('draw calls drawDisconnectedPlaceholder when source is disconnected', () => {
+    const [subgraphNode] = setupSubgraph(0)
 
+    // Create a view pointing at a non-existent node so resolveDeepest
+    // returns undefined — the disconnected path.
     const view = createPromotedWidgetView(
       subgraphNode,
-      String(innerNode.id),
-      'unknownDraw'
+      'nonexistent-node-id',
+      'noWidget'
     )
 
-    const ctx = createFakeCanvasContext()
-    // Should not throw — getProjectedWidget returns undefined, draw returns early
+    const fillText = vi.fn()
+    const ctx = createInspectableCanvasContext(fillText)
     view.draw!(ctx, subgraphNode, 200, 0, 30)
+
+    expect(fillText).toHaveBeenCalledOnce()
   })
 
-  test('resolveDeepest uses frame cache on repeated access', () => {
+  test('resolveDeepest uses frame cache on repeated access', async () => {
+    const resolve =
+      await import('@/core/graph/subgraph/resolveConcretePromotedWidget')
+    const spy = vi.spyOn(resolve, 'resolveConcretePromotedWidget')
+
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'cached', 'val', () => {})
 
-    // Set up primaryCanvas with frame
+    // Set up primaryCanvas with a stable frame so the cache can be hit
     const rootGraph = subgraphNode.rootGraph
-    rootGraph.primaryCanvas = { frame: 5 } as never
+    rootGraph.primaryCanvas = { frame: 5 } as unknown as LGraphCanvas
 
     const view = createPromotedWidgetView(
       subgraphNode,
@@ -677,11 +677,13 @@ describe(createPromotedWidgetView, () => {
       'cached'
     )
 
-    // First access populates the cache (covers lines 273-274)
-    const type1 = view.type
-    // Second access hits the cache (covers line 263)
-    const type2 = view.type
-    expect(type1).toBe(type2)
+    // First access populates the cache
+    void view.type
+    // Second access should hit the cache — resolver must not be called again
+    void view.type
+    expect(spy).toHaveBeenCalledOnce()
+
+    spy.mockRestore()
   })
 })
 
