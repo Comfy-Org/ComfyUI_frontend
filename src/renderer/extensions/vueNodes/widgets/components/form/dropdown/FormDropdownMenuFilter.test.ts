@@ -8,10 +8,13 @@ import { createI18n } from 'vue-i18n'
 
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
 
-const mocks = vi.hoisted(() => ({
-  isEnabled: false,
-  showUploadDialog: () => {}
-}))
+const mocks = vi.hoisted(
+  () =>
+    ({
+      isEnabled: false,
+      showUploadDialog: (() => {}) as () => void
+    }) as { isEnabled: boolean; showUploadDialog: () => void }
+)
 
 vi.mock('@/platform/assets/composables/useModelUpload', async () => {
   const { computed } = await import('vue')
@@ -71,7 +74,7 @@ describe('FormDropdownMenuFilter', () => {
   beforeEach(() => {
     mocks.isEnabled = false
     showDialogSpy = vi.fn()
-    mocks.showUploadDialog = showDialogSpy
+    mocks.showUploadDialog = showDialogSpy as unknown as () => void
   })
 
   describe('Filter options', () => {

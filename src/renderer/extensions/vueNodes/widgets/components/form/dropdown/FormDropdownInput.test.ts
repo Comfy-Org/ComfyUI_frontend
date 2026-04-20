@@ -27,7 +27,7 @@ function renderInput(
   return render(FormDropdownInput, {
     props: {
       items,
-      selected: new Set(),
+      selected: new Set<string>(),
       maxSelectable: 1,
       uploadable: false,
       disabled: false,
