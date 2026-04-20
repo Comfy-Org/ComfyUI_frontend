@@ -40,8 +40,7 @@ describe('createElectronDownloadService', () => {
       }
     ])
 
-    const service = createElectronDownloadService()
-    await service.initialize()
+    const service = await createElectronDownloadService()
 
     const allDownloads = service.getAll()
     expect(allDownloads).toHaveLength(1)
@@ -54,8 +53,7 @@ describe('createElectronDownloadService', () => {
   })
 
   it('start delegates to DownloadManager and returns a pending entry', async () => {
-    const service = createElectronDownloadService()
-    await service.initialize()
+    const service = await createElectronDownloadService()
 
     const entry = await service.start({
       url: 'https://example.com/new-model.safetensors',
@@ -76,8 +74,7 @@ describe('createElectronDownloadService', () => {
   })
 
   it('updates entries on progress callbacks from DownloadManager', async () => {
-    const service = createElectronDownloadService()
-    await service.initialize()
+    const service = await createElectronDownloadService()
 
     await service.start({
       url: 'https://example.com/dl.safetensors',
@@ -99,8 +96,7 @@ describe('createElectronDownloadService', () => {
   })
 
   it('onProgress notifies subscribers when entries update', async () => {
-    const service = createElectronDownloadService()
-    await service.initialize()
+    const service = await createElectronDownloadService()
 
     const url = 'https://example.com/sub.safetensors'
     await service.start({
@@ -137,8 +133,7 @@ describe('createElectronDownloadService', () => {
   })
 
   it('pause/resume/cancel delegate to DownloadManager', async () => {
-    const service = createElectronDownloadService()
-    await service.initialize()
+    const service = await createElectronDownloadService()
 
     await service.pause('url1')
     expect(mockDownloadManager.pauseDownload).toHaveBeenCalledWith('url1')
@@ -150,8 +145,8 @@ describe('createElectronDownloadService', () => {
     expect(mockDownloadManager.cancelDownload).toHaveBeenCalledWith('url3')
   })
 
-  it('supports pause/resume', () => {
-    const service = createElectronDownloadService()
+  it('supports pause/resume', async () => {
+    const service = await createElectronDownloadService()
     expect(service.supportsPauseResume).toBe(true)
   })
 })
