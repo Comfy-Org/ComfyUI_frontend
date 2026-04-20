@@ -176,7 +176,13 @@ export const TestIds = {
     vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
-    subgraph: 'subgraph-breadcrumb'
+    subgraph: 'subgraph-breadcrumb',
+    back: 'subgraph-breadcrumb-back',
+    item: (key: string) => `subgraph-breadcrumb-item-${key}`,
+    blueprintTag: 'subgraph-breadcrumb-blueprint-tag',
+    missingNodesIcon: 'subgraph-breadcrumb-missing-nodes-icon',
+    renameInput: 'subgraph-breadcrumb-rename-input',
+    menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
   templates: {
     content: 'template-workflows-content',
@@ -236,7 +242,10 @@ export type TestIdValue =
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
   | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
   | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
-  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
+  | Exclude<
+      (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb],
+      (key: string) => string
+    >
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
       (id: string) => string
