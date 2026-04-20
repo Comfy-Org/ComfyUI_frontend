@@ -22,7 +22,7 @@ The skill does NOT auto-add Slack reactions (no `reactions.add` tool is exposed)
 
 Both markers are respected by Processed Detection on subsequent sweeps.
 
-### Team emoji scheme (per Christian, 2026-04-18)
+### Team emoji scheme
 
 | Emoji                | Meaning            | Who adds it                                            | Skill behavior                                 |
 | -------------------- | ------------------ | ------------------------------------------------------ | ---------------------------------------------- |
@@ -33,9 +33,7 @@ Both markers are respected by Processed Detection on subsequent sweeps.
 
 ## Design Priority
 
-Christian's framing (2026-04-18): "we just need to sync the channel into a better system where we can add status, labels, context, etc. like linear… Once everything is tracked and synced to linear, it's much easier to triage them with agents."
-
-**Implication:** optimize for coverage and label quality over fix-path cleverness. A Linear ticket with wrong severity is recoverable. A Slack-only bug is invisible to downstream tooling.
+Optimize for **coverage and label quality** over fix-path cleverness. Linear is the downstream triage surface — once every bug is there with status, labels, and context, agents and humans can work from Linear alone. A Linear ticket with a wrong severity is cheap to fix; a Slack-only bug is invisible to downstream tooling.
 
 ## Quick Start
 
@@ -492,7 +490,7 @@ Created:
 - ...
 
 Skipped with reason:
-- 1776592837.616399 -- Christian's Glary-Bot design discussion, not a bug
+- 1776592837.616399 -- design discussion in thread, not a bug
 - ...
 ```
 
