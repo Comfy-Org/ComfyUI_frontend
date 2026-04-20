@@ -70,6 +70,9 @@ export function useTemplateUrlLoader() {
    * Handles errors internally and shows appropriate user feedback
    */
   const loadTemplateFromUrl = async () => {
+    error.value = null
+    isReady.value = false
+
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
@@ -111,7 +114,6 @@ export function useTemplateUrlLoader() {
     }
 
     isLoading.value = true
-    error.value = null
 
     try {
       await templateWorkflows.loadTemplates()

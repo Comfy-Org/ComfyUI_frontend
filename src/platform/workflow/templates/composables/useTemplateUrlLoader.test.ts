@@ -516,5 +516,28 @@ describe('useTemplateUrlLoader', () => {
         expect(mockLoadTemplates).not.toHaveBeenCalled()
       }
     })
+
+    it('resets stale state on retry after error', async () => {
+      mockQueryParams = { template: 'flux_simple' }
+      const thrownError = new Error('Network error')
+      mockLoadTemplates.mockRejectedValueOnce(thrownError)
+
+      const { loadTemplateFromUrl, error, isReady } = useTemplateUrlLoader()
+
+      await loadTemplateFromUrl()
+      expect(error.value).toBe(thrownError)
+      expect(isReady.value).toBe(true)
+
+      mockLoadTemplates.mockResolvedValueOnce(true)
+      const retryPromise = loadTemplateFromUrl()
+
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(false)
+
+      await retryPromise
+
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(true)
+    })
   })
 })
