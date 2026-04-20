@@ -50,8 +50,8 @@ function _useNewUserService() {
     // V2 draft index key (scoped to personal workspace; cloud workspace id
     // comes from sessionStorage which may not be set yet at this point).
     // Check for actual draft history rather than key existence: an empty
-    // index is written by `migrateV1toV2()` for genuine new users during
-    // startup, so key presence alone is not evidence of prior usage.
+    // index can be written for genuine new users during startup, so key
+    // presence alone is not evidence of prior usage.
     const hasNoV2DraftIndex = !hasV2DraftHistory(
       localStorage.getItem('Comfy.Workflow.DraftIndex.v2:personal')
     )
