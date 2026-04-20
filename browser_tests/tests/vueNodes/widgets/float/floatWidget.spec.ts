@@ -32,18 +32,18 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     const initial = Number(await controls.input.inputValue())
 
     await controls.incrementButton.click()
-    await expect(controls.input).not.toHaveValue(initial.toString())
-
+    await expect
+      .poll(async () => Number(await controls.input.inputValue()))
+      .toBeGreaterThan(initial)
     const afterIncrement = Number(await controls.input.inputValue())
-    expect(afterIncrement).toBeGreaterThan(initial)
 
     await controls.decrementButton.click()
     await expect
-      .poll(() => Number(controls.input.inputValue().then(Number)))
-      .toBeLessThanOrEqual(afterIncrement)
+      .poll(async () => Number(await controls.input.inputValue()))
+      .toBeLessThan(afterIncrement)
   })
 
-  test('persists value after the workflow is serialized and reloaded', async ({
+  test('persists value across a serialize and reload round-trip', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
@@ -57,7 +57,11 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     await input.blur()
     await expect(input).toHaveValue('7.25')
 
-    const cfgValue = await comfyPage.page.evaluate(() => {
+    const serialized = await comfyPage.workflow.getExportedWorkflow()
+    await comfyPage.workflow.loadGraphData(serialized)
+    await comfyPage.vueNodes.waitForNodes()
+
+    const cfgValueAfterReload = await comfyPage.page.evaluate(() => {
       const graph = window.graph as unknown as TestGraphAccess | undefined
       if (!graph) return null
       const node = Object.values(graph._nodes_by_id).find(
@@ -66,6 +70,6 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
       return node?.widgets?.find((w) => w.name === 'cfg')?.value ?? null
     })
 
-    expect(cfgValue).toBe(7.25)
+    expect(cfgValueAfterReload).toBe(7.25)
   })
 })

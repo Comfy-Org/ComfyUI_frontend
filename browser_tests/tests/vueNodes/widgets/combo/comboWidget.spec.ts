@@ -41,7 +41,7 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     await expect(samplerCombo).toContainText('dpmpp_2m')
   })
 
-  test('persists the selected combo value in the serialized workflow', async ({
+  test('persists the selected combo value across a serialize and reload round-trip', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
@@ -52,7 +52,11 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
       'karras'
     )
 
-    const schedulerValue = await comfyPage.page.evaluate(() => {
+    const serialized = await comfyPage.workflow.getExportedWorkflow()
+    await comfyPage.workflow.loadGraphData(serialized)
+    await comfyPage.vueNodes.waitForNodes()
+
+    const schedulerValueAfterReload = await comfyPage.page.evaluate(() => {
       const graph = window.graph as unknown as TestGraphAccess | undefined
       if (!graph) return null
       const node = Object.values(graph._nodes_by_id).find(
@@ -61,6 +65,6 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
       return node?.widgets?.find((w) => w.name === 'scheduler')?.value ?? null
     })
 
-    expect(schedulerValue).toBe('karras')
+    expect(schedulerValueAfterReload).toBe('karras')
   })
 })
