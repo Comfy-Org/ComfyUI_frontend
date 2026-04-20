@@ -8,7 +8,7 @@
     >
       <h2 class="m-0 text-sm font-normal text-base-foreground">
         {{
-          isActiveSubscription
+          canAccessSubscriptionFeatures
             ? $t('workspacePanel.inviteUpsellDialog.titleSingleSeat')
             : $t('workspacePanel.inviteUpsellDialog.titleNotSubscribed')
         }}
@@ -26,7 +26,7 @@
     <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{
-          isActiveSubscription
+          canAccessSubscriptionFeatures
             ? $t('workspacePanel.inviteUpsellDialog.messageSingleSeat')
             : $t('workspacePanel.inviteUpsellDialog.messageNotSubscribed')
         }}
@@ -40,7 +40,7 @@
       </Button>
       <Button variant="primary" size="lg" @click="onUpgrade">
         {{
-          isActiveSubscription
+          canAccessSubscriptionFeatures
             ? $t('workspacePanel.inviteUpsellDialog.upgradeToCreator')
             : $t('workspacePanel.inviteUpsellDialog.viewPlans')
         }}
@@ -55,7 +55,8 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+const { canAccessSubscriptionFeatures, showSubscriptionDialog } =
+  useBillingContext()
 
 function onDismiss() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })

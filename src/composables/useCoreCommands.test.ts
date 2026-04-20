@@ -129,14 +129,14 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     showSubscriptionDialog: vi.fn()
   }))
 }))

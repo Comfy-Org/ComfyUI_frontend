@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import SubscriptionPanel from '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
 
 // Mock state refs that can be modified between tests
-const mockIsActiveSubscription = ref(false)
+const mockCanAccessSubscriptionFeatures = ref(false)
 const mockIsCancelled = ref(false)
 const mockSubscriptionTier = ref<
   'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
@@ -24,7 +24,9 @@ const TIER_TO_NAME: Record<string, string> = {
 
 // Mock composables - using computed to match composable return types
 const mockSubscriptionData = {
-  isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+  canAccessSubscriptionFeatures: computed(
+    () => mockCanAccessSubscriptionFeatures.value
+  ),
   isCancelled: computed(() => mockIsCancelled.value),
   formattedRenewalDate: computed(() => '2024-12-31'),
   formattedEndDate: computed(() => '2024-12-31'),
@@ -93,7 +95,9 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    ),
     manageSubscription: vi.fn()
   })
 }))
@@ -227,7 +231,7 @@ describe('SubscriptionPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mock state
-    mockIsActiveSubscription.value = false
+    mockCanAccessSubscriptionFeatures.value = false
     mockIsCancelled.value = false
     mockSubscriptionTier.value = 'CREATOR'
     mockIsYearlySubscription.value = false
@@ -237,14 +241,14 @@ describe('SubscriptionPanel', () => {
 
   describe('subscription state functionality', () => {
     it('shows correct UI for active subscription', () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       const { container } = createComponent()
       expect(container.textContent).toContain('Manage Subscription')
       expect(container.textContent).toContain('Add Credits')
     })
 
     it('shows correct UI for inactive subscription', () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
       const { container } = createComponent()
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('subscribe-button-stub')).not.toBeNull()
@@ -253,14 +257,14 @@ describe('SubscriptionPanel', () => {
     })
 
     it('shows renewal date for active non-cancelled subscription', () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockIsCancelled.value = false
       const { container } = createComponent()
       expect(container.textContent).toContain('Renews 2024-12-31')
     })
 
     it('shows expiry date for cancelled subscription', () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockIsCancelled.value = true
       const { container } = createComponent()
       expect(container.textContent).toContain('Expires 2024-12-31')
@@ -308,7 +312,7 @@ describe('SubscriptionPanel', () => {
       vi.useFakeTimers()
       vi.stubEnv('TZ', 'UTC')
       try {
-        mockIsActiveSubscription.value = true
+        mockCanAccessSubscriptionFeatures.value = true
         const { container } = createComponent()
         expect(container.textContent).toMatch(
           /Included \(Refills \d{2}\/\d{2}\/\d{2}\)/

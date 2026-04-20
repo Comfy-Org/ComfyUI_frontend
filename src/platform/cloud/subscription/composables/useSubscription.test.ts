@@ -195,7 +195,7 @@ describe('useSubscription', () => {
   })
 
   describe('computed properties', () => {
-    it('should compute isActiveSubscription correctly when subscription is active', async () => {
+    it('should compute canAccessSubscriptionFeatures correctly when subscription is active', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -206,13 +206,14 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
 
-    it('should compute isActiveSubscription as false when subscription is inactive', async () => {
+    it('should compute canAccessSubscriptionFeatures as false when subscription is inactive', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -223,10 +224,11 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(false)
+      expect(canAccessSubscriptionFeatures.value).toBe(false)
     })
 
     it('should format renewal date correctly', async () => {
@@ -604,12 +606,12 @@ describe('useSubscription', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('should report isActiveSubscription as true when not on cloud', () => {
+    it('should report canAccessSubscriptionFeatures as true when not on cloud', () => {
       mockIsCloud.value = false
 
-      const { isActiveSubscription } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures } = useSubscriptionWithScope()
 
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
   })
 

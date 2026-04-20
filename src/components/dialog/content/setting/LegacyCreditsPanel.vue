@@ -16,7 +16,7 @@
           <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
-            v-else-if="isActiveSubscription"
+            v-else-if="canAccessSubscriptionFeatures"
             :loading="loading"
             @click="handlePurchaseCreditsClick"
           >
@@ -137,7 +137,7 @@ const authStore = useAuthStore()
 const authActions = useAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
-const { isActiveSubscription } = useBillingContext()
+const { canAccessSubscriptionFeatures } = useBillingContext()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
