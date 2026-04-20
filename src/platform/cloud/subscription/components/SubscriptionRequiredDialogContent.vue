@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -153,7 +153,7 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { fetchStatus, isActiveSubscription } = useBillingContext()
+const { isActiveSubscription } = useBillingContext()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -174,69 +174,10 @@ const telemetry = useTelemetry()
 // Always show custom pricing table for cloud subscriptions
 const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 
-const POLL_INTERVAL_MS = 3000
-const MAX_POLL_ATTEMPTS = 3
-let pollInterval: number | null = null
-let pollAttempts = 0
-
-const stopPolling = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-}
-
-const startPolling = () => {
-  stopPolling()
-  pollAttempts = 0
-
-  const poll = async () => {
-    try {
-      await fetchStatus()
-      pollAttempts++
-
-      if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-        stopPolling()
-      }
-    } catch (error) {
-      console.error(
-        '[SubscriptionDialog] Failed to poll subscription status',
-        error
-      )
-      stopPolling()
-    }
-  }
-
-  void poll()
-  pollInterval = window.setInterval(() => {
-    void poll()
-  }, POLL_INTERVAL_MS)
-}
-
-const handleWindowFocus = () => {
-  if (showCustomPricingTable.value) {
-    startPolling()
-  }
-}
-
-watch(
-  showCustomPricingTable,
-  (enabled) => {
-    if (enabled) {
-      window.addEventListener('focus', handleWindowFocus)
-    } else {
-      window.removeEventListener('focus', handleWindowFocus)
-      stopPolling()
-    }
-  },
-  { immediate: true }
-)
-
 watch(
   () => isActiveSubscription.value,
   (isActive) => {
     if (isActive && showCustomPricingTable.value) {
-      telemetry?.trackMonthlySubscriptionSucceeded()
       emit('close', true)
     }
   }
@@ -247,7 +188,6 @@ const handleSubscribed = () => {
 }
 
 const handleClose = () => {
-  stopPolling()
   onClose()
 }
 
@@ -268,11 +208,6 @@ const handleViewEnterprise = () => {
   })
   window.open('https://www.comfy.org/cloud/enterprise', '_blank')
 }
-
-onBeforeUnmount(() => {
-  stopPolling()
-  window.removeEventListener('focus', handleWindowFocus)
-})
 </script>
 
 <style scoped>

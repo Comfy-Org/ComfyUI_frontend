@@ -10,6 +10,7 @@ import {
 } from '@/stores/firebaseAuthStore'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -116,9 +117,24 @@ export async function performSubscriptionCheckout(
         ...checkoutAttribution
       })
     }
+
     if (openInNewTab) {
-      window.open(data.checkout_url, '_blank')
+      const checkoutWindow = window.open(data.checkout_url, '_blank')
+      if (!checkoutWindow) {
+        return
+      }
+
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
+      })
     } else {
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
+      })
       globalThis.location.href = data.checkout_url
     }
   }
