@@ -1,22 +1,25 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
 
 // WebGPU globals are not available in happy-dom
 beforeAll(() => {
-  const g = globalThis as Record<string, unknown>
-  g.GPUBufferUsage = {
+  vi.stubGlobal('GPUBufferUsage', {
     VERTEX: 0x0020,
     INDEX: 0x0010,
     COPY_DST: 0x0008,
     UNIFORM: 0x0040
-  }
-  g.GPUTextureUsage = {
+  })
+  vi.stubGlobal('GPUTextureUsage', {
     RENDER_ATTACHMENT: 0x0010,
     TEXTURE_BINDING: 0x0004,
     COPY_SRC: 0x0001
-  }
-  g.GPUShaderStage = { VERTEX: 0x1, FRAGMENT: 0x2 }
+  })
+  vi.stubGlobal('GPUShaderStage', { VERTEX: 0x1, FRAGMENT: 0x2 })
+})
+
+afterAll(() => {
+  vi.unstubAllGlobals()
 })
 
 vi.mock('typegpu', () => ({
