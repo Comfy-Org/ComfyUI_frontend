@@ -69,17 +69,13 @@ function renderComponent(
 }
 
 const getGradientSlider = () => screen.getByTestId('gradient-slider')
-const getNumberInput = (container: Element) =>
-  // eslint-disable-next-line testing-library/no-node-access
-  container.querySelector(
-    'input[inputmode="decimal"], input[inputmode="numeric"]'
-  ) as HTMLInputElement
+const getNumberInput = () => screen.getByRole('spinbutton') as HTMLInputElement
 
 describe('WidgetInputNumberGradientSlider', () => {
   describe('Value and bounds pass-through', () => {
     it('displays initial value in number input', () => {
-      const { container } = renderComponent(makeWidget(42), 42)
-      expect(getNumberInput(container).value).toBe('42')
+      renderComponent(makeWidget(42), 42)
+      expect(getNumberInput().value).toBe('42')
     })
 
     it('passes min and max from widget options to GradientSlider', () => {

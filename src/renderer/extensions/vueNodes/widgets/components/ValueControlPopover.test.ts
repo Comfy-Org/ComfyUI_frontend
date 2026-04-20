@@ -48,7 +48,7 @@ const ButtonStub = defineComponent({
   name: 'Button',
   inheritAttrs: false,
   props: { as: { type: String, default: 'button' } },
-  template: '<label v-bind="$attrs" data-testid="option-row"><slot /></label>'
+  template: '<label v-bind="$attrs"><slot /></label>'
 })
 
 function renderPopover(modelValue: ControlOptions = 'randomize') {
@@ -75,8 +75,8 @@ describe('ValueControlPopover', () => {
 
   describe('Header text from setting store', () => {
     it('shows AFTER copy when Comfy.WidgetControlMode is "after"', () => {
-      mockGet.mockReturnValue('after')
       renderPopover()
+      expect(mockGet).toHaveBeenCalledWith('Comfy.WidgetControlMode')
       expect(screen.getByText('AFTER')).toBeInTheDocument()
       expect(screen.queryByText('BEFORE')).not.toBeInTheDocument()
     })
@@ -84,6 +84,7 @@ describe('ValueControlPopover', () => {
     it('shows BEFORE copy when Comfy.WidgetControlMode is "before"', () => {
       mockGet.mockReturnValue('before')
       renderPopover()
+      expect(mockGet).toHaveBeenCalledWith('Comfy.WidgetControlMode')
       expect(screen.getByText('BEFORE')).toBeInTheDocument()
       expect(screen.queryByText('AFTER')).not.toBeInTheDocument()
     })
