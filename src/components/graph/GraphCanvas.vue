@@ -547,7 +547,10 @@ onMounted(async () => {
 
     vueNodeLifecycle.setupEmptyGraphListener()
   } finally {
-    workspaceStore.spinner = false
+    const deferSpinnerForTemplate = workflowPersistence.hasTemplateIntent()
+    if (!deferSpinnerForTemplate) {
+      workspaceStore.spinner = false
+    }
   }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
@@ -567,10 +570,11 @@ onMounted(async () => {
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  // Load template from URL if present
   if (sharedWorkflowLoadStatus === 'not-present') {
     await workflowPersistence.loadTemplateFromUrlIfPresent()
   }
+
+  workspaceStore.spinner = false
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
