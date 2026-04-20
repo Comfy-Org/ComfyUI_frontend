@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { SelectOption } from '@/components/input/types'
+import type { SelectOption } from '@/components/ui/select/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OwnershipFilterOption } from '@/platform/assets/types/filterTypes'
 import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'

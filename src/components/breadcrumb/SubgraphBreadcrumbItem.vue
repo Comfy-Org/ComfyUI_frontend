@@ -21,7 +21,7 @@
     />
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
     <Tag v-if="item.isBlueprint" value="Blueprint" severity="primary" />
-    <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
+    <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
   </div>
   <Menu
     v-if="isActive || isRoot"

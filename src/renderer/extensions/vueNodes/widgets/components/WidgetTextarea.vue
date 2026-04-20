@@ -10,7 +10,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-xxs text-muted-foreground"
+      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
     >
       {{ displayName }}
     </label>
@@ -23,7 +23,9 @@
         cn(
           WidgetInputBaseClass,
           'size-full resize-none text-xs',
-          !hideLayoutField && 'pt-5'
+          !hideLayoutField && 'pt-5',
+          // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
+          'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
       :placeholder

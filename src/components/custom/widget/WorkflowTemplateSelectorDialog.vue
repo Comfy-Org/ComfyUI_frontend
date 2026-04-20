@@ -265,10 +265,11 @@
                 </template>
                 <template #bottom-right>
                   <template v-if="template.tags && template.tags.length > 0">
-                    <SquareChip
+                    <Tag
                       v-for="tag in template.tags"
                       :key="tag"
                       :label="tag"
+                      shape="overlay"
                     />
                   </template>
                 </template>
@@ -402,10 +403,10 @@ import { useI18n } from 'vue-i18n'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
+import Tag from '@/components/chip/Tag.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import MultiSelect from '@/components/input/MultiSelect.vue'
-import SingleSelect from '@/components/input/SingleSelect.vue'
+import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'

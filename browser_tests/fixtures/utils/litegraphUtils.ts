@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
-import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '../../helpers/manageGroupNode'
-import type { ComfyPage } from '../ComfyPage'
-import type { Position, Size } from '../types'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ManageGroupNode } from '@e2e/helpers/manageGroupNode'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position, Size } from '@e2e/fixtures/types'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {
@@ -332,6 +332,22 @@ export class NodeReference {
   async isCollapsed() {
     return !!(await this.getFlags()).collapsed
   }
+  /**
+   * Toggle the node's collapsed state by simulating the same user interaction
+   * the runtime uses: DOM collapse button click in Vue mode, canvas icon click
+   * in legacy mode. Mode is detected by the presence of a Vue-rendered DOM
+   * element with `data-node-id`.
+   */
+  async toggleCollapse() {
+    const vueLocator = this.comfyPage.page.locator(
+      `[data-node-id="${this.id}"]`
+    )
+    if ((await vueLocator.count()) > 0) {
+      await new VueNodeFixture(vueLocator).toggleCollapse()
+      return
+    }
+    await this.click('collapse')
+  }
   async isBypassed() {
     return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
@@ -356,7 +372,11 @@ export class NodeReference {
   }
   async click(
     position: 'title' | 'collapse',
-    options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
+    options?: {
+      button?: 'left' | 'right' | 'middle'
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+      moveMouseToEmptyArea?: boolean
+    }
   ) {
     let clickPos: Position
     switch (position) {
@@ -377,12 +397,7 @@ export class NodeReference {
       delete options.moveMouseToEmptyArea
     }
 
-    await this.comfyPage.canvas.click({
-      ...options,
-      position: clickPos,
-      force: true
-    })
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.canvasOps.mouseClickAt(clickPos, options)
     if (moveMouseToEmptyArea) {
       await this.comfyPage.canvasOps.moveMouseToEmptyArea()
     }
@@ -390,6 +405,10 @@ export class NodeReference {
   async copy() {
     await this.click('title')
     await this.comfyPage.clipboard.copy()
+  }
+  async delete(): Promise<void> {
+    await this.click('title')
+    await this.comfyPage.page.keyboard.press('Delete')
     await this.comfyPage.nextFrame()
   }
   async connectWidget(
@@ -431,7 +450,6 @@ export class NodeReference {
   async convertToGroupNode(groupNodeName: string = 'GroupNode') {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.nodeOps.fillPromptDialog(groupNodeName)
-    await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
       `workflow>${groupNodeName}`
     )
@@ -494,31 +512,18 @@ export class NodeReference {
 
     await expect(async () => {
       // Try just clicking the enter button first
-      await this.comfyPage.canvas.click({
-        position: { x: 250, y: 250 },
-        force: true
-      })
-      await this.comfyPage.nextFrame()
+      await this.comfyPage.canvasOps.mouseClickAt({ x: 250, y: 250 })
 
-      await this.comfyPage.canvas.click({
-        position: subgraphButtonPos,
-        force: true
-      })
-      await this.comfyPage.nextFrame()
+      await this.comfyPage.canvasOps.mouseClickAt(subgraphButtonPos)
 
       if (await checkIsInSubgraph()) return
 
       for (const position of clickPositions) {
         // Clear any selection first
-        await this.comfyPage.canvas.click({
-          position: { x: 250, y: 250 },
-          force: true
-        })
-        await this.comfyPage.nextFrame()
+        await this.comfyPage.canvasOps.mouseClickAt({ x: 250, y: 250 })
 
         // Double-click to enter subgraph
-        await this.comfyPage.canvas.dblclick({ position, force: true })
-        await this.comfyPage.nextFrame()
+        await this.comfyPage.canvasOps.mouseDblclickAt(position)
 
         if (await checkIsInSubgraph()) return
       }

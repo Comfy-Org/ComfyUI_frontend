@@ -4,6 +4,7 @@ import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
   adjustColor,
   hexToHsva,
+  hexToInt,
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
@@ -92,6 +93,20 @@ describe('colorUtil conversions', () => {
     it('round-trips #hex -> rgb -> #hex', () => {
       const hex = '#123abc'
       expect(rgbToHex(hexToRgb(hex))).toBe('#123abc')
+    })
+  })
+
+  describe('hexToInt', () => {
+    it('converts 6-digit hex to packed integer', () => {
+      expect(hexToInt('#ff0000')).toBe(0xff0000)
+      expect(hexToInt('#00ff00')).toBe(0x00ff00)
+      expect(hexToInt('#45edf5')).toBe(0x45edf5)
+      expect(hexToInt('#000000')).toBe(0)
+    })
+
+    it('converts 3-digit hex to packed integer', () => {
+      expect(hexToInt('#fff')).toBe(0xffffff)
+      expect(hexToInt('#f00')).toBe(0xff0000)
     })
   })
 

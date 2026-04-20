@@ -60,7 +60,7 @@ import type {
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
@@ -332,7 +332,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Cache Firebase auth store composable function.
    */
-  private authStoreComposable?: typeof useFirebaseAuthStore
+  private authStoreComposable?: typeof useAuthStore
 
   reportedUnknownMessageTypes = new Set<string>()
 
@@ -399,8 +399,8 @@ export class ComfyApi extends EventTarget {
   private async getAuthStore() {
     if (isCloud) {
       if (!this.authStoreComposable) {
-        const module = await import('@/stores/firebaseAuthStore')
-        this.authStoreComposable = module.useFirebaseAuthStore
+        const module = await import('@/stores/authStore')
+        this.authStoreComposable = module.useAuthStore
       }
 
       return this.authStoreComposable()
@@ -638,7 +638,7 @@ export class ComfyApi extends EventTarget {
                 let promptId: string | undefined
 
                 if (
-                  this.getClientFeatureFlags()?.supports_progress_text_metadata
+                  this.serverFeatureFlags.value?.supports_progress_text_metadata
                 ) {
                   const promptIdLength = rawView.getUint32(offset)
                   offset += 4

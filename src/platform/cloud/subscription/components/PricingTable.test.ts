@@ -1,11 +1,26 @@
 import { createTestingPinia } from '@pinia/testing'
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
+
+function createDeferredPromise<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+
+  return { promise, resolve }
+}
 
 const mockIsActiveSubscription = ref(false)
 const mockSubscriptionTier = ref<
@@ -20,6 +35,35 @@ const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
+const mockLocalStorage = vi.hoisted(() => {
+  const store = new Map<string, string>()
+
+  return {
+    getItem: vi.fn((key: string) => store.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store.set(key, value)
+    }),
+    removeItem: vi.fn((key: string) => {
+      store.delete(key)
+    }),
+    clear: vi.fn(() => {
+      store.clear()
+    }),
+    __reset: () => {
+      store.clear()
+    }
+  }
+})
+
+Object.defineProperty(window, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
@@ -31,8 +75,8 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
     accessBillingPortal: mockAccessBillingPortal,
     reportError: mockReportError
   })
@@ -56,13 +100,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () =>
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () =>
     reactive({
       getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     }),
-  FirebaseAuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {}
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -131,8 +175,11 @@ const i18n = createI18n({
   }
 })
 
-function createWrapper() {
-  return mount(PricingTable, {
+function renderComponent() {
+  return render(PricingTable, {
+    props: {
+      onChooseTeamWorkspace: onChooseTeamWorkspace
+    },
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       components: {
@@ -140,7 +187,20 @@ function createWrapper() {
       },
       stubs: {
         SelectButton: {
-          template: '<div><slot /></div>',
+          template: `
+            <div>
+              <button
+                v-for="option in options"
+                :key="option.value"
+                type="button"
+                @click="$emit('update:modelValue', option.value)"
+              >
+                <slot name="option" :option="option">
+                  {{ option.label }}
+                </slot>
+              </button>
+            </div>
+          `,
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
         },
@@ -150,6 +210,8 @@ function createWrapper() {
   })
 }
 
+const onChooseTeamWorkspace = vi.fn()
+
 describe('PricingTable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -157,7 +219,10 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
     mockUserId.value = 'user-123'
+    mockAccessBillingPortal.mockReset()
+    mockAccessBillingPortal.mockResolvedValue(true)
     mockTrackBeginCheckout.mockReset()
+    mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
@@ -169,15 +234,15 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const creatorButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Creator'))
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
 
       expect(creatorButton).toBeDefined()
-      await creatorButton?.trigger('click')
+      await userEvent.click(creatorButton!)
       await flushPromises()
 
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
@@ -194,17 +259,77 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const proButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Pro'))
+      const proButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Pro'))
 
-      await proButton?.trigger('click')
+      await userEvent.click(proButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('pro-yearly')
+    })
+
+    it('records the plan snapshot that was actually opened', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+
+      const portalOpen = createDeferredPromise<boolean>()
+      mockAccessBillingPortal.mockReturnValueOnce(portalOpen.promise)
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
+
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      const monthlyToggle = screen.getByRole('button', { name: 'Monthly' })
+      await userEvent.click(monthlyToggle)
+      await flushPromises()
+
+      portalOpen.resolve(true)
+      await flushPromises()
+
+      expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
+      expect(
+        JSON.parse(
+          window.localStorage.getItem(
+            PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+          ) ?? '{}'
+        )
+      ).toMatchObject({
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'change',
+        previous_tier: 'standard',
+        previous_cycle: 'monthly'
+      })
+    })
+
+    it('does not record a pending upgrade when the billing portal does not open', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+      mockAccessBillingPortal.mockResolvedValueOnce(false)
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
+
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      expect(
+        window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
     })
 
     it('should use the latest userId value when it changes after mount', async () => {
@@ -212,16 +337,16 @@ describe('PricingTable', () => {
       mockSubscriptionTier.value = 'STANDARD'
       mockUserId.value = 'user-early'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
       mockUserId.value = 'user-late'
 
-      const creatorButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Creator'))
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
 
-      await creatorButton?.trigger('click')
+      await userEvent.click(creatorButton!)
       await flushPromises()
 
       expect(mockTrackBeginCheckout).toHaveBeenCalledTimes(1)
@@ -238,14 +363,14 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'CREATOR'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const currentPlanButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Current Plan'))
+      const currentPlanButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Current Plan'))
 
-      await currentPlanButton?.trigger('click')
+      await userEvent.click(currentPlanButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).not.toHaveBeenCalled()
@@ -258,14 +383,14 @@ describe('PricingTable', () => {
         .spyOn(window, 'open')
         .mockImplementation(() => null)
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const subscribeButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Subscribe'))
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
 
-      await subscribeButton?.trigger('click')
+      await userEvent.click(subscribeButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).not.toHaveBeenCalled()
@@ -285,14 +410,14 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'PRO'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const standardButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Standard'))
+      const standardButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Standard'))
 
-      await standardButton?.trigger('click')
+      await userEvent.click(standardButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
@@ -301,17 +426,17 @@ describe('PricingTable', () => {
 
   describe('team workspace link', () => {
     it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const teamLink = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Need team workspace?'))
+      const teamLink = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Need team workspace?'))
 
       expect(teamLink).toBeDefined()
-      await teamLink?.trigger('click')
+      await userEvent.click(teamLink!)
 
-      expect(wrapper.emitted('chooseTeamWorkspace')).toHaveLength(1)
+      expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
     })
   })
 })

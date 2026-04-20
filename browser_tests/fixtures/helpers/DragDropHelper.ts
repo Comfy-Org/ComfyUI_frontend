@@ -2,22 +2,13 @@ import { readFileSync } from 'fs'
 
 import type { Page } from '@playwright/test'
 
-import type { Position } from '../types'
-import { getMimeType } from './mimeTypeUtil'
+import type { Position } from '@e2e/fixtures/types'
+import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class DragDropHelper {
-  constructor(
-    private readonly page: Page,
-    private readonly assetPath: (fileName: string) => string
-  ) {}
-
-  private async nextFrame(): Promise<void> {
-    await this.page.evaluate(() => {
-      return new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve())
-      })
-    })
-  }
+  constructor(private readonly page: Page) {}
 
   async dragAndDropExternalResource(
     options: {
@@ -25,13 +16,15 @@ export class DragDropHelper {
       url?: string
       dropPosition?: Position
       waitForUpload?: boolean
+      preserveNativePropagation?: boolean
     } = {}
   ): Promise<void> {
     const {
       dropPosition = { x: 100, y: 100 },
       fileName,
       url,
-      waitForUpload = false
+      waitForUpload = false,
+      preserveNativePropagation = false
     } = options
 
     if (!fileName && !url)
@@ -43,10 +36,11 @@ export class DragDropHelper {
       fileType?: string
       buffer?: Uint8Array | number[]
       url?: string
-    } = { dropPosition }
+      preserveNativePropagation: boolean
+    } = { dropPosition, preserveNativePropagation }
 
     if (fileName) {
-      const filePath = this.assetPath(fileName)
+      const filePath = assetPath(fileName)
       const buffer = readFileSync(filePath)
 
       evaluateParams.fileName = fileName
@@ -115,15 +109,17 @@ export class DragDropHelper {
         )
       }
 
-      Object.defineProperty(dropEvent, 'preventDefault', {
-        value: () => {},
-        writable: false
-      })
+      if (!params.preserveNativePropagation) {
+        Object.defineProperty(dropEvent, 'preventDefault', {
+          value: () => {},
+          writable: false
+        })
 
-      Object.defineProperty(dropEvent, 'stopPropagation', {
-        value: () => {},
-        writable: false
-      })
+        Object.defineProperty(dropEvent, 'stopPropagation', {
+          value: () => {},
+          writable: false
+        })
+      }
 
       targetElement.dispatchEvent(dragOverEvent)
       targetElement.dispatchEvent(dropEvent)
@@ -142,7 +138,7 @@ export class DragDropHelper {
       await uploadResponsePromise
     }
 
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async dragAndDropFile(
@@ -154,7 +150,10 @@ export class DragDropHelper {
 
   async dragAndDropURL(
     url: string,
-    options: { dropPosition?: Position } = {}
+    options: {
+      dropPosition?: Position
+      preserveNativePropagation?: boolean
+    } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ url, ...options })
   }
