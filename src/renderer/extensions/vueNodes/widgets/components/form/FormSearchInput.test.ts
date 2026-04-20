@@ -19,18 +19,29 @@ const i18n = createI18n({
   }
 })
 
+type Searcher = (
+  query: string,
+  onCleanup: (fn: () => void) => void
+) => Promise<void>
+
 function renderSearch(
   initialQuery: string = '',
-  searcher?: (query: string) => Promise<void>
+  searcher?: Searcher,
+  updateKey?: { value: unknown }
 ) {
   const query = ref(initialQuery)
+  const key = updateKey
   const Harness = defineComponent({
     components: { FormSearchInput },
-    setup: () => ({ query, searcher }),
-    template: '<FormSearchInput v-model="query" :searcher="searcher" />'
+    setup: () => ({ query, searcher, key }),
+    template: `<FormSearchInput
+      v-model="query"
+      :searcher="searcher"
+      :update-key="key"
+    />`
   })
   const utils = render(Harness, { global: { plugins: [i18n] } })
-  return { ...utils, query }
+  return { ...utils, query, key }
 }
 
 describe('FormSearchInput', () => {
@@ -106,6 +117,48 @@ describe('FormSearchInput', () => {
       await vi.advanceTimersByTimeAsync(300)
       expect(searcher).toHaveBeenCalledTimes(1)
       expect(searcher.mock.calls[0][0]).toBe('abc')
+    })
+  })
+
+  describe('updateKey refresh', () => {
+    it('reruns the searcher when updateKey changes even if the query is unchanged', async () => {
+      const searcher = vi.fn(async () => {})
+      const updateKey = ref(1)
+      renderSearch('query', searcher, updateKey)
+      await vi.advanceTimersByTimeAsync(0)
+      searcher.mockClear()
+
+      updateKey.value = 2
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(searcher).toHaveBeenCalledTimes(1)
+      expect(searcher.mock.calls[0][0]).toBe('query')
+    })
+  })
+
+  describe('Stale-result cancellation via onCleanup', () => {
+    it('invokes the cleanup registered by a superseded search before starting the next one', async () => {
+      const cleanupA = vi.fn()
+      const cleanupB = vi.fn()
+      let call = 0
+      const searcher: Searcher = async (_q, onCleanup) => {
+        const current = ++call
+        onCleanup(current === 1 ? cleanupA : cleanupB)
+      }
+
+      const { query } = renderSearch('', searcher)
+      await vi.advanceTimersByTimeAsync(0)
+      // First call registered its cleanup
+      expect(cleanupA).not.toHaveBeenCalled()
+
+      // Supersede it with a new query
+      query.value = 'next'
+      await vi.advanceTimersByTimeAsync(300)
+
+      // The first search's cleanup must run before the second registers its own
+      expect(cleanupA).toHaveBeenCalledTimes(1)
+      // Latest active search's cleanup has not fired yet
+      expect(cleanupB).not.toHaveBeenCalled()
     })
   })
 })

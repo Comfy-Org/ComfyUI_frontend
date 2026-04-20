@@ -1,6 +1,6 @@
 /* eslint-disable vue/one-component-per-file */
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -91,6 +91,80 @@ describe('WidgetLayoutField', () => {
       render(Harness)
       const el = screen.getByTestId('slot-border')
       expect(el.dataset.border).toContain('custom-border')
+    })
+  })
+
+  describe('Pointer-event isolation', () => {
+    // The slot wrapper stops pointerdown/move/up so inner controls can capture
+    // drags without triggering node selection/drag on the outer canvas.
+    function renderInsideParent(
+      onParentPointer: (type: string) => void
+    ) {
+      const Harness = defineComponent({
+        components: { WidgetLayoutField },
+        setup: () => ({
+          widget: { name: 'seed' },
+          onDown: () => onParentPointer('pointerdown'),
+          onMove: () => onParentPointer('pointermove'),
+          onUp: () => onParentPointer('pointerup')
+        }),
+        template: `
+          <div
+            data-testid="parent"
+            @pointerdown="onDown"
+            @pointermove="onMove"
+            @pointerup="onUp"
+          >
+            <WidgetLayoutField :widget="widget">
+              <input data-testid="inner-input" />
+            </WidgetLayoutField>
+          </div>
+        `
+      })
+      return render(Harness)
+    }
+
+    it.for([
+      ['pointerdown', fireEvent.pointerDown],
+      ['pointermove', fireEvent.pointerMove],
+      ['pointerup', fireEvent.pointerUp]
+    ] as const)(
+      'stops %s from propagating to the parent',
+      async ([, dispatch]) => {
+        const parentSpy = vi.fn<(type: string) => void>()
+        renderInsideParent(parentSpy)
+
+        const inner = screen.getByTestId('inner-input')
+        await dispatch(inner)
+
+        expect(parentSpy).not.toHaveBeenCalled()
+      }
+    )
+
+    it('still allows the inner control itself to observe the event', async () => {
+      const parentSpy = vi.fn<(type: string) => void>()
+      const innerSpy = vi.fn()
+      const Harness = defineComponent({
+        components: { WidgetLayoutField },
+        setup: () => ({
+          widget: { name: 'seed' },
+          onParent: (t: string) => parentSpy(t),
+          onInner: () => innerSpy()
+        }),
+        template: `
+          <div data-testid="parent" @pointerdown="onParent('pointerdown')">
+            <WidgetLayoutField :widget="widget">
+              <input data-testid="inner-input" @pointerdown="onInner" />
+            </WidgetLayoutField>
+          </div>
+        `
+      })
+      render(Harness)
+
+      await fireEvent.pointerDown(screen.getByTestId('inner-input'))
+
+      expect(innerSpy).toHaveBeenCalledTimes(1)
+      expect(parentSpy).not.toHaveBeenCalled()
     })
   })
 })
