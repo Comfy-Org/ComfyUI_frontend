@@ -569,11 +569,13 @@ onMounted(async () => {
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
+  let templateLoadAttempted = false
   if (sharedWorkflowLoadStatus === 'not-present') {
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
+    templateLoadAttempted =
+      await workflowPersistence.loadTemplateFromUrlIfPresent()
   }
 
-  if (workflowPersistence.hasTemplateIntent()) {
+  if (templateLoadAttempted) {
     workspaceStore.spinner = false
   }
 
