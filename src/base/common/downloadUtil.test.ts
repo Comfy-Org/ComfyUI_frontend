@@ -2,9 +2,11 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  assertValidDownloadUrl,
   downloadFile,
   downloadFileAsync,
   extractFilenameFromContentDisposition,
+  inferDownloadFilename,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
 
@@ -364,6 +366,47 @@ describe('downloadUtil', () => {
     it('throws synchronously for invalid URLs', async () => {
       await expect(downloadFileAsync('')).rejects.toThrow(
         'Invalid URL provided for download'
+      )
+    })
+  })
+
+  describe('assertValidDownloadUrl', () => {
+    it('throws for empty string', () => {
+      expect(() => assertValidDownloadUrl('')).toThrow(
+        'Invalid URL provided for download'
+      )
+    })
+
+    it('throws for whitespace-only string', () => {
+      expect(() => assertValidDownloadUrl('   ')).toThrow(
+        'Invalid URL provided for download'
+      )
+    })
+
+    it('does not throw for valid URL', () => {
+      expect(() => assertValidDownloadUrl('https://example.com')).not.toThrow()
+    })
+  })
+
+  describe('inferDownloadFilename', () => {
+    it('prefers explicit filename over URL extraction', () => {
+      expect(
+        inferDownloadFilename(
+          'https://example.com/file?filename=url-name.png',
+          'explicit.png'
+        )
+      ).toBe('explicit.png')
+    })
+
+    it('falls back to URL filename parameter', () => {
+      expect(
+        inferDownloadFilename('https://example.com/file?filename=url-name.png')
+      ).toBe('url-name.png')
+    })
+
+    it('falls back to default when no filename available', () => {
+      expect(inferDownloadFilename('https://example.com/file')).toBe(
+        'download.png'
       )
     })
   })

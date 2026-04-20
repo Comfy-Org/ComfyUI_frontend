@@ -132,7 +132,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDownload } from '@/composables/useDownload'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -147,7 +147,23 @@ const props = defineProps<VideoPreviewProps>()
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
-const { loading: downloading, download } = useDownload()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  execute: download
+} = useDownloadFile()
+
+watch(downloadError, (err) => {
+  if (err) {
+    useToast().add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadVideo'),
+      life: 3000,
+      group: 'video-preview'
+    })
+  }
+})
 
 const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
@@ -209,15 +225,7 @@ const handleVideoError = () => {
 }
 
 const handleDownload = () => {
-  void download(currentVideoUrl.value).catch(() => {
-    useToast().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadVideo'),
-      life: 3000,
-      group: 'video-preview'
-    })
-  })
+  void download(currentVideoUrl.value)
 }
 
 const handleRemove = () => {

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFileAsync } from '@/base/common/downloadUtil'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { useDownload } from '@/composables/useDownload'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -27,7 +27,11 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 const { t } = useI18n()
 const toastStore = useToastStore()
 const mediaActions = useMediaAssetActions()
-const { loading: downloading, download } = useDownload()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  execute: download
+} = useDownloadFile()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
@@ -42,6 +46,16 @@ const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
+
+watch(downloadError, (err) => {
+  if (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  }
+})
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -79,13 +93,7 @@ async function downloadAsset(item?: AssetItem) {
 
 function handleSingleDownload() {
   if (!selectedOutput.value?.url) return
-  void download(selectedOutput.value.url).catch(() => {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
-    })
-  })
+  void download(selectedOutput.value.url)
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {

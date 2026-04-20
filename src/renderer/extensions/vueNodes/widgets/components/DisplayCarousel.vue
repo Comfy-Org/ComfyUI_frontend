@@ -175,7 +175,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDownload } from '@/composables/useDownload'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -209,7 +209,21 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
-const { loading: downloading, download } = useDownload()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  execute: download
+} = useDownloadFile()
+
+watch(downloadError, (err) => {
+  if (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  }
+})
 
 const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
@@ -362,13 +376,7 @@ function handleEditMask() {
 function handleDownload() {
   const src = activeItem.value ? getItemSrc(activeItem.value) : ''
   if (!src) return
-  void download(src).catch(() => {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
-    })
-  })
+  void download(src)
 }
 
 function handleRemove() {

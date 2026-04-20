@@ -178,7 +178,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { useDownload } from '@/composables/useDownload'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -198,7 +198,21 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
-const { loading: downloading, download } = useDownload()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  execute: download
+} = useDownloadFile()
+
+watch(downloadError, (err) => {
+  if (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  }
+})
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -296,13 +310,7 @@ function handleEditMask() {
 }
 
 function handleDownload() {
-  void download(currentImageUrl.value).catch(() => {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
-    })
-  })
+  void download(currentImageUrl.value)
 }
 
 function setCurrentIndex(index: number) {

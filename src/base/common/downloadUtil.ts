@@ -10,6 +10,16 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
 
+export function assertValidDownloadUrl(url: string): void {
+  if (!url || typeof url !== 'string' || url.trim().length === 0) {
+    throw new Error('Invalid URL provided for download')
+  }
+}
+
+export function inferDownloadFilename(url: string, filename?: string): string {
+  return filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+}
+
 /**
  * Trigger a download by creating a temporary anchor element
  * @param href - The URL or blob URL to download
@@ -35,12 +45,8 @@ function triggerLinkDownload(href: string, filename: string): void {
  * @throws {Error} If the URL is invalid or empty
  */
 export function downloadFile(url: string, filename?: string): void {
-  if (!url || typeof url !== 'string' || url.trim().length === 0) {
-    throw new Error('Invalid URL provided for download')
-  }
-
-  const inferredFilename =
-    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+  assertValidDownloadUrl(url)
+  const inferredFilename = inferDownloadFilename(url, filename)
 
   if (isCloud) {
     // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
@@ -66,12 +72,8 @@ export async function downloadFileAsync(
   url: string,
   filename?: string
 ): Promise<void> {
-  if (!url || typeof url !== 'string' || url.trim().length === 0) {
-    throw new Error('Invalid URL provided for download')
-  }
-
-  const inferredFilename =
-    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+  assertValidDownloadUrl(url)
+  const inferredFilename = inferDownloadFilename(url, filename)
 
   if (isCloud) {
     try {

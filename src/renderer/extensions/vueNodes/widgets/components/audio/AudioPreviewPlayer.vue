@@ -153,21 +153,35 @@
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
 import { useToast } from 'primevue/usetoast'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useDownload } from '@/composables/useDownload'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 import { cn } from '@/utils/tailwindUtil'
 
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 const toast = useToast()
-const { loading: downloading, download } = useDownload()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  execute: download
+} = useDownloadFile()
+
+watch(downloadError, (err) => {
+  if (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadFile')
+    })
+  }
+})
 
 const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
   hideWhenEmpty?: boolean
@@ -210,13 +224,7 @@ const togglePlayPause = () => {
 
 const handleDownload = () => {
   if (!modelValue.value) return
-  void download(modelValue.value).catch(() => {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
-  })
+  void download(modelValue.value)
 }
 
 const toggleMute = () => {
