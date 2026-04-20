@@ -24,6 +24,7 @@
           <i
             v-if="jobState"
             data-testid="job-state-indicator"
+            role="status"
             :data-state="jobState"
             :aria-label="jobStateLabel"
             :class="
@@ -86,7 +87,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -102,6 +103,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
+import type { WorkflowStatus } from '@/stores/executionStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
@@ -186,20 +188,15 @@ const jobState = computed(() => {
   return executionStore.workflowStatus.get(path) ?? null
 })
 
-const jobStateLabelMap: Record<string, string> = {
+const jobStateI18nKeys: Record<WorkflowStatus, string> = {
   running: 'g.running',
   completed: 'g.completed',
   failed: 'g.failed'
 }
 
 const jobStateLabel = computed(() =>
-  jobState.value ? t(jobStateLabelMap[jobState.value]) : undefined
+  jobState.value ? t(jobStateI18nKeys[jobState.value]) : undefined
 )
-
-watch(isActiveTab, (isActive) => {
-  const path = props.workflowOption.workflow.path
-  if (isActive && path) executionStore.clearWorkflowStatus(path)
-})
 
 const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
@@ -233,8 +230,6 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
       // User clicked cancel
       break
     }
-    const path = opt.workflow.path
-    if (path) executionStore.clearWorkflowStatus(path)
   }
 }
 

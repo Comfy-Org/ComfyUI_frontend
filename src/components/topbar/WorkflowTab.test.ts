@@ -1,13 +1,19 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import { nextTick, reactive } from 'vue'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowStatus } from '@/stores/executionStore'
+
+const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
+  const { shallowRef } = await import('vue')
+  return {
+    mockWorkflowStatus: shallowRef<Map<string, WorkflowStatus>>(new Map()),
+    mockCloseWorkflow: vi.fn().mockResolvedValue(true)
+  }
+})
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: () => ({
@@ -17,33 +23,13 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   })
 }))
 
-const mockExecutionStore = reactive({
-  workflowStatus: new Map<string, WorkflowStatus>(),
-  clearWorkflowStatus: vi.fn()
-})
-
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: () => mockExecutionStore
-}))
-
-vi.mock('reka-ui', () => {
-  const passthrough = {
-    render() {
-      return (
-        this as unknown as { $slots: { default?: () => unknown } }
-      ).$slots.default?.()
+  useExecutionStore: () => ({
+    get workflowStatus() {
+      return mockWorkflowStatus.value
     }
-  }
-  return {
-    ContextMenuRoot: passthrough,
-    ContextMenuTrigger: passthrough,
-    ContextMenuContent: passthrough,
-    ContextMenuItem: passthrough,
-    ContextMenuPortal: passthrough,
-    ContextMenuSeparator: passthrough,
-    Primitive: passthrough
-  }
-})
+  })
+}))
 
 vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
   usePragmaticDraggable: vi.fn(),
@@ -56,7 +42,6 @@ vi.mock('@/composables/useWorkflowActionsMenu', () => ({
   })
 }))
 
-const mockCloseWorkflow = vi.fn().mockResolvedValue(true)
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
     closeWorkflow: mockCloseWorkflow
@@ -74,14 +59,23 @@ vi.mock('./WorkflowTabPopover.vue', () => ({
 }))
 
 import WorkflowTab from './WorkflowTab.vue'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
+
+const statusAriaLabels: Record<WorkflowStatus, string> = {
+  running: 'Running',
+  completed: 'Completed',
+  failed: 'Failed'
+}
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { close: 'Close' } } }
+  messages: {
+    en: {
+      g: { close: 'Close', ...statusAriaLabels }
+    }
+  }
 })
 
 function makeWorkflowOption(overrides: Record<string, unknown> = {}) {
@@ -141,21 +135,21 @@ function findIndicator(wrapper: ReturnType<typeof mountTab>) {
 
 describe('WorkflowTab - job state indicator', () => {
   beforeEach(() => {
-    mockExecutionStore.workflowStatus = new Map()
-    mockExecutionStore.clearWorkflowStatus.mockClear()
+    mockWorkflowStatus.value = new Map()
+    mockCloseWorkflow.mockClear()
   })
 
   it.for(['running', 'completed', 'failed'] as const)(
-    'shows %s indicator from store',
+    'shows %s indicator from store with translated aria-label',
     (status) => {
-      mockExecutionStore.workflowStatus = new Map([
-        ['/workflows/test.json', status]
-      ])
+      mockWorkflowStatus.value = new Map([['/workflows/test.json', status]])
 
       const wrapper = mountTab()
       const indicator = findIndicator(wrapper)
       expect(indicator.exists()).toBe(true)
       expect(indicator.attributes('data-state')).toBe(status)
+      expect(indicator.attributes('role')).toBe('status')
+      expect(indicator.attributes('aria-label')).toBe(statusAriaLabels[status])
     }
   )
 
@@ -170,18 +164,14 @@ describe('WorkflowTab - job state indicator', () => {
   })
 
   it('does not show job indicator on active tab', () => {
-    mockExecutionStore.workflowStatus = new Map([
-      ['/workflows/test.json', 'completed']
-    ])
+    mockWorkflowStatus.value = new Map([['/workflows/test.json', 'completed']])
 
     const wrapper = mountTab({ activeWorkflowKey: 'test-key' })
     expect(findIndicator(wrapper).exists()).toBe(false)
   })
 
   it('job state replaces unsaved dot', () => {
-    mockExecutionStore.workflowStatus = new Map([
-      ['/workflows/test.json', 'running']
-    ])
+    mockWorkflowStatus.value = new Map([['/workflows/test.json', 'running']])
 
     const wrapper = mountTab({
       workflowOverrides: { isPersisted: false }
@@ -191,34 +181,13 @@ describe('WorkflowTab - job state indicator', () => {
     expect(indicator.attributes('data-state')).toBe('running')
   })
 
-  it('clears workflow status when tab becomes active', async () => {
-    mockExecutionStore.workflowStatus = new Map([
-      ['/workflows/test.json', 'completed']
-    ])
-
-    const wrapper = mountTab()
-    expect(findIndicator(wrapper).exists()).toBe(true)
-
-    const workflowStore = useWorkflowStore()
-    workflowStore.activeWorkflow = {
-      key: 'test-key'
-    } satisfies Partial<LoadedComfyWorkflow> as LoadedComfyWorkflow
-    await nextTick()
-
-    expect(mockExecutionStore.clearWorkflowStatus).toHaveBeenCalledWith(
-      '/workflows/test.json'
-    )
-  })
-
-  it('clears workflow status when close succeeds', async () => {
-    mockCloseWorkflow.mockResolvedValue(true)
-
+  it('delegates close to workflow service with the tab workflow', async () => {
     const wrapper = mountTab()
     await wrapper.find('button[aria-label="Close"]').trigger('click')
 
-    expect(mockCloseWorkflow).toHaveBeenCalled()
-    expect(mockExecutionStore.clearWorkflowStatus).toHaveBeenCalledWith(
-      '/workflows/test.json'
+    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'test-key' }),
+      expect.anything()
     )
   })
 })

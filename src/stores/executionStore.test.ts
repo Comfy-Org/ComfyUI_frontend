@@ -1,14 +1,27 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
-// Create mock functions that will be shared
-const mockNodeExecutionIdToNodeLocatorId = vi.fn()
-const mockNodeIdToNodeLocatorId = vi.fn()
-const mockNodeLocatorIdToNodeExecutionId = vi.fn()
+const {
+  mockNodeExecutionIdToNodeLocatorId,
+  mockNodeIdToNodeLocatorId,
+  mockNodeLocatorIdToNodeExecutionId,
+  mockActiveWorkflow,
+  mockOpenWorkflows
+} = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return {
+    mockNodeExecutionIdToNodeLocatorId: vi.fn(),
+    mockNodeIdToNodeLocatorId: vi.fn(),
+    mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+    mockActiveWorkflow: ref<{ path?: string } | null>(null),
+    mockOpenWorkflows: ref<{ path: string }[]>([])
+  }
+})
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
@@ -25,7 +38,13 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: vi.fn(() => ({
       nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+      get activeWorkflow() {
+        return mockActiveWorkflow.value
+      },
+      get openWorkflows() {
+        return mockOpenWorkflows.value
+      }
     }))
   }
 })
@@ -466,6 +485,16 @@ describe('useExecutionStore - workflowStatus', () => {
     )
   }
 
+  function fireExecutionInterrupted(jobId: string) {
+    const handler = apiEventHandlers.get('execution_interrupted')
+    if (!handler) throw new Error('execution_interrupted handler not bound')
+    handler(
+      new CustomEvent('execution_interrupted', {
+        detail: { prompt_id: jobId }
+      })
+    )
+  }
+
   function callStoreJob(jobId: string, workflowPath: string) {
     store.storeJob({
       nodes: ['1'],
@@ -479,6 +508,8 @@ describe('useExecutionStore - workflowStatus', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     apiEventHandlers.clear()
+    mockActiveWorkflow.value = null
+    mockOpenWorkflows.value = []
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
@@ -511,6 +542,14 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
   })
 
+  it('does not set running when job was interrupted before HTTP arrives', () => {
+    fireExecutionStart('job-1')
+    fireExecutionInterrupted('job-1')
+
+    callStoreJob('job-1', '/workflows/a.json')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
+  })
+
   it('sets completed on execution_success', () => {
     callStoreJob('job-1', '/workflows/a.json')
     fireExecutionStart('job-1')
@@ -527,14 +566,45 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.workflowStatus.get('/workflows/a.json')).toBe('failed')
   })
 
-  it('clearWorkflowStatus removes the entry', () => {
+  it('sets failed on execution_interrupted', () => {
     callStoreJob('job-1', '/workflows/a.json')
     fireExecutionStart('job-1')
-    fireExecutionSuccess('job-1')
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('completed')
+    fireExecutionInterrupted('job-1')
 
-    store.clearWorkflowStatus('/workflows/a.json')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('failed')
+  })
+
+  it('ignores status events for unknown prompt ids', () => {
+    fireExecutionSuccess('unknown-job')
+    expect(store.workflowStatus.size).toBe(0)
+  })
+
+  it('clears only the active workflow status, leaving others intact', async () => {
+    callStoreJob('job-a', '/workflows/a.json')
+    callStoreJob('job-b', '/workflows/b.json')
+    fireExecutionStart('job-a')
+    fireExecutionSuccess('job-a')
+    fireExecutionStart('job-b')
+    fireExecutionSuccess('job-b')
+
+    mockActiveWorkflow.value = { path: '/workflows/a.json' }
+    await nextTick()
+
     expect(store.workflowStatus.has('/workflows/a.json')).toBe(false)
+    expect(store.workflowStatus.get('/workflows/b.json')).toBe('completed')
+  })
+
+  it('prunes only closed workflows, leaving open ones intact', async () => {
+    callStoreJob('job-a', '/workflows/a.json')
+    callStoreJob('job-b', '/workflows/b.json')
+    fireExecutionSuccess('job-a')
+    fireExecutionSuccess('job-b')
+
+    mockOpenWorkflows.value = [{ path: '/workflows/b.json' }]
+    await nextTick()
+
+    expect(store.workflowStatus.has('/workflows/a.json')).toBe(false)
+    expect(store.workflowStatus.get('/workflows/b.json')).toBe('completed')
   })
 })
 

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -84,24 +84,50 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /**
    * Per-workflow-path execution status for the current session.
-   * Updated by WebSocket event handlers; cleared by the UI when viewed.
+   * Updated by WebSocket event handlers; cleared automatically when the
+   * workflow becomes active or is closed.
    */
   const workflowStatus = shallowRef<Map<string, WorkflowStatus>>(new Map())
+
+  function mutateStatus(mutator: (map: Map<string, WorkflowStatus>) => void) {
+    const next = new Map(workflowStatus.value)
+    mutator(next)
+    workflowStatus.value = next
+  }
 
   function setWorkflowStatus(jobId: string, status: WorkflowStatus) {
     const path = jobIdToSessionWorkflowPath.value.get(jobId)
     if (!path) return
-    const next = new Map(workflowStatus.value)
-    next.set(path, status)
-    workflowStatus.value = next
+    mutateStatus((m) => m.set(path, status))
   }
 
   function clearWorkflowStatus(path: string) {
     if (!workflowStatus.value.has(path)) return
-    const next = new Map(workflowStatus.value)
-    next.delete(path)
-    workflowStatus.value = next
+    mutateStatus((m) => m.delete(path))
   }
+
+  // Clear status when a workflow becomes active — the user has seen it.
+  watch(
+    () => workflowStore.activeWorkflow?.path,
+    (path) => {
+      if (path) clearWorkflowStatus(path)
+    }
+  )
+
+  // Prune statuses for workflows that have been closed.
+  watch(
+    () => workflowStore.openWorkflows,
+    (openWorkflows) => {
+      if (workflowStatus.value.size === 0) return
+      const openPaths = new Set(openWorkflows.map((w) => w.path))
+      const filtered = new Map(
+        [...workflowStatus.value].filter(([path]) => openPaths.has(path))
+      )
+      if (filtered.size !== workflowStatus.value.size) {
+        workflowStatus.value = filtered
+      }
+    }
+  )
 
   /**
    * Cache for executionIdToNodeLocatorId lookups.
@@ -606,10 +632,10 @@ export const useExecutionStore = defineStore('execution', () => {
     // If this job is still executing, mark the workflow as running.
     // Handles the race where handleExecutionStart fired before the path
     // mapping existed (WebSocket arrived before the HTTP response).
+    // The `has(path)` guard prevents overwriting a terminal status written
+    // by a late-arriving WS event for a job that already completed.
     if (activeJobId.value === jobId && !workflowStatus.value.has(path)) {
-      const nextStatus = new Map(workflowStatus.value)
-      nextStatus.set(path, 'running')
-      workflowStatus.value = nextStatus
+      mutateStatus((m) => m.set(path, 'running'))
     }
   }
 
@@ -690,7 +716,6 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
     ensureSessionWorkflowPath,
-    workflowStatus,
-    clearWorkflowStatus
+    workflowStatus
   }
 })
