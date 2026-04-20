@@ -52,8 +52,7 @@ const PopoverStub = defineComponent({
       this.open = false
     }
   },
-  template:
-    '<div data-testid="popover-body" v-if="open"><slot /></div>'
+  template: '<div data-testid="popover-body" v-if="open"><slot /></div>'
 })
 
 const sortOptions: SortOption[] = [
