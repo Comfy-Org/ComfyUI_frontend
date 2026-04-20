@@ -120,7 +120,7 @@ const plans: PricingPlan[] = [
 const standardPlans = plans.filter((p) => !p.isEnterprise)
 const enterprisePlan = plans.find((p) => p.isEnterprise)!
 
-const activePlanIndex = ref<number | null>(null)
+const activePlanIndex = ref(0)
 </script>
 
 <template>
@@ -150,7 +150,7 @@ const activePlanIndex = ref<number | null>(null)
               : 'bg-transparency-white-t4 text-primary-comfy-canvas'
           )
         "
-        @click="activePlanIndex = activePlanIndex === index ? null : index"
+        @click="activePlanIndex = index"
       >
         <span class="ppformula-text-center">
           {{ t(plan.labelKey, locale) }}
@@ -285,14 +285,7 @@ const activePlanIndex = ref<number | null>(null)
       <div
         v-for="(plan, index) in plans"
         :key="plan.id"
-        :class="
-          cn(
-            'flex-col',
-            activePlanIndex !== null && activePlanIndex !== index
-              ? 'hidden'
-              : 'flex'
-          )
-        "
+        :class="cn('flex-col', activePlanIndex !== index ? 'hidden' : 'flex')"
       >
         <!-- Main info card -->
         <div class="bg-transparency-white-t4 rounded-3xl p-6">
