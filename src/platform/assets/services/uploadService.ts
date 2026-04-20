@@ -2,12 +2,12 @@ import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { ImageRef } from '@/stores/maskEditorDataStore'
 
-interface UploadInput {
+export interface UploadInput {
   source: File | Blob | string
   filename?: string
 }
 
-interface UploadConfig {
+export interface UploadConfig {
   subfolder?: string
   type?: ResultItemType
   endpoint?: '/upload/image' | '/upload/mask'
@@ -15,13 +15,13 @@ interface UploadConfig {
   maxSizeMB?: number
 }
 
-interface UploadApiResponse {
+export interface UploadApiResponse {
   name: string
   subfolder?: string
   type?: string
 }
 
-interface UploadResult {
+export interface UploadResult {
   success: boolean
   path: string
   name: string

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
 
@@ -17,6 +18,7 @@ interface Props {
   uploadable: boolean
   disabled: boolean
   accept?: string
+  loading?: boolean
 }
 
 const {
@@ -28,7 +30,8 @@ const {
   maxSelectable,
   uploadable,
   disabled,
-  accept
+  accept,
+  loading = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -36,15 +39,19 @@ const emit = defineEmits<{
   (e: 'file-change', event: Event): void
 }>()
 
+const { t } = useI18n()
+
 const selectedItems = computed(() => {
   const itemsToSearch = displayItems ?? items
   return itemsToSearch.filter((item) => selected.has(item.id))
 })
 
+const triggerDisabled = computed(() => disabled || loading)
+
 const theButtonStyle = computed(() =>
   cn(
     'border-0 bg-component-node-widget-background text-text-secondary outline-none',
-    disabled
+    triggerDisabled.value
       ? 'cursor-not-allowed'
       : 'cursor-pointer hover:bg-component-node-widget-background-hovered',
     selectedItems.value.length > 0 && 'text-text-primary'
@@ -56,7 +63,8 @@ const theButtonStyle = computed(() =>
   <div
     :class="
       cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'cursor-not-allowed opacity-50 outline-node-component-border': disabled
+        'cursor-not-allowed opacity-50 outline-node-component-border':
+          triggerDisabled
       })
     "
   >
@@ -71,10 +79,13 @@ const theButtonStyle = computed(() =>
           }
         )
       "
+      :disabled="triggerDisabled"
+      :aria-busy="loading || undefined"
       @click="emit('select-click', $event)"
     >
       <span class="min-w-0 flex-1 truncate px-1 py-2 text-left">
-        <span v-if="!selectedItems.length">
+        <span v-if="loading">{{ t('g.loading') }}...</span>
+        <span v-else-if="!selectedItems.length">
           {{ placeholder }}
         </span>
         <span v-else>
@@ -96,17 +107,27 @@ const theButtonStyle = computed(() =>
       :class="
         cn(
           theButtonStyle,
-          'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border'
+          'relative flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border',
+          loading && 'cursor-wait'
         )
       "
+      :aria-busy="loading || undefined"
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i
+        :class="
+          cn(
+            'size-4',
+            loading
+              ? 'icon-[lucide--loader-circle] animate-spin'
+              : 'icon-[lucide--folder-search]'
+          )
+        "
+      />
       <input
         type="file"
         class="absolute inset-0 -z-1 opacity-0"
         :multiple="maxSelectable > 1"
-        :disabled="disabled"
+        :disabled="triggerDisabled"
         :accept="accept"
         @change="emit('file-change', $event)"
       />

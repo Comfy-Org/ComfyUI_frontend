@@ -4,10 +4,10 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { UPLOAD_SKIPPED_ERROR, useUpload } from '@/composables/useUpload'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
-import { uploadMediaBatch } from '@/platform/assets/services/uploadService'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -360,23 +360,26 @@ function updateSelectedItems(selectedItems: Set<string>) {
   useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
 }
 
-// Handle multiple file uploads using shared uploadMediaBatch service
+const assetsStore = useAssetsStore()
+const { loading: uploading, uploadBatch } = useUpload()
+
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = uploadFolder ?? 'input'
-  const assetsStore = useAssetsStore()
 
-  const results = await uploadMediaBatch(
+  const results = await uploadBatch(
     files.map((file) => ({ source: file })),
     { type: folder, subfolder: uploadSubfolder }
   )
 
-  // Report failed uploads
   const failedUploads = results.filter((r) => !r.success)
   for (const failed of failedUploads) {
-    toastStore.addAlert(failed.error || t('toastMessages.uploadFailed'))
+    if (failed.error === UPLOAD_SKIPPED_ERROR) {
+      toastStore.addAlert(t('g.uploadAlreadyInProgress'))
+    } else {
+      toastStore.addAlert(failed.error || t('toastMessages.uploadFailed'))
+    }
   }
 
-  // Update AssetsStore once after all uploads complete (not per-file)
   const successfulPaths = results.filter((r) => r.success).map((r) => r.path)
 
   if (folder === 'input' && successfulPaths.length > 0) {
@@ -411,7 +414,6 @@ async function handleFilesUpdate(files: File[]) {
       widget.callback(uploadedPaths[0])
     }
 
-    // 5. Snapshot undo state so the image change gets its own undo entry
     useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   } catch (error) {
     console.error('Upload error:', error)
@@ -449,6 +451,7 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable
+      :loading="uploading"
       :accept="acceptTypes"
       :filter-options
       :show-ownership-filter
