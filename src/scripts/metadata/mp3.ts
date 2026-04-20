@@ -1,15 +1,18 @@
 export async function getMp3Metadata(file: File) {
   const reader = new FileReader()
-  const read_process = new Promise(
-    (r) => (reader.onload = (event) => r(event?.target?.result))
-  )
+  const read_process = new Promise<ArrayBuffer | null>((r) => {
+    reader.onload = (event) => r((event?.target?.result as ArrayBuffer) ?? null)
+    reader.onerror = () => r(null)
+    reader.onabort = () => r(null)
+  })
   reader.readAsArrayBuffer(file)
-  const arrayBuffer = (await read_process) as ArrayBuffer
+  const arrayBuffer = await read_process
+  if (!arrayBuffer) return { prompt: undefined, workflow: undefined }
   //https://stackoverflow.com/questions/7302439/how-can-i-determine-that-a-particular-file-is-in-fact-an-mp3-file#7302482
   const sig_bytes = new Uint8Array(arrayBuffer, 0, 3)
   if (
-    (sig_bytes[0] != 0xff && sig_bytes[1] != 0xfb) ||
-    (sig_bytes[0] != 0x49 && sig_bytes[1] != 0x44 && sig_bytes[2] != 0x33)
+    (sig_bytes[0] != 0xff || sig_bytes[1] != 0xfb) &&
+    (sig_bytes[0] != 0x49 || sig_bytes[1] != 0x44 || sig_bytes[2] != 0x33)
   )
     console.error('Invalid file signature.')
   let header = ''

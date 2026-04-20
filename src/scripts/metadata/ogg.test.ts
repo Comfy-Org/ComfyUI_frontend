@@ -2,6 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  EXPECTED_PROMPT,
+  EXPECTED_WORKFLOW,
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
 import { getOggMetadata } from './ogg'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.opus')
@@ -15,12 +21,8 @@ describe('OGG/Opus metadata', () => {
 
     const result = await getOggMetadata(file)
 
-    expect(result.workflow).toEqual({
-      nodes: [{ id: 1, type: 'KSampler', pos: [100, 100], size: [200, 200] }]
-    })
-    expect(result.prompt).toEqual({
-      '1': { class_type: 'KSampler', inputs: {} }
-    })
+    expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+    expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
   it('returns undefined fields for non-OGG data', async () => {
@@ -48,5 +50,25 @@ describe('OGG/Opus metadata', () => {
 
     expect(result.workflow).toBeUndefined()
     expect(result.prompt).toBeUndefined()
+  })
+
+  describe('FileReader failure modes', () => {
+    const file = new File([new Uint8Array(16)], 'test.ogg')
+
+    it('resolves undefined fields when the FileReader fires error', async () => {
+      mockFileReaderError('readAsArrayBuffer')
+
+      const result = await getOggMetadata(file)
+
+      expect(result).toEqual({ prompt: undefined, workflow: undefined })
+    })
+
+    it('resolves undefined fields when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+
+      const result = await getOggMetadata(file)
+
+      expect(result).toEqual({ prompt: undefined, workflow: undefined })
+    })
   })
 })

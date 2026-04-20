@@ -7,8 +7,11 @@ export function getDataFromJSON(
     const reader = new FileReader()
     reader.onload = async () => {
       try {
-        const readerResult = reader.result as string
-        const jsonContent = JSON.parse(readerResult)
+        if (typeof reader.result !== 'string') {
+          resolve(undefined)
+          return
+        }
+        const jsonContent = JSON.parse(reader.result)
         if (jsonContent?.templates) {
           resolve({ templates: jsonContent.templates })
           return
@@ -25,7 +28,6 @@ export function getDataFromJSON(
     reader.onerror = () => resolve(undefined)
     reader.onabort = () => resolve(undefined)
     reader.readAsText(file)
-    return
   })
 }
 

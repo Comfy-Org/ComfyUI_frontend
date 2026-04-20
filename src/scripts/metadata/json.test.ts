@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  mockFileReaderAbort,
+  mockFileReaderError,
+  mockFileReaderResult
+} from './__fixtures__/helpers'
 import { getDataFromJSON } from './json'
 
 function jsonFile(content: object): File {
@@ -52,15 +57,7 @@ describe('getDataFromJSON', () => {
     })
 
     it('resolves undefined when the FileReader fires error', async () => {
-      vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(
-        function (this: FileReader) {
-          queueMicrotask(() =>
-            this.onerror?.(
-              new ProgressEvent('error') as ProgressEvent<FileReader>
-            )
-          )
-        }
-      )
+      mockFileReaderError('readAsText')
 
       const result = await getDataFromJSON(jsonFile({ nodes: [] }))
 
@@ -68,15 +65,23 @@ describe('getDataFromJSON', () => {
     })
 
     it('resolves undefined when the FileReader fires abort', async () => {
-      vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(
-        function (this: FileReader) {
-          queueMicrotask(() =>
-            this.onabort?.(
-              new ProgressEvent('abort') as ProgressEvent<FileReader>
-            )
-          )
-        }
-      )
+      mockFileReaderAbort('readAsText')
+
+      const result = await getDataFromJSON(jsonFile({ nodes: [] }))
+
+      expect(result).toBeUndefined()
+    })
+
+    it('resolves undefined when reader.result is not a string', async () => {
+      mockFileReaderResult('readAsText', new ArrayBuffer(8))
+
+      const result = await getDataFromJSON(jsonFile({ nodes: [] }))
+
+      expect(result).toBeUndefined()
+    })
+
+    it('resolves undefined when reader.result is null', async () => {
+      mockFileReaderResult('readAsText', null)
 
       const result = await getDataFromJSON(jsonFile({ nodes: [] }))
 

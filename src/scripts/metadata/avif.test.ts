@@ -2,6 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  EXPECTED_PROMPT,
+  EXPECTED_WORKFLOW,
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
 import { getFromAvifFile } from './avif'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.avif')
@@ -15,12 +21,8 @@ describe('AVIF metadata', () => {
 
     const result = await getFromAvifFile(file)
 
-    expect(JSON.parse(result.workflow)).toEqual({
-      nodes: [{ id: 1, type: 'KSampler', pos: [100, 100], size: [200, 200] }]
-    })
-    expect(JSON.parse(result.prompt)).toEqual({
-      '1': { class_type: 'KSampler', inputs: {} }
-    })
+    expect(JSON.parse(result.workflow)).toEqual(EXPECTED_WORKFLOW)
+    expect(JSON.parse(result.prompt)).toEqual(EXPECTED_PROMPT)
   })
 
   it('returns empty for non-AVIF data', async () => {
@@ -51,5 +53,20 @@ describe('AVIF metadata', () => {
       expect.stringContaining('Error parsing AVIF metadata'),
       expect.anything()
     )
+  })
+
+  describe('FileReader failure modes', () => {
+    const file = new File([new Uint8Array(16)], 'test.avif')
+
+    it('resolves empty when the FileReader fires error', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockFileReaderError('readAsArrayBuffer')
+      expect(await getFromAvifFile(file)).toEqual({})
+    })
+
+    it('resolves empty when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+      expect(await getFromAvifFile(file)).toEqual({})
+    })
   })
 })

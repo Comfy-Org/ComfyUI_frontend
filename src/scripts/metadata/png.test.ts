@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
 import { getFromPngBuffer, getFromPngFile } from './png'
 
 afterEach(() => vi.restoreAllMocks())
@@ -210,5 +214,19 @@ describe('getFromPngFile', () => {
 
     expect(result).toEqual({})
     expect(console.error).toHaveBeenCalledWith('Not a valid PNG file')
+  })
+
+  describe('FileReader failure modes', () => {
+    const file = new File([new Uint8Array(16)], 'test.png')
+
+    it('rejects when the FileReader fires error', async () => {
+      mockFileReaderError('readAsArrayBuffer')
+      await expect(getFromPngFile(file)).rejects.toBeDefined()
+    })
+
+    it('rejects when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+      await expect(getFromPngFile(file)).rejects.toThrow('FileReader aborted')
+    })
   })
 })

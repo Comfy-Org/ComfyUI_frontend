@@ -1,7 +1,13 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  EXPECTED_PROMPT,
+  EXPECTED_WORKFLOW,
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
 import { getFromIsobmffFile } from './isobmff'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.mp4')
@@ -13,12 +19,8 @@ describe('ISOBMFF (MP4) metadata', () => {
 
     const result = await getFromIsobmffFile(file)
 
-    expect(result.workflow).toEqual({
-      nodes: [{ id: 1, type: 'KSampler', pos: [100, 100], size: [200, 200] }]
-    })
-    expect(result.prompt).toEqual({
-      '1': { class_type: 'KSampler', inputs: {} }
-    })
+    expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+    expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
   it('returns empty for non-ISOBMFF data', async () => {
@@ -29,5 +31,22 @@ describe('ISOBMFF (MP4) metadata', () => {
     const result = await getFromIsobmffFile(file)
 
     expect(result).toEqual({})
+  })
+
+  describe('FileReader failure modes', () => {
+    afterEach(() => vi.restoreAllMocks())
+
+    const file = new File([new Uint8Array(16)], 'test.mp4')
+
+    it('resolves empty when the FileReader fires error', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockFileReaderError('readAsArrayBuffer')
+      expect(await getFromIsobmffFile(file)).toEqual({})
+    })
+
+    it('resolves empty when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+      expect(await getFromIsobmffFile(file)).toEqual({})
+    })
   })
 })

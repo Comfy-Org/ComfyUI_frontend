@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
+import {
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
 import { getGltfBinaryMetadata } from './gltf'
 
 describe('GLTF binary metadata parser', () => {
@@ -159,5 +163,21 @@ describe('GLTF binary metadata parser', () => {
     const invalidEmptyFile = new File([], 'invalid.glb')
     const metadata = await getGltfBinaryMetadata(invalidEmptyFile)
     expect(metadata).toEqual({})
+  })
+
+  describe('FileReader failure modes', () => {
+    afterEach(() => vi.restoreAllMocks())
+
+    const file = new File([new Uint8Array(16)], 'test.glb')
+
+    it('resolves empty when the FileReader fires error', async () => {
+      mockFileReaderError('readAsArrayBuffer')
+      expect(await getGltfBinaryMetadata(file)).toEqual({})
+    })
+
+    it('resolves empty when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+      expect(await getGltfBinaryMetadata(file)).toEqual({})
+    })
   })
 })

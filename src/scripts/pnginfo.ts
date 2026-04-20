@@ -134,7 +134,8 @@ export function getWebpMetadata(file: File) {
 
       r(txt_chunks)
     }
-
+    reader.onerror = () => r({})
+    reader.onabort = () => r({})
     reader.readAsArrayBuffer(file)
   })
 }
@@ -162,7 +163,8 @@ export function getLatentMetadata(
         r(undefined)
       }
     }
-
+    reader.onerror = () => r(undefined)
+    reader.onabort = () => r(undefined)
     const slice = file.slice(0, 1024 * 1024 * 4)
     reader.readAsArrayBuffer(slice)
   })

@@ -1,10 +1,18 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getFromFlacBuffer } from './flac'
+import {
+  EXPECTED_PROMPT,
+  EXPECTED_WORKFLOW,
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
+import { getFromFlacBuffer, getFromFlacFile } from './flac'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.flac')
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('FLAC metadata', () => {
   it('extracts workflow and prompt from Vorbis comments', () => {
@@ -16,15 +24,33 @@ describe('FLAC metadata', () => {
 
     const result = getFromFlacBuffer(buffer)
 
-    expect(result.workflow).toBe(
-      '{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}'
-    )
-    expect(result.prompt).toBe('{"1":{"class_type":"KSampler","inputs":{}}}')
+    expect(result.workflow).toBe(JSON.stringify(EXPECTED_WORKFLOW))
+    expect(result.prompt).toBe(JSON.stringify(EXPECTED_PROMPT))
   })
 
   it('returns undefined for non-FLAC data', () => {
     const buf = new ArrayBuffer(16)
     const result = getFromFlacBuffer(buf)
     expect(result).toBeUndefined()
+  })
+
+  describe('FileReader failure modes', () => {
+    const file = new File([new Uint8Array(16)], 'test.flac')
+
+    it('resolves empty when the FileReader fires error', async () => {
+      mockFileReaderError('readAsArrayBuffer')
+
+      const result = await getFromFlacFile(file)
+
+      expect(result).toEqual({})
+    })
+
+    it('resolves empty when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+
+      const result = await getFromFlacFile(file)
+
+      expect(result).toEqual({})
+    })
   })
 })
