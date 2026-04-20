@@ -339,6 +339,12 @@ export class ComfyPage {
     await nextFrame(this.page)
   }
 
+  async idleFrames(count: number) {
+    for (let i = 0; i < count; i++) {
+      await this.nextFrame()
+    }
+  }
+
   async delay(ms: number) {
     return sleep(ms)
   }
