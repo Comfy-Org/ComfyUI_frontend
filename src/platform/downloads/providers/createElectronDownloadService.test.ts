@@ -73,6 +73,19 @@ describe('createElectronDownloadService', () => {
     expect(service.getById(entry.id)).toEqual(entry)
   })
 
+  it('throws when startDownload returns false', async () => {
+    mockDownloadManager.startDownload.mockResolvedValueOnce(false)
+    const service = await createElectronDownloadService()
+
+    await expect(
+      service.start({
+        url: 'https://example.com/fail.safetensors',
+        savePath: '/models',
+        filename: 'fail.safetensors'
+      })
+    ).rejects.toThrow('Download could not be started')
+  })
+
   it('updates entries on progress callbacks from DownloadManager', async () => {
     const service = await createElectronDownloadService()
 
