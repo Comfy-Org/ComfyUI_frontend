@@ -25,7 +25,7 @@ export function createElectronDownloadService(): DownloadService & {
     )
   }
 
-  const VALID_STATUSES = new Set<DownloadStatus>([
+  const VALID_STATUSES: ReadonlySet<string> = new Set([
     'pending',
     'in_progress',
     'paused',
@@ -34,13 +34,15 @@ export function createElectronDownloadService(): DownloadService & {
     'error'
   ])
 
+  function isDownloadStatus(value: unknown): value is DownloadStatus {
+    return typeof value === 'string' && VALID_STATUSES.has(value)
+  }
+
   function toDownloadStatus(
     value: unknown,
     fallback: DownloadStatus = 'error'
   ): DownloadStatus {
-    return VALID_STATUSES.has(value as DownloadStatus)
-      ? (value as DownloadStatus)
-      : fallback
+    return isDownloadStatus(value) ? value : fallback
   }
 
   function notifyListeners(id: string, entry: DownloadEntry) {
