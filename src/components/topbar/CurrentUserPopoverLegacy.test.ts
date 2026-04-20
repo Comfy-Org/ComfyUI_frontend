@@ -411,9 +411,14 @@ describe('CurrentUserPopoverLegacy', () => {
       mockIsCloud.value = false
     })
 
-    it('hides credits section', () => {
+    it('still shows credits balance', () => {
       renderComponent()
-      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+      expect(screen.getByText('1000')).toBeInTheDocument()
+    })
+
+    it('shows add-credits button and hides upgrade-to-add-credits button', () => {
+      renderComponent()
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
       expect(
         screen.queryByTestId('upgrade-to-add-credits-button')
       ).not.toBeInTheDocument()
