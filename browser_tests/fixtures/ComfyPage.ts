@@ -30,8 +30,6 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
-import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
-import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
@@ -179,7 +177,6 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
-  public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
   public readonly visibleToasts: Locator
@@ -233,7 +230,6 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
-    this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
   }
@@ -499,7 +495,6 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
-    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
