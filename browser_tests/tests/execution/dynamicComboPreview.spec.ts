@@ -11,14 +11,13 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('execution/dynamic_combo_preview')
 
-      const previewNode = await comfyPage.nodeOps.getNodeRefById('2')
-
       await comfyPage.runButton.click()
 
+      const previewTextbox = comfyPage.page.getByRole('textbox', {
+        name: 'preview_text'
+      })
       await expect
-        .poll(async () => (await previewNode.getWidget(0)).getValue(), {
-          timeout: 15_000
-        })
+        .poll(async () => previewTextbox.inputValue(), { timeout: 15_000 })
         .toContain('DynamicCombo output')
     })
 
@@ -36,18 +35,11 @@ test.describe(
 
       await subgraphNode.navigateIntoSubgraph()
 
+      const previewTextbox = comfyPage.page.getByRole('textbox', {
+        name: 'preview_text'
+      })
       await expect
-        .poll(
-          async () => {
-            const nodes = await comfyPage.nodeOps.getNodeRefsByType(
-              'PreviewAny',
-              true
-            )
-            if (nodes.length !== 1) return ''
-            return (await nodes[0].getWidget(0)).getValue()
-          },
-          { timeout: 15_000 }
-        )
+        .poll(async () => previewTextbox.inputValue(), { timeout: 15_000 })
         .toContain('DynamicCombo output')
     })
   }
