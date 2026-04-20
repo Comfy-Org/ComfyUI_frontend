@@ -263,6 +263,35 @@ export const useWorkflowService = () => {
     })
   }
 
+  async function trySwitch(
+    action: () => Promise<void>,
+    workflow: ComfyWorkflow
+  ): Promise<boolean> {
+    try {
+      await action()
+      return !workflowStore.isActive(workflow)
+    } catch (error) {
+      console.error('Failed to switch workflow', error)
+      return false
+    }
+  }
+
+  async function switchAwayFrom(workflow: ComfyWorkflow): Promise<boolean> {
+    const replacement =
+      workflowStore.getMostRecentWorkflow() ??
+      workflowStore.openedWorkflowIndexShift(1)
+
+    if (replacement) {
+      const switched = await trySwitch(
+        () => openWorkflow(replacement),
+        workflow
+      )
+      if (switched) return true
+    }
+
+    return trySwitch(() => loadDefaultWorkflow(), workflow)
+  }
+
   /**
    * Close a workflow with confirmation if there are unsaved changes
    * @param workflow The workflow to close
@@ -298,31 +327,8 @@ export const useWorkflowService = () => {
     }
     // If this is the active workflow, switch to another before closing
     if (workflowStore.isActive(workflow)) {
-      let switched = false
-
-      const replacement =
-        workflowStore.getMostRecentWorkflow() ??
-        workflowStore.openedWorkflowIndexShift(1)
-
-      if (replacement) {
-        try {
-          await openWorkflow(replacement)
-          switched = !workflowStore.isActive(workflow)
-        } catch (error) {
-          console.error('Failed to open replacement workflow', error)
-        }
-      }
-
-      if (!switched) {
-        try {
-          await loadDefaultWorkflow()
-          switched = !workflowStore.isActive(workflow)
-        } catch (error) {
-          console.error('Failed to load default workflow fallback', error)
-        }
-      }
-
-      if (!switched) return false
+      const didSwitch = await switchAwayFrom(workflow)
+      if (!didSwitch) return false
     }
 
     await workflowStore.closeWorkflow(workflow)
