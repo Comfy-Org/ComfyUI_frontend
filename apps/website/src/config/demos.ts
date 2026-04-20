@@ -57,6 +57,9 @@ export function getDemoBySlug(slug: string): Demo | undefined {
 }
 
 export function getNextDemo(slug: string): Demo {
+  if (demos.length === 0) {
+    throw new Error('No demos configured')
+  }
   const index = demos.findIndex((demo) => demo.slug === slug)
   if (index === -1) {
     throw new Error(`Unknown demo slug: ${slug}`)
