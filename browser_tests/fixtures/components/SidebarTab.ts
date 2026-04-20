@@ -144,7 +144,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
     this.activeWorkflowLabel = this.root.locator(
       '.comfyui-workflows-open .p-tree-node-selected .node-label'
     )
-    this.searchInput = page.getByPlaceholder('Search Workflow...')
+    this.searchInput = this.root.getByRole('combobox').first()
   }
 
   async getOpenedWorkflowNames() {
