@@ -196,6 +196,32 @@ describe('TopMenuSection', () => {
     mockData.setShowConflictRedDot(false)
   })
 
+  describe('auth fallback when workflow tabs are not in topbar', () => {
+    function createSidebarTabsWrapper() {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) =>
+        key === 'Comfy.Workflow.WorkflowTabsPosition' ? 'Sidebar' : undefined
+      )
+      return createWrapper({ pinia })
+    }
+
+    it('should display CurrentUserButton when user is logged in', () => {
+      mockData.isLoggedIn = true
+      const { container } = createSidebarTabsWrapper()
+      expect(container.querySelector('current-user-button-stub')).not.toBeNull()
+      expect(container.querySelector('login-button-stub')).toBeNull()
+    })
+
+    it('should display LoginButton when user is not logged in on desktop', () => {
+      mockData.isLoggedIn = false
+      mockData.isDesktop = true
+      const { container } = createSidebarTabsWrapper()
+      expect(container.querySelector('login-button-stub')).not.toBeNull()
+      expect(container.querySelector('current-user-button-stub')).toBeNull()
+    })
+  })
+
   it('shows the active jobs label with the current count', async () => {
     createWrapper()
     const queueStore = useQueueStore()
