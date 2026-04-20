@@ -135,10 +135,7 @@ describe('FormDropdownInput', () => {
 
     it('emits file-change when a file is uploaded', async () => {
       const onFileChange = vi.fn()
-      const { container } = renderInput(
-        { uploadable: true },
-        { onFileChange }
-      )
+      const { container } = renderInput({ uploadable: true }, { onFileChange })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const fileInput = container.querySelector(
         'input[type="file"]'

@@ -82,9 +82,7 @@ describe('FormDropdownMenuFilter', () => {
       renderMenu()
       expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Mine' })).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: 'Shared' })
-      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Shared' })).toBeInTheDocument()
     })
 
     it('updates v-model when an option is clicked', async () => {
