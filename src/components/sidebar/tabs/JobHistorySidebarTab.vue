@@ -46,22 +46,25 @@
       </div>
     </template>
     <template #body>
-      <JobAssetsList
-        :displayed-job-groups="displayedJobGroups"
-        @cancel-item="onCancelItem"
-        @delete-item="onDeleteItem"
-        @view-item="onViewItem"
-        @menu="onMenuItem"
-      />
-      <JobContextMenu
-        ref="jobContextMenuRef"
-        :entries="jobMenuEntries"
-        @action="onJobMenuAction"
-      />
-      <ResultGallery
-        v-model:active-index="galleryActiveIndex"
-        :all-gallery-items="galleryItems"
-      />
+      <div class="flex h-full min-h-0 flex-col">
+        <JobAssetsList
+          class="min-h-0 flex-1"
+          :displayed-job-groups="displayedJobGroups"
+          @cancel-item="onCancelItem"
+          @delete-item="onDeleteItem"
+          @view-item="onViewItem"
+          @menu="onMenuItem"
+        />
+        <JobContextMenu
+          ref="jobContextMenuRef"
+          :entries="jobMenuEntries"
+          @action="onJobMenuAction"
+        />
+        <MediaLightbox
+          v-model:active-index="galleryActiveIndex"
+          :all-gallery-items="galleryItems"
+        />
+      </div>
     </template>
   </SidebarTabTemplate>
 </template>
@@ -83,7 +86,7 @@ import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHis
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'

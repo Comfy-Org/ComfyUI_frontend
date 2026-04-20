@@ -1,8 +1,8 @@
 <template>
   <div class="editable-text">
-    <span v-if="!isEditing">
+    <component :is="labelType" v-if="!isEditing" :class="labelClass">
       {{ modelValue }}
-    </span>
+    </component>
     <!-- Avoid double triggering finishEditing event when keydown.enter is triggered -->
     <InputText
       v-else
@@ -35,11 +35,15 @@ import { nextTick, ref, watch } from 'vue'
 const {
   modelValue,
   isEditing = false,
-  inputAttrs = {}
+  inputAttrs = {},
+  labelClass = '',
+  labelType = 'span'
 } = defineProps<{
   modelValue: string
   isEditing?: boolean
   inputAttrs?: Record<string, string>
+  labelClass?: string
+  labelType?: string
 }>()
 
 const emit = defineEmits(['edit', 'cancel'])

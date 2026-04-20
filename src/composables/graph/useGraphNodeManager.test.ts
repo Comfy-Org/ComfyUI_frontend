@@ -1,5 +1,6 @@
-import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
@@ -11,10 +12,10 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -197,14 +198,16 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
 
-    // Create a PromotedWidgetView with displayName="value" (subgraph input
+    // Create a PromotedWidgetView with identityName="value" (subgraph input
     // slot name) and sourceWidgetName="prompt" (interior widget name).
-    // PromotedWidgetView.name returns "value", but safeWidgetMapper sets
-    // SafeWidgetData.name to sourceWidgetName ("prompt").
+    // PromotedWidgetView.name returns "value" (identity), safeWidgetMapper
+    // sets SafeWidgetData.name to sourceWidgetName ("prompt").
     const promotedView = createPromotedWidgetView(
       subgraphNode,
       '10',
       'prompt',
+      'value',
+      undefined,
       'value'
     )
 
@@ -275,18 +278,20 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const secondPromotedView = promotedViews[1]
     if (!secondPromotedView) throw new Error('Expected second promoted view')
 
-    ;(
-      secondPromotedView as unknown as {
+    fromAny<
+      {
         sourceNodeId: string
         sourceWidgetName: string
-      }
-    ).sourceNodeId = '9999'
-    ;(
-      secondPromotedView as unknown as {
+      },
+      unknown
+    >(secondPromotedView).sourceNodeId = '9999'
+    fromAny<
+      {
         sourceNodeId: string
         sourceWidgetName: string
-      }
-    ).sourceWidgetName = 'stale_widget'
+      },
+      unknown
+    >(secondPromotedView).sourceWidgetName = 'stale_widget'
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))
@@ -413,12 +418,10 @@ describe('Subgraph Promoted Pseudo Widgets', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: '10',
+      sourceWidgetName: '$$canvas-image-preview'
+    })
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const vueNode = vueNodeData.get(String(subgraphNode.id))
@@ -500,12 +503,10 @@ describe('Nested promoted widget mapping', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(independentNode.id),
-      'string_a'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(independentNode.id),
+      sourceWidgetName: 'string_a'
+    })
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))
@@ -520,6 +521,70 @@ describe('Nested promoted widget mapping', () => {
       new Set([
         `${subgraph.id}:${linkedNode.id}`,
         `${subgraph.id}:${independentNode.id}`
+      ])
+    )
+  })
+
+  it('maps duplicate-name promoted views from same intermediate node to distinct store identities', () => {
+    const innerSubgraph = createTestSubgraph()
+    const firstTextNode = new LGraphNode('FirstTextNode')
+    firstTextNode.addWidget('text', 'text', '11111111111', () => undefined)
+    innerSubgraph.add(firstTextNode)
+
+    const secondTextNode = new LGraphNode('SecondTextNode')
+    secondTextNode.addWidget('text', 'text', '22222222222', () => undefined)
+    innerSubgraph.add(secondTextNode)
+
+    const outerSubgraph = createTestSubgraph()
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 3,
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 4 })
+    const graph = outerSubgraphNode.graph as LGraph
+    graph.add(outerSubgraphNode)
+
+    usePromotionStore().setPromotions(
+      innerSubgraphNode.rootGraph.id,
+      innerSubgraphNode.id,
+      [
+        { sourceNodeId: String(firstTextNode.id), sourceWidgetName: 'text' },
+        { sourceNodeId: String(secondTextNode.id), sourceWidgetName: 'text' }
+      ]
+    )
+
+    usePromotionStore().setPromotions(
+      outerSubgraphNode.rootGraph.id,
+      outerSubgraphNode.id,
+      [
+        {
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(firstTextNode.id)
+        },
+        {
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(secondTextNode.id)
+        }
+      ]
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(outerSubgraphNode.id))
+    const promotedWidgets = nodeData?.widgets?.filter(
+      (widget) => widget.name === 'text'
+    )
+
+    expect(promotedWidgets).toHaveLength(2)
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+    ).toEqual(
+      new Set([
+        `${outerSubgraphNode.subgraph.id}:${firstTextNode.id}`,
+        `${outerSubgraphNode.subgraph.id}:${secondTextNode.id}`
       ])
     )
   })

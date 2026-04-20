@@ -89,7 +89,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type { CurveInterpolation, CurvePoint } from './types'
 
-import { histogramToPath } from './curveUtils'
+import { histogramToPath } from '@/utils/histogramUtil'
 
 const {
   curveColor = 'white',

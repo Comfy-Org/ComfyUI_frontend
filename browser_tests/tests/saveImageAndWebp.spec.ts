@@ -1,23 +1,17 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Save Image and WEBM preview',
-  { tag: ['@screenshot', '@widget'] },
+  { tag: ['@screenshot', '@widget', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
     test('Can preview both SaveImage and SaveWEBM outputs', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
         'widgets/save_image_and_animated_webp'
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       await comfyPage.runButton.click()
 

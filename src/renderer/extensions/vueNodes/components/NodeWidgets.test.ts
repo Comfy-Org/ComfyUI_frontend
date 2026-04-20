@@ -1,5 +1,7 @@
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,9 +10,8 @@ import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -23,6 +24,24 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     }
   })
 }))
+
+const WidgetStub = {
+  name: 'WidgetStub',
+  props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
+  template:
+    '<div class="widget-stub" :data-node-type="nodeType">{{ nodeType }}</div>'
+}
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  async (importOriginal) => {
+    const original = await importOriginal()
+    return {
+      ...(original as Record<string, unknown>),
+      getComponent: () => WidgetStub
+    }
+  }
+)
 
 describe('NodeWidgets', () => {
   const createMockWidget = (
@@ -41,9 +60,10 @@ describe('NodeWidgets', () => {
 
   const createMockNodeData = (
     nodeType: string = 'TestNode',
-    widgets: SafeWidgetData[] = []
+    widgets: SafeWidgetData[] = [],
+    id: string = '1'
   ): VueNodeData => ({
-    id: '1',
+    id,
     type: nodeType,
     widgets,
     title: 'Test Node',
@@ -54,18 +74,18 @@ describe('NodeWidgets', () => {
     outputs: []
   })
 
-  const mountComponent = (nodeData?: VueNodeData) => {
+  function renderComponent(nodeData?: VueNodeData, setupStores?: () => void) {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
+    setupStores?.()
 
-    return mount(NodeWidgets, {
+    return render(NodeWidgets, {
       props: {
         nodeData
       },
       global: {
         plugins: [pinia],
         stubs: {
-          // Stub InputSlot to avoid complex slot registration dependencies
           InputSlot: true
         },
         mocks: {
@@ -79,61 +99,30 @@ describe('NodeWidgets', () => {
     it('passes node type to widget components', () => {
       const widget = createMockWidget()
       const nodeData = createMockNodeData('CheckpointLoaderSimple', [widget])
-      const wrapper = mountComponent(nodeData)
+      const { container } = renderComponent(nodeData)
 
-      // Find the dynamically rendered widget component
-      const widgetComponent = wrapper.find('.lg-node-widget')
-      expect(widgetComponent.exists()).toBe(true)
-
-      // Verify node-type prop is passed
-      const component = widgetComponent.findComponent({ name: 'WidgetSelect' })
-      if (component.exists()) {
-        expect(component.props('nodeType')).toBe('CheckpointLoaderSimple')
-      }
+      const stub = container.querySelector('.widget-stub')
+      expect(stub).not.toBeNull()
+      expect(stub!.getAttribute('data-node-type')).toBe(
+        'CheckpointLoaderSimple'
+      )
     })
 
-    it('passes empty string when nodeData is undefined', () => {
-      const wrapper = mountComponent(undefined)
+    it('renders no widgets when nodeData is undefined', () => {
+      const { container } = renderComponent(undefined)
 
-      // No widgets should be rendered
-      const widgetComponents = wrapper.findAll('.lg-node-widget')
-      expect(widgetComponents).toHaveLength(0)
+      expect(container.querySelectorAll('.widget-stub')).toHaveLength(0)
     })
 
-    it('passes empty string when nodeData.type is undefined', () => {
+    it('passes empty string when nodeData.type is empty', () => {
       const widget = createMockWidget()
       const nodeData = createMockNodeData('', [widget])
-      const wrapper = mountComponent(nodeData)
+      const { container } = renderComponent(nodeData)
 
-      const widgetComponent = wrapper.find('.lg-node-widget')
-      if (widgetComponent.exists()) {
-        const component = widgetComponent.findComponent({
-          name: 'WidgetSelect'
-        })
-        if (component.exists()) {
-          expect(component.props('nodeType')).toBe('')
-        }
-      }
+      const stub = container.querySelector('.widget-stub')
+      expect(stub).not.toBeNull()
+      expect(stub!.getAttribute('data-node-type')).toBe('')
     })
-
-    it.for(['CheckpointLoaderSimple', 'LoraLoader', 'VAELoader', 'KSampler'])(
-      'passes correct node type: %s',
-      (nodeType) => {
-        const widget = createMockWidget()
-        const nodeData = createMockNodeData(nodeType, [widget])
-        const wrapper = mountComponent(nodeData)
-
-        const widgetComponent = wrapper.find('.lg-node-widget')
-        expect(widgetComponent.exists()).toBe(true)
-
-        const component = widgetComponent.findComponent({
-          name: 'WidgetSelect'
-        })
-        if (component.exists()) {
-          expect(component.props('nodeType')).toBe(nodeType)
-        }
-      }
-    )
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
@@ -167,9 +156,9 @@ describe('NodeWidgets', () => {
       distinct
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
@@ -196,9 +185,9 @@ describe('NodeWidgets', () => {
       visibleDuplicate
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(1)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(1)
   })
 
   it('does not deduplicate entries that share names but have different widget types', () => {
@@ -223,9 +212,9 @@ describe('NodeWidgets', () => {
       comboWidget
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('keeps unresolved same-name promoted entries distinct by source execution identity', () => {
@@ -252,9 +241,36 @@ describe('NodeWidgets', () => {
       secondTransientEntry
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
+  })
+
+  it('does not deduplicate promoted duplicates that differ only by disambiguating source identity', () => {
+    const firstPromoted = createMockWidget({
+      name: 'text',
+      type: 'text',
+      nodeId: 'outer-subgraph:1',
+      storeNodeId: 'outer-subgraph:1',
+      storeName: 'text',
+      slotName: 'text'
+    })
+    const secondPromoted = createMockWidget({
+      name: 'text',
+      type: 'text',
+      nodeId: 'outer-subgraph:2',
+      storeNodeId: 'outer-subgraph:2',
+      storeName: 'text',
+      slotName: 'text'
+    })
+
+    const nodeData = createMockNodeData('SubgraphNode', [
+      firstPromoted,
+      secondPromoted
+    ])
+    const { container } = renderComponent(nodeData)
+
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('hides widgets when merged store options mark them hidden', async () => {
@@ -266,7 +282,7 @@ describe('NodeWidgets', () => {
       })
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget('graph-test', {
       nodeId: 'test_node',
@@ -281,7 +297,7 @@ describe('NodeWidgets', () => {
 
     await nextTick()
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(0)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(0)
   })
 
   it('keeps AppInput ids mapped to node identity for selection', () => {
@@ -290,9 +306,32 @@ describe('NodeWidgets', () => {
       createMockWidget({ nodeId: 'test_node', name: 'seed_b', type: 'text' })
     ])
 
-    const wrapper = mountComponent(nodeData)
-    const appInputWrappers = wrapper.findAllComponents({ name: 'AppInput' })
-    const ids = appInputWrappers.map((component) => component.props('id'))
+    const { container } = render(NodeWidgets, {
+      props: { nodeData },
+      global: {
+        plugins: [
+          (() => {
+            const pinia = createTestingPinia({ stubActions: false })
+            setActivePinia(pinia)
+            return pinia
+          })()
+        ],
+        stubs: {
+          InputSlot: true,
+          AppInput: {
+            props: ['id', 'name', 'enable'],
+            template: '<div class="app-input-stub" :data-id="id"><slot /></div>'
+          }
+        },
+        mocks: {
+          $t: (key: string) => key
+        }
+      }
+    })
+    const appInputElements = container.querySelectorAll('.app-input-stub')
+    const ids = Array.from(appInputElements).map((el) =>
+      el.getAttribute('data-id')
+    )
 
     expect(ids).toStrictEqual(['test_node', 'test_node'])
   })

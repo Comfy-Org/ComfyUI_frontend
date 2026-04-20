@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Générez une vidéo avec Seedance 2.0 à partir d'une image de première image et, optionnellement, d'une image de dernière image.",
+    "display_name": "ByteDance Seedance 2.0 Première-Dernière-Image vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_frame": {
+        "name": "première image",
+        "tooltip": "Image de la première image pour la vidéo."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de la dernière image pour la vidéo."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_generate_audio": {
+        "name": "générer_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Générez, éditez ou étendez une vidéo avec Seedance 2.0 à l'aide d'images, de vidéos et d'audios de référence. Prend en charge la référence multimodale, l'édition vidéo et l'extension vidéo.",
+    "display_name": "ByteDance Seedance 2.0 Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_generate_audio": {
+        "name": "générer_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Générez une vidéo avec les modèles Seedance 2.0 à partir d'un prompt textuel.",
+    "display_name": "ByteDance Seedance 2.0 Texte vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_generate_audio": {
+        "name": "générer_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Générer une vidéo en utilisant l'invite et les première et dernière images.",
     "display_name": "ByteDance Première-Dernière Image vers Vidéo",
@@ -1362,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "Faire correspondre les couleurs d'une image à une autre en utilisant divers algorithmes.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Image(s) de référence à laquelle faire correspondre les couleurs. Si non fourni, le traitement est ignoré."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Image(s) auxquelles appliquer la transformation de couleur."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame : chaque image est ajustée individuellement à image_ref. uniform : les statistiques de toutes les images sources sont regroupées comme référence, puis ajustées à image_ref. target_frame : une image choisie sert de référence pour la transformation vers image_ref, appliquée uniformément à toutes les images (préserve les différences relatives)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combiner Hooks [2]",
     "inputs": {
@@ -1427,6 +1588,22 @@
       },
       "values": {
         "name": "valeurs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "Conversion de nombre",
+    "inputs": {
+      "value": {
+        "name": "valeur"
       }
     },
     "outputs": {
@@ -1736,6 +1913,10 @@
         "name": "boucle_fermée",
         "tooltip": "Indique s'il faut fermer la boucle de la fenêtre de contexte ; applicable uniquement aux planifications en boucle."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Liste des indices latents à conserver dans les tenseurs de conditionnement pour chaque fenêtre ; par exemple, définir cette valeur à '0' utilisera l'image de départ initiale pour chaque fenêtre."
+      },
       "context_length": {
         "name": "longueur_contexte",
         "tooltip": "La longueur de la fenêtre de contexte."
@@ -1767,6 +1948,10 @@
       "model": {
         "name": "modèle",
         "tooltip": "Le modèle auquel appliquer les fenêtres de contexte pendant l'échantillonnage."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Indique s'il faut répartir plusieurs conditionnements (créés par ConditionCombine) dans chaque fenêtre selon l'index de région."
       }
     },
     "outputs": {
@@ -2166,6 +2351,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Déterminer s'il faut étirer le recadrage pour correspondre à la taille de sortie, ou ajouter des pixels noirs pour préserver le ratio d'aspect."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Hauteur à laquelle chaque découpe est redimensionnée."
@@ -2206,6 +2395,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Éditeur de courbe",
+    "inputs": {
+      "curve": {
+        "name": "courbe"
+      },
+      "histogram": {
+        "name": "histogramme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "courbe",
         "tooltip": null
       }
     }
@@ -2268,6 +2474,23 @@
     "display_name": "DésactiverBruit",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Dessiner les BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3604,6 +3827,14 @@
     "description": "Appliquez des shaders de fragments GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
     "display_name": "Shader GLSL",
     "inputs": {
+      "bools": {
+        "name": "booléens",
+        "tooltip": "Les booléens sont disponibles sous u_bool0-9 (bool) dans le code du shader"
+      },
+      "curves": {
+        "name": "courbes",
+        "tooltip": "Les courbes sont disponibles sous u_curve0-3 (sampler2D, LUT 1D) dans le code du shader. Échantillonnez avec texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Les flottants sont disponibles sous u_float0-4 dans le code du shader"
@@ -3815,6 +4046,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Première image issue du processus de réflexion du modèle. Disponible uniquement avec le niveau de réflexion ÉLEVÉ et la modalité IMAGE+TEXTE."
       }
     }
   },
@@ -4080,6 +4315,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Prolongez une vidéo existante avec une continuation fluide basée sur une invite textuelle.",
+    "display_name": "Extension vidéo Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour l’extension vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de ce qui doit se passer ensuite dans la vidéo."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo source à prolonger. Format MP4, 2-15 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Générez une vidéo à partir d'une invite ou d'une image",
     "display_name": "Grok Video",
@@ -4112,6 +4380,41 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Générez une vidéo guidée par des images de référence comme références de style et de contenu.",
+    "display_name": "Grok Référence-vers-Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de la vidéo souhaitée."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
       }
     },
     "outputs": {
@@ -4864,6 +5167,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Histogramme d'image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rvb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminance",
+        "tooltip": null
+      },
+      "2": {
+        "name": "rouge",
+        "tooltip": null
+      },
+      "3": {
+        "name": "vert",
+        "tooltip": null
+      },
+      "4": {
+        "name": "bleu",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Inverser l'image",
     "inputs": {
@@ -5281,6 +5614,22 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Extraire une chaîne du JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -6732,6 +7081,54 @@
     "outputs": {
       "0": {
         "name": "image_de_sortie",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Définir un audio de référence pour le transfert d'identité de locuteur ID-LoRA. Encode un clip audio de référence dans le conditionnement et, en option, applique un guidage d'identité au modèle (passe supplémentaire sans référence, amplifiant l'effet d'identité du locuteur).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE pour l'encodage."
+      },
+      "end_percent": {
+        "name": "pourcentage_fin",
+        "tooltip": "Fin de la plage sigma où le guidage d'identité est actif."
+      },
+      "identity_guidance_scale": {
+        "name": "échelle_guidage_identité",
+        "tooltip": "Intensité du guidage d'identité. Effectue une passe supplémentaire sans référence à chaque étape pour amplifier l'identité du locuteur. Mettre à 0 pour désactiver (pas de passe supplémentaire)."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "reference_audio": {
+        "name": "audio_de_référence",
+        "tooltip": "Clip audio de référence dont l'identité du locuteur sera transférée. ~5 secondes recommandées (durée d'entraînement). Des clips plus courts ou plus longs peuvent dégrader le transfert d'identité vocale."
+      },
+      "start_percent": {
+        "name": "pourcentage_début",
+        "tooltip": "Début de la plage sigma où le guidage d'identité est actif."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "négatif",
         "tooltip": null
       }
     }
@@ -11949,6 +12346,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "description": "Vectorisez une image matricielle en SVG à l'aide de Quiver AI.",
+    "display_name": "Quiver Image vers SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Rogner automatiquement sur le sujet principal."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image d'entrée à vectoriser."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la vectorisation SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Générez un SVG à partir d'une invite textuelle avec Quiver AI.",
+    "display_name": "Quiver Texte vers SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Conseils supplémentaires de style ou de mise en forme."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la génération du SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description textuelle du SVG souhaité."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu'à 4 images de référence pour guider la génération."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -11969,6 +12451,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "Détection RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrer les détections par classe. Définir sur 'all' pour désactiver le filtrage."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Nombre maximal de détections à retourner par image. Par ordre décroissant du score de confiance."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },
@@ -13422,6 +13932,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Ramène la sortie débruitée vers le latent d'entrée. Plus la valeur est élevée, plus la fidélité à l'entrée est forte. 0 pour désactiver."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Seuil sigma en dessous duquel restore_cfg est désactivé."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Contrôle la force à la fin de l'échantillonnage (sigma faible). Interpolé linéairement depuis le début."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Contrôle la force au début de l'échantillonnage (sigma élevé)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D_Conditioning",
     "inputs": {
@@ -14428,6 +14976,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "Générez de la musique à partir d'une invite textuelle en utilisant le modèle IA de Sonilo. Laissez la durée à 0 pour que le modèle l'infère à partir de l'invite.",
+    "display_name": "Sonilo Texte en Musique",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Durée cible en secondes. Mettez 0 pour laisser le modèle inférer la durée à partir de l'invite. Maximum : 6 minutes."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant la musique à générer."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour la reproductibilité. Actuellement ignorée par le service Sonilo mais conservée pour la cohérence du graphe."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Générez de la musique à partir d'un contenu vidéo en utilisant le modèle IA de Sonilo. Analyse la vidéo et crée une musique correspondante.",
+    "display_name": "Sonilo Vidéo en Musique",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle optionnelle pour guider la génération musicale. Laissez vide pour une qualité optimale - le modèle analysera entièrement le contenu vidéo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour la reproductibilité. Actuellement ignorée par le service Sonilo mais conservée pour la cohérence du graphe."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vidéo d'entrée à partir de laquelle générer la musique. Durée maximale : 6 minutes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Sépare l'audio en canaux gauche et droit.",
     "display_name": "Séparer les canaux audio",
@@ -15377,6 +15977,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -15667,6 +16271,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "pénalité_de_presence"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "pénalité_de_répétition"
       },
@@ -15681,6 +16288,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "réflexion",
+        "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
+      },
+      "use_default_template": {
+        "name": "utiliser le modèle par défaut",
+        "tooltip": "Utiliser l'invite/le modèle système intégré si le modèle en possède un."
       }
     },
     "outputs": {
@@ -15711,6 +16326,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "pénalité_de_presence"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "pénalité_de_répétition"
       },
@@ -15725,6 +16343,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "réflexion",
+        "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
+      },
+      "use_default_template": {
+        "name": "utiliser le modèle par défaut",
+        "tooltip": "Utiliser l'invite/le modèle système intégré si le modèle en possède un."
       }
     },
     "outputs": {
@@ -15993,6 +16619,10 @@
       "positive": {
         "name": "positif",
         "tooltip": "Le conditionnement positif à utiliser pour l'entraînement."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Lorsque le paramètre training_dtype est défini sur 'none' et que l'entraînement se fait sur un modèle quantifié, effectue la rétropropagation avec une multiplication matricielle quantifiée si activé."
       },
       "rank": {
         "name": "rang",
@@ -17618,6 +18248,241 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "Générez une vidéo à partir d'une image de première image, avec une image de dernière image et un audio optionnels.",
+    "display_name": "Wan 2.7 Image vers Vidéo",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio pour guider la génération vidéo (ex : synchronisation labiale, mouvement sur le rythme). Durée : 2s-30s. Si non fourni, le modèle génère automatiquement une musique de fond ou des effets sonores adaptés."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_frame": {
+        "name": "première image",
+        "tooltip": "Image de la première image. Le format de sortie est dérivé de cette image."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de la dernière image. Le modèle génère une vidéo passant de la première à la dernière image."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt_extend": {
+        "name": "extension de prompt",
+        "tooltip": "Permet d'améliorer le prompt avec l'aide de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Générez une vidéo mettant en scène une personne ou un objet à partir de références. Prend en charge les performances à un personnage et les interactions multi-personnages.",
+    "display_name": "Wan 2.7 Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Génère une vidéo à partir d'une invite textuelle en utilisant le modèle Wan 2.7.",
+    "display_name": "Wan 2.7 Texte en Vidéo",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio pour guider la génération vidéo (ex : synchronisation labiale, mouvement sur le rythme). Durée : 3s-30s. Si non fourni, le modèle génère automatiquement une musique de fond ou des effets sonores adaptés."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "invite négative"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt_extend": {
+        "name": "extension d'invite",
+        "tooltip": "Améliorer l'invite avec l'assistance de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Continue une vidéo à partir de l'endroit où elle s'est arrêtée, avec un contrôle optionnel de la dernière image.",
+    "display_name": "Wan 2.7 Continuation Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_clip": {
+        "name": "premier clip",
+        "tooltip": "Vidéo d'entrée à continuer. Durée : 2s-10s. Le ratio de sortie est dérivé de cette vidéo."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de la dernière frame. La continuation effectuera une transition vers cette image."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "invite négative"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt_extend": {
+        "name": "extension d'invite",
+        "tooltip": "Améliorer l'invite avec l'assistance de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Éditez une vidéo à l'aide d'instructions textuelles, d'images de référence ou de transfert de style.",
+    "display_name": "Wan 2.7 Édition Vidéo",
+    "inputs": {
+      "audio_setting": {
+        "name": "paramètre audio",
+        "tooltip": "'auto' : le modèle décide de régénérer ou non l'audio selon l'invite. 'origin' : préserve l'audio original de la vidéo d'entrée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "La vidéo à éditer."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter un filigrane généré par IA au résultat."
       }
     },
     "outputs": {

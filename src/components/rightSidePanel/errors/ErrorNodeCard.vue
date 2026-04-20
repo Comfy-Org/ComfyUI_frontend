@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden">
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
     <!-- Card Header -->
     <div
       v-if="card.nodeId && !compact"
@@ -12,10 +12,10 @@
         #{{ card.nodeId }}
       </span>
       <span
-        v-if="card.nodeTitle"
+        v-if="card.nodeTitle || card.title"
         class="flex-1 truncate text-sm font-medium text-muted-foreground"
       >
-        {{ card.nodeTitle }}
+        {{ card.nodeTitle || card.title }}
       </span>
       <div class="flex shrink-0 items-center">
         <Button
@@ -40,12 +40,19 @@
     </div>
 
     <!-- Multiple Errors within one Card -->
-    <div class="space-y-4 divide-y divide-interface-stroke/20">
+    <div
+      class="flex min-h-0 flex-1 flex-col space-y-4 divide-y divide-interface-stroke/20"
+    >
       <!-- Card Content -->
       <div
         v-for="(error, idx) in card.errors"
         :key="idx"
-        class="flex flex-col gap-3"
+        :class="
+          cn(
+            'flex min-h-0 flex-col gap-3',
+            fullHeight && error.isRuntimeError && 'flex-1'
+          )
+        "
       >
         <!-- Error Message -->
         <p
@@ -55,32 +62,62 @@
           {{ error.message }}
         </p>
 
-        <!-- Traceback / Details -->
+        <!-- Traceback / Details (enriched with full report for runtime errors) -->
         <div
-          v-if="error.details"
+          v-if="displayedDetailsMap[idx]"
           :class="
             cn(
               'overflow-y-auto rounded-lg border border-interface-stroke/30 bg-secondary-background-hover p-2.5',
-              error.isRuntimeError ? 'max-h-[10lh]' : 'max-h-[6lh]'
+              error.isRuntimeError
+                ? fullHeight
+                  ? 'min-h-0 flex-1'
+                  : 'max-h-[15lh]'
+                : 'max-h-[6lh]'
             )
           "
         >
           <p
             class="m-0 font-mono text-xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
-            {{ error.details }}
+            {{ displayedDetailsMap[idx] }}
           </p>
         </div>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          class="h-8 w-full justify-center gap-2 text-xs"
-          @click="handleCopyError(error)"
-        >
-          <i class="icon-[lucide--copy] size-3.5" />
-          {{ t('g.copy') }}
-        </Button>
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <Button
+              v-tooltip.top="t('rightSidePanel.findOnGithubTooltip')"
+              variant="secondary"
+              size="sm"
+              class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
+              data-testid="error-card-find-on-github"
+              @click="handleCheckGithub(error)"
+            >
+              {{ t('g.findOnGithub') }}
+              <i class="icon-[lucide--github] size-3.5" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              class="h-8 w-1/3 justify-center gap-1 rounded-lg text-xs"
+              data-testid="error-card-copy"
+              @click="handleCopyError(idx)"
+            >
+              {{ t('g.copy') }}
+              <i class="icon-[lucide--copy] size-3.5" />
+            </Button>
+          </div>
+          <Button
+            v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
+            variant="secondary"
+            size="sm"
+            class="h-8 w-full justify-center gap-1 rounded-lg text-xs"
+            @click="handleGetHelp"
+          >
+            {{ t('g.getHelpAction') }}
+            <i class="icon-[lucide--external-link] size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   </div>
@@ -93,16 +130,21 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { ErrorCardData, ErrorItem } from './types'
+import { useErrorActions } from './useErrorActions'
+import { useErrorReport } from './useErrorReport'
 
 const {
   card,
   showNodeIdBadge = false,
-  compact = false
+  compact = false,
+  fullHeight = false
 } = defineProps<{
   card: ErrorCardData
   showNodeIdBadge?: boolean
   /** Hide card header and error message (used in single-node selection mode) */
   compact?: boolean
+  /** Allow runtime error details to fill available height (used in dedicated panel) */
+  fullHeight?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -112,6 +154,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { displayedDetailsMap } = useErrorReport(() => card)
+const { findOnGitHub, contactSupport: handleGetHelp } = useErrorActions()
 
 function handleLocateNode() {
   if (card.nodeId) {
@@ -125,10 +169,13 @@ function handleEnterSubgraph() {
   }
 }
 
-function handleCopyError(error: ErrorItem) {
-  emit(
-    'copyToClipboard',
-    [error.message, error.details].filter(Boolean).join('\n\n')
-  )
+function handleCopyError(idx: number) {
+  const details = displayedDetailsMap.value[idx]
+  const message = card.errors[idx]?.message
+  emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))
+}
+
+function handleCheckGithub(error: ErrorItem) {
+  findOnGitHub(error.message)
 }
 </script>

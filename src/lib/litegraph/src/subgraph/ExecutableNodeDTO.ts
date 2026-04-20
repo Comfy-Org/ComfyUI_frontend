@@ -186,11 +186,16 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         if (!widget) return
 
         // Special case: SubgraphNode widget.
+        // Prefer serializeValue (per-instance) over the shared .value getter
+        // so multiple SubgraphNode instances return their own configured values.
+        const widgetValue = widget.serializeValue
+          ? widget.serializeValue(subgraphNode, -1)
+          : widget.value
         return {
           node: this,
           origin_id: this.id,
           origin_slot: -1,
-          widgetInfo: { value: widget.value }
+          widgetInfo: { value: widgetValue }
         }
       }
 
@@ -291,6 +296,20 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return this._resolveSubgraphOutput(slot, type, visited)
 
     if (node.isVirtualNode) {
+      // Cross-graph virtual nodes (e.g. Set/Get) resolve their source directly.
+      const virtualSource = this.node.resolveVirtualOutput?.(slot)
+      if (virtualSource) {
+        const inputNodeDto = [...this.nodesByExecutionId.values()].find(
+          (dto) =>
+            dto instanceof ExecutableNodeDTO && dto.node === virtualSource.node
+        )
+        if (!inputNodeDto)
+          throw new Error(
+            `No DTO found for virtual source node [${virtualSource.node.id}]`
+          )
+
+        return inputNodeDto.resolveOutput(virtualSource.slot, type, visited)
+      }
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
         const { inputNode } = virtualLink.resolve(this.graph)

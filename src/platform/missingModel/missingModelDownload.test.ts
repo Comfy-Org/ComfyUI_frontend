@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { fetchModelMetadata } from './missingModelDownload'
+import {
+  fetchModelMetadata,
+  isModelDownloadable,
+  toBrowsableUrl
+} from './missingModelDownload'
 
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
@@ -138,5 +142,74 @@ describe('fetchModelMetadata', () => {
     expect(first.fileSize).toBe(2048)
     expect(second.fileSize).toBe(2048)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('toBrowsableUrl', () => {
+  it('replaces /resolve/ with /blob/ in HuggingFace URLs', () => {
+    expect(
+      toBrowsableUrl(
+        'https://huggingface.co/org/model/resolve/main/file.safetensors'
+      )
+    ).toBe('https://huggingface.co/org/model/blob/main/file.safetensors')
+  })
+
+  it('returns non-HuggingFace URLs unchanged', () => {
+    const url =
+      'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+    expect(toBrowsableUrl(url)).toBe(url)
+  })
+
+  it('preserves query params in HuggingFace URLs', () => {
+    expect(
+      toBrowsableUrl(
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors?download=true'
+      )
+    ).toBe(
+      'https://huggingface.co/bfl/FLUX.1/blob/main/model.safetensors?download=true'
+    )
+  })
+
+  it('converts Civitai api/download URL to model page', () => {
+    expect(
+      toBrowsableUrl('https://civitai.com/api/download/models/12345')
+    ).toBe('https://civitai.com/models/12345')
+  })
+
+  it('converts Civitai api/v1 URL to model page', () => {
+    expect(toBrowsableUrl('https://civitai.com/api/v1/models/12345')).toBe(
+      'https://civitai.com/models/12345'
+    )
+  })
+
+  it('converts civitai.red URLs to model pages', () => {
+    expect(
+      toBrowsableUrl('https://civitai.red/api/download/models/12345')
+    ).toBe('https://civitai.red/models/12345')
+    expect(toBrowsableUrl('https://civitai.red/api/v1/models/12345')).toBe(
+      'https://civitai.red/models/12345'
+    )
+  })
+})
+
+describe('isModelDownloadable', () => {
+  it('allows civitai.red URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://civitai.red/api/download/models/12345',
+        directory: 'checkpoints'
+      })
+    ).toBe(true)
+  })
+
+  it('rejects non-allowlisted URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        directory: 'checkpoints'
+      })
+    ).toBe(false)
   })
 })

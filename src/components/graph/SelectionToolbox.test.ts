@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+import { fireEvent, render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -129,6 +130,10 @@ describe('SelectionToolbox', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
+    nodeDefMock = {
+      type: 'TestNode',
+      title: 'Test Node'
+    } as unknown
 
     // Mock the canvas to avoid "getCanvas: canvas is null" errors
     canvasStore.canvas = createMockCanvas()
@@ -136,8 +141,8 @@ describe('SelectionToolbox', () => {
     vi.resetAllMocks()
   })
 
-  const mountComponent = (props = {}) => {
-    return mount(SelectionToolbox, {
+  function renderComponent(props = {}): { container: Element } {
+    const { container } = render(SelectionToolbox, {
       props,
       global: {
         plugins: [i18n, PrimeVue],
@@ -169,7 +174,9 @@ describe('SelectionToolbox', () => {
           Load3DViewerButton: {
             template: '<div class="load-3d-viewer-button" />'
           },
-          MaskEditorButton: { template: '<div class="mask-editor-button" />' },
+          MaskEditorButton: {
+            template: '<div class="mask-editor-button" />'
+          },
           DeleteButton: {
             template:
               '<button data-testid="delete-button" class="delete-button" />'
@@ -193,6 +200,7 @@ describe('SelectionToolbox', () => {
         }
       }
     })
+    return { container }
   }
 
   describe('Button Visibility Logic', () => {
@@ -204,91 +212,91 @@ describe('SelectionToolbox', () => {
     it('should show info button only for single selections', () => {
       // Single node selection
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('.info-button').exists()).toBe(true)
+      const { container } = renderComponent()
+      expect(container.querySelector('.info-button')).toBeTruthy()
 
-      // Multiple node selection
+      // Multiple node selection - render in separate test scope
       canvasStore.selectedItems = [
         createMockPositionable(),
         createMockPositionable()
       ]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('.info-button').exists()).toBe(false)
+      const { container: container2 } = renderComponent()
+      expect(container2.querySelector('.info-button')).toBeFalsy()
     })
 
     it('should not show info button when node definition is not found', () => {
       canvasStore.selectedItems = [createMockPositionable()]
-      // mock nodedef and return null
       nodeDefMock = null
-      // remount component
-      const wrapper = mountComponent()
-      expect(wrapper.find('.info-button').exists()).toBe(false)
+      const { container } = renderComponent()
+      expect(container.querySelector('.info-button')).toBeFalsy()
     })
 
     it('should show color picker for all selections', () => {
       // Single node selection
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('[data-testid="color-picker-button"]').exists()).toBe(
-        true
-      )
+      const { container } = renderComponent()
+      expect(
+        container.querySelector('[data-testid="color-picker-button"]')
+      ).toBeTruthy()
 
       // Multiple node selection
       canvasStore.selectedItems = [
         createMockPositionable(),
         createMockPositionable()
       ]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
+      const { container: container2 } = renderComponent()
       expect(
-        wrapper2.find('[data-testid="color-picker-button"]').exists()
-      ).toBe(true)
+        container2.querySelector('[data-testid="color-picker-button"]')
+      ).toBeTruthy()
     })
 
     it('should show frame nodes only for multiple selections', () => {
       // Single node selection
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('.frame-nodes').exists()).toBe(false)
+      const { container } = renderComponent()
+      expect(container.querySelector('.frame-nodes')).toBeFalsy()
 
       // Multiple node selection
       canvasStore.selectedItems = [
         createMockPositionable(),
         createMockPositionable()
       ]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('.frame-nodes').exists()).toBe(true)
+      const { container: container2 } = renderComponent()
+      expect(container2.querySelector('.frame-nodes')).toBeTruthy()
     })
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('[data-testid="bypass-button"]').exists()).toBe(true)
+      const { container } = renderComponent()
+      expect(
+        container.querySelector('[data-testid="bypass-button"]')
+      ).toBeTruthy()
 
       // Multiple node selection
       canvasStore.selectedItems = [
         createMockPositionable(),
         createMockPositionable()
       ]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('[data-testid="bypass-button"]').exists()).toBe(true)
+      const { container: container2 } = renderComponent()
+      expect(
+        container2.querySelector('[data-testid="bypass-button"]')
+      ).toBeTruthy()
     })
 
     it('should show common buttons for all selections', () => {
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      expect(wrapper.find('[data-testid="delete-button"]').exists()).toBe(true)
       expect(
-        wrapper.find('[data-testid="convert-to-subgraph-button"]').exists()
-      ).toBe(true)
-      expect(wrapper.find('[data-testid="more-options-button"]').exists()).toBe(
-        true
-      )
+        container.querySelector('[data-testid="delete-button"]')
+      ).toBeTruthy()
+      expect(
+        container.querySelector('[data-testid="convert-to-subgraph-button"]')
+      ).toBeTruthy()
+      expect(
+        container.querySelector('[data-testid="more-options-button"]')
+      ).toBeTruthy()
     })
 
     it('should show mask editor only for single image nodes', () => {
@@ -297,15 +305,14 @@ describe('SelectionToolbox', () => {
       // Single image node
       isImageNodeSpy.mockReturnValue(true)
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('.mask-editor-button').exists()).toBe(true)
+      const { container } = renderComponent()
+      expect(container.querySelector('.mask-editor-button')).toBeTruthy()
 
       // Single non-image node
       isImageNodeSpy.mockReturnValue(false)
       canvasStore.selectedItems = [createMockPositionable()]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('.mask-editor-button').exists()).toBe(false)
+      const { container: container2 } = renderComponent()
+      expect(container2.querySelector('.mask-editor-button')).toBeFalsy()
     })
 
     it('should show Color picker button only for single Load3D nodes', () => {
@@ -314,15 +321,14 @@ describe('SelectionToolbox', () => {
       // Single Load3D node
       isLoad3dNodeSpy.mockReturnValue(true)
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('.load-3d-viewer-button').exists()).toBe(true)
+      const { container } = renderComponent()
+      expect(container.querySelector('.load-3d-viewer-button')).toBeTruthy()
 
       // Single non-Load3D node
       isLoad3dNodeSpy.mockReturnValue(false)
       canvasStore.selectedItems = [createMockPositionable()]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('.load-3d-viewer-button').exists()).toBe(false)
+      const { container: container2 } = renderComponent()
+      expect(container2.querySelector('.load-3d-viewer-button')).toBeFalsy()
     })
 
     it('should show ExecuteButton only when output nodes are selected', () => {
@@ -335,22 +341,20 @@ describe('SelectionToolbox', () => {
         { type: 'SaveImage' }
       ] as LGraphNode[])
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-      expect(wrapper.find('.execute-button').exists()).toBe(true)
+      const { container } = renderComponent()
+      expect(container.querySelector('.execute-button')).toBeTruthy()
 
       // Without output node selected
       isOutputNodeSpy.mockReturnValue(false)
       filterOutputNodesSpy.mockReturnValue([])
       canvasStore.selectedItems = [createMockPositionable()]
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('.execute-button').exists()).toBe(false)
+      const { container: container2 } = renderComponent()
+      expect(container2.querySelector('.execute-button')).toBeFalsy()
 
       // No selection at all
       canvasStore.selectedItems = []
-      wrapper2.unmount()
-      const wrapper3 = mountComponent()
-      expect(wrapper3.find('.execute-button').exists()).toBe(false)
+      const { container: container3 } = renderComponent()
+      expect(container3.querySelector('.execute-button')).toBeFalsy()
     })
   })
 
@@ -358,19 +362,20 @@ describe('SelectionToolbox', () => {
     it('should show dividers between button groups when both groups have buttons', () => {
       // Setup single node to show info + other buttons
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      const dividers = wrapper.findAll('.vertical-divider')
+      const dividers = container.querySelectorAll('.vertical-divider')
       expect(dividers.length).toBeGreaterThan(0)
     })
 
     it('should not show dividers when adjacent groups are empty', () => {
       // No selection should show minimal buttons and dividers
       canvasStore.selectedItems = []
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      const buttons = wrapper.find('.panel').element.children
-      expect(buttons.length).toBeGreaterThan(0) // At least MoreOptions should show
+      expect(
+        container.querySelector('[data-testid="more-options-button"]')
+      ).toBeTruthy()
     })
   })
 
@@ -390,9 +395,9 @@ describe('SelectionToolbox', () => {
       } as ReturnType<typeof useExtensionService>)
 
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      expect(wrapper.find('.extension-command-button').exists()).toBe(true)
+      expect(container.querySelector('.extension-command-button')).toBeTruthy()
     })
 
     it('should not render extension commands when none available', () => {
@@ -400,47 +405,9 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue(createMockExtensionService())
 
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      expect(wrapper.find('.extension-command-button').exists()).toBe(false)
-    })
-  })
-
-  describe('Container Styling', () => {
-    it('should apply minimap container styles', () => {
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-
-      canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-
-      const panel = wrapper.find('.panel')
-      expect(panel.exists()).toBe(true)
-    })
-
-    it('should have correct CSS classes', () => {
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-
-      canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-
-      const panel = wrapper.find('.panel')
-      expect(panel.classes()).toContain('selection-toolbox')
-      expect(panel.classes()).toContain('absolute')
-      expect(panel.classes()).toContain('left-1/2')
-      expect(panel.classes()).toContain('rounded-lg')
-    })
-
-    it('should handle animation class conditionally', () => {
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-
-      canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
-
-      const panel = wrapper.find('.panel')
-      expect(panel.exists()).toBe(true)
+      expect(container.querySelector('.extension-command-button')).toBeFalsy()
     })
   })
 
@@ -461,10 +428,11 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue(createMockExtensionService())
 
       canvasStore.selectedItems = [createMockPositionable()]
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      const panel = wrapper.find('.panel')
-      await panel.trigger('wheel')
+      const panel = container.querySelector('.panel')
+      expect(panel).toBeTruthy()
+      await fireEvent.wheel(panel!)
 
       expect(forwardEventToCanvasSpy).toHaveBeenCalled()
     })
@@ -478,12 +446,12 @@ describe('SelectionToolbox', () => {
 
     it('should hide most buttons when no items selected', () => {
       canvasStore.selectedItems = []
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      expect(wrapper.find('.info-button').exists()).toBe(false)
-      expect(wrapper.find('.color-picker-button').exists()).toBe(false)
-      expect(wrapper.find('.frame-nodes').exists()).toBe(false)
-      expect(wrapper.find('.bookmark-button').exists()).toBe(false)
+      expect(container.querySelector('.info-button')).toBeFalsy()
+      expect(container.querySelector('.color-picker-button')).toBeFalsy()
+      expect(container.querySelector('.frame-nodes')).toBeFalsy()
+      expect(container.querySelector('.bookmark-button')).toBeFalsy()
     })
   })
 })

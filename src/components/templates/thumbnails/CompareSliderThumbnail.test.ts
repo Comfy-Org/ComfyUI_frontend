@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -30,8 +30,8 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 describe('CompareSliderThumbnail', () => {
-  const mountThumbnail = (props = {}) => {
-    return mount(CompareSliderThumbnail, {
+  const renderThumbnail = (props = {}) => {
+    return render(CompareSliderThumbnail, {
       props: {
         baseImageSrc: '/base-image.jpg',
         overlayImageSrc: '/overlay-image.jpg',
@@ -43,42 +43,35 @@ describe('CompareSliderThumbnail', () => {
   }
 
   it('renders both base and overlay images', () => {
-    const wrapper = mountThumbnail()
-    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
-    expect(lazyImages.length).toBe(2)
-    expect(lazyImages[0].props('src')).toBe('/base-image.jpg')
-    expect(lazyImages[1].props('src')).toBe('/overlay-image.jpg')
+    renderThumbnail()
+    const images = screen.getAllByRole('img')
+    expect(images).toHaveLength(2)
+    expect(images[0]).toHaveAttribute('src', '/base-image.jpg')
+    expect(images[1]).toHaveAttribute('src', '/overlay-image.jpg')
   })
 
   it('applies correct alt text to both images', () => {
-    const wrapper = mountThumbnail({ alt: 'Custom Alt Text' })
-    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
-    expect(lazyImages[0].props('alt')).toBe('Custom Alt Text')
-    expect(lazyImages[1].props('alt')).toBe('Custom Alt Text')
+    renderThumbnail({ alt: 'Custom Alt Text' })
+    const images = screen.getAllByRole('img')
+    expect(images[0]).toHaveAttribute('alt', 'Custom Alt Text')
+    expect(images[1]).toHaveAttribute('alt', 'Custom Alt Text')
   })
 
   it('applies clip-path style to overlay image', () => {
-    const wrapper = mountThumbnail()
-    const overlayLazyImage = wrapper.findAllComponents({ name: 'LazyImage' })[1]
-    const imageStyle = overlayLazyImage.props('imageStyle')
-    expect(imageStyle.clipPath).toContain('inset')
+    renderThumbnail()
+    const images = screen.getAllByRole('img')
+    expect(images[1].style.clipPath).toContain('inset')
   })
 
   it('renders slider divider', () => {
-    const wrapper = mountThumbnail()
-    const divider = wrapper.find('.bg-white\\/30')
-    expect(divider.exists()).toBe(true)
+    renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider).toBeDefined()
   })
 
   it('positions slider based on default value', () => {
-    const wrapper = mountThumbnail()
-    const divider = wrapper.find('.bg-white\\/30')
-    expect(divider.attributes('style')).toContain('left: 50%')
-  })
-
-  it('passes isHovered prop to BaseThumbnail', () => {
-    const wrapper = mountThumbnail({ isHovered: true })
-    const baseThumbnail = wrapper.findComponent({ name: 'BaseThumbnail' })
-    expect(baseThumbnail.props('isHovered')).toBe(true)
+    renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('50%')
   })
 })

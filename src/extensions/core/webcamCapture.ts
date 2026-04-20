@@ -142,7 +142,11 @@ app.registerExtension({
         useToastStore().addAlert(err)
         throw new Error(err)
       }
-      return `webcam/${name} [temp]`
+      const data = await resp.json()
+      const serverName = data.name || name
+      const subfolder = data.subfolder || 'webcam'
+      const type = data.type || 'temp'
+      return `${subfolder}/${serverName} [${type}]`
     }
 
     // @ts-expect-error fixme ts strict error

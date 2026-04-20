@@ -1,0 +1,11 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "e2e/**/*", "astro.config.ts"],
+  "exclude": ["src/**/*.stories.ts"],
+  "references": [{ "path": "./tsconfig.stories.json" }]
+}
