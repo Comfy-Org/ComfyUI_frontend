@@ -111,8 +111,8 @@ export class AssetBrowserHelper {
     }
   }
 
-  async enableAssetApiSetting(page: Page): Promise<void> {
-    await page.evaluate(async () => {
+  async enableAssetApiSetting(): Promise<void> {
+    await this.page.evaluate(async () => {
       await window.app!.extensionManager.setting.set(
         'Comfy.Assets.UseAssetAPI',
         true
@@ -120,8 +120,8 @@ export class AssetBrowserHelper {
     })
   }
 
-  async openModelLibrary(page: Page): Promise<void> {
-    await page.evaluate(async () => {
+  async openModelLibrary(): Promise<void> {
+    await this.page.evaluate(async () => {
       await window.app!.extensionManager.command.execute(
         'Comfy.BrowseModelAssets'
       )

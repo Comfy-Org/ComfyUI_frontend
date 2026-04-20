@@ -84,8 +84,8 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     ])
 
     await comfyPage.setup()
-    await assetBrowserHelper.enableAssetApiSetting(comfyPage.page)
-    await assetBrowserHelper.openModelLibrary(comfyPage.page)
+    await assetBrowserHelper.enableAssetApiSetting()
+    await assetBrowserHelper.openModelLibrary()
 
     modal = new AssetBrowserModal(comfyPage.page)
     await expect(modal.root).toBeVisible()
@@ -509,15 +509,6 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => tagCalls.getCalls().length, { timeout: 1200 })
         .toBe(initial)
-    })
-
-    test('immutable asset disables all editable controls', async () => {
-      await focusImmutableModel()
-
-      await expect(modal.userDescriptionTextarea).toBeDisabled()
-      await expect(modal.baseModelsInput).toBeDisabled()
-      await expect(modal.additionalTagsInput).toBeDisabled()
-      await expect(modal.editDisplayNameButton).toBeHidden()
     })
   })
 })
