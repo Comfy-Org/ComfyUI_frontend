@@ -424,7 +424,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
 
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.nextFrame()
 
       const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('19')
       await subgraphNodeRef.navigateIntoSubgraph()

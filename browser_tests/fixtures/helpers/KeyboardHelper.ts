@@ -1,13 +1,21 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+
 export class KeyboardHelper {
   constructor(
     private readonly page: Page,
     private readonly canvas: Locator
   ) {}
 
-  private async nextFrame(): Promise<void> {
-    await this.page.evaluate(() => new Promise<number>(requestAnimationFrame))
+  async press(key: string, locator?: Locator | null): Promise<void> {
+    const target = locator ?? this.canvas
+    await target.press(key)
+    await nextFrame(this.page)
+  }
+
+  async delete(locator?: Locator | null): Promise<void> {
+    await this.press('Delete', locator)
   }
 
   async ctrlSend(
@@ -16,7 +24,7 @@ export class KeyboardHelper {
   ): Promise<void> {
     const target = locator ?? this.page.keyboard
     await target.press(`Control+${keyToPress}`)
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async selectAll(locator?: Locator | null): Promise<void> {

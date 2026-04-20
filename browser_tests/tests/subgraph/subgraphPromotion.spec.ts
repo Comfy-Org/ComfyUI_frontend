@@ -102,7 +102,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.nextFrame()
 
         const textarea = comfyPage.page.getByTestId(
           TestIds.widgets.domWidgetTextarea
@@ -150,7 +149,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.nextFrame()
 
         const testContent = 'promoted-value-sync-test'
 
@@ -182,10 +180,6 @@ test.describe(
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      })
-
       test('Can promote and un-promote a widget from inside a subgraph', async ({
         comfyPage
       }) => {
@@ -322,7 +316,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-preview-node'
         )
-        await comfyPage.nextFrame()
 
         // The SaveImage node is in the recommendedNodes list, so its
         // filename_prefix widget should be auto-promoted
@@ -407,7 +400,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
-        await comfyPage.nextFrame()
 
         await expect
           .poll(() => getPromotedWidgetNames(comfyPage, '5'))
@@ -459,7 +451,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.nextFrame()
 
         // Verify promotions exist
         await expect
@@ -477,12 +468,9 @@ test.describe(
       test('Nested promoted widget entries reflect interior changes after slot removal', async ({
         comfyPage
       }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
-        await comfyPage.nextFrame()
 
         await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '5', 0)
         const initialNames = await getPromotedWidgetNames(comfyPage, '5')
@@ -522,8 +510,6 @@ test.describe(
       test('Removing I/O slot removes associated promoted widget', async ({
         comfyPage
       }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )

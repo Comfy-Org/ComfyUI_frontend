@@ -184,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@/utils/tailwindUtil'
@@ -206,6 +206,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
   downloadModel,
+  fetchModelMetadata,
   isModelDownloadable,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
@@ -243,6 +244,24 @@ const isDownloadActive = computed(
 const store = useMissingModelStore()
 const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
   storeToRefs(store)
+
+onMounted(() => {
+  const url = model.representative.url
+  if (url && !store.fileSizes[url]) {
+    fetchModelMetadata(url)
+      .then((metadata) => {
+        if (metadata.fileSize !== null) {
+          store.setFileSize(url, metadata.fileSize)
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn(
+          `[MissingModelRow] Failed to fetch metadata for ${url}:`,
+          error
+        )
+      })
+  }
+})
 
 const downloadable = computed(() => {
   const rep = model.representative

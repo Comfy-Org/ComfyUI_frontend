@@ -92,6 +92,14 @@
         v-if="showExportControls"
         @export-model="handleExportModel"
       />
+
+      <GizmoControls
+        v-if="showGizmoControls"
+        v-model:gizmo-config="modelConfig!.gizmo"
+        @toggle-gizmo="handleToggleGizmo"
+        @set-gizmo-mode="handleSetGizmoMode"
+        @reset-gizmo-transform="handleResetGizmoTransform"
+      />
     </div>
   </div>
 </template>
@@ -102,6 +110,7 @@ import { computed, ref } from 'vue'
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
+import GizmoControls from '@/components/load3d/controls/GizmoControls.vue'
 import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
@@ -109,6 +118,7 @@ import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   CameraConfig,
+  GizmoMode,
   LightConfig,
   ModelConfig,
   SceneConfig
@@ -148,6 +158,7 @@ const categoryLabels: Record<string, string> = {
   model: 'load3d.model',
   camera: 'load3d.camera',
   light: 'load3d.light',
+  gizmo: 'load3d.gizmo.label',
   export: 'load3d.export'
 }
 
@@ -156,7 +167,7 @@ const availableCategories = computed(() => {
     return ['scene', 'model', 'camera']
   }
 
-  return ['scene', 'model', 'camera', 'light', 'export']
+  return ['scene', 'model', 'camera', 'light', 'gizmo', 'export']
 })
 
 const showSceneControls = computed(
@@ -175,6 +186,9 @@ const showLightControls = computed(
     !!modelConfig.value
 )
 const showExportControls = computed(() => activeCategory.value === 'export')
+const showGizmoControls = computed(
+  () => activeCategory.value === 'gizmo' && !!modelConfig.value
+)
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -190,6 +204,7 @@ const categoryIcons = {
   model: 'icon-[lucide--box]',
   camera: 'icon-[lucide--camera]',
   light: 'icon-[lucide--sun]',
+  gizmo: 'icon-[lucide--move-3d]',
   export: 'icon-[lucide--download]'
 } as const
 
@@ -205,6 +220,9 @@ const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
   (e: 'exportModel', format: string): void
   (e: 'updateHdriFile', file: File | null): void
+  (e: 'toggleGizmo', enabled: boolean): void
+  (e: 'setGizmoMode', mode: GizmoMode): void
+  (e: 'resetGizmoTransform'): void
 }>()
 
 const handleBackgroundImageUpdate = (file: File | null) => {
@@ -217,5 +235,17 @@ const handleExportModel = (format: string) => {
 
 const handleHDRIFileUpdate = (file: File | null) => {
   emit('updateHdriFile', file)
+}
+
+const handleToggleGizmo = (enabled: boolean) => {
+  emit('toggleGizmo', enabled)
+}
+
+const handleSetGizmoMode = (mode: GizmoMode) => {
+  emit('setGizmoMode', mode)
+}
+
+const handleResetGizmoTransform = () => {
+  emit('resetGizmoTransform')
 }
 </script>

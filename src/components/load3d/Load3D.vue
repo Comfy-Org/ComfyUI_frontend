@@ -28,6 +28,9 @@
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
         @update-hdri-file="handleHDRIFileUpdate"
+        @toggle-gizmo="handleToggleGizmo"
+        @set-gizmo-mode="handleSetGizmoMode"
+        @reset-gizmo-transform="handleResetGizmoTransform"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -40,9 +43,27 @@
         @seek="handleSeek"
       />
     </div>
+    <div class="pointer-events-auto absolute top-12 right-2 z-20">
+      <div class="flex flex-col rounded-lg bg-backdrop/30">
+        <Button
+          v-tooltip.left="{
+            value: $t('load3d.fitToViewer'),
+            showDelay: 300
+          }"
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.fitToViewer')"
+          @click="handleFitToViewer"
+        >
+          <i class="pi pi-window-maximize text-lg text-base-foreground" />
+        </Button>
+      </div>
+    </div>
+
     <div
       v-if="enable3DViewer && node"
-      class="pointer-events-auto absolute top-12 right-2 z-20"
+      class="pointer-events-auto absolute top-24 right-2 z-20"
     >
       <ViewerControls :node="node as LGraphNode" />
     </div>
@@ -51,8 +72,8 @@
       v-if="!isPreview"
       class="pointer-events-auto absolute right-2 z-20"
       :class="{
-        'top-12': !enable3DViewer,
-        'top-24': enable3DViewer
+        'top-24': !enable3DViewer,
+        'top-36': enable3DViewer
       }"
     >
       <RecordingControls
@@ -77,6 +98,7 @@ import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -143,6 +165,10 @@ const {
   handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
+  handleToggleGizmo,
+  handleSetGizmoMode,
+  handleResetGizmoTransform,
+  handleFitToViewer,
   cleanup
 } = useLoad3d(node as Ref<LGraphNode | null>)
 
