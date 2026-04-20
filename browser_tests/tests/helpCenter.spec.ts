@@ -96,7 +96,7 @@ test.describe('Help Center', () => {
       )
 
       expect(url.hostname).toBe('github.com')
-      expect(url.pathname).toBe('/comfyanonymous/ComfyUI')
+      expect(url.pathname).toBe('/Comfy-Org/ComfyUI')
     })
 
     test('Help & Support item opens the Zendesk support form with OSS tag', async ({
