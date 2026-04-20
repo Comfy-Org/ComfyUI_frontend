@@ -547,7 +547,8 @@ onMounted(async () => {
 
     vueNodeLifecycle.setupEmptyGraphListener()
   } finally {
-    if (!workflowPersistence.hasTemplateIntent()) {
+    const deferSpinnerForTemplate = workflowPersistence.hasTemplateIntent()
+    if (!deferSpinnerForTemplate) {
       workspaceStore.spinner = false
     }
   }
@@ -569,15 +570,11 @@ onMounted(async () => {
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  let templateLoadAttempted = false
   if (sharedWorkflowLoadStatus === 'not-present') {
-    templateLoadAttempted =
-      await workflowPersistence.loadTemplateFromUrlIfPresent()
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
   }
 
-  if (templateLoadAttempted) {
-    workspaceStore.spinner = false
-  }
+  workspaceStore.spinner = false
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
