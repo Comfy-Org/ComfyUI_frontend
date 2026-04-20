@@ -3,12 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Node Resizing', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
   test('should resize node without position drift after selecting', async ({
     comfyPage
   }) => {

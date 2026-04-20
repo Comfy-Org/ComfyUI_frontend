@@ -29,7 +29,7 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
 
   const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
   await expect(helpButton).toBeVisible()
-  await helpButton.click({ force: true })
+  await helpButton.click()
   await comfyPage.nextFrame()
 
   return comfyPage.page.getByTestId('properties-panel')
@@ -87,8 +87,6 @@ async function setLocaleAndWaitForWorkflowReload(
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
   })
 

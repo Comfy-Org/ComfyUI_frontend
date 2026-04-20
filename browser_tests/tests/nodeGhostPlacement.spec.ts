@@ -14,7 +14,6 @@ async function setVueMode(comfyPage: ComfyPage, enabled: boolean) {
 
 async function addGhostAtCenter(comfyPage: ComfyPage) {
   await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-  await comfyPage.nextFrame()
 
   const viewport = comfyPage.page.viewportSize()!
   const centerX = Math.round(viewport.width / 2)
@@ -53,7 +52,6 @@ for (const mode of ['litegraph', 'vue'] as const) {
 
     test('positions ghost node at cursor', async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.nextFrame()
 
       const viewport = comfyPage.page.viewportSize()!
       const centerX = Math.round(viewport.width / 2)
@@ -110,8 +108,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(before).not.toBeNull()
       expect(before!.ghost).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()
@@ -124,8 +121,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(before).not.toBeNull()
       expect(before!.ghost).toBe(true)
 
-      await comfyPage.page.keyboard.press('Delete')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Delete')
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()
@@ -138,8 +134,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(before).not.toBeNull()
       expect(before!.ghost).toBe(true)
 
-      await comfyPage.page.keyboard.press('Backspace')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Backspace')
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()

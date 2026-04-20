@@ -89,7 +89,7 @@ vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
   civitaiImportSource: {
     type: 'civitai',
     name: 'Civitai',
-    hostnames: ['civitai.com']
+    hostnames: ['civitai.com', 'civitai.red']
   }
 }))
 

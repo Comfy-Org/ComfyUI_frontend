@@ -129,6 +129,8 @@
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
+    "on": "On",
+    "off": "Off",
     "cancel": "Cancel",
     "close": "Close",
     "closeDialog": "Close dialog",
@@ -1668,6 +1670,7 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
+    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "math": "math",
@@ -1699,7 +1702,6 @@
     "HitPaw": "HitPaw",
     "sd": "sd",
     "Ideogram": "Ideogram",
-    "postprocessing": "postprocessing",
     "transform": "transform",
     "batch": "batch",
     "upscaling": "upscaling",
@@ -1734,10 +1736,12 @@
     "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
+    "Sonilo": "Sonilo",
     "Stability AI": "Stability AI",
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "supir": "supir",
     "Tencent": "Tencent",
     "textgen": "textgen",
     "Topaz": "Topaz",
@@ -1941,6 +1945,7 @@
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
+    "fitToViewer": "Fit to Viewer",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -1988,7 +1993,24 @@
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
-    "uploadingModel": "Uploading 3D model..."
+    "uploadingModel": "Uploading 3D model...",
+    "loadingHDRI": "Loading HDRI...",
+    "hdri": {
+      "label": "HDRI Environment",
+      "uploadFile": "Upload HDRI (.hdr, .exr)",
+      "changeFile": "Change HDRI",
+      "removeFile": "Remove HDRI",
+      "showAsBackground": "Show as Background",
+      "intensity": "Intensity"
+    },
+    "gizmo": {
+      "label": "Gizmo",
+      "toggle": "Gizmo",
+      "translate": "Translate",
+      "rotate": "Rotate",
+      "scale": "Scale",
+      "reset": "Reset Transform"
+    }
   },
   "imageCrop": {
     "loading": "Loading...",
@@ -2083,7 +2105,11 @@
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
     "failedToUploadBackgroundImage": "Failed to upload background image",
-    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
+    "failedToLoadHDRI": "Failed to load HDRI file",
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
+    "failedToToggleGizmo": "Failed to toggle gizmo",
+    "failedToSetGizmoMode": "Failed to set gizmo mode"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -3214,7 +3240,9 @@
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
-    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again."
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishSuccessTitle": "Published successfully",
+    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
@@ -3403,6 +3431,8 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
+    "editTitle": "Edit title",
+    "editSubgraph": "Edit subgraph",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
     "title": "No item(s) selected | 1 item selected | {count} items selected",
