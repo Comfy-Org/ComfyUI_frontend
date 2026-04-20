@@ -18,6 +18,7 @@ on:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
+  PREVIEW_ALIAS_PREFIX: comfy-website-preview
 
 jobs:
   deploy-preview:
@@ -41,19 +42,53 @@ jobs:
       - name: Build project artifacts
         run: vercel build --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
 
+      - name: Compute stable alias hostname
+        id: alias
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: echo "host=${PREVIEW_ALIAS_PREFIX}-pr-${PR_NUMBER}.vercel.app" >> "$GITHUB_OUTPUT"
+
       - name: Deploy project artifacts to Vercel
         id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
+          GIT_COMMIT_REF: ${{ github.event.pull_request.head.ref }}
+          GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          GIT_COMMIT_MESSAGE: ${{ github.event.pull_request.title }}
+          GIT_PR_ID: ${{ github.event.pull_request.number }}
+          GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_WEBSITE_TOKEN }})
+          URL=$(vercel deploy --prebuilt \
+            --token="$VERCEL_TOKEN" \
+            --meta githubCommitRef="$GIT_COMMIT_REF" \
+            --meta githubCommitSha="$GIT_COMMIT_SHA" \
+            --meta githubCommitAuthorLogin="$GIT_AUTHOR_LOGIN" \
+            --meta githubCommitMessage="$GIT_COMMIT_MESSAGE" \
+            --meta githubPrId="$GIT_PR_ID" \
+            --meta githubRepo="$GIT_REPO")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Add deployment URL to summary
-        run: echo "**Preview:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Alias deployment to stable PR hostname
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          ALIAS_HOST: ${{ steps.alias.outputs.host }}
+        run: |
+          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST" --token="$VERCEL_TOKEN"
+
+      - name: Add deployment URLs to summary
+        run: |
+          {
+            echo "**Preview:** https://${{ steps.alias.outputs.host }}"
+            echo "**This commit:** ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save PR metadata
         run: |
           mkdir -p temp/vercel-preview
           echo "${{ steps.deploy.outputs.url }}" > temp/vercel-preview/url.txt
+          echo "https://${{ steps.alias.outputs.host }}" > temp/vercel-preview/stable-url.txt
 
       - name: Upload preview metadata
         uses: actions/upload-artifact@v6
