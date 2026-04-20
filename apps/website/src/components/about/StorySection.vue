@@ -9,8 +9,8 @@ const investors = [
   { name: 'CRAFT', icon: '/icons/investors/craft.svg' },
   { name: 'PACE CAPITAL', icon: '/icons/investors/pace-capital.svg' },
   { name: 'chemistry_', icon: '/icons/investors/chemistry.svg' },
+  { name: 'ABSTRACT', icon: '/icons/investors/abstract.svg' },
   { name: 'TRUARROW PARTNERS', icon: '/icons/investors/truarrow-partners.svg' },
-  { name: 'SAPPHIRE VENTURES', icon: '/icons/investors/sapphire-ventures.svg' },
   { name: 'ESSENCE', icon: '/icons/investors/essence.svg' }
 ]
 </script>

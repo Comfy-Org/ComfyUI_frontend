@@ -150,7 +150,11 @@ onMounted(() => {
     }
   }
 
-  tick()
+  if (prefersReducedMotion()) {
+    tick(performance.now())
+  } else {
+    animationId = requestAnimationFrame(tick)
+  }
 })
 
 onUnmounted(() => {
