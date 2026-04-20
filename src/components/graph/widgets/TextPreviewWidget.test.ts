@@ -122,8 +122,44 @@ describe('TextPreviewWidget', () => {
     })
   })
 
+  describe('Raw HTML sanitisation in modelValue', () => {
+    it('strips img tags with inline event handlers', () => {
+      const { container } = renderPreview('<img src=x onerror="alert(1)">')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const img = container.querySelector('img')
+      // DOMPurify removes on* handlers; an <img> with an onerror should be
+      // dropped entirely or at minimum have the handler stripped.
+      expect(img?.getAttribute('onerror')).toBeNull()
+    })
+
+    it('strips script tags from raw HTML in modelValue', () => {
+      const { container } = renderPreview(
+        'hello<script>window.__xss = true</script>world'
+      )
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('script')).toBeNull()
+    })
+
+    it('strips inline javascript: hrefs on anchors', () => {
+      const { container } = renderPreview(
+        '<a href="javascript:alert(1)">click</a>'
+      )
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const anchor = container.querySelector('a')
+      const href = anchor?.getAttribute('href')
+      expect(href === null || !href.startsWith('javascript:')).toBe(true)
+    })
+  })
+
   describe('Execution state', () => {
-    it('shows a Skeleton on mount (assumes parent may still be executing)', () => {
+    it('hides the Skeleton on mount when execution is already idle', () => {
+      execState().executingNodeIds = []
+      execState().isIdle = true
+      renderPreview('text', { nodeId: 'n1' })
+      expect(screen.queryByTestId('skeleton')).toBeNull()
+    })
+
+    it('shows a Skeleton on mount when the parent node is executing', () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
       renderPreview('text', { nodeId: 'n1' })

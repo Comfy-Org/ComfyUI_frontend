@@ -12,8 +12,9 @@
 </template>
 
 <script setup lang="ts">
+import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -25,7 +26,11 @@ const props = defineProps<{
 }>()
 
 const executionStore = useExecutionStore()
-const isParentNodeExecuting = ref(true)
+const isParentNodeExecuting = computed(() => {
+  if (executionStore.isIdle) return false
+  if (!parentNodeId) return executionStore.executingNodeIds.length > 0
+  return executionStore.executingNodeIds.includes(parentNodeId)
+})
 const formattedText = computed(() => {
   const src = modelValue.value
   // Turn [[label|url]] into placeholders to avoid interfering with linkifyHtml
@@ -51,39 +56,23 @@ const formattedText = computed(() => {
       : safeLabel
   })
 
-  return html
+  return DOMPurify.sanitize(html, {
+    ADD_ATTR: ['target', 'rel']
+  })
 })
 
 let parentNodeId: NodeId | null = null
 onMounted(() => {
   // Get the parent node ID from props if provided
   // For backward compatibility, fall back to the first executing node
-  parentNodeId = props.nodeId
+  parentNodeId = props.nodeId ?? parentNodeId
 })
 
-// Watch for either a new node has starting execution or overall execution ending
-const stopWatching = watch(
-  [() => executionStore.executingNodeIds, () => executionStore.isIdle],
-  () => {
-    if (executionStore.isIdle) {
-      isParentNodeExecuting.value = false
-      stopWatching()
-      return
-    }
-
-    // Check if parent node is no longer in the executing nodes list
-    if (
-      parentNodeId &&
-      !executionStore.executingNodeIds.includes(parentNodeId)
-    ) {
-      isParentNodeExecuting.value = false
-      stopWatching()
-    }
-
-    // Set parent node ID if not set yet
-    if (!parentNodeId && executionStore.executingNodeIds.length > 0) {
-      parentNodeId = executionStore.executingNodeIds[0]
-    }
+// Lazily adopt the first executing node as the parent when no nodeId is known.
+watch(
+  () => executionStore.executingNodeIds,
+  (ids) => {
+    if (!parentNodeId && ids.length > 0) parentNodeId = ids[0]
   }
 )
 </script>
