@@ -49,10 +49,12 @@
               @update:progress-target="updateProgressTarget"
             />
             <CurrentUserButton
-              v-if="isLoggedIn && !isWorkflowTabsInTopbar"
+              v-if="showCurrentUser && !isWorkflowTabsInTopbar"
               class="shrink-0"
             />
-            <LoginButton v-else-if="isDesktop && !isWorkflowTabsInTopbar" />
+            <LoginButton
+              v-else-if="showLoginButton && !isWorkflowTabsInTopbar"
+            />
             <Button
               v-if="isCloud && flags.workflowSharingEnabled"
               v-tooltip.bottom="shareTooltipConfig"
@@ -192,6 +194,10 @@ const isActionbarFloating = computed(
 const isWorkflowTabsInTopbar = computed(
   () => settingStore.get('Comfy.Workflow.WorkflowTabsPosition') === 'Topbar'
 )
+const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
+const showLoginButton = computed(
+  () => !showCurrentUser.value && (flags.showSignInButton ?? isDesktop)
+)
 /**
  * Whether the actionbar container has any visible docked buttons
  * (excluding ComfyActionbar, which uses position:fixed when floating
@@ -200,8 +206,8 @@ const isWorkflowTabsInTopbar = computed(
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
-  if (isLoggedIn.value && !isWorkflowTabsInTopbar.value) return true
-  if (isDesktop && !isWorkflowTabsInTopbar.value) return true
+  if (showCurrentUser.value && !isWorkflowTabsInTopbar.value) return true
+  if (showLoginButton.value && !isWorkflowTabsInTopbar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false
