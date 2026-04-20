@@ -9,7 +9,7 @@ description: 'Syncs the #bug-dump Slack channel into Linear as the system of rec
 
 Fix workflows (red-green tests, PRs) are a **secondary, opt-in pass** triggered per-candidate with `F`. The default flow files tickets and stops.
 
-```
+```text
 fetch → verify false defects → present approvals → create Linear (with labels, Triage state)
       → thread reply ":white_check_mark: Filed to Linear" (ingested marker)
       → [optional] delegate to red-green-fix → unit/e2e tests → PR
@@ -22,7 +22,7 @@ The skill does NOT auto-add Slack reactions (no `reactions.add` tool is exposed)
 
 Both markers are respected by Processed Detection on subsequent sweeps.
 
-### Team emoji scheme
+## Team emoji scheme
 
 | Emoji                | Meaning            | Who adds it                                            | Skill behavior                                 |
 | -------------------- | ------------------ | ------------------------------------------------------ | ---------------------------------------------- |
@@ -103,7 +103,7 @@ Never re-ingest a message already marked in any of the above ways.
 
 Filter query for Slack search-based sweeps:
 
-```
+```text
 in:<#C0A4XMHANP3> -has::white_check_mark: -has::pr-open: -has::repeat: -has::question: after:YYYY-MM-DD
 ```
 
@@ -202,7 +202,7 @@ Before proposing a ticket:
 
 Present candidates in batches of 5-10. Table format (9 columns):
 
-```
+```text
  #  | Slack (author, time)   | Proposed title                          | Env        | Sev  | Area       | Dedup      | Verify      | Rec
 ----+------------------------+-----------------------------------------+------------+------+------------+------------+-------------+-----
  1  | wavey, 04-20 08:06     | Unet dropdown missing selected model    | cloud prod | low  | ui         | N          | resolved    | N
@@ -315,7 +315,7 @@ If any of these fail, create the ticket without the failing optional field AND l
 
 After (successful) Linear creation, post a threaded reply on the original message via `slack_send_message` with `thread_ts` set to the top-level message ts. The reply MUST start with `:white_check_mark:` and include the Linear URL — that's the ingested marker used by future runs' filtering:
 
-```
+```text
 :white_check_mark: Filed to Linear: <LINEAR_URL>
 Reporter: <@USER_ID>
 Sev: <severity>  •  Area: <area>
@@ -327,7 +327,7 @@ Keep the rest plain text — no markdown tables, no bold. The leading `:white_ch
 
 Thread replies are collapsed in the channel, so the parent message isn't visibly marked until the human adds a `:white_check_mark:` reaction. The skill can't set reactions (no `reactions.add` tool), so after each batch it MUST print a ready-to-use action list:
 
-```
+```text
 Add :white_check_mark: to these parent messages in #bug-dump (click emoji → search "white check"):
 
 1. https://comfy-organization.slack.com/archives/C0A4XMHANP3/p1776639963837519  → LIN-4710
@@ -352,7 +352,7 @@ Keeping both is cheap and makes processed detection robust to either signal drif
 
 If the candidate was `F` (file and fix), post a second thread reply when the PR opens — using the team's `:pr-open:` emoji so it aligns with the channel scheme:
 
-```
+```text
 :pr-open: Fix PR: <PR_URL>
 Red-green verified: <unit or e2e> test proves the regression.
 ```
@@ -471,7 +471,7 @@ Approval-table response code `R` (new) corresponds to `:repeat:` — if you pick
 
 Append to `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md`:
 
-```
+```text
 Bug Dump Ingest Session -- 2026-04-20 11:40 KST
 
 Window: 2026-04-18 00:00 — 2026-04-20 12:00 KST
@@ -512,7 +512,7 @@ If the reporter replies `"No action needed, this is solved"` (see wavey 2026-04-
 
 Construct Slack permalinks as:
 
-```
+```text
 https://comfy-organization.slack.com/archives/{CHANNEL_ID}/p{TS_WITH_DOT_REMOVED}
 ```
 
