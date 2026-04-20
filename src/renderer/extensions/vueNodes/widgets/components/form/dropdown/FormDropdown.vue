@@ -135,7 +135,7 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 }
 
 const toggleDropdown = (event: Event) => {
-  if (disabled) return
+  if (disabled || loading) return
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle(event, triggerRef.value)
     isOpen.value = !isOpen.value
@@ -150,7 +150,7 @@ const closeDropdown = () => {
 }
 
 function handleFileChange(event: Event) {
-  if (disabled) return
+  if (disabled || loading) return
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   if (target.files) {
