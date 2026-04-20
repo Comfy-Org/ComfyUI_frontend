@@ -19,6 +19,7 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
+  VERCEL_SCOPE: comfyui
 
 jobs:
   deploy-preview:
@@ -84,7 +85,7 @@ jobs:
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST"
+          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST" --scope="$VERCEL_SCOPE"
 
       - name: Publish preview outputs
         env:
