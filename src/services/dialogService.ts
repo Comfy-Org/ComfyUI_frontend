@@ -278,8 +278,9 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    const { canAccessSubscriptionFeatures, isFreeTier, type } =
+      useBillingContext()
+    if (!canAccessSubscriptionFeatures.value || isFreeTier.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'

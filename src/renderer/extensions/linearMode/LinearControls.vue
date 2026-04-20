@@ -23,7 +23,7 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
-const { isActiveSubscription } = useBillingContext()
+const { canAccessSubscriptionFeatures } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -137,7 +137,7 @@ function handleDragDrop(e: DragEvent) {
         class="border-t border-node-component-border p-4 pb-6"
       >
         <SubscribeToRunButton
-          v-if="!isActiveSubscription"
+          v-if="!canAccessSubscriptionFeatures"
           class="mt-4 w-full"
         />
         <div v-else class="mt-4 flex">
@@ -189,7 +189,7 @@ function handleDragDrop(e: DragEvent) {
           class="h-7 min-w-40"
         />
         <SubscribeToRunButton
-          v-if="!isActiveSubscription"
+          v-if="!canAccessSubscriptionFeatures"
           class="mt-4 w-full"
         />
         <Button

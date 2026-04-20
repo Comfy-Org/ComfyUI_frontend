@@ -151,10 +151,11 @@ const {
   showInviteMemberUpsellDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isActiveSubscription, subscription, getMaxSeats } = useBillingContext()
+const { canAccessSubscriptionFeatures, subscription, getMaxSeats } =
+  useBillingContext()
 
 const isSingleSeatPlan = computed(() => {
-  if (!isActiveSubscription.value) return true
+  if (!canAccessSubscriptionFeatures.value) return true
   const tier = subscription.value?.tier
   if (!tier) return true
   const tierKey = TIER_TO_KEY[tier]
@@ -184,7 +185,7 @@ function handleEditWorkspace() {
 }
 
 // Disable delete when workspace has an active subscription (to prevent accidental deletion)
-// Use workspace's own subscription status, not the global isActiveSubscription
+// Use workspace's own subscription status, not the global canAccessSubscriptionFeatures
 const isDeleteDisabled = computed(
   () =>
     uiConfig.value.workspaceMenuAction === 'delete' &&
