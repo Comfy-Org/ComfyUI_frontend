@@ -34,7 +34,6 @@ function createDefaultCropState() {
 }
 
 vi.mock('@/composables/useImageCrop', async () => {
-  const { ref } = await import('vue')
   return {
     ASPECT_RATIOS: {
       '1:1': 1,
