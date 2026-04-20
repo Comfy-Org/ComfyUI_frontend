@@ -111,20 +111,16 @@ describe('WidgetRange', () => {
     })
 
     it('forwards the display option to the RangeEditor', () => {
-      renderWidget(
-        makeWidget({ display: 'percentage' } as IWidgetRangeOptions)
-      )
+      renderWidget(makeWidget({ display: 'histogram' }))
       expect(screen.getByTestId('range-editor').dataset.display).toBe(
-        'percentage'
+        'histogram'
       )
     })
   })
 
   describe('Disabled state', () => {
     it('passes disabled=true when widget.options.disabled is set', () => {
-      renderWidget(
-        makeWidget({ disabled: true } as IWidgetRangeOptions)
-      )
+      renderWidget(makeWidget({ disabled: true }))
       expect(screen.getByTestId('range-editor').dataset.disabled).toBe('true')
     })
 

@@ -213,13 +213,13 @@ describe('WidgetCurve', () => {
     })
 
     it('preserves points when interpolation changes', async () => {
-      const original = {
+      const original: CurveData = {
         points: [
           [0, 0],
           [0.3, 0.8],
           [1, 1]
         ],
-        interpolation: 'monotone_cubic' as const
+        interpolation: 'monotone_cubic'
       }
       const { value } = renderWidget(makeWidget(), original)
       const user = userEvent.setup()
