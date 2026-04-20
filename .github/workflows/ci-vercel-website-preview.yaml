@@ -33,6 +33,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
@@ -40,9 +45,11 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment information
+        working-directory: apps/website
         run: vercel pull --yes --environment=preview
 
       - name: Build project artifacts
+        working-directory: apps/website
         run: vercel build
 
       - name: Fetch head commit metadata
@@ -62,6 +69,7 @@ jobs:
 
       - name: Deploy project artifacts to Vercel
         id: deploy
+        working-directory: apps/website
         env:
           GIT_COMMIT_REF: ${{ github.event.pull_request.head.ref }}
           GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
@@ -122,6 +130,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
@@ -129,13 +142,16 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment information
+        working-directory: apps/website
         run: vercel pull --yes --environment=production
 
       - name: Build project artifacts
+        working-directory: apps/website
         run: vercel build --prod
 
       - name: Deploy project artifacts to Vercel
         id: deploy
+        working-directory: apps/website
         run: |
           URL=$(vercel deploy --prebuilt --prod)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
