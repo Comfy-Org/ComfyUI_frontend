@@ -25,8 +25,8 @@ function getCommandRow(page: Page, commandId: string): Locator {
 }
 
 async function openContextMenu(page: Page, commandId: string) {
-  const cell = page.locator(`[title="${commandId}"]`)
-  await cell.click({ button: 'right' })
+  const row = getCommandRow(page, commandId)
+  await row.locator(`[title="${commandId}"]`).click({ button: 'right' })
   await expect(
     page.getByRole('menuitem', { name: /Change keybinding/i })
   ).toBeVisible()
@@ -45,6 +45,12 @@ async function pressComboOnInput(page: Page, combo: string) {
 async function saveAndCloseKeybindingDialog(page: Page) {
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: /Save/i }).click()
+  await expect(dialog).toBeHidden()
+}
+
+async function cancelAndCloseDialog(page: Page) {
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: /Cancel/i }).click()
   await expect(dialog).toBeHidden()
 }
 
@@ -127,10 +133,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
 
     test('Double-click row with 1 keybinding opens Edit dialog', async ({
@@ -147,10 +150,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
   })
 
@@ -197,10 +197,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
 
     test("Context menu 'Change keybinding' on single-binding command opens edit dialog", async ({
@@ -216,10 +213,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
 
     test("Context menu 'Change keybinding' on multi-binding command expands row", async ({
@@ -321,10 +315,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
 
     test('Add button opens add dialog', async ({ comfyPage }) => {
@@ -338,10 +329,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
 
     test('Reset button is disabled for unmodified commands', async ({
@@ -443,10 +431,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const input = getKeybindingInput(page)
       await expect(input).toBeVisible()
 
-      await page
-        .getByRole('dialog')
-        .getByRole('button', { name: /Cancel/i })
-        .click()
+      await cancelAndCloseDialog(page)
     })
 
     test('Delete button in expanded row removes that binding and collapses', async ({
