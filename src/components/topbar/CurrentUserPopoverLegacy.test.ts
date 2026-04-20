@@ -456,11 +456,9 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.queryByText('Subscribe Button')).not.toBeInTheDocument()
     })
 
-    it('hides partner nodes menu item', () => {
+    it('still shows partner nodes menu item', () => {
       renderComponent()
-      expect(
-        screen.queryByTestId('partner-nodes-menu-item')
-      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('partner-nodes-menu-item')).toBeInTheDocument()
     })
 
     it('hides plans & pricing menu item', () => {
@@ -470,11 +468,9 @@ describe('CurrentUserPopoverLegacy', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('hides manage plan menu item', () => {
+    it('still shows manage plan menu item', () => {
       renderComponent()
-      expect(
-        screen.queryByTestId('manage-plan-menu-item')
-      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
     })
 
     it('still shows user settings menu item', () => {

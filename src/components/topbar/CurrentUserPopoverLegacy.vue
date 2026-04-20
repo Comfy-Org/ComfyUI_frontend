@@ -79,7 +79,7 @@
     <Divider class="mx-0 my-2" />
 
     <div
-      v-if="isCloud && isActiveSubscription"
+      v-if="isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -109,7 +109,7 @@
     </div>
 
     <div
-      v-if="isCloud && isActiveSubscription"
+      v-if="isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
