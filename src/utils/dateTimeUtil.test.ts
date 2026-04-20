@@ -1,6 +1,43 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { parseIsoDateSafe } from './dateTimeUtil'
+
+const isoFractionalSecondsPattern = /\.(\d+)(?=Z|[+-]\d{2}:?\d{2}|$)/
+
+function withStrictMillisecondParser<T>(
+  run: (normalizedValues: string[]) => T
+): T {
+  const RealDate = Date
+  const normalizedValues: string[] = []
+
+  class StrictDate extends RealDate {
+    constructor(value?: string | number | Date) {
+      if (arguments.length === 0) {
+        super()
+        return
+      }
+
+      if (typeof value === 'string') {
+        normalizedValues.push(value)
+        const fractionalSeconds = value.match(isoFractionalSecondsPattern)?.[1]
+        if (fractionalSeconds && fractionalSeconds.length !== 3) {
+          super(Number.NaN)
+          return
+        }
+      }
+
+      super(value as string | number)
+    }
+  }
+
+  vi.stubGlobal('Date', StrictDate as DateConstructor)
+
+  try {
+    return run(normalizedValues)
+  } finally {
+    vi.unstubAllGlobals()
+  }
+}
 
 describe('parseIsoDateSafe', () => {
   it('parses standard ISO 8601 with millisecond precision', () => {
@@ -44,13 +81,20 @@ describe('parseIsoDateSafe', () => {
     expect(date?.toISOString()).toBe('2026-04-18T10:04:55.000Z')
   })
 
-  it('leaves 1- and 2-digit fractionals untouched', () => {
-    expect(parseIsoDateSafe('2026-04-18T10:04:55.6Z')?.toISOString()).toBe(
-      '2026-04-18T10:04:55.600Z'
-    )
-    expect(parseIsoDateSafe('2026-04-18T10:04:55.65Z')?.toISOString()).toBe(
-      '2026-04-18T10:04:55.650Z'
-    )
+  it('normalizes 1- and 2-digit fractionals for strict parsers', () => {
+    withStrictMillisecondParser((normalizedValues) => {
+      expect(parseIsoDateSafe('2026-04-18T10:04:55.6Z')?.toISOString()).toBe(
+        '2026-04-18T10:04:55.600Z'
+      )
+      expect(parseIsoDateSafe('2026-04-18T10:04:55.65Z')?.toISOString()).toBe(
+        '2026-04-18T10:04:55.650Z'
+      )
+
+      expect(normalizedValues).toEqual([
+        '2026-04-18T10:04:55.600Z',
+        '2026-04-18T10:04:55.650Z'
+      ])
+    })
   })
 
   it('returns null for empty string', () => {
