@@ -321,6 +321,39 @@ describe('useLoad3d', () => {
     })
   })
 
+  describe('preserves existing node callbacks through initializeLoad3d', () => {
+    // Regression: FE-214 — undo triggers rootGraph.clear() which fires
+    // node.onRemoved on the outgoing node. addWidget() chains a cleanup that
+    // unregisters the component widget from the DOM widget store. If
+    // initializeLoad3d overwrites node.onRemoved instead of chaining, that
+    // cleanup is lost and the interactive UI persists with a stale reference.
+    it('chains node.onRemoved with a preexisting callback', async () => {
+      const existingOnRemoved = vi.fn()
+      mockNode.onRemoved = existingOnRemoved
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      mockNode.onRemoved?.()
+
+      expect(existingOnRemoved).toHaveBeenCalledTimes(1)
+    })
+
+    it('chains node.onResize with a preexisting callback', async () => {
+      const existingOnResize = vi.fn()
+      mockNode.onResize = existingOnResize
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      mockNode.onResize?.([512, 512] as Size)
+
+      expect(existingOnResize).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('waitForLoad3d', () => {
     it('should execute callback immediately if Load3d exists', async () => {
       const composable = useLoad3d(mockNode)
