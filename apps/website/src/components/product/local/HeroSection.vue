@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale } from '../../../i18n/translations'
 
+import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
@@ -144,10 +145,12 @@ onMounted(() => {
       )
     })
 
-    animationId = requestAnimationFrame(tick)
+    if (!prefersReducedMotion()) {
+      animationId = requestAnimationFrame(tick)
+    }
   }
 
-  animationId = requestAnimationFrame(tick)
+  tick()
 })
 
 onUnmounted(() => {
