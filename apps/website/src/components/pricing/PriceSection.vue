@@ -49,8 +49,7 @@ const plans: PricingPlan[] = [
     features: [
       { text: 'pricing.plan.free.feature1' },
       { text: 'pricing.plan.free.feature2' }
-    ],
-    image: 'https://media.comfy.org/website/pricing/free.webp'
+    ]
   },
   {
     id: 'standard',
@@ -65,8 +64,7 @@ const plans: PricingPlan[] = [
     features: [
       { text: 'pricing.plan.standard.feature1' },
       { text: 'pricing.plan.standard.feature2' }
-    ],
-    image: 'https://media.comfy.org/website/pricing/standard.webp'
+    ]
   },
   {
     id: 'creator',
@@ -83,7 +81,6 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.creator.feature2' }
     ],
     nextUpKey: 'pricing.plan.creator.nextUp',
-    image: 'https://media.comfy.org/website/pricing/creator.webp',
     isPopular: true
   },
   {
@@ -100,8 +97,7 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.pro.feature1' },
       { text: 'pricing.plan.pro.feature2' }
     ],
-    nextUpKey: 'pricing.plan.pro.nextUp',
-    image: 'https://media.comfy.org/website/pricing/pro.webp'
+    nextUpKey: 'pricing.plan.pro.nextUp'
   },
   {
     id: 'enterprise',
@@ -281,13 +277,6 @@ const activePlanIndex = ref<number | null>(null)
             </p>
           </div>
         </div>
-
-        <!-- Card image -->
-        <img
-          :src="plan.image"
-          :alt="t(plan.labelKey, locale)"
-          class="aspect-video w-full rounded-4xl object-cover"
-        />
       </div>
     </div>
 

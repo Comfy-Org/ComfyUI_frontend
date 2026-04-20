@@ -7,6 +7,7 @@ interface Feature {
   description2?: string
   ctaText?: string
   ctaHref?: string
+  image: string
 }
 
 defineProps<{
@@ -75,10 +76,10 @@ defineProps<{
             cn('order-1 lg:w-1/2', i % 2 === 0 ? 'lg:order-2' : 'lg:order-1')
           "
         >
-          <div
-            class="aspect-4/3 w-full rounded-4xl bg-smoke-200"
-            role="img"
-            :aria-label="feature.title"
+          <img
+            :src="feature.image"
+            :alt="feature.title"
+            class="aspect-4/3 w-full rounded-4xl object-cover"
           />
         </div>
       </div>
