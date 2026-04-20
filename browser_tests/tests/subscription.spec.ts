@@ -46,7 +46,7 @@ unsubscribedTest.describe(
       async ({ comfyPage }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
-        ).toBeVisible({ timeout: 10_000 })
+        ).toBeVisible()
       }
     )
 
@@ -56,9 +56,7 @@ unsubscribedTest.describe(
         await comfyPage.page
           .getByTestId(TestIds.topbar.subscribeToRunButton)
           .click()
-        await expect(comfyPage.page.getByRole('dialog')).toBeVisible({
-          timeout: 10_000
-        })
+        await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
       }
     )
 
@@ -69,7 +67,7 @@ unsubscribedTest.describe(
         const btn = comfyPage.page.getByTestId(
           TestIds.topbar.subscribeToRunButton
         )
-        await expect(btn).toBeVisible({ timeout: 10_000 })
+        await expect(btn).toBeVisible()
         await expect(btn).not.toContainText(/to run/i)
       }
     )
@@ -83,7 +81,7 @@ unsubscribedTest.describe(
         const popover = comfyPage.page.locator('.current-user-popover')
         await expect(
           popover.getByRole('button', { name: /subscribe/i })
-        ).toBeVisible({ timeout: 10_000 })
+        ).toBeVisible()
       }
     )
 
@@ -98,9 +96,7 @@ unsubscribedTest.describe(
           .getByRole('button', { name: /subscribe/i })
           .first()
           .click()
-        await expect(comfyPage.page.getByRole('dialog')).toBeVisible({
-          timeout: 10_000
-        })
+        await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
       }
     )
 
@@ -109,7 +105,7 @@ unsubscribedTest.describe(
       async ({ comfyPage, subscriptionHelper }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
-        ).toBeVisible({ timeout: 10_000 })
+        ).toBeVisible()
 
         // Simulate returning from Stripe checkout: seed pending checkout,
         // mutate mock to return active subscription, trigger re-fetch.
@@ -123,7 +119,7 @@ unsubscribedTest.describe(
 
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
-        ).not.toBeVisible({ timeout: 10_000 })
+        ).toBeHidden()
       }
     )
 
@@ -140,11 +136,11 @@ unsubscribedTest.describe(
           .first()
           .click()
         const dialog = comfyPage.page.getByRole('dialog')
-        await expect(dialog).toBeVisible({ timeout: 10_000 })
+        await expect(dialog).toBeVisible()
 
         // Close dialog → SubscribeButton unmounts → onBeforeUnmount resets ref
         await dialog.getByRole('button', { name: /close/i }).first().click()
-        await expect(dialog).not.toBeVisible({ timeout: 10_000 })
+        await expect(dialog).toBeHidden()
 
         // Now change subscription state — the unmounted SubscribeButton's watcher
         // should not fire because isAwaitingStripeSubscription was reset.
@@ -157,7 +153,7 @@ unsubscribedTest.describe(
         await subscriptionHelper.triggerSubscriptionRefetch()
 
         // No dialog should reappear from the stale SubscribeButton state
-        await expect(dialog).not.toBeVisible({ timeout: 2_000 })
+        await expect(dialog).toBeHidden()
       }
     )
   }
@@ -172,7 +168,7 @@ subscribedTest.describe(
       async ({ comfyPage }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.queueButton)
-        ).toBeVisible({ timeout: 10_000 })
+        ).toBeVisible()
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeHidden()
@@ -184,7 +180,7 @@ subscribedTest.describe(
       async ({ comfyPage }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.queueButton)
-        ).toBeVisible({ timeout: 10_000 })
+        ).toBeVisible()
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
         ).toBeHidden()
@@ -202,7 +198,7 @@ freeTierTest.describe(
       async ({ comfyPage }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
-        ).toBeVisible({ timeout: 10_000 })
+        ).toBeVisible()
       }
     )
   }
