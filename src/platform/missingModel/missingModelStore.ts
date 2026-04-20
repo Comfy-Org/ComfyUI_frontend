@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -127,6 +128,85 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       missingModelCandidates.value = null
   }
 
+  function clearInteractionStateForName(name: string) {
+    delete modelExpandState.value[name]
+    delete selectedLibraryModel.value[name]
+    delete importCategoryMismatch.value[name]
+    delete importTaskIds.value[name]
+    delete urlInputs.value[name]
+    delete urlMetadata.value[name]
+    delete urlFetching.value[name]
+    delete urlErrors.value[name]
+    delete urlImporting.value[name]
+  }
+
+  function removeMissingModelsByNodeId(nodeId: string) {
+    if (!missingModelCandidates.value) return
+    const removedNames = new Set(
+      missingModelCandidates.value
+        .filter((m) => String(m.nodeId) === nodeId)
+        .map((m) => m.name)
+    )
+    missingModelCandidates.value = missingModelCandidates.value.filter(
+      (m) => String(m.nodeId) !== nodeId
+    )
+    for (const name of removedNames) {
+      if (!missingModelCandidates.value.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+    if (!missingModelCandidates.value.length)
+      missingModelCandidates.value = null
+  }
+
+  /**
+   * Remove all candidates whose nodeId starts with `prefix`.
+   *
+   * Intended for clearing all interior errors when a subgraph container is
+   * removed. Callers are expected to pass `${execId}:` (with trailing
+   * colon) so that sibling IDs sharing a numeric prefix (e.g. `"705"` vs
+   * `"70"`) are not matched.
+   */
+  function removeMissingModelsByPrefix(prefix: string) {
+    if (!missingModelCandidates.value) return
+    const removedNames = new Set<string>()
+    const remaining: MissingModelCandidate[] = []
+    for (const m of missingModelCandidates.value) {
+      // Preserve workflow-level candidates with no nodeId; they are not
+      // tied to any subgraph scope and should never be matched by prefix.
+      if (m.nodeId == null) {
+        remaining.push(m)
+        continue
+      }
+      if (String(m.nodeId).startsWith(prefix)) {
+        removedNames.add(m.name)
+      } else {
+        remaining.push(m)
+      }
+    }
+    if (removedNames.size === 0) return
+    missingModelCandidates.value = remaining.length ? remaining : null
+    for (const name of removedNames) {
+      if (!remaining.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+  }
+
+  function addMissingModels(models: MissingModelCandidate[]) {
+    if (!models.length) return
+    const existing = missingModelCandidates.value ?? []
+    const existingKeys = new Set(
+      existing.map((m) => `${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    const newModels = models.filter(
+      (m) =>
+        !existingKeys.has(`${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    if (!newModels.length) return
+    missingModelCandidates.value = [...existing, ...newModels]
+  }
+
   function hasMissingModelOnNode(nodeLocatorId: string): boolean {
     return missingModelNodeIds.value.has(nodeLocatorId)
   }
@@ -199,8 +279,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelAncestorExecutionIds,
 
     setMissingModels,
+    addMissingModels,
     removeMissingModelByNameOnNodes,
     removeMissingModelByWidget,
+    removeMissingModelsByNodeId,
+    removeMissingModelsByPrefix,
     clearMissingModels,
     createVerificationAbortController,
 

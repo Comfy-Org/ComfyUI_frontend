@@ -1,6 +1,7 @@
 @layer theme, base, primevue, components, utilities;
 
 @import './fonts.css';
+@import './_palette.css';
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
@@ -15,53 +16,25 @@
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow}]");
+@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
-@source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,subgraph-blueprint-canny-to-video-ltx-2-0,subgraph-blueprint-pose-to-video-ltx-2-0,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent}]");
+@source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent,i-tools-preview-image,i-tools-compare-image,canny-to-image,image-edit,text-to-image,pose-to-image,depth-to-video,image-to-image,canny-to-video,depth-to-image,image-to-video,pose-to-video,text-to-video,image-inpainting,image-outpainting}]");
 
 @custom-variant touch (@media (hover: none));
 
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
 
-  --text-xxs: 0.625rem;
-  --text-xxs--line-height: calc(1 / 0.625);
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: calc(1 / 0.625);
 
-  --text-xxxs: 0.5625rem;
-  --text-xxxs--line-height: calc(1 / 0.5625);
-
-  /* Font Families */
-  --font-inter: 'Inter', sans-serif;
-
-  /* Palette Colors */
-  --color-charcoal-100: #55565e;
-  --color-charcoal-200: #494a50;
-  --color-charcoal-300: #3c3d42;
-  --color-charcoal-400: #313235;
-  --color-charcoal-500: #2d2e32;
-  --color-charcoal-600: #262729;
-  --color-charcoal-700: #202121;
-  --color-charcoal-800: #171718;
-
-  --color-neutral-550: #636363;
-
-  --color-ash-300: #bbbbbb;
-  --color-ash-500: #828282;
-  --color-ash-800: #444444;
+  --text-3xs: 0.5625rem;
+  --text-3xs--line-height: calc(1 / 0.5625);
 
   --color-ivory-100: #fdfbfa;
   --color-ivory-200: #faf9f5;
   --color-ivory-300: #f0eee6;
-
-  --color-smoke-100: #f3f3f3;
-  --color-smoke-200: #e9e9e9;
-  --color-smoke-300: #e1e1e1;
-  --color-smoke-400: #d9d9d9;
-  --color-smoke-500: #c5c5c5;
-  --color-smoke-600: #b4b4b4;
-  --color-smoke-700: #a0a0a0;
-  --color-smoke-800: #8a8a8a;
 
   --color-sand-100: #e1ded5;
   --color-sand-200: #fff7d5;
@@ -71,14 +44,6 @@
   --color-slate-100: #9c9eab;
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
-
-  --color-white: #ffffff;
-  --color-black: #000000;
-
-  --color-electric-400: #f0ff41;
-  --color-sapphire-700: #172dd7;
-  --color-brand-yellow: var(--color-electric-400);
-  --color-brand-blue: var(--color-sapphire-700);
 
   --color-azure-300: #78bae9;
   --color-azure-400: #31b9f4;
@@ -230,6 +195,7 @@
   --interface-builder-mode-background: var(--color-ocean-300);
   --interface-builder-mode-button-background: var(--color-ocean-600);
   --interface-builder-mode-button-foreground: var(--color-white);
+  --interface-builder-mode-footer-background: var(--color-ocean-900);
 
   --nav-background: var(--color-white);
 
@@ -373,6 +339,7 @@
   --interface-builder-mode-background: var(--color-ocean-900);
   --interface-builder-mode-button-background: var(--color-ocean-600);
   --interface-builder-mode-button-foreground: var(--color-white);
+  --interface-builder-mode-footer-background: var(--color-ocean-900);
 
   --nav-background: var(--color-charcoal-800);
 
@@ -515,6 +482,9 @@
   );
   --color-interface-builder-mode-button-foreground: var(
     --interface-builder-mode-button-foreground
+  );
+  --color-interface-builder-mode-footer-background: var(
+    --interface-builder-mode-footer-background
   );
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
@@ -1900,4 +1870,38 @@ audio.comfy-audio.empty-audio-widget {
   50% {
     background-position: 0 0;
   }
+}
+
+@utility scroll-shadows-* {
+  overflow: auto;
+
+  background:
+    /* Shadow Cover TOP */
+    linear-gradient(--value(--color-*) 30%, transparent) center top,
+    /* Shadow Cover BOTTOM */
+      linear-gradient(transparent, --value(--color-*) 70%) center bottom,
+    /* Shadow TOP */
+      radial-gradient(
+        farthest-side at 50% 0,
+        color-mix(in oklab, --value(--color-*), #777777 35%),
+        60%,
+        transparent
+      )
+      center top,
+    /* Shadow BOTTOM */
+      radial-gradient(
+        farthest-side at 50% 100%,
+        color-mix(in oklab, --value(--color-*), #777777 35%),
+        60%,
+        transparent
+      )
+      center bottom;
+
+  background-repeat: no-repeat;
+  background-size:
+    300% 40px,
+    300% 40px,
+    300% 14px,
+    300% 14px;
+  background-attachment: local, local, scroll, scroll;
 }

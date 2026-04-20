@@ -1,0 +1,203 @@
+name: 'PR: Unified Report'
+
+on:
+  workflow_run:
+    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: E2E Coverage']
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: pr-report-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Resolve PR from workflow_run context
+        id: pr-meta
+        uses: actions/github-script@v8
+        with:
+          script: |
+            let pr = context.payload.workflow_run.pull_requests?.[0];
+            if (!pr) {
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.payload.workflow_run.head_sha,
+              });
+              pr = prs.find(p => p.state === 'open');
+            }
+
+            if (!pr) {
+              core.info('No open PR found for this workflow run — skipping.');
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            // Verify the workflow_run head SHA matches the current PR head
+            const { data: livePr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+
+            if (livePr.head.sha !== context.payload.workflow_run.head_sha) {
+              core.info(`Stale run: workflow SHA ${context.payload.workflow_run.head_sha} != PR head ${livePr.head.sha}`);
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            core.setOutput('skip', 'false');
+            core.setOutput('number', String(pr.number));
+            core.setOutput('base', livePr.base.ref);
+            core.setOutput('head-sha', livePr.head.sha);
+
+      - name: Find size workflow run
+        if: steps.pr-meta.outputs.skip != 'true'
+        id: find-size
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-size-data.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find perf workflow run
+        if: steps.pr-meta.outputs.skip != 'true'
+        id: find-perf
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-perf-report.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download size data (current)
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-size.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: size-data
+          run_id: ${{ steps.find-size.outputs.run-id }}
+          path: temp/size
+
+      - name: Download size baseline
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-size.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          branch: ${{ steps.pr-meta.outputs.base }}
+          workflow: ci-size-data.yaml
+          event: push
+          name: size-data
+          path: temp/size-prev
+          if_no_artifact_found: warn
+
+      - name: Find coverage workflow run
+        if: steps.pr-meta.outputs.skip != 'true'
+        id: find-coverage
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-tests-e2e-coverage.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          not-found-status: skip
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download coverage data
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-coverage.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: e2e-coverage
+          run_id: ${{ steps.find-coverage.outputs.run-id }}
+          path: temp/coverage
+          if_no_artifact_found: warn
+
+      - name: Download perf metrics (current)
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-perf.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: perf-metrics
+          run_id: ${{ steps.find-perf.outputs.run-id }}
+          path: test-results/
+
+      - name: Download perf baseline
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-perf.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          branch: ${{ steps.pr-meta.outputs.base }}
+          workflow: ci-perf-report.yaml
+          event: push
+          name: perf-metrics
+          path: temp/perf-baseline/
+          if_no_artifact_found: warn
+
+      - name: Download perf history from perf-data branch
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-perf.outputs.status == 'ready'
+        continue-on-error: true
+        run: |
+          if git ls-remote --exit-code origin perf-data >/dev/null 2>&1; then
+            git fetch origin perf-data --depth=1
+            mkdir -p temp/perf-history
+            for file in $(git ls-tree --name-only origin/perf-data baselines/ 2>/dev/null | sort -r | head -15); do
+              git show "origin/perf-data:${file}" > "temp/perf-history/$(basename "$file")" 2>/dev/null || true
+            done
+            echo "Loaded $(ls temp/perf-history/*.json 2>/dev/null | wc -l) historical baselines"
+          fi
+
+      - name: Generate unified report
+        if: steps.pr-meta.outputs.skip != 'true'
+        run: >
+          pnpm exec tsx scripts/unified-report.ts
+          --size-status=${{ steps.find-size.outputs.status }}
+          --perf-status=${{ steps.find-perf.outputs.status }}
+          --coverage-status=${{ steps.find-coverage.outputs.status }}
+          > pr-report.md
+
+      - name: Remove legacy separate comments
+        if: steps.pr-meta.outputs.skip != 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prNumber = Number('${{ steps.pr-meta.outputs.number }}');
+            const legacyMarkers = [
+              '<!-- COMFYUI_FRONTEND_SIZE -->',
+              '<!-- COMFYUI_FRONTEND_PERF -->',
+            ];
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            for (const comment of comments) {
+              if (legacyMarkers.some(m => comment.body?.includes(m))) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                });
+                core.info(`Deleted legacy comment ${comment.id}`);
+              }
+            }
+
+      - name: Post PR comment
+        if: steps.pr-meta.outputs.skip != 'true'
+        uses: ./.github/actions/post-pr-report-comment
+        with:
+          pr-number: ${{ steps.pr-meta.outputs.number }}
+          report-file: ./pr-report.md
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}

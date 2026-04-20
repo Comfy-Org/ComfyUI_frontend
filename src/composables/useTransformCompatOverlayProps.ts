@@ -1,5 +1,6 @@
 import type { HintedString } from '@primevue/core'
-import { computed } from 'vue'
+import type { InjectionKey } from 'vue'
+import { computed, inject } from 'vue'
 
 /**
  * Options for configuring transform-compatible overlay props
@@ -14,6 +15,10 @@ interface TransformCompatOverlayOptions {
   // scrollTarget?: string | HTMLElement
   // autoZIndex?: boolean
 }
+
+export const OverlayAppendToKey: InjectionKey<
+  HintedString<'body' | 'self'> | undefined | HTMLElement
+> = Symbol('OverlayAppendTo')
 
 /**
  * Composable that provides props to make PrimeVue overlay components
@@ -41,8 +46,10 @@ interface TransformCompatOverlayOptions {
 export function useTransformCompatOverlayProps(
   overrides: TransformCompatOverlayOptions = {}
 ) {
+  const injectedAppendTo = inject(OverlayAppendToKey, undefined)
+
   return computed(() => ({
-    appendTo: 'self' as const,
+    appendTo: injectedAppendTo ?? ('self' as const),
     ...overrides
   }))
 }

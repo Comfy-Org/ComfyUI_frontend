@@ -25,6 +25,10 @@
       "custom": "custom"
     }
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "Disable animations",
+    "tooltip": "Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",
     "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "Float widget rounding decimal places [0 = auto].",
     "tooltip": "(requires page reload)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Auto-pan speed",
+    "tooltip": "Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning."
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "Show canvas info on bottom left corner (fps, etc.)"
@@ -453,9 +461,6 @@
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Show missing models warning"
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Show missing nodes warning"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"

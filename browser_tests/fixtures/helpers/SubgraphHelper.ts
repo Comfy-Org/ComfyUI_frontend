@@ -1,13 +1,17 @@
-import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
 import type {
   CanvasPointerEvent,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { ComfyPage } from '../ComfyPage'
-import type { NodeReference } from '../utils/litegraphUtils'
-import { SubgraphSlotReference } from '../utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class SubgraphHelper {
   constructor(private readonly comfyPage: ComfyPage) {}
@@ -154,7 +158,7 @@ export class SubgraphHelper {
 
     // Wait for the appropriate UI element to appear
     if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
+      await this.page.locator('.litemenu-entry').first().waitFor({
         state: 'visible',
         timeout: 5000
       })
@@ -321,5 +325,257 @@ export class SubgraphHelper {
       await targetSlot.getPosition()
     )
     await this.comfyPage.nextFrame()
+  }
+
+  async isInSubgraph(): Promise<boolean> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph
+      return !!graph && 'inputNode' in graph
+    })
+  }
+
+  async exitViaBreadcrumb(): Promise<void> {
+    const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
+    const parentLink = breadcrumb.getByRole('link').first()
+    if (await parentLink.isVisible()) {
+      await parentLink.click()
+    } else {
+      await this.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const graph = canvas.graph
+        if (!graph) return
+        canvas.setGraph(graph.rootGraph)
+      })
+    }
+
+    await this.comfyPage.nextFrame()
+    await expect.poll(async () => this.isInSubgraph()).toBe(false)
+  }
+
+  async countGraphPseudoPreviewEntries(): Promise<number> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.graph!
+      return graph.nodes.reduce((count, node) => {
+        const proxyWidgets = node.properties?.proxyWidgets
+        if (!Array.isArray(proxyWidgets)) return count
+
+        return (
+          count +
+          proxyWidgets.filter(
+            (entry) =>
+              Array.isArray(entry) &&
+              entry.length >= 2 &&
+              typeof entry[1] === 'string' &&
+              entry[1].startsWith('$$')
+          ).length
+        )
+      }, 0)
+    })
+  }
+
+  async getHostPromotedTupleSnapshot(): Promise<
+    { hostNodeId: string; promotedWidgets: [string, string][] }[]
+  > {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      return graph._nodes
+        .filter(
+          (node) =>
+            typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+        )
+        .map((node) => {
+          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
+            ? node.properties.proxyWidgets
+            : []
+          const promotedWidgets = proxyWidgets
+            .filter(
+              (entry): entry is [string, string] =>
+                Array.isArray(entry) &&
+                entry.length >= 2 &&
+                typeof entry[0] === 'string' &&
+                typeof entry[1] === 'string'
+            )
+            .map(
+              ([interiorNodeId, widgetName]) =>
+                [interiorNodeId, widgetName] as [string, string]
+            )
+
+          return {
+            hostNodeId: String(node.id),
+            promotedWidgets
+          }
+        })
+        .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
+    })
+  }
+
+  /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
+  async getNodeCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      return window.app!.canvas.graph!.nodes?.length || 0
+    })
+  }
+
+  async getSlotCount(type: 'input' | 'output'): Promise<number> {
+    return this.page.evaluate((slotType: 'input' | 'output') => {
+      const graph = window.app!.canvas.graph
+      if (!graph || !('inputNode' in graph)) return 0
+      return graph[`${slotType}s`]?.length ?? 0
+    }, type)
+  }
+
+  async getSlotLabel(
+    type: 'input' | 'output',
+    index = 0
+  ): Promise<string | null> {
+    return this.page.evaluate(
+      ([slotType, idx]) => {
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        const slot = graph[`${slotType}s`]?.[idx]
+        return slot?.label ?? slot?.name ?? null
+      },
+      [type, index] as const
+    )
+  }
+
+  async removeSlot(type: 'input' | 'output', slotName?: string): Promise<void> {
+    if (type === 'input') {
+      await this.rightClickInputSlot(slotName)
+    } else {
+      await this.rightClickOutputSlot(slotName)
+    }
+    await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+    await this.comfyPage.contextMenu.waitForHidden()
+  }
+
+  async findSubgraphNodeId(): Promise<string> {
+    const id = await this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const node = graph.nodes.find(
+        (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+      )
+      return node ? String(node.id) : null
+    })
+    if (!id) throw new Error('No subgraph node found in current graph')
+    return id
+  }
+
+  async serializeAndReload(): Promise<void> {
+    const serialized = await this.page.evaluate(() =>
+      window.app!.graph!.serialize()
+    )
+    await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
+  }
+
+  async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {
+    await this.comfyPage.workflow.loadWorkflow('default')
+    const ksampler = await this.comfyPage.nodeOps.getNodeRefById('3')
+    await ksampler.click('title')
+    const subgraphNode = await ksampler.convertToSubgraph()
+    return subgraphNode
+  }
+
+  async packAllInteriorNodes(hostNodeId: string): Promise<void> {
+    await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
+    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.press('Control+a')
+    await this.comfyPage.nextFrame()
+    await this.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.graph!.convertToSubgraph(canvas.selectedItems)
+    })
+    await this.comfyPage.nextFrame()
+    await this.exitViaBreadcrumb()
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.nextFrame()
+  }
+  async publishSubgraph(name: string = 'test blueprint') {
+    await this.comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
+      name
+    })
+  }
+
+  //Blueprints will show an overwrite confirmation dialogue if they have not
+  //already been saved during the active session.
+  //Forcibly reset this flag without an expensive reload operation.
+  async setSaveUnpromptedOnActiveBlueprint() {
+    await this.page.evaluate(() => {
+      const { activeWorkflow } = window.app!.extensionManager.workflow
+      ;(
+        activeWorkflow as ComfyWorkflow & { hasPromptedSave: boolean }
+      ).hasPromptedSave = false
+    })
+  }
+
+  static getTextSlotPosition(page: Page, nodeId: string) {
+    return page.evaluate((id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)
+      if (!node) return null
+
+      const titleHeight = window.LiteGraph!.NODE_TITLE_HEIGHT
+
+      for (const input of node.inputs) {
+        if (!input.widget || input.type !== 'STRING') continue
+        return {
+          hasPos: !!input.pos,
+          posY: input.pos?.[1] ?? null,
+          widgetName: input.widget.name,
+          titleHeight
+        }
+      }
+      return null
+    }, nodeId)
+  }
+
+  static async expectWidgetBelowHeader(
+    nodeLocator: Locator,
+    widgetLocator: Locator
+  ): Promise<void> {
+    const headerBox = await nodeLocator
+      .locator('[data-testid^="node-header-"]')
+      .boundingBox()
+    const widgetBox = await widgetLocator.boundingBox()
+    if (!headerBox || !widgetBox)
+      throw new Error('Header or widget bounding box not found')
+    expect(widgetBox.y).toBeGreaterThan(headerBox.y + headerBox.height)
+  }
+
+  static collectConsoleWarnings(
+    page: Page,
+    patterns: string[] = [
+      'No link found',
+      'Failed to resolve legacy -1',
+      'No inner link found'
+    ]
+  ): { warnings: string[]; dispose: () => void } {
+    const warnings: string[] = []
+    const handler = (msg: ConsoleMessage) => {
+      const text = msg.text()
+      if (patterns.some((p) => text.includes(p))) {
+        warnings.push(text)
+      }
+    }
+    page.on('console', handler)
+    return { warnings, dispose: () => page.off('console', handler) }
   }
 }

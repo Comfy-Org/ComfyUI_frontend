@@ -80,6 +80,7 @@
                 size="icon-sm"
                 class="absolute top-4 right-4"
                 :loading="isLoadingBalance"
+                :aria-label="$t('subscription.refreshCredits')"
                 @click="handleRefresh"
               >
                 <i class="pi pi-sync text-sm text-text-secondary" />
@@ -211,7 +212,7 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
@@ -227,7 +228,7 @@ import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefi
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { cn } from '@/utils/tailwindUtil'
 
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const { t, n } = useI18n()
 
 const {

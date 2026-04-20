@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像です。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像です。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0 を使い、リファレンス画像・動画・音声から動画を生成・編集・拡張します。マルチモーダルリファレンス、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.0 リファレンスから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "テキストプロンプトに基づいて Seedance 2.0 モデルで動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "プロンプトと最初・最後のフレームを使用して動画を生成します。",
     "display_name": "ByteDance 最初-最後フレームから動画生成",
@@ -1362,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "さまざまなアルゴリズムを使用して、ある画像の色を別の画像に合わせます。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "色を合わせる参照画像。指定しない場合は処理をスキップします。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "色変換を適用する画像。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：各フレームを個別にimage_refに合わせます。uniform：すべてのソースフレームの統計をまとめて基準とし、image_refに合わせます。target_frame：選択した1フレームを変換の基準として使用し、すべてのフレームに均一に適用します（相対的な違いを保持）。"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "フックを組み合わせる [2]",
     "inputs": {
@@ -1426,6 +1587,22 @@
         "name": "式"
       },
       "values": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "数値変換",
+    "inputs": {
+      "value": {
         "name": "値"
       }
     },
@@ -1736,6 +1913,10 @@
         "name": "closed_loop",
         "tooltip": "コンテキストウィンドウのループを閉じるかどうか。ループスケジュールにのみ適用されます。"
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "各ウィンドウのコンディショニングテンソルで保持するlatentインデックスのリストです。例えば「0」に設定すると、各ウィンドウで初期の開始画像が使用されます。"
+      },
       "context_length": {
         "name": "コンテキスト長",
         "tooltip": "コンテキストウィンドウの長さ。"
@@ -1767,6 +1948,10 @@
       "model": {
         "name": "モデル",
         "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデル。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "複数のコンディショニング（ConditionCombineで作成）を領域インデックスに基づいて各ウィンドウに分割するかどうか。"
       }
     },
     "outputs": {
@@ -2166,6 +2351,10 @@
       "image": {
         "name": "画像"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "クロップを出力サイズに合わせて引き伸ばすか、アスペクト比を維持するために黒いピクセルでパディングするかを選択します。"
+      },
       "output_height": {
         "name": "出力高さ",
         "tooltip": "各切り抜き画像がリサイズされる高さ。"
@@ -2206,6 +2395,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "カーブエディター",
+    "inputs": {
+      "curve": {
+        "name": "カーブ"
+      },
+      "histogram": {
+        "name": "ヒストグラム"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "カーブ",
         "tooltip": null
       }
     }
@@ -2268,6 +2474,23 @@
     "display_name": "ノイズを無効にする",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "バウンディングボックスを描画",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3604,6 +3827,14 @@
     "description": "GLSL ESフラグメントシェーダーを画像に適用します。u_resolution（vec2）は常に利用可能です。",
     "display_name": "GLSLシェーダー",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "ブール値はシェーダーコード内で u_bool0-9（bool）として利用できます"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "カーブはシェーダーコード内で u_curve0-3（sampler2D、1D LUT）として利用できます。texture(u_curve0, vec2(x, 0.5)).r でサンプリングします"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "floatsはシェーダーコード内でu_float0-4として利用可能"
@@ -3815,6 +4046,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "モデルの思考過程からの最初の画像です。thinking_levelがHIGHかつIMAGE+TEXTモダリティの場合のみ利用可能です。"
       }
     }
   },
@@ -4080,6 +4315,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "テキストプロンプトに基づいて、既存のビデオをシームレスに継続します。",
+    "display_name": "Grokビデオ拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ拡張に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオの次に何が起こるべきかのテキスト説明。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "拡張する元のビデオ。MP4形式、2～15秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "プロンプトまたは画像から動画を生成します",
     "display_name": "Grok動画生成",
@@ -4112,6 +4380,41 @@
       "seed": {
         "name": "シード値",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "リファレンス画像をスタイルや内容の参考として、ビデオを生成します。",
+    "display_name": "Grokリファレンス→ビデオ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望するビデオのテキスト説明。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -4864,6 +5167,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "画像ヒストグラム",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "輝度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "赤",
+        "tooltip": null
+      },
+      "3": {
+        "name": "緑",
+        "tooltip": null
+      },
+      "4": {
+        "name": "青",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "画像を反転",
     "inputs": {
@@ -5281,6 +5614,22 @@
       },
       "image": {
         "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "JSONから文字列を抽出",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -6732,6 +7081,54 @@
     "outputs": {
       "0": {
         "name": "出力画像",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA話者識別転送のためのリファレンス音声を設定します。リファレンス音声クリップをコンディショニングにエンコードし、必要に応じてモデルにアイデンティティガイダンス（リファレンスなしの追加フォワードパスで話者識別効果を強調）を適用します。",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "エンコード用のLTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "アイデンティティガイダンスが有効になるシグマ範囲の終了点。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "アイデンティティガイダンスの強さ。各ステップでリファレンスなしの追加フォワードパスを実行し、話者識別を強調します。0に設定すると無効化されます（追加パスなし）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "転送したい話者識別を持つリファレンス音声クリップ。約5秒間（学習時間）が推奨されます。短すぎたり長すぎたりすると話者識別転送の品質が低下する場合があります。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "アイデンティティガイダンスが有効になるシグマ範囲の開始点。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11949,6 +12346,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "description": "Quiver AIを使ってラスタ画像をSVGにベクトル化します。",
+    "display_name": "Quiver画像からSVGへ",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "主要な被写体に自動でクロップします。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "ベクトル化する入力画像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVGベクトル化に使用するモデル。"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Quiver AIを使ってテキストプロンプトからSVGを生成します。",
+    "display_name": "QuiverテキストからSVGへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "追加のスタイルやフォーマットに関する指示。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG生成に使用するモデル。"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望するSVG出力のテキスト説明。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "生成をガイドするための最大4枚の参照画像。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -11969,6 +12451,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 検出",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "クラスで検出結果をフィルタリングします。「all」に設定するとフィルタリングを無効にします。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "画像ごとに返す検出の最大数。信頼度スコアの高い順に並びます。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },
@@ -13422,6 +13932,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "ノイズ除去後の出力を入力のlatentに近づけます。値が高いほど入力への忠実度が強くなります。0で無効化。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "このシグマ閾値未満ではrestore_cfgが無効になります。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "サンプリング終了時（低シグマ）の強度を制御します。開始値から線形補間されます。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "サンプリング開始時（高シグマ）の強度を制御します。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D条件付け",
     "inputs": {
@@ -14428,6 +14976,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "SoniloのAIモデルを使ってテキストプロンプトから音楽を生成します。継続時間を0にすると、プロンプトから自動的に推定されます。",
+    "display_name": "Sonilo テキストから音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "目標の長さ（秒）。0に設定するとプロンプトから自動的に推定されます。最大：6分。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する音楽を説明するテキストプロンプト。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "SoniloのAIモデルを使って動画コンテンツから音楽を生成します。動画を解析し、マッチする音楽を作成します。",
+    "display_name": "Sonilo 動画から音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "音楽生成をガイドするためのオプションのテキストプロンプト。空欄の場合は最高品質となり、モデルが動画内容を完全に解析します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "音楽を生成する入力動画。最大長：6分。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "オーディオを左右のチャンネルに分離します。",
     "display_name": "オーディオチャンネル分割",
@@ -15377,6 +15977,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv画像",
+        "tooltip": null
       }
     }
   },
@@ -15667,6 +16271,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15681,6 +16288,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
       }
     },
     "outputs": {
@@ -15711,6 +16326,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15725,6 +16343,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
       }
     },
     "outputs": {
@@ -15993,6 +16619,10 @@
       "positive": {
         "name": "ポジティブ条件付け",
         "tooltip": "学習に使用するポジティブな条件付け。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "training_dtype を「none」に設定し、量子化モデルでトレーニングする場合、有効にすると逆伝播時に量子化された行列積を使用します。"
       },
       "rank": {
         "name": "ランク",
@@ -17618,6 +18248,241 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "最初のフレーム画像から動画を生成します。オプションで最後のフレーム画像や音声も指定できます。",
+    "display_name": "Wan 2.7 画像から動画へ",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "動画生成を制御する音声（例：リップシンク、ビートに合わせた動き）。長さ：2秒～30秒。指定しない場合は、モデルが自動的に合うBGMや効果音を生成します。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "最初のフレーム画像。この画像から出力動画のアスペクト比が決まります。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最後のフレーム画像。最初から最後のフレームへと遷移する動画を生成します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AIによるプロンプトの強化を行うかどうか。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "リファレンス素材から人物や物体を特徴とする動画を生成します。単一キャラクターの演技や複数キャラクターのインタラクションに対応しています。",
+    "display_name": "Wan 2.7 リファレンスから動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Wan 2.7モデルを使用してテキストプロンプトに基づいたビデオを生成します。",
+    "display_name": "Wan 2.7 テキストからビデオへ",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "ビデオ生成を駆動する音声（例：リップシンク、ビートに合わせた動き）。長さ：3秒～30秒。未指定の場合、モデルが自動的に合うBGMや効果音を生成します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt_extend": {
+        "name": "プロンプト拡張",
+        "tooltip": "AIアシストでプロンプトを強化するかどうか。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "ビデオの続きから生成を行い、オプションでラストフレーム制御も可能です。",
+    "display_name": "Wan 2.7 ビデオ継続生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_clip": {
+        "name": "最初のクリップ",
+        "tooltip": "継続元となる入力ビデオ。長さ：2秒～10秒。出力のアスペクト比はこのビデオから取得されます。"
+      },
+      "last_frame": {
+        "name": "ラストフレーム",
+        "tooltip": "ラストフレーム画像。継続生成はこのフレームへと遷移します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt_extend": {
+        "name": "プロンプト拡張",
+        "tooltip": "AIアシストでプロンプトを強化するかどうか。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "テキスト指示、参照画像、またはスタイル転送を使ってビデオを編集します。",
+    "display_name": "Wan 2.7 ビデオ編集",
+    "inputs": {
+      "audio_setting": {
+        "name": "オーディオ設定",
+        "tooltip": "「auto」：プロンプトに基づきモデルが音声再生成の有無を判断。「origin」：入力ビデオの元の音声を保持。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "編集対象のビデオ。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
       }
     },
     "outputs": {

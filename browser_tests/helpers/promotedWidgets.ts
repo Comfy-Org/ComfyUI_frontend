@@ -1,10 +1,8 @@
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-export type PromotedWidgetEntry = [string, string]
+type PromotedWidgetEntry = [string, string]
 
-export function isPromotedWidgetEntry(
-  entry: unknown
-): entry is PromotedWidgetEntry {
+function isPromotedWidgetEntry(entry: unknown): entry is PromotedWidgetEntry {
   return (
     Array.isArray(entry) &&
     entry.length === 2 &&
@@ -13,9 +11,7 @@ export function isPromotedWidgetEntry(
   )
 }
 
-export function normalizePromotedWidgets(
-  value: unknown
-): PromotedWidgetEntry[] {
+function normalizePromotedWidgets(value: unknown): PromotedWidgetEntry[] {
   if (!Array.isArray(value)) return []
   return value.filter(isPromotedWidgetEntry)
 }
@@ -26,7 +22,24 @@ export async function getPromotedWidgets(
 ): Promise<PromotedWidgetEntry[]> {
   const raw = await comfyPage.page.evaluate((id) => {
     const node = window.app!.canvas.graph!.getNodeById(id)
-    return node?.properties?.proxyWidgets ?? []
+    const widgets = node?.widgets ?? []
+
+    // Read the live promoted widget views from the host node instead of the
+    // serialized proxyWidgets snapshot, which can lag behind the current graph
+    // state during promotion and cleanup flows.
+    return widgets.flatMap((widget) => {
+      if (
+        widget &&
+        typeof widget === 'object' &&
+        'sourceNodeId' in widget &&
+        typeof widget.sourceNodeId === 'string' &&
+        'sourceWidgetName' in widget &&
+        typeof widget.sourceWidgetName === 'string'
+      ) {
+        return [[widget.sourceNodeId, widget.sourceWidgetName]]
+      }
+      return []
+    })
   }, nodeId)
 
   return normalizePromotedWidgets(raw)
@@ -46,6 +59,18 @@ export async function getPromotedWidgetCount(
 ): Promise<number> {
   const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
   return promotedWidgets.length
+}
+
+function isPseudoPreviewEntry(entry: PromotedWidgetEntry): boolean {
+  return entry[1].startsWith('$$')
+}
+
+export async function getPseudoPreviewWidgets(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<PromotedWidgetEntry[]> {
+  const widgets = await getPromotedWidgets(comfyPage, nodeId)
+  return widgets.filter(isPseudoPreviewEntry)
 }
 
 export async function getPromotedWidgetCountByName(

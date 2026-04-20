@@ -1,0 +1,185 @@
+@import 'tailwindcss';
+@import '@comfyorg/design-system/css/base.css';
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula Condensed';
+  src: url('/fonts/PPFormula-CondensedSemibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-site-dropdown: #332b38;
+  --color-primary-comfy-yellow: #f2ff59;
+  --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-canvas: #c2bfb9;
+  --color-primary-warm-white: #f0efed;
+  --color-primary-warm-gray: #7e7c78;
+  --color-secondary-mauve: #4d3762;
+  --color-primary-comfy-plum: #49378b;
+  --color-secondary-cool-gray: #3c3c3c;
+  --color-illustration-forest: #20464c;
+  --color-transparency-white-t4: rgb(255 255 255 / 0.04);
+  --font-formula: 'PP Formula', sans-serif;
+  --font-formula-condensed: 'PP Formula Condensed', sans-serif;
+  --text-3\.5xl: 2rem;
+  --text-6\.5xl: 4.125rem;
+  --radius-4xl: 2rem;
+  --radius-4\.5xl: 2.25rem;
+  --radius-5xl: 2.5rem;
+  --container-8xl: 88rem;
+  --container-9xl: 96rem;
+  --container-10xl: 100rem;
+}
+
+@keyframes border-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility animate-border-spin {
+  animation: border-spin 2s linear infinite;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+@utility animate-marquee-reverse {
+  animation: marquee-reverse 30s linear infinite;
+}
+
+@keyframes ripple-effect {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+
+@utility animate-ripple {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: ripple-effect 4s linear infinite;
+}
+
+@utility animate-delay-* {
+  animation-delay: --value([*]);
+}
+
+.crossfade-enter-active,
+.crossfade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.crossfade-enter-from,
+.crossfade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility icon-mask {
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+/* PP Formula has asymmetric vertical metrics
+   Shifting visually with `top` corrects the appearance without changing the
+   inline-block's bounding box, so button/badge sizes are unaffected. */
+@utility ppformula-text-center {
+  display: inline-block;
+  position: relative;
+  top: 0.19em;
+}
+
+:root {
+  --site-bg: #211927;
+  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-border-subtle: rgb(255 255 255 / 0.1);
+}

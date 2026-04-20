@@ -10,8 +10,11 @@
     :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute text-sm',
-        'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
+        'group/node lg-node absolute isolate text-sm',
+        'flex flex-col contain-layout contain-style',
+        isRerouteNode
+          ? 'h-(--node-height)'
+          : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -32,7 +35,7 @@
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop.stop.prevent="handleDrop"
+    @drop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -54,8 +57,7 @@
           hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
             ? 'border-node-component-outline'
-            : 'border-node-stroke-executing',
-          footerStateOutlineBottomClass
+            : 'border-node-stroke-executing'
         )
       "
     />
@@ -65,8 +67,7 @@
         cn(
           'pointer-events-none absolute border border-solid border-component-node-border',
           rootBorderShapeClass,
-          hasAnyError ? '-inset-1' : 'inset-0',
-          footerRootBorderBottomClass
+          hasAnyError ? '-inset-1' : 'inset-0'
         )
       "
     />
@@ -75,16 +76,13 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
+          'w-(--node-width)',
+          !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
-          {
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
-              bypassed,
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
-              muted,
-            'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
-          }
+          bypassed && bypassOverlayClass,
+          muted && mutedOverlayClass,
+          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
         )
       "
       :style="{
@@ -129,7 +127,11 @@
         :style="{ width: `${Math.min(progress * 100, 100)}%` }"
       />
 
-      <template v-if="!isCollapsed">
+      <template v-if="!isCollapsed && isRerouteNode">
+        <NodeSlots :node-data="nodeData" />
+      </template>
+
+      <template v-else-if="!isCollapsed">
         <div class="relative">
           <!-- Progress bar for executing state -->
           <div
@@ -166,7 +168,7 @@
             />
             <NodeContent
               v-for="preview in promotedPreviews"
-              :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+              :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data="nodeData"
               :media="preview"
             />
@@ -186,10 +188,10 @@
       </template>
     </div>
     <NodeFooter
+      v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
-      :is-collapsed="isCollapsed"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="showAdvancedState"
       :header-color="applyLightThemeColor(nodeData?.color)"
@@ -199,7 +201,12 @@
       @toggle-advanced="handleToggleAdvanced"
     />
     <template
-      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+      v-if="
+        !isCollapsed &&
+        !isRerouteNode &&
+        nodeData.resizable !== false &&
+        !isSelectMode
+      "
     >
       <div
         v-for="handle in RESIZE_HANDLES"
@@ -210,8 +217,6 @@
           cn(
             baseResizeHandleClasses,
             handle.positionClasses,
-            (handle.corner === 'SE' || handle.corner === 'SW') &&
-              footerResizeHandleBottomClass,
             handle.cursorClass,
             'group-hover/node:opacity-100'
           )
@@ -257,8 +262,9 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -272,6 +278,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -292,6 +299,7 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -302,7 +310,6 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 import { isTransparent } from '@/utils/colorUtil'
 
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -332,7 +339,7 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-useVueElementTracking(() => nodeData.id, 'node')
+useVueElementTracking(String(nodeData.id), 'node')
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
@@ -343,6 +350,7 @@ const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -356,7 +364,7 @@ const hasAnyError = computed((): boolean => {
     missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
     (lgraphNode.value &&
       (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        executionErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
+        missingNodesErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
         missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
   )
 })
@@ -366,6 +374,8 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -549,30 +559,6 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
-const hasFooter = computed(() => {
-  return !!(
-    (hasAnyError.value && showErrorsTabEnabled.value) ||
-    lgraphNode.value?.isSubgraphNode() ||
-    (!lgraphNode.value?.isSubgraphNode() &&
-      (showAdvancedState.value || showAdvancedInputsButton.value))
-  )
-})
-
-// Footer offset computed classes
-
-const footerStateOutlineBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-[35px]' : ''
-)
-
-const footerRootBorderBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-8' : ''
-)
-
-const footerResizeHandleBottomClass = computed(() => {
-  if (!hasFooter.value) return ''
-  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-35px]'
-})
-
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
@@ -641,14 +627,28 @@ const selectionShapeClass = computed(() => {
   }
 })
 
-const beforeShapeClass = computed(() => {
+const BEFORE_OVERLAY_BASE =
+  'before:pointer-events-none before:absolute before:inset-0'
+
+const bypassOverlayClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return ''
+      return `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
     case RenderShape.CARD:
-      return 'before:rounded-tl-2xl before:rounded-br-2xl'
+      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
     default:
-      return 'before:rounded-2xl'
+      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+  }
+})
+
+const mutedOverlayClass = computed(() => {
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return BEFORE_OVERLAY_BASE
+    case RenderShape.CARD:
+      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE}`
+    default:
+      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE}`
   }
 })
 
@@ -713,6 +713,8 @@ const lgraphNode = computed(() => {
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+
+useGLSLPreview(lgraphNode)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -811,15 +813,16 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-async function handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
-  if (!node || !node.onDragDrop) {
-    return
-  }
+  if (!node?.onDragDrop) return
 
-  // Forward the drop event to the litegraph node's onDragDrop callback
-  await node.onDragDrop(event)
+  const handled = node.onDragDrop(event)
+  if (handled === true) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
 }
 </script>

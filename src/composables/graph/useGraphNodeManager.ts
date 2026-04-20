@@ -6,6 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -44,6 +45,7 @@ export interface WidgetSlotMetadata {
   linked: boolean
   originNodeId?: string
   originOutputName?: string
+  type: string
 }
 
 /**
@@ -91,6 +93,10 @@ export interface SafeWidgetData {
    * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
    */
   sourceExecutionId?: string
+  /** Tooltip text from the resolved widget. */
+  tooltip?: string
+  /** For promoted widgets, the display label from the subgraph input slot. */
+  promotedLabel?: string
 }
 
 export interface VueNodeData {
@@ -224,19 +230,21 @@ function safeWidgetMapper(
   function resolvePromotedSourceByInputName(inputName: string): {
     sourceNodeId: string
     sourceWidgetName: string
+    disambiguatingSourceNodeId?: string
   } | null {
     const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
     if (!resolvedTarget) return null
 
     return {
       sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName
+      sourceWidgetName: resolvedTarget.widgetName,
+      disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
     }
   }
 
   function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
     displayName: string
-    promotedSource: { sourceNodeId: string; sourceWidgetName: string } | null
+    promotedSource: PromotedWidgetSource | null
   } {
     if (!isPromotedWidgetView(widget)) {
       return {
@@ -250,7 +258,8 @@ function safeWidgetMapper(
     const displayName = promotedInputName ?? widget.name
     const directSource = {
       sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName
+      sourceWidgetName: widget.sourceWidgetName,
+      disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
     }
     const promotedSource =
       matchedInput?._widget === widget
@@ -297,7 +306,8 @@ function safeWidgetMapper(
           ? resolveConcretePromotedWidget(
               node,
               promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName
+              promotedSource.sourceWidgetName,
+              promotedSource.disambiguatingSourceNodeId
             )
           : null
       const resolvedSource =
@@ -310,7 +320,11 @@ function safeWidgetMapper(
       const effectiveWidget = sourceWidget ?? widget
 
       const localId = isPromotedWidgetView(widget)
-        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
+        ? String(
+            sourceNode?.id ??
+              promotedSource?.disambiguatingSourceNodeId ??
+              promotedSource?.sourceNodeId
+          )
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
@@ -343,7 +357,8 @@ function safeWidgetMapper(
           sourceNode && app.rootGraph
             ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
             : undefined,
-        tooltip: widget.tooltip
+        tooltip: widget.tooltip,
+        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
       }
     } catch (error) {
       console.warn(
@@ -381,7 +396,8 @@ function buildSlotMetadata(
       index,
       linked: input.link != null,
       originNodeId,
-      originOutputName
+      originOutputName,
+      type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
     if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
@@ -794,6 +810,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
+        // Re-extract widget data so promotedLabel reflects the rename
+        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }
 

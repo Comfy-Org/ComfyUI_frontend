@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
+import HeroSection from '../../components/home/HeroSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
+import UseCaseSection from '../../components/home/UseCaseSection.vue'
+import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
+import GetStartedSection from '../../components/home/GetStartedSection.vue'
+import BuildWhatSection from '../../components/home/BuildWhatSection.vue'
+---
+
+<BaseLayout title="Comfy — 视觉 AI 的专业控制">
+  <HeroSection locale="zh-CN" client:load />
+  <SocialProofBarSection />
+  <ProductShowcaseSection locale="zh-CN" client:load />
+  <UseCaseSection locale="zh-CN" client:load />
+  <GetStartedSection locale="zh-CN" />
+  <ProductCardsSection locale="zh-CN" />
+  <CaseStudySpotlightSection locale="zh-CN" />
+  <BuildWhatSection locale="zh-CN" />
+</BaseLayout>

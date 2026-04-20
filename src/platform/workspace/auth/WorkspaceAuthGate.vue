@@ -24,19 +24,21 @@ import { onMounted, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000
 
 const isReady = ref(!isCloud)
+const subscriptionDialog = useSubscriptionDialog()
 
 async function initialize(): Promise<void> {
   if (!isCloud) return
 
-  const authStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
   const { isInitialized, currentUser } = storeToRefs(authStore)
 
   try {
@@ -86,6 +88,14 @@ async function initialize(): Promise<void> {
 
     // Step 5: WORKSPACE MODE - Full initialization
     await initializeWorkspaceMode()
+
+    // Step 6: Resume any pending pricing flow from team workspace creation
+    // Only safe after workspace store initialized successfully — the pricing
+    // dialog reads workspace state to decide which variant to show.
+    const workspaceStore = useTeamWorkspaceStore()
+    if (workspaceStore.initState === 'ready') {
+      subscriptionDialog.resumePendingPricingFlow()
+    }
   } catch (error) {
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
   } finally {

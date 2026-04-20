@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
+    "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "first_frame": {
+        "name": "首幀圖像",
+        "tooltip": "影片的首幀圖像。"
+      },
+      "last_frame": {
+        "name": "末幀圖像",
+        "tooltip": "影片的末幀圖像。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子決定此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "使用 Seedance 2.0，透過參考圖像、影片與音訊產生、編輯或延伸影片。支援多模態參考、影片編輯與影片延伸。",
+    "display_name": "ByteDance Seedance 2.0 參考轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子決定此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "根據文字提示，使用 Seedance 2.0 模型產生影片。",
+    "display_name": "ByteDance Seedance 2.0 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子決定此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "使用提示詞和首尾幀生成影片。",
     "display_name": "字節跳動首尾幀轉影片",
@@ -1362,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "使用各種演算法將一張圖片的色彩匹配到另一張圖片。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "要匹配色彩的參考圖片。如果未提供，將跳過處理。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "要套用色彩轉換的圖片。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：每一幀分別與 image_ref 匹配。uniform：將所有來源幀的統計數據合併作為基準，並與 image_ref 匹配。target_frame：選擇一幀作為轉換到 image_ref 的基準，並均勻套用到所有幀（保留相對差異）"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "合併 Hooks [2]",
     "inputs": {
@@ -1426,6 +1587,22 @@
         "name": "運算式"
       },
       "values": {
+        "name": "數值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "數值轉換",
+    "inputs": {
+      "value": {
         "name": "數值"
       }
     },
@@ -1736,6 +1913,10 @@
         "name": "閉環",
         "tooltip": "是否關閉上下文窗口循環；僅適用於循環排程。"
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "每個視窗中要在 conditioning 張量中保留的 latent 索引列表，例如設為「0」將會在每個視窗中使用初始起始圖像。"
+      },
       "context_length": {
         "name": "上下文長度",
         "tooltip": "上下文窗口的長度。"
@@ -1767,6 +1948,10 @@
       "model": {
         "name": "模型",
         "tooltip": "在取樣期間應用上下文窗口的模型。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否根據區域索引，將多個 conditioning（由 ConditionCombine 建立）分配到各個視窗。"
       }
     },
     "outputs": {
@@ -2166,6 +2351,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "保持比例",
+        "tooltip": "選擇是否將裁剪內容拉伸以符合輸出尺寸，或以黑色像素填充以保留長寬比。"
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "每個裁切區域調整後的高度。"
@@ -2206,6 +2395,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "曲線編輯器",
+    "inputs": {
+      "curve": {
+        "name": "曲線"
+      },
+      "histogram": {
+        "name": "直方圖"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "曲線",
         "tooltip": null
       }
     }
@@ -2268,6 +2474,23 @@
     "display_name": "停用雜訊",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "繪製 BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "圖像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "輸出圖像",
         "tooltip": null
       }
     }
@@ -3604,6 +3827,14 @@
     "description": "將 GLSL ES 片段著色器應用於影像。u_resolution（vec2）始終可用。",
     "display_name": "GLSL 葉片著色器",
     "inputs": {
+      "bools": {
+        "name": "布林值",
+        "tooltip": "布林值在著色器程式碼中可作為 u_bool0-9（bool）使用"
+      },
+      "curves": {
+        "name": "曲線",
+        "tooltip": "曲線在著色器程式碼中可作為 u_curve0-3（sampler2D，1D LUT）使用。可用 texture(u_curve0, vec2(x, 0.5)).r 取樣"
+      },
       "floats": {
         "name": "浮點數",
         "tooltip": "浮點數在著色器程式碼中以 u_float0-4 提供"
@@ -3815,6 +4046,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "模型思考過程中的第一張圖像。僅在 thinking_level 設為 HIGH 且模態為 IMAGE+TEXT 時可用。"
       }
     }
   },
@@ -4080,6 +4315,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "根據文字提示，為現有影片無縫延伸內容。",
+    "display_name": "Grok 影片延伸",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片延伸的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述影片接下來應該發生什麼的文字說明。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定是否重新執行節點的種子值；實際結果無論種子如何都不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要延伸的來源影片。MP4 格式，2-15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "從提示或圖像生成影片",
     "display_name": "Grok 影片",
@@ -4112,6 +4380,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "根據參考圖像作為風格與內容指引生成影片。",
+    "display_name": "Grok 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述所需影片的文字說明。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定是否重新執行節點的種子值；實際結果無論種子如何都不具決定性。"
       }
     },
     "outputs": {
@@ -4864,6 +5167,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "影像直方圖",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "亮度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "紅色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "綠色",
+        "tooltip": null
+      },
+      "4": {
+        "name": "藍色",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "反轉影像",
     "inputs": {
@@ -5281,6 +5614,22 @@
       },
       "image": {
         "name": "影像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "從 JSON 擷取字串",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -6732,6 +7081,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "設定參考音訊以進行 ID-LoRA 說話人身份轉換。將參考音訊 clip 編碼為條件，並可選擇性地以身份指引修補模型（額外進行一次無參考的前向傳遞，以強化說話人身份效果）。",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "用於編碼的 LTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "身份指引啟用的 sigma 範圍結束百分比。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "身份指引強度。每一步會額外進行一次無參考的前向傳遞以強化說話人身份。設為 0 可停用（不進行額外傳遞）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "要轉換說話人身份的參考音訊 clip。建議長度約 5 秒（訓練時長）。過短或過長的 clip 可能會降低聲音身份轉換效果。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "身份指引啟用的 sigma 範圍起始百分比。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11949,6 +12346,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "description": "使用 Quiver AI 將點陣圖像向量化為 SVG。",
+    "display_name": "Quiver 圖像轉 SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "自動裁切至主要主體。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要向量化的輸入圖像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於 SVG 向量化的模型。"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "使用 Quiver AI 根據文字提示生成 SVG。",
+    "display_name": "Quiver 文字轉 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "額外的風格或格式指引。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於 SVG 生成的模型。"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "對期望 SVG 輸出的文字描述。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "最多 4 張參考圖像以輔助生成。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -11969,6 +12451,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 偵測",
+    "inputs": {
+      "class_name": {
+        "name": "類別名稱",
+        "tooltip": "依類別篩選偵測結果。設為 'all' 以停用篩選。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "max_detections": {
+        "name": "最大偵測數",
+        "tooltip": "每張圖像最多回傳的偵測數量，依信心分數由高至低排序。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "threshold": {
+        "name": "閾值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },
@@ -13422,6 +13932,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "將去噪後的輸出拉回輸入 latent。數值越高，越忠於輸入。設為 0 則停用。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "低於此 sigma 閾值時，restore_cfg 會停用。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "控制取樣結束時（低 sigma）的強度。從開始值線性插值。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "控制取樣開始時（高 sigma）的強度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D_Conditioning",
     "inputs": {
@@ -14428,6 +14976,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "使用 Sonilo 的 AI 模型，根據文字提示產生音樂。將時長設為 0 可讓模型自動從提示中推斷時長。",
+    "display_name": "Sonilo 文字轉音樂",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "目標時長（秒）。設為 0 讓模型自動從提示推斷時長。最長 6 分鐘。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述要產生音樂的文字提示。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於重現性的種子。目前 Sonilo 服務會忽略此值，但為了流程一致性保留。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "使用 Sonilo 的 AI 模型，從影片內容產生音樂。分析影片並創作相符的音樂。",
+    "display_name": "Sonilo 影片轉音樂",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可選的文字提示，用於引導音樂生成。留空可獲得最佳品質——模型將完整分析影片內容。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於重現性的種子。目前 Sonilo 服務會忽略此值，但為了流程一致性保留。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "輸入要產生音樂的影片。最長 6 分鐘。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "將音訊分離為左右聲道。",
     "display_name": "分離音訊聲道",
@@ -15377,6 +15977,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -15667,6 +16271,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15681,6 +16288,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "若模型有內建系統提示/模板則使用。"
       }
     },
     "outputs": {
@@ -15711,6 +16326,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p 值"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15725,6 +16343,14 @@
       },
       "sampling_mode_top_p": {
         "name": "Top-P"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "若模型有內建系統提示/模板則使用。"
       }
     },
     "outputs": {
@@ -15993,6 +16619,10 @@
       "positive": {
         "name": "正向條件",
         "tooltip": "用於訓練的正向條件。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "當 training_dtype 設為 'none' 並在量化模型上訓練時，啟用後將以量化矩陣相乘進行反向傳播。"
       },
       "rank": {
         "name": "秩",
@@ -17618,6 +18248,241 @@
       },
       "width": {
         "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "從首幀圖像產生影片，可選擇加入末幀圖像與音訊。",
+    "display_name": "Wan 2.7 圖像轉影片",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於驅動影片生成的音訊（如對嘴、節奏動作）。時長：2秒至30秒。若未提供，模型會自動產生相符的背景音樂或音效。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首幀圖像。輸出長寬比將依此圖像決定。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "末幀圖像。模型將產生從首幀到末幀的過渡影片。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的隨機種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "根據參考素材生成包含人物或物件的影片。支援單一角色表演與多角色互動。",
+    "display_name": "Wan 2.7 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的隨機種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "使用 Wan 2.7 模型根據文字提示生成影片。",
+    "display_name": "Wan 2.7 文字轉影片",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於驅動影片生成的音訊（如對嘴、節奏同步動作）。時長：3秒至30秒。若未提供，模型會自動生成匹配的背景音樂或音效。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "從影片結束處繼續生成影片，可選擇最後一幀控制。",
+    "display_name": "Wan 2.7 影片續接",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "要續接的輸入影片。時長：2秒至10秒。輸出長寬比將依此影片決定。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最後一幀圖像。續接內容將朝此幀過渡。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "使用文字指令、參考圖像或風格轉換編輯影片。",
+    "display_name": "Wan 2.7 影片編輯",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "「auto」：模型根據提示詞決定是否重新生成音訊。「origin」：保留輸入影片的原始音訊。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要編輯的影片。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
       }
     },
     "outputs": {

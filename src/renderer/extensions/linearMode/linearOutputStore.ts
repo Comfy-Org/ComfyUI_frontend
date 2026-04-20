@@ -246,7 +246,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     if (!isJobForActiveWorkflow(jobId)) return
 
     const sel = selectedId.value
-    if (!sel || sel.startsWith('slot:') || isFollowing.value) {
+    if (!sel || isFollowing.value) {
       selectedId.value = slotId
       isFollowing.value = true
       return
@@ -262,17 +262,27 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     onNodeExecuted(jobId, detail)
   }
 
+  // Watch both activeJobId and the path mapping together. The path mapping
+  // may arrive after activeJobId due to a race between WebSocket
+  // (execution_start) and the HTTP response (queuePrompt > storeJob).
+  // Watching both ensures onJobStart fires once the mapping is available.
   watch(
-    () => executionStore.activeJobId,
-    (jobId, oldJobId) => {
+    [
+      () => executionStore.activeJobId,
+      () => executionStore.jobIdToSessionWorkflowPath
+    ],
+    ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
       if (oldJobId && oldJobId !== jobId) {
         onJobComplete(oldJobId)
       }
-      // Start tracking only if the job belongs to this workflow.
-      // Jobs from other workflows are picked up by reconcileOnEnter
-      // when the user switches to that workflow's tab.
-      if (jobId && isJobForActiveWorkflow(jobId)) {
+      // Guard with trackedJobId to avoid double-starting when the
+      // path mapping arrives after activeJobId was already set.
+      if (
+        jobId &&
+        trackedJobId.value !== jobId &&
+        isJobForActiveWorkflow(jobId)
+      ) {
         onJobStart(jobId)
       }
     }

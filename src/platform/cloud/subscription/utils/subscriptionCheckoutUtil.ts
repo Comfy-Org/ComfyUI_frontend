@@ -4,12 +4,10 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import {
-  FirebaseAuthStoreError,
-  useFirebaseAuthStore
-} from '@/stores/firebaseAuthStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -51,13 +49,13 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
-  const firebaseAuthStore = useFirebaseAuthStore()
-  const { userId } = storeToRefs(firebaseAuthStore)
+  const authStore = useAuthStore()
+  const { userId } = storeToRefs(authStore)
   const telemetry = useTelemetry()
-  const authHeader = await firebaseAuthStore.getAuthHeader()
+  const authHeader = await authStore.getAuthHeader()
 
   if (!authHeader) {
-    throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+    throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
@@ -97,7 +95,7 @@ export async function performSubscriptionCheckout(
       }
     }
 
-    throw new FirebaseAuthStoreError(
+    throw new AuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
         error: errorMessage
       })
@@ -116,9 +114,24 @@ export async function performSubscriptionCheckout(
         ...checkoutAttribution
       })
     }
+
     if (openInNewTab) {
-      window.open(data.checkout_url, '_blank')
+      const checkoutWindow = window.open(data.checkout_url, '_blank')
+      if (!checkoutWindow) {
+        return
+      }
+
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
+      })
     } else {
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
+      })
       globalThis.location.href = data.checkout_url
     }
   }

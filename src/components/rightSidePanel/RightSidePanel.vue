@@ -9,12 +9,16 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { st } from '@/i18n'
+import { app } from '@/scripts/app'
+import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -38,14 +42,25 @@ import TabErrors from './errors/TabErrors.vue'
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingMediaStore = useMissingMediaStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds, activeMissingNodeGraphIds } =
-  storeToRefs(executionErrorStore)
+const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
+
+const activeMissingNodeGraphIds = computed<Set<string>>(() => {
+  if (!app.isGraphReady) return new Set()
+  return getActiveGraphNodeIds(
+    app.rootGraph,
+    canvasStore.currentGraph ?? app.rootGraph,
+    missingNodesErrorStore.missingAncestorExecutionIds
+  )
+})
 
 const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
+const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -130,13 +145,22 @@ const hasMissingModelSelected = computed(
     )
 )
 
+const hasMissingMediaSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingMediaGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
     hasMissingNodeSelected.value ||
-    hasMissingModelSelected.value
+    hasMissingModelSelected.value ||
+    hasMissingMediaSelected.value
   )
 })
 
@@ -275,11 +299,14 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <i
+            <button
               v-if="!isEditing"
-              class="relative top-[2px] ml-2 icon-[lucide--pencil] size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              :aria-label="t('rightSidePanel.editTitle')"
+              class="relative top-[2px] ml-2 size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
               @click="isEditing = true"
-            />
+            >
+              <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
+            </button>
           </template>
           <template v-else>
             {{ panelTitle }}
@@ -291,6 +318,8 @@ function handleTitleCancel() {
             v-if="isSingleSubgraphNode"
             variant="secondary"
             size="icon"
+            data-testid="subgraph-editor-toggle"
+            :aria-label="t('rightSidePanel.editSubgraph')"
             :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(
@@ -325,6 +354,7 @@ function handleTitleCancel() {
             :key="tab.value"
             class="px-2 py-1 font-inter text-sm transition-all active:scale-95"
             :value="tab.value"
+            :data-testid="`panel-tab-${tab.value}`"
           >
             {{ tab.label() }}
             <i

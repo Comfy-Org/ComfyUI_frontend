@@ -91,10 +91,17 @@ const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
+
+function dragDrop(e: DragEvent) {
+  const { dataTransfer } = e
+  if (!dataTransfer) return
+
+  linearWorkflowRef.value?.handleDragDrop(e)
+}
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute size-full">
+  <div v-else class="absolute size-full" @dragover.prevent>
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
@@ -144,8 +151,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         id="linearCenterPanel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+        @drop="dragDrop"
       >
         <LinearProgressBar
+          data-testid="linear-header-progress-bar"
           class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
         <LinearPreview

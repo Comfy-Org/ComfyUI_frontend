@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div class="flex w-72 flex-col">
+    <div class="flex w-72 flex-col" data-testid="load3d-viewer-sidebar">
       <div class="flex-1 overflow-y-auto p-4">
         <div class="space-y-2">
           <div class="space-y-4 p-2">
@@ -74,6 +74,14 @@
             />
           </div>
 
+          <div class="space-y-4 p-2">
+            <GizmoControls
+              v-model:gizmo-enabled="viewer.gizmoEnabled.value"
+              v-model:gizmo-mode="viewer.gizmoMode.value"
+              @reset-transform="viewer.resetGizmoTransform"
+            />
+          </div>
+
           <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
             <ExportControls @export-model="viewer.exportModel" />
           </div>
@@ -99,6 +107,7 @@ import { useI18n } from 'vue-i18n'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import CameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import ExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
+import GizmoControls from '@/components/load3d/controls/viewer/ViewerGizmoControls.vue'
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
@@ -196,5 +205,16 @@ onBeforeUnmount(() => {
 <style scoped>
 :deep(.p-panel-content) {
   padding: 0;
+}
+
+:deep(.p-slider) {
+  height: 6px;
+}
+
+:deep(.p-slider-handle) {
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  margin-left: -7px;
 }
 </style>

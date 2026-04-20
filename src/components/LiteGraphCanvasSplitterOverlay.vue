@@ -18,15 +18,20 @@
       <Splitter
         :key="splitterRefreshKey"
         class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
-        :state-key="isSelectMode ? 'builder-splitter' : sidebarStateKey"
+        :state-key="
+          isSelectMode
+            ? sidebarLocation === 'left'
+              ? 'builder-splitter'
+              : 'builder-splitter-right'
+            : sidebarStateKey
+        "
         state-storage="local"
         @resizestart="onResizestart"
+        @resizeend="normalizeSavedSizes"
       >
         <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
-          v-if="
-            !focusMode && (sidebarLocation === 'left' || showOffsideSplitter)
-          "
+          v-if="firstPanelVisible"
           :class="
             sidebarLocation === 'left'
               ? cn(
@@ -56,7 +61,7 @@
         </SplitterPanel>
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="CENTER_PANEL_SIZE" class="flex flex-col">
+        <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
           <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
@@ -72,7 +77,7 @@
             state-storage="local"
             @resizestart="onResizestart"
           >
-            <SplitterPanel class="graph-canvas-panel relative">
+            <SplitterPanel class="graph-canvas-panel relative overflow-visible">
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
             <SplitterPanel
@@ -86,9 +91,7 @@
 
         <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
-          v-if="
-            !focusMode && (sidebarLocation === 'right' || showOffsideSplitter)
-          "
+          v-if="lastPanelVisible"
           :class="
             sidebarLocation === 'right'
               ? cn(
@@ -167,11 +170,46 @@ const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
 
-const sidebarStateKey = computed(() => {
+const firstPanelVisible = computed(
+  () => sidebarLocation.value === 'left' || showOffsideSplitter.value
+)
+const lastPanelVisible = computed(
+  () => sidebarLocation.value === 'right' || showOffsideSplitter.value
+)
+
+/**
+ * When both side panels are visible, reduce center panel default size so that
+ * initial sizes sum to 100%. This prevents PrimeVue Splitter from saving an
+ * inconsistent panelSizes array (where untouched panel values are prop-based
+ * while resized panels are pixel-derived), which caused one panel's width to
+ * drift when the other was resized.
+ *
+ * Uses runtime visibility (not just mount state) because the sidebar panel can
+ * be mounted but hidden via display:none when no tab is active.
+ */
+const bothSidePanelsVisible = computed(
+  () =>
+    !focusMode.value && sidebarPanelVisible.value && showOffsideSplitter.value
+)
+
+const centerPanelDefaultSize = computed(() =>
+  bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
+)
+
+const sidebarTabKey = computed(() => {
   return unifiedWidth.value
     ? 'unified-sidebar'
     : // When no tab is active, use a default key to maintain state
       (activeSidebarTabId.value ?? 'default-sidebar')
+})
+
+const sidebarStateKey = computed(() => {
+  const base = sidebarTabKey.value
+  if (sidebarLocation.value === 'left' && !showOffsideSplitter.value) {
+    return base
+  }
+  const suffix = showOffsideSplitter.value ? '-with-offside' : ''
+  return `${base}-${sidebarLocation.value}${suffix}`
 })
 
 /**
@@ -179,6 +217,42 @@ const sidebarStateKey = computed(() => {
  */
 function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
   event.preventDefault()
+}
+
+/**
+ * Normalize persisted panel sizes to sum to 100% after each resize.
+ *
+ * PrimeVue Splitter only updates the two panels adjacent to the dragged gutter,
+ * leaving the third panel at its initial prop value. Because that prop value
+ * doesn't account for CSS min-width or gutter offsets, the saved array can sum
+ * to more than 100%, causing the untouched panel's width to drift on restore.
+ */
+function normalizeSavedSizes() {
+  const stateKey = isSelectMode.value
+    ? sidebarLocation.value === 'left'
+      ? 'builder-splitter'
+      : 'builder-splitter-right'
+    : sidebarStateKey.value
+  const raw = localStorage.getItem(stateKey)
+  if (!raw) return
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length === 0 ||
+      parsed.some((s) => typeof s !== 'number' || !Number.isFinite(s))
+    ) {
+      return
+    }
+    const sum = parsed.reduce((a, b) => a + b, 0)
+    if (sum <= 0 || Math.abs(sum - 100) <= 0.5) return
+    localStorage.setItem(
+      stateKey,
+      JSON.stringify(parsed.map((s) => (s / sum) * 100))
+    )
+  } catch {
+    return
+  }
 }
 
 /*
@@ -190,6 +264,7 @@ const splitterRefreshKey = computed(() => {
 })
 
 const firstPanelStyle = computed(() => {
+  if (focusMode.value) return { display: 'none' }
   if (sidebarLocation.value === 'left') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -197,6 +272,7 @@ const firstPanelStyle = computed(() => {
 })
 
 const lastPanelStyle = computed(() => {
+  if (focusMode.value) return { display: 'none' }
   if (sidebarLocation.value === 'right') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -215,9 +291,13 @@ const lastPanelStyle = computed(() => {
   background-color: var(--p-primary-color);
 }
 
-/* Hide sidebar gutter when sidebar is not visible */
-:deep(.side-bar-panel[style*='display: none'] + .p-splitter-gutter),
-:deep(.p-splitter-gutter + .side-bar-panel[style*='display: none']) {
+/* Hide gutter when adjacent panel is not visible */
+:deep(
+  [data-pc-name='splitterpanel'][style*='display: none'] + .p-splitter-gutter
+),
+:deep(
+  .p-splitter-gutter + [data-pc-name='splitterpanel'][style*='display: none']
+) {
   display: none;
 }
 

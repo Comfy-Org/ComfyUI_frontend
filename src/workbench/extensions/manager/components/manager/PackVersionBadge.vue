@@ -22,7 +22,7 @@
         class="pi pi-arrow-circle-up text-xs text-blue-600"
       />
       <span>{{ installedVersion }}</span>
-      <i v-if="!isDisabled" class="pi pi-chevron-right text-xxs" />
+      <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
     </div>
 
     <Popover

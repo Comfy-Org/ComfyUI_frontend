@@ -8,7 +8,7 @@
         :get-children="
           (item) => (item.children?.length ? item.children : undefined)
         "
-        class="m-0 min-w-0 p-0 pb-6"
+        class="m-0 min-w-0 p-0 px-2 pb-2"
       >
         <TreeVirtualizer
           v-slot="{ item }"
@@ -37,13 +37,13 @@
       </TreeRoot>
     </ContextMenuTrigger>
 
-    <ContextMenuPortal v-if="showContextMenu">
+    <ContextMenuPortal v-if="showContextMenu && contextMenuNode?.data">
       <ContextMenuContent
         class="z-9999 min-w-32 overflow-hidden rounded-md border border-border-default bg-comfy-menu-bg p-1 shadow-md"
       >
         <ContextMenuItem
           class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-highlight focus:bg-highlight"
-          @select="handleAddToFavorites"
+          @select="handleToggleBookmark"
         >
           <i
             :class="
@@ -58,6 +58,14 @@
               ? $t('sideToolbar.nodeLibraryTab.sections.unfavoriteNode')
               : $t('sideToolbar.nodeLibraryTab.sections.favoriteNode')
           }}
+        </ContextMenuItem>
+        <ContextMenuItem
+          v-if="isCurrentNodeUserBlueprint"
+          class="text-destructive flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-highlight focus:bg-highlight"
+          @select="handleDeleteBlueprint"
+        >
+          <i class="icon-[lucide--trash-2] size-4" />
+          {{ $t('g.delete') }}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenuPortal>
@@ -79,6 +87,7 @@ import { computed, provide, ref } from 'vue'
 
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
@@ -98,7 +107,6 @@ const emit = defineEmits<{
     node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
     event: MouseEvent
   ]
-  addToFavorites: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
 }>()
 
 const contextMenuNode = ref<RenderedTreeExplorerNode<ComfyNodeDefImpl> | null>(
@@ -107,6 +115,7 @@ const contextMenuNode = ref<RenderedTreeExplorerNode<ComfyNodeDefImpl> | null>(
 provide(InjectKeyContextMenuNode, contextMenuNode)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
+const subgraphStore = useSubgraphStore()
 
 const isCurrentNodeBookmarked = computed(() => {
   const node = contextMenuNode.value
@@ -114,9 +123,21 @@ const isCurrentNodeBookmarked = computed(() => {
   return nodeBookmarkStore.isBookmarked(node.data)
 })
 
-function handleAddToFavorites() {
-  if (contextMenuNode.value) {
-    emit('addToFavorites', contextMenuNode.value)
+const isCurrentNodeUserBlueprint = computed(() =>
+  subgraphStore.isUserBlueprint(contextMenuNode.value?.data?.name)
+)
+
+function handleToggleBookmark() {
+  const node = contextMenuNode.value
+  if (node?.data) {
+    nodeBookmarkStore.toggleBookmark(node.data)
+  }
+}
+
+function handleDeleteBlueprint() {
+  const name = contextMenuNode.value?.data?.name
+  if (name) {
+    void subgraphStore.deleteBlueprint(name)
   }
 }
 </script>
