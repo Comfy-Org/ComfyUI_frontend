@@ -12,9 +12,10 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
-import { getJobWorkflow } from '@/services/jobOutputCache'
+import { getJobPrompt, getJobWorkflow } from '@/services/jobOutputCache'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -59,11 +60,19 @@ export function useJobMenu(
   const openJobWorkflow = async (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    const data = await getJobWorkflow(target.id)
-    if (!data) return
     const filename = `Job ${target.id}.json`
-    const temp = workflowStore.createTemporary(filename, data)
-    await workflowService.openWorkflow(temp)
+
+    const data = await getJobWorkflow(target.id)
+    if (data) {
+      const temp = workflowStore.createTemporary(filename, data)
+      await workflowService.openWorkflow(temp)
+      return
+    }
+
+    const prompt = await getJobPrompt(target.id)
+    if (prompt) {
+      app.loadApiJson(prompt, filename)
+    }
   }
 
   const copyJobId = async (item?: JobListItem | null) => {
@@ -182,7 +191,8 @@ export function useJobMenu(
   const exportJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await getJobWorkflow(item.id)
+    const data =
+      (await getJobWorkflow(item.id)) ?? (await getJobPrompt(item.id))
     if (!data) return
 
     const settingStore = useSettingStore()

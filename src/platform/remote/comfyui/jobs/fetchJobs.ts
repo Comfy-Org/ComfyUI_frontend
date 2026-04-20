@@ -6,7 +6,10 @@
  * All distributions use the /jobs endpoint.
  */
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
 
@@ -158,4 +161,20 @@ export async function extractWorkflow(
   })
 
   return validated ?? undefined
+}
+
+/**
+ * Fallback for API-dispatched workflows where extra_pnginfo.workflow
+ * is not populated. Extracts the API-format prompt from workflow.prompt.
+ */
+export function extractPrompt(
+  job: JobDetail | undefined
+): ComfyApiWorkflow | undefined {
+  const parsed = zWorkflowContainer.safeParse(job?.workflow)
+  if (!parsed.success) return undefined
+
+  const prompt = parsed.data.prompt
+  if (!prompt || Object.keys(prompt).length === 0) return undefined
+
+  return prompt as ComfyApiWorkflow
 }
