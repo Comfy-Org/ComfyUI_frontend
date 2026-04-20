@@ -24,6 +24,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 const mockData = vi.hoisted(() => ({
   isLoggedIn: false,
   isDesktop: false,
+  isCloud: false,
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
@@ -36,7 +37,9 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false,
+  get isCloud() {
+    return mockData.isCloud
+  },
   isNightly: false,
   get isDesktop() {
     return mockData.isDesktop
@@ -193,6 +196,7 @@ describe('TopMenuSection', () => {
     localStorage.clear()
     mockData.isDesktop = false
     mockData.isLoggedIn = false
+    mockData.isCloud = false
     mockData.setShowConflictRedDot(false)
   })
 
@@ -219,6 +223,14 @@ describe('TopMenuSection', () => {
       const { container } = createSidebarTabsWrapper()
       expect(container.querySelector('login-button-stub')).not.toBeNull()
       expect(container.querySelector('current-user-button-stub')).toBeNull()
+    })
+
+    it('should display CurrentUserButton when user is logged out on cloud', () => {
+      mockData.isLoggedIn = false
+      mockData.isCloud = true
+      const { container } = createSidebarTabsWrapper()
+      expect(container.querySelector('current-user-button-stub')).not.toBeNull()
+      expect(container.querySelector('login-button-stub')).toBeNull()
     })
   })
 
