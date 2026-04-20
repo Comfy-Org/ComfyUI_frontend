@@ -40,20 +40,30 @@ describe('FormDropdownInput', () => {
     expect(fileInput(wrapper).disabled).toBe(true)
   })
 
-  it('surfaces a Loading… label on the upload button while loading', () => {
-    const wrapper = mountInput({ ...baseProps, loading: true })
+  it('replaces the dropdown text with Loading… while loading', () => {
+    const wrapper = mountInput({
+      ...baseProps,
+      loading: true,
+      placeholder: 'Pick a file'
+    })
 
-    expect(wrapper.get('label').text()).toContain('Loading')
+    expect(wrapper.get('button').text()).toContain('Loading')
+    expect(wrapper.get('button').text()).not.toContain('Pick a file')
   })
 
-  it('leaves the trigger and file input enabled and hides the label when idle', () => {
-    const wrapper = mountInput({ ...baseProps, loading: false })
+  it('shows the placeholder and leaves trigger + file input enabled when idle', () => {
+    const wrapper = mountInput({
+      ...baseProps,
+      loading: false,
+      placeholder: 'Pick a file'
+    })
 
     expect(triggerButton(wrapper).disabled).toBe(false)
     expect(wrapper.get('button').attributes('aria-busy')).toBeUndefined()
     expect(wrapper.get('label').attributes('aria-busy')).toBeUndefined()
     expect(fileInput(wrapper).disabled).toBe(false)
-    expect(wrapper.get('label').text()).toBe('')
+    expect(wrapper.get('button').text()).toContain('Pick a file')
+    expect(wrapper.get('button').text()).not.toContain('Loading')
   })
 
   it('keeps the file input disabled when the whole widget is disabled, regardless of loading', () => {

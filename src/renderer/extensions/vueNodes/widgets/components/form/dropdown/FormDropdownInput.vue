@@ -84,7 +84,8 @@ const theButtonStyle = computed(() =>
       @click="emit('select-click', $event)"
     >
       <span class="min-w-0 flex-1 truncate px-1 py-2 text-left">
-        <span v-if="!selectedItems.length">
+        <span v-if="loading">{{ t('g.loading') }}...</span>
+        <span v-else-if="!selectedItems.length">
           {{ placeholder }}
         </span>
         <span v-else>
@@ -106,8 +107,8 @@ const theButtonStyle = computed(() =>
       :class="
         cn(
           theButtonStyle,
-          'relative flex h-8 items-center justify-center gap-1.5 rounded-r-lg border-l border-node-component-border',
-          loading ? 'cursor-wait px-2' : 'w-8'
+          'relative flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border',
+          loading && 'cursor-wait'
         )
       "
       :aria-busy="loading || undefined"
@@ -122,9 +123,6 @@ const theButtonStyle = computed(() =>
           )
         "
       />
-      <span v-if="loading" class="text-xs whitespace-nowrap">
-        {{ t('g.loading') }}...
-      </span>
       <input
         type="file"
         class="absolute inset-0 -z-1 opacity-0"
