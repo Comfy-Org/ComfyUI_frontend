@@ -127,8 +127,18 @@ const websiteJsonLd = {
     <Analytics />
 
     <script>
-      import { initSmoothScroll } from '../scripts/smoothScroll'
+      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
+      import { ScrollTrigger } from '../scripts/gsapSetup'
+
       initSmoothScroll()
+
+      document.addEventListener('astro:page-load', () => {
+        ScrollTrigger.refresh()
+      })
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelScroll()
+      })
     </script>
   </body>
 </html>
