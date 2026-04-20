@@ -17,11 +17,11 @@ test.describe('Workflow sidebar - search', () => {
       'alpha-workflow.json': 'default.json',
       'beta-workflow.json': 'default.json'
     })
+    await comfyPage.menu.workflowsTab.open()
   })
 
   test('Search filters saved workflows by name', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    await tab.open()
 
     await tab.searchInput.fill('alpha')
 
@@ -31,7 +31,6 @@ test.describe('Workflow sidebar - search', () => {
 
   test('Clearing search restores all workflows', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    await tab.open()
 
     await tab.searchInput.fill('alpha')
     await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeHidden()
@@ -44,7 +43,6 @@ test.describe('Workflow sidebar - search', () => {
 
   test('Search with no matches shows empty results', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    await tab.open()
 
     await tab.searchInput.fill('nonexistent_xyz')
 
@@ -60,13 +58,13 @@ test.describe('Workflow sidebar - search', () => {
         'gamma-workflow.json': 'default.json'
       })
       await comfyPage.settings.setSetting('Comfy.Workflow.ConfirmDelete', false)
+      await comfyPage.menu.workflowsTab.open()
     })
 
     test('Deleting a workflow while search is active removes it from results', async ({
       comfyPage
     }) => {
       const tab = comfyPage.menu.workflowsTab
-      await tab.open()
 
       await tab.searchInput.fill('alpha')
       await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
@@ -83,7 +81,6 @@ test.describe('Workflow sidebar - search', () => {
       comfyPage
     }) => {
       const tab = comfyPage.menu.workflowsTab
-      await tab.open()
 
       await tab.searchInput.fill('workflow')
 
@@ -105,7 +102,6 @@ test.describe('Workflow sidebar - search', () => {
       comfyPage
     }) => {
       const tab = comfyPage.menu.workflowsTab
-      await tab.open()
 
       await tab.searchInput.fill('alpha')
       await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
