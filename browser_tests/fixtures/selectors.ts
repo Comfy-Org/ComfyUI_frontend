@@ -115,6 +115,13 @@ export const TestIds = {
   menu: {
     moreMenuContent: 'more-menu-content'
   },
+  helpCenter: {
+    button: 'help-center-button',
+    popup: 'help-center-popup',
+    backdrop: 'help-center-backdrop',
+    menuItem: (key: string) => `help-menu-item-${key}`,
+    releaseItem: (version: string) => `help-release-item-${version}`
+  },
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
@@ -243,6 +250,10 @@ export type TestIdValue =
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
   | (typeof TestIds.menu)[keyof typeof TestIds.menu]
+  | Exclude<
+      (typeof TestIds.helpCenter)[keyof typeof TestIds.helpCenter],
+      (arg: string) => string
+    >
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
