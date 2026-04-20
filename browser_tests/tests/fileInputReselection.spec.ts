@@ -3,53 +3,52 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('File input same-file reselection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
-  })
-
-  test('should allow uploading the same file twice in a row', async ({
+  test('should allow uploading the same file twice via LoadImage node', async ({
     comfyPage
   }) => {
-    await comfyPage.page.keyboard.press('Control+,')
+    await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
 
-    const appearanceOption = comfyPage.page.locator('text=Appearance')
-    await appearanceOption.click()
+    const loadImageNodes =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const loadImageNode = loadImageNodes[0]
+    const uploadWidget = await loadImageNode.getWidget(1)
+    const fileWidget = await loadImageNode.getWidget(0)
 
-    const backgroundImageSetting = comfyPage.page.locator(
-      '#Comfy\\.Canvas\\.BackgroundImage'
+    // First upload
+    const firstUpload = comfyPage.page.waitForResponse(
+      (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+      { timeout: 10_000 }
     )
-    const uploadButton = backgroundImageSetting.getByRole('button', {
-      name: /upload/i
-    })
-
     const firstChooser = comfyPage.page.waitForEvent('filechooser')
-    await uploadButton.click()
-    await (
-      await firstChooser
-    ).setFiles(comfyPage.assetPath('test_upload_image.png'))
+    await uploadWidget.click()
+    await (await firstChooser).setFiles(
+      comfyPage.assetPath('test_upload_image.png')
+    )
+    await firstUpload
 
-    const urlInput = backgroundImageSetting.getByRole('textbox')
-    await expect(urlInput).toHaveValue(/^\/api\/view\?/)
+    await expect
+      .poll(() => fileWidget.getValue(), {
+        message: 'First upload should set widget value'
+      })
+      .toContain('test_upload_image')
 
-    const clearButton = backgroundImageSetting.getByRole('button', {
-      name: /clear/i
-    })
-    await clearButton.click()
-    await expect(urlInput).toHaveValue('')
-
-    // Second upload of the SAME file — this failed before the fix because
-    // the hidden input retained the previous value and onchange did not fire.
+    // Second upload of the SAME file — before the fix, the hidden input
+    // retained the previous value and onchange did not fire.
+    const secondUpload = comfyPage.page.waitForResponse(
+      (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+      { timeout: 10_000 }
+    )
     const secondChooser = comfyPage.page.waitForEvent('filechooser')
-    await uploadButton.click()
-    await (
-      await secondChooser
-    ).setFiles(comfyPage.assetPath('test_upload_image.png'))
+    await uploadWidget.click()
+    await (await secondChooser).setFiles(
+      comfyPage.assetPath('test_upload_image.png')
+    )
+    await secondUpload
 
-    await expect(urlInput).toHaveValue(/^\/api\/view\?/)
+    await expect
+      .poll(() => fileWidget.getValue(), {
+        message: 'Second upload of the same file should still set widget value'
+      })
+      .toContain('test_upload_image')
   })
 })
