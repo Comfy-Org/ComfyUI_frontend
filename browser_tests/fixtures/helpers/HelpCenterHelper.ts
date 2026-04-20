@@ -24,7 +24,7 @@ export class HelpCenterHelper {
   public readonly whatsNewSection: Locator
 
   constructor(public readonly page: Page) {
-    this.button = page.locator('.comfy-help-center-btn')
+    this.button = page.getByTestId(TestIds.helpCenter.button)
     this.popup = page.getByTestId(TestIds.helpCenter.popup)
     this.backdrop = page.getByTestId(TestIds.helpCenter.backdrop)
     this.whatsNewSection = page.getByTestId(TestIds.dialogs.whatsNewSection)
@@ -137,7 +137,7 @@ export function createMockRelease(
   return {
     id: 1,
     project: 'comfyui',
-    version: 'v0.3.44',
+    version: '0.3.44',
     attention: 'medium',
     content: '## New Features\n\n- Added awesome feature',
     published_at: new Date().toISOString(),

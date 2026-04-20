@@ -137,7 +137,7 @@ test.describe('Help Center', () => {
       comfyPage,
       helpCenter
     }) => {
-      const versions = ['v0.4.10', 'v0.4.9', 'v0.4.8', 'v0.4.7', 'v0.4.6']
+      const versions = ['0.4.10', '0.4.9', '0.4.8', '0.4.7', '0.4.6']
       const now = Date.now()
       const releases = versions.map((version, idx) =>
         createMockRelease({
@@ -153,17 +153,17 @@ test.describe('Help Center', () => {
 
       await expect(helpCenter.whatsNewSection).toBeVisible()
       await expect(helpCenter.releaseItems).toHaveCount(3)
-      await expect(helpCenter.releaseItem('v0.4.10')).toBeVisible()
-      await expect(helpCenter.releaseItem('v0.4.9')).toBeVisible()
-      await expect(helpCenter.releaseItem('v0.4.8')).toBeVisible()
-      await expect(helpCenter.releaseItem('v0.4.7')).toHaveCount(0)
+      await expect(helpCenter.releaseItem('0.4.10')).toBeVisible()
+      await expect(helpCenter.releaseItem('0.4.9')).toBeVisible()
+      await expect(helpCenter.releaseItem('0.4.8')).toBeVisible()
+      await expect(helpCenter.releaseItem('0.4.7')).toHaveCount(0)
     })
 
     test('clicking a release opens the changelog with a version anchor', async ({
       comfyPage,
       helpCenter
     }) => {
-      const release = createMockRelease({ version: 'v0.3.50' })
+      const release = createMockRelease({ version: '0.3.50' })
 
       await helpCenter.mockReleases([release])
       await helpCenter.stubDocsPage()
@@ -171,13 +171,13 @@ test.describe('Help Center', () => {
       await helpCenter.open()
 
       const popupPromise = helpCenter.page.waitForEvent('popup')
-      await helpCenter.releaseItem('v0.3.50').click()
+      await helpCenter.releaseItem('0.3.50').click()
       const externalTab = await popupPromise
 
       const url = new URL(externalTab.url())
       expect(url.hostname).toBe('docs.comfy.org')
       expect(url.pathname).toBe('/changelog')
-      expect(url.hash).toBe('#vv0-3-50')
+      expect(url.hash).toBe('#v0-3-50')
 
       await expect(helpCenter.popup).toBeHidden()
       await externalTab.close()
