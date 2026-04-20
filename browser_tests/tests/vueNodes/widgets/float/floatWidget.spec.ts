@@ -2,10 +2,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { TestGraphAccess } from '@e2e/types/globals'
 
 test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
-  test('allows changing value via the number input', async ({ comfyPage }) => {
+  test('evaluates expression input using the widget precision', async ({
+    comfyPage
+  }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
     const cfgWidget = comfyPage.vueNodes
@@ -13,10 +14,10 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
       .first()
     const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
 
-    await input.fill('3.5')
+    await input.fill('1.5 + 1.75')
     await input.blur()
 
-    await expect(input).toHaveValue('3.5')
+    await expect(input).toHaveValue('3.3')
   })
 
   test('increment and decrement buttons update the value', async ({
@@ -64,15 +65,12 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.vueNodes.waitForNodes()
 
-    const cfgValueAfterReload = await comfyPage.page.evaluate(() => {
-      const graph = window.graph as unknown as TestGraphAccess | undefined
-      if (!graph) return null
-      const node = Object.values(graph._nodes_by_id).find(
-        (n) => n.type === 'KSampler'
-      )
-      return node?.widgets?.find((w) => w.name === 'cfg')?.value ?? null
-    })
+    const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    if (!ksamplerNode) {
+      throw new Error('KSampler node not found after reload')
+    }
 
-    expect(cfgValueAfterReload).toBe(7.5)
+    const cfgWidgetAfterReload = await ksamplerNode.getWidgetByName('cfg')
+    await expect.poll(() => cfgWidgetAfterReload.getValue()).toBe(7.5)
   })
 })

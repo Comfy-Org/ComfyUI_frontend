@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { TestGraphAccess } from '@e2e/types/globals'
 
 test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
   test('opens a dropdown that lists sampler options', async ({ comfyPage }) => {
@@ -56,18 +55,13 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.vueNodes.waitForNodes()
 
-    // Verify both the internal widget state and the visible Vue combobox
-    // after reload. A broken rehydration path could keep the widget object
-    // correct while rendering the old selection (or vice versa).
-    const schedulerValueAfterReload = await comfyPage.page.evaluate(() => {
-      const graph = window.graph as unknown as TestGraphAccess | undefined
-      if (!graph) return null
-      const node = Object.values(graph._nodes_by_id).find(
-        (n) => n.type === 'KSampler'
-      )
-      return node?.widgets?.find((w) => w.name === 'scheduler')?.value ?? null
-    })
-    expect(schedulerValueAfterReload).toBe('karras')
+    const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    if (!ksamplerNode) {
+      throw new Error('KSampler node not found after reload')
+    }
+
+    const schedulerWidget = await ksamplerNode.getWidgetByName('scheduler')
+    await expect.poll(() => schedulerWidget.getValue()).toBe('karras')
 
     const schedulerComboAfterReload = comfyPage.vueNodes
       .getNodeByTitle('KSampler')
