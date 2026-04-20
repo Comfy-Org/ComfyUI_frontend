@@ -5,7 +5,6 @@ import { ref } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
-import BorderedPlaceholder from './BorderedPlaceholder.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -13,17 +12,19 @@ const features = [
   {
     title: t('showcase.feature1.title', locale),
     description: t('showcase.feature1.description', locale),
-    image: ''
+    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
   },
   {
     title: t('showcase.feature2.title', locale),
     description: t('showcase.feature2.description', locale),
-    image: ''
+    video:
+      'https://media.comfy.org/website/homepage/showcase/node-workflow.webm'
   },
   {
     title: t('showcase.feature3.title', locale),
     description: t('showcase.feature3.description', locale),
-    image: ''
+    video:
+      'https://media.comfy.org/website/homepage/showcase/video-showcase.webm'
   }
 ]
 
@@ -51,17 +52,70 @@ const activeIndex = ref(0)
 
     <!-- Content area -->
     <div class="mt-12 flex flex-col lg:mt-24 lg:flex-row lg:items-stretch">
-      <!-- Image area (desktop only) -->
-      <BorderedPlaceholder class="hidden flex-1 lg:flex" />
+      <!-- Video area (desktop only) -->
+      <div class="hidden flex-1 lg:flex">
+        <div
+          class="rounded-5xl relative flex w-full items-center justify-center overflow-hidden p-0.5 [clip-path:inset(0_round_var(--radius-5xl))]"
+        >
+          <div
+            class="animate-border-spin absolute top-1/2 left-1/2 aspect-square min-h-full min-w-full -translate-1/2 scale-150"
+            style="
+              background: conic-gradient(
+                from 0deg,
+                color-mix(
+                    in srgb,
+                    var(--color-primary-comfy-yellow) 4%,
+                    transparent
+                  )
+                  0%,
+                var(--color-primary-comfy-yellow) 100%
+              );
+            "
+          />
+          <div
+            class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
+          >
+            <video
+              v-for="(feature, i) in features"
+              :key="feature.title"
+              :src="feature.video"
+              autoplay
+              loop
+              muted
+              playsinline
+              :class="
+                cn(
+                  'absolute inset-0 size-full object-cover transition-opacity duration-300',
+                  activeIndex === i ? 'opacity-100' : 'opacity-0'
+                )
+              "
+            />
+          </div>
+        </div>
+      </div>
 
       <!-- Feature accordion -->
       <div class="flex w-full flex-col lg:w-85 lg:gap-4">
         <template v-for="(feature, i) in features" :key="feature.title">
-          <!-- Image area (mobile, rendered before active item) -->
-          <BorderedPlaceholder
+          <!-- Video area (mobile, rendered before active item) -->
+          <div
             v-if="activeIndex === i"
-            :class="cn('lg:hidden', i !== 0 && 'mt-4')"
-          />
+            :class="
+              cn(
+                'aspect-video overflow-hidden rounded-4xl lg:hidden',
+                i !== 0 && 'mt-4'
+              )
+            "
+          >
+            <video
+              :src="feature.video"
+              autoplay
+              loop
+              muted
+              playsinline
+              class="size-full object-cover"
+            />
+          </div>
 
           <!-- Connector (mobile) -->
           <div

@@ -13,11 +13,12 @@ const topLeftRef = ref<HTMLElement>()
 const topRightRef = ref<HTMLElement>()
 const midLeftRef = ref<HTMLElement>()
 const midRightRef = ref<HTMLElement>()
+const bottomLeftRef = ref<HTMLElement>()
 const bottomRightRef = ref<HTMLElement>()
 
 useParallax([topLeftRef, topRightRef], { trigger: sectionRef, y: 200 })
 useParallax([midLeftRef, midRightRef], { trigger: sectionRef, y: 300 })
-useParallax([bottomRightRef], { trigger: sectionRef, y: 400 })
+useParallax([bottomLeftRef, bottomRightRef], { trigger: sectionRef, y: 400 })
 </script>
 
 <template>
@@ -25,30 +26,58 @@ useParallax([bottomRightRef], { trigger: sectionRef, y: 400 })
     ref="sectionRef"
     class="relative overflow-x-clip px-4 py-24 lg:px-20 lg:py-32"
   >
-    <!-- Decorative images -->
-    <div
+    <!-- Decorative media — left column -->
+    <img
       ref="topLeftRef"
-      class="absolute top-0 -left-8 size-36 rounded-3xl bg-smoke-200 lg:left-[10%] lg:size-64"
+      src="https://media.comfy.org/website/gallery/gallery.webp"
+      alt=""
+      class="absolute top-4 -left-6 size-36 rounded-3xl object-cover lg:top-8 lg:left-[8%] lg:h-72 lg:w-64"
       aria-hidden="true"
     />
-    <div
-      ref="topRightRef"
-      class="absolute top-0 -right-8 size-28 rounded-3xl bg-smoke-200 lg:top-4 lg:right-[2%] lg:size-40"
-      aria-hidden="true"
-    />
-    <div
+    <img
       ref="midLeftRef"
-      class="absolute top-1/3 -left-12 size-40 rounded-3xl bg-smoke-200 lg:top-[35%] lg:left-[2%] lg:h-56 lg:w-48"
+      src="https://media.comfy.org/website/enterprise/retro-sakura-window.webp"
+      alt=""
+      class="absolute top-[40%] -left-10 h-44 w-40 rounded-3xl object-cover lg:top-[38%] lg:-left-4 lg:h-56 lg:w-52"
       aria-hidden="true"
     />
-    <div
+    <video
+      ref="bottomLeftRef"
+      src="https://media.comfy.org/videos/compressed_256/flower.webm"
+      autoplay
+      loop
+      muted
+      playsinline
+      class="absolute top-[58%] -left-12 size-36 rounded-3xl object-cover lg:top-[56%] lg:-left-6 lg:size-48"
+      aria-hidden="true"
+    />
+
+    <!-- Decorative media — right column -->
+    <video
+      ref="topRightRef"
+      src="https://media.comfy.org/videos/compressed_256/eye.webm"
+      autoplay
+      loop
+      muted
+      playsinline
+      class="absolute top-0 -right-6 h-28 w-32 rounded-3xl object-cover lg:top-4 lg:-right-4 lg:h-32 lg:w-36"
+      aria-hidden="true"
+    />
+    <video
       ref="midRightRef"
-      class="absolute top-[45%] -right-4 hidden h-48 w-72 rounded-3xl bg-smoke-200 lg:block"
+      src="https://media.comfy.org/videos/compressed_256/clouds.webm"
+      autoplay
+      loop
+      muted
+      playsinline
+      class="absolute top-[42%] -right-4 hidden h-48 w-80 rounded-3xl object-cover lg:block"
       aria-hidden="true"
     />
-    <div
+    <img
       ref="bottomRightRef"
-      class="absolute -right-4 bottom-8 hidden size-48 rounded-3xl bg-smoke-200 lg:block"
+      src="https://media.comfy.org/website/enterprise/glitter-metallic-face.webp"
+      alt=""
+      class="absolute top-[62%] -right-4 hidden h-44 w-56 rounded-3xl object-cover lg:block"
       aria-hidden="true"
     />
 
