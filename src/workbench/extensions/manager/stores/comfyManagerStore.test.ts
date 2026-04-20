@@ -55,7 +55,9 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-const toastAddMock = vi.fn()
+const { toastAddMock } = vi.hoisted(() => ({
+  toastAddMock: vi.fn()
+}))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => ({
@@ -589,12 +591,10 @@ describe('useComfyManagerStore', () => {
       )
     })
 
-    it('does not show a toast when failures are cleared via resetTaskState', async () => {
+    it('does not show a stale toast when resetTaskState runs before the debounce fires', async () => {
       const store = useComfyManagerStore()
       setTaskHistory(store, { a: errorTask('a') })
       await nextTick()
-      await vi.runAllTimersAsync()
-      toastAddMock.mockClear()
 
       store.resetTaskState()
       await nextTick()

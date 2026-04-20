@@ -361,7 +361,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   const resetTaskState = () => {
-    // Clear all task-related reactive state for fresh start after restart
+    // Clear all task-related reactive state for fresh start after restart.
+    // Also clear pendingFailureCount so any in-flight debounced failure
+    // toast (which reads this value before firing) becomes a no-op.
+    pendingFailureCount.value = 0
     taskLogs.value = []
     taskHistory.value = {}
     succeededTasksIds.value = []
