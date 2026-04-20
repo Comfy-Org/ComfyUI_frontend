@@ -106,10 +106,23 @@ const WidgetBoundingBoxStub = defineComponent({
   />`
 })
 
-function setCropState(overrides: Record<string, { value: unknown }>) {
-  if (!cropHolder.state) cropHolder.state = {}
-  for (const [k, v] of Object.entries(overrides)) {
-    ;(cropHolder.state as Record<string, { value: unknown }>)[k] = v
+function primeCropState(overrides: Record<string, unknown> = {}) {
+  cropHolder.state = {
+    imageUrl: ref<string | null>(null),
+    isLoading: ref(false),
+    selectedRatio: ref('1:1'),
+    isLockEnabled: ref(false),
+    cropBoxStyle: ref({}),
+    resizeHandles: ref([]),
+    handleImageLoad: () => {},
+    handleImageError: () => {},
+    handleDragStart: () => {},
+    handleDragMove: () => {},
+    handleDragEnd: () => {},
+    handleResizeStart: () => {},
+    handleResizeMove: () => {},
+    handleResizeEnd: () => {},
+    ...overrides
   }
 }
 
@@ -161,6 +174,7 @@ describe('WidgetImageCrop', () => {
 
   describe('Image states', () => {
     it('shows the empty-state placeholder when imageUrl is null', () => {
+      primeCropState()
       renderWidget()
       expect(screen.getByTestId('crop-empty-state')).toBeInTheDocument()
       expect(
@@ -169,32 +183,24 @@ describe('WidgetImageCrop', () => {
     })
 
     it('shows the loading message when isLoading is true', () => {
+      primeCropState({ isLoading: ref(true), imageUrl: ref('/img.png') })
       renderWidget()
-      setCropState({ isLoading: ref(true) })
-      // re-render to pick up state change
-      renderWidget()
-      expect(screen.getAllByText('Loading...').length).toBeGreaterThan(0)
+      expect(screen.getByText('Loading...')).toBeInTheDocument()
+      expect(screen.queryByTestId('crop-empty-state')).toBeNull()
     })
 
     it('renders an img when imageUrl is set and not loading', () => {
-      renderWidget()
-      setCropState({
-        imageUrl: ref('/img.png'),
-        isLoading: ref(false)
-      })
+      primeCropState({ imageUrl: ref('/img.png'), isLoading: ref(false) })
       const { container } = renderWidget()
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('img')).toBeInTheDocument()
+      expect(screen.queryByText('Loading...')).toBeNull()
     })
 
     it('renders the crop overlay when an image is loaded', () => {
+      primeCropState({ imageUrl: ref('/img.png'), isLoading: ref(false) })
       renderWidget()
-      setCropState({
-        imageUrl: ref('/img.png'),
-        isLoading: ref(false)
-      })
-      renderWidget()
-      expect(screen.getAllByTestId('crop-overlay').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('crop-overlay')).toBeInTheDocument()
     })
   })
 
