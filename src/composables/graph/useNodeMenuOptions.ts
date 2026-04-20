@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { NodeColorOption } from './useNodeColorOptions'
 import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
 import { useSelectedNodeActions } from './useSelectedNodeActions'
@@ -29,8 +30,11 @@ export function useNodeMenuOptions() {
   )
 
   const colorSubmenu = computed(() => {
-    return colorOptions.map((colorOption) => ({
-      label: colorOption.localizedName,
+    return colorOptions.value.map((colorOption: NodeColorOption) => ({
+      label:
+        typeof colorOption.localizedName === 'function'
+          ? colorOption.localizedName()
+          : colorOption.localizedName,
       color: isLightTheme.value
         ? colorOption.value.light
         : colorOption.value.dark,
