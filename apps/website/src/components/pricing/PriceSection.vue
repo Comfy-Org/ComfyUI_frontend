@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import BrandButton from '../common/BrandButton.vue'
+import PricingTierCard from './PricingTierCard.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
@@ -162,122 +163,111 @@ const activePlanIndex = ref(0)
     <div
       class="rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:grid-cols-4 lg:gap-2"
     >
-      <div
-        v-for="plan in standardPlans"
-        :key="plan.id"
-        class="flex flex-col rounded-3xl"
-      >
-        <!-- Card content -->
-        <div class="flex grow flex-col">
-          <!-- Label + badge + Summary -->
-          <div
-            class="bg-primary-comfy-ink flex h-45 flex-col gap-8 rounded-4xl p-8"
+      <PricingTierCard v-for="plan in standardPlans" :key="plan.id">
+        <!-- 1. Label + badge -->
+        <div class="flex items-center gap-2 px-8 pt-8">
+          <span
+            class="text-primary-comfy-yellow translate-y-0.5 text-base font-bold tracking-wider"
           >
-            <div class="flex items-center gap-2">
-              <span
-                class="text-primary-comfy-yellow translate-y-0.5 text-base font-bold tracking-wider"
-              >
-                {{ t(plan.labelKey, locale) }}
-              </span>
-              <span v-if="plan.isPopular" class="flex h-5 items-stretch">
-                <img
-                  src="/icons/node-left.svg"
-                  alt=""
-                  class="-mx-px self-stretch"
-                  aria-hidden="true"
-                />
-                <span
-                  class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center px-2 text-[10px] font-bold tracking-wider"
-                >
-                  <span class="ppformula-text-center">
-                    {{ t('pricing.badge.popular', locale) }}
-                  </span>
-                </span>
-                <img
-                  src="/icons/node-right.svg"
-                  alt=""
-                  class="-mx-px self-stretch"
-                  aria-hidden="true"
-                />
-              </span>
-            </div>
-            <p class="text-primary-comfy-canvas text-base">
-              {{ t(plan.summaryKey, locale) }}
-            </p>
-          </div>
-
-          <!-- Price, credits, estimate, CTA -->
-          <div
-            class="bg-primary-comfy-ink flex h-100 flex-col justify-between rounded-4xl p-8"
-          >
-            <div class="flex flex-col gap-4">
-              <!-- Price -->
-              <div v-if="plan.priceKey" class="flex items-baseline gap-1">
-                <span
-                  class="text-primary-comfy-canvas font-formula text-6.5xl font-light"
-                >
-                  {{ t(plan.priceKey, locale) }}
-                </span>
-                <span class="text-primary-comfy-canvas text-sm">
-                  {{ t('pricing.plan.period', locale) }}
-                </span>
-              </div>
-
-              <!-- Credits -->
-              <p
-                v-if="plan.creditsKey"
-                class="text-primary-comfy-canvas text-sm"
-              >
-                {{ t(plan.creditsKey, locale) }}
-              </p>
-
-              <!-- Estimate -->
-              <p
-                v-if="plan.estimateKey"
-                class="text-primary-comfy-canvas/80 text-sm"
-              >
-                {{ t(plan.estimateKey, locale) }}
-              </p>
-            </div>
-            <!-- CTA -->
-            <BrandButton
-              :href="plan.ctaHref"
-              :label="t(plan.ctaKey, locale)"
-              variant="outline"
-              size="sm"
-              class-name="w-full text-center"
+            {{ t(plan.labelKey, locale) }}
+          </span>
+          <span v-if="plan.isPopular" class="flex h-5 items-stretch">
+            <img
+              src="/icons/node-left.svg"
+              alt=""
+              class="-mx-px self-stretch"
+              aria-hidden="true"
             />
-          </div>
-
-          <!-- Features -->
-          <div class="bg-primary-comfy-ink h-66 rounded-4xl p-8">
-            <p
-              v-if="plan.featureIntroKey"
-              class="text-primary-comfy-canvas mb-3 text-sm font-semibold"
+            <span
+              class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center px-2 text-[10px] font-bold tracking-wider"
             >
-              {{ t(plan.featureIntroKey, locale) }}
-            </p>
-            <ul class="space-y-2">
-              <li
-                v-for="feature in plan.features"
-                :key="feature.text"
-                class="flex items-start gap-2"
-              >
-                <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-                <span class="text-primary-comfy-canvas text-sm">
-                  {{ t(feature.text, locale) }}
-                </span>
-              </li>
-            </ul>
-            <p
-              v-if="plan.nextUpKey"
-              class="text-primary-comfy-canvas/80 mt-4 text-sm"
-            >
-              {{ t(plan.nextUpKey, locale) }}
-            </p>
-          </div>
+              <span class="ppformula-text-center">
+                {{ t('pricing.badge.popular', locale) }}
+              </span>
+            </span>
+            <img
+              src="/icons/node-right.svg"
+              alt=""
+              class="-mx-px self-stretch"
+              aria-hidden="true"
+            />
+          </span>
         </div>
-      </div>
+
+        <!-- 2. Summary -->
+        <p class="text-primary-comfy-canvas px-8 text-base">
+          {{ t(plan.summaryKey, locale) }}
+        </p>
+
+        <!-- 3. Price -->
+        <div v-if="plan.priceKey" class="flex items-baseline gap-1 px-8 pt-4">
+          <span
+            class="text-primary-comfy-canvas font-formula text-6.5xl font-light"
+          >
+            {{ t(plan.priceKey, locale) }}
+          </span>
+          <span class="text-primary-comfy-canvas text-sm">
+            {{ t('pricing.plan.period', locale) }}
+          </span>
+        </div>
+        <div v-else class="px-8 pt-4" />
+
+        <!-- 4. Credits -->
+        <p
+          v-if="plan.creditsKey"
+          class="text-primary-comfy-canvas px-8 text-sm"
+        >
+          {{ t(plan.creditsKey, locale) }}
+        </p>
+        <div v-else class="px-8" />
+
+        <!-- 5. Estimate -->
+        <p
+          v-if="plan.estimateKey"
+          class="text-primary-comfy-canvas/80 px-8 text-sm"
+        >
+          {{ t(plan.estimateKey, locale) }}
+        </p>
+        <div v-else class="px-8" />
+
+        <!-- 6. CTA -->
+        <div class="flex self-end px-8 py-4">
+          <BrandButton
+            :href="plan.ctaHref"
+            :label="t(plan.ctaKey, locale)"
+            variant="outline"
+            size="sm"
+            class-name="w-full text-center"
+          />
+        </div>
+
+        <!-- 7. Features -->
+        <div class="px-8 pb-8">
+          <p class="text-primary-comfy-canvas mb-3 text-sm font-semibold">
+            {{
+              plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
+            }}
+          </p>
+          <ul class="space-y-2">
+            <li
+              v-for="feature in plan.features"
+              :key="feature.text"
+              class="flex items-start gap-2"
+            >
+              <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
+              <span class="text-primary-comfy-canvas text-sm">
+                {{ t(feature.text, locale) }}
+              </span>
+            </li>
+          </ul>
+          <p
+            v-if="plan.nextUpKey"
+            class="text-primary-comfy-canvas/80 mt-4 text-sm"
+          >
+            {{ t(plan.nextUpKey, locale) }}
+          </p>
+        </div>
+      </PricingTierCard>
     </div>
 
     <!-- Mobile: single plan view -->
