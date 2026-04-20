@@ -183,9 +183,23 @@ async function openBaseModelPopover() {
 
 describe('FormDropdownMenuActions', () => {
   describe('Search', () => {
-    it('binds search input to v-model', () => {
+    it('binds search input to v-model on initial render', () => {
       renderMenu({ searchQuery: 'seed' })
       expect(screen.getByRole('textbox')).toHaveValue('seed')
+    })
+
+    it('propagates typed input up to searchQuery v-model', async () => {
+      const { searchQuery } = renderMenu({ searchQuery: '' })
+      const user = userEvent.setup()
+      await user.type(screen.getByRole('textbox'), 'abc')
+      expect(searchQuery.value).toBe('abc')
+    })
+
+    it('clears searchQuery when the user clears the textbox', async () => {
+      const { searchQuery } = renderMenu({ searchQuery: 'seed' })
+      const user = userEvent.setup()
+      await user.clear(screen.getByRole('textbox'))
+      expect(searchQuery.value).toBe('')
     })
   })
 
@@ -210,6 +224,14 @@ describe('FormDropdownMenuActions', () => {
       const user = userEvent.setup()
       await user.click(within(body).getByRole('button', { name: 'Name A-Z' }))
       expect(sortSelected.value).toBe('name-asc')
+    })
+
+    it('closes the popover after a sort option is selected', async () => {
+      renderMenu({ sortSelected: 'default' })
+      const body = await openSortPopover()
+      const user = userEvent.setup()
+      await user.click(within(body).getByRole('button', { name: 'Name A-Z' }))
+      expect(screen.queryByTestId('popover-body')).toBeNull()
     })
   })
 
@@ -237,6 +259,14 @@ describe('FormDropdownMenuActions', () => {
       const user = userEvent.setup()
       await user.click(within(body).getByRole('button', { name: 'Mine' }))
       expect(ownershipSelected.value).toBe('my-models')
+    })
+
+    it('closes the popover after an ownership option is selected', async () => {
+      renderMenu({ showOwnershipFilter: true, ownershipSelected: 'all' })
+      const body = await openOwnershipPopover()
+      const user = userEvent.setup()
+      await user.click(within(body).getByRole('button', { name: 'Mine' }))
+      expect(screen.queryByTestId('popover-body')).toBeNull()
     })
   })
 
