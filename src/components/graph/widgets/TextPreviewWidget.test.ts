@@ -85,7 +85,9 @@ describe('TextPreviewWidget', () => {
 
   describe('Bracketed link tokens [[label|url]]', () => {
     it('renders an http link with the supplied label', () => {
-      const { container } = renderPreview('see [[Docs|https://docs.example.com]]')
+      const { container } = renderPreview(
+        'see [[Docs|https://docs.example.com]]'
+      )
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor).not.toBeNull()
