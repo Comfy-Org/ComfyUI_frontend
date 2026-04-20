@@ -21,6 +21,10 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
   VERCEL_SCOPE: comfyui
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy-preview:
     if: github.event_name == 'pull_request'
