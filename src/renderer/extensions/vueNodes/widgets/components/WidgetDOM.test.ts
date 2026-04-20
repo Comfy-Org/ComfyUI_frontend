@@ -121,6 +121,6 @@ describe('WidgetDOM', () => {
     const { container } = mountWithWidget(document.createElement('span'))
     // eslint-disable-next-line testing-library/no-node-access
     const root = container.firstElementChild as HTMLElement
-    expect(root).toBeInTheDocument()
+    expect(root).toBeVisible()
   })
 })
