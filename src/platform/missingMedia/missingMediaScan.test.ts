@@ -1,10 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import {
+  scanAllMediaCandidates,
+  scanNodeMediaCandidates,
   verifyCloudMediaCandidates,
   groupCandidatesByName,
   groupCandidatesByMediaType
 } from './missingMediaScan'
 import type { MissingMediaCandidate } from './types'
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
+  getExecutionIdByNode: (
+    _graph: unknown,
+    node: { _testExecutionId?: string; id: number }
+  ) => node._testExecutionId ?? String(node.id)
+}))
 
 function makeCandidate(
   nodeId: string,
@@ -21,6 +36,122 @@ function makeCandidate(
     ...overrides
   }
 }
+
+function makeMediaCombo(
+  name: string,
+  value: string,
+  options: string[] = []
+): IComboWidget {
+  return fromAny<IComboWidget, unknown>({
+    type: 'combo',
+    name,
+    value,
+    options: { values: options }
+  })
+}
+
+function makeMediaNode(
+  id: number,
+  type: string,
+  widgets: IComboWidget[],
+  mode: number = 0,
+  executionId?: string
+): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id,
+    type,
+    widgets,
+    mode,
+    _testExecutionId: executionId ?? String(id)
+  })
+}
+
+function makeGraph(nodes: LGraphNode[]): LGraph {
+  return fromAny<LGraph, unknown>({ _testNodes: nodes })
+}
+
+describe('scanNodeMediaCandidates', () => {
+  it('returns candidate for a LoadImage node with missing image', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', ['other.png'])],
+      0
+    )
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      nodeId: '1',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'photo.png',
+      isMissing: true
+    })
+  })
+
+  it('returns empty for non-media node types', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'KSampler',
+      [makeMediaCombo('sampler', 'euler', ['euler', 'dpm'])],
+      0
+    )
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('returns empty for node with no widgets', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(1, 'LoadImage', [], 0)
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+})
+
+describe('scanAllMediaCandidates', () => {
+  it('skips muted nodes (mode === NEVER)', () => {
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', ['other.png'])],
+      2 // NEVER
+    )
+    const result = scanAllMediaCandidates(makeGraph([node]), false)
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips bypassed nodes (mode === BYPASS)', () => {
+    const node = makeMediaNode(
+      2,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', ['other.png'])],
+      4 // BYPASS
+    )
+    const result = scanAllMediaCandidates(makeGraph([node]), false)
+    expect(result).toHaveLength(0)
+  })
+
+  it('includes active nodes (mode === ALWAYS)', () => {
+    const node = makeMediaNode(
+      3,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', ['other.png'])],
+      0 // ALWAYS
+    )
+    const result = scanAllMediaCandidates(makeGraph([node]), false)
+    expect(result).toHaveLength(1)
+    expect(result[0].isMissing).toBe(true)
+  })
+})
 
 describe('groupCandidatesByName', () => {
   it('groups candidates with the same name', () => {

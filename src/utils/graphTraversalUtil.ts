@@ -363,6 +363,27 @@ export function getExecutionIdByNode(
 }
 
 /**
+ * Returns the execution ID for a node identified by its (graph, nodeId) pair.
+ *
+ * Unlike {@link getExecutionIdByNode}, this does not rely on `node.graph`.
+ * Use this when the node reference may be detached (e.g. inside
+ * `onNodeRemoved`, which LiteGraph fires after clearing `node.graph`).
+ *
+ * @param rootGraph - The root graph to resolve from
+ * @param graph     - The graph the node currently lives in (or lived in)
+ * @param nodeId    - The local node ID within `graph`
+ */
+export function getExecutionIdForNodeInGraph(
+  rootGraph: LGraph,
+  graph: LGraph | Subgraph,
+  nodeId: string | number
+): string {
+  if (graph === rootGraph || graph.isRootGraph) return String(nodeId)
+  const parentPath = findPartialExecutionPathToGraph(graph as LGraph, rootGraph)
+  return parentPath !== undefined ? `${parentPath}:${nodeId}` : String(nodeId)
+}
+
+/**
  * Returns the execution ID for a node described by plain data (id + subgraphId),
  * without requiring a pre-existing {@link LGraphNode} reference.
  * Subgraph nodes return the full colon-separated path (e.g. `"65:70:63"`).
