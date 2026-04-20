@@ -4,7 +4,7 @@
   >
     <p class="text-foreground m-0 text-sm">
       {{
-        isActiveSubscription
+        canAccessSubscriptionFeatures
           ? $t('workspacePanel.members.upsellBannerUpgrade')
           : $t('workspacePanel.members.upsellBannerSubscribe')
       }}
@@ -23,7 +23,7 @@
 import Button from '@/components/ui/button/Button.vue'
 
 defineProps<{
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
 }>()
 
 defineEmits<{

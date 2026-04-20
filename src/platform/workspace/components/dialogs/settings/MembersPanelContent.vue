@@ -167,7 +167,7 @@
           <!-- Upsell Banner -->
           <MemberUpsellBanner
             v-if="isSingleSeatPlan"
-            :is-active-subscription="isActiveSubscription"
+            :can-access-subscription-features="canAccessSubscriptionFeatures"
             @show-plans="showSubscriptionDialog()"
           />
 
@@ -238,7 +238,7 @@ const {
 const { copyInviteLink } = workspaceStore
 const { permissions, uiConfig } = useWorkspaceUI()
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   subscription,
   showSubscriptionDialog,
   getMaxSeats
@@ -255,7 +255,7 @@ const maxSeats = computed(() => {
 
 const isSingleSeatPlan = computed(() => {
   if (isPersonalWorkspace.value) return false
-  if (!isActiveSubscription.value) return true
+  if (!canAccessSubscriptionFeatures.value) return true
   return maxSeats.value <= 1
 })
 

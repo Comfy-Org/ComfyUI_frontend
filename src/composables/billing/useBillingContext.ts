@@ -116,8 +116,8 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentPlanSlug)
   )
 
-  const isActiveSubscription = computed(() =>
-    toValue(activeContext.value.isActiveSubscription)
+  const canAccessSubscriptionFeatures = computed(() =>
+    toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
@@ -239,7 +239,7 @@ function useBillingContextInternal(): BillingContext {
     currentPlanSlug,
     isLoading,
     error,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     getMaxSeats,
 

@@ -19,7 +19,8 @@ const router = useRouter()
 const { reportError, accessBillingPortal } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { isActiveSubscription, isInitialized, initialize } = useBillingContext()
+const { canAccessSubscriptionFeatures, isInitialized, initialize } =
+  useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -78,7 +79,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     await initialize()
   }
 
-  if (isActiveSubscription.value) {
+  if (canAccessSubscriptionFeatures.value) {
     await accessBillingPortal(undefined, false)
   } else {
     await performSubscriptionCheckout(
