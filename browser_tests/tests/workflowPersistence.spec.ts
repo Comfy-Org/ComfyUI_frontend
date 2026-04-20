@@ -121,9 +121,9 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
     await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
@@ -149,7 +149,6 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBeGreaterThan(1)
 
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.nextFrame()
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
@@ -289,10 +288,8 @@ test.describe('Workflow Persistence', () => {
     const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.nextFrame()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'en')
-    await comfyPage.nextFrame()
 
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
@@ -349,7 +346,6 @@ test.describe('Workflow Persistence', () => {
 
     // Create B: duplicate, add a node, then save (unmodified after save)
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
@@ -392,7 +388,7 @@ test.describe('Workflow Persistence', () => {
     test.info().annotations.push({
       type: 'regression',
       description:
-        'PR #10745 — saveWorkflow called checkState on inactive tab, serializing the active graph instead'
+        'PR #10745 — saveWorkflow called captureCanvasState on inactive tab, serializing the active graph instead'
     })
 
     await comfyPage.settings.setSetting(
@@ -410,7 +406,6 @@ test.describe('Workflow Persistence', () => {
 
     // Create B: duplicate and save
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    await comfyPage.nextFrame()
     await comfyPage.menu.topbar.saveWorkflow(nameB)
 
     // Add a Note node in B to mark it as modified
@@ -424,13 +419,13 @@ test.describe('Workflow Persistence', () => {
       .toBe(nodeCountA + 1)
     const nodeCountB = await comfyPage.nodeOps.getNodeCount()
 
-    // Trigger checkState so isModified is set
+    // Trigger captureCanvasState so isModified is set
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
     // Switch to A via topbar tab (making B inactive)
@@ -469,7 +464,7 @@ test.describe('Workflow Persistence', () => {
     test.info().annotations.push({
       type: 'regression',
       description:
-        'PR #10745 — saveWorkflowAs called checkState on inactive temp tab, serializing the active graph'
+        'PR #10745 — saveWorkflowAs called captureCanvasState on inactive temp tab, serializing the active graph'
     })
 
     await comfyPage.settings.setSetting(
@@ -487,20 +482,19 @@ test.describe('Workflow Persistence', () => {
 
     // Create B as an unsaved workflow with a Note node
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
     })
     await comfyPage.nextFrame()
 
-    // Trigger checkState so isModified is set
+    // Trigger captureCanvasState so isModified is set
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)

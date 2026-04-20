@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
+import MCR from 'monocart-coverage-reports'
 
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
@@ -9,7 +10,7 @@ import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { sleep } from '@e2e/fixtures/utils/timing'
+import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -197,7 +198,7 @@ export class ComfyPage {
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
-    this.selectionToolbox = page.locator('.selection-toolbox')
+    this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
@@ -335,9 +336,7 @@ export class ComfyPage {
   }
 
   async nextFrame() {
-    await this.page.evaluate(() => {
-      return new Promise<number>(requestAnimationFrame)
-    })
+    await nextFrame(this.page)
   }
 
   async delay(ms: number) {
@@ -392,6 +391,27 @@ export class ComfyPage {
     return this.page.locator('.dom-widget')
   }
 
+  async expectScreenshot(
+    locator: Locator,
+    name: string | string[],
+    options?: {
+      animations?: 'disabled' | 'allow'
+      caret?: 'hide' | 'initial'
+      mask?: Array<Locator>
+      maskColor?: string
+      maxDiffPixelRatio?: number
+      maxDiffPixels?: number
+      omitBackground?: boolean
+      scale?: 'css' | 'device'
+      stylePath?: string | Array<string>
+      threshold?: number
+      timeout?: number
+    }
+  ): Promise<void> {
+    await this.nextFrame()
+    await comfyExpect(locator).toHaveScreenshot(name, options)
+  }
+
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
       ;(window.app!.extensionManager as WorkspaceStore).focusMode = focusMode
@@ -402,10 +422,28 @@ export class ComfyPage {
 
 export const testComfySnapToGridGridSize = 50
 
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
+
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
 }>({
+  page: async ({ page, browserName }, use) => {
+    if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
+      return use(page)
+    }
+
+    await page.coverage.startJSCoverage({ resetOnNavigation: false })
+    await use(page)
+    const coverage = await page.coverage.stopJSCoverage()
+
+    const mcr = MCR({
+      outputDir: './coverage/playwright',
+      reports: []
+    })
+    await mcr.add(coverage)
+  },
+
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 

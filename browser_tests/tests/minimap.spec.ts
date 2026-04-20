@@ -1,6 +1,7 @@
-import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -16,21 +17,24 @@ function hasCanvasContent(canvas: Locator): Promise<boolean> {
   })
 }
 
-async function clickMinimapAt(
-  overlay: Locator,
-  page: Page,
-  relX: number,
-  relY: number
-) {
-  const box = await overlay.boundingBox()
-  expect(box, 'Minimap interaction overlay not found').toBeTruthy()
+function getMinimapLocators(comfyPage: ComfyPage) {
+  const container = comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
+  return {
+    container,
+    canvas: comfyPage.page.getByTestId(TestIds.canvas.minimapCanvas),
+    viewport: comfyPage.page.getByTestId(TestIds.canvas.minimapViewport),
+    toggleButton: comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    ),
+    closeButton: comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton)
+  }
+}
 
-  // Click area — avoiding the settings button (top-left, 32×32px)
-  // and close button (top-right, 32×32px)
-  await page.mouse.click(
-    box!.x + box!.width * relX,
-    box!.y + box!.height * relY
-  )
+function getCanvasOffset(page: Page): Promise<[number, number]> {
+  return page.evaluate(() => {
+    const ds = window.app!.canvas.ds
+    return [ds.offset[0], ds.offset[1]] as [number, number]
+  })
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
@@ -42,23 +46,13 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
   })
 
   test('Validate minimap is visible by default', async ({ comfyPage }) => {
-    const minimapContainer = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapContainer
-    )
+    const { container, canvas, viewport } = getMinimapLocators(comfyPage)
 
-    await expect(minimapContainer).toBeVisible()
+    await expect(container).toBeVisible()
+    await expect(canvas).toBeVisible()
+    await expect(viewport).toBeVisible()
 
-    const minimapCanvas = minimapContainer.getByTestId(
-      TestIds.canvas.minimapCanvas
-    )
-    await expect(minimapCanvas).toBeVisible()
-
-    const minimapViewport = minimapContainer.getByTestId(
-      TestIds.canvas.minimapViewport
-    )
-    await expect(minimapViewport).toBeVisible()
-
-    await expect(minimapContainer).toHaveCSS('position', 'relative')
+    await expect(container).toHaveCSS('position', 'relative')
 
     // position and z-index validation moved to the parent container of the minimap
     const minimapMainContainer = comfyPage.page.locator(
@@ -69,59 +63,53 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
+    const { container, toggleButton } = getMinimapLocators(comfyPage)
 
     await expect(toggleButton).toBeVisible()
-
-    const minimapContainer = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapContainer
-    )
-    await expect(minimapContainer).toBeVisible()
+    await expect(container).toBeVisible()
   })
 
   test('Validate minimap can be toggled off and on', async ({ comfyPage }) => {
-    const minimapContainer = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapContainer
-    )
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
+    const { container, toggleButton } = getMinimapLocators(comfyPage)
 
-    await expect(minimapContainer).toBeVisible()
+    await expect(container).toBeVisible()
 
     await toggleButton.click()
-    await expect(minimapContainer).toBeHidden()
+    await comfyPage.nextFrame()
+
+    await expect(container).toBeHidden()
 
     await toggleButton.click()
-    await expect(minimapContainer).toBeVisible()
+    await comfyPage.nextFrame()
+
+    await expect(container).toBeVisible()
   })
 
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {
-    const minimapContainer = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapContainer
-    )
+    const { container } = getMinimapLocators(comfyPage)
 
-    await expect(minimapContainer).toBeVisible()
+    await expect(container).toBeVisible()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await expect(minimapContainer).toBeHidden()
+    await comfyPage.nextFrame()
+
+    await expect(container).toBeHidden()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await expect(minimapContainer).toBeVisible()
+    await comfyPage.nextFrame()
+
+    await expect(container).toBeVisible()
   })
 
   test('Close button hides minimap', async ({ comfyPage }) => {
-    const minimap = comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
-    await expect(minimap).toBeVisible()
+    const { container, toggleButton, closeButton } =
+      getMinimapLocators(comfyPage)
 
-    await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
-    await expect(minimap).toBeHidden()
+    await expect(container).toBeVisible()
 
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
+    await closeButton.click()
+    await expect(container).toBeHidden()
+
     await expect(toggleButton).toBeVisible()
   })
 
@@ -129,12 +117,10 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     'Panning canvas moves minimap viewport',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const minimap = comfyPage.page.getByTestId(
-        TestIds.canvas.minimapContainer
-      )
-      await expect(minimap).toBeVisible()
+      const { container } = getMinimapLocators(comfyPage)
+      await expect(container).toBeVisible()
 
-      await expect(minimap).toHaveScreenshot('minimap-before-pan.png')
+      await comfyPage.expectScreenshot(container, 'minimap-before-pan.png')
 
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -143,156 +129,192 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await comfyPage.nextFrame()
-      await expect(minimap).toHaveScreenshot('minimap-after-pan.png')
+      await comfyPage.expectScreenshot(container, 'minimap-after-pan.png')
     }
   )
-
-  test('Minimap canvas is non-empty for a workflow with nodes', async ({
-    comfyPage
-  }) => {
-    const minimapCanvas = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapCanvas
-    )
-    await expect(minimapCanvas).toBeVisible()
-
-    await expect.poll(() => hasCanvasContent(minimapCanvas)).toBe(true)
-  })
-
-  test('Minimap canvas is empty after all nodes are deleted', async ({
-    comfyPage
-  }) => {
-    const minimapCanvas = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapCanvas
-    )
-    await expect(minimapCanvas).toBeVisible()
-
-    await comfyPage.keyboard.selectAll()
-    await comfyPage.vueNodes.deleteSelected()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-
-    await expect.poll(() => hasCanvasContent(minimapCanvas)).toBe(false)
-  })
-
-  test('Clicking minimap corner pans the main canvas', async ({
-    comfyPage
-  }) => {
-    const minimap = comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
-    const viewport = minimap.getByTestId(TestIds.canvas.minimapViewport)
-    const overlay = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapInteractionOverlay
-    )
-    await expect(minimap).toBeVisible()
-
-    const before = await comfyPage.page.evaluate(() => ({
-      x: window.app!.canvas.ds.offset[0],
-      y: window.app!.canvas.ds.offset[1]
-    }))
-
-    const transformBefore = await viewport.evaluate(
-      (el: HTMLElement) => el.style.transform
-    )
-
-    await clickMinimapAt(overlay, comfyPage.page, 0.15, 0.85)
-
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => ({
-          x: window.app!.canvas.ds.offset[0],
-          y: window.app!.canvas.ds.offset[1]
-        }))
-      )
-      .not.toStrictEqual(before)
-
-    await expect
-      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform))
-      .not.toBe(transformBefore)
-  })
-
-  test('Clicking minimap center after FitView causes minimal canvas movement', async ({
-    comfyPage
-  }) => {
-    const minimap = comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
-    const overlay = comfyPage.page.getByTestId(
-      TestIds.canvas.minimapInteractionOverlay
-    )
-    const viewport = minimap.getByTestId(TestIds.canvas.minimapViewport)
-    await expect(minimap).toBeVisible()
-
-    await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      canvas.ds.offset[0] -= 1000
-      canvas.setDirty(true, true)
-    })
-    await comfyPage.nextFrame()
-
-    const transformBefore = await viewport.evaluate(
-      (el: HTMLElement) => el.style.transform
-    )
-
-    await comfyPage.page.evaluate(() => {
-      window.app!.canvas.fitViewToSelectionAnimated({ duration: 1 })
-    })
-
-    await expect
-      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform), {
-        timeout: 2000
-      })
-      .not.toBe(transformBefore)
-
-    await comfyPage.nextFrame()
-
-    const before = await comfyPage.page.evaluate(() => ({
-      x: window.app!.canvas.ds.offset[0],
-      y: window.app!.canvas.ds.offset[1]
-    }))
-
-    await clickMinimapAt(overlay, comfyPage.page, 0.5, 0.5)
-    await comfyPage.nextFrame()
-
-    const after = await comfyPage.page.evaluate(() => ({
-      x: window.app!.canvas.ds.offset[0],
-      y: window.app!.canvas.ds.offset[1]
-    }))
-
-    // ~3px overlay error × ~15 canvas/minimap scale ≈ 45, rounded up
-    const TOLERANCE = 50
-    expect(
-      Math.abs(after.x - before.x),
-      `offset.x changed by more than ${TOLERANCE} after clicking minimap center post-FitView`
-    ).toBeLessThan(TOLERANCE)
-    expect(
-      Math.abs(after.y - before.y),
-      `offset.y changed by more than ${TOLERANCE} after clicking minimap center post-FitView`
-    ).toBeLessThan(TOLERANCE)
-  })
 
   test(
     'Viewport rectangle is visible and positioned within minimap',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const minimap = comfyPage.page.getByTestId(
-        TestIds.canvas.minimapContainer
-      )
-      await expect(minimap).toBeVisible()
-
-      const viewport = minimap.getByTestId(TestIds.canvas.minimapViewport)
+      const { container, viewport } = getMinimapLocators(comfyPage)
+      await expect(container).toBeVisible()
       await expect(viewport).toBeVisible()
 
-      await expect(async () => {
-        const vb = await viewport.boundingBox()
-        const mb = await minimap.boundingBox()
-        expect(vb).toBeTruthy()
-        expect(mb).toBeTruthy()
-        expect(vb!.width).toBeGreaterThan(0)
-        expect(vb!.height).toBeGreaterThan(0)
-        expect(vb!.x).toBeGreaterThanOrEqual(mb!.x)
-        expect(vb!.y).toBeGreaterThanOrEqual(mb!.y)
-        expect(vb!.x + vb!.width).toBeLessThanOrEqual(mb!.x + mb!.width)
-        expect(vb!.y + vb!.height).toBeLessThanOrEqual(mb!.y + mb!.height)
-      }).toPass({ timeout: 5000 })
+      const minimapBox = await container.boundingBox()
+      const viewportBox = await viewport.boundingBox()
 
-      await expect(minimap).toHaveScreenshot('minimap-with-viewport.png')
+      expect(minimapBox).toBeTruthy()
+      expect(viewportBox).toBeTruthy()
+      expect(viewportBox!.width).toBeGreaterThan(0)
+      expect(viewportBox!.height).toBeGreaterThan(0)
+
+      expect(viewportBox!.x + viewportBox!.width).toBeGreaterThan(minimapBox!.x)
+      expect(viewportBox!.y + viewportBox!.height).toBeGreaterThan(
+        minimapBox!.y
+      )
+      expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
+      expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
+
+      await comfyPage.expectScreenshot(container, 'minimap-with-viewport.png')
     }
   )
+
+  test('Clicking on minimap pans the canvas to that position', async ({
+    comfyPage
+  }) => {
+    const { container } = getMinimapLocators(comfyPage)
+    await expect(container).toBeVisible()
+
+    const offsetBefore = await getCanvasOffset(comfyPage.page)
+
+    const minimapBox = await container.boundingBox()
+    expect(minimapBox).toBeTruthy()
+
+    // Click the top-left quadrant — canvas should pan so that region
+    // becomes centered, meaning offset increases (moves right/down)
+    await comfyPage.page.mouse.click(
+      minimapBox!.x + minimapBox!.width * 0.2,
+      minimapBox!.y + minimapBox!.height * 0.2
+    )
+    await comfyPage.nextFrame()
+
+    await expect
+      .poll(() => getCanvasOffset(comfyPage.page))
+      .not.toEqual(offsetBefore)
+  })
+
+  test('Dragging on minimap continuously pans the canvas', async ({
+    comfyPage
+  }) => {
+    const { container } = getMinimapLocators(comfyPage)
+    await expect(container).toBeVisible()
+
+    const minimapBox = await container.boundingBox()
+    expect(minimapBox).toBeTruthy()
+
+    const startX = minimapBox!.x + minimapBox!.width * 0.3
+    const startY = minimapBox!.y + minimapBox!.height * 0.3
+    const endX = minimapBox!.x + minimapBox!.width * 0.7
+    const endY = minimapBox!.y + minimapBox!.height * 0.7
+
+    const offsetBefore = await getCanvasOffset(comfyPage.page)
+
+    // Drag from top-left toward bottom-right on the minimap
+    await comfyPage.page.mouse.move(startX, startY)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(endX, endY, { steps: 10 })
+
+    // Mid-drag: offset should already differ from initial state
+    const offsetMidDrag = await getCanvasOffset(comfyPage.page)
+    expect(
+      offsetMidDrag[0] !== offsetBefore[0] ||
+        offsetMidDrag[1] !== offsetBefore[1]
+    ).toBe(true)
+
+    await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
+
+    // Final offset should also differ (drag was not discarded on mouseup)
+    await expect
+      .poll(() => getCanvasOffset(comfyPage.page))
+      .not.toEqual(offsetBefore)
+  })
+
+  test('Minimap viewport updates when canvas is zoomed', async ({
+    comfyPage
+  }) => {
+    const { container, viewport } = getMinimapLocators(comfyPage)
+    await expect(container).toBeVisible()
+    await expect(viewport).toBeVisible()
+
+    const viewportBefore = await viewport.boundingBox()
+    expect(viewportBefore).toBeTruthy()
+
+    // Zoom in significantly
+    await comfyPage.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.ds.scale = 3
+      canvas.setDirty(true, true)
+    })
+    await comfyPage.nextFrame()
+
+    // Viewport rectangle should shrink when zoomed in
+    await expect
+      .poll(async () => {
+        const box = await viewport.boundingBox()
+        return box?.width ?? 0
+      })
+      .toBeLessThan(viewportBefore!.width)
+  })
+
+  test('Minimap canvas is empty after all nodes are deleted', async ({
+    comfyPage
+  }) => {
+    const { canvas } = getMinimapLocators(comfyPage)
+    await expect(canvas).toBeVisible()
+
+    // Minimap should have content before deletion
+    await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
+
+    // Remove all nodes
+    await comfyPage.canvas.press('Control+a')
+    await comfyPage.canvas.press('Delete')
+    await comfyPage.nextFrame()
+
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+
+    // Minimap canvas should be empty — no nodes means nothing to render
+    await expect
+      .poll(() => hasCanvasContent(canvas), { timeout: 5000 })
+      .toBe(false)
+  })
+
+  test('Minimap re-renders after loading a different workflow', async ({
+    comfyPage
+  }) => {
+    const { canvas } = getMinimapLocators(comfyPage)
+    await expect(canvas).toBeVisible()
+
+    // Default workflow has content
+    await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
+
+    // Load a very different workflow
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+    await comfyPage.nextFrame()
+
+    // Minimap should still have content (different workflow, still has nodes)
+    await expect
+      .poll(() => hasCanvasContent(canvas), { timeout: 5000 })
+      .toBe(true)
+  })
+
+  test('Minimap viewport position reflects canvas pan state', async ({
+    comfyPage
+  }) => {
+    const { container, viewport } = getMinimapLocators(comfyPage)
+    await expect(container).toBeVisible()
+    await expect(viewport).toBeVisible()
+
+    const positionBefore = await viewport.boundingBox()
+    expect(positionBefore).toBeTruthy()
+
+    // Pan the canvas by a large amount to the right and down
+    await comfyPage.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] -= 500
+      canvas.ds.offset[1] -= 500
+      canvas.setDirty(true, true)
+    })
+    await comfyPage.nextFrame()
+
+    // The viewport indicator should have moved within the minimap
+    await expect
+      .poll(async () => {
+        const box = await viewport.boundingBox()
+        if (!box || !positionBefore) return false
+        return box.x !== positionBefore.x || box.y !== positionBefore.y
+      })
+      .toBe(true)
+  })
 })

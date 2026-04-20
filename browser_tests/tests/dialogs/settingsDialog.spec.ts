@@ -131,6 +131,38 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     expect(switched).toBe(true)
   })
 
+  test('Boolean setting persists after page reload', async ({ comfyPage }) => {
+    const settingId = 'Comfy.Node.MiddleClickRerouteNode'
+    const initialValue = await comfyPage.settings.getSetting<boolean>(settingId)
+
+    try {
+      await comfyPage.settings.setSetting(settingId, !initialValue)
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.page.waitForFunction(
+        () => window.app && window.app.extensionManager
+      )
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => window.LiteGraph!.middle_click_slot_add_default_node
+          )
+        )
+        .toBe(!initialValue)
+    } finally {
+      await comfyPage.settings.setSetting(settingId, initialValue)
+    }
+  })
+
   test('Dropdown setting can be changed and persists', async ({
     comfyPage
   }) => {
@@ -145,15 +177,27 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Open the dropdown via its combobox role and verify it expanded.
-      // Retry because the PrimeVue Select may re-render during search
-      // filtering, causing the first click to land on a stale element.
+      // Wait for the search filter to fully settle — PrimeVue re-renders
+      // the entire settings list after typing, and the combobox element is
+      // replaced during re-render. Wait until the filtered list stabilises
+      // before interacting with the combobox.
+      const settingItems = dialog.root.locator('[data-setting-id]')
+      await expect
+        .poll(() => settingItems.count(), { timeout: 5000 })
+        .toBeLessThanOrEqual(5)
+
       const select = settingRow.getByRole('combobox')
+      await expect(select).toBeVisible()
+      await expect(select).toBeEnabled()
+
+      // Open the dropdown via its combobox role and verify it expanded.
+      // Retry because the PrimeVue Select may still re-render after the
+      // filter settles, causing the first click to land on a stale element.
       await expect(async () => {
         const expanded = await select.getAttribute('aria-expanded')
         if (expanded !== 'true') await select.click()
         await expect(select).toHaveAttribute('aria-expanded', 'true')
-      }).toPass({ timeout: 5000 })
+      }).toPass({ timeout: 10_000 })
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'

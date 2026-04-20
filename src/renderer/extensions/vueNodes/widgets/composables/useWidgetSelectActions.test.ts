@@ -9,7 +9,7 @@ import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/c
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const mockCheckState = vi.hoisted(() => vi.fn())
+const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const actual = await vi.importActual(
@@ -20,7 +20,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: () => ({
       activeWorkflow: {
         changeTracker: {
-          checkState: mockCheckState
+          captureCanvasState: mockCaptureCanvasState
         }
       }
     })
@@ -48,7 +48,7 @@ function createItems(...names: string[]): FormDropdownItem[] {
 describe('useWidgetSelectActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    mockCheckState.mockClear()
+    mockCaptureCanvasState.mockClear()
   })
 
   describe('updateSelectedItems', () => {
@@ -71,7 +71,7 @@ describe('useWidgetSelectActions', () => {
       updateSelectedItems(new Set(['input-1']))
 
       expect(modelValue.value).toBe('photo_abc.jpg')
-      expect(mockCheckState).toHaveBeenCalledOnce()
+      expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
     })
 
     it('clears modelValue when empty set', () => {
@@ -93,7 +93,7 @@ describe('useWidgetSelectActions', () => {
       updateSelectedItems(new Set())
 
       expect(modelValue.value).toBeUndefined()
-      expect(mockCheckState).toHaveBeenCalledOnce()
+      expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
     })
   })
 
@@ -130,7 +130,7 @@ describe('useWidgetSelectActions', () => {
       await handleFilesUpdate([file])
 
       expect(modelValue.value).toBe('uploaded.png')
-      expect(mockCheckState).toHaveBeenCalledOnce()
+      expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
     })
 
     it('adds uploaded path to widget values array', async () => {
