@@ -45,9 +45,11 @@ describe('WidgetLayoutField', () => {
       expect(screen.queryByText('seed')).toBeNull()
     })
 
-    it('renders no label when widget.name is empty', () => {
-      renderField({ name: '' })
-      expect(screen.queryByText('seed')).toBeNull()
+    it('renders no label text when widget.name is empty', () => {
+      const { container } = renderField({ name: '' })
+      expect(screen.getByTestId('slot')).toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container -- no semantic role for the label div; asserting on container text is the only way
+      expect(container.textContent?.trim()).toBe('content')
     })
   })
 
