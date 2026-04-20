@@ -178,7 +178,8 @@ test.describe('Widget Bounding Box', { tag: ['@widget', '@vue-nodes'] }, () => {
     await boundingBox.x.type(42)
     await expect(boundingBox.x.input).toHaveValue('42')
 
-    await boundingBox.x.type('not a number')
+    await boundingBox.x.input.fill('not a number')
+    await boundingBox.x.input.blur()
     await expect(boundingBox.x.input).toHaveValue('42')
   })
 })
