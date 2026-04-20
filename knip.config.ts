@@ -51,6 +51,7 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    'src/platform/downloads/downloadServiceStore.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js'
   ],
