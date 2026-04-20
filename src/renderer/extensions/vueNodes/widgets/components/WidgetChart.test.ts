@@ -5,13 +5,15 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetChart from './WidgetChart.vue'
 import { createMockWidget } from './widgetTestUtils'
 
-type ChartWidgetOptions = NonNullable<ChartInputSpec['options']>
+type ChartWidgetOptions = NonNullable<ChartInputSpec['options']> &
+  IWidgetOptions
 
 const i18n = createI18n({
   legacy: false,
@@ -123,10 +125,10 @@ describe('WidgetChart', () => {
 
   describe('Accessibility', () => {
     it('sets an aria-label that includes the widget name and chart type', () => {
-      renderChart(makeWidget({ type: 'pie' }), { labels: [], datasets: [] })
+      renderChart(makeWidget({ type: 'bar' }), { labels: [], datasets: [] })
       const chart = screen.getByTestId('chart')
       expect(chart.getAttribute('aria-label')).toContain('test_chart')
-      expect(chart.getAttribute('aria-label')).toContain('pie')
+      expect(chart.getAttribute('aria-label')).toContain('bar')
     })
 
     it('uses the translated "Chart" label when the widget has no name', () => {
