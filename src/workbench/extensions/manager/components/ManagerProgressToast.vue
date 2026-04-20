@@ -18,11 +18,25 @@ const { isRestarting, isRestartCompleted, applyChanges } = useApplyChanges()
 const isExpanded = ref(false)
 const activeTabIndex = ref(0)
 
+const FAILED_TAB_KEY = 'failed'
+
+const failedCount = computed(() => comfyManagerStore.failedTasksIds.length)
+const hasFailures = computed(() => failedCount.value > 0)
+
+const failedTabIndicatorLabel = computed(() =>
+  t(
+    'manager.failedTabIndicatorTooltip',
+    { count: failedCount.value },
+    failedCount.value
+  )
+)
+
 const tabs = computed(() => [
   { label: t('manager.installationQueue') },
   {
+    key: FAILED_TAB_KEY,
     label: t('manager.failed', {
-      count: comfyManagerStore.failedTasksIds.length
+      count: failedCount.value
     })
   }
 ])
@@ -169,7 +183,19 @@ onBeforeUnmount(() => {
             menuitem: { class: 'font-medium' },
             action: { class: 'px-4 py-2' }
           }"
-        />
+        >
+          <template #item="{ item, props, label }">
+            <a v-bind="props.action" class="flex items-center gap-2">
+              <span>{{ label }}</span>
+              <i
+                v-if="item.key === FAILED_TAB_KEY && hasFailures"
+                class="pi pi-exclamation-circle text-danger"
+                :aria-label="failedTabIndicatorLabel"
+                :title="failedTabIndicatorLabel"
+              />
+            </a>
+          </template>
+        </TabMenu>
       </div>
 
       <div
