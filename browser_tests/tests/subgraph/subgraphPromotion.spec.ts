@@ -848,27 +848,6 @@ test(
     await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
   }
 )
-function getSubgraphControlWidgetLabels(page: ComfyPage['page']) {
-  return page.evaluate(() => {
-    type GraphNodeWithOptionalSubgraph = {
-      subgraph?: {
-        nodes: Map<unknown, { widgets?: Array<{ label?: string }> }>
-      }
-    }
-    const app = window.app as unknown as {
-      graph?: { nodes: GraphNodeWithOptionalSubgraph[] }
-    }
-    const subgraphNode = app.graph?.nodes.find((n) => !!n.subgraph)
-    if (!subgraphNode?.subgraph) return []
-    const innerNodes = Array.from(subgraphNode.subgraph.nodes.values())
-    return innerNodes.flatMap((n) =>
-      (n.widgets ?? [])
-        .filter((w) => (w.label ?? '').includes('control'))
-        .map((w) => w.label!)
-    )
-  })
-}
-
 test.describe(
   'WidgetControlMode in subgraphs',
   { tag: ['@subgraph', '@widget'] },
@@ -884,13 +863,13 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       await expect
-        .poll(() => getSubgraphControlWidgetLabels(comfyPage.page))
+        .poll(() => comfyPage.subgraph.getInnerControlWidgetLabels())
         .toEqual(expect.arrayContaining([expect.stringContaining('after')]))
 
       await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'before')
 
       await expect
-        .poll(() => getSubgraphControlWidgetLabels(comfyPage.page))
+        .poll(() => comfyPage.subgraph.getInnerControlWidgetLabels())
         .toEqual(expect.arrayContaining([expect.stringContaining('before')]))
     })
   }
