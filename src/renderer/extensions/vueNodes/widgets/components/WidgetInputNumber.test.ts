@@ -14,7 +14,10 @@ import { createMockWidget } from './widgetTestUtils'
 const variantStub = (name: string, testid: string) =>
   defineComponent({
     name,
-    props: { widget: { type: Object, default: () => ({}) }, modelValue: { type: Number, default: 0 } },
+    props: {
+      widget: { type: Object, default: () => ({}) },
+      modelValue: { type: Number, default: 0 }
+    },
     template: `<div data-testid="${testid}" :data-model-value="String(modelValue)" :data-widget-type="widget?.type" />`
   })
 
@@ -31,8 +34,14 @@ const WithControlStub = defineComponent({
 
 const globalConfig = {
   stubs: {
-    WidgetInputNumberInput: variantStub('WidgetInputNumberInput', 'variant-input'),
-    WidgetInputNumberSlider: variantStub('WidgetInputNumberSlider', 'variant-slider'),
+    WidgetInputNumberInput: variantStub(
+      'WidgetInputNumberInput',
+      'variant-input'
+    ),
+    WidgetInputNumberSlider: variantStub(
+      'WidgetInputNumberSlider',
+      'variant-slider'
+    ),
     WidgetInputNumberGradientSlider: variantStub(
       'WidgetInputNumberGradientSlider',
       'variant-gradient'

@@ -107,7 +107,9 @@ describe('ValueControlPopover', () => {
   describe('Selection', () => {
     it('marks the current modelValue as checked', () => {
       renderPopover('increment')
-      const checked = screen.getAllByRole('radio').find((r) => (r as HTMLInputElement).checked)
+      const checked = screen
+        .getAllByRole('radio')
+        .find((r) => (r as HTMLInputElement).checked)
       expect(checked).toBeDefined()
       expect((checked as HTMLInputElement).value).toBe('increment')
     })

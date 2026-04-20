@@ -105,7 +105,9 @@ describe('WidgetInputNumberGradientSlider', () => {
   describe('Gradient stops', () => {
     it('uses black-to-white default when gradient_stops is absent', () => {
       renderComponent(makeWidget(0), 0)
-      const stops = JSON.parse(getGradientSlider().dataset.stops!) as ColorStop[]
+      const stops = JSON.parse(
+        getGradientSlider().dataset.stops!
+      ) as ColorStop[]
       expect(stops).toHaveLength(2)
       expect(stops[0]).toMatchObject({ offset: 0, color: [0, 0, 0] })
       expect(stops[1]).toMatchObject({ offset: 1, color: [255, 255, 255] })
@@ -118,14 +120,18 @@ describe('WidgetInputNumberGradientSlider', () => {
         { offset: 1, color: [0, 0, 255] }
       ]
       renderComponent(makeWidget(0, { gradient_stops: custom }), 0)
-      const stops = JSON.parse(getGradientSlider().dataset.stops!) as ColorStop[]
+      const stops = JSON.parse(
+        getGradientSlider().dataset.stops!
+      ) as ColorStop[]
       expect(stops).toEqual(custom)
     })
 
     it('falls back to default when gradient_stops has fewer than 2 stops', () => {
       const tooFew: ColorStop[] = [{ offset: 0, color: [255, 0, 0] }]
       renderComponent(makeWidget(0, { gradient_stops: tooFew }), 0)
-      const stops = JSON.parse(getGradientSlider().dataset.stops!) as ColorStop[]
+      const stops = JSON.parse(
+        getGradientSlider().dataset.stops!
+      ) as ColorStop[]
       expect(stops).toHaveLength(2)
       expect(stops[0].color).toEqual([0, 0, 0])
     })
