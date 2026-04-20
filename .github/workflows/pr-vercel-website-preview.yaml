@@ -47,14 +47,16 @@ jobs:
       - name: Write report
         if: steps.pr-meta.outputs.skip != 'true'
         env:
+          STABLE_URL: ${{ steps.meta.outputs.stable_url }}
+          UNIQUE_URL: ${{ steps.meta.outputs.url }}
           DEPLOYED_AT: ${{ github.event.workflow_run.updated_at }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           SHORT_SHA="${HEAD_SHA:0:7}"
           cat > preview-report.md <<EOF
-          **Website Preview:** ${{ steps.meta.outputs.stable_url }}
+          **Website Preview:** $STABLE_URL
 
-          <sub>This commit: ${{ steps.meta.outputs.url }}</sub>
+          <sub>This commit: $UNIQUE_URL</sub>
 
           <sub>Last updated: $DEPLOYED_AT for \`$SHORT_SHA\`</sub>
           EOF

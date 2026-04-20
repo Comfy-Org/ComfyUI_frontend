@@ -78,17 +78,23 @@ jobs:
           vercel alias set "$DEPLOY_URL" "$ALIAS_HOST" --token="$VERCEL_TOKEN"
 
       - name: Add deployment URLs to summary
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          ALIAS_HOST: ${{ steps.alias.outputs.host }}
         run: |
           {
-            echo "**Preview:** https://${{ steps.alias.outputs.host }}"
-            echo "**This commit:** ${{ steps.deploy.outputs.url }}"
+            echo "**Preview:** https://$ALIAS_HOST"
+            echo "**This commit:** $DEPLOY_URL"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save PR metadata
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          ALIAS_HOST: ${{ steps.alias.outputs.host }}
         run: |
           mkdir -p temp/vercel-preview
-          echo "${{ steps.deploy.outputs.url }}" > temp/vercel-preview/url.txt
-          echo "https://${{ steps.alias.outputs.host }}" > temp/vercel-preview/stable-url.txt
+          echo "$DEPLOY_URL" > temp/vercel-preview/url.txt
+          echo "https://$ALIAS_HOST" > temp/vercel-preview/stable-url.txt
 
       - name: Upload preview metadata
         uses: actions/upload-artifact@v6
