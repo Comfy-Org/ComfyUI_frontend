@@ -1,0 +1,134 @@
+---
+import { ClientRouter } from 'astro:transitions'
+import Analytics from '@vercel/analytics/astro'
+import '../styles/global.css'
+import type { Locale } from '../i18n/translations'
+import SiteFooter from '../components/common/SiteFooter.vue'
+import SiteNav from '../components/common/SiteNav.vue'
+
+interface Props {
+  title: string
+  description?: string
+  ogImage?: string
+  noindex?: boolean
+}
+
+const {
+  title,
+  description = 'Comfy is the AI creation engine for visual professionals who demand control.',
+  ogImage = '/og-default.png',
+  noindex = false,
+} = Astro.props
+
+const siteBase = Astro.site ?? 'https://comfy.org'
+const canonicalURL = new URL(Astro.url.pathname, siteBase)
+const ogImageURL = new URL(ogImage, siteBase)
+const rawLocale = Astro.currentLocale ?? 'en'
+const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const gtmId = 'GTM-NP9JM6K7'
+const gtmEnabled = import.meta.env.PROD
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Comfy Org',
+  url: 'https://comfy.org',
+  logo: 'https://comfy.org/icons/logomark.svg',
+  sameAs: [
+    'https://github.com/comfyanonymous/ComfyUI',
+    'https://discord.gg/comfyorg',
+    'https://x.com/comaboratory',
+    'https://reddit.com/r/comfyui',
+    'https://linkedin.com/company/comfyorg',
+    'https://instagram.com/comfyorg',
+  ],
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Comfy',
+  url: 'https://comfy.org',
+}
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <title>{title}</title>
+
+    <link rel="icon" href="/icons/logomark.svg" type="image/svg+xml" />
+    <link rel="canonical" href={canonicalURL.href} />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content={canonicalURL.href} />
+    <meta property="og:locale" content={locale} />
+    <meta property="og:site_name" content="Comfy" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@comaboratory" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL.href} />
+
+    <!-- Structured Data -->
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+
+    <!-- Google Tag Manager -->
+    {gtmEnabled && (
+      <script is:inline define:vars={{ gtmId }}>
+        ;(function (w, d, s, l, i) {
+          w[l] = w[l] || []
+          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+          var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s),
+            dl = l != 'dataLayer' ? '&l=' + l : ''
+          j.async = true
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+          f.parentNode.insertBefore(j, f)
+        })(window, document, 'script', 'dataLayer', gtmId)
+      </script>
+    )}
+
+    <ClientRouter />
+  </head>
+  <body class="bg-primary-comfy-ink text-white font-formula antialiased">
+    {gtmEnabled && (
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+          height="0"
+          width="0"
+          style="display:none;visibility:hidden"
+        ></iframe>
+      </noscript>
+    )}
+
+    <SiteNav locale={locale} client:load />
+    <main>
+      <slot />
+    </main>
+    <SiteFooter locale={locale} client:load />
+
+    <Analytics />
+
+    <script>
+      import { initSmoothScroll } from '../scripts/smoothScroll'
+      initSmoothScroll()
+    </script>
+  </body>
+</html>

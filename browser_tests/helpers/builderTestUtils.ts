@@ -1,49 +1,15 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-import { fitToViewInstant } from './fitToView'
-import { getPromotedWidgetNames } from './promotedWidgets'
+import { comfyExpect } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
-/** Click the first SaveImage/PreviewImage node on the canvas. */
-async function selectOutputNode(comfyPage: ComfyPage) {
-  const { page } = comfyPage
-
-  const saveImageNodeId = await page.evaluate(() =>
-    String(
-      window.app!.rootGraph.nodes.find(
-        (n: { type?: string }) =>
-          n.type === 'SaveImage' || n.type === 'PreviewImage'
-      )?.id
-    )
-  )
-  const saveImageRef = await comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-  await saveImageRef.centerOnNode()
-
-  const canvasBox = await page.locator('#graph-canvas').boundingBox()
-  if (!canvasBox) throw new Error('Canvas not found')
-  await page.mouse.click(
-    canvasBox.x + canvasBox.width / 2,
-    canvasBox.y + canvasBox.height / 2
-  )
-  await comfyPage.nextFrame()
-}
-
-/** Center on a node and click its first widget to select it as input. */
-async function selectInputWidget(comfyPage: ComfyPage, node: NodeReference) {
-  const { page } = comfyPage
-
-  await comfyPage.canvasOps.setScale(1)
-  await node.centerOnNode()
-
-  const widgetRef = await node.getWidget(0)
-  const widgetPos = await widgetRef.getPosition()
-  const titleHeight = await page.evaluate(
-    () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
-  )
-  await page.mouse.click(widgetPos.x, widgetPos.y + titleHeight)
-  await comfyPage.nextFrame()
+interface BuilderSetupResult {
+  inputNodeTitle: string
+  widgetNames: string[]
 }
 
 /**
@@ -53,53 +19,93 @@ async function selectInputWidget(comfyPage: ComfyPage, node: NodeReference) {
  * to subgraph), then enters builder mode and selects inputs + outputs.
  *
  * @param comfyPage - The page fixture.
- * @param getInputNode - Returns the node to click for input selection.
- *   Receives the KSampler node ref and can transform the graph before
- *   returning the target node. Defaults to using KSampler directly.
- * @returns The node used for input selection.
+ * @param prepareGraph - Optional callback to transform the graph before
+ *   entering builder. Receives the KSampler node ref and returns the
+ *   input node title and widget names to select.
+ *   Defaults to KSampler with its first widget.
+ *   Mutually exclusive with widgetNames.
+ * @param widgetNames - Widget names to select from the KSampler node.
+ *   Only used when prepareGraph is not provided.
+ *   Mutually exclusive with prepareGraph.
  */
 export async function setupBuilder(
   comfyPage: ComfyPage,
-  getInputNode?: (ksampler: NodeReference) => Promise<NodeReference>
-): Promise<NodeReference> {
+  prepareGraph?: (ksampler: NodeReference) => Promise<BuilderSetupResult>,
+  widgetNames?: string[]
+): Promise<void> {
   const { appMode } = comfyPage
   await comfyPage.workflow.loadWorkflow('default')
 
   const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
-  const inputNode = getInputNode ? await getInputNode(ksampler) : ksampler
+
+  const { inputNodeTitle, widgetNames: inputWidgets } = prepareGraph
+    ? await prepareGraph(ksampler)
+    : { inputNodeTitle: 'KSampler', widgetNames: widgetNames ?? ['seed'] }
 
   await fitToViewInstant(comfyPage)
   await appMode.enterBuilder()
-  await appMode.goToInputs()
-  await selectInputWidget(comfyPage, inputNode)
+  await appMode.steps.goToInputs()
 
-  await appMode.goToOutputs()
-  await selectOutputNode(comfyPage)
+  for (const name of inputWidgets) {
+    await appMode.select.selectInputWidget(inputNodeTitle, name)
+  }
 
-  return inputNode
+  await appMode.steps.goToOutputs()
+  await appMode.select.selectOutputNode('Save Image')
 }
 
 /**
  * Convert the KSampler to a subgraph, then enter builder with I/O selected.
- *
- * Returns the subgraph node reference for further interaction.
  */
 export async function setupSubgraphBuilder(
   comfyPage: ComfyPage
-): Promise<NodeReference> {
-  return setupBuilder(comfyPage, async (ksampler) => {
+): Promise<void> {
+  await setupBuilder(comfyPage, async (ksampler) => {
     await ksampler.click('title')
-    const subgraphNode = await ksampler.convertToSubgraph()
+    await ksampler.convertToSubgraph()
     await comfyPage.nextFrame()
 
-    const promotedNames = await getPromotedWidgetNames(
-      comfyPage,
-      String(subgraphNode.id)
-    )
-    expect(promotedNames).toContain('seed')
-
-    return subgraphNode
+    return {
+      inputNodeTitle: 'New Subgraph',
+      widgetNames: ['seed']
+    }
   })
+}
+
+/**
+ * Open the save-as dialog, fill name + view type, click save,
+ * and wait for the success dialog.
+ */
+export async function builderSaveAs(
+  appMode: AppModeHelper,
+  workflowName: string,
+  viewType: 'App' | 'Node graph' = 'App'
+) {
+  await appMode.footer.saveAsButton.click()
+  await comfyExpect(appMode.saveAs.nameInput).toBeVisible()
+  await appMode.saveAs.fillAndSave(workflowName, viewType)
+  await comfyExpect(appMode.saveAs.successMessage).toBeVisible()
+}
+
+/**
+ * Load a different workflow, then reopen the named one from the sidebar.
+ * Caller must ensure the page is in graph mode (not builder or app mode)
+ * before calling.
+ */
+export async function openWorkflowFromSidebar(
+  comfyPage: ComfyPage,
+  name: string
+) {
+  await comfyPage.workflow.loadWorkflow('default')
+  await comfyPage.nextFrame()
+  const { workflowsTab } = comfyPage.menu
+  await workflowsTab.open()
+  await workflowsTab.getPersistedItem(name).dblclick()
+  await comfyPage.nextFrame()
+
+  await expect
+    .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+    .toContain(name)
 }
 
 /** Save the workflow, reopen it, and enter app mode. */

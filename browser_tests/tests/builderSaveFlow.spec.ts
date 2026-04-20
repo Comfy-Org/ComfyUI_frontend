@@ -1,19 +1,42 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { setupSubgraphBuilder } from '../helpers/builderTestUtils'
-import { fitToViewInstant } from '../helpers/fitToView'
+} from '@e2e/fixtures/ComfyPage'
+import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
+import {
+  builderSaveAs,
+  openWorkflowFromSidebar,
+  setupBuilder
+} from '@e2e/helpers/builderTestUtils'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
-test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
+/**
+ * After a first save, open save-as again from the chevron,
+ * fill name + view type, and save.
+ */
+async function reSaveAs(
+  appMode: AppModeHelper,
+  workflowName: string,
+  viewType: 'App' | 'Node graph'
+) {
+  await appMode.footer.openSaveAsFromChevron()
+  await expect(appMode.saveAs.nameInput).toBeVisible()
+  await appMode.saveAs.fillAndSave(workflowName, viewType)
+}
+
+async function dismissSuccessDialog(
+  saveAs: BuilderSaveAsHelper,
+  button: 'close' | 'dismiss' = 'close'
+) {
+  const btn = button === 'close' ? saveAs.closeButton : saveAs.dismissButton
+  await btn.click()
+  await expect(saveAs.successDialog).toBeHidden()
+}
+
+test.describe('Builder save flow', { tag: ['@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
       true
@@ -21,231 +44,352 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   })
 
   test('Save as dialog appears for unsaved workflow', async ({ comfyPage }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+    const { saveAs } = comfyPage.appMode
+    await setupBuilder(comfyPage)
+    await comfyPage.appMode.footer.saveAsButton.click()
 
-    // The save-as dialog should appear with filename input and view type selection
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible({ timeout: 5000 })
-    await expect(dialog.getByRole('textbox')).toBeVisible()
-    await expect(dialog.getByText('Save as')).toBeVisible()
-
-    // View type radio group should be present
-    const radioGroup = dialog.getByRole('radiogroup')
-    await expect(radioGroup).toBeVisible()
+    await expect(saveAs.dialog).toBeVisible()
+    await expect(saveAs.nameInput).toBeVisible()
+    await expect(saveAs.title).toBeVisible()
+    await expect(saveAs.radioGroup).toBeVisible()
   })
 
   test('Save as dialog allows entering filename and saving', async ({
     comfyPage
   }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
-
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible({ timeout: 5000 })
-
-    const workflowName = `${Date.now()} builder-save-test`
-    const input = dialog.getByRole('textbox')
-    await input.fill(workflowName)
-
-    // Save button should be enabled now
-    const saveButton = dialog.getByRole('button', { name: 'Save' })
-    await expect(saveButton).toBeEnabled()
-    await saveButton.click()
-
-    // Success dialog should appear
-    const successDialog = page.getByRole('dialog')
-    await expect(successDialog.getByText('Successfully saved')).toBeVisible({
-      timeout: 5000
-    })
+    await setupBuilder(comfyPage)
+    await builderSaveAs(comfyPage.appMode, `${Date.now()} builder-save`, 'App')
   })
 
   test('Save as dialog disables save when filename is empty', async ({
     comfyPage
   }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+    const { saveAs } = comfyPage.appMode
+    await setupBuilder(comfyPage)
+    await comfyPage.appMode.footer.saveAsButton.click()
 
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible({ timeout: 5000 })
+    await expect(saveAs.dialog).toBeVisible()
+    await saveAs.nameInput.fill('')
+    await expect(saveAs.saveButton).toBeDisabled()
+  })
 
-    // Clear the filename input
-    const input = dialog.getByRole('textbox')
-    await input.fill('')
+  test('View type can be toggled in save-as dialog', async ({ comfyPage }) => {
+    const { saveAs } = comfyPage.appMode
+    await setupBuilder(comfyPage)
+    await comfyPage.appMode.footer.saveAsButton.click()
 
-    // Save button should be disabled
-    const saveButton = dialog.getByRole('button', { name: 'Save' })
-    await expect(saveButton).toBeDisabled()
+    await expect(saveAs.dialog).toBeVisible()
+
+    const appRadio = saveAs.viewTypeRadio('App')
+    await expect(appRadio).toHaveAttribute('aria-checked', 'true')
+
+    const graphRadio = saveAs.viewTypeRadio('Node graph')
+    await graphRadio.click()
+    await expect(graphRadio).toHaveAttribute('aria-checked', 'true')
+    await expect(appRadio).toHaveAttribute('aria-checked', 'false')
   })
 
   test('Builder step navigation works correctly', async ({ comfyPage }) => {
-    const { appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
+    const { footer } = comfyPage.appMode
+    await setupBuilder(comfyPage)
 
-    // Should start at outputs (we ended there in setup)
-    // Navigate to inputs
-    await appMode.goToInputs()
+    await comfyPage.appMode.steps.goToInputs()
 
-    // Back button should be disabled on first step
-    const backButton = appMode.getFooterButton('Back')
-    await expect(backButton).toBeDisabled()
+    await expect(footer.backButton).toBeDisabled()
+    await expect(footer.nextButton).toBeEnabled()
 
-    // Next button should be enabled
-    const nextButton = appMode.getFooterButton('Next')
-    await expect(nextButton).toBeEnabled()
+    await footer.next()
+    await expect(footer.backButton).toBeEnabled()
 
-    // Navigate forward
-    await appMode.next()
-
-    // Back button should now be enabled
-    await expect(backButton).toBeEnabled()
-
-    // Navigate to preview (last step)
-    await appMode.next()
-
-    // Next button should be disabled on last step
-    await expect(nextButton).toBeDisabled()
+    await footer.next()
+    await expect(footer.nextButton).toBeDisabled()
   })
 
   test('Escape key exits builder mode', async ({ comfyPage }) => {
-    const { page } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
+    await setupBuilder(comfyPage)
 
-    // Verify builder toolbar is visible
-    const toolbar = page.getByRole('navigation', { name: 'App Builder' })
-    await expect(toolbar).toBeVisible()
+    await expect(comfyPage.appMode.steps.toolbar).toBeVisible()
 
-    // Press Escape
-    await page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Escape')
 
-    // Builder toolbar should be gone
-    await expect(toolbar).not.toBeVisible()
+    await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })
 
   test('Exit builder button exits builder mode', async ({ comfyPage }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
+    await setupBuilder(comfyPage)
 
-    const toolbar = page.getByRole('navigation', { name: 'App Builder' })
-    await expect(toolbar).toBeVisible()
-
-    await appMode.exitBuilder()
-
-    await expect(toolbar).not.toBeVisible()
+    await expect(comfyPage.appMode.steps.toolbar).toBeVisible()
+    await comfyPage.appMode.footer.exitBuilder()
+    await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })
 
   test('Save button directly saves for previously saved workflow', async ({
     comfyPage
   }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
+    const { footer, saveAs } = comfyPage.appMode
+    await setupBuilder(comfyPage)
 
-    // First save via builder save-as to make it non-temporary
-    await appMode.clickSave()
-    const saveAsDialog = page.getByRole('dialog')
-    await expect(saveAsDialog).toBeVisible({ timeout: 5000 })
-    const workflowName = `${Date.now()} builder-direct-save`
-    await saveAsDialog.getByRole('textbox').fill(workflowName)
-    await saveAsDialog.getByRole('button', { name: 'Save' }).click()
+    await builderSaveAs(comfyPage.appMode, `${Date.now()} direct-save`, 'App')
+    await dismissSuccessDialog(saveAs)
 
-    // Dismiss the success dialog
-    const successDialog = page.getByRole('dialog')
-    await expect(successDialog.getByText('Successfully saved')).toBeVisible({
-      timeout: 5000
-    })
-    await successDialog.getByText('Close', { exact: true }).click()
+    // Modify the workflow so the save button becomes enabled
+    await comfyPage.appMode.steps.goToInputs()
+    await comfyPage.appMode.select.deleteInput('seed')
+    await expect(footer.saveButton).toBeEnabled()
+
+    await footer.saveButton.click()
     await comfyPage.nextFrame()
 
-    // Now click save again — should save directly
-    await appMode.clickSave()
-
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 2000 })
-    await expect(appMode.getFooterButton(/^Save$/)).toBeDisabled()
+    await expect(saveAs.dialog).toBeHidden()
+    await expect(footer.saveButton).toBeDisabled()
   })
 
   test('Split button chevron opens save-as for saved workflow', async ({
     comfyPage
   }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
+    const { footer, saveAs } = comfyPage.appMode
+    await setupBuilder(comfyPage)
 
-    // First save via builder save-as to make it non-temporary
-    await appMode.clickSave()
-    const saveAsDialog = page.getByRole('dialog')
-    await expect(saveAsDialog).toBeVisible({ timeout: 5000 })
-    const workflowName = `${Date.now()} builder-split-btn`
-    await saveAsDialog.getByRole('textbox').fill(workflowName)
-    await saveAsDialog.getByRole('button', { name: 'Save' }).click()
+    await builderSaveAs(comfyPage.appMode, `${Date.now()} split-btn`, 'App')
+    await dismissSuccessDialog(saveAs)
 
-    // Dismiss the success dialog
-    const successDialog = page.getByRole('dialog')
-    await expect(successDialog.getByText('Successfully saved')).toBeVisible({
-      timeout: 5000
-    })
-    await successDialog.getByText('Close', { exact: true }).click()
-    await comfyPage.nextFrame()
+    await footer.openSaveAsFromChevron()
 
-    // Click the chevron dropdown trigger
-    const chevronButton = appMode.getFooterButton('Save as')
-    await chevronButton.click()
+    await expect(saveAs.title).toBeVisible()
+    await expect(saveAs.nameInput).toBeVisible()
+  })
 
-    // "Save as" menu item should appear
-    const menuItem = page.getByRole('menuitem', { name: 'Save as' })
-    await expect(menuItem).toBeVisible({ timeout: 5000 })
-    await menuItem.click()
+  test('Save button width is consistent across all states', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    await comfyPage.workflow.loadWorkflow('default')
+    await fitToViewInstant(comfyPage)
+    await appMode.enterBuilder()
 
-    // Save-as dialog should appear
-    const newSaveAsDialog = page.getByRole('dialog')
-    await expect(newSaveAsDialog.getByText('Save as')).toBeVisible({
-      timeout: 5000
-    })
-    await expect(newSaveAsDialog.getByRole('textbox')).toBeVisible()
+    // State 1: Disabled "Save as" (no outputs selected)
+    await expect(appMode.footer.saveAsButton).toBeVisible()
+    const disabledBox = await appMode.footer.saveAsButton.boundingBox()
+    if (!disabledBox)
+      throw new Error('saveAsButton boundingBox returned null while visible')
+    const disabledWidth = disabledBox.width
+
+    // Select I/O to enable the button
+    await appMode.steps.goToInputs()
+    await appMode.select.selectInputWidget('KSampler', 'seed')
+    await appMode.steps.goToOutputs()
+    await appMode.select.selectOutputNode('Save Image')
+
+    // State 2: Enabled "Save as" (unsaved, has outputs)
+    await expect
+      .poll(
+        async () => (await appMode.footer.saveAsButton.boundingBox())?.width
+      )
+      .toBe(disabledWidth)
+
+    // Save the workflow to transition to the Save + chevron state
+    await builderSaveAs(appMode, `${Date.now()} width-test`, 'App')
+    await dismissSuccessDialog(appMode.saveAs)
+
+    // State 3: Save + chevron button group (saved workflow)
+    await expect
+      .poll(async () => (await appMode.footer.saveGroup.boundingBox())?.width)
+      .toBe(disabledWidth)
   })
 
   test('Connect output popover appears when no outputs selected', async ({
     comfyPage
   }) => {
-    const { page, appMode } = comfyPage
     await comfyPage.workflow.loadWorkflow('default')
     await fitToViewInstant(comfyPage)
-    await appMode.enterBuilder()
+    await comfyPage.appMode.enterBuilder()
 
-    // Without selecting any outputs, click the save button
-    // It should trigger the connect-output popover
-    await appMode.clickSave()
+    await comfyPage.appMode.footer.saveAsButton.click()
 
-    // The popover should show a message about connecting outputs
     await expect(
-      page.getByText('Connect an output', { exact: false })
-    ).toBeVisible({ timeout: 5000 })
+      comfyPage.page.getByText('Connect an output', { exact: false })
+    ).toBeVisible()
   })
 
-  test('View type can be toggled in save-as dialog', async ({ comfyPage }) => {
-    const { page, appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+  test('save as app produces correct extension and linearMode', async ({
+    comfyPage
+  }) => {
+    await setupBuilder(comfyPage)
+    await builderSaveAs(comfyPage.appMode, `${Date.now()} app-ext`, 'App')
 
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible({ timeout: 5000 })
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
 
-    // App should be selected by default
-    const appRadio = dialog.getByRole('radio', { name: /App/ })
-    await expect(appRadio).toHaveAttribute('aria-checked', 'true')
+    await expect
+      .poll(() => comfyPage.workflow.getLinearModeFromGraph())
+      .toBe(true)
+  })
 
-    // Click Node graph option
-    const graphRadio = dialog.getByRole('radio', { name: /Node graph/ })
-    await graphRadio.click()
-    await expect(graphRadio).toHaveAttribute('aria-checked', 'true')
-    await expect(appRadio).toHaveAttribute('aria-checked', 'false')
+  test('save as node graph produces correct extension and linearMode', async ({
+    comfyPage
+  }) => {
+    await setupBuilder(comfyPage)
+    await builderSaveAs(
+      comfyPage.appMode,
+      `${Date.now()} graph-ext`,
+      'Node graph'
+    )
+
+    await expect(async () => {
+      const path = await comfyPage.workflow.getActiveWorkflowPath()
+      expect(path).toMatch(/\.json$/)
+      expect(path).not.toContain('.app.json')
+    }).toPass({ timeout: 5000 })
+
+    await expect
+      .poll(() => comfyPage.workflow.getLinearModeFromGraph())
+      .toBe(false)
+  })
+
+  test('save as app View App button enters app mode', async ({ comfyPage }) => {
+    await setupBuilder(comfyPage)
+    await builderSaveAs(comfyPage.appMode, `${Date.now()} app-view`, 'App')
+
+    await comfyPage.appMode.saveAs.viewAppButton.click()
+    await expect(comfyPage.appMode.saveAs.successDialog).toBeHidden()
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowActiveAppMode())
+      .toBe('app')
+  })
+
+  test('save as node graph Exit builder exits builder mode', async ({
+    comfyPage
+  }) => {
+    await setupBuilder(comfyPage)
+    await builderSaveAs(
+      comfyPage.appMode,
+      `${Date.now()} graph-exit`,
+      'Node graph'
+    )
+
+    await comfyPage.appMode.saveAs.exitBuilderButton.click()
+    await expect(comfyPage.appMode.saveAs.successDialog).toBeHidden()
+
+    await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
+  })
+
+  test('save as with different mode does not modify the original workflow', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    await setupBuilder(comfyPage)
+
+    const originalName = `${Date.now()} original`
+    await builderSaveAs(appMode, originalName, 'App')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
+    await dismissSuccessDialog(appMode.saveAs)
+
+    // Re-save as node graph — creates a copy
+    await reSaveAs(appMode, `${Date.now()} copy`, 'Node graph')
+    await expect(appMode.saveAs.successMessage).toBeVisible()
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toContain('.app.json')
+
+    // Dismiss success dialog, exit app mode, reopen the original
+    await dismissSuccessDialog(appMode.saveAs, 'dismiss')
+    await appMode.toggleAppMode()
+    await openWorkflowFromSidebar(comfyPage, originalName)
+
+    await expect
+      .poll(() => comfyPage.workflow.getLinearModeFromGraph())
+      .toBe(true)
+  })
+
+  test('save as with same name and same mode overwrites in place', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    const name = `${Date.now()} overwrite`
+    await setupBuilder(comfyPage)
+
+    await builderSaveAs(appMode, name, 'App')
+    await dismissSuccessDialog(appMode.saveAs)
+    await comfyPage.nextFrame()
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
+    const pathAfterFirst = await comfyPage.workflow.getActiveWorkflowPath()
+
+    await reSaveAs(appMode, name, 'App')
+
+    await expect(appMode.saveAs.overwriteDialog).toBeVisible()
+    await appMode.saveAs.overwriteButton.click()
+    await expect(appMode.saveAs.overwriteDialog).toBeHidden()
+
+    await expect(appMode.saveAs.successMessage).toBeVisible()
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toBe(pathAfterFirst)
+  })
+
+  test('save as with same name but different mode creates a new file', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    const name = `${Date.now()} mode-change`
+    await setupBuilder(comfyPage)
+
+    await builderSaveAs(appMode, name, 'App')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
+    const pathAfterFirst = await comfyPage.workflow.getActiveWorkflowPath()
+    await dismissSuccessDialog(appMode.saveAs)
+
+    await reSaveAs(appMode, name, 'Node graph')
+    await expect(appMode.saveAs.successMessage).toBeVisible()
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toBe(pathAfterFirst)
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toMatch(/\.json$/)
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toContain('.app.json')
+  })
+
+  test('save as app workflow reloads in app mode', async ({ comfyPage }) => {
+    const name = `${Date.now()} reload-app`
+    await setupBuilder(comfyPage)
+    await builderSaveAs(comfyPage.appMode, name, 'App')
+    await dismissSuccessDialog(comfyPage.appMode.saveAs, 'dismiss')
+    await comfyPage.appMode.footer.exitBuilder()
+
+    await openWorkflowFromSidebar(comfyPage, name)
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowInitialMode())
+      .toBe('app')
+  })
+
+  test('save as node graph workflow reloads in node graph mode', async ({
+    comfyPage
+  }) => {
+    const name = `${Date.now()} reload-graph`
+    await setupBuilder(comfyPage)
+    await builderSaveAs(comfyPage.appMode, name, 'Node graph')
+    await dismissSuccessDialog(comfyPage.appMode.saveAs, 'dismiss')
+    await comfyPage.appMode.toggleAppMode()
+
+    await openWorkflowFromSidebar(comfyPage, name)
+
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowInitialMode())
+      .toBe('graph')
   })
 })

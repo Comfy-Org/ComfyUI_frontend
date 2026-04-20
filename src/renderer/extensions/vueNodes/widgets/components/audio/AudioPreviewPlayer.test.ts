@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -21,8 +22,8 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-function mountPlayer(modelValue?: string) {
-  return mount(AudioPreviewPlayer, {
+function renderPlayer(modelValue?: string) {
+  return render(AudioPreviewPlayer, {
     props: {
       modelValue,
       hideWhenEmpty: false
@@ -38,29 +39,28 @@ function mountPlayer(modelValue?: string) {
   })
 }
 
-function findDownloadButton(wrapper: ReturnType<typeof mountPlayer>) {
-  return wrapper.find('[aria-label="g.downloadAudio"]')
-}
-
 describe('AudioPreviewPlayer', () => {
   describe('download button', () => {
     it('shows download button when audio is loaded', () => {
-      const wrapper = mountPlayer('http://example.com/audio.mp3')
+      renderPlayer('http://example.com/audio.mp3')
 
-      expect(findDownloadButton(wrapper).exists()).toBe(true)
+      screen.getByRole('button', { name: 'g.downloadAudio' })
     })
 
     it('hides download button when no audio is loaded', () => {
-      const wrapper = mountPlayer()
+      renderPlayer()
 
-      expect(findDownloadButton(wrapper).exists()).toBe(false)
+      expect(
+        screen.queryByRole('button', { name: 'g.downloadAudio' })
+      ).not.toBeInTheDocument()
     })
 
     it('calls downloadFile when download button is clicked', async () => {
       const { downloadFile } = await import('@/base/common/downloadUtil')
+      const user = userEvent.setup()
 
-      const wrapper = mountPlayer('http://example.com/audio.mp3')
-      await findDownloadButton(wrapper).trigger('click')
+      renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.downloadAudio' }))
 
       expect(downloadFile).toHaveBeenCalledWith('http://example.com/audio.mp3')
     })
@@ -70,9 +70,10 @@ describe('AudioPreviewPlayer', () => {
       vi.mocked(downloadFile).mockImplementation(() => {
         throw new Error('download failed')
       })
+      const user = userEvent.setup()
 
-      const wrapper = mountPlayer('http://example.com/audio.mp3')
-      await findDownloadButton(wrapper).trigger('click')
+      renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.downloadAudio' }))
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({

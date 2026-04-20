@@ -47,6 +47,14 @@ export interface CameraConfig {
 
 export interface LightConfig {
   intensity: number
+  hdri?: HDRIConfig
+}
+
+export interface HDRIConfig {
+  enabled: boolean
+  hdriPath: string
+  showAsBackground: boolean
+  intensity: number
 }
 
 export interface EventCallback<T = unknown> {

@@ -1,14 +1,9 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Node Resizing', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
   test('should resize node without position drift after selecting', async ({
     comfyPage
   }) => {
@@ -26,8 +21,12 @@ test.describe('Vue Node Resizing', () => {
       throw new Error('Node bounding box not found after select')
 
     // Verify position unchanged after selection
-    expect(selectedBox.x).toBeCloseTo(initialBox.x, 1)
-    expect(selectedBox.y).toBeCloseTo(initialBox.y, 1)
+    await expect
+      .poll(async () => (await node.boundingBox())?.x)
+      .toBeCloseTo(initialBox.x, 1)
+    await expect
+      .poll(async () => (await node.boundingBox())?.y)
+      .toBeCloseTo(initialBox.y, 1)
 
     // Now resize from bottom-right corner
     const resizeStartX = selectedBox.x + selectedBox.width - 5
@@ -38,16 +37,20 @@ test.describe('Vue Node Resizing', () => {
     await comfyPage.page.mouse.move(resizeStartX + 50, resizeStartY + 30)
     await comfyPage.page.mouse.up()
 
-    // Get final position and size
-    const finalBox = await node.boundingBox()
-    if (!finalBox) throw new Error('Node bounding box not found after resize')
-
     // Position should NOT have changed (the bug was position drift)
-    expect(finalBox.x).toBeCloseTo(initialBox.x, 1)
-    expect(finalBox.y).toBeCloseTo(initialBox.y, 1)
+    await expect
+      .poll(async () => (await node.boundingBox())?.x)
+      .toBeCloseTo(initialBox.x, 1)
+    await expect
+      .poll(async () => (await node.boundingBox())?.y)
+      .toBeCloseTo(initialBox.y, 1)
 
     // Size should have increased
-    expect(finalBox.width).toBeGreaterThan(initialBox.width)
-    expect(finalBox.height).toBeGreaterThan(initialBox.height)
+    await expect
+      .poll(async () => (await node.boundingBox())?.width)
+      .toBeGreaterThan(initialBox.width)
+    await expect
+      .poll(async () => (await node.boundingBox())?.height)
+      .toBeGreaterThan(initialBox.height)
   })
 })

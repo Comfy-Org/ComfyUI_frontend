@@ -1,6 +1,7 @@
 import type { MaybeRef } from 'vue'
 
 import { toRef } from '@vueuse/core'
+import { getActivePinia } from 'pinia'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -24,6 +25,7 @@ import type {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -58,8 +60,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   })
 
   const lightConfig = ref<LightConfig>({
-    intensity: 5
+    intensity: 5,
+    hdri: {
+      enabled: false,
+      hdriPath: '',
+      showAsBackground: false,
+      intensity: 1
+    }
   })
+  const lastNonHdriLightIntensity = ref(lightConfig.value.intensity)
 
   const isRecording = ref(false)
   const hasRecording = ref(false)
@@ -185,8 +194,45 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     const savedLightConfig = node.properties['Light Config'] as LightConfig
+    const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
     if (savedLightConfig) {
-      lightConfig.value = savedLightConfig
+      lightConfig.value = {
+        intensity: savedLightConfig.intensity ?? lightConfig.value.intensity,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          ...savedLightConfig.hdri,
+          enabled: false
+        }
+      }
+      lastNonHdriLightIntensity.value = lightConfig.value.intensity
+    }
+
+    const hdri = lightConfig.value.hdri
+    let hdriLoaded = false
+    if (hdri?.hdriPath) {
+      const hdriUrl = api.apiURL(
+        Load3dUtils.getResourceURL(
+          ...Load3dUtils.splitFilePath(hdri.hdriPath),
+          'input'
+        )
+      )
+      try {
+        await load3d.loadHDRI(hdriUrl)
+        hdriLoaded = true
+      } catch (error) {
+        console.warn('Failed to restore HDRI:', error)
+        lightConfig.value = {
+          ...lightConfig.value,
+          hdri: { ...lightConfig.value.hdri!, hdriPath: '', enabled: false }
+        }
+      }
+    }
+
+    if (hdriLoaded && savedHdriEnabled) {
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: { ...lightConfig.value.hdri!, enabled: true }
+      }
     }
 
     const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
@@ -212,6 +258,39 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     } else if (cameraStateToRestore) {
       load3d.setCameraState(cameraStateToRestore)
+    }
+
+    applySceneConfigToLoad3d()
+    applyLightConfigToLoad3d()
+  }
+
+  const applySceneConfigToLoad3d = () => {
+    if (!load3d) return
+    const cfg = sceneConfig.value
+    load3d.toggleGrid(cfg.showGrid)
+    if (!lightConfig.value.hdri?.enabled) {
+      load3d.setBackgroundColor(cfg.backgroundColor)
+    }
+    if (cfg.backgroundRenderMode) {
+      load3d.setBackgroundRenderMode(cfg.backgroundRenderMode)
+    }
+  }
+
+  const applyLightConfigToLoad3d = () => {
+    if (!load3d) return
+    const cfg = lightConfig.value
+    load3d.setLightIntensity(cfg.intensity)
+    const hdri = cfg.hdri
+    if (!hdri) return
+    load3d.setHDRIIntensity(hdri.intensity)
+    load3d.setHDRIAsBackground(hdri.showAsBackground)
+    load3d.setHDRIEnabled(hdri.enabled)
+  }
+
+  const persistLightConfigToNode = () => {
+    const n = nodeRef.value
+    if (n) {
+      n.properties['Light Config'] = lightConfig.value
     }
   }
 
@@ -260,20 +339,42 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   watch(
     sceneConfig,
-    async (newValue) => {
-      if (load3d && nodeRef.value) {
+    (newValue) => {
+      if (nodeRef.value) {
         nodeRef.value.properties['Scene Config'] = newValue
-        load3d.toggleGrid(newValue.showGrid)
-        load3d.setBackgroundColor(newValue.backgroundColor)
-
-        await load3d.setBackgroundImage(newValue.backgroundImage || '')
-
-        if (newValue.backgroundRenderMode) {
-          load3d.setBackgroundRenderMode(newValue.backgroundRenderMode)
-        }
       }
     },
     { deep: true }
+  )
+
+  watch(
+    () => sceneConfig.value.showGrid,
+    (showGrid) => {
+      load3d?.toggleGrid(showGrid)
+    }
+  )
+
+  watch(
+    () => sceneConfig.value.backgroundColor,
+    (color) => {
+      if (!load3d || lightConfig.value.hdri?.enabled) return
+      load3d.setBackgroundColor(color)
+    }
+  )
+
+  watch(
+    () => sceneConfig.value.backgroundImage,
+    async (image) => {
+      if (!load3d) return
+      await load3d.setBackgroundImage(image || '')
+    }
+  )
+
+  watch(
+    () => sceneConfig.value.backgroundRenderMode,
+    (mode) => {
+      if (mode) load3d?.setBackgroundRenderMode(mode)
+    }
   )
 
   watch(
@@ -302,14 +403,54 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   )
 
   watch(
-    lightConfig,
-    (newValue) => {
-      if (load3d && nodeRef.value) {
-        nodeRef.value.properties['Light Config'] = newValue
-        load3d.setLightIntensity(newValue.intensity)
+    () => lightConfig.value.intensity,
+    (intensity) => {
+      if (!load3d || !nodeRef.value) return
+      if (!lightConfig.value.hdri?.enabled) {
+        lastNonHdriLightIntensity.value = intensity
       }
-    },
-    { deep: true }
+      persistLightConfigToNode()
+      load3d.setLightIntensity(intensity)
+    }
+  )
+
+  watch(
+    () => lightConfig.value.hdri?.intensity,
+    (intensity) => {
+      if (!load3d || !nodeRef.value) return
+      if (intensity === undefined) return
+      persistLightConfigToNode()
+      load3d.setHDRIIntensity(intensity)
+    }
+  )
+
+  watch(
+    () => lightConfig.value.hdri?.showAsBackground,
+    (show) => {
+      if (!load3d || !nodeRef.value) return
+      if (show === undefined) return
+      persistLightConfigToNode()
+      load3d.setHDRIAsBackground(show)
+    }
+  )
+
+  watch(
+    () => lightConfig.value.hdri?.enabled,
+    (enabled, prevEnabled) => {
+      if (!load3d || !nodeRef.value) return
+      if (enabled === undefined) return
+      if (enabled && prevEnabled === false) {
+        lastNonHdriLightIntensity.value = lightConfig.value.intensity
+      }
+      if (!enabled && prevEnabled === true) {
+        lightConfig.value = {
+          ...lightConfig.value,
+          intensity: lastNonHdriLightIntensity.value
+        }
+      }
+      persistLightConfigToNode()
+      load3d.setHDRIEnabled(enabled)
+    }
   )
 
   watch(playing, (newValue) => {
@@ -374,6 +515,98 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (load3d && animationDuration.value > 0) {
       const time = (progress / 100) * animationDuration.value
       load3d.setAnimationTime(time)
+    }
+  }
+
+  const handleHDRIFileUpdate = async (file: File | null) => {
+    const capturedLoad3d = load3d
+    if (!capturedLoad3d) return
+
+    if (!file) {
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          hdriPath: '',
+          enabled: false,
+          showAsBackground: false
+        }
+      }
+      capturedLoad3d.clearHDRI()
+      return
+    }
+
+    const resourceFolder =
+      (nodeRef.value?.properties['Resource Folder'] as string) || ''
+
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
+
+    const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+    if (!uploadedPath) {
+      return
+    }
+
+    // Re-validate: node may have been removed during upload
+    if (load3d !== capturedLoad3d) return
+
+    const hdriUrl = api.apiURL(
+      Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(uploadedPath),
+        'input'
+      )
+    )
+
+    try {
+      loading.value = true
+      loadingMessage.value = t('load3d.loadingHDRI')
+      await capturedLoad3d.loadHDRI(hdriUrl)
+
+      if (load3d !== capturedLoad3d) return
+
+      let sceneMin = 1
+      let sceneMax = 10
+      if (getActivePinia() != null) {
+        const settingStore = useSettingStore()
+        sceneMin = settingStore.get(
+          'Comfy.Load3D.LightIntensityMinimum'
+        ) as number
+        sceneMax = settingStore.get(
+          'Comfy.Load3D.LightIntensityMaximum'
+        ) as number
+      }
+      const mappedHdriIntensity = Load3dUtils.mapSceneLightIntensityToHdri(
+        lightConfig.value.intensity,
+        sceneMin,
+        sceneMax
+      )
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          hdriPath: uploadedPath,
+          enabled: true,
+          showAsBackground: true,
+          intensity: mappedHdriIntensity
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load HDRI:', error)
+      capturedLoad3d.clearHDRI()
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: {
+          ...lightConfig.value.hdri!,
+          hdriPath: '',
+          enabled: false,
+          showAsBackground: false
+        }
+      }
+      useToastStore().addAlert(t('toastMessages.failedToLoadHDRI'))
+    } finally {
+      loading.value = false
+      loadingMessage.value = ''
     }
   }
 
@@ -642,6 +875,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleClearRecording,
     handleSeek,
     handleBackgroundImageUpdate,
+    handleHDRIFileUpdate,
     handleExportModel,
     handleModelDrop,
     cleanup
