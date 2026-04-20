@@ -17,11 +17,17 @@ function getNewlyAddedFiles(): string[] {
   }
 }
 
+const TEST_FILE_PATTERN = /\.(test|spec)\.ts$/
+
+function isFrozenImplementationFile(path: string): boolean {
+  if (!FROZEN_DIRS.some((dir) => path.startsWith(dir))) return false
+  if (TEST_FILE_PATTERN.test(path)) return false
+  return true
+}
+
 function main() {
   const added = getNewlyAddedFiles()
-  const offenders = added.filter((f) =>
-    FROZEN_DIRS.some((dir) => f.startsWith(dir))
-  )
+  const offenders = added.filter(isFrozenImplementationFile)
 
   if (offenders.length === 0) return
 

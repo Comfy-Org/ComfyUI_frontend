@@ -517,12 +517,19 @@ export default defineConfig([
   },
 
   // Deprecate new hand-written zod server-response schemas under
-  // src/schemas/. Server response shapes should come from
+  // src/schemas/. Local-state / form / UI-config schemas
+  // (colorPaletteSchema, signInSchema) are not server responses and
+  // are explicitly exempted. Server response shapes should come from
   // @comfyorg/ingest-types generated types. Warn severity so existing
-  // schemas don't break CI; new additions get nudged at PR review.
+  // response schemas don't break CI; new additions get nudged at PR
+  // review.
   {
     files: ['src/schemas/**/*.ts'],
-    ignores: ['src/schemas/**/*.test.ts'],
+    ignores: [
+      'src/schemas/**/*.test.ts',
+      'src/schemas/colorPaletteSchema.ts',
+      'src/schemas/signInSchema.ts'
+    ],
     rules: {
       'no-restricted-syntax': [
         'warn',
