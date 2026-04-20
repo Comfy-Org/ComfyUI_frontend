@@ -4,10 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('should open bottom panel via toggle button', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 

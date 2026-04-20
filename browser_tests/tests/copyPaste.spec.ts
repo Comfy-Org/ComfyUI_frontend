@@ -146,7 +146,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await ksamplerNodes[0].copy()
-      await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.emptyCanvasClick
+      })
       await comfyPage.nextFrame()
       await comfyPage.clipboard.paste()
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
@@ -155,7 +157,6 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       const loadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       await loadImageNodes[0].click('title')
-      await comfyPage.nextFrame()
 
       const uploadPromise = comfyPage.page.waitForResponse(
         (resp) => resp.url().includes('/upload/') && resp.status() === 200,
@@ -175,7 +176,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
 
       // Step 3: Click empty canvas area, paste image → creates new LoadImage
-      await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.emptyCanvasClick
+      })
       await comfyPage.nextFrame()
 
       const uploadPromise2 = comfyPage.page.waitForResponse(

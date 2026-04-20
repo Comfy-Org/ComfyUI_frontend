@@ -102,6 +102,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useTelemetry } from '@/platform/telemetry'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -128,6 +129,7 @@ const { t } = useI18n()
 const toast = useToast()
 const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
   useBillingContext()
+const telemetry = useTelemetry()
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 
@@ -226,6 +228,7 @@ async function handleAddCreditCard() {
     if (!response) return
 
     if (response.status === 'subscribed') {
+      telemetry?.trackMonthlySubscriptionSucceeded()
       toast.add({
         severity: 'success',
         summary: t('subscription.required.pollingSuccess'),
@@ -280,6 +283,7 @@ async function handleConfirmTransition() {
     if (!response) return
 
     if (response.status === 'subscribed') {
+      telemetry?.trackMonthlySubscriptionSucceeded()
       toast.add({
         severity: 'success',
         summary: t('subscription.required.pollingSuccess'),

@@ -47,7 +47,12 @@
             </Button>
           </PopoverClose>
           <PopoverClose as-child>
-            <Button variant="secondary" size="md" @click="emit('switch')">
+            <Button
+              variant="secondary"
+              size="md"
+              data-testid="builder-connect-output-switch"
+              @click="emit('switch')"
+            >
               {{ t('builderToolbar.switchToOutputs') }}
             </Button>
           </PopoverClose>

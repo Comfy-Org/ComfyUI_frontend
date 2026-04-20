@@ -7,6 +7,7 @@ import {
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
+  isCivitaiModelUrl,
   isPreviewableMediaType,
   truncateFilename
 } from './formatUtil'
@@ -355,6 +356,14 @@ describe('formatUtil', () => {
     it('returns false for text/other', () => {
       expect(isPreviewableMediaType('text')).toBe(false)
       expect(isPreviewableMediaType('other')).toBe(false)
+    })
+  })
+
+  describe('isCivitaiModelUrl', () => {
+    it('recognizes civitai.red model URLs', () => {
+      expect(
+        isCivitaiModelUrl('https://civitai.red/api/download/models/123456')
+      ).toBe(true)
     })
   })
 })

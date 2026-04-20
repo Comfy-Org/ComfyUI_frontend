@@ -3,10 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('should toggle shortcuts panel visibility', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
