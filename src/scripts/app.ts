@@ -2008,10 +2008,8 @@ export class ComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       useWorkflowService().beforeLoadNewGraph()
-      this.canvas.setGraph(this.rootGraph)
-      this.clean()
-      await importA1111(this.rootGraph, parameters)
-      await useWorkflowService().afterLoadNewGraph(
+      importA1111(this.rootGraph, parameters)
+      useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
