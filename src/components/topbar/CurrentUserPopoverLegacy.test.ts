@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h } from 'vue'
+import { h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -103,11 +103,13 @@ vi.mock('@/stores/authStore', () => ({
 
 // Mock the useSubscription composable
 const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
+const mockIsFreeTier = ref(false)
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: { value: true },
-    subscriptionTierName: { value: 'Creator' },
-    subscriptionTier: { value: 'CREATOR' },
+    isActiveSubscription: ref(true),
+    isFreeTier: mockIsFreeTier,
+    subscriptionTierName: ref('Creator'),
+    subscriptionTier: ref('CREATOR'),
     fetchStatus: mockFetchStatus
   }))
 }))
@@ -188,6 +190,7 @@ describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true
+    mockIsFreeTier.value = false
     mockAuthStoreState.balance = {
       amount_micros: 100_000,
       effective_balance_micros: 100_000,
@@ -406,14 +409,43 @@ describe('CurrentUserPopoverLegacy', () => {
     })
   })
 
+  describe('cloud free tier', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockIsFreeTier.value = true
+    })
+
+    it('shows upgrade-to-add-credits button and hides add-credits button', () => {
+      renderComponent()
+      expect(
+        screen.getByTestId('upgrade-to-add-credits-button')
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    })
+  })
+
   describe('non-cloud distribution', () => {
     beforeEach(() => {
       mockIsCloud.value = false
     })
 
-    it('hides credits section', () => {
+    it('still shows credits balance', () => {
       renderComponent()
-      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+      expect(screen.getByText('1000')).toBeInTheDocument()
+    })
+
+    it('shows add-credits button and hides upgrade-to-add-credits button', () => {
+      renderComponent()
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('upgrade-to-add-credits-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('hides upgrade-to-add-credits button even when on free tier', () => {
+      mockIsFreeTier.value = true
+      renderComponent()
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
       expect(
         screen.queryByTestId('upgrade-to-add-credits-button')
       ).not.toBeInTheDocument()
@@ -424,11 +456,9 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.queryByText('Subscribe Button')).not.toBeInTheDocument()
     })
 
-    it('hides partner nodes menu item', () => {
+    it('still shows partner nodes menu item', () => {
       renderComponent()
-      expect(
-        screen.queryByTestId('partner-nodes-menu-item')
-      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('partner-nodes-menu-item')).toBeInTheDocument()
     })
 
     it('hides plans & pricing menu item', () => {
@@ -438,11 +468,9 @@ describe('CurrentUserPopoverLegacy', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('hides manage plan menu item', () => {
+    it('still shows manage plan menu item', () => {
       renderComponent()
-      expect(
-        screen.queryByTestId('manage-plan-menu-item')
-      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
     })
 
     it('still shows user settings menu item', () => {
