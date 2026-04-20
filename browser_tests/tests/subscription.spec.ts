@@ -63,9 +63,9 @@ unsubscribedTest.describe(
     )
 
     unsubscribedTest(
-      'SubscribeToRun shows short label on mobile',
-      { tag: '@mobile' },
+      'SubscribeToRun shows short label at narrow viewport',
       async ({ comfyPage }) => {
+        await comfyPage.page.setViewportSize({ width: 393, height: 851 })
         const btn = comfyPage.page.getByTestId(
           TestIds.topbar.subscribeToRunButton
         )
