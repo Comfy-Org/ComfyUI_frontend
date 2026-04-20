@@ -18,6 +18,14 @@ test.describe(
   { tag: '@cloud' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
+      await comfyPage.settings.setSetting(
+        'Comfy.Templates.SelectedUseCases',
+        []
+      )
+      await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
+      await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
+
       await comfyPage.page.route('**/templates/**.webp', async (route) => {
         await route.fulfill({
           status: 200,
