@@ -42,7 +42,7 @@ const loaded = ref(false)
       <iframe
         class="size-full"
         :src="`https://demo.arcade.software/${arcadeId}?embed&show_title=0`"
-        :title="`Interactive demo: ${title}`"
+        :title="`${t('demos.embed.label', locale)}: ${title}`"
         loading="lazy"
         allow="clipboard-write"
         referrerpolicy="strict-origin-when-cross-origin"
