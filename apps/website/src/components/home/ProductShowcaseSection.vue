@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -35,6 +35,16 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
+const videoRefs = ref<HTMLVideoElement[]>([])
+
+watch(activeIndex, (current, previous) => {
+  videoRefs.value[previous]?.pause()
+  const active = videoRefs.value[current]
+  if (active) {
+    active.currentTime = 0
+    active.play().catch(() => {})
+  }
+})
 </script>
 
 <template>
@@ -77,9 +87,14 @@ const activeIndex = ref(0)
           >
             <video
               v-for="(feature, i) in features"
+              :ref="
+                (el) => {
+                  if (el) videoRefs[i] = el as HTMLVideoElement
+                }
+              "
               :key="feature.title"
               :src="feature.video"
-              autoplay
+              :autoplay="i === 0"
               loop
               muted
               playsinline
