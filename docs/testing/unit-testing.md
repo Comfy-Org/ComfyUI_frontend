@@ -147,23 +147,24 @@ it('should subscribe to logs API', () => {
 })
 ```
 
-## Mocking Lodash Functions
+## Mocking Utility Functions from es-toolkit
 
-Mocking utility functions like debounce:
+The codebase uses `es-toolkit` for utility functions (not lodash). When mocking functions like debounce, you have two approaches:
+
+### Approach 1: Partial Mock with vi.importActual (Recommended)
+
+This preserves other utilities while mocking only what you need:
 
 ```typescript
-// Mock debounce to execute immediately
 import { debounce } from 'es-toolkit/compat'
 
-vi.mock('es-toolkit/compat', () => ({
-  debounce: vi.fn((fn) => {
-    // Return function that calls the input function immediately
-    const mockDebounced = (...args: any[]) => fn(...args)
-    // Add cancel method that debounced functions have
-    mockDebounced.cancel = vi.fn()
-    return mockDebounced
-  })
-}))
+vi.mock('es-toolkit/compat', async () => {
+  const actual = await vi.importActual('es-toolkit/compat')
+  return {
+    ...actual,
+    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
+  }
+})
 
 describe('Function using debounce', () => {
   it('calls debounced function immediately in tests', () => {
@@ -176,6 +177,22 @@ describe('Function using debounce', () => {
     expect(mockFn).toHaveBeenCalled()
   })
 })
+```
+
+### Approach 2: Full Mock for Immediate Execution
+
+```typescript
+import { debounce } from 'es-toolkit/compat'
+
+vi.mock('es-toolkit/compat', () => ({
+  debounce: vi.fn((fn) => {
+    // Return function that calls the input function immediately
+    const mockDebounced = (...args: any[]) => fn(...args)
+    // Add cancel method that debounced functions have
+    mockDebounced.cancel = vi.fn()
+    return mockDebounced
+  })
+}))
 ```
 
 ## Testing with Debounce and Throttle
