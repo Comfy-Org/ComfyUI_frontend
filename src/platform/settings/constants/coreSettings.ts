@@ -583,12 +583,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.UI.TabBarLayout',
     category: ['Appearance', 'General'],
     name: 'Tab Bar Layout',
-    type: 'combo',
-    options: ['Default', 'Legacy'],
-    tooltip: 'Controls the elements contained in the integrated tab bar.',
+    type: 'hidden',
     defaultValue: 'Default',
     migrateDeprecatedValue: (value: unknown) =>
-      value === 'Integrated' ? 'Default' : value
+      value === 'Integrated' || value === 'Legacy' ? 'Default' : value
   },
   {
     id: 'Comfy.Appearance.DisableAnimations',
