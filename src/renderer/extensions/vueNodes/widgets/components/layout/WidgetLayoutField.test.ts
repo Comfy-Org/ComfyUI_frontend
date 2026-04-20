@@ -102,9 +102,7 @@ describe('WidgetLayoutField', () => {
   describe('Pointer-event isolation', () => {
     // The slot wrapper stops pointerdown/move/up so inner controls can capture
     // drags without triggering node selection/drag on the outer canvas.
-    function renderInsideParent(
-      onParentPointer: (type: string) => void
-    ) {
+    function renderInsideParent(onParentPointer: (type: string) => void) {
       const Harness = defineComponent({
         components: { WidgetLayoutField },
         setup: () => ({

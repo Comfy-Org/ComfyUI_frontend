@@ -80,9 +80,7 @@ describe('FormSearchInput', () => {
 
     it('is shown when the query has non-whitespace text', () => {
       renderSearch('abc')
-      expect(
-        screen.getByRole('button', { name: 'Clear' })
-      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
     })
 
     it('clears the query when clicked', async () => {
@@ -162,4 +160,3 @@ describe('FormSearchInput', () => {
     })
   })
 })
-
