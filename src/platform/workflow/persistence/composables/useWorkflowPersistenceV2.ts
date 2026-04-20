@@ -187,6 +187,20 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const hasTemplateIntent = (): boolean => {
+    if (route.query.template && typeof route.query.template === 'string') {
+      return true
+    }
+    try {
+      const raw = sessionStorage.getItem('Comfy.PreservedQuery.template')
+      if (!raw) return false
+      const parsed = JSON.parse(raw)
+      return typeof parsed?.template === 'string'
+    } catch {
+      return false
+    }
+  }
+
   const loadTemplateFromUrlIfPresent = async (): Promise<boolean> => {
     const query = await ensureTemplateQueryFromIntent()
     const hasTemplateUrl = query.template && typeof query.template === 'string'
@@ -310,6 +324,7 @@ export function useWorkflowPersistenceV2() {
   }
 
   return {
+    hasTemplateIntent,
     initializeWorkflow,
     loadSharedWorkflowFromUrlIfPresent,
     loadTemplateFromUrlIfPresent,

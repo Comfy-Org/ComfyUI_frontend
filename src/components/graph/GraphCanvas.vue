@@ -123,7 +123,6 @@ import {
   watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -456,7 +455,6 @@ useEventListener(
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-const route = useRoute()
 const { flags } = useFeatureFlags()
 // Set up URL loaders during setup phase so useRoute/useRouter work correctly
 const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
@@ -549,8 +547,7 @@ onMounted(async () => {
 
     vueNodeLifecycle.setupEmptyGraphListener()
   } finally {
-    const hasTemplateUrlParam = route.query.template != null
-    if (!hasTemplateUrlParam) {
+    if (!workflowPersistence.hasTemplateIntent()) {
       workspaceStore.spinner = false
     }
   }
@@ -576,7 +573,7 @@ onMounted(async () => {
     await workflowPersistence.loadTemplateFromUrlIfPresent()
   }
 
-  if (route.query.template != null) {
+  if (workflowPersistence.hasTemplateIntent()) {
     workspaceStore.spinner = false
   }
 

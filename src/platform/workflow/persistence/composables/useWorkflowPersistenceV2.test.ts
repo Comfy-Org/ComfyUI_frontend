@@ -89,7 +89,7 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-let mockRouteQuery: Record<string, string | undefined> = {}
+let mockRouteQuery: Record<string, string | string[] | undefined> = {}
 vi.mock('vue-router', () => ({
   useRoute: () => ({
     query: mockRouteQuery
@@ -388,14 +388,49 @@ describe('useWorkflowPersistenceV2', () => {
       expect(mockLoadTemplateFromUrl).not.toHaveBeenCalled()
     })
 
-    it('returns false when template param is not a string', async () => {
-      mockRouteQuery = {}
+    it('returns false when template param is an array', async () => {
+      mockRouteQuery = { template: ['first', 'second'] }
 
       const { loadTemplateFromUrlIfPresent } = useWorkflowPersistenceV2()
       const result = await loadTemplateFromUrlIfPresent()
 
       expect(result).toBe(false)
       expect(mockLoadTemplateFromUrl).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('hasTemplateIntent', () => {
+    it('returns true when route query has template param', () => {
+      mockRouteQuery = { template: 'flux_simple' }
+
+      const { hasTemplateIntent } = useWorkflowPersistenceV2()
+      expect(hasTemplateIntent()).toBe(true)
+    })
+
+    it('returns false when route query has no template param', () => {
+      mockRouteQuery = {}
+
+      const { hasTemplateIntent } = useWorkflowPersistenceV2()
+      expect(hasTemplateIntent()).toBe(false)
+    })
+
+    it('returns true when preserved query has template in sessionStorage', () => {
+      mockRouteQuery = {}
+      sessionStorage.setItem(
+        'Comfy.PreservedQuery.template',
+        JSON.stringify({ template: 'flux_simple' })
+      )
+
+      const { hasTemplateIntent } = useWorkflowPersistenceV2()
+      expect(hasTemplateIntent()).toBe(true)
+    })
+
+    it('returns false when sessionStorage has invalid preserved query', () => {
+      mockRouteQuery = {}
+      sessionStorage.setItem('Comfy.PreservedQuery.template', 'invalid-json{')
+
+      const { hasTemplateIntent } = useWorkflowPersistenceV2()
+      expect(hasTemplateIntent()).toBe(false)
     })
   })
 })
