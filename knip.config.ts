@@ -21,12 +21,15 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'packages/shared-frontend-utils': {
+      entry: ['src/formatUtil.ts', 'src/networkUtil.ts'],
       project: ['src/**/*.{js,ts}']
     },
     'packages/registry-types': {
+      entry: ['src/comfyRegistryTypes.ts'],
       project: ['src/**/*.{js,ts}']
     },
     'packages/ingest-types': {
+      entry: ['src/index.ts', 'src/zod.gen.ts'],
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
