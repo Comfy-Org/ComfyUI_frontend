@@ -19,7 +19,6 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
-  PREVIEW_ALIAS_PREFIX: comfy-website-preview
 
 jobs:
   deploy-preview:
@@ -27,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      ALIAS_HOST: comfy-website-preview-pr-${{ github.event.pull_request.number }}.vercel.app
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -42,12 +43,6 @@ jobs:
 
       - name: Build project artifacts
         run: vercel build
-
-      - name: Compute stable alias hostname
-        id: alias
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: echo "host=${PREVIEW_ALIAS_PREFIX}-pr-${PR_NUMBER}.vercel.app" >> "$GITHUB_OUTPUT"
 
       - name: Fetch head commit metadata
         id: head-commit
@@ -88,39 +83,30 @@ jobs:
         continue-on-error: true
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          ALIAS_HOST: ${{ steps.alias.outputs.host }}
         run: |
           vercel alias set "$DEPLOY_URL" "$ALIAS_HOST"
 
-      - name: Add deployment URLs to summary
+      - name: Publish preview outputs
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          ALIAS_HOST: ${{ steps.alias.outputs.host }}
           ALIAS_OK: ${{ steps.alias-set.outcome == 'success' }}
         run: |
+          if [[ "$ALIAS_OK" == "true" ]]; then
+            STABLE_URL="https://$ALIAS_HOST"
+          else
+            STABLE_URL="$DEPLOY_URL"
+          fi
+          mkdir -p temp/vercel-preview
+          echo "$DEPLOY_URL" > temp/vercel-preview/url.txt
+          echo "$STABLE_URL" > temp/vercel-preview/stable-url.txt
           {
+            echo "**Preview:** $STABLE_URL"
             if [[ "$ALIAS_OK" == "true" ]]; then
-              echo "**Preview:** https://$ALIAS_HOST"
               echo "**This commit:** $DEPLOY_URL"
             else
-              echo "**Preview:** $DEPLOY_URL"
               echo "_Stable alias update failed — URL reflects this commit only._"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Save PR metadata
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          ALIAS_HOST: ${{ steps.alias.outputs.host }}
-          ALIAS_OK: ${{ steps.alias-set.outcome == 'success' }}
-        run: |
-          mkdir -p temp/vercel-preview
-          echo "$DEPLOY_URL" > temp/vercel-preview/url.txt
-          if [[ "$ALIAS_OK" == "true" ]]; then
-            echo "https://$ALIAS_HOST" > temp/vercel-preview/stable-url.txt
-          else
-            echo "$DEPLOY_URL" > temp/vercel-preview/stable-url.txt
-          fi
 
       - name: Upload preview metadata
         uses: actions/upload-artifact@v6
