@@ -41,11 +41,19 @@ const ButtonStub = defineComponent({
 
 const PopoverStub = defineComponent({
   name: 'Popover',
-  methods: {
-    toggle() {},
-    hide() {}
+  data() {
+    return { open: false }
   },
-  template: '<div data-testid="popover-body"><slot /></div>'
+  methods: {
+    toggle() {
+      this.open = !this.open
+    },
+    hide() {
+      this.open = false
+    }
+  },
+  template:
+    '<div data-testid="popover-body" v-if="open"><slot /></div>'
 })
 
 const sortOptions: SortOption[] = [
@@ -145,12 +153,34 @@ function renderMenu(props: MenuProps = {}) {
   }
 }
 
-const getPopoverBy = (optionName: string) =>
-  screen
-    .getAllByTestId('popover-body')
-    .find((body) =>
-      within(body).queryByRole('button', { name: optionName })
-    ) as HTMLElement
+function findTriggerByIconClass(iconSuffix: string): HTMLElement {
+  const triggers = screen.getAllByRole('button').filter((button) =>
+    // eslint-disable-next-line testing-library/no-node-access
+    button.querySelector(`.icon-\\[lucide--${iconSuffix}\\]`)
+  )
+  if (triggers.length === 0) {
+    throw new Error(`No trigger button found with icon ${iconSuffix}`)
+  }
+  return triggers[0]
+}
+
+async function openSortPopover() {
+  const user = userEvent.setup()
+  await user.click(findTriggerByIconClass('arrow-up-down'))
+  return screen.getByTestId('popover-body')
+}
+
+async function openOwnershipPopover() {
+  const user = userEvent.setup()
+  await user.click(screen.getByLabelText('Ownership'))
+  return screen.getByTestId('popover-body')
+}
+
+async function openBaseModelPopover() {
+  const user = userEvent.setup()
+  await user.click(screen.getByLabelText('Base model'))
+  return screen.getByTestId('popover-body')
+}
 
 describe('FormDropdownMenuActions', () => {
   describe('Search', () => {
@@ -161,9 +191,15 @@ describe('FormDropdownMenuActions', () => {
   })
 
   describe('Sort popover', () => {
-    it('renders all sort options', () => {
+    it('is closed by default (no sort options rendered)', () => {
       renderMenu()
-      const body = getPopoverBy('Name A-Z')
+      expect(screen.queryByTestId('popover-body')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Name A-Z' })).toBeNull()
+    })
+
+    it('opens the options list after the sort trigger is clicked', async () => {
+      renderMenu()
+      const body = await openSortPopover()
       expect(within(body).getByText('Default')).toBeInTheDocument()
       expect(within(body).getByText('Name A-Z')).toBeInTheDocument()
       expect(within(body).getByText('Most Recent')).toBeInTheDocument()
@@ -171,8 +207,8 @@ describe('FormDropdownMenuActions', () => {
 
     it('updates sortSelected when a sort option is clicked', async () => {
       const { sortSelected } = renderMenu({ sortSelected: 'default' })
+      const body = await openSortPopover()
       const user = userEvent.setup()
-      const body = getPopoverBy('Name A-Z')
       await user.click(within(body).getByRole('button', { name: 'Name A-Z' }))
       expect(sortSelected.value).toBe('name-asc')
     })
@@ -182,11 +218,15 @@ describe('FormDropdownMenuActions', () => {
     it('is hidden when showOwnershipFilter is false', () => {
       renderMenu({ showOwnershipFilter: false })
       expect(screen.queryByLabelText('Ownership')).toBeNull()
+      // The ownership options must not be reachable even indirectly
+      expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull()
     })
 
     it('is shown when showOwnershipFilter is true and options exist', () => {
       renderMenu({ showOwnershipFilter: true })
       expect(screen.getByLabelText('Ownership')).toBeInTheDocument()
+      // Closed by default until the trigger is clicked
+      expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull()
     })
 
     it('updates ownershipSelected when an option is clicked', async () => {
@@ -194,8 +234,8 @@ describe('FormDropdownMenuActions', () => {
         showOwnershipFilter: true,
         ownershipSelected: 'all'
       })
+      const body = await openOwnershipPopover()
       const user = userEvent.setup()
-      const body = getPopoverBy('Mine')
       await user.click(within(body).getByRole('button', { name: 'Mine' }))
       expect(ownershipSelected.value).toBe('my-models')
     })
@@ -205,17 +245,22 @@ describe('FormDropdownMenuActions', () => {
     it('is hidden when showBaseModelFilter is false', () => {
       renderMenu({ showBaseModelFilter: false })
       expect(screen.queryByLabelText('Base model')).toBeNull()
+      // None of the base-model options should be reachable
+      expect(screen.queryByRole('button', { name: 'SDXL' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Clear Filters' })).toBeNull()
     })
 
     it('is shown when showBaseModelFilter is true and options exist', () => {
       renderMenu({ showBaseModelFilter: true })
       expect(screen.getByLabelText('Base model')).toBeInTheDocument()
+      // Closed by default until the trigger is clicked
+      expect(screen.queryByRole('button', { name: 'SDXL' })).toBeNull()
     })
 
     it('adds a value to baseModelSelected when an option is clicked', async () => {
       const { baseModelSelected } = renderMenu({ showBaseModelFilter: true })
+      const body = await openBaseModelPopover()
       const user = userEvent.setup()
-      const body = getPopoverBy('SDXL')
       await user.click(within(body).getByRole('button', { name: 'SDXL' }))
       expect(baseModelSelected.value.has('sdxl')).toBe(true)
       expect(baseModelSelected.value.size).toBe(1)
@@ -226,8 +271,8 @@ describe('FormDropdownMenuActions', () => {
         showBaseModelFilter: true,
         baseModelSelected: new Set(['sdxl', 'flux'])
       })
+      const body = await openBaseModelPopover()
       const user = userEvent.setup()
-      const body = getPopoverBy('SDXL')
       await user.click(within(body).getByRole('button', { name: 'SDXL' }))
       expect(baseModelSelected.value.has('sdxl')).toBe(false)
       expect(baseModelSelected.value.has('flux')).toBe(true)
@@ -235,8 +280,8 @@ describe('FormDropdownMenuActions', () => {
 
     it('supports multiple selections', async () => {
       const { baseModelSelected } = renderMenu({ showBaseModelFilter: true })
+      const body = await openBaseModelPopover()
       const user = userEvent.setup()
-      const body = getPopoverBy('SDXL')
       await user.click(within(body).getByRole('button', { name: 'SDXL' }))
       await user.click(within(body).getByRole('button', { name: 'Flux' }))
       expect(baseModelSelected.value.size).toBe(2)
@@ -249,8 +294,8 @@ describe('FormDropdownMenuActions', () => {
         showBaseModelFilter: true,
         baseModelSelected: new Set(['sdxl', 'flux'])
       })
+      const body = await openBaseModelPopover()
       const user = userEvent.setup()
-      const body = getPopoverBy('Clear Filters')
       await user.click(
         within(body).getByRole('button', { name: 'Clear Filters' })
       )
