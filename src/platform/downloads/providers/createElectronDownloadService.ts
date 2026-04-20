@@ -25,6 +25,24 @@ export function createElectronDownloadService(): DownloadService & {
     )
   }
 
+  const VALID_STATUSES = new Set<DownloadStatus>([
+    'pending',
+    'in_progress',
+    'paused',
+    'completed',
+    'cancelled',
+    'error'
+  ])
+
+  function toDownloadStatus(
+    value: unknown,
+    fallback: DownloadStatus = 'error'
+  ): DownloadStatus {
+    return VALID_STATUSES.has(value as DownloadStatus)
+      ? (value as DownloadStatus)
+      : fallback
+  }
+
   function notifyListeners(id: string, entry: DownloadEntry) {
     progressListeners.get(id)?.forEach((cb) => cb(entry))
   }
@@ -36,7 +54,7 @@ export function createElectronDownloadService(): DownloadService & {
       url: update.url,
       filename: update.filename ?? existing?.filename ?? '',
       savePath: update.savePath ?? existing?.savePath ?? '',
-      status: (update.status as DownloadStatus) ?? 'in_progress',
+      status: toDownloadStatus(update.status, 'in_progress'),
       progress: update.progress ?? 0
     }
     entries.set(update.url, entry)
@@ -59,7 +77,7 @@ export function createElectronDownloadService(): DownloadService & {
             url: download.url,
             filename: download.filename,
             savePath: '',
-            status: download.state as DownloadStatus,
+            status: toDownloadStatus(download.state),
             progress: download.totalBytes
               ? download.receivedBytes / download.totalBytes
               : 0
@@ -76,11 +94,16 @@ export function createElectronDownloadService(): DownloadService & {
   }
 
   async function start(params: DownloadStartParams): Promise<DownloadEntry> {
-    await downloadManager.startDownload(
+    const started = await downloadManager.startDownload(
       params.url,
       params.savePath,
       params.filename
     )
+    if (started === false) {
+      throw new Error(
+        `Download could not be started for ${params.url}. Verify the URL and try again.`
+      )
+    }
     const entry: DownloadEntry = {
       id: params.url,
       url: params.url,
