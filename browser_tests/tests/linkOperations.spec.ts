@@ -118,7 +118,7 @@ test.describe(
           .poll(
             async () => (await evaluateGraphLinks(comfyPage.page)).totalLinks
           )
-          .toBeLessThanOrEqual(before.totalLinks - totalOutputLinks)
+          .toBe(before.totalLinks - totalOutputLinks)
 
         await expect
           .poll(() => evaluateGraphLinks(comfyPage.page))
@@ -201,7 +201,8 @@ test.describe(
         const clipNodes =
           await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
         expect(clipNodes.length).toBeGreaterThanOrEqual(1)
-        const clipInput = await clipNodes[0].getInput(0)
+        const clipNode = clipNodes[0]
+        const clipInput = await clipNode.getInput(0)
 
         const originalLink = await comfyPage.page.evaluate(
           ([nodeId]) => {
@@ -219,14 +220,21 @@ test.describe(
               targetSlot: link.target_slot
             }
           },
-          [clipNodes[0].id] as const
+          [clipNode.id] as const
         )
         expect(originalLink).not.toBeNull()
 
-        await comfyPage.canvasOps.disconnectEdge()
+        await clipInput.removeLinks()
         await expect.poll(() => clipInput.getLinkCount()).toBe(0)
 
-        await comfyPage.canvasOps.connectEdge()
+        const checkpointNodes = await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )
+        await checkpointNodes[0].connectOutput(
+          originalLink!.originSlot,
+          clipNode,
+          originalLink!.targetSlot
+        )
         await expect.poll(() => clipInput.getLinkCount()).toBe(1)
 
         await expect
@@ -247,7 +255,7 @@ test.describe(
                   targetSlot: link.target_slot
                 }
               },
-              [clipNodes[0].id] as const
+              [clipNode.id] as const
             )
           })
           .toMatchObject(originalLink!)
@@ -300,11 +308,9 @@ test.describe(
           if (!firstLink) return null
 
           const dupeId = graph.last_link_id + 1
-          const dupe = {
-            ...firstLink,
-            id: dupeId
-          }
-          graph.links.set(dupeId, dupe as typeof firstLink)
+          const dupe = Object.create(Object.getPrototypeOf(firstLink))
+          Object.assign(dupe, firstLink, { id: dupeId, _pos: [0, 0] })
+          graph.links.set(dupeId, dupe)
           graph.last_link_id = dupeId
 
           const originNode = graph.getNodeById(firstLink.origin_id)
