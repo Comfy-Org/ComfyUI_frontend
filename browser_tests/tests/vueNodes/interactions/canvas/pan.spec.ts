@@ -18,38 +18,26 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  test('Middle-click drag on node should pan canvas', async ({ comfyPage }) => {
-    const node = comfyPage.vueNodes
-      .getNodeByTitle('CLIP Text Encode (Prompt)')
-      .first()
-    const nodeBounds = await node.boundingBox()
-    if (!nodeBounds) throw new Error('Node bounding box not found')
+  test(
+    'Middle-click drag on node should pan canvas',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const node = comfyPage.vueNodes
+        .getNodeByTitle('CLIP Text Encode (Prompt)')
+        .first()
+      const box = await node.boundingBox()
+      if (!box) throw new Error('Node bounding box not found')
 
-    const start = {
-      x: nodeBounds.x + nodeBounds.width / 2,
-      y: nodeBounds.y + nodeBounds.height / 2
-    }
+      const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      await comfyPage.canvasOps.middleClickDrag(center, {
+        x: center.x + 140,
+        y: center.y + 90
+      })
+      await comfyPage.nextFrame()
 
-    const offsetBefore = await comfyPage.page.evaluate(() => {
-      const ds = window.app!.canvas!.ds
-      return [ds.offset[0], ds.offset[1]]
-    })
-
-    await comfyPage.page.mouse.move(start.x, start.y)
-    await comfyPage.page.mouse.down({ button: 'middle' })
-    await comfyPage.page.mouse.move(start.x + 140, start.y + 90, { steps: 10 })
-    await comfyPage.page.mouse.up({ button: 'middle' })
-    await comfyPage.nextFrame()
-
-    await expect
-      .poll(
-        () =>
-          comfyPage.page.evaluate(() => {
-            const ds = window.app!.canvas!.ds
-            return [ds.offset[0], ds.offset[1]]
-          }),
-        { message: 'Expected middle drag on node to pan canvas offset' }
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-mmb-pan-on-node.png'
       )
-      .not.toEqual(offsetBefore)
-  })
+    }
+  )
 })
