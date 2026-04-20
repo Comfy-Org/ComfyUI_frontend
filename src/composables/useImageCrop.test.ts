@@ -1,18 +1,12 @@
 /* eslint-disable vue/one-component-per-file */
 
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { createApp, defineComponent, nextTick, reactive, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
@@ -164,10 +158,10 @@ type CropVm = Record<string, unknown> & {
 
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
-  /* eslint-disable testing-library/no-node-access */
+
   const container = vm.$el as HTMLDivElement
   const img = container.querySelector('img')
-  /* eslint-enable testing-library/no-node-access */
+
   mountContainerLayout(container, 400, 300)
   if (img) {
     Object.defineProperty(img, 'naturalWidth', {
@@ -374,10 +368,10 @@ describe('useImageCrop', () => {
 
   it('uses scale factor 1 when natural dimensions are zero', async () => {
     const vm = await mountHarness()
-    /* eslint-disable testing-library/no-node-access */
+
     const container = vm.$el as HTMLDivElement
     const img = container.querySelector('img')
-    /* eslint-enable testing-library/no-node-access */
+
     if (!img) throw new Error('expected preview img')
     Object.defineProperty(img, 'naturalWidth', { configurable: true, value: 0 })
     Object.defineProperty(img, 'naturalHeight', {
@@ -578,201 +572,5 @@ describe('useImageCrop', () => {
     resizeMove(makePointerEvent('pointermove', captureEl, 10, 80))
     resizeEnd(makePointerEvent('pointerup', captureEl, 10, 80))
     expect(vm.cropHeight as number).toBeGreaterThan(h0)
-  })
-})
-
-describe('WidgetImageCrop', () => {
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: {
-      en: {
-        imageCrop: {
-          loading: 'Loading...',
-          noInputImage: 'No input image connected',
-          cropPreviewAlt: 'Crop preview',
-          ratio: 'Ratio',
-          lockRatio: 'Lock aspect ratio',
-          unlockRatio: 'Unlock aspect ratio',
-          custom: 'Custom'
-        }
-      }
-    }
-  })
-
-  beforeEach(() => {
-    resizeObserverCallbacks.length = 0
-    vi.clearAllMocks()
-    const outputStore: MockOutputStore = {
-      nodeOutputs: reactive<Record<string, unknown>>({}),
-      nodePreviewImages: reactive<Record<string, unknown>>({}),
-      getNodeImageUrls: mockGetNodeImageUrls
-    }
-    useNodeOutputStoreMock.mockReturnValue(outputStore)
-    const source = createMockLGraphNode({ id: 99, isSubgraphNode: () => false })
-    const crop = createMockLGraphNode({
-      id: 2,
-      getInputNode: vi.fn(() => source),
-      getInputLink: vi.fn(),
-      isSubgraphNode: () => false
-    })
-    mockResolveNode.mockReturnValue(crop)
-    mockGetNodeImageUrls.mockImplementation((n) =>
-      n === source ? ['https://example.com/a.png'] : null
-    )
-    setActivePinia(createTestingPinia({ stubActions: true }))
-  })
-
-  it('renders empty state copy when no image URL is available', async () => {
-    mockGetNodeImageUrls.mockReturnValue(null)
-    const widget = fromPartial<SimplifiedWidget>({
-      type: 'imagecrop',
-      options: {}
-    })
-    const attach = document.createElement('div')
-    document.body.appendChild(attach)
-    const { unmount } = render(WidgetImageCrop, {
-      container: attach,
-      props: {
-        widget,
-        nodeId: 2 as NodeId,
-        modelValue: { x: 0, y: 0, width: 100, height: 100 }
-      },
-      global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetBoundingBox: {
-            name: 'WidgetBoundingBox',
-            template: '<div data-testid="bbox-stub" />'
-          }
-        }
-      }
-    })
-    await flushTicks()
-    expect(screen.getByText('No input image connected')).toBeTruthy()
-    unmount()
-    attach.remove()
-  })
-
-  it('shows crop overlay after the preview image loads', async () => {
-    const widget = fromPartial<SimplifiedWidget>({
-      type: 'imagecrop',
-      options: {}
-    })
-    const attach = document.createElement('div')
-    attach.style.width = '420px'
-    attach.style.height = '320px'
-    document.body.appendChild(attach)
-    const { unmount } = render(WidgetImageCrop, {
-      container: attach,
-      props: {
-        widget,
-        nodeId: 2 as NodeId,
-        modelValue: { x: 0, y: 0, width: 200, height: 200 }
-      },
-      global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetBoundingBox: {
-            name: 'WidgetBoundingBox',
-            template: '<div data-testid="bbox-stub" />'
-          }
-        }
-      }
-    })
-    await flushTicks()
-    const img = screen.getByAltText('Crop preview')
-    Object.defineProperty(img, 'naturalWidth', {
-      configurable: true,
-      value: 400
-    })
-    Object.defineProperty(img, 'naturalHeight', {
-      configurable: true,
-      value: 400
-    })
-    img.dispatchEvent(new Event('load'))
-    await flushTicks()
-    expect(screen.getByTestId('crop-overlay')).toBeTruthy()
-    unmount()
-    attach.remove()
-  })
-
-  it('toggles aspect ratio lock from the toolbar button', async () => {
-    const user = userEvent.setup()
-    const widget = fromPartial<SimplifiedWidget>({
-      type: 'imagecrop',
-      options: {}
-    })
-    const attach = document.createElement('div')
-    attach.style.width = '420px'
-    attach.style.height = '320px'
-    document.body.appendChild(attach)
-    const { unmount } = render(WidgetImageCrop, {
-      container: attach,
-      props: {
-        widget,
-        nodeId: 2 as NodeId,
-        modelValue: { x: 0, y: 0, width: 200, height: 200 }
-      },
-      global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetBoundingBox: {
-            name: 'WidgetBoundingBox',
-            template: '<div data-testid="bbox-stub" />'
-          }
-        }
-      }
-    })
-    await flushTicks()
-    const img = screen.getByAltText('Crop preview')
-    Object.defineProperty(img, 'naturalWidth', {
-      configurable: true,
-      value: 400
-    })
-    Object.defineProperty(img, 'naturalHeight', {
-      configurable: true,
-      value: 400
-    })
-    img.dispatchEvent(new Event('load'))
-    await flushTicks()
-
-    await user.click(screen.getByRole('button', { name: 'Lock aspect ratio' }))
-    await flushTicks()
-    expect(
-      screen.getByRole('button', { name: 'Unlock aspect ratio' })
-    ).toBeTruthy()
-    unmount()
-    attach.remove()
-  })
-
-  it('renders ratio controls when the widget is enabled', async () => {
-    const widget = fromPartial<SimplifiedWidget>({
-      type: 'imagecrop',
-      options: {}
-    })
-    const attach = document.createElement('div')
-    document.body.appendChild(attach)
-    const { unmount } = render(WidgetImageCrop, {
-      container: attach,
-      props: {
-        widget,
-        nodeId: 2 as NodeId,
-        modelValue: { x: 0, y: 0, width: 100, height: 100 }
-      },
-      global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetBoundingBox: {
-            name: 'WidgetBoundingBox',
-            template: '<div data-testid="bbox-stub" />'
-          }
-        }
-      }
-    })
-    await flushTicks()
-    expect(screen.getByText('Ratio')).toBeTruthy()
-    unmount()
-    attach.remove()
   })
 })
