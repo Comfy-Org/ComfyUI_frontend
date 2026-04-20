@@ -99,9 +99,7 @@ catalog:
   storybook: ^10.2.10
   stylelint: ^16.26.1
   tailwindcss: ^4.2.0
-  tailwindcss-primeui: ^0.6.1
   tsx: ^4.15.6
-  tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
   typescript: ^5.9.3
   typescript-eslint: ^8.49.0
