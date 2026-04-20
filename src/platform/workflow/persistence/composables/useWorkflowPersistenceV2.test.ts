@@ -67,13 +67,20 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   })
 }))
 
+const mockLoadTemplateFromUrl = vi.fn()
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateUrlLoader',
-  () => ({
-    useTemplateUrlLoader: () => ({
-      loadTemplateFromUrl: vi.fn()
-    })
-  })
+  async () => {
+    const { ref, shallowRef, readonly } = await import('vue')
+    return {
+      useTemplateUrlLoader: () => ({
+        loadTemplateFromUrl: mockLoadTemplateFromUrl,
+        isLoading: readonly(ref(false)),
+        error: readonly(shallowRef(null)),
+        isReady: readonly(ref(false))
+      })
+    }
+  }
 )
 
 vi.mock('@/stores/commandStore', () => ({
@@ -82,9 +89,10 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
+let mockRouteQuery: Record<string, string | undefined> = {}
 vi.mock('vue-router', () => ({
   useRoute: () => ({
-    query: {}
+    query: mockRouteQuery
   }),
   useRouter: () => ({
     replace: vi.fn()
@@ -161,6 +169,7 @@ describe('useWorkflowPersistenceV2', () => {
     localStorage.clear()
     sessionStorage.clear()
     vi.clearAllMocks()
+    mockRouteQuery = {}
     settingMocks.persistRef!.value = true
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
@@ -355,6 +364,38 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('loadTemplateFromUrlIfPresent', () => {
+    it('returns true and calls loadTemplateFromUrl when template param exists', async () => {
+      mockRouteQuery = { template: 'flux_simple' }
+
+      const { loadTemplateFromUrlIfPresent } = useWorkflowPersistenceV2()
+      const result = await loadTemplateFromUrlIfPresent()
+
+      expect(result).toBe(true)
+      expect(mockLoadTemplateFromUrl).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns false and skips load when no template param', async () => {
+      mockRouteQuery = {}
+
+      const { loadTemplateFromUrlIfPresent } = useWorkflowPersistenceV2()
+      const result = await loadTemplateFromUrlIfPresent()
+
+      expect(result).toBe(false)
+      expect(mockLoadTemplateFromUrl).not.toHaveBeenCalled()
+    })
+
+    it('returns false when template param is not a string', async () => {
+      mockRouteQuery = {}
+
+      const { loadTemplateFromUrlIfPresent } = useWorkflowPersistenceV2()
+      const result = await loadTemplateFromUrlIfPresent()
+
+      expect(result).toBe(false)
+      expect(mockLoadTemplateFromUrl).not.toHaveBeenCalled()
     })
   })
 })
