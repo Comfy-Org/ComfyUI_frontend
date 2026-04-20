@@ -492,5 +492,53 @@ export default defineConfig([
         }
       ]
     }
+  },
+
+  // Deprecate @/schemas/apiSchema — use generated types from
+  // @comfyorg/ingest-types instead. Uses no-restricted-syntax so it
+  // composes with other file-scoped no-restricted-imports blocks above
+  // (flat-config rules of the same key override rather than merge).
+  // Warn severity: ~80 files still import apiSchema during migration;
+  // elevate to error once the count is near zero. Scoped to src/ to
+  // avoid overriding the stricter no-restricted-syntax rules on
+  // browser_tests/fixtures/data and .spec/.test files.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: "ImportDeclaration[source.value='@/schemas/apiSchema']",
+          message:
+            'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+        }
+      ]
+    }
+  },
+
+  // Deprecate new hand-written zod server-response schemas under
+  // src/schemas/. Local-state / form / UI-config schemas
+  // (colorPaletteSchema, signInSchema) are not server responses and
+  // are explicitly exempted. Server response shapes should come from
+  // @comfyorg/ingest-types generated types. Warn severity so existing
+  // response schemas don't break CI; new additions get nudged at PR
+  // review.
+  {
+    files: ['src/schemas/**/*.ts'],
+    ignores: [
+      'src/schemas/**/*.test.ts',
+      'src/schemas/colorPaletteSchema.ts',
+      'src/schemas/signInSchema.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: "ImportDeclaration[source.value='zod']",
+          message:
+            'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+        }
+      ]
+    }
   }
 ])
