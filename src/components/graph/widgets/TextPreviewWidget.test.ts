@@ -153,7 +153,7 @@ describe('TextPreviewWidget', () => {
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       const href = anchor?.getAttribute('href')
-      expect(href === null || !href.startsWith('javascript:')).toBe(true)
+      expect(href == null || !href.startsWith('javascript:')).toBe(true)
     })
 
     it('preserves the <br> tag produced by nl2br', () => {
