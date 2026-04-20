@@ -30,7 +30,8 @@ const categories = [
   {
     label: t('useCase.ecommerce', locale),
     leftSrc: 'https://media.comfy.org/website/homepage/use-case/left4.webm',
-    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right4.webm'
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right4.webm',
+    rightObjectPosition: 'top'
   },
   {
     label: t('useCase.more', locale),
@@ -56,6 +57,9 @@ const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
 
 const activeLeft = computed(() => categories[activeCategory.value].leftSrc)
 const activeRight = computed(() => categories[activeCategory.value].rightSrc)
+const activeRightObjectPosition = computed(
+  () => categories[activeCategory.value].rightObjectPosition
+)
 
 const uid = useId()
 const leftBlobId = `left-blob-${uid}`
@@ -123,7 +127,7 @@ useParallax([leftImgRef], {
             <Transition name="crossfade">
               <video
                 v-if="isVideo(activeLeft)"
-                :key="activeLeft"
+                :key="`video-${activeLeft}`"
                 :src="activeLeft"
                 autoplay
                 muted
@@ -134,7 +138,7 @@ useParallax([leftImgRef], {
               />
               <img
                 v-else
-                :key="activeLeft"
+                :key="`img-${activeLeft}`"
                 :src="activeLeft"
                 alt=""
                 aria-hidden="true"
@@ -203,7 +207,7 @@ useParallax([leftImgRef], {
             <Transition name="crossfade">
               <video
                 v-if="isVideo(activeRight)"
-                :key="activeRight"
+                :key="`video-${activeRight}`"
                 :src="activeRight"
                 autoplay
                 muted
@@ -211,14 +215,24 @@ useParallax([leftImgRef], {
                 playsinline
                 aria-hidden="true"
                 class="absolute inset-0 size-full object-cover"
+                :style="
+                  activeRightObjectPosition
+                    ? `object-position: ${activeRightObjectPosition}`
+                    : undefined
+                "
               />
               <img
                 v-else
-                :key="activeRight"
+                :key="`img-${activeRight}`"
                 :src="activeRight"
                 alt=""
                 aria-hidden="true"
                 class="absolute inset-0 size-full object-cover"
+                :style="
+                  activeRightObjectPosition
+                    ? `object-position: ${activeRightObjectPosition}`
+                    : undefined
+                "
               />
             </Transition>
           </div>
