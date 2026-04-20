@@ -4,6 +4,7 @@ import { shallowRef } from 'vue'
 import type { DownloadService } from './types'
 
 let _service: DownloadService | null = null
+let _initPromise: Promise<DownloadService> | null = null
 
 async function createDownloadServiceProvider(): Promise<DownloadService> {
   if (__DISTRIBUTION__ === 'desktop') {
@@ -33,7 +34,10 @@ export const useDownloadServiceStore = defineStore('downloadService', () => {
       service.value = _service
       return
     }
-    _service = await createDownloadServiceProvider()
+    if (!_initPromise) {
+      _initPromise = createDownloadServiceProvider()
+    }
+    _service = await _initPromise
     service.value = _service
   }
 

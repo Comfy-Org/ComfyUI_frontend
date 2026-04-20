@@ -18,6 +18,11 @@ export function createElectronDownloadService(): DownloadService & {
     Set<(entry: DownloadEntry) => void>
   >()
   const downloadManager = electronAPI().DownloadManager
+  if (!downloadManager) {
+    throw new Error(
+      'DownloadManager is unavailable. Verify Electron preload exposes DownloadManager.'
+    )
+  }
 
   function notifyListeners(id: string, entry: DownloadEntry) {
     progressListeners.get(id)?.forEach((cb) => cb(entry))
@@ -42,21 +47,25 @@ export function createElectronDownloadService(): DownloadService & {
   async function initialize() {
     if (initialized) return
     initialized = true
-
-    const existingDownloads = await downloadManager.getAllDownloads()
-    for (const download of existingDownloads) {
-      entries.set(download.url, {
-        id: download.url,
-        url: download.url,
-        filename: download.filename,
-        savePath: '',
-        status: download.state as DownloadStatus,
-        progress: download.totalBytes
-          ? download.receivedBytes / download.totalBytes
-          : 0
-      })
+    try {
+      const existingDownloads = await downloadManager.getAllDownloads()
+      for (const download of existingDownloads) {
+        entries.set(download.url, {
+          id: download.url,
+          url: download.url,
+          filename: download.filename,
+          savePath: '',
+          status: download.state as DownloadStatus,
+          progress: download.totalBytes
+            ? download.receivedBytes / download.totalBytes
+            : 0
+        })
+      }
+      downloadManager.onDownloadProgress(upsertFromProgress)
+    } catch (error) {
+      initialized = false
+      throw error
     }
-    downloadManager.onDownloadProgress(upsertFromProgress)
   }
 
   async function start(params: DownloadStartParams): Promise<DownloadEntry> {
@@ -106,7 +115,12 @@ export function createElectronDownloadService(): DownloadService & {
     }
     progressListeners.get(id)!.add(cb)
     return () => {
-      progressListeners.get(id)?.delete(cb)
+      const listeners = progressListeners.get(id)
+      if (!listeners) return
+      listeners.delete(cb)
+      if (listeners.size === 0) {
+        progressListeners.delete(id)
+      }
     }
   }
 
