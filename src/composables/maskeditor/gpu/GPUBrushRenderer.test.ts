@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
+} from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
 
@@ -36,6 +44,8 @@ vi.mock('typegpu/data', () => ({
   builtin: { position: {} },
   sizeOf: vi.fn(() => 16)
 }))
+
+let pipelineCounter = 0
 
 function createMockPass() {
   return {
@@ -89,7 +99,9 @@ function createMockDevice() {
     createBindGroupLayout: vi.fn(() => ({})),
     createBindGroup: vi.fn(() => ({})),
     createPipelineLayout: vi.fn(() => ({})),
-    createRenderPipeline: vi.fn(() => ({})),
+    createRenderPipeline: vi.fn(() => ({
+      _id: `pipeline-${pipelineCounter++}`
+    })),
     createComputePipeline: vi.fn(
       () =>
         ({
@@ -112,11 +124,27 @@ function createMockDevice() {
 }
 
 describe('GPUBrushRenderer', () => {
+  // Pipeline creation order in constructor:
+  // 0: render, 1: accumulate, 2: blit,
+  // 3: composite, 4: compositePreview, 5: erase, 6: erasePreview
+  const PIPELINE_INDEX = {
+    composite: 3,
+    compositePreview: 4,
+    erase: 5,
+    erasePreview: 6
+  }
+
+  function getPipeline(index: number) {
+    return (device.createRenderPipeline as ReturnType<typeof vi.fn>).mock
+      .results[index].value
+  }
+
   let device: ReturnType<typeof createMockDevice>
   let renderer: GPUBrushRenderer
 
   beforeEach(() => {
     vi.clearAllMocks()
+    pipelineCounter = 0
     device = createMockDevice()
     renderer = new GPUBrushRenderer(device)
   })
@@ -284,6 +312,7 @@ describe('GPUBrushRenderer', () => {
     })
 
     it('uses erase pipeline when isErasing is true', () => {
+      const erasePipeline = getPipeline(PIPELINE_INDEX.erase)
       renderer.prepareStroke(512, 512)
       vi.clearAllMocks()
 
@@ -291,8 +320,24 @@ describe('GPUBrushRenderer', () => {
       renderer.compositeStroke(targetView, { ...settings, isErasing: true })
 
       const encoder = device._encoder
-      expect(encoder._renderPass.setPipeline).toHaveBeenCalled()
+      expect(encoder._renderPass.setPipeline).toHaveBeenCalledWith(
+        erasePipeline
+      )
       expect(encoder._renderPass.draw).toHaveBeenCalledWith(3)
+    })
+
+    it('uses composite pipeline when isErasing is false', () => {
+      const compositePipeline = getPipeline(PIPELINE_INDEX.composite)
+      renderer.prepareStroke(512, 512)
+      vi.clearAllMocks()
+
+      const targetView = {} as GPUTextureView
+      renderer.compositeStroke(targetView, settings)
+
+      const encoder = device._encoder
+      expect(encoder._renderPass.setPipeline).toHaveBeenCalledWith(
+        compositePipeline
+      )
     })
   })
 
@@ -343,13 +388,31 @@ describe('GPUBrushRenderer', () => {
     })
 
     it('uses erase preview pipeline when isErasing is true', () => {
+      const erasePreviewPipeline = getPipeline(PIPELINE_INDEX.erasePreview)
       renderer.prepareStroke(512, 512)
       vi.clearAllMocks()
 
       renderer.blitToCanvas(mockCtx, { ...settings, isErasing: true })
 
       const encoder = device._encoder
-      expect(encoder._renderPass.setPipeline).toHaveBeenCalled()
+      expect(encoder._renderPass.setPipeline).toHaveBeenCalledWith(
+        erasePreviewPipeline
+      )
+    })
+
+    it('uses composite preview pipeline when isErasing is false', () => {
+      const compositePreviewPipeline = getPipeline(
+        PIPELINE_INDEX.compositePreview
+      )
+      renderer.prepareStroke(512, 512)
+      vi.clearAllMocks()
+
+      renderer.blitToCanvas(mockCtx, settings)
+
+      const encoder = device._encoder
+      expect(encoder._renderPass.setPipeline).toHaveBeenCalledWith(
+        compositePreviewPipeline
+      )
     })
   })
 
