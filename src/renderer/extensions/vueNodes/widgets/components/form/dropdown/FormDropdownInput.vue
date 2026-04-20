@@ -17,6 +17,7 @@ interface Props {
   uploadable: boolean
   disabled: boolean
   accept?: string
+  loading?: boolean
 }
 
 const {
@@ -28,7 +29,8 @@ const {
   maxSelectable,
   uploadable,
   disabled,
-  accept
+  accept,
+  loading = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -97,16 +99,27 @@ const theButtonStyle = computed(() =>
         cn(
           theButtonStyle,
           'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border'
+          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border',
+          loading && 'cursor-wait'
         )
       "
+      :aria-busy="loading || undefined"
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i
+        :class="
+          cn(
+            'size-4',
+            loading
+              ? 'icon-[lucide--loader-circle] animate-spin'
+              : 'icon-[lucide--folder-search]'
+          )
+        "
+      />
       <input
         type="file"
         class="absolute inset-0 -z-1 opacity-0"
         :multiple="maxSelectable > 1"
-        :disabled="disabled"
+        :disabled="disabled || loading"
         :accept="accept"
         @change="emit('file-change', $event)"
       />

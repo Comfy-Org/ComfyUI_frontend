@@ -29,6 +29,7 @@ interface Props {
   multiple?: boolean | number
 
   uploadable?: boolean
+  loading?: boolean
   disabled?: boolean
   accept?: string
   filterOptions?: FilterOption[]
@@ -55,6 +56,7 @@ const {
   placeholder,
   multiple = false,
   uploadable = false,
+  loading = false,
   disabled = false,
   accept,
   filterOptions = [],
@@ -192,6 +194,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       :max-selectable
       :selected
       :uploadable
+      :loading
       :disabled
       :accept
       @select-click="toggleDropdown"
