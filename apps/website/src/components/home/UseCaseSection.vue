@@ -50,7 +50,11 @@ const navRef = ref<HTMLElement>()
 const leftImgRef = ref<HTMLElement>()
 const rightImgRef = ref<HTMLElement>()
 
-const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
+const {
+  activeIndex: activeCategory,
+  isActive: isPinned,
+  scrollToIndex
+} = usePinScrub(
   { section: sectionRef, content: contentRef, nav: navRef },
   { itemCount: categories.length }
 )
@@ -82,7 +86,12 @@ useParallax([leftImgRef], {
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative isolate overflow-hidden px-8 py-20 lg:h-[calc(100vh+60px)] lg:px-0 lg:py-24"
+    :class="
+      cn(
+        'bg-primary-comfy-ink relative isolate px-8 py-20 lg:px-0 lg:py-24',
+        isPinned && 'overflow-hidden lg:h-[calc(100vh+60px)]'
+      )
+    "
   >
     <!-- Clip-path definitions for shaped images -->
     <svg class="absolute size-0" width="0" height="0" aria-hidden="true">

@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { lockScroll, unlockScroll } from '../../composables/useScrollLock'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { GalleryItem } from './GallerySection.vue'
 
 const {
@@ -26,7 +28,7 @@ const activeItem = computed(() => items[activeIndex.value])
 function scrollToActiveThumbnail() {
   void nextTick(() => {
     thumbnailRefs.value[activeIndex.value]?.scrollIntoView({
-      behavior: 'smooth',
+      behavior: prefersReducedMotion() ? 'instant' : 'smooth',
       block: 'nearest',
       inline: 'center'
     })
@@ -70,13 +72,13 @@ watch(
 const dialogRef = ref<HTMLDialogElement>()
 
 onMounted(() => {
-  document.body.style.overflow = 'hidden'
+  lockScroll()
   dialogRef.value?.showModal()
   scrollToActiveThumbnail()
 })
 
 onUnmounted(() => {
-  document.body.style.overflow = ''
+  unlockScroll()
 })
 </script>
 

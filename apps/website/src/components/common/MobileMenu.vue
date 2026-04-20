@@ -3,6 +3,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { lockScroll, unlockScroll } from '../../composables/useScrollLock'
 import BrandButton from './BrandButton.vue'
 import type { NavLink } from './NavDesktopLink.vue'
 
@@ -14,11 +15,13 @@ interface CtaLink {
 
 const {
   open = false,
+  navigating = false,
   links = [],
   ctaLinks = [],
   locale = 'en'
 } = defineProps<{
   open?: boolean
+  navigating?: boolean
   links?: NavLink[]
   ctaLinks?: CtaLink[]
   locale?: Locale
@@ -60,24 +63,6 @@ function trapFocus(e: KeyboardEvent) {
   }
 }
 
-let savedScrollY = 0
-
-function lockScroll() {
-  savedScrollY = window.scrollY
-  document.body.style.position = 'fixed'
-  document.body.style.top = `-${savedScrollY}px`
-  document.body.style.left = '0'
-  document.body.style.right = '0'
-}
-
-function unlockScroll() {
-  document.body.style.position = ''
-  document.body.style.top = ''
-  document.body.style.left = ''
-  document.body.style.right = ''
-  window.scrollTo(0, savedScrollY)
-}
-
 watch(
   () => open,
   async (isOpen) => {
@@ -90,14 +75,14 @@ watch(
       menu?.addEventListener('keydown', trapFocus)
     } else {
       menuRef.value?.removeEventListener('keydown', trapFocus)
-      unlockScroll()
+      unlockScroll({ skipRestore: navigating })
     }
   }
 )
 
 onUnmounted(() => {
   menuRef.value?.removeEventListener('keydown', trapFocus)
-  unlockScroll()
+  if (open) unlockScroll({ skipRestore: true })
 })
 </script>
 

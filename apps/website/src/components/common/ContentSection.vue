@@ -5,6 +5,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { hasKey, t } from '../../i18n/translations'
+import { scrollTo } from '../../scripts/smoothScroll'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
 import { deriveSections } from '../../config/contentSections'
@@ -37,15 +39,19 @@ const activeSection = ref(sections[0]?.id ?? '')
 let observer: IntersectionObserver | null = null
 let isScrolling = false
 
+const HEADER_OFFSET = -144
+
 onMounted(() => {
   observer = new IntersectionObserver(
     (entries) => {
       if (isScrolling) return
+      let best: IntersectionObserverEntry | null = null
       for (const entry of entries) {
-        if (entry.isIntersecting) {
-          activeSection.value = entry.target.id
-        }
+        if (!entry.isIntersecting) continue
+        if (!best || entry.boundingClientRect.top < best.boundingClientRect.top)
+          best = entry
       }
+      if (best) activeSection.value = best.target.id
     },
     { rootMargin: '-20% 0px -60% 0px' }
   )
@@ -64,10 +70,18 @@ function scrollToSection(id: string) {
   activeSection.value = id
   isScrolling = true
   const el = document.getElementById(id)
-  el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  setTimeout(() => {
-    isScrolling = false
-  }, 800)
+  if (el) {
+    scrollTo(el, {
+      offset: HEADER_OFFSET,
+      duration: 0.8,
+      immediate: prefersReducedMotion(),
+      onComplete: () => {
+        isScrolling = false
+      }
+    })
+    return
+  }
+  isScrolling = false
 }
 </script>
 

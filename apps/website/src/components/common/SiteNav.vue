@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -95,6 +95,7 @@ const ctaButtons = [
 const currentPath = ref('')
 const openDesktopDropdown = ref<string | null>(null)
 const mobileMenuOpen = ref(false)
+const isNavigating = ref(false)
 const hamburgerRef = ref<HTMLButtonElement | undefined>()
 
 function closeMobileMenu() {
@@ -113,10 +114,13 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-function onNavigate() {
+async function onNavigate() {
+  isNavigating.value = true
   closeMobileMenu()
   openDesktopDropdown.value = null
   currentPath.value = window.location.pathname
+  await nextTick()
+  isNavigating.value = false
 }
 
 function onMediaChange(e: MediaQueryListEvent) {
@@ -143,6 +147,7 @@ onUnmounted(() => {
 <template>
   <MobileMenu
     :open="mobileMenuOpen"
+    :navigating="isNavigating"
     :links="navLinks"
     :cta-links="ctaButtons"
     :locale="locale"
