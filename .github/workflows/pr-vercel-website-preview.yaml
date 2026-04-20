@@ -37,16 +37,22 @@ jobs:
         id: pr-meta
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
-      - name: Read preview URL
-        if: steps.pr-meta.outputs.skip != 'true'
-        id: meta
-        run: |
-          echo "url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
-
       - name: Write report
         if: steps.pr-meta.outputs.skip != 'true'
+        env:
+          DEPLOYED_AT: ${{ github.event.workflow_run.updated_at }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          echo "**Website Preview:** ${{ steps.meta.outputs.url }}" > preview-report.md
+          STABLE_URL=$(cat temp/vercel-preview/stable-url.txt)
+          UNIQUE_URL=$(cat temp/vercel-preview/url.txt)
+          SHORT_SHA="${HEAD_SHA:0:7}"
+          cat > preview-report.md <<EOF
+          **Website Preview:** $STABLE_URL
+
+          <sub>This commit: $UNIQUE_URL</sub>
+
+          <sub>Last updated: $DEPLOYED_AT for \`$SHORT_SHA\`</sub>
+          EOF
 
       - name: Post PR comment
         if: steps.pr-meta.outputs.skip != 'true'
