@@ -54,6 +54,12 @@ async function cancelAndCloseDialog(page: Page) {
   await expect(dialog).toBeHidden()
 }
 
+async function addKeybindingToRow(page: Page, row: Locator, combo: string) {
+  await row.getByRole('button', { name: /Add new keybinding/i }).click()
+  await pressComboOnInput(page, combo)
+  await saveAndCloseKeybindingDialog(page)
+}
+
 test.beforeEach(async ({ comfyPage }) => {
   await registerNoBindingCommand(comfyPage)
   await comfyPage.settingDialog.open()
@@ -233,7 +239,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await expect(expansionContent).toBeVisible()
     })
 
-    test("Context menu 'Remove keybinding' on multi-binding command shows confirm dialog", async ({
+    test("Context menu 'Remove keybinding' after adding second binding shows confirm dialog", async ({
       comfyPage
     }) => {
       const { page } = comfyPage
@@ -241,11 +247,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, SINGLE_BINDING_COMMAND)
       const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
 
-      await row.getByRole('button', { name: /Add new keybinding/i }).click()
-      const input = getKeybindingInput(page)
-      await expect(input).toBeVisible()
-      await pressComboOnInput(page, 'Control+Shift+F9')
-      await saveAndCloseKeybindingDialog(page)
+      await addKeybindingToRow(page, row, 'Control+Shift+F9')
 
       await openContextMenu(page, SINGLE_BINDING_COMMAND)
       await page.getByRole('menuitem', { name: /Remove keybinding/i }).click()
@@ -265,11 +267,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, SINGLE_BINDING_COMMAND)
       const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
 
-      await row.getByRole('button', { name: /Add new keybinding/i }).click()
-      const input = getKeybindingInput(page)
-      await expect(input).toBeVisible()
-      await pressComboOnInput(page, 'Control+Shift+F10')
-      await saveAndCloseKeybindingDialog(page)
+      await addKeybindingToRow(page, row, 'Control+Shift+F10')
 
       await openContextMenu(page, SINGLE_BINDING_COMMAND)
       await page.getByRole('menuitem', { name: /Reset to default/i }).click()
@@ -350,9 +348,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, SINGLE_BINDING_COMMAND)
       const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
 
-      await row.getByRole('button', { name: /Add new keybinding/i }).click()
-      await pressComboOnInput(page, 'Control+Shift+F11')
-      await saveAndCloseKeybindingDialog(page)
+      await addKeybindingToRow(page, row, 'Control+Shift+F11')
 
       const resetButton = row.getByRole('button', { name: /Reset/i })
       await expect(resetButton).toBeEnabled()
@@ -382,9 +378,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, NO_BINDING_COMMAND)
       const row = getCommandRow(page, NO_BINDING_COMMAND)
 
-      await row.getByRole('button', { name: /Add new keybinding/i }).click()
-      await pressComboOnInput(page, 'Control+Shift+F12')
-      await saveAndCloseKeybindingDialog(page)
+      await addKeybindingToRow(page, row, 'Control+Shift+F12')
 
       const deleteButton = row.getByRole('button', { name: /Delete/i })
       await expect(deleteButton).toBeEnabled()
@@ -474,9 +468,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await searchKeybindings(page, SINGLE_BINDING_COMMAND)
       const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
-      await row.getByRole('button', { name: /Add new keybinding/i }).click()
-      await pressComboOnInput(page, 'Control+Shift+F8')
-      await saveAndCloseKeybindingDialog(page)
+      await addKeybindingToRow(page, row, 'Control+Shift+F8')
 
       await expect(row.getByRole('button', { name: /Reset/i })).toBeEnabled()
 
