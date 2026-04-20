@@ -76,12 +76,24 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
     await expect(dialog.creditsInput).toHaveValue(expectedCredits(500))
   })
 
+  test('typing in credits stepper updates pay', async () => {
+    const credits = String(50 * CREDITS_PER_USD)
+
+    await dialog.creditsInput.fill('')
+    await dialog.creditsInput.pressSequentially(credits)
+    await dialog.creditsInput.blur()
+
+    await expect(dialog.payInput).toHaveValue('50')
+  })
+
   test('max ceiling warning appears when exceeding max', async () => {
     await dialog.payInput.fill('')
     await dialog.payInput.pressSequentially('99999')
+    await dialog.payInput.blur()
 
     await expect(dialog.ceilingWarning).toBeVisible()
     await expect(dialog.payInput).toHaveValue('10,000')
+    await expect(dialog.creditsInput).toHaveValue(expectedCredits(10_000))
   })
 
   test('min amount warning appears for values below minimum', async () => {
