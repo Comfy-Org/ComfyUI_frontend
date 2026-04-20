@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { isReadonly } from 'vue'
 
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 
@@ -397,5 +398,123 @@ describe('useTemplateUrlLoader', () => {
     }
 
     consoleSpy.mockRestore()
+  })
+
+  describe('loading state refs', () => {
+    it('returns readonly refs for isLoading, error, and isReady', () => {
+      const { isLoading, error, isReady } = useTemplateUrlLoader()
+
+      expect(isReadonly(isLoading)).toBe(true)
+      expect(isReadonly(error)).toBe(true)
+      expect(isReadonly(isReady)).toBe(true)
+    })
+
+    it('transitions refs through success lifecycle', async () => {
+      mockQueryParams = { template: 'flux_simple' }
+
+      let resolveLoadTemplates: (() => void) | undefined
+      mockLoadTemplates.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveLoadTemplates = resolve
+          })
+      )
+
+      const { loadTemplateFromUrl, isLoading, error, isReady } =
+        useTemplateUrlLoader()
+
+      expect(isLoading.value).toBe(false)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(false)
+
+      const loadPromise = loadTemplateFromUrl()
+
+      expect(isLoading.value).toBe(true)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(false)
+
+      resolveLoadTemplates?.()
+      await loadPromise
+
+      expect(isLoading.value).toBe(false)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(true)
+    })
+
+    it('sets isReady after failed template load without setting error', async () => {
+      mockQueryParams = { template: 'invalid-template' }
+      mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+
+      const { loadTemplateFromUrl, isLoading, error, isReady } =
+        useTemplateUrlLoader()
+
+      expect(isLoading.value).toBe(false)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(false)
+
+      await loadTemplateFromUrl()
+
+      expect(isLoading.value).toBe(false)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(true)
+    })
+
+    it('sets error and isReady when load throws', async () => {
+      mockQueryParams = { template: 'flux_simple' }
+      const thrownError = new Error('Network error')
+      mockLoadTemplates.mockRejectedValueOnce(thrownError)
+
+      const { loadTemplateFromUrl, isLoading, error, isReady } =
+        useTemplateUrlLoader()
+      const loadPromise = loadTemplateFromUrl()
+
+      expect(isLoading.value).toBe(true)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(false)
+
+      await loadPromise
+
+      expect(isLoading.value).toBe(false)
+      expect(error.value).toBe(thrownError)
+      expect(isReady.value).toBe(true)
+    })
+
+    it('keeps refs unchanged when template param is missing', async () => {
+      mockQueryParams = {}
+
+      const { loadTemplateFromUrl, isLoading, error, isReady } =
+        useTemplateUrlLoader()
+
+      await loadTemplateFromUrl()
+
+      expect(isLoading.value).toBe(false)
+      expect(error.value).toBe(null)
+      expect(isReady.value).toBe(false)
+      expect(mockLoadTemplates).not.toHaveBeenCalled()
+      expect(mockLoadWorkflowTemplate).not.toHaveBeenCalled()
+    })
+
+    it('keeps refs unchanged for invalid params before async work', async () => {
+      const invalidQueries: Record<string, string>[] = [
+        { template: '../../../etc/passwd' },
+        { template: 'flux_simple', source: '../malicious' },
+        { template: 'flux_simple', mode: '../malicious' }
+      ]
+
+      for (const query of invalidQueries) {
+        vi.clearAllMocks()
+        mockQueryParams = query
+
+        const { loadTemplateFromUrl, isLoading, error, isReady } =
+          useTemplateUrlLoader()
+
+        await loadTemplateFromUrl()
+
+        expect(isLoading.value).toBe(false)
+        expect(error.value).toBe(null)
+        expect(isReady.value).toBe(false)
+        expect(mockLoadTemplates).not.toHaveBeenCalled()
+      }
+    })
   })
 })
