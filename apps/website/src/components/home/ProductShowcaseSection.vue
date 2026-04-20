@@ -12,13 +12,13 @@ const features = [
   {
     title: t('showcase.feature1.title', locale),
     description: t('showcase.feature1.description', locale),
-    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
+    video:
+      'https://media.comfy.org/website/homepage/showcase/node-workflow.webm'
   },
   {
     title: t('showcase.feature2.title', locale),
     description: t('showcase.feature2.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/node-workflow.webm'
+    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
   },
   {
     title: t('showcase.feature3.title', locale),
