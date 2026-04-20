@@ -449,6 +449,25 @@ export class SubgraphHelper {
     await this.comfyPage.contextMenu.waitForHidden()
   }
 
+  async getInnerControlWidgetLabels(): Promise<string[]> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const subgraphNode = graph.nodes.find(
+        (n: { isSubgraphNode?: () => boolean }) =>
+          typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+      ) as { subgraph?: Subgraph } | undefined
+      if (!subgraphNode?.subgraph) return []
+      const innerNodes = Array.from(subgraphNode.subgraph.nodes.values())
+      return innerNodes.flatMap((n: { widgets?: Array<{ label?: string }> }) =>
+        (n.widgets ?? [])
+          .filter((w: { label?: string }) =>
+            (w.label ?? '').includes('control')
+          )
+          .map((w: { label?: string }) => w.label!)
+      )
+    })
+  }
+
   async findSubgraphNodeId(): Promise<string> {
     const id = await this.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
