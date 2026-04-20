@@ -37,11 +37,11 @@ Rules:
 
 Transformations:
 
-| Slack message (excerpt)                                                  | Title                                                |
-| ------------------------------------------------------------------------ | ---------------------------------------------------- |
-| "unet model dropdown doesnt display all available models..."             | Unet dropdown missing selected model                 |
-| "Dates are broken on Settings -> Secrets. Cloud Prod"                    | Settings → Secrets dates broken on cloud prod        |
-| "LTX-2: Audio to VIdeo template results in the "RuntimeError..." error"  | LTX-2 Audio-to-Video template RuntimeError on cloud  |
+| Slack message (excerpt)                                                 | Title                                               |
+| ----------------------------------------------------------------------- | --------------------------------------------------- |
+| "unet model dropdown doesnt display all available models..."            | Unet dropdown missing selected model                |
+| "Dates are broken on Settings -> Secrets. Cloud Prod"                   | Settings → Secrets dates broken on cloud prod       |
+| "LTX-2: Audio to VIdeo template results in the "RuntimeError..." error" | LTX-2 Audio-to-Video template RuntimeError on cloud |
 
 ## `description`
 
@@ -55,14 +55,14 @@ Structure — see `linear-api.md` Description Template. Key rules:
 
 Detect from message text using these terms:
 
-| Text in message              | Tag             |
-| ---------------------------- | --------------- |
-| `cloud prod`, `prod cloud`   | `cloud prod`    |
-| `cloud dev`                  | `cloud dev`     |
-| `cloud`                      | `cloud` (unqual.) |
-| `local`, `localhost`         | `local`         |
-| `electron`, `desktop`        | `electron`      |
-| `nodes 2.0`, `LG`            | (feature tag, not env) |
+| Text in message            | Tag                    |
+| -------------------------- | ---------------------- |
+| `cloud prod`, `prod cloud` | `cloud prod`           |
+| `cloud dev`                | `cloud dev`            |
+| `cloud`                    | `cloud` (unqual.)      |
+| `local`, `localhost`       | `local`                |
+| `electron`, `desktop`      | `electron`             |
+| `nodes 2.0`, `LG`          | (feature tag, not env) |
 
 A message can have multiple env tags. If none are detectable, set `env: []` and flag "env unclear" in the approval row.
 

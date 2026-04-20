@@ -24,12 +24,12 @@ Both markers are respected by Processed Detection on subsequent sweeps.
 
 ### Team emoji scheme (per Christian, 2026-04-18)
 
-| Emoji                  | Meaning             | Who adds it                                               | Skill behavior                                    |
-| ---------------------- | ------------------- | --------------------------------------------------------- | ------------------------------------------------- |
-| `:white_check_mark:`   | Ticket created      | Human on parent (after skill files); also in bot reply    | Skip in future sweeps                             |
-| `:pr-open:`            | PR open             | Human                                                     | Skip creation; include PR link in approval row    |
-| `:question:`           | Needs more context  | Human                                                     | Skip creation; agent may ask for clarification    |
-| `:repeat:`             | Duplicate           | Human                                                     | Skip creation; link existing Linear issue         |
+| Emoji                | Meaning            | Who adds it                                            | Skill behavior                                 |
+| -------------------- | ------------------ | ------------------------------------------------------ | ---------------------------------------------- |
+| `:white_check_mark:` | Ticket created     | Human on parent (after skill files); also in bot reply | Skip in future sweeps                          |
+| `:pr-open:`          | PR open            | Human                                                  | Skip creation; include PR link in approval row |
+| `:question:`         | Needs more context | Human                                                  | Skip creation; agent may ask for clarification |
+| `:repeat:`           | Duplicate          | Human                                                  | Skip creation; link existing Linear issue      |
 
 ## Design Priority
 
@@ -54,28 +54,28 @@ Christian's framing (2026-04-18): "we just need to sync the channel into a bette
 
 ## System Context
 
-| Item                | Value                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| Source channel      | `#bug-dump` (`C0A4XMHANP3`)                                      |
-| Destination         | Linear — default team: `Frontend Engineering` (resolve `teamId` and `key` at session start via `teams { nodes { id key name } }`)        |
-| Default state       | `Triage` — created tickets land here for downstream sorting      |
-| State dir           | `~/temp/bug-dump-ingest/`                                        |
-| Processed registry  | `~/temp/bug-dump-ingest/processed.json`                          |
-| Session log         | `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md`                   |
-| Drafts (no-MCP)     | `~/temp/bug-dump-ingest/drafts/*.md`                             |
+| Item               | Value                                                                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Source channel     | `#bug-dump` (`C0A4XMHANP3`)                                                                                                       |
+| Destination        | Linear — default team: `Frontend Engineering` (resolve `teamId` and `key` at session start via `teams { nodes { id key name } }`) |
+| Default state      | `Triage` — created tickets land here for downstream sorting                                                                       |
+| State dir          | `~/temp/bug-dump-ingest/`                                                                                                         |
+| Processed registry | `~/temp/bug-dump-ingest/processed.json`                                                                                           |
+| Session log        | `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md`                                                                                    |
+| Drafts (no-MCP)    | `~/temp/bug-dump-ingest/drafts/*.md`                                                                                              |
 
 ## Label Taxonomy
 
 Every created Linear issue MUST get the following labels (create labels in Linear if they don't exist yet):
 
-| Label kind    | Values                                                                   | Source                     |
-| ------------- | ------------------------------------------------------------------------ | -------------------------- |
-| `source:`     | `source:bug-dump`                                                        | Always (marks Slack sync)  |
-| `area:`       | `area:ui`, `area:node-system`, `area:workflow`, `area:cloud`, `area:templates` | Area Heuristics      |
-| `env:`        | `env:cloud-prod`, `env:cloud-dev`, `env:local`, `env:electron`           | Env Heuristics             |
-| `severity:`   | `sev:high`, `sev:medium`, `sev:low`                                      | Severity Heuristics        |
-| `reporter:`   | `reporter:<slack-handle>` (kebab-case)                                   | From message author        |
-| Status flags  | `needs-repro`, `needs-backend`, `regression`, `pr-open`                  | When applicable            |
+| Label kind   | Values                                                                         | Source                    |
+| ------------ | ------------------------------------------------------------------------------ | ------------------------- |
+| `source:`    | `source:bug-dump`                                                              | Always (marks Slack sync) |
+| `area:`      | `area:ui`, `area:node-system`, `area:workflow`, `area:cloud`, `area:templates` | Area Heuristics           |
+| `env:`       | `env:cloud-prod`, `env:cloud-dev`, `env:local`, `env:electron`                 | Env Heuristics            |
+| `severity:`  | `sev:high`, `sev:medium`, `sev:low`                                            | Severity Heuristics       |
+| `reporter:`  | `reporter:<slack-handle>` (kebab-case)                                         | From message author       |
+| Status flags | `needs-repro`, `needs-backend`, `regression`, `pr-open`                        | When applicable           |
 
 Label rules:
 
@@ -113,16 +113,16 @@ in:<#C0A4XMHANP3> -has::white_check_mark: -has::pr-open: -has::repeat: -has::que
 
 Before a candidate hits the approval batch, run cheap checks to demote obvious non-bugs. Goal: keep the approval table high-signal. This is not a full repro — just fast heuristics that catch the top false-positive classes.
 
-| Check                                   | Command / Signal                                                       | Demote-to   |
-| --------------------------------------- | ---------------------------------------------------------------------- | ----------- |
-| Reporter self-resolved in same msg      | "no action needed", "solved", "nvm", "fixed it"                        | `resolved`  |
-| Reporter self-resolved in thread        | `slack_read_thread` → reporter's last reply contains "solved"          | `resolved`  |
-| Fix PR merged on main                   | `gh search prs "in:title <keyword>" --state merged --limit 3`          | `fixed`     |
-| Fix PR open (already-filed)             | `gh search prs "<keyword>" --state open --limit 3`                     | `pr-open`   |
-| Linear issue exists (open)              | Linear `searchIssues` on title keywords → any open match               | `dedupe`    |
-| Behavior is documented / intended       | grep `docs/` and `src/locales/en/*.json` for the feature               | `expected`  |
-| Not reproducible — feature doesn't exist| grep `src/` for mentioned component/feature → 0 hits                   | `stale`     |
-| Env drift only (local setup issue)      | Thread contains "my machine", "my setup", "proxy" without others       | `env`       |
+| Check                                    | Command / Signal                                                 | Demote-to  |
+| ---------------------------------------- | ---------------------------------------------------------------- | ---------- |
+| Reporter self-resolved in same msg       | "no action needed", "solved", "nvm", "fixed it"                  | `resolved` |
+| Reporter self-resolved in thread         | `slack_read_thread` → reporter's last reply contains "solved"    | `resolved` |
+| Fix PR merged on main                    | `gh search prs "in:title <keyword>" --state merged --limit 3`    | `fixed`    |
+| Fix PR open (already-filed)              | `gh search prs "<keyword>" --state open --limit 3`               | `pr-open`  |
+| Linear issue exists (open)               | Linear `searchIssues` on title keywords → any open match         | `dedupe`   |
+| Behavior is documented / intended        | grep `docs/` and `src/locales/en/*.json` for the feature         | `expected` |
+| Not reproducible — feature doesn't exist | grep `src/` for mentioned component/feature → 0 hits             | `stale`    |
+| Env drift only (local setup issue)       | Thread contains "my machine", "my setup", "proxy" without others | `env`      |
 
 For each demoted candidate, record the demotion reason in the approval table as `Verify: <tag>` so the human can override if they disagree. Never hard-skip based on verification alone — always show the row with the demotion.
 
@@ -145,13 +145,13 @@ Keep verification under ~30s per candidate. If it takes longer, propose a ticket
 
 For each unprocessed top-level message, decide:
 
-| Class             | Signal                                                                                                   | Action                   |
-| ----------------- | -------------------------------------------------------------------------------------------------------- | ------------------------ |
-| **bug**           | Describes unexpected behavior, visual glitch, error, regression, crash. Usually has repro steps or media. | Propose Linear ticket    |
-| **discussion**    | Design question, rollout thoughts, team chatter, PR planning (e.g. "how about we make a PR to do...")    | Skip                     |
-| **question**      | User asking if something is expected or known                                                            | Skip unless answered = bug |
-| **meta**          | Channel joins, bot messages, cross-posts without content                                                 | Skip                     |
-| **already-filed** | Thread shows PR already open OR existing Linear link                                                     | Skip, log with existing link |
+| Class             | Signal                                                                                                    | Action                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **bug**           | Describes unexpected behavior, visual glitch, error, regression, crash. Usually has repro steps or media. | Propose Linear ticket        |
+| **discussion**    | Design question, rollout thoughts, team chatter, PR planning (e.g. "how about we make a PR to do...")     | Skip                         |
+| **question**      | User asking if something is expected or known                                                             | Skip unless answered = bug   |
+| **meta**          | Channel joins, bot messages, cross-posts without content                                                  | Skip                         |
+| **already-filed** | Thread shows PR already open OR existing Linear link                                                      | Skip, log with existing link |
 
 When ambiguous, default to **bug** and let the human decide in the approval batch.
 
@@ -169,9 +169,7 @@ Normalize each bug to this shape before presenting:
   "env": ["cloud prod"],
   "severity": "low | medium | high",
   "area": "ui | node-system | workflow | cloud | templates | unknown",
-  "attachments": [
-    { "name": "...", "id": "F...", "type": "image/png" }
-  ],
+  "attachments": [{ "name": "...", "id": "F...", "type": "image/png" }],
   "thread_resolution": "solved | open | none"
 }
 ```
@@ -396,11 +394,17 @@ Both tests MUST be written in the "red" commit BEFORE any fix code (per red-gree
 - **E2E test (Playwright)** — under `browser_tests/tests/`, follow `writing-playwright-tests` skill. Tag with `@regression` and include the Linear ID in the test title:
 
   ```typescript
-  test.describe('LIN-4710 unet dropdown regression', { tag: ['@regression'] }, () => {
-    test('keeps selected model visible in the dropdown', async ({ comfyPage }) => {
-      // ...
-    })
-  })
+  test.describe(
+    'LIN-4710 unet dropdown regression',
+    { tag: ['@regression'] },
+    () => {
+      test('keeps selected model visible in the dropdown', async ({
+        comfyPage
+      }) => {
+        // ...
+      })
+    }
+  )
   ```
 
 - **Mock data types** — follow `docs/guidance/playwright.md`: mock responses typed from `packages/ingest-types`, `packages/registry-types`, `src/schemas/` — never `as any`.
@@ -429,10 +433,10 @@ The red-green-fix skill's PR template is extended with a `Source` line:
 
 ## Red-Green Verification
 
-| Commit | CI Status | Purpose |
-|--------|-----------|---------|
-| `test: LIN-NNN add failing test for <bug>` | :red_circle: Red | Proves the test catches the bug |
-| `fix: <bug summary>` | :green_circle: Green | Proves the fix resolves the bug |
+| Commit                                     | CI Status            | Purpose                         |
+| ------------------------------------------ | -------------------- | ------------------------------- |
+| `test: LIN-NNN add failing test for <bug>` | :red_circle: Red     | Proves the test catches the bug |
+| `fix: <bug summary>`                       | :green_circle: Green | Proves the fix resolves the bug |
 
 ## Test Plan
 
@@ -448,20 +452,20 @@ After the PR merges, post the second thread reply on Slack (see Slack Thread Rep
 
 The agent cannot add reactions, but respects human-set reactions when filtering. The canonical team scheme (primary):
 
-| Reaction             | Meaning             | Action                                                   |
-| -------------------- | ------------------- | -------------------------------------------------------- |
-| `:white_check_mark:` | Ticket created      | Skip — already ingested                                  |
-| `:pr-open:`          | PR open             | Skip creation; record PR link in session log             |
-| `:question:`         | Needs more context  | Skip creation; agent may post a thread reply asking      |
-| `:repeat:`           | Duplicate           | Skip creation; link existing Linear issue in session log |
+| Reaction             | Meaning            | Action                                                   |
+| -------------------- | ------------------ | -------------------------------------------------------- |
+| `:white_check_mark:` | Ticket created     | Skip — already ingested                                  |
+| `:pr-open:`          | PR open            | Skip creation; record PR link in session log             |
+| `:question:`         | Needs more context | Skip creation; agent may post a thread reply asking      |
+| `:repeat:`           | Duplicate          | Skip creation; link existing Linear issue in session log |
 
 Incidental reactions observed in the channel — treat as soft hints only, do NOT skip solely on these:
 
-| Reaction     | Meaning              | Action                                                 |
-| ------------ | -------------------- | ------------------------------------------------------ |
-| `:eyes:`     | Someone is triaging  | Still ingestable                                       |
-| `:done:`     | Reporter resolved    | Demote to `resolved` in verify, but still show row     |
-| `:+1:`       | Acknowledged         | Ignore                                                 |
+| Reaction | Meaning             | Action                                             |
+| -------- | ------------------- | -------------------------------------------------- |
+| `:eyes:` | Someone is triaging | Still ingestable                                   |
+| `:done:` | Reporter resolved   | Demote to `resolved` in verify, but still show row |
+| `:+1:`   | Acknowledged        | Ignore                                             |
 
 Approval-table response code `R` (new) corresponds to `:repeat:` — if you pick `R`, the skill treats it as duplicate and asks for the target Linear ID.
 
