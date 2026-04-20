@@ -1,6 +1,6 @@
 import type { TranslationKey } from '../i18n/translations'
 
-export interface Demo {
+interface Demo {
   slug: string
   arcadeId: string
   category: TranslationKey
@@ -59,8 +59,4 @@ export function getDemoBySlug(slug: string): Demo | undefined {
 export function getNextDemo(slug: string): Demo {
   const index = demos.findIndex((demo) => demo.slug === slug)
   return demos[(index + 1) % demos.length]
-}
-
-export function getDemosByTag(tag: string): Demo[] {
-  return demos.filter((demo) => demo.tags.includes(tag))
 }
