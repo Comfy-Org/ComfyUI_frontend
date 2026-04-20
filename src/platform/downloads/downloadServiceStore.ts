@@ -37,8 +37,13 @@ export const useDownloadServiceStore = defineStore('downloadService', () => {
     if (!_initPromise) {
       _initPromise = createDownloadServiceProvider()
     }
-    _service = await _initPromise
-    service.value = _service
+    try {
+      _service = await _initPromise
+      service.value = _service
+    } catch (error) {
+      _initPromise = null
+      throw error
+    }
   }
 
   return { service, initialize }

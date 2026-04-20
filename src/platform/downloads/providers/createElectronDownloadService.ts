@@ -17,7 +17,8 @@ export function createElectronDownloadService(): DownloadService & {
     string,
     Set<(entry: DownloadEntry) => void>
   >()
-  const downloadManager = electronAPI().DownloadManager
+  const api = electronAPI()
+  const downloadManager = api?.DownloadManager
   if (!downloadManager) {
     throw new Error(
       'DownloadManager is unavailable. Verify Electron preload exposes DownloadManager.'
@@ -43,29 +44,35 @@ export function createElectronDownloadService(): DownloadService & {
   }
 
   let initialized = false
+  let initPromise: Promise<void> | null = null
 
   async function initialize() {
     if (initialized) return
-    initialized = true
-    try {
-      const existingDownloads = await downloadManager.getAllDownloads()
-      for (const download of existingDownloads) {
-        entries.set(download.url, {
-          id: download.url,
-          url: download.url,
-          filename: download.filename,
-          savePath: '',
-          status: download.state as DownloadStatus,
-          progress: download.totalBytes
-            ? download.receivedBytes / download.totalBytes
-            : 0
-        })
+    if (initPromise) return initPromise
+
+    initPromise = (async () => {
+      try {
+        const existingDownloads = await downloadManager.getAllDownloads()
+        for (const download of existingDownloads) {
+          entries.set(download.url, {
+            id: download.url,
+            url: download.url,
+            filename: download.filename,
+            savePath: '',
+            status: download.state as DownloadStatus,
+            progress: download.totalBytes
+              ? download.receivedBytes / download.totalBytes
+              : 0
+          })
+        }
+        downloadManager.onDownloadProgress(upsertFromProgress)
+        initialized = true
+      } finally {
+        initPromise = null
       }
-      downloadManager.onDownloadProgress(upsertFromProgress)
-    } catch (error) {
-      initialized = false
-      throw error
-    }
+    })()
+
+    return initPromise
   }
 
   async function start(params: DownloadStartParams): Promise<DownloadEntry> {
