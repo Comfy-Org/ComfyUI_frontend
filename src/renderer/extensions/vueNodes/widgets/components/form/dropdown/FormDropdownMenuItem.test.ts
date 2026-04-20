@@ -128,16 +128,20 @@ describe('FormDropdownMenuItem', () => {
   })
 
   describe('Selected state', () => {
+    const CHECK_SELECTOR = '.icon-\\[lucide--check\\]'
+
     it('renders a selection indicator when selected is true', () => {
       const { container } = renderItem({ selected: true })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('.icon-\\[lucide--check\\]')).toBeInTheDocument()
+      const checkIcon = container.querySelector(CHECK_SELECTOR)
+      expect(checkIcon).toBeInTheDocument()
     })
 
     it('does not render the selection indicator when selected is false', () => {
       const { container } = renderItem({ selected: false })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('.icon-\\[lucide--check\\]')).toBeNull()
+      const checkIcon = container.querySelector(CHECK_SELECTOR)
+      expect(checkIcon).toBeNull()
     })
   })
 })
