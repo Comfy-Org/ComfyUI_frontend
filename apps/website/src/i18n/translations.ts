@@ -1194,7 +1194,7 @@ const translations = {
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {
-    en: 'Built, tweaked, and dreamed in',
+    en: 'Built, Tweaked, and Dreamed in',
     'zh-CN': '在 ComfyUI 中构建、调整与创想'
   },
   'gallery.heroSubtitle': {
@@ -1212,10 +1212,10 @@ const translations = {
   // ContactSection
   'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'gallery.contact.heading': {
-    en: 'Questions? Reach out!',
-    'zh-CN': '有问题？联系我们！'
+    en: 'HAVE SOMETHING COOL TO SHARE?\nGET IN TOUCH.',
+    'zh-CN': '有精彩作品想要分享？\n联系我们。'
   },
-  'gallery.contact.cta': { en: 'CONTACT US', 'zh-CN': '联系我们' },
+  'gallery.contact.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
 
   // AboutHeroSection
   'about.hero.label': { en: 'ABOUT', 'zh-CN': '关于' },

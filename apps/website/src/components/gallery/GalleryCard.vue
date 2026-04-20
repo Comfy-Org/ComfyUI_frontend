@@ -24,7 +24,17 @@ defineEmits<{ click: [] }>()
       class="relative overflow-hidden rounded-2xl"
       :class="hero ? 'aspect-21/9' : mobile ? 'aspect-4/3' : 'aspect-3/2'"
     >
+      <video
+        v-if="item.video"
+        :src="item.video"
+        autoplay
+        loop
+        muted
+        playsinline
+        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+      />
       <img
+        v-else
         :src="item.image"
         :alt="item.title"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -42,11 +52,14 @@ defineEmits<{ click: [] }>()
               <span class="text-primary-comfy-yellow">{{
                 item.userAlias
               }}</span>
-              {{ t('gallery.card.and', locale) }}
-              <span class="text-primary-comfy-yellow">{{
-                item.teamAlias
-              }}</span>
-              {{ t('gallery.card.teamUsing', locale) }}
+              <template v-if="item.teamAlias">
+                {{ t('gallery.card.and', locale) }}
+                <span class="text-primary-comfy-yellow">{{
+                  item.teamAlias
+                }}</span>
+                {{ t('gallery.card.teamUsing', locale) }}
+              </template>
+              <template v-else> using </template>
               <span class="text-primary-comfy-yellow">{{ item.tool }}</span>
             </p>
           </div>
@@ -78,9 +91,12 @@ defineEmits<{ click: [] }>()
       <p class="text-primary-comfy-canvas text-xs">
         {{ t('gallery.card.by', locale) }}
         <span class="text-primary-comfy-yellow">{{ item.userAlias }}</span>
-        {{ t('gallery.card.and', locale) }}
-        <span class="text-primary-comfy-yellow">{{ item.teamAlias }}</span>
-        {{ t('gallery.card.teamUsing', locale) }}
+        <template v-if="item.teamAlias">
+          {{ t('gallery.card.and', locale) }}
+          <span class="text-primary-comfy-yellow">{{ item.teamAlias }}</span>
+          {{ t('gallery.card.teamUsing', locale) }}
+        </template>
+        <template v-else> using </template>
         <span class="text-primary-comfy-yellow">{{ item.tool }}</span>
       </p>
     </div>

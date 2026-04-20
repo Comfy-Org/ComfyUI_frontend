@@ -20,7 +20,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('gallery.contact.heading', locale) }}
     </h2>
     <a
-      href="mailto:contact@comfy.org"
+      href="mailto:hello@comfy.org"
       class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink mt-8 inline-flex items-center justify-center rounded-2xl border-2 px-8 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
     >
       {{ t('gallery.contact.cta', locale) }}
