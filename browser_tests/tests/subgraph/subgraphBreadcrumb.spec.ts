@@ -30,9 +30,19 @@ const enterNestedSubgraphs = async (comfyPage: ComfyPage) => {
     OUTER_SUBGRAPH_NODE_ID_IN_NESTED
   )
   await outerNode.navigateIntoSubgraph()
+
+  await expect
+    .poll(() => comfyPage.subgraph.getActiveGraphId())
+    .toBe(SUBGRAPH_2_ID)
+
   const innerSubgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
   const innerNode = await comfyPage.nodeOps.getNodeRefById(innerSubgraphNodeId)
+  await innerNode.centerOnNode()
   await innerNode.navigateIntoSubgraph()
+
+  await expect
+    .poll(() => comfyPage.subgraph.getActiveGraphId())
+    .toBe(SUBGRAPH_3_ID)
 }
 
 test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
@@ -66,17 +76,13 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
 
     await test.step('Descend to the deepest nested subgraph', async () => {
       await enterNestedSubgraphs(comfyPage)
-
-      await expect
-        .poll(() => subgraphBreadcrumb.getActiveGraphId())
-        .toBe(SUBGRAPH_3_ID)
     })
 
     await test.step('Back button pops one level', async () => {
       await subgraphBreadcrumb.clickBack()
 
       await expect
-        .poll(() => subgraphBreadcrumb.getActiveGraphId())
+        .poll(() => comfyPage.subgraph.getActiveGraphId())
         .toBe(SUBGRAPH_2_ID)
       await expect(subgraphBreadcrumb.panel.backButton).toBeVisible()
     })
@@ -96,15 +102,11 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await comfyPage.workflow.loadWorkflow(NESTED_WORKFLOW)
     await enterNestedSubgraphs(comfyPage)
 
-    await expect
-      .poll(() => subgraphBreadcrumb.getActiveGraphId())
-      .toBe(SUBGRAPH_3_ID)
-
     await test.step('Click the middle (subgraph 2) item', async () => {
       await subgraphBreadcrumb.clickItem(`subgraph-${SUBGRAPH_2_ID}`)
 
       await expect
-        .poll(() => subgraphBreadcrumb.getActiveGraphId())
+        .poll(() => comfyPage.subgraph.getActiveGraphId())
         .toBe(SUBGRAPH_2_ID)
     })
 
@@ -122,7 +124,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow(BASIC_WORKFLOW)
 
-    const rootGraphId = await subgraphBreadcrumb.getRootGraphId()
+    const rootGraphId = await comfyPage.subgraph.getRootGraphId()
     expect(
       rootGraphId,
       'Root graph id should be readable before navigating'
@@ -137,7 +139,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await subgraphBreadcrumb.clickItem('root')
 
     await expect
-      .poll(() => subgraphBreadcrumb.getActiveGraphId())
+      .poll(() => comfyPage.subgraph.getActiveGraphId())
       .toBe(rootGraphId)
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
   })
@@ -154,7 +156,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await subgraphNode.navigateIntoSubgraph()
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-    const activeGraphId = await subgraphBreadcrumb.getActiveGraphId()
+    const activeGraphId = await comfyPage.subgraph.getActiveGraphId()
     expect(activeGraphId).not.toBeNull()
     const menuKey = `subgraph-${activeGraphId}`
 
@@ -175,7 +177,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     )
     await outerNode.navigateIntoSubgraph()
     await expect
-      .poll(() => subgraphBreadcrumb.getActiveGraphId())
+      .poll(() => comfyPage.subgraph.getActiveGraphId())
       .toBe(SUBGRAPH_2_ID)
     await expect(subgraphBreadcrumb.panel.activeItem).toContainText(
       SUBGRAPH_2_NAME
@@ -236,7 +238,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await subgraphNode.navigateIntoSubgraph()
 
     await expect
-      .poll(() => subgraphBreadcrumb.getActiveGraphId())
+      .poll(() => comfyPage.subgraph.getActiveGraphId())
       .toBe(MISSING_NODES_SUBGRAPH_ID)
 
     await expect(subgraphBreadcrumb.panel.missingNodesIcon).toBeVisible()
@@ -248,10 +250,6 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow(NESTED_WORKFLOW)
     await enterNestedSubgraphs(comfyPage)
-
-    await expect
-      .poll(() => subgraphBreadcrumb.getActiveGraphId())
-      .toBe(SUBGRAPH_3_ID)
 
     await expect(subgraphBreadcrumb.panel.rootItem()).toBeAttached()
     await expect(
@@ -265,5 +263,51 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
       'data-testid',
       `subgraph-breadcrumb-item-subgraph-${SUBGRAPH_3_ID}`
     )
+  })
+
+  test('collapses when overflowing and expands when there is room', async ({
+    comfyPage,
+    subgraphBreadcrumb
+  }) => {
+    const { panel } = subgraphBreadcrumb
+    const rootItem = panel.rootItem()
+    const subgraph2Item = panel.subgraphItem(SUBGRAPH_2_ID)
+    const subgraph3Item = panel.subgraphItem(SUBGRAPH_3_ID)
+    const originalViewport = comfyPage.page.viewportSize()
+    expect(
+      originalViewport,
+      'Viewport size should be known before resizing'
+    ).not.toBeNull()
+
+    await comfyPage.workflow.loadWorkflow(NESTED_WORKFLOW)
+    await enterNestedSubgraphs(comfyPage)
+
+    await test.step('All items visible at default width', async () => {
+      await expect(panel.root).not.toHaveClass(/subgraph-breadcrumb-collapse/)
+      await expect(rootItem).toBeVisible()
+      await expect(subgraph2Item).toBeVisible()
+      await expect(subgraph3Item).toBeVisible()
+    })
+
+    await test.step('Shrinking the viewport collapses middle items', async () => {
+      await comfyPage.page.setViewportSize({
+        width: 680,
+        height: originalViewport!.height
+      })
+
+      await expect(panel.root).toHaveClass(/subgraph-breadcrumb-collapse/)
+      await expect(rootItem).toBeHidden()
+      await expect(subgraph2Item).toBeVisible()
+      await expect(subgraph3Item).toBeVisible()
+    })
+
+    await test.step('Restoring the viewport expands the breadcrumb again', async () => {
+      await comfyPage.page.setViewportSize(originalViewport!)
+
+      await expect(panel.root).not.toHaveClass(/subgraph-breadcrumb-collapse/)
+      await expect(rootItem).toBeVisible()
+      await expect(subgraph2Item).toBeVisible()
+      await expect(subgraph3Item).toBeVisible()
+    })
   })
 })
