@@ -94,6 +94,11 @@ describe('WidgetLayoutField', () => {
     })
   })
 
+  // user-event models clicks/keyboard but not raw pointerdown/move/up.
+  // fireEvent is the correct primitive for testing propagation stops on
+  // pointer events, so the testing-library/prefer-user-event rule is
+  // disabled within this block.
+  /* eslint-disable testing-library/prefer-user-event */
   describe('Pointer-event isolation', () => {
     // The slot wrapper stops pointerdown/move/up so inner controls can capture
     // drags without triggering node selection/drag on the outer canvas.
@@ -167,4 +172,5 @@ describe('WidgetLayoutField', () => {
       expect(parentSpy).not.toHaveBeenCalled()
     })
   })
+  /* eslint-enable testing-library/prefer-user-event */
 })
