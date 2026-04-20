@@ -15,6 +15,8 @@ export class AssetBrowserModal {
   public readonly fileNameText: Locator
   public readonly sourceLink: Locator
   public readonly modelTypeSelect: Locator
+  public readonly baseModelsField: Locator
+  public readonly additionalTagsField: Locator
   public readonly baseModelsInput: Locator
   public readonly additionalTagsInput: Locator
   public readonly descriptionText: Locator
@@ -48,8 +50,16 @@ export class AssetBrowserModal {
       .first()
 
     this.modelTypeSelect = this.modelTaggingSection.getByRole('combobox')
-    this.baseModelsInput = this.modelTaggingSection.locator('input').nth(0)
-    this.additionalTagsInput = this.modelTaggingSection.locator('input').nth(1)
+    this.baseModelsField = this.modelTaggingSection
+      .locator('div')
+      .filter({ hasText: /base model/i })
+      .first()
+    this.additionalTagsField = this.modelTaggingSection
+      .locator('div')
+      .filter({ hasText: /additional tag/i })
+      .first()
+    this.baseModelsInput = this.baseModelsField.locator('input')
+    this.additionalTagsInput = this.additionalTagsField.locator('input')
 
     this.descriptionText = this.modelDescriptionSection.locator('p').first()
     this.userDescriptionTextarea =
@@ -65,15 +75,29 @@ export class AssetBrowserModal {
     this.selectModelPrompt = this.root.locator('.wrap-break-word.text-muted')
   }
 
-  async clickAsset(name: string): Promise<void> {
-    await this.assetGrid
-      .locator('[data-component-id="AssetCard"]')
-      .filter({ hasText: name })
-      .first()
-      .click()
+  async clickAsset(name: string, assetId?: string): Promise<void> {
+    const assetCard = assetId
+      ? this.assetGrid.locator(
+          `[data-component-id="AssetCard"][data-asset-id="${assetId}"]`
+        )
+      : this.assetGrid.locator('[data-component-id="AssetCard"]').filter({
+          has: this.page.getByRole('heading', {
+            name,
+            exact: true
+          })
+        })
+
+    await assetCard.first().click()
   }
 
   async waitForModelInfoPanel(): Promise<void> {
     await this.modelInfoPanel.waitFor({ state: 'visible' })
+  }
+
+  async waitForAssetContent(text: string): Promise<void> {
+    await this.modelInfoPanel
+      .getByText(text, { exact: false })
+      .first()
+      .waitFor({ state: 'visible' })
   }
 }

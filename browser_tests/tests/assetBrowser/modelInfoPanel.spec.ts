@@ -12,6 +12,7 @@ import {
   assetToDisplayName,
   AssetBrowserHelper
 } from '@e2e/fixtures/helpers/AssetBrowserHelper'
+import type { TagMutationCall } from '@e2e/fixtures/helpers/AssetBrowserHelper'
 import { withAsset } from '@e2e/fixtures/helpers/AssetHelper'
 
 type MetadataBody = {
@@ -21,23 +22,27 @@ type MetadataBody = {
 test.describe('Asset Browser - ModelInfoPanel', () => {
   let modal: AssetBrowserModal
   let assetBrowserHelper: AssetBrowserHelper
-  let tagCalls: {
-    getCalls(): Array<{ method: string; body: { tags: string[] } }>
-  }
+  let tagCalls: { getCalls(): TagMutationCall[] }
 
   async function focusEditableModel() {
-    await modal.clickAsset(assetToDisplayName(EDITABLE_MODEL))
-    await modal.waitForModelInfoPanel()
+    await modal.clickAsset(
+      assetToDisplayName(EDITABLE_MODEL),
+      EDITABLE_MODEL.id
+    )
+    await modal.waitForAssetContent('cinematic_details_v2.safetensors')
   }
 
   async function focusImmutableModel() {
-    await modal.clickAsset(assetToDisplayName(IMMUTABLE_MODEL))
-    await modal.waitForModelInfoPanel()
+    await modal.clickAsset(
+      assetToDisplayName(IMMUTABLE_MODEL),
+      IMMUTABLE_MODEL.id
+    )
+    await modal.waitForAssetContent('sdxl_base_1.0.safetensors')
   }
 
   async function focusBareModel() {
-    await modal.clickAsset(assetToDisplayName(BARE_MODEL))
-    await modal.waitForModelInfoPanel()
+    await modal.clickAsset(assetToDisplayName(BARE_MODEL), BARE_MODEL.id)
+    await modal.waitForAssetContent('bare_checkpoint.safetensors')
   }
 
   function metadataMutations(comfyPage: {
@@ -72,7 +77,11 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
 
     assetBrowserHelper = new AssetBrowserHelper(comfyPage.page)
     await assetBrowserHelper.mockModelFolders(MOCK_MODEL_FOLDERS)
-    tagCalls = await assetBrowserHelper.mockAssetTags()
+    tagCalls = await assetBrowserHelper.mockAssetTags([
+      { id: EDITABLE_MODEL.id, tags: [...(EDITABLE_MODEL.tags ?? [])] },
+      { id: IMMUTABLE_MODEL.id, tags: [...(IMMUTABLE_MODEL.tags ?? [])] },
+      { id: BARE_MODEL.id, tags: [...(BARE_MODEL.tags ?? [])] }
+    ])
 
     await comfyPage.setup()
     await assetBrowserHelper.enableAssetApiSetting(comfyPage.page)
@@ -268,6 +277,10 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => tagCalls.getCalls().length)
         .toBeGreaterThan(initial)
+
+      const lastCall = tagCalls.getCalls().at(-1)
+      expect(lastCall).toBeDefined()
+      expect(lastCall?.body.tags).toContain('checkpoints')
     })
 
     test('selecting same model type does not send tag mutations', async () => {
@@ -309,6 +322,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => metadataMutations(comfyPage).length)
         .toBeGreaterThan(initial)
+
+      const lastBody = getLastMetadataBody(comfyPage)
+      expect(lastBody?.user_metadata?.base_model).toBeDefined()
     })
 
     test('removing a base model sends metadata update', async ({
@@ -316,7 +332,7 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     }) => {
       const initial = metadataMutations(comfyPage).length
 
-      const removeButtons = modal.modelTaggingSection.getByRole('button', {
+      const removeButtons = modal.baseModelsField.getByRole('button', {
         name: /remove/i
       })
       await removeButtons.first().click()
@@ -338,6 +354,9 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => metadataMutations(comfyPage).length)
         .toBeGreaterThan(initial)
+
+      const lastBody = getLastMetadataBody(comfyPage)
+      expect(lastBody?.user_metadata?.additional_tags).toBeDefined()
     })
 
     test('removing an additional tag sends metadata update', async ({
@@ -345,10 +364,10 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
     }) => {
       const initial = metadataMutations(comfyPage).length
 
-      const removeButtons = modal.modelTaggingSection.getByRole('button', {
+      const removeButtons = modal.additionalTagsField.getByRole('button', {
         name: /remove/i
       })
-      await removeButtons.nth(2).click()
+      await removeButtons.first().click()
 
       await expect
         .poll(() => metadataMutations(comfyPage).length)
@@ -410,14 +429,15 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
   })
 
   test.describe('7) Watchers & State Reset', () => {
-    test('switching assets resets display-name editing state', async () => {
-      await modal.editDisplayNameButton.click()
-      await expect(modal.displayNameInput).toBeVisible()
+    test('switching assets resets pending metadata updates', async () => {
+      await modal.userDescriptionTextarea.fill('pending draft')
 
       await focusBareModel()
       await focusEditableModel()
 
-      await expect(modal.displayNameInput).toBeHidden()
+      await expect(modal.userDescriptionTextarea).toHaveValue(
+        'Great for close-up portraits and high-frequency details.'
+      )
     })
 
     test('switching assets resets pending model-type state', async () => {
@@ -462,24 +482,13 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBe(initial)
     })
 
-    test('immutable asset skips debounced metadata flush', async ({
-      comfyPage
-    }) => {
+    test('immutable asset disables all editable controls', async () => {
       await focusImmutableModel()
 
-      const initialMetadata = metadataMutations(comfyPage).length
-      const initialTags = tagCalls.getCalls().length
-
-      await modal.userDescriptionTextarea.fill(
-        'should not persist for immutable'
-      )
-
-      await expect
-        .poll(() => metadataMutations(comfyPage).length, { timeout: 1200 })
-        .toBe(initialMetadata)
-      await expect
-        .poll(() => tagCalls.getCalls().length, { timeout: 1200 })
-        .toBe(initialTags)
+      await expect(modal.userDescriptionTextarea).toBeDisabled()
+      await expect(modal.baseModelsInput).toBeDisabled()
+      await expect(modal.additionalTagsInput).toBeDisabled()
+      await expect(modal.editDisplayNameButton).toBeHidden()
     })
   })
 })

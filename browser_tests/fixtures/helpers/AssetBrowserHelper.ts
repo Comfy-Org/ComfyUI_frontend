@@ -35,9 +35,17 @@ export class AssetBrowserHelper {
     await this.page.route(modelFoldersRoutePattern, handler)
   }
 
-  async mockAssetTags(): Promise<{ getCalls(): TagMutationCall[] }> {
+  async mockAssetTags(
+    initialAssets?: Array<{ id: string; tags: string[] }>
+  ): Promise<{ getCalls(): TagMutationCall[] }> {
     const calls: TagMutationCall[] = []
     const tagsByAssetId = new Map<string, string[]>()
+
+    if (initialAssets) {
+      for (const asset of initialAssets) {
+        tagsByAssetId.set(asset.id, [...asset.tags])
+      }
+    }
 
     const handler = async (route: Route) => {
       const request = route.request()
