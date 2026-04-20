@@ -95,7 +95,7 @@ describe('FormSearchInput', () => {
 
   describe('Searcher integration', () => {
     it('calls searcher immediately on mount with the initial query', async () => {
-      const searcher = vi.fn(async () => {})
+      const searcher = vi.fn<Searcher>(async () => {})
       renderSearch('initial', searcher)
       await vi.advanceTimersByTimeAsync(0)
       expect(searcher).toHaveBeenCalled()
@@ -103,7 +103,7 @@ describe('FormSearchInput', () => {
     })
 
     it('debounces user input before calling searcher again', async () => {
-      const searcher = vi.fn(async () => {})
+      const searcher = vi.fn<Searcher>(async () => {})
       const { query } = renderSearch('', searcher)
       await vi.advanceTimersByTimeAsync(0)
       searcher.mockClear()
@@ -122,7 +122,7 @@ describe('FormSearchInput', () => {
 
   describe('updateKey refresh', () => {
     it('reruns the searcher when updateKey changes even if the query is unchanged', async () => {
-      const searcher = vi.fn(async () => {})
+      const searcher = vi.fn<Searcher>(async () => {})
       const updateKey = ref(1)
       renderSearch('query', searcher, updateKey)
       await vi.advanceTimersByTimeAsync(0)
