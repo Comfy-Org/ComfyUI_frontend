@@ -103,7 +103,10 @@ onUnmounted(() => {
       </button>
 
       <!-- Desktop layout -->
-      <div class="relative hidden w-full items-start pt-12 lg:flex">
+      <div
+        class="relative hidden w-full items-start pt-12 lg:flex"
+        style="max-height: calc(100vh - 13rem)"
+      >
         <!-- Left: info card -->
         <div
           class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-5xl relative z-10 flex w-80 shrink-0 flex-col justify-between self-start p-8"
@@ -116,9 +119,12 @@ onUnmounted(() => {
             <p class="mt-2 text-xs">
               {{ t('gallery.card.by', locale) }}
               <span class="font-bold">{{ activeItem.userAlias }}</span>
-              {{ t('gallery.card.and', locale) }}
-              <span class="font-bold">{{ activeItem.teamAlias }}</span>
-              {{ t('gallery.card.teamUsing', locale) }}
+              <template v-if="activeItem.teamAlias">
+                {{ t('gallery.card.and', locale) }}
+                <span class="font-bold">{{ activeItem.teamAlias }}</span>
+                {{ t('gallery.card.teamUsing', locale) }}
+              </template>
+              <template v-else> using </template>
               <span class="font-bold">{{ activeItem.tool }}</span>
             </p>
           </div>
@@ -139,13 +145,20 @@ onUnmounted(() => {
 
         <!-- Right: large image -->
         <div
-          class="border-primary-comfy-yellow bg-primary-comfy-ink rounded-5xl flex-1 overflow-hidden border-2 p-4"
+          class="border-primary-comfy-yellow bg-primary-comfy-ink rounded-5xl flex max-h-full min-h-0 flex-1 items-center justify-center overflow-hidden border-2 p-4"
         >
-          <img
-            :src="activeItem.image"
-            :alt="activeItem.title"
+          <component
+            :is="activeItem.video ? 'video' : 'img'"
+            :key="activeItem.video ?? activeItem.image"
+            :src="activeItem.video ?? activeItem.image"
+            :alt="activeItem.video ? undefined : activeItem.title"
+            v-bind="
+              activeItem.video
+                ? { autoplay: true, loop: true, muted: true, playsinline: true }
+                : {}
+            "
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
-            class="size-full rounded-4xl object-cover transition-opacity duration-200"
+            class="mx-auto max-h-full max-w-full rounded-4xl object-contain transition-opacity duration-200"
           />
         </div>
       </div>
@@ -153,16 +166,24 @@ onUnmounted(() => {
       <!-- Mobile layout -->
       <div
         class="flex w-full flex-1 flex-col items-center justify-between pt-12 lg:hidden"
+        style="max-height: calc(100vh - 9.5rem)"
       >
         <!-- Image -->
         <div
           class="border-primary-comfy-yellow bg-primary-comfy-ink flex w-full flex-1 items-center overflow-hidden rounded-4xl border-2 p-3"
         >
-          <img
-            :src="activeItem.image"
-            :alt="activeItem.title"
+          <component
+            :is="activeItem.video ? 'video' : 'img'"
+            :key="activeItem.video ?? activeItem.image"
+            :src="activeItem.video ?? activeItem.image"
+            :alt="activeItem.video ? undefined : activeItem.title"
+            v-bind="
+              activeItem.video
+                ? { autoplay: true, loop: true, muted: true, playsinline: true }
+                : {}
+            "
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
-            class="w-full rounded-3xl object-cover transition-opacity duration-200"
+            class="mx-auto max-h-full max-w-full rounded-3xl object-contain transition-opacity duration-200"
           />
         </div>
 
@@ -185,9 +206,12 @@ onUnmounted(() => {
             <p class="mt-2 text-xs">
               {{ t('gallery.card.by', locale) }}
               <span class="font-bold">{{ activeItem.userAlias }}</span>
-              {{ t('gallery.card.and', locale) }}
-              <span class="font-bold">{{ activeItem.teamAlias }}</span>
-              {{ t('gallery.card.teamUsing', locale) }}
+              <template v-if="activeItem.teamAlias">
+                {{ t('gallery.card.and', locale) }}
+                <span class="font-bold">{{ activeItem.teamAlias }}</span>
+                {{ t('gallery.card.teamUsing', locale) }}
+              </template>
+              <template v-else> using </template>
               <span class="font-bold">{{ activeItem.tool }}</span>
             </p>
           </div>
@@ -201,7 +225,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Thumbnail strip -->
-      <div class="mx-auto mt-6 max-w-full overflow-x-auto px-6">
+      <div class="scrollbar-none mx-auto mt-6 max-w-full overflow-x-auto px-6">
         <div class="flex items-end gap-3">
           <button
             v-for="(item, i) in items"
@@ -219,7 +243,15 @@ onUnmounted(() => {
             "
             @click="selectThumbnail(i)"
           >
+            <video
+              v-if="item.video"
+              :src="item.video"
+              muted
+              playsinline
+              class="size-full object-cover"
+            />
             <img
+              v-else
               :src="item.image"
               :alt="item.title"
               class="size-full object-cover"
