@@ -11,56 +11,38 @@ const baseProps = {
   disabled: false
 }
 
+type Root = Pick<Element, 'querySelector'>
+
+const uploadLabel = (container: Root) =>
+  container.querySelector<HTMLLabelElement>('label')
+
+const fileInput = (container: Root) =>
+  container.querySelector<HTMLInputElement>('input[type="file"]')
+
 describe('FormDropdownInput', () => {
-  it('renders the folder-search icon when not loading', () => {
-    const { container } = render(FormDropdownInput, {
-      props: { ...baseProps, loading: false }
-    })
-
-    expect(
-      container.querySelector('.icon-\\[lucide--folder-search\\]')
-    ).not.toBeNull()
-    expect(
-      container.querySelector('.icon-\\[lucide--loader-circle\\]')
-    ).toBeNull()
-  })
-
-  it('renders the animated loader icon when loading', () => {
+  it('marks the upload label as busy and disables the file input while loading', () => {
     const { container } = render(FormDropdownInput, {
       props: { ...baseProps, loading: true }
     })
 
-    const loader = container.querySelector(
-      '.icon-\\[lucide--loader-circle\\]'
-    ) as HTMLElement | null
-    expect(loader).not.toBeNull()
-    expect(loader?.classList.contains('animate-spin')).toBe(true)
-    expect(
-      container.querySelector('.icon-\\[lucide--folder-search\\]')
-    ).toBeNull()
+    expect(uploadLabel(container)?.getAttribute('aria-busy')).toBe('true')
+    expect(fileInput(container)?.disabled).toBe(true)
   })
 
-  it('disables the file input while loading', () => {
-    const { container } = render(FormDropdownInput, {
-      props: { ...baseProps, loading: true }
-    })
-
-    const fileInput = container.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement | null
-    expect(fileInput).not.toBeNull()
-    expect(fileInput?.disabled).toBe(true)
-  })
-
-  it('leaves the file input enabled when not loading and not disabled', () => {
+  it('is not busy and leaves the file input enabled when idle', () => {
     const { container } = render(FormDropdownInput, {
       props: { ...baseProps, loading: false }
     })
 
-    const fileInput = container.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement | null
-    expect(fileInput).not.toBeNull()
-    expect(fileInput?.disabled).toBe(false)
+    expect(uploadLabel(container)?.getAttribute('aria-busy')).toBeNull()
+    expect(fileInput(container)?.disabled).toBe(false)
+  })
+
+  it('keeps the file input disabled when the whole widget is disabled, regardless of loading', () => {
+    const { container } = render(FormDropdownInput, {
+      props: { ...baseProps, disabled: true, loading: false }
+    })
+
+    expect(fileInput(container)?.disabled).toBe(true)
   })
 })

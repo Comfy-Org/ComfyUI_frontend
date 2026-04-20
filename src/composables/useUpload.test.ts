@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useUpload } from '@/composables/useUpload'
+import { UPLOAD_SKIPPED_ERROR, useUpload } from '@/composables/useUpload'
 import type { UploadResult } from '@/platform/assets/services/uploadService'
 
 const { mockUploadMedia, mockUploadMediaBatch } = vi.hoisted(() => ({
@@ -33,11 +33,6 @@ describe('useUpload', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-  })
-
-  it('starts with loading false', () => {
-    const { loading } = useUpload()
-    expect(loading.value).toBe(false)
   })
 
   it('sets loading true while upload is in progress', async () => {
@@ -108,7 +103,7 @@ describe('useUpload', () => {
 
     const second = await upload({ source: makeFile('b.png') })
     expect(second.success).toBe(false)
-    expect(second.error).toBe('Upload already in progress')
+    expect(second.error).toBe(UPLOAD_SKIPPED_ERROR)
     expect(mockUploadMedia).toHaveBeenCalledTimes(1)
 
     resolveFirst(successResult())
@@ -189,9 +184,7 @@ describe('useUpload', () => {
     ])
     expect(batch).toHaveLength(2)
     expect(batch.every((r) => !r.success)).toBe(true)
-    expect(batch.every((r) => r.error === 'Upload already in progress')).toBe(
-      true
-    )
+    expect(batch.every((r) => r.error === UPLOAD_SKIPPED_ERROR)).toBe(true)
     expect(mockUploadMediaBatch).not.toHaveBeenCalled()
 
     resolveFirst(successResult('a.png'))

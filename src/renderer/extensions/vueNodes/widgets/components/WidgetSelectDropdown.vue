@@ -4,7 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { useUpload } from '@/composables/useUpload'
+import { UPLOAD_SKIPPED_ERROR, useUpload } from '@/composables/useUpload'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -373,7 +373,11 @@ const uploadFiles = async (files: File[]): Promise<string[]> => {
 
   const failedUploads = results.filter((r) => !r.success)
   for (const failed of failedUploads) {
-    toastStore.addAlert(failed.error || t('toastMessages.uploadFailed'))
+    if (failed.error === UPLOAD_SKIPPED_ERROR) {
+      toastStore.addAlert(t('g.uploadAlreadyInProgress'))
+    } else {
+      toastStore.addAlert(failed.error || t('toastMessages.uploadFailed'))
+    }
   }
 
   const successfulPaths = results.filter((r) => r.success).map((r) => r.path)

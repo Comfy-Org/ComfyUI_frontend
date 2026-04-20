@@ -10,13 +10,15 @@ import type {
   UploadResult
 } from '@/platform/assets/services/uploadService'
 
+export const UPLOAD_SKIPPED_ERROR = 'UPLOAD_SKIPPED_ALREADY_IN_PROGRESS'
+
 function skippedResult(): UploadResult {
   return {
     success: false,
     path: '',
     name: '',
     subfolder: '',
-    error: 'Upload already in progress',
+    error: UPLOAD_SKIPPED_ERROR,
     response: null
   }
 }
@@ -24,8 +26,10 @@ function skippedResult(): UploadResult {
 /**
  * Loading-state wrapper around `uploadMedia` / `uploadMediaBatch`.
  * Concurrent calls while `loading` is true resolve to an unsuccessful
- * `UploadResult` (matches `uploadMedia`'s error-as-value pattern —
- * callers check `result.success`, not `try/catch`).
+ * `UploadResult` with `error === UPLOAD_SKIPPED_ERROR` (matches
+ * `uploadMedia`'s error-as-value pattern — callers check
+ * `result.success`, not `try/catch`). Consumers surfacing errors to
+ * the user should localize this sentinel at the UI boundary.
  */
 export function useUpload() {
   const loading = ref(false)
