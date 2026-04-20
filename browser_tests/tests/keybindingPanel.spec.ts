@@ -408,6 +408,8 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await expect(confirmDialog).toBeVisible()
 
       await confirmDialog.getByRole('button', { name: /Cancel/i }).click()
+      await expect(confirmDialog).toBeHidden()
+      await expect(row.locator('td').nth(1)).not.toContainText('-')
     })
   })
 
