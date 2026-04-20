@@ -177,9 +177,7 @@ describe('WidgetImageCrop', () => {
       primeCropState()
       renderWidget()
       expect(screen.getByTestId('crop-empty-state')).toBeInTheDocument()
-      expect(
-        screen.getByText('No input image connected')
-      ).toBeInTheDocument()
+      expect(screen.getByText('No input image connected')).toBeInTheDocument()
     })
 
     it('shows the loading message when isLoading is true', () => {
@@ -206,9 +204,7 @@ describe('WidgetImageCrop', () => {
 
   describe('Disabled state', () => {
     it('hides the ratio controls when widget is disabled', () => {
-      renderWidget(
-        makeWidget({ options: { disabled: true } })
-      )
+      renderWidget(makeWidget({ options: { disabled: true } }))
       expect(screen.queryByText('Ratio')).toBeNull()
     })
 
@@ -226,9 +222,7 @@ describe('WidgetImageCrop', () => {
   describe('Bounds delegation', () => {
     it('forwards v-model to the bounding box child', () => {
       renderWidget(undefined, { x: 5, y: 10, width: 100, height: 200 })
-      const parsed = JSON.parse(
-        screen.getByTestId('bbox-child').dataset.model!
-      )
+      const parsed = JSON.parse(screen.getByTestId('bbox-child').dataset.model!)
       expect(parsed).toEqual({ x: 5, y: 10, width: 100, height: 200 })
     })
 
@@ -249,9 +243,7 @@ describe('WidgetImageCrop', () => {
         }),
         { x: 0, y: 0, width: 512, height: 512 }
       )
-      const parsed = JSON.parse(
-        screen.getByTestId('bbox-child').dataset.model!
-      )
+      const parsed = JSON.parse(screen.getByTestId('bbox-child').dataset.model!)
       expect(parsed).toEqual({ x: 7, y: 8, width: 20, height: 30 })
     })
   })

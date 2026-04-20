@@ -58,7 +58,9 @@ const RangeEditorStub = defineComponent({
 
 function makeWidget(
   options: Partial<IWidgetRangeOptions> = {},
-  widgetOverrides: Partial<SimplifiedWidget<RangeValue, IWidgetRangeOptions>> = {}
+  widgetOverrides: Partial<
+    SimplifiedWidget<RangeValue, IWidgetRangeOptions>
+  > = {}
 ): SimplifiedWidget<RangeValue, IWidgetRangeOptions> {
   return {
     name: 'range_w',
@@ -132,10 +134,9 @@ describe('WidgetRange', () => {
     it('shows upstream value when disabled with a valid upstream', () => {
       setUpstream({ min: 0.3, max: 0.7 })
       renderWidget(
-        makeWidget(
-          { disabled: true } as IWidgetRangeOptions,
-          { linkedUpstream: { nodeId: 'n1' } }
-        ),
+        makeWidget({ disabled: true } as IWidgetRangeOptions, {
+          linkedUpstream: { nodeId: 'n1' }
+        }),
         { min: 0, max: 1 }
       )
       const el = screen.getByTestId('range-editor')
@@ -144,10 +145,10 @@ describe('WidgetRange', () => {
 
     it('ignores upstream value when not disabled', () => {
       setUpstream({ min: 0.3, max: 0.7 })
-      renderWidget(
-        makeWidget({}, { linkedUpstream: { nodeId: 'n1' } }),
-        { min: 0, max: 1 }
-      )
+      renderWidget(makeWidget({}, { linkedUpstream: { nodeId: 'n1' } }), {
+        min: 0,
+        max: 1
+      })
       const el = screen.getByTestId('range-editor')
       expect(JSON.parse(el.dataset.model!)).toEqual({ min: 0, max: 1 })
     })
@@ -165,9 +166,7 @@ describe('WidgetRange', () => {
       outputsHolder.nodeOutputs = {
         loc1: { histogram_range_w: [1, 2, 3, 4] }
       }
-      renderWidget(
-        makeWidget({}, { nodeLocatorId: 'loc1' })
-      )
+      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'true'
       )
@@ -177,13 +176,10 @@ describe('WidgetRange', () => {
       outputsHolder.nodeOutputs = {
         loc1: { histogram_range_w: [] }
       }
-      renderWidget(
-        makeWidget({}, { nodeLocatorId: 'loc1' })
-      )
+      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'
       )
     })
   })
 })
-

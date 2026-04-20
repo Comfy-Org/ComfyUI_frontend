@@ -46,8 +46,7 @@ function renderBox(initial: Bounds, disabled = false) {
   const Harness = defineComponent({
     components: { WidgetBoundingBox },
     setup: () => ({ value, disabled }),
-    template:
-      '<WidgetBoundingBox v-model="value" :disabled="disabled" />'
+    template: '<WidgetBoundingBox v-model="value" :disabled="disabled" />'
   })
   const utils = render(Harness, {
     global: {
@@ -72,9 +71,7 @@ describe('WidgetBoundingBox', () => {
   describe('Initial values', () => {
     it('displays the initial bounds across four inputs', () => {
       renderBox({ x: 10, y: 20, width: 300, height: 400 })
-      const inputs = screen.getAllByRole(
-        'spinbutton'
-      ) as HTMLInputElement[]
+      const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
       expect(inputs.map((i) => i.value)).toEqual(['10', '20', '300', '400'])
     })
   })
@@ -93,9 +90,7 @@ describe('WidgetBoundingBox', () => {
   describe('v-model updates', () => {
     it('updates x immutably, preserving y/width/height', async () => {
       const { value } = renderBox({ x: 10, y: 20, width: 100, height: 200 })
-      const inputs = screen.getAllByRole(
-        'spinbutton'
-      ) as HTMLInputElement[]
+      const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
       const user = userEvent.setup()
       await user.clear(inputs[0])
       await user.type(inputs[0], '55')
@@ -110,9 +105,7 @@ describe('WidgetBoundingBox', () => {
     it('updates height immutably without mutating the original bounds', async () => {
       const initial = { x: 10, y: 20, width: 100, height: 200 }
       const { value } = renderBox(initial)
-      const inputs = screen.getAllByRole(
-        'spinbutton'
-      ) as HTMLInputElement[]
+      const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
       const user = userEvent.setup()
       await user.clear(inputs[3])
       await user.type(inputs[3], '500')
