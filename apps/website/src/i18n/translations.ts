@@ -799,9 +799,9 @@ const translations = {
     en: 'Nano Banana Pro',
     'zh-CN': 'Nano Banana Pro'
   },
-  'cloud.aiModels.card.seendance20': {
-    en: 'Seendance 2.0',
-    'zh-CN': 'Seendance 2.0'
+  'cloud.aiModels.card.seedance20': {
+    en: 'Seedance 2.0',
+    'zh-CN': 'Seedance 2.0'
   },
   'cloud.aiModels.card.qwenImageEdit': {
     en: 'Qwen\nImage Edit',
