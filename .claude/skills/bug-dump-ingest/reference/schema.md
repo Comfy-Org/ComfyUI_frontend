@@ -10,7 +10,7 @@ The top-level message timestamp from `slack_read_channel` response (`Message TS:
 
 Construct:
 
-```
+```text
 https://comfy-organization.slack.com/archives/C0A4XMHANP3/p<ts-without-dot>
 ```
 
