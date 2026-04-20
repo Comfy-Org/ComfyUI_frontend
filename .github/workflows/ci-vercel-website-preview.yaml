@@ -33,13 +33,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: '.nvmrc'
-
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -130,13 +130,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: '.nvmrc'
-
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
