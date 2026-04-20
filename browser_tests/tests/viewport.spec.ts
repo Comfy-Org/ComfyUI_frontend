@@ -34,9 +34,8 @@ test.describe('Viewport', { tag: ['@screenshot', '@smoke', '@canvas'] }, () => {
         { message: 'All nodes should be within the visible viewport' }
       )
       .toBe(true)
-    await comfyPage.nextFrame()
-
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await comfyPage.expectScreenshot(
+      comfyPage.canvas,
       'viewport-fits-when-saved-offscreen.png'
     )
   })

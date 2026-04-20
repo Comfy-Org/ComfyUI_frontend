@@ -4,10 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Focus Mode', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
-
   test('Focus mode hides UI chrome', async ({ comfyPage }) => {
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
 
@@ -58,5 +54,31 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
 
     await comfyPage.setFocusMode(true)
     await expect(comfyPage.menu.sideToolbar).toBeHidden()
+  })
+
+  test('Focus mode toggle preserves properties panel width', async ({
+    comfyPage
+  }) => {
+    // Open the properties panel
+    await comfyPage.actionbar.propertiesButton.click()
+    await expect(comfyPage.menu.propertiesPanel.root).toBeVisible()
+
+    // Record the initial panel width
+    const initialBox = await comfyPage.menu.propertiesPanel.root.boundingBox()
+    expect(initialBox).not.toBeNull()
+    const initialWidth = initialBox!.width
+
+    // Toggle focus mode on then off
+    await comfyPage.setFocusMode(true)
+    await comfyPage.setFocusMode(false)
+
+    // Properties panel should be visible again with the same width
+    await expect(comfyPage.menu.propertiesPanel.root).toBeVisible()
+    await expect
+      .poll(async () => {
+        const box = await comfyPage.menu.propertiesPanel.root.boundingBox()
+        return box ? Math.abs(box.width - initialWidth) : Infinity
+      })
+      .toBeLessThan(2)
   })
 })

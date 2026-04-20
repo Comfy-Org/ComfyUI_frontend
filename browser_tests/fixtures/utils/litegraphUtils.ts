@@ -4,6 +4,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 import { ManageGroupNode } from '@e2e/helpers/manageGroupNode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {
@@ -331,6 +332,22 @@ export class NodeReference {
   async isCollapsed() {
     return !!(await this.getFlags()).collapsed
   }
+  /**
+   * Toggle the node's collapsed state by simulating the same user interaction
+   * the runtime uses: DOM collapse button click in Vue mode, canvas icon click
+   * in legacy mode. Mode is detected by the presence of a Vue-rendered DOM
+   * element with `data-node-id`.
+   */
+  async toggleCollapse() {
+    const vueLocator = this.comfyPage.page.locator(
+      `[data-node-id="${this.id}"]`
+    )
+    if ((await vueLocator.count()) > 0) {
+      await new VueNodeFixture(vueLocator).toggleCollapse()
+      return
+    }
+    await this.click('collapse')
+  }
   async isBypassed() {
     return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
@@ -388,7 +405,6 @@ export class NodeReference {
   async copy() {
     await this.click('title')
     await this.comfyPage.clipboard.copy()
-    await this.comfyPage.nextFrame()
   }
   async delete(): Promise<void> {
     await this.click('title')
@@ -434,7 +450,6 @@ export class NodeReference {
   async convertToGroupNode(groupNodeName: string = 'GroupNode') {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.nodeOps.fillPromptDialog(groupNodeName)
-    await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
       `workflow>${groupNodeName}`
     )

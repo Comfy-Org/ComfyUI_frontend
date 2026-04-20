@@ -38,13 +38,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       const nodeToClone = await comfyPage.nodeOps.getNodeRefById(String(nodeId))
       await nodeToClone.click('title')
-      await comfyPage.nextFrame()
 
-      await comfyPage.page.keyboard.press('ControlOrMeta+c')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('ControlOrMeta+c')
 
-      await comfyPage.page.keyboard.press('ControlOrMeta+v')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('ControlOrMeta+v')
 
       await expect
         .poll(() => comfyPage.subgraph.getNodeCount())

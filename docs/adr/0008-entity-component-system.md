@@ -26,6 +26,8 @@ An Entity Component System (ECS) separates **identity** (entities), **data** (co
 - **Tight rendering coupling**: Visual properties (color, position, bounding rect) are interleaved with domain logic (execution order, slot types)
 - **No unified entity model**: Each entity kind uses different ID types, ownership patterns, and lifecycle management
 
+For the full problem catalog with line-level code references, see [Entity System Structural Problems](../architecture/entity-problems.md). For a map of all current entity relationships, see [Entity Interactions](../architecture/entity-interactions.md).
+
 ## Decision
 
 Adopt an Entity Component System architecture for the graph domain model. This ADR defines the entity taxonomy, ID strategy, and component decomposition. Implementation will be incremental — existing classes remain untouched initially and will be migrated piecewise.
@@ -172,7 +174,7 @@ Systems are pure functions that query the World for entities with specific compo
 - **LayoutSystem** — queries `Position` + `Dimensions` + structural components for auto-layout
 - **SelectionSystem** — queries `Position` for point entities and `Position` + `Dimensions` for box hit-testing
 
-System design is deferred to a future ADR.
+System design is deferred to a future ADR. For detailed before/after walkthroughs of how lifecycle operations (node removal, link creation, subgraph nesting, etc.) transform under ECS, see [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md).
 
 ### Migration Strategy
 
@@ -181,6 +183,8 @@ System design is deferred to a future ADR.
 3. **New features first** — any new cross-cutting feature (e.g., CRDT sync) builds on ECS components rather than class properties
 4. **Incremental extraction** — migrate one component at a time from classes to the World, using the bridge layer for backward compatibility
 5. **Deprecate class properties** — once all consumers read from the World, mark class properties as deprecated
+
+For the phased migration roadmap with shipping milestones, see [ECS Migration Plan](../architecture/ecs-migration-plan.md). For the full target architecture, see [ECS Target Architecture](../architecture/ecs-target-architecture.md). For an inventory of existing stores that already partially implement ECS patterns, see [Proto-ECS Stores](../architecture/proto-ecs-stores.md).
 
 ### Relationship to ADR 0003 (Command Pattern / CRDT)
 
@@ -230,6 +234,23 @@ Planned mitigations for the ECS render path:
 5. Treat parity as a release gate: ECS render path must stay within agreed frame-time budgets (for example, no statistically significant regression in p95 frame time on representative 200-node and 500-node workflows).
 
 The design goal is to preserve ECS modularity while keeping render throughput within existing frame-time budgets.
+
+## Supporting Documents
+
+Companion architecture documents that expand on the design in this ADR:
+
+| Document                                                                                         | Description                                                                                 |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [Entity Interactions](../architecture/entity-interactions.md)                                    | Maps all current entity relationships and interaction patterns — the ECS migration baseline |
+| [Entity System Structural Problems](../architecture/entity-problems.md)                          | Detailed problem catalog with line-level code references motivating the ECS migration       |
+| [Proto-ECS Stores](../architecture/proto-ecs-stores.md)                                          | Inventory of existing Pinia stores that already partially implement ECS patterns            |
+| [ECS Target Architecture](../architecture/ecs-target-architecture.md)                            | Full target architecture showing how entities and interactions transform under ECS          |
+| [ECS Migration Plan](../architecture/ecs-migration-plan.md)                                      | Phased migration roadmap with shipping milestones and go/no-go criteria                     |
+| [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md)                            | Before/after walkthroughs of lifecycle operations (node removal, link creation, etc.)       |
+| [World API and Command Layer](../architecture/ecs-world-command-api.md)                          | How each lifecycle scenario maps to a command in the World API                              |
+| [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) | Design rationale for modeling subgraphs as node components, not separate entities           |
+| [Appendix: Critical Analysis](../architecture/appendix-critical-analysis.md)                     | Independent verification of the accuracy of the architecture documents                      |
+| [Change Tracker](../architecture/change-tracker.md)                                              | Documents the current undo/redo system that ECS cross-cutting concerns will replace         |
 
 ## Notes
 
