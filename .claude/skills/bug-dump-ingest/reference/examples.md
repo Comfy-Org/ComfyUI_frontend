@@ -19,7 +19,7 @@ Real #bug-dump messages (2026-04-17 → 2026-04-20) normalized through the skill
 
 **Approval row**:
 
-```
+```text
  1 | wavey, 04-20 08:06 | Unet dropdown missing selected model | cloud | low | ui | N | N (reporter marked solved)
 ```
 
