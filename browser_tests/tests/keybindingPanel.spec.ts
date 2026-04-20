@@ -448,11 +448,11 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const bindingRows = expansionContent.locator(
         '.flex.items-center.justify-between'
       )
-      const initialCount = await bindingRows.count()
-      expect(
-        initialCount,
-        'Expected at least 2 bindings'
-      ).toBeGreaterThanOrEqual(2)
+      await expect
+        .poll(() => bindingRows.count(), {
+          message: 'Expected at least 2 bindings'
+        })
+        .toBeGreaterThanOrEqual(2)
 
       await bindingRows
         .first()
