@@ -1,6 +1,8 @@
 <template>
   <div
+    ref="containerRef"
     class="relative max-h-[200px] min-h-[28px] w-full overflow-y-auto rounded-lg px-4 py-2 text-xs"
+    @wheel="handleWheel"
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
@@ -13,7 +15,7 @@
 
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -23,6 +25,28 @@ const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{
   nodeId: NodeId
 }>()
+
+const containerRef = useTemplateRef<HTMLElement>('containerRef')
+
+function handleWheel(event: WheelEvent) {
+  const container = containerRef.value
+  if (!container) return
+
+  const isScrollable = container.scrollHeight > container.clientHeight
+  if (!isScrollable) return
+
+  const { scrollTop, scrollHeight, clientHeight } = container
+  const isScrollingUp = event.deltaY < 0
+  const isScrollingDown = event.deltaY > 0
+
+  const scrollTolerance = 1
+  const isAtTop = Math.abs(scrollTop) <= scrollTolerance
+  const isAtBottom = scrollTop + clientHeight >= scrollHeight - scrollTolerance
+
+  if ((isScrollingUp && !isAtTop) || (isScrollingDown && !isAtBottom)) {
+    event.stopPropagation()
+  }
+}
 
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = ref(true)
