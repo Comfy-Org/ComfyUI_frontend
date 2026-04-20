@@ -11,7 +11,7 @@ type ModelCard = {
   titleKey:
     | 'cloud.aiModels.card.grokImagine'
     | 'cloud.aiModels.card.nanoBananaPro'
-    | 'cloud.aiModels.card.seendance20'
+    | 'cloud.aiModels.card.seedance20'
     | 'cloud.aiModels.card.qwenImageEdit'
     | 'cloud.aiModels.card.wan22TextToVideo'
   imageSrc: string
@@ -28,7 +28,7 @@ const badgeBase =
 
 const modelCards: ModelCard[] = [
   {
-    titleKey: 'cloud.aiModels.card.seendance20',
+    titleKey: 'cloud.aiModels.card.seedance20',
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
     badgeIcon: '/icons/ai-models/bytedance.svg',
