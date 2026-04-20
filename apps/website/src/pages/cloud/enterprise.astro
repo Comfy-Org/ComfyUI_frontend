@@ -1,8 +1,24 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import ComingSoon from '../../components/common/ComingSoon.astro'
+import CloudBannerSection from '../../components/product/shared/CloudBannerSection.vue'
+import HeroSection from '../../components/product/enterprise/HeroSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import ReasonSection from '../../components/product/enterprise/ReasonSection.vue'
+import TeamSection from '../../components/product/enterprise/TeamSection.vue'
+import DataOwnershipSection from '../../components/product/enterprise/DataOwnershipSection.vue'
+import BYOKeySection from '../../components/product/enterprise/BYOKeySection.vue'
+import OrchestrationSection from '../../components/product/enterprise/OrchestrationSection.vue'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
 ---
 
 <BaseLayout title="Comfy Enterprise">
-  <ComingSoon />
+  <CloudBannerSection />
+  <HeroSection />
+  <SocialProofBarSection />
+  <ReasonSection />
+  <TeamSection />
+  <DataOwnershipSection client:visible />
+  <BYOKeySection />
+  <OrchestrationSection client:visible />
+  <ProductCardsSection exclude-product="enterprise" label-key="products.labelProducts" />
 </BaseLayout>
