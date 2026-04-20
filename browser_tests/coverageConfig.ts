@@ -12,6 +12,7 @@ export const coverageSourceFilter: Readonly<Record<string, boolean>> = {
   '**/node_modules/**': false,
   '**/browser_tests/**': false,
   // Legacy DOM component library kept only for extension backwards-compat
+  '**/src/scripts/ui.ts': false,
   '**/src/scripts/ui/**': false,
   '**/*': true
 }
