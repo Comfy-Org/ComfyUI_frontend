@@ -9,14 +9,27 @@ import type {
 
 import { electronAPI } from '@/utils/envUtil'
 
-export function createElectronDownloadService(): DownloadService & {
-  initialize(): Promise<void>
-} {
-  const entries = new Map<string, DownloadEntry>()
-  const progressListeners = new Map<
-    string,
-    Set<(entry: DownloadEntry) => void>
-  >()
+const VALID_STATUSES: ReadonlySet<string> = new Set([
+  'pending',
+  'in_progress',
+  'paused',
+  'completed',
+  'cancelled',
+  'error'
+])
+
+function isDownloadStatus(value: unknown): value is DownloadStatus {
+  return typeof value === 'string' && VALID_STATUSES.has(value)
+}
+
+function toDownloadStatus(
+  value: unknown,
+  fallback: DownloadStatus = 'error'
+): DownloadStatus {
+  return isDownloadStatus(value) ? value : fallback
+}
+
+export async function createElectronDownloadService(): Promise<DownloadService> {
   const api = electronAPI()
   const downloadManager = api?.DownloadManager
   if (!downloadManager) {
@@ -25,29 +38,11 @@ export function createElectronDownloadService(): DownloadService & {
     )
   }
 
-  const VALID_STATUSES: ReadonlySet<string> = new Set([
-    'pending',
-    'in_progress',
-    'paused',
-    'completed',
-    'cancelled',
-    'error'
-  ])
-
-  function isDownloadStatus(value: unknown): value is DownloadStatus {
-    return typeof value === 'string' && VALID_STATUSES.has(value)
-  }
-
-  function toDownloadStatus(
-    value: unknown,
-    fallback: DownloadStatus = 'error'
-  ): DownloadStatus {
-    return isDownloadStatus(value) ? value : fallback
-  }
-
-  function notifyListeners(id: string, entry: DownloadEntry) {
-    progressListeners.get(id)?.forEach((cb) => cb(entry))
-  }
+  const entries = new Map<string, DownloadEntry>()
+  const progressListeners = new Map<
+    string,
+    Set<(entry: DownloadEntry) => void>
+  >()
 
   function upsertFromProgress(update: DownloadProgressUpdate) {
     const existing = entries.get(update.url)
@@ -60,40 +55,23 @@ export function createElectronDownloadService(): DownloadService & {
       progress: update.progress ?? 0
     }
     entries.set(update.url, entry)
-    notifyListeners(update.url, entry)
+    progressListeners.get(update.url)?.forEach((cb) => cb(entry))
   }
 
-  let initialized = false
-  let initPromise: Promise<void> | null = null
-
-  async function initialize() {
-    if (initialized) return
-    if (initPromise) return initPromise
-
-    initPromise = (async () => {
-      try {
-        const existingDownloads = await downloadManager.getAllDownloads()
-        for (const download of existingDownloads) {
-          entries.set(download.url, {
-            id: download.url,
-            url: download.url,
-            filename: download.filename,
-            savePath: '',
-            status: toDownloadStatus(download.state),
-            progress: download.totalBytes
-              ? download.receivedBytes / download.totalBytes
-              : 0
-          })
-        }
-        downloadManager.onDownloadProgress(upsertFromProgress)
-        initialized = true
-      } finally {
-        initPromise = null
-      }
-    })()
-
-    return initPromise
+  const existingDownloads = await downloadManager.getAllDownloads()
+  for (const download of existingDownloads) {
+    entries.set(download.url, {
+      id: download.url,
+      url: download.url,
+      filename: download.filename,
+      savePath: '',
+      status: toDownloadStatus(download.state),
+      progress: download.totalBytes
+        ? download.receivedBytes / download.totalBytes
+        : 0
+    })
   }
+  downloadManager.onDownloadProgress(upsertFromProgress)
 
   async function start(params: DownloadStartParams): Promise<DownloadEntry> {
     const started = await downloadManager.startDownload(
@@ -128,6 +106,7 @@ export function createElectronDownloadService(): DownloadService & {
 
   async function cancel(id: string) {
     await downloadManager.cancelDownload(id)
+    entries.delete(id)
   }
 
   function getAll(): DownloadEntry[] {
@@ -158,7 +137,6 @@ export function createElectronDownloadService(): DownloadService & {
 
   return {
     supportsPauseResume: true,
-    initialize,
     start,
     pause,
     resume,
