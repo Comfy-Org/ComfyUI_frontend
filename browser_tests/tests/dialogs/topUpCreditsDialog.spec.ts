@@ -1,11 +1,21 @@
 import { expect } from '@playwright/test'
 
+import type { operations } from '@comfyorg/registry-types'
+import { CREDITS_PER_USD } from '@/base/credits/comfyCredits'
+import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 
-// 211 credits per USD (from src/base/credits/comfyCredits.ts)
+type GetCustomerBalanceResponse =
+  operations['GetCustomerBalance']['responses']['200']['content']['application/json']
+
 // Step: $5 when pay < $100, $50 when pay < $1000, $100 otherwise
 // MIN_AMOUNT = $5, MAX_AMOUNT = $10,000
+
+function expectedCredits(usd: number): string {
+  return (usd * CREDITS_PER_USD).toLocaleString('en-US')
+}
 
 test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
   let dialog: TopUpCreditsDialog
@@ -15,13 +25,19 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
       '**/cloud-subscription-status**',
       async (route) => {
         await route.fulfill({
-          json: { is_active: true, subscription_tier: 'PRO' }
+          json: {
+            is_active: true,
+            subscription_tier: 'PRO'
+          } satisfies CloudSubscriptionStatusResponse
         })
       }
     )
     await comfyPage.page.route('**/customers/balance**', async (route) => {
       await route.fulfill({
-        json: { amount_micros: 1_000_000, currency: 'usd' }
+        json: {
+          amount_micros: 1_000_000,
+          currency: 'usd'
+        } satisfies GetCustomerBalanceResponse
       })
     })
 
@@ -33,7 +49,7 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
     await dialog.getPresetButton(25).click()
 
     await expect(dialog.payInput).toHaveValue('25')
-    await expect(dialog.creditsInput).toHaveValue('5,275')
+    await expect(dialog.creditsInput).toHaveValue(expectedCredits(25))
   })
 
   test('increment pay stepper updates credits', async () => {
@@ -41,7 +57,7 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
     await dialog.incrementPay.click()
 
     await expect(dialog.payInput).toHaveValue('30')
-    await expect(dialog.creditsInput).toHaveValue('6,330')
+    await expect(dialog.creditsInput).toHaveValue(expectedCredits(30))
   })
 
   test('decrement pay stepper updates credits', async () => {
@@ -49,7 +65,7 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
     await dialog.decrementPay.click()
 
     await expect(dialog.payInput).toHaveValue('45')
-    await expect(dialog.creditsInput).toHaveValue('9,495')
+    await expect(dialog.creditsInput).toHaveValue(expectedCredits(45))
   })
 
   test('typing in pay stepper updates credits', async () => {
@@ -57,7 +73,7 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
     await dialog.payInput.pressSequentially('500')
     await dialog.payInput.blur()
 
-    await expect(dialog.creditsInput).toHaveValue('105,500')
+    await expect(dialog.creditsInput).toHaveValue(expectedCredits(500))
   })
 
   test('max ceiling warning appears when exceeding max', async () => {
