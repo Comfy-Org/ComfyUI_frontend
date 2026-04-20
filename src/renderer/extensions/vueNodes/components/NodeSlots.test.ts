@@ -29,6 +29,22 @@ const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
   ...overrides
 })
 
+function makeInputSlot(
+  name: string,
+  type: string,
+  extra?: Partial<INodeInputSlot>
+): INodeInputSlot {
+  return { name, type, boundingRect: [0, 0, 0, 0], link: null, ...extra }
+}
+
+function makeOutputSlot(
+  name: string,
+  type: string,
+  extra?: Partial<INodeOutputSlot>
+): INodeOutputSlot {
+  return { name, type, boundingRect: [0, 0, 0, 0], links: [], ...extra }
+}
+
 // Explicit stubs to capture props for assertions
 interface StubSlotData {
   name?: string
@@ -36,14 +52,16 @@ interface StubSlotData {
   boundingRect?: [number, number, number, number]
 }
 
+const STUB_SLOT_PROPS = {
+  slotData: { type: Object as PropType<StubSlotData>, required: true },
+  nodeId: { type: String, required: false, default: '' },
+  index: { type: Number, required: true },
+  readonly: { type: Boolean, required: false, default: false }
+} as const
+
 const InputSlotStub = defineComponent({
   name: 'InputSlot',
-  props: {
-    slotData: { type: Object as PropType<StubSlotData>, required: true },
-    nodeId: { type: String, required: false, default: '' },
-    index: { type: Number, required: true },
-    readonly: { type: Boolean, required: false, default: false }
-  },
+  props: STUB_SLOT_PROPS,
   template: `
     <div
       class="stub-input-slot"
@@ -58,12 +76,7 @@ const InputSlotStub = defineComponent({
 
 const OutputSlotStub = defineComponent({
   name: 'OutputSlot',
-  props: {
-    slotData: { type: Object as PropType<StubSlotData>, required: true },
-    nodeId: { type: String, required: false, default: '' },
-    index: { type: Number, required: true },
-    readonly: { type: Boolean, required: false, default: false }
-  },
+  props: STUB_SLOT_PROPS,
   template: `
     <div
       class="stub-output-slot"
@@ -75,6 +88,33 @@ const OutputSlotStub = defineComponent({
     />
   `
 })
+
+function createTrackingStub(
+  componentName: 'InputSlot' | 'OutputSlot',
+  mountCounts: Map<string, number>
+) {
+  const cssClass =
+    componentName === 'InputSlot' ? 'stub-input-slot' : 'stub-output-slot'
+  return defineComponent({
+    name: componentName,
+    props: {
+      slotData: { type: Object as PropType<StubSlotData>, required: true },
+      nodeId: { type: String, required: false, default: '' },
+      index: { type: Number, required: true }
+    },
+    setup(props) {
+      const key = `${props.slotData?.name ?? ''}`
+      mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
+    },
+    template: `
+      <div
+        class="${cssClass}"
+        :data-index="index"
+        :data-name="slotData && slotData.name ? slotData.name : ''"
+      />
+    `
+  })
+}
 
 const mountSlots = (nodeData: VueNodeData) => {
   const i18n = createI18n({
@@ -94,32 +134,48 @@ const mountSlots = (nodeData: VueNodeData) => {
   })
 }
 
+function mountSlotsWithTracking(
+  nodeData: VueNodeData,
+  mountCounts: Map<string, number>,
+  trackingTarget: 'InputSlot' | 'OutputSlot'
+) {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+  const trackingStub = createTrackingStub(trackingTarget, mountCounts)
+  const stubs =
+    trackingTarget === 'InputSlot'
+      ? { InputSlot: trackingStub, OutputSlot: OutputSlotStub }
+      : { InputSlot: InputSlotStub, OutputSlot: trackingStub }
+
+  return render(NodeSlots, {
+    global: {
+      plugins: [i18n, createTestingPinia({ stubActions: false })],
+      stubs
+    },
+    props: { nodeData }
+  })
+}
+
+function getRenderedSlotIndex(container: Element, slotName: string) {
+  // eslint-disable-next-line testing-library/no-node-access
+  const el = container.querySelector(`[data-name="${slotName}"]`)
+  if (!(el instanceof HTMLElement)) {
+    throw new Error(`Slot element "${slotName}" not found`)
+  }
+  return Number(el.dataset.index)
+}
+
 describe('NodeSlots.vue', () => {
   it('filters out inputs with widget property and maps indexes correctly', () => {
-    // Two inputs without widgets and one with widget (filtered out)
-    const inputObjNoWidget: INodeInputSlot = {
-      name: 'objNoWidget',
-      type: 'number',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const inputObjWithWidget: INodeInputSlot = {
-      name: 'objWithWidget',
-      type: 'number',
-      boundingRect: [0, 0, 0, 0],
-      widget: { name: 'objWithWidget' },
-      link: null
-    }
-    const inputStringNoWidget: INodeInputSlot = {
-      name: 'stringInput',
-      type: 'string',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
     const inputs: INodeInputSlot[] = [
-      inputObjNoWidget,
-      inputObjWithWidget,
-      inputStringNoWidget
+      makeInputSlot('objNoWidget', 'number'),
+      makeInputSlot('objWithWidget', 'number', {
+        widget: { name: 'objWithWidget' }
+      }),
+      makeInputSlot('stringInput', 'string')
     ]
 
     const { container } = mountSlots(makeNodeData({ inputs }))
@@ -128,10 +184,8 @@ describe('NodeSlots.vue', () => {
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll('.stub-input-slot')
     ) as HTMLElement[]
-    // Should filter out the widget-backed input; expect 2 inputs rendered
     expect(inputEls).toHaveLength(2)
 
-    // Verify expected tuple of {index, name, nodeId}
     const info = inputEls.map((el) => ({
       index: Number(el.dataset.index),
       name: el.dataset.name ?? '',
@@ -156,25 +210,15 @@ describe('NodeSlots.vue', () => {
       }
     ])
 
-    // Ensure widget-backed input was indeed filtered out
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-name="objWithWidget"]')).toBeNull()
   })
 
   it('maps outputs and passes correct indexes', () => {
-    const outputObj: INodeOutputSlot = {
-      name: 'outA',
-      type: 'any',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-    const outputObjB: INodeOutputSlot = {
-      name: 'outB',
-      type: 'any',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-    const outputs: INodeOutputSlot[] = [outputObj, outputObjB]
+    const outputs: INodeOutputSlot[] = [
+      makeOutputSlot('outA', 'any'),
+      makeOutputSlot('outB', 'any')
+    ]
 
     const { container } = mountSlots(makeNodeData({ outputs }))
     const outputEls = Array.from(
@@ -192,78 +236,37 @@ describe('NodeSlots.vue', () => {
     }))
     expect(outInfo).toEqual([
       { index: 0, name: 'outA', nodeId: '123', type: 'any', readonly: false },
-      // string output mapped to object with type 'any'
       { index: 1, name: 'outB', nodeId: '123', type: 'any', readonly: false }
     ])
   })
 
   it('remounts OutputSlot when index shifts due to output removal', async () => {
     const mountCounts = new Map<string, number>()
+    const outputs = [
+      makeOutputSlot('outA', 'IMAGE'),
+      makeOutputSlot('outB', 'VIDEO'),
+      makeOutputSlot('outC', 'AUDIO')
+    ]
 
-    const TrackingOutputSlotStub = defineComponent({
-      name: 'OutputSlot',
-      props: {
-        slotData: { type: Object as PropType<StubSlotData>, required: true },
-        nodeId: { type: String, required: false, default: '' },
-        index: { type: Number, required: true }
-      },
-      setup(props) {
-        const key = `${props.slotData?.name ?? ''}`
-        mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
-      },
-      template: `
-        <div
-          class="stub-output-slot"
-          :data-index="index"
-          :data-name="slotData && slotData.name ? slotData.name : ''"
-        />
-      `
-    })
-
-    const outA: INodeOutputSlot = {
-      name: 'outA',
-      type: 'IMAGE',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-    const outB: INodeOutputSlot = {
-      name: 'outB',
-      type: 'VIDEO',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-    const outC: INodeOutputSlot = {
-      name: 'outC',
-      type: 'AUDIO',
-      boundingRect: [0, 0, 0, 0],
-      links: []
-    }
-
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: { en: enMessages }
-    })
-    const { container, rerender } = render(NodeSlots, {
-      global: {
-        plugins: [i18n, createTestingPinia({ stubActions: false })],
-        stubs: { InputSlot: InputSlotStub, OutputSlot: TrackingOutputSlotStub }
-      },
-      props: { nodeData: makeNodeData({ outputs: [outA, outB, outC] }) }
-    })
+    const { container, rerender } = mountSlotsWithTracking(
+      makeNodeData({ outputs }),
+      mountCounts,
+      'OutputSlot'
+    )
 
     expect(mountCounts.get('outC')).toBe(1)
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    let outCEl = container.querySelector('[data-name="outC"]') as HTMLElement
-    expect(Number(outCEl.dataset.index)).toBe(2)
+    expect(getRenderedSlotIndex(container, 'outC')).toBe(2)
 
     await rerender({
-      nodeData: makeNodeData({ outputs: [outA, outC] })
+      nodeData: makeNodeData({
+        outputs: [
+          makeOutputSlot('outA', 'IMAGE'),
+          makeOutputSlot('outC', 'AUDIO')
+        ]
+      })
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    outCEl = container.querySelector('[data-name="outC"]') as HTMLElement
-    expect(Number(outCEl.dataset.index)).toBe(1)
+    expect(getRenderedSlotIndex(container, 'outC')).toBe(1)
     expect(mountCounts.get('outC')).toBe(2)
   })
 
@@ -275,38 +278,14 @@ describe('NodeSlots.vue', () => {
     expect(container.querySelectorAll('.stub-output-slot')).toHaveLength(0)
   })
 
-  it('maps correct actual indices when autogrow inserts inputs between groups', () => {
-    const img0: INodeInputSlot = {
-      name: 'ref_images.img0',
-      type: 'IMAGE',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const img1: INodeInputSlot = {
-      name: 'ref_images.img1',
-      type: 'IMAGE',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const img2: INodeInputSlot = {
-      name: 'ref_images.img2',
-      type: 'IMAGE',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const vid0: INodeInputSlot = {
-      name: 'ref_videos.vid0',
-      type: 'VIDEO',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const vid1: INodeInputSlot = {
-      name: 'ref_videos.vid1',
-      type: 'VIDEO',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const inputs: INodeInputSlot[] = [img0, img1, img2, vid0, vid1]
+  it('passes correct actual indices for multi-group input layout', () => {
+    const inputs: INodeInputSlot[] = [
+      makeInputSlot('ref_images.img0', 'IMAGE'),
+      makeInputSlot('ref_images.img1', 'IMAGE'),
+      makeInputSlot('ref_images.img2', 'IMAGE'),
+      makeInputSlot('ref_videos.vid0', 'VIDEO'),
+      makeInputSlot('ref_videos.vid1', 'VIDEO')
+    ]
 
     const { container } = mountSlots(makeNodeData({ inputs }))
 
@@ -332,76 +311,31 @@ describe('NodeSlots.vue', () => {
 
   it('remounts InputSlot when index shifts due to autogrow insertion', async () => {
     const mountCounts = new Map<string, number>()
+    const initialInputs = [
+      makeInputSlot('ref_images.img0', 'IMAGE'),
+      makeInputSlot('ref_videos.vid0', 'VIDEO')
+    ]
 
-    const TrackingInputSlotStub = defineComponent({
-      name: 'InputSlot',
-      props: {
-        slotData: { type: Object as PropType<StubSlotData>, required: true },
-        nodeId: { type: String, required: false, default: '' },
-        index: { type: Number, required: true }
-      },
-      setup(props) {
-        const key = `${props.slotData?.name ?? ''}`
-        mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
-      },
-      template: `
-        <div
-          class="stub-input-slot"
-          :data-index="index"
-          :data-name="slotData && slotData.name ? slotData.name : ''"
-        />
-      `
-    })
-
-    const img0: INodeInputSlot = {
-      name: 'ref_images.img0',
-      type: 'IMAGE',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-    const vid0: INodeInputSlot = {
-      name: 'ref_videos.vid0',
-      type: 'VIDEO',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
-
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: { en: enMessages }
-    })
-    const { container, rerender } = render(NodeSlots, {
-      global: {
-        plugins: [i18n, createTestingPinia({ stubActions: false })],
-        stubs: { InputSlot: TrackingInputSlotStub, OutputSlot: OutputSlotStub }
-      },
-      props: { nodeData: makeNodeData({ inputs: [img0, vid0] }) }
-    })
+    const { container, rerender } = mountSlotsWithTracking(
+      makeNodeData({ inputs: initialInputs }),
+      mountCounts,
+      'InputSlot'
+    )
 
     expect(mountCounts.get('ref_videos.vid0')).toBe(1)
+    expect(getRenderedSlotIndex(container, 'ref_videos.vid0')).toBe(1)
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    let vidEl = container.querySelector(
-      '[data-name="ref_videos.vid0"]'
-    ) as HTMLElement
-    expect(Number(vidEl.dataset.index)).toBe(1)
-
-    const img1: INodeInputSlot = {
-      name: 'ref_images.img1',
-      type: 'IMAGE',
-      boundingRect: [0, 0, 0, 0],
-      link: null
-    }
     await rerender({
-      nodeData: makeNodeData({ inputs: [img0, img1, vid0] })
+      nodeData: makeNodeData({
+        inputs: [
+          makeInputSlot('ref_images.img0', 'IMAGE'),
+          makeInputSlot('ref_images.img1', 'IMAGE'),
+          makeInputSlot('ref_videos.vid0', 'VIDEO')
+        ]
+      })
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    vidEl = container.querySelector(
-      '[data-name="ref_videos.vid0"]'
-    ) as HTMLElement
-    expect(Number(vidEl.dataset.index)).toBe(2)
+    expect(getRenderedSlotIndex(container, 'ref_videos.vid0')).toBe(2)
     expect(mountCounts.get('ref_videos.vid0')).toBe(2)
   })
 })
