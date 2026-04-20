@@ -217,9 +217,9 @@ describe('downloadUtil', () => {
       expect(fetchMock).toHaveBeenCalledWith(testUrl)
       const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
       await fetchPromise
-      await Promise.resolve() // let fetchAsBlob throw
-      await Promise.resolve() // let .catch handler run
-      expect(consoleSpy).toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalled()
+      })
       expect(createObjectURLSpy).not.toHaveBeenCalled()
       consoleSpy.mockRestore()
     })

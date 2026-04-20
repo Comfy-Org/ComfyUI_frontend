@@ -45,18 +45,9 @@ function triggerLinkDownload(href: string, filename: string): void {
  * @throws {Error} If the URL is invalid or empty
  */
 export function downloadFile(url: string, filename?: string): void {
-  assertValidDownloadUrl(url)
-  const inferredFilename = inferDownloadFilename(url, filename)
-
-  if (isCloud) {
-    // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
-    void downloadViaBlobFetch(url, inferredFilename).catch((error) => {
-      console.error('Failed to download file', error)
-    })
-    return
-  }
-
-  triggerLinkDownload(url, inferredFilename)
+  void downloadFileAsync(url, filename).catch((error) => {
+    console.error('Failed to download file', error)
+  })
 }
 
 /**
