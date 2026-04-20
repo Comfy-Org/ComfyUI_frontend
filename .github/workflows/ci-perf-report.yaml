@@ -58,21 +58,6 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Save PR metadata
-        if: github.event_name == 'pull_request'
-        run: |
-          mkdir -p temp/perf-meta
-          echo "${{ github.event.number }}" > temp/perf-meta/number.txt
-          echo "${{ github.event.pull_request.base.ref }}" > temp/perf-meta/base.txt
-          echo "${{ github.event.pull_request.head.sha }}" > temp/perf-meta/head-sha.txt
-
-      - name: Upload PR metadata
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v6
-        with:
-          name: perf-meta
-          path: temp/perf-meta/
-
       - name: Save perf baseline to perf-data branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'
         continue-on-error: true
