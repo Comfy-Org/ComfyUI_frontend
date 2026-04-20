@@ -83,7 +83,6 @@
       <i class="pi pi-plus" />
     </Button>
     <div
-      v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
       :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
@@ -139,7 +138,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -163,7 +161,6 @@ const props = defineProps<{
   class?: string
 }>()
 
-const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -181,9 +178,6 @@ const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
 
-const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
-)
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
 function openFeedback() {

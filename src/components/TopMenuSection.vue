@@ -81,10 +81,10 @@
                 @update:progress-target="updateProgressTarget"
               />
               <CurrentUserButton
-                v-if="isLoggedIn && !isIntegratedTabBar"
+                v-if="isLoggedIn && !isWorkflowTabsInTopbar"
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isIntegratedTabBar" />
+              <LoginButton v-else-if="!isWorkflowTabsInTopbar" />
               <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
@@ -236,6 +236,9 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
+const isWorkflowTabsInTopbar = computed(
+  () => settingStore.get('Comfy.Workflow.WorkflowTabsPosition') === 'Topbar'
+)
 /**
  * Whether the actionbar container has any visible docked buttons
  * (excluding ComfyActionbar, which uses position:fixed when floating
@@ -244,16 +247,14 @@ const isActionbarFloating = computed(
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
-  if (!isIntegratedTabBar.value) return true
+  if (isLoggedIn.value && !isWorkflowTabsInTopbar.value) return true
+  if (isDesktop && !isWorkflowTabsInTopbar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false
 })
 const isActionbarContainerEmpty = computed(
   () => isActionbarFloating.value && !hasDockedButtons.value
-)
-const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
