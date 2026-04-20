@@ -4,6 +4,13 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+/** Python backend response shape from /upload/image and /upload/mask */
+interface UploadResponse {
+  name: string
+  subfolder: string
+  type: 'input' | 'output' | 'temp'
+}
+
 test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
@@ -148,28 +155,30 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
       observedContentType = (await request.headerValue('content-type')) ?? ''
       observedBodyLength = request.postDataBuffer()?.byteLength ?? 0
 
+      const response: UploadResponse = {
+        name: 'clipspace-mask-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          name: 'clipspace-mask-123.png',
-          subfolder: 'clipspace',
-          type: 'input'
-        })
+        body: JSON.stringify(response)
       })
     })
 
-    await comfyPage.page.route('**/upload/image', (route) =>
-      route.fulfill({
+    await comfyPage.page.route('**/upload/image', (route) => {
+      const response: UploadResponse = {
+        name: 'clipspace-painted-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          name: 'clipspace-painted-123.png',
-          subfolder: 'clipspace',
-          type: 'input'
-        })
+        body: JSON.stringify(response)
       })
-    )
+    })
 
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(dialog).toBeHidden()
@@ -193,37 +202,35 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
 
     await comfyPage.page.route('**/upload/mask', (route) => {
       maskUploadCount++
-      const name =
-        maskUploadCount === 1
-          ? 'clipspace-mask-456.png'
-          : 'clipspace-painted-masked-456.png'
-
+      const response: UploadResponse = {
+        name:
+          maskUploadCount === 1
+            ? 'clipspace-mask-456.png'
+            : 'clipspace-painted-masked-456.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          name,
-          subfolder: 'clipspace',
-          type: 'input'
-        })
+        body: JSON.stringify(response)
       })
     })
 
     await comfyPage.page.route('**/upload/image', (route) => {
       imageUploadCount++
-      const name =
-        imageUploadCount === 1
-          ? 'clipspace-paint-456.png'
-          : 'clipspace-painted-456.png'
-
+      const response: UploadResponse = {
+        name:
+          imageUploadCount === 1
+            ? 'clipspace-paint-456.png'
+            : 'clipspace-painted-456.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          name,
-          subfolder: 'clipspace',
-          type: 'input'
-        })
+        body: JSON.stringify(response)
       })
     })
 
@@ -281,14 +288,15 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     })
     await comfyPage.page.route('**/upload/image', (route) => {
       imageUploadHit = true
+      const response: UploadResponse = {
+        name: 'clipspace-painted-999.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          name: 'clipspace-painted-999.png',
-          subfolder: 'clipspace',
-          type: 'input'
-        })
+        body: JSON.stringify(response)
       })
     })
 
