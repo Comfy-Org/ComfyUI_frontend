@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import type { ChartData } from 'chart.js'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -90,19 +90,34 @@ describe('WidgetChart', () => {
       expect(parsed.datasets[0].label).toBe('x')
     })
 
-    it('falls back to empty labels/datasets when value is an empty object', () => {
+    it('falls back to empty labels/datasets when value becomes null', async () => {
       const { value } = renderChart(
         makeWidget(),
-        { labels: [], datasets: [] }
+        { labels: ['a'], datasets: [{ label: 'x', data: [1] }] }
       )
-      value.value = {} as ChartData
-      // value mutation happens after initial render; re-read the latest state
-      // by triggering a re-render via the same mount assertion
+      value.value = null as unknown as ChartData
+      await nextTick()
+
       const parsed = JSON.parse(
         screen.getByTestId('chart').dataset.chartData!
       )
-      expect(Array.isArray(parsed.labels)).toBe(true)
-      expect(Array.isArray(parsed.datasets)).toBe(true)
+      expect(parsed).toEqual({ labels: [], datasets: [] })
+    })
+
+    it('reactively updates the chart when model value changes', async () => {
+      const { value } = renderChart(
+        makeWidget(),
+        { labels: ['a'], datasets: [{ label: 'x', data: [1] }] }
+      )
+
+      value.value = { labels: ['b', 'c'], datasets: [{ label: 'y', data: [2, 3] }] }
+      await nextTick()
+
+      const parsed = JSON.parse(
+        screen.getByTestId('chart').dataset.chartData!
+      )
+      expect(parsed.labels).toEqual(['b', 'c'])
+      expect(parsed.datasets[0].label).toBe('y')
     })
   })
 
