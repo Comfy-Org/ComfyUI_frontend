@@ -81,6 +81,15 @@ export class AssetBrowserHelper {
           ? Array.from(new Set([...existing, ...tags]))
           : existing.filter((tag) => !tags.includes(tag))
 
+      const added =
+        method === 'POST'
+          ? totalTags.filter((tag) => !existing.includes(tag))
+          : []
+      const removed =
+        method === 'DELETE'
+          ? existing.filter((tag) => !totalTags.includes(tag))
+          : []
+
       tagsByAssetId.set(assetId, totalTags)
 
       await route.fulfill({
@@ -88,8 +97,8 @@ export class AssetBrowserHelper {
         contentType: 'application/json',
         body: JSON.stringify({
           total_tags: totalTags,
-          added: method === 'POST' ? tags : [],
-          removed: method === 'DELETE' ? tags : []
+          added,
+          removed
         })
       })
     }

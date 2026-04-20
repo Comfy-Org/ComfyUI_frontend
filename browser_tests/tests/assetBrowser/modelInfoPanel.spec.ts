@@ -324,7 +324,12 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBeGreaterThan(initial)
 
       const lastBody = getLastMetadataBody(comfyPage)
-      expect(lastBody?.user_metadata?.base_model).toBeDefined()
+      const baseModels = lastBody?.user_metadata?.base_model as
+        | string[]
+        | undefined
+      expect(baseModels).toContain('sd3.5-large')
+      expect(baseModels).toContain('sdxl')
+      expect(baseModels).toContain('flux.1-dev')
     })
 
     test('removing a base model sends metadata update', async ({
@@ -340,6 +345,13 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => metadataMutations(comfyPage).length)
         .toBeGreaterThan(initial)
+
+      const lastBody = getLastMetadataBody(comfyPage)
+      const baseModels = lastBody?.user_metadata?.base_model as
+        | string[]
+        | undefined
+      expect(baseModels).toBeDefined()
+      expect(baseModels!.length).toBeLessThan(2)
     })
 
     test('adding an additional tag sends metadata update', async ({
@@ -356,7 +368,12 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
         .toBeGreaterThan(initial)
 
       const lastBody = getLastMetadataBody(comfyPage)
-      expect(lastBody?.user_metadata?.additional_tags).toBeDefined()
+      const tags = lastBody?.user_metadata?.additional_tags as
+        | string[]
+        | undefined
+      expect(tags).toContain('cinematic')
+      expect(tags).toContain('portrait')
+      expect(tags).toContain('detail')
     })
 
     test('removing an additional tag sends metadata update', async ({
@@ -372,6 +389,13 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => metadataMutations(comfyPage).length)
         .toBeGreaterThan(initial)
+
+      const lastBody = getLastMetadataBody(comfyPage)
+      const tags = lastBody?.user_metadata?.additional_tags as
+        | string[]
+        | undefined
+      expect(tags).toBeDefined()
+      expect(tags!.length).toBeLessThan(2)
     })
   })
 
@@ -465,6 +489,11 @@ test.describe('Asset Browser - ModelInfoPanel', () => {
       await expect
         .poll(() => metadataMutations(comfyPage).length)
         .toBe(initial + 1)
+
+      const lastBody = getLastMetadataBody(comfyPage)
+      expect(lastBody?.user_metadata?.user_description).toBe(
+        'final debounced value'
+      )
     })
 
     test('rapid model type changes coalesce to final debounced mutation set', async () => {
