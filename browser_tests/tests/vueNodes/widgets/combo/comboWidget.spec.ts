@@ -56,6 +56,9 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.vueNodes.waitForNodes()
 
+    // Verify both the internal widget state and the visible Vue combobox
+    // after reload. A broken rehydration path could keep the widget object
+    // correct while rendering the old selection (or vice versa).
     const schedulerValueAfterReload = await comfyPage.page.evaluate(() => {
       const graph = window.graph as unknown as TestGraphAccess | undefined
       if (!graph) return null
@@ -64,7 +67,11 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
       )
       return node?.widgets?.find((w) => w.name === 'scheduler')?.value ?? null
     })
-
     expect(schedulerValueAfterReload).toBe('karras')
+
+    const schedulerComboAfterReload = comfyPage.vueNodes
+      .getNodeByTitle('KSampler')
+      .getByRole('combobox', { name: 'scheduler', exact: true })
+    await expect(schedulerComboAfterReload).toContainText('karras')
   })
 })
