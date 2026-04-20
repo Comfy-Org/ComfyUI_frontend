@@ -597,4 +597,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 .cloud-worm-top {
   animation: cloudFloatWorm 3s ease-in-out infinite 1.2s;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  [class*='cloud-panel'],
+  [class*='cloud-float'],
+  [class*='cloud-worm'] {
+    animation: none;
+  }
+}
 </style>

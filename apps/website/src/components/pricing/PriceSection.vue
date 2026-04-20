@@ -16,7 +16,6 @@ function subscribeUrl(tier: string): string {
 
 interface PlanFeature {
   text: TranslationKey
-  isComingSoon?: boolean
 }
 
 interface PricingPlan {
@@ -81,7 +80,7 @@ const plans: PricingPlan[] = [
     featureIntroKey: 'pricing.plan.creator.featureIntro',
     features: [
       { text: 'pricing.plan.creator.feature1' },
-      { text: 'pricing.plan.creator.feature2', isComingSoon: true }
+      { text: 'pricing.plan.creator.feature2' }
     ],
     nextUpKey: 'pricing.plan.creator.nextUp',
     image: 'https://media.comfy.org/website/pricing/creator.webp',
@@ -99,7 +98,7 @@ const plans: PricingPlan[] = [
     featureIntroKey: 'pricing.plan.pro.featureIntro',
     features: [
       { text: 'pricing.plan.pro.feature1' },
-      { text: 'pricing.plan.pro.feature2', isComingSoon: true }
+      { text: 'pricing.plan.pro.feature2' }
     ],
     nextUpKey: 'pricing.plan.pro.nextUp',
     image: 'https://media.comfy.org/website/pricing/pro.webp'

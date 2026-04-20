@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { useFrameScrub } from '../../composables/useFrameScrub'
+import { useIntersectionObserver } from '@vueuse/core'
+
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -11,19 +12,14 @@ import type { FooterLink } from './FooterLinkColumn.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
 
-const footerRef = ref<HTMLElement>()
-const canvasRef = ref<HTMLCanvasElement>()
+const videoRef = ref<HTMLVideoElement>()
 
-useFrameScrub(canvasRef, {
-  frameCount: 73,
-  frameSrc: (i) =>
-    `https://media.comfy.org/website/homepage/footer-logo-seq/Logo${String(i).padStart(2, '0')}.webp`,
-  scrollTrigger: (canvas) => ({
-    trigger: canvas,
-    start: 'top bottom',
-    end: 'top bottom',
-    scrub: 1
-  })
+const { stop } = useIntersectionObserver(videoRef, ([entry]) => {
+  if (entry?.isIntersecting && videoRef.value) {
+    videoRef.value.playbackRate = 5
+    videoRef.value.play()
+    stop()
+  }
 })
 
 const topColumns: { title: string; links: FooterLink[] }[] = [
@@ -90,7 +86,6 @@ const contactColumn = {
 
 <template>
   <footer
-    ref="footerRef"
     class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20"
   >
     <div
@@ -143,7 +138,14 @@ const contactColumn = {
       <div
         class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
       >
-        <canvas ref="canvasRef" class="mt-12 size-52 opacity-80 lg:mt-24" />
+        <video
+          ref="videoRef"
+          src="https://media.comfy.org/website/homepage/footer-logo-seq.webm"
+          muted
+          playsinline
+          preload="auto"
+          class="mt-12 size-52 opacity-80 lg:mt-24"
+        />
         <div class="flex justify-center gap-6 lg:justify-end">
           <p class="text-sm">{{ t('footer.location', locale) }}</p>
           <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
