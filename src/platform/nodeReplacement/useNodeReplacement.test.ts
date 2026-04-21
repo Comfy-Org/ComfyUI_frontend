@@ -296,6 +296,7 @@ describe('useNodeReplacement', () => {
 
     it('should apply set_value to widget', () => {
       const placeholder = createPlaceholderNode(1, 'ImageScaleBy')
+      placeholder.onRemoved = vi.fn()
       const graph = createMockGraph([placeholder])
       placeholder.graph = graph
       Object.assign(app, { rootGraph: graph })
@@ -330,6 +331,10 @@ describe('useNodeReplacement', () => {
 
       // set_value should be applied to the widget
       expect(newNode.widgets![0].value).toBe('scale by multiplier')
+      expect(
+        placeholder.onRemoved,
+        'call onRemoved on old node'
+      ).toHaveBeenCalledTimes(1)
     })
 
     it('should transfer widget values using old_widget_ids', () => {
