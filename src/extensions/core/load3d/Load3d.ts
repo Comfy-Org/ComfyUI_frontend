@@ -1,20 +1,18 @@
 import * as THREE from 'three'
 
-import { exceedsClickThreshold } from '@/composables/useClickDragGuard'
-
-import { AnimationManager } from './AnimationManager'
-import { CameraManager } from './CameraManager'
-import { ControlsManager } from './ControlsManager'
-import { EventManager } from './EventManager'
-import { HDRIManager } from './HDRIManager'
-import { GizmoManager } from './GizmoManager'
-import { LightingManager } from './LightingManager'
-import { LoaderManager } from './LoaderManager'
+import type { AnimationManager } from './AnimationManager'
+import type { CameraManager } from './CameraManager'
+import type { ControlsManager } from './ControlsManager'
+import type { EventManager } from './EventManager'
+import type { HDRIManager } from './HDRIManager'
+import type { GizmoManager } from './GizmoManager'
+import type { LightingManager } from './LightingManager'
+import type { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
-import { RecordingManager } from './RecordingManager'
-import { SceneManager } from './SceneManager'
-import { SceneModelManager } from './SceneModelManager'
-import { ViewHelperManager } from './ViewHelperManager'
+import type { RecordingManager } from './RecordingManager'
+import type { SceneManager } from './SceneManager'
+import type { SceneModelManager } from './SceneModelManager'
+import type { ViewHelperManager } from './ViewHelperManager'
 import type {
   CameraState,
   CaptureResult,
@@ -24,6 +22,30 @@ import type {
   MaterialMode,
   UpDirection
 } from './interfaces'
+import {
+  DEFAULT_MODEL_CAPABILITIES,
+  type ModelAdapterCapabilities
+} from './ModelAdapter'
+import { attachContextMenuGuard } from './load3dContextMenuGuard'
+import type { RenderLoopHandle } from './load3dRenderLoop'
+import { startRenderLoop } from './load3dRenderLoop'
+import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+
+export type Load3dDeps = {
+  renderer: THREE.WebGLRenderer
+  eventManager: EventManager
+  sceneManager: SceneManager
+  cameraManager: CameraManager
+  controlsManager: ControlsManager
+  lightingManager: LightingManager
+  hdriManager: HDRIManager
+  viewHelperManager: ViewHelperManager
+  loaderManager: LoaderManager
+  modelManager: SceneModelManager
+  recordingManager: RecordingManager
+  animationManager: AnimationManager
+  gizmoManager: GizmoManager
+}
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
@@ -47,10 +69,14 @@ function positionThumbnailCamera(
 class Load3d {
   renderer: THREE.WebGLRenderer
   protected clock: THREE.Clock
-  protected animationFrameId: number | null = null
+  private renderLoop: RenderLoopHandle | null = null
+  private disposeContextMenuGuard: (() => void) | null = null
   private loadingPromise: Promise<void> | null = null
-  private onContextMenuCallback?: (event: MouseEvent) => void
-  private getDimensionsCallback?: () => { width: number; height: number } | null
+  private readonly onContextMenuCallback?: (event: MouseEvent) => void
+  private readonly getDimensionsCallback?: () => {
+    width: number
+    height: number
+  } | null
 
   eventManager: EventManager
   sceneManager: SceneManager
@@ -75,13 +101,13 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
-  private rightMouseStart: { x: number; y: number } = { x: 0, y: 0 }
-  private rightMouseMoved: boolean = false
-  private readonly dragThreshold: number = 5
-  private contextMenuAbortController: AbortController | null = null
   private resizeObserver: ResizeObserver | null = null
 
-  constructor(container: Element | HTMLElement, options: Load3DOptions = {}) {
+  constructor(
+    container: Element | HTMLElement,
+    deps: Load3dDeps,
+    options: Load3DOptions = {}
+  ) {
     this.clock = new THREE.Clock()
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
@@ -93,90 +119,19 @@ class Load3d {
       this.targetAspectRatio = options.width / options.height
     }
 
-    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
-    this.renderer.setSize(300, 300)
-    this.renderer.setClearColor(0x282828)
-    this.renderer.autoClear = false
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.renderer.domElement.classList.add(
-      'absolute',
-      'inset-0',
-      'h-full',
-      'w-full',
-      'outline-none'
-    )
-    container.appendChild(this.renderer.domElement)
-
-    this.eventManager = new EventManager()
-
-    this.sceneManager = new SceneManager(
-      this.renderer,
-      this.getActiveCamera.bind(this),
-      this.getControls.bind(this),
-      this.eventManager
-    )
-
-    this.cameraManager = new CameraManager(this.renderer, this.eventManager)
-
-    this.controlsManager = new ControlsManager(
-      this.renderer,
-      this.cameraManager.activeCamera,
-      this.eventManager
-    )
-
-    this.cameraManager.setControls(this.controlsManager.controls)
-
-    this.lightingManager = new LightingManager(
-      this.sceneManager.scene,
-      this.eventManager
-    )
-
-    this.hdriManager = new HDRIManager(
-      this.sceneManager.scene,
-      this.renderer,
-      this.eventManager
-    )
-
-    this.viewHelperManager = new ViewHelperManager(
-      this.renderer,
-      this.getActiveCamera.bind(this),
-      this.getControls.bind(this),
-      this.eventManager
-    )
-
-    this.modelManager = new SceneModelManager(
-      this.sceneManager.scene,
-      this.renderer,
-      this.eventManager,
-      this.getActiveCamera.bind(this),
-      this.setupCamera.bind(this),
-      this.setGizmo.bind(this)
-    )
-
-    this.loaderManager = new LoaderManager(this.modelManager, this.eventManager)
-
-    this.recordingManager = new RecordingManager(
-      this.sceneManager.scene,
-      this.renderer,
-      this.eventManager
-    )
-
-    this.animationManager = new AnimationManager(this.eventManager)
-
-    this.gizmoManager = new GizmoManager(
-      this.sceneManager.scene,
-      this.renderer,
-      this.controlsManager.controls,
-      this.getActiveCamera.bind(this),
-      () => {
-        const transform = this.gizmoManager.getTransform()
-        this.eventManager.emitEvent('gizmoTransformChange', {
-          ...transform,
-          enabled: this.gizmoManager.isEnabled(),
-          mode: this.gizmoManager.getMode()
-        })
-      }
-    )
+    this.renderer = deps.renderer
+    this.eventManager = deps.eventManager
+    this.sceneManager = deps.sceneManager
+    this.cameraManager = deps.cameraManager
+    this.controlsManager = deps.controlsManager
+    this.lightingManager = deps.lightingManager
+    this.hdriManager = deps.hdriManager
+    this.viewHelperManager = deps.viewHelperManager
+    this.loaderManager = deps.loaderManager
+    this.modelManager = deps.modelManager
+    this.recordingManager = deps.recordingManager
+    this.animationManager = deps.animationManager
+    this.gizmoManager = deps.gizmoManager
 
     this.sceneManager.init()
     this.cameraManager.init()
@@ -214,69 +169,12 @@ class Load3d {
     this.resizeObserver.observe(container)
   }
 
-  /**
-   * Initialize context menu on the Three.js canvas
-   * Detects right-click vs right-drag to show menu only on click
-   */
   private initContextMenu(): void {
-    const canvas = this.renderer.domElement
-
-    this.contextMenuAbortController = new AbortController()
-    const { signal } = this.contextMenuAbortController
-
-    const mousedownHandler = (e: MouseEvent) => {
-      if (e.button === 2) {
-        this.rightMouseStart = { x: e.clientX, y: e.clientY }
-        this.rightMouseMoved = false
-      }
-    }
-
-    const mousemoveHandler = (e: MouseEvent) => {
-      if (e.buttons === 2) {
-        if (
-          exceedsClickThreshold(
-            this.rightMouseStart,
-            { x: e.clientX, y: e.clientY },
-            this.dragThreshold
-          )
-        ) {
-          this.rightMouseMoved = true
-        }
-      }
-    }
-
-    const contextmenuHandler = (e: MouseEvent) => {
-      if (this.isViewerMode) return
-
-      const wasDragging =
-        this.rightMouseMoved ||
-        exceedsClickThreshold(
-          this.rightMouseStart,
-          { x: e.clientX, y: e.clientY },
-          this.dragThreshold
-        )
-
-      this.rightMouseMoved = false
-
-      if (wasDragging) {
-        return
-      }
-
-      e.preventDefault()
-      e.stopPropagation()
-
-      this.showNodeContextMenu(e)
-    }
-
-    canvas.addEventListener('mousedown', mousedownHandler, { signal })
-    canvas.addEventListener('mousemove', mousemoveHandler, { signal })
-    canvas.addEventListener('contextmenu', contextmenuHandler, { signal })
-  }
-
-  private showNodeContextMenu(event: MouseEvent): void {
-    if (this.onContextMenuCallback) {
-      this.onContextMenuCallback(event)
-    }
+    this.disposeContextMenuGuard = attachContextMenuGuard(
+      this.renderer.domElement,
+      (event) => this.onContextMenuCallback?.(event),
+      { isDisabled: () => this.isViewerMode }
+    )
   }
 
   getEventManager(): EventManager {
@@ -323,7 +221,7 @@ class Load3d {
     return this.isViewerMode || (this.targetWidth > 0 && this.targetHeight > 0)
   }
 
-  forceRender(): void {
+  private performFrame(): void {
     const delta = this.clock.getDelta()
     this.animationManager.update(delta)
     this.viewHelperManager.update(delta)
@@ -336,7 +234,10 @@ class Load3d {
     if (this.viewHelperManager.viewHelper.render) {
       this.viewHelperManager.viewHelper.render(this.renderer)
     }
+  }
 
+  forceRender(): void {
+    this.performFrame()
     this.INITIAL_RENDER_DONE = true
   }
 
@@ -354,22 +255,10 @@ class Load3d {
     }
 
     if (this.shouldMaintainAspectRatio()) {
-      const containerAspectRatio = containerWidth / containerHeight
-
-      let renderWidth: number
-      let renderHeight: number
-      let offsetX: number = 0
-      let offsetY: number = 0
-
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
-        offsetX = (containerWidth - renderWidth) / 2
-      } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
-        offsetY = (containerHeight - renderHeight) / 2
-      }
+      const { offsetX, offsetY, width, height } = computeLetterboxedViewport(
+        { width: containerWidth, height: containerHeight },
+        this.targetAspectRatio
+      )
 
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
       this.renderer.setScissor(0, 0, containerWidth, containerHeight)
@@ -377,11 +266,10 @@ class Load3d {
       this.renderer.setClearColor(0x0a0a0a)
       this.renderer.clear()
 
-      this.renderer.setViewport(offsetX, offsetY, renderWidth, renderHeight)
-      this.renderer.setScissor(offsetX, offsetY, renderWidth, renderHeight)
+      this.renderer.setViewport(offsetX, offsetY, width, height)
+      this.renderer.setScissor(offsetX, offsetY, width, height)
 
-      const renderAspectRatio = renderWidth / renderHeight
-      this.cameraManager.updateAspectRatio(renderAspectRatio)
+      this.cameraManager.updateAspectRatio(width / height)
     } else {
       // No aspect ratio constraint: fill the entire container
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
@@ -405,45 +293,11 @@ class Load3d {
     this.renderer.setScissorTest(false)
   }
 
-  private getActiveCamera(): THREE.Camera {
-    return this.cameraManager.activeCamera
-  }
-
-  private getControls() {
-    return this.controlsManager.controls
-  }
-
-  private setGizmo(model: THREE.Object3D): void {
-    this.gizmoManager.setupForModel(model)
-  }
-
-  private setupCamera(size: THREE.Vector3, center: THREE.Vector3): void {
-    this.cameraManager.setupForModel(size, center)
-  }
-
   private startAnimation(): void {
-    const animate = () => {
-      this.animationFrameId = requestAnimationFrame(animate)
-
-      if (!this.isActive()) {
-        return
-      }
-
-      const delta = this.clock.getDelta()
-      this.animationManager.update(delta)
-      this.viewHelperManager.update(delta)
-      this.controlsManager.update()
-
-      this.renderMainScene()
-
-      this.resetViewport()
-
-      if (this.viewHelperManager.viewHelper.render) {
-        this.viewHelperManager.viewHelper.render(this.renderer)
-      }
-    }
-
-    animate()
+    this.renderLoop = startRenderLoop({
+      tick: () => this.performFrame(),
+      isActive: () => this.isActive()
+    })
   }
 
   updateStatusMouseOnNode(onNode: boolean): void {
@@ -459,14 +313,14 @@ class Load3d {
   }
 
   isActive(): boolean {
-    return (
-      this.STATUS_MOUSE_ON_NODE ||
-      this.STATUS_MOUSE_ON_SCENE ||
-      this.STATUS_MOUSE_ON_VIEWER ||
-      this.isRecording() ||
-      !this.INITIAL_RENDER_DONE ||
-      this.animationManager.isAnimationPlaying
-    )
+    return isLoad3dActive({
+      mouseOnNode: this.STATUS_MOUSE_ON_NODE,
+      mouseOnScene: this.STATUS_MOUSE_ON_SCENE,
+      mouseOnViewer: this.STATUS_MOUSE_ON_VIEWER,
+      recording: this.isRecording(),
+      initialRenderDone: this.INITIAL_RENDER_DONE,
+      animationPlaying: this.animationManager.isAnimationPlaying
+    })
   }
 
   async exportModel(format: string): Promise<void> {
@@ -527,24 +381,16 @@ class Load3d {
       const containerHeight = this.renderer.domElement.clientHeight
 
       if (this.shouldMaintainAspectRatio()) {
-        const containerAspectRatio = containerWidth / containerHeight
-
-        let renderWidth: number
-        let renderHeight: number
-
-        if (containerAspectRatio > this.targetAspectRatio) {
-          renderHeight = containerHeight
-          renderWidth = renderHeight * this.targetAspectRatio
-        } else {
-          renderWidth = containerWidth
-          renderHeight = renderWidth / this.targetAspectRatio
-        }
+        const { width, height } = computeLetterboxedViewport(
+          { width: containerWidth, height: containerHeight },
+          this.targetAspectRatio
+        )
 
         this.sceneManager.updateBackgroundSize(
           this.sceneManager.backgroundTexture,
           this.sceneManager.backgroundMesh,
-          renderWidth,
-          renderHeight
+          width,
+          height
         )
       } else {
         // No aspect ratio constraints: fill container
@@ -651,11 +497,18 @@ class Load3d {
   }
 
   isSplatModel(): boolean {
-    return this.modelManager.containsSplatMesh()
+    return this.loaderManager.getCurrentAdapter()?.kind === 'splat'
   }
 
   isPlyModel(): boolean {
-    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+    return this.loaderManager.getCurrentAdapter()?.kind === 'pointCloud'
+  }
+
+  getCurrentModelCapabilities(): ModelAdapterCapabilities {
+    return (
+      this.loaderManager.getCurrentAdapter()?.capabilities ??
+      DEFAULT_MODEL_CAPABILITIES
+    )
   }
 
   clearModel(): void {
@@ -742,21 +595,14 @@ class Load3d {
     }
 
     if (this.shouldMaintainAspectRatio()) {
-      const containerAspectRatio = containerWidth / containerHeight
-      let renderWidth: number
-      let renderHeight: number
-
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
-      } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
-      }
+      const { width, height } = computeLetterboxedViewport(
+        { width: containerWidth, height: containerHeight },
+        this.targetAspectRatio
+      )
 
       this.renderer.setSize(containerWidth, containerHeight)
-      this.cameraManager.handleResize(renderWidth, renderHeight)
-      this.sceneManager.handleResize(renderWidth, renderHeight)
+      this.cameraManager.handleResize(width, height)
+      this.sceneManager.handleResize(width, height)
     } else {
       // No aspect ratio constraint: use container dimensions directly
       this.renderer.setSize(containerWidth, containerHeight)
@@ -903,16 +749,22 @@ class Load3d {
   }
 
   public setGizmoEnabled(enabled: boolean): void {
+    // Defensive guard: adapters that don't support gizmo transforms
+    // (PLY point clouds, Gaussian splats) ignore enable requests even if
+    // the caller forgot to check the capability.
+    if (enabled && !this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.setEnabled(enabled)
     this.forceRender()
   }
 
   public setGizmoMode(mode: GizmoMode): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.setMode(mode)
     this.forceRender()
   }
 
   public resetGizmoTransform(): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.reset()
     this.forceRender()
   }
@@ -922,6 +774,7 @@ class Load3d {
     rotation: { x: number; y: number; z: number },
     scale?: { x: number; y: number; z: number }
   ): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.applyTransform(position, rotation, scale)
     this.forceRender()
   }
@@ -945,10 +798,8 @@ class Load3d {
       this.resizeObserver = null
     }
 
-    if (this.contextMenuAbortController) {
-      this.contextMenuAbortController.abort()
-      this.contextMenuAbortController = null
-    }
+    this.disposeContextMenuGuard?.()
+    this.disposeContextMenuGuard = null
 
     this.renderer.forceContextLoss()
     const canvas = this.renderer.domElement
@@ -958,9 +809,8 @@ class Load3d {
     })
     canvas.dispatchEvent(event)
 
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId)
-    }
+    this.renderLoop?.stop()
+    this.renderLoop = null
 
     this.sceneManager.dispose()
     this.cameraManager.dispose()

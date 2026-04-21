@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div v-if="!hideMaterialMode" class="show-material-mode relative">
+    <div v-if="materialModes.length > 0" class="show-material-mode relative">
       <Button
         v-tooltip.right="{
           value: t('load3d.materialMode'),
@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -105,12 +105,10 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 const {
-  hideMaterialMode = false,
-  isPlyModel = false,
+  materialModes = ['original', 'normal', 'wireframe'],
   hasSkeleton = false
 } = defineProps<{
-  hideMaterialMode?: boolean
-  isPlyModel?: boolean
+  materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
 }>()
 
@@ -130,22 +128,6 @@ const upDirections: UpDirection[] = [
   '-z',
   '+z'
 ]
-
-const materialModes = computed(() => {
-  const modes: MaterialMode[] = [
-    'original',
-    'normal',
-    'wireframe'
-    //'depth' disable for now
-  ]
-
-  // Only show pointCloud mode for PLY files (point cloud rendering)
-  if (isPlyModel) {
-    modes.splice(1, 0, 'pointCloud')
-  }
-
-  return modes
-})
 
 function toggleUpDirection() {
   showUpDirection.value = !showUpDirection.value

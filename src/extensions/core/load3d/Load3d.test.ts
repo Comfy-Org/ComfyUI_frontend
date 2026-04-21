@@ -37,11 +37,6 @@ type SceneManagerStub = {
   dispose: ReturnType<typeof vi.fn>
 }
 
-type Load3dPrivate = {
-  setGizmo(model: THREE.Object3D): void
-  setupCamera(size: THREE.Vector3, center: THREE.Vector3): void
-}
-
 function makeGizmoStub(): GizmoStub {
   return {
     setEnabled: vi.fn(),
@@ -83,6 +78,20 @@ function makeInstance() {
   const controlsManager = { updateCamera: vi.fn() }
   const viewHelperManager = { recreateViewHelper: vi.fn() }
   const animationManager = { dispose: vi.fn() }
+  const loaderManager = {
+    getCurrentAdapter: vi.fn().mockReturnValue({
+      kind: 'mesh',
+      extensions: ['glb'],
+      capabilities: {
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe']
+      }
+    })
+  }
 
   // Load3d's constructor instantiates THREE.WebGLRenderer, ResizeObserver
   // and ViewHelper, none of which are available in happy-dom. Skip it and
@@ -97,6 +106,7 @@ function makeInstance() {
     controlsManager,
     viewHelperManager,
     animationManager,
+    loaderManager,
     forceRender: vi.fn(),
     handleResize: vi.fn()
   })
@@ -221,23 +231,6 @@ describe('Load3d', () => {
         ctx.cameraManager.activeCamera
       )
       expect(ctx.viewHelperManager.recreateViewHelper).toHaveBeenCalledOnce()
-    })
-
-    it('setGizmo (private) forwards the model to gizmoManager.setupForModel', () => {
-      const model = new THREE.Object3D()
-
-      ;(ctx.load3d as unknown as Load3dPrivate).setGizmo(model)
-
-      expect(ctx.gizmo.setupForModel).toHaveBeenCalledWith(model)
-    })
-
-    it('setupCamera (private) forwards size and center to cameraManager', () => {
-      const size = new THREE.Vector3(1, 2, 3)
-      const center = new THREE.Vector3(4, 5, 6)
-
-      ;(ctx.load3d as unknown as Load3dPrivate).setupCamera(size, center)
-
-      expect(ctx.cameraManager.setupForModel).toHaveBeenCalledWith(size, center)
     })
   })
 
