@@ -410,11 +410,11 @@ const activePlanIndex = ref(0)
 
     <!-- Enterprise section (desktop only, mobile handled in plan loop) -->
     <div
-      class="bg-transparency-white-t4 rounded-5xl mt-8 hidden flex-col gap-8 p-2 lg:mt-2 lg:flex lg:flex-row"
+      class="bg-transparency-white-t4 rounded-5xl mt-8 hidden flex-col p-2 lg:mt-8 lg:flex lg:flex-row"
     >
       <!-- Left side -->
       <div
-        class="bg-primary-comfy-ink flex flex-col items-start justify-between rounded-4xl p-8 lg:w-1/2"
+        class="bg-primary-comfy-ink rounded-4.5xl flex flex-col items-start justify-between p-8 lg:w-1/2"
       >
         <div>
           <span

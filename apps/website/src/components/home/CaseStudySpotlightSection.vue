@@ -20,6 +20,7 @@ const routes = getRoutes(locale)
         <VideoPlayer
           src="https://media.comfy.org/website/customers/blackmath/video.webm"
           poster="https://media.comfy.org/website/customers/blackmath/poster.webp"
+          minimal
           :tracks="[
             {
               src: 'https://media.comfy.org/website/customers/blackmath/video.vtt',

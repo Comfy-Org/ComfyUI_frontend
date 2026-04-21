@@ -21,7 +21,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('gallery.contact.heading', locale) }}
     </h2>
     <BrandButton
-      href="mailto:hello@comfy.org"
+      href="/contact"
       variant="outline"
       size="sm"
       class="mt-8 uppercase"

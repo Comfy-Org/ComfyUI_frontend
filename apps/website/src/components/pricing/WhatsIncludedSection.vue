@@ -88,23 +88,27 @@ const features: IncludedFeature[] = [
           :key="feature.title"
           :class="
             index < features.length - 1
-              ? 'border-primary-comfy-canvas/15 border-b border-dashed'
+              ? 'border-primary-comfy-canvas/15 border-b border-solid'
               : ''
           "
           class="py-8 first:pt-0 lg:grid lg:grid-cols-[200px_1fr] lg:gap-x-10"
         >
           <!-- Title -->
           <div class="flex items-start gap-3">
-            <span
-              :class="
-                feature.isComingSoon
-                  ? 'text-primary-comfy-yellow/60'
-                  : 'text-primary-comfy-yellow'
-              "
-              class="mt-0.5 text-sm leading-none"
-            >
-              {{ feature.isComingSoon ? '⏳' : '✓' }}
-            </span>
+            <img
+              v-if="feature.isComingSoon"
+              src="/icons/clock.svg"
+              alt=""
+              class="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <img
+              v-else
+              src="/icons/check.svg"
+              alt=""
+              class="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
             <div>
               <p class="text-primary-comfy-canvas text-sm font-medium">
                 {{ feature.title }}
