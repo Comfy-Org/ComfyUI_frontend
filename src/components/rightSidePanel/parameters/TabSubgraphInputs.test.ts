@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, waitFor } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,6 +43,11 @@ const {
 vi.mock('@atlaskit/pragmatic-drag-and-drop/element/adapter', () => ({
   draggable: mockDraggable,
   dropTargetForElements: mockDropTargetForElements
+}))
+
+const mockSetDirty = vi.hoisted(() => vi.fn())
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ canvas: { setDirty: mockSetDirty } })
 }))
 
 vi.mock(
@@ -169,5 +174,38 @@ describe('TabSubgraphInputs drag-and-drop', () => {
     capturedDropHandlers[0]({ source: { data: { index: 0 } } })
 
     expect(promotionStore.movePromotion).not.toHaveBeenCalled()
+  })
+
+  it('ignores drop when source index is not a number', () => {
+    renderComponent()
+
+    const promotionStore = usePromotionStore()
+    vi.spyOn(promotionStore, 'movePromotion')
+
+    capturedDropHandlers[1]({ source: { data: { index: 'invalid' } } })
+
+    expect(promotionStore.movePromotion).not.toHaveBeenCalled()
+  })
+
+  it('calls canvas setDirty after a successful drop', () => {
+    const node = createMockNode()
+    renderComponent(node)
+
+    capturedDropHandlers[1]({ source: { data: { index: 0 } } })
+
+    expect(mockSetDirty).toHaveBeenCalledWith(true, true)
+  })
+
+  it('re-registers drag handlers when promotionEntries changes', async () => {
+    const node = createMockNode()
+    renderComponent(node)
+    mockDraggable.mockClear()
+
+    const promotionStore = usePromotionStore()
+    promotionStore.setPromotions('graph-1', '1', [
+      fromAny({ sourceNodeId: 'node-1', widgetName: 'seed' })
+    ])
+
+    await waitFor(() => expect(mockDraggable).toHaveBeenCalledTimes(2))
   })
 })
