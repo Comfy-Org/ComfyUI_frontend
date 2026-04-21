@@ -9,7 +9,7 @@
       v-model="inputValue"
       v-focus
       type="text"
-      class="rounded-none bg-transparent p-0"
+      class="h-full rounded-none p-0 focus-visible:ring-0"
       v-bind="inputAttrs"
       @blur="finishEditing"
       @keydown.enter.capture.stop="blurInputElement"

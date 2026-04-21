@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { useDialogStore } from '@/stores/dialogStore'
 import PromptDialogContent from './PromptDialogContent.vue'
 
 type Props = ComponentProps<typeof PromptDialogContent>
@@ -41,15 +42,17 @@ describe('PromptDialogContent', () => {
     expect(screen.getByRole('textbox')).toHaveValue('my workflow')
   })
 
-  it('calls onConfirm with the current input value when Confirm is clicked', async () => {
+  it('calls onConfirm and closes dialog when Confirm is clicked', async () => {
     const onConfirm = vi.fn()
     const { user } = renderComponent({ defaultValue: 'original', onConfirm })
+    const closeSpy = vi.spyOn(useDialogStore(), 'closeDialog')
 
     await user.clear(screen.getByRole('textbox'))
     await user.type(screen.getByRole('textbox'), 'renamed')
-    await user.click(screen.getByRole('button'))
+    await user.click(screen.getByRole('button', { name: /confirm/i }))
 
     expect(onConfirm).toHaveBeenCalledWith('renamed')
+    expect(closeSpy).toHaveBeenCalledOnce()
   })
 
   it('calls onConfirm when Enter is pressed inside the input', async () => {
@@ -61,6 +64,15 @@ describe('PromptDialogContent', () => {
     await user.keyboard('{Enter}')
 
     expect(onConfirm).toHaveBeenCalledWith('via enter')
+  })
+
+  it('closes dialog when Confirm button is clicked', async () => {
+    const { user } = renderComponent({ defaultValue: '' })
+    const closeSpy = vi.spyOn(useDialogStore(), 'closeDialog')
+
+    await user.click(screen.getByRole('button', { name: /confirm/i }))
+
+    expect(closeSpy).toHaveBeenCalledOnce()
   })
 
   it('selects all text when the input is focused', async () => {
