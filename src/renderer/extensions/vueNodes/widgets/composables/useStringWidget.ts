@@ -1,4 +1,8 @@
-import { isMiddleButtonHeld, isMiddlePointerInput } from '@/base/pointerUtils'
+import {
+  isMiddleButtonDown,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
@@ -72,7 +76,7 @@ function addMultilineWidget(
   })
 
   inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
+    if (isMiddleButtonDown(event)) {
       app.canvas.processMouseUp(event)
     }
   })

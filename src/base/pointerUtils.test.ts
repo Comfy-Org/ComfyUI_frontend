@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { isMiddleButtonHeld, isMiddlePointerInput } from '@/base/pointerUtils'
+import {
+  isMiddleButtonDown,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 
 describe('isMiddlePointerInput', () => {
   describe('MouseEvent.button semantics (down/up events)', () => {
@@ -138,5 +142,36 @@ describe('isMiddleButtonHeld', () => {
   it('works for PointerEvent with buttons=4', () => {
     const event = new PointerEvent('pointermove', { buttons: 4 })
     expect(isMiddleButtonHeld(event)).toBe(true)
+  })
+})
+
+describe('isMiddleButtonDown', () => {
+  it('returns true when button is 1 (middle)', () => {
+    const event = new MouseEvent('mousedown', { button: 1 })
+    expect(isMiddleButtonDown(event)).toBe(true)
+  })
+
+  it('returns true on pointerup with button=1 even if buttons=0', () => {
+    // On middle pointerup the button just released, so buttons typically
+    // drops middle. Use the button field to identify middle-up events.
+    const event = new PointerEvent('pointerup', { button: 1, buttons: 0 })
+    expect(isMiddleButtonDown(event)).toBe(true)
+  })
+
+  it('returns false when button is 0 (left)', () => {
+    const event = new MouseEvent('mousedown', { button: 0 })
+    expect(isMiddleButtonDown(event)).toBe(false)
+  })
+
+  it('returns false when button is 2 (right)', () => {
+    const event = new MouseEvent('mousedown', { button: 2 })
+    expect(isMiddleButtonDown(event)).toBe(false)
+  })
+
+  it('ignores buttons bitmask — only button field matters', () => {
+    // buttons=5 (middle held while left press fires) but button=0 means this
+    // is a left-button event, not a middle-button event.
+    const event = new MouseEvent('mousedown', { button: 0, buttons: 5 })
+    expect(isMiddleButtonDown(event)).toBe(false)
   })
 })

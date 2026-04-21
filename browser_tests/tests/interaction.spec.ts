@@ -1088,11 +1088,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       )
     })
 
-    test('Middle-click drag should pan canvas', async ({ comfyPage }) => {
-      await comfyPage.page.mouse.move(50, 50)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(150, 150)
-      await comfyPage.page.mouse.up({ button: 'middle' })
+    test('Middle-click drag should pan canvas', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyMouse.mmbDrag({ x: 50, y: 50 }, { x: 150, y: 150 })
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'legacy-middle-drag-pan.png'
@@ -1164,11 +1164,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       )
     })
 
-    test('Middle-click drag should pan canvas', async ({ comfyPage }) => {
-      await comfyPage.page.mouse.move(50, 50)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(150, 150)
-      await comfyPage.page.mouse.up({ button: 'middle' })
+    test('Middle-click drag should pan canvas', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyMouse.mmbDrag({ x: 50, y: 50 }, { x: 150, y: 150 })
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'standard-middle-drag-pan.png'
