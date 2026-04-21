@@ -631,6 +631,56 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-226: All tab chronological sort', () => {
+    it('FE-226 follow-up: a fresh input (with created_at) sorts above older outputs when inputMediaAssets is provided', async () => {
+      const freshInput = '2026-04-20T12:00:00Z'
+      const olderOutput = '2026-04-19T12:00:00Z'
+      const oldestOutput = '2026-04-18T12:00:00Z'
+
+      mockMediaAssets.media.value = [
+        {
+          id: 'out-older',
+          name: 'output_older.png',
+          preview_url: '',
+          tags: ['output'],
+          created_at: olderOutput
+        },
+        {
+          id: 'out-oldest',
+          name: 'output_oldest.png',
+          preview_url: '',
+          tags: ['output'],
+          created_at: oldestOutput
+        }
+      ]
+
+      const inputAssets = createMockMediaAssets()
+      inputAssets.media.value = [
+        {
+          id: 'in-fresh',
+          name: 'input_fresh.png',
+          preview_url: '',
+          tags: ['input'],
+          created_at: freshInput
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['input_fresh.png'],
+          inputMediaAssets: inputAssets,
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'all'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'input_fresh.png',
+        'output_older.png [output]',
+        'output_oldest.png [output]'
+      ])
+    })
+
     it('sorts All tab by created_at DESC, interleaving outputs with legacy-combo inputs (which land last)', async () => {
       const newer = '2026-04-20T12:00:00Z'
       const older = '2026-04-19T12:00:00Z'

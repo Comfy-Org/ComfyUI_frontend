@@ -63,6 +63,7 @@ interface UseWidgetSelectItemsOptions {
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
   outputMediaAssets: ReturnType<typeof useMediaAssets>
+  inputMediaAssets?: ReturnType<typeof useMediaAssets>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
