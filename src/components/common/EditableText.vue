@@ -12,7 +12,7 @@
       class="h-full rounded-none p-0 focus-visible:ring-0"
       v-bind="inputAttrs"
       @blur="finishEditing"
-      @keydown.enter.capture.stop="blurInputElement"
+      @keydown.enter.capture.stop="inputRef?.blur()"
       @keydown.escape.capture.stop="cancelEditing"
       @click.stop
       @contextmenu.stop
@@ -46,10 +46,6 @@ const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof Input>>()
 const isCanceling = ref(false)
 
-function blurInputElement() {
-  inputRef.value?.blur()
-}
-
 function finishEditing() {
   if (!isCanceling.value) {
     emit('edit', inputValue.value)
@@ -61,7 +57,7 @@ function cancelEditing() {
   isCanceling.value = true
   inputValue.value = modelValue
   emit('cancel')
-  blurInputElement()
+  inputRef.value?.blur()
 }
 
 watch(

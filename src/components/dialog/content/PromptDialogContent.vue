@@ -9,7 +9,7 @@
         :placeholder
         autofocus
         @keyup.enter="handleConfirm"
-        @focus="selectAllText"
+        @focus="inputRef?.selectAll()"
       />
     </label>
     <Button @click="handleConfirm">
@@ -40,8 +40,4 @@ function handleConfirm() {
 }
 
 const inputRef = ref<InstanceType<typeof Input>>()
-
-function selectAllText() {
-  inputRef.value?.setSelectionRange(0, inputValue.value.length)
-}
 </script>

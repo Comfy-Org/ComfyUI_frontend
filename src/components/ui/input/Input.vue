@@ -17,7 +17,9 @@ defineExpose({
   select: () => inputRef.value?.select(),
   blur: () => inputRef.value?.blur(),
   setSelectionRange: (start: number, end: number) =>
-    inputRef.value?.setSelectionRange(start, end)
+    inputRef.value?.setSelectionRange(start, end),
+  selectAll: () =>
+    inputRef.value?.setSelectionRange(0, inputRef.value.value.length)
 })
 </script>
 
