@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -36,35 +37,25 @@ const categories = computed(() =>
 
 const activeSection = ref(sections[0]?.id ?? '')
 
-let observer: IntersectionObserver | null = null
+const sectionRefs = useTemplateRefsList<HTMLElement>()
 let isScrolling = false
 
 const HEADER_OFFSET = -144
 
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (isScrolling) return
-      let best: IntersectionObserverEntry | null = null
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        if (!best || entry.boundingClientRect.top < best.boundingClientRect.top)
-          best = entry
-      }
-      if (best) activeSection.value = best.target.id
-    },
-    { rootMargin: '-20% 0px -60% 0px' }
-  )
-
-  for (const section of sections) {
-    const el = document.getElementById(section.id)
-    if (el) observer.observe(el)
-  }
-})
-
-onUnmounted(() => {
-  observer?.disconnect()
-})
+useIntersectionObserver(
+  sectionRefs,
+  (entries) => {
+    if (isScrolling) return
+    let best: IntersectionObserverEntry | null = null
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      if (!best || entry.boundingClientRect.top < best.boundingClientRect.top)
+        best = entry
+    }
+    if (best) activeSection.value = best.target.id
+  },
+  { rootMargin: '-20% 0px -60% 0px' }
+)
 
 function scrollToSection(id: string) {
   activeSection.value = id
@@ -104,6 +95,7 @@ function scrollToSection(id: string) {
         <div
           v-for="section in sections"
           :id="section.id"
+          :ref="sectionRefs.set"
           :key="section.id"
           class="mb-16 scroll-mt-24 lg:scroll-mt-36"
         >

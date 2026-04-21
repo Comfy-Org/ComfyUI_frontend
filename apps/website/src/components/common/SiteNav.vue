@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import {
+  breakpointsTailwind,
+  useBreakpoints,
+  useEventListener,
+  whenever
+} from '@vueuse/core'
+import { nextTick, onMounted, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -123,24 +129,22 @@ async function onNavigate() {
   isNavigating.value = false
 }
 
-function onMediaChange(e: MediaQueryListEvent) {
-  if (e.matches) closeMobileMenu()
-}
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isDesktop = breakpoints.greaterOrEqual('lg')
 
-let mq: MediaQueryList
+whenever(isDesktop, () => {
+  mobileMenuOpen.value = false
+  // Don't focus hamburger when transitioning to desktop — it's hidden
+})
 
 onMounted(() => {
   currentPath.value = window.location.pathname
-  mq = window.matchMedia('(min-width: 1024px)')
-  mq.addEventListener('change', onMediaChange)
-  document.addEventListener('keydown', onKeydown)
-  document.addEventListener('astro:after-swap', onNavigate)
-})
-
-onUnmounted(() => {
-  mq?.removeEventListener('change', onMediaChange)
-  document.removeEventListener('keydown', onKeydown)
-  document.removeEventListener('astro:after-swap', onNavigate)
+  useEventListener(document, 'keydown', onKeydown)
+  useEventListener(
+    document,
+    'astro:after-swap' as keyof DocumentEventMap,
+    onNavigate
+  )
 })
 </script>
 
