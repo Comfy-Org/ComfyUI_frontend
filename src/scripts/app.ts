@@ -8,6 +8,10 @@ import { useCanvasPositionConversion } from '@/composables/element/useCanvasPosi
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import {
+  applyViewport,
+  measureViewportFromElement
+} from '@/renderer/core/canvas/canvasViewport'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { st, t } from '@/i18n'
@@ -968,15 +972,8 @@ export class ComfyApp {
   }
 
   private resizeCanvas(canvas: HTMLCanvasElement) {
-    // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
-    const scale = Math.max(window.devicePixelRatio, 1)
-
-    // Clear fixed width and height while calculating rect so it uses 100% instead
-    canvas.height = canvas.width = NaN
-    const { width, height } = canvas.getBoundingClientRect()
-    canvas.width = Math.round(width * scale)
-    canvas.height = Math.round(height * scale)
-    canvas.getContext('2d')?.scale(scale, scale)
+    const viewport = measureViewportFromElement(canvas)
+    applyViewport(viewport, canvas, this.canvas.bgcanvas)
     this.canvas?.draw(true, true)
   }
 
@@ -1345,7 +1342,7 @@ export class ComfyApp {
         }
 
         canvasScheduler.schedule(() => {
-          this.canvas.resize()
+          this.resizeCanvas(this.canvasEl)
           fitView()
         })
       } catch (error) {
