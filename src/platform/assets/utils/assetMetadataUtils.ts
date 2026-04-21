@@ -167,14 +167,11 @@ export function getAssetUserDescription(asset: AssetItem): string {
 }
 
 /**
- * Gets the filename for an asset with fallback chain:
- *   user_metadata.filename → metadata.filename → asset.display_name → asset.name
- *
- * display_name is populated by queue output mappers in Cloud where
- * asset.name is a content hash.
+ * Gets the filename for an asset with fallback chain
+ * Checks user_metadata.filename first, then metadata.filename, then asset.name
+ * @param asset - The asset to extract filename from
+ * @returns The filename string
  */
 export function getAssetFilename(asset: AssetItem): string {
-  return (
-    getStringProperty(asset, 'filename') ?? asset.display_name ?? asset.name
-  )
+  return getStringProperty(asset, 'filename') ?? asset.name
 }

@@ -179,7 +179,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const annotatedPath = `${asset.name} [output]`
-      const displayLabel = `${getAssetFilename(asset)} [output]`
+      const displayFilename =
+        getAssetFilename(asset) !== asset.name
+          ? getAssetFilename(asset)
+          : (asset.display_name ?? asset.name)
+      const displayLabel = `${displayFilename} [output]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:
