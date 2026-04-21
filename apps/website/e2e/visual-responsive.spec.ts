@@ -34,7 +34,6 @@ async function navigateAndFreeze(page: Page, url: string) {
   await freezeVideos(page)
 }
 
-// ── Home ─────────────────────────────────────────────
 test.describe('Home', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test.describe(vp.name, () => {
@@ -67,7 +66,6 @@ test.describe('Home', { tag: '@visual' }, () => {
   }
 })
 
-// ── Pricing ──────────────────────────────────────────
 test.describe('Pricing', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test(`pricing-tiers-${vp.name}`, async ({ page }) => {
@@ -84,7 +82,6 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   }
 })
 
-// ── Contact ──────────────────────────────────────────
 test.describe('Contact', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS.filter(
     (v) => v.name === '1-sm' || v.name === '2-md'
@@ -102,7 +99,6 @@ test.describe('Contact', { tag: '@visual' }, () => {
   }
 })
 
-// ── Gallery ──────────────────────────────────────────
 test.describe('Gallery', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS.filter(
     (v) => v.name === '1-sm' || v.name === '2-md'
@@ -120,7 +116,6 @@ test.describe('Gallery', { tag: '@visual' }, () => {
   }
 })
 
-// ── About ────────────────────────────────────────────
 test.describe('About', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS.filter(
     (v) => v.name === '1-sm' || v.name === '2-md'
@@ -138,11 +133,6 @@ test.describe('About', { tag: '@visual' }, () => {
   }
 })
 
-// ── Overflow-only checks (all major pages) ───────────
-// Known overflow bugs at wider viewports (to be fixed in later phases):
-//   / — desktop, wide
-//   /cloud — tablet, desktop, wide
-//   /download — tablet, desktop, wide
 const OVERFLOW_SKIP = new Set([
   '/ 3-lg',
   '/ 4-xl',
