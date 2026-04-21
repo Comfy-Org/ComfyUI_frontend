@@ -10,7 +10,11 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { devAssert } from '@/utils/devAssert'
+import {
+  applyViewport,
+  measureViewport
+} from '@/renderer/core/canvas/canvasViewport'
+import { devAssert } from '@/base/common/devAssert'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -6519,9 +6523,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
-   * resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode.
-   * Prefer using the CanvasViewport system (measureViewportFromElement + applyViewport) for
-   * DPR-aware resizing. This method uses the viewport system internally.
+   * Resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode.
+   * Uses the CanvasViewport system internally for DPR-aware sizing.
    */
   resize(width?: number, height?: number): void {
     if (!width && !height) {
@@ -6534,24 +6537,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    const dpr = Math.max(window.devicePixelRatio ?? 1, 1)
-    const physicalWidth = Math.round((width ?? 0) * dpr)
-    const physicalHeight = Math.round((height ?? 0) * dpr)
+    const viewport = measureViewport(
+      width ?? 0,
+      height ?? 0,
+      window.devicePixelRatio ?? 1
+    )
 
     if (
-      this.canvas.width === physicalWidth &&
-      this.canvas.height === physicalHeight
+      this.canvas.width === viewport.physicalWidth &&
+      this.canvas.height === viewport.physicalHeight
     )
       return
 
-    this.canvas.width = physicalWidth
-    this.canvas.height = physicalHeight
-    this.bgcanvas.width = physicalWidth
-    this.bgcanvas.height = physicalHeight
-
-    this.canvas.getContext('2d')?.scale(dpr, dpr)
-    this.bgcanvas.getContext('2d')?.scale(dpr, dpr)
-
+    applyViewport(viewport, this.canvas, this.bgcanvas)
     this.setDirty(true, true)
   }
 

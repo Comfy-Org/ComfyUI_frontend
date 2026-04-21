@@ -198,8 +198,7 @@ export class DragAndScale {
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
         : [this.element.width, this.element.height]
-    //     const canvasNotMeasurable = width <= 0 || height <= 0
-    //    if (canvasNotMeasurable) return
+    if (width <= 0 || height <= 0) return
     const cw = width / window.devicePixelRatio
     const ch = height / window.devicePixelRatio
     let targetScale = this.scale
@@ -252,8 +251,7 @@ export class DragAndScale {
     const startTimestamp = performance.now()
     const cw = this.element.width / window.devicePixelRatio
     const ch = this.element.height / window.devicePixelRatio
-    //   const canvasNotMeasurable = cw <= 0 || ch <= 0
-    // if (canvasNotMeasurable) return
+    if (cw <= 0 || ch <= 0) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale
