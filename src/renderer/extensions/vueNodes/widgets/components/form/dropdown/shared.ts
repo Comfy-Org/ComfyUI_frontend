@@ -33,7 +33,7 @@ function createSortOption(
 
 export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
-    createSortOption('default', t('assetBrowser.sortDefault')),
+    createSortOption('default', t('assetBrowser.sortRecent')),
     createSortOption('name-asc', t('assetBrowser.sortAZ'))
   ]
 }
