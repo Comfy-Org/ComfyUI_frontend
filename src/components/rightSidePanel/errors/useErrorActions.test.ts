@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
     trackHelpResourceClicked: ReturnType<typeof vi.fn>
   } | null,
   staticUrls: {
-    githubIssues: 'https://github.com/comfyanonymous/ComfyUI/issues'
+    githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
   }
 }))
 
