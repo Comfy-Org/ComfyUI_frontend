@@ -124,7 +124,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleButtonDown, isMiddleButtonHeld } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -605,7 +605,12 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
-  if (!isMiddlePointerInput(e)) return
+  // Bound to pointerdown, pointerup, AND pointermove (see template capture
+  // handlers). pointermove needs the bitmask held check so a chorded button
+  // mid-drag doesn't drop the forwarding; down/up use the button field.
+  const isMiddle =
+    e.type === 'pointermove' ? isMiddleButtonHeld(e) : isMiddleButtonDown(e)
+  if (!isMiddle) return
   if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 
