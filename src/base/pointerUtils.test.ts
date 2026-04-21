@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleButtonHeld, isMiddlePointerInput } from '@/base/pointerUtils'
 
 describe('isMiddlePointerInput', () => {
   describe('MouseEvent.button semantics (down/up events)', () => {
@@ -89,5 +89,54 @@ describe('isMiddlePointerInput', () => {
       const event = new MouseEvent('mousedown', { button: 1, buttons: 2 })
       expect(isMiddlePointerInput(event)).toBe(true)
     })
+  })
+})
+
+describe('isMiddleButtonHeld', () => {
+  it('returns true when middle is the only held button (buttons=4)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 4 })
+    expect(isMiddleButtonHeld(event)).toBe(true)
+  })
+
+  it('returns true when middle is held chorded with left (buttons=5)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 5 })
+    expect(isMiddleButtonHeld(event)).toBe(true)
+  })
+
+  it('returns true when middle is held chorded with right (buttons=6)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 6 })
+    expect(isMiddleButtonHeld(event)).toBe(true)
+  })
+
+  it('returns true when all three buttons are held (buttons=7)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 7 })
+    expect(isMiddleButtonHeld(event)).toBe(true)
+  })
+
+  it('returns false when only left is held (buttons=1)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 1 })
+    expect(isMiddleButtonHeld(event)).toBe(false)
+  })
+
+  it('returns false when only right is held (buttons=2)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 2 })
+    expect(isMiddleButtonHeld(event)).toBe(false)
+  })
+
+  it('returns false when no buttons are held (buttons=0)', () => {
+    const event = new MouseEvent('mousemove', { buttons: 0 })
+    expect(isMiddleButtonHeld(event)).toBe(false)
+  })
+
+  it('ignores button field — only buttons (held) matters', () => {
+    // Synthetic: pointerdown with button===1 but buttons=0 (quirky UA). Held
+    // semantics say middle is NOT currently held, so false.
+    const event = new MouseEvent('mousedown', { button: 1, buttons: 0 })
+    expect(isMiddleButtonHeld(event)).toBe(false)
+  })
+
+  it('works for PointerEvent with buttons=4', () => {
+    const event = new PointerEvent('pointermove', { buttons: 4 })
+    expect(isMiddleButtonHeld(event)).toBe(true)
   })
 })

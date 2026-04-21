@@ -1,4 +1,4 @@
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleButtonHeld, isMiddlePointerInput } from '@/base/pointerUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
@@ -66,7 +66,7 @@ function addMultilineWidget(
   })
 
   inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
+    if (isMiddleButtonHeld(event)) {
       app.canvas.processMouseMove(event)
     }
   })
