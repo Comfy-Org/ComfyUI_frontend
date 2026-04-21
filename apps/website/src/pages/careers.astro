@@ -1,8 +1,24 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import ComingSoon from '../components/common/ComingSoon.astro'
+import HeroSection from '../components/careers/HeroSection.vue'
+import RolesSection from '../components/careers/RolesSection.vue'
+import WhyJoinSection from '../components/careers/WhyJoinSection.vue'
+import TeamPhotosSection from '../components/careers/TeamPhotosSection.vue'
+import FAQSection from '../components/common/FAQSection.vue'
 ---
 
-<BaseLayout title="Careers — Comfy">
-  <ComingSoon />
+<BaseLayout
+  title="Careers — Comfy"
+  description="Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more."
+>
+  <HeroSection />
+  <RolesSection client:visible />
+  <WhyJoinSection client:visible />
+  <TeamPhotosSection client:visible />
+  <FAQSection
+    headingKey="careers.faq.heading"
+    faqPrefix="careers.faq"
+    faqCount={8}
+    client:visible
+  />
 </BaseLayout>
