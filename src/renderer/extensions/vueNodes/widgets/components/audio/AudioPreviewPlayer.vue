@@ -184,7 +184,7 @@ const progressPercentage = computed(() => {
 const modelValue = defineModel<string>()
 
 const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
-const showVolumeOne = computed(() => isMuted.value && volume.value > 0)
+const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
 const togglePlayPause = () => {
