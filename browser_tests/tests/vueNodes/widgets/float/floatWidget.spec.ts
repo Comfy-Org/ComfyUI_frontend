@@ -14,7 +14,9 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
       .first()
     const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
 
-    await input.fill('1.5 + 1.75')
+    // 2.1 + 1.23 = 3.33 — well away from any half-point, so the expected
+    // value is the same under half-up, half-even, and half-away-from-zero.
+    await input.fill('2.1 + 1.23')
     await input.blur()
 
     await expect(input).toHaveValue('3.3')
@@ -72,5 +74,10 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
 
     const cfgWidgetAfterReload = await ksamplerNode.getWidgetByName('cfg')
     await expect.poll(() => cfgWidgetAfterReload.getValue()).toBe(7.5)
+
+    // Also assert the Vue input mirrors the persisted value, so a broken
+    // rehydration path that keeps litegraph state correct but renders stale
+    // UI (or vice versa) still fails this test.
+    await expect(input).toHaveValue('7.5')
   })
 })
