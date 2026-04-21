@@ -28,6 +28,17 @@ const RED_SHADER = [
   '}'
 ].join('\n')
 
+/** Shader that drives every pixel's red channel from `u_float0` alone. */
+const FLOAT_RED_SHADER = [
+  '#version 300 es',
+  'precision highp float;',
+  'uniform float u_float0;',
+  'layout(location = 0) out vec4 fragColor0;',
+  'void main() {',
+  '    fragColor0 = vec4(u_float0, 0.0, 0.0, 1.0);',
+  '}'
+].join('\n')
+
 /** Wait until an `<img>` locator has finished decoding. */
 async function waitForImageDecoded(image: Locator): Promise<void> {
   await expect
@@ -213,6 +224,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
         await expect.poll(() => glsl.getPreviewSrc()).not.toBe(initialSrc)
         await expect.poll(() => glsl.getPreviewSrc()).toMatch(/^blob:/)
+        await glsl.expectEveryPixelToBe([255, 0, 0, 255])
       })
     })
 
@@ -270,6 +282,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await glsl.shaderTextbox.fill(RED_SHADER)
       await expect.poll(() => glsl.getPreviewSrc()).not.toBe(goodSrc)
       await expect.poll(() => glsl.getPreviewSrc()).toMatch(/^blob:/)
+      await glsl.expectEveryPixelToBe([255, 0, 0, 255])
     })
   })
 
@@ -292,16 +305,22 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       const { input: floatValueInput } =
         comfyPage.vueNodes.getInputNumberControls(floatValueWidget)
 
+      // Drive every pixel's red channel directly from u_float0 so the
+      // before/after refresh is visually obvious (dim red → pure red).
+      await glsl.shaderTextbox.fill(FLOAT_RED_SHADER)
       await glsl.simulateExecutionOutput(ws)
       const initialSrc = await glsl.waitForBlobSrc()
+      // Workflow default is 0.25 → ~64; RGBA16F → PNG round-trip can drift.
+      await glsl.expectEveryPixelToBe([64, 0, 0, 255], 2)
 
       await test.step('changing the upstream float value re-renders the preview', async () => {
         await expect(floatValueInput).toBeVisible()
-        await floatValueInput.fill('0.9')
+        await floatValueInput.fill('1.0')
         await floatValueInput.blur()
 
         await expect.poll(() => glsl.getPreviewSrc()).not.toBe(initialSrc)
         await expect.poll(() => glsl.getPreviewSrc()).toMatch(/^blob:/)
+        await glsl.expectEveryPixelToBe([255, 0, 0, 255])
       })
     })
   })
