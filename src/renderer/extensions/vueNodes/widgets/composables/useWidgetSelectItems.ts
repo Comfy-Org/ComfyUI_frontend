@@ -184,7 +184,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(annotatedPath, labelFn)
+        label: getDisplayLabel(annotatedPath, labelFn),
+        created_at: asset.created_at
       })
     }
 
@@ -260,11 +261,26 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (toValue(options.isAssetMode) && assetData) {
       return filteredAssetItems.value
     }
-    return [
-      ...(missingValueItem.value ? [missingValueItem.value] : []),
-      ...inputItems.value,
-      ...outputItems.value
-    ]
+    const missing = missingValueItem.value ? [missingValueItem.value] : []
+    const combined = [...inputItems.value, ...outputItems.value]
+    const sorted = combined
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const aTime = a.item.created_at
+          ? new Date(a.item.created_at).getTime()
+          : NaN
+        const bTime = b.item.created_at
+          ? new Date(b.item.created_at).getTime()
+          : NaN
+        const aHas = Number.isFinite(aTime)
+        const bHas = Number.isFinite(bTime)
+        if (aHas && bHas) return bTime - aTime
+        if (aHas) return -1
+        if (bHas) return 1
+        return a.index - b.index
+      })
+      .map(({ item }) => item)
+    return [...missing, ...sorted]
   })
 
   const dropdownItems = computed<FormDropdownItem[]>(() => {
