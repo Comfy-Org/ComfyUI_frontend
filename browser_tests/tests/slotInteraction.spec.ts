@@ -14,6 +14,13 @@ test.describe('Slot Interaction', () => {
   test('Middle-click on output slot should create default node when setting enabled', async ({
     comfyPage
   }) => {
+    const previousVueNodesEnabled = await comfyPage.settings.getSetting(
+      'Comfy.VueNodes.Enabled'
+    )
+    const previousMiddleClickReroute = await comfyPage.settings.getSetting(
+      'Comfy.Node.MiddleClickRerouteNode'
+    )
+
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
     await comfyPage.settings.setSetting(
       'Comfy.Node.MiddleClickRerouteNode',
@@ -66,9 +73,12 @@ test.describe('Slot Interaction', () => {
     } finally {
       await comfyPage.settings.setSetting(
         'Comfy.Node.MiddleClickRerouteNode',
-        false
+        previousMiddleClickReroute
       )
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.Enabled',
+        previousVueNodesEnabled
+      )
     }
   })
 
@@ -133,12 +143,36 @@ test.describe('Slot Interaction', () => {
       comfyPage,
       comfyMouse
     }) => {
+      const previousAutoSnap = await comfyPage.settings.getSetting(
+        'Comfy.Node.AutoSnapLinkToSlot'
+      )
+      const previousSnapHighlights = await comfyPage.settings.getSetting(
+        'Comfy.Node.SnapHighlightsNode'
+      )
+
       await comfyPage.settings.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
       await comfyPage.settings.setSetting('Comfy.Node.SnapHighlightsNode', true)
 
-      await comfyMouse.move(DefaultGraphPositions.clipTextEncodeNode1InputSlot)
-      await comfyMouse.drag(DefaultGraphPositions.clipTextEncodeNode2InputSlot)
-      await expect(comfyPage.canvas).toHaveScreenshot('snapped-highlighted.png')
+      try {
+        await comfyMouse.move(
+          DefaultGraphPositions.clipTextEncodeNode1InputSlot
+        )
+        await comfyMouse.drag(
+          DefaultGraphPositions.clipTextEncodeNode2InputSlot
+        )
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          'snapped-highlighted.png'
+        )
+      } finally {
+        await comfyPage.settings.setSetting(
+          'Comfy.Node.AutoSnapLinkToSlot',
+          previousAutoSnap
+        )
+        await comfyPage.settings.setSetting(
+          'Comfy.Node.SnapHighlightsNode',
+          previousSnapHighlights
+        )
+      }
     })
   })
 })
