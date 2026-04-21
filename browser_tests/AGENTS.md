@@ -15,9 +15,10 @@ browser_tests/
 │   ├── VueNodeHelpers.ts - Vue Nodes 2.0 helpers
 │   ├── selectors.ts      - Centralized TestIds
 │   ├── data/             - Static test data (mock API responses, workflow JSONs, node definitions)
-│   ├── components/       - Page object components (locators, user interactions)
+│   ├── components/       - Page object classes (locators, user interactions)
 │   │   ├── Actionbar.ts
 │   │   ├── ContextMenu.ts
+│   │   ├── ManageGroupNode.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
 │   │   ├── Templates.ts
@@ -43,9 +44,19 @@ browser_tests/
 ### Architectural Separation
 
 - **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
-- **`fixtures/components/`** — Page object components. Encapsulate locators and user interactions for a specific UI area.
-- **`fixtures/helpers/`** — Focused helper classes. Domain-specific actions that coordinate multiple page objects (e.g. canvas operations, workflow loading).
-- **`fixtures/utils/`** — Standalone utility functions. Shared helpers used by tests or fixtures (test setup, page injection, query helpers, etc.).
+- **`fixtures/components/`** — Page object components. Classes that encapsulate locators and user interactions for a specific UI area (e.g. `Actionbar`, `ContextMenu`, `ManageGroupNode`).
+- **`fixtures/helpers/`** — Helper classes wired into `ComfyPage`. Domain-specific action classes instantiated as `ComfyPage` properties (e.g. `CanvasHelper`, `WorkflowHelper`, `NodeOperationsHelper`).
+- **`fixtures/utils/`** — Standalone utility functions. Exported functions (not classes) used by tests or fixtures (e.g. `fitToView`, `clipboardSpy`, `builderTestUtils`).
+
+### Placement Rule
+
+When adding a new file, use this decision flow:
+
+1. **Is it a class?**
+   - **Yes, and wired into `ComfyPage`** → `fixtures/helpers/`
+   - **Yes, but standalone** → `fixtures/components/`
+   - **No (exported functions)** → `fixtures/utils/`
+2. **Is it static data with no code?** → `fixtures/data/`
 
 ## Page Object Locator Style
 

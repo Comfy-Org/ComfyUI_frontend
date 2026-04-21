@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '@e2e/fixtures/utils/manageGroupNode'
+import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
