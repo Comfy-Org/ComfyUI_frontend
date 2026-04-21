@@ -630,6 +630,45 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('FE-226: All tab chronological sort', () => {
+    it('sorts All tab by created_at DESC, interleaving outputs with legacy-combo inputs (which land last)', async () => {
+      const newer = '2026-04-20T12:00:00Z'
+      const older = '2026-04-19T12:00:00Z'
+
+      mockMediaAssets.media.value = [
+        {
+          id: 'out-older',
+          name: 'older_output.png',
+          preview_url: '',
+          tags: ['output'],
+          created_at: older
+        },
+        {
+          id: 'out-newer',
+          name: 'newer_output.png',
+          preview_url: '',
+          tags: ['output'],
+          created_at: newer
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['legacy_input.png'],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'all'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'newer_output.png [output]',
+        'older_output.png [output]',
+        'legacy_input.png'
+      ])
+    })
+  })
+
   describe('selectedSet', () => {
     beforeEach(() => {
       setActivePinia(createTestingPinia({ stubActions: false }))
