@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
+import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import { t } from '../../i18n/translations'
@@ -19,7 +20,7 @@ const reasons: TranslationKey[] = [
 
 const containerRef = ref<HTMLElement>()
 const ifYouDotRef = ref<HTMLElement>()
-const reasonDots = ref<HTMLElement[]>([])
+const reasonDots = useTemplateRefsList<HTMLElement>()
 const reasonOutputDotRef = ref<HTMLElement>()
 const comfyDotRef = ref<HTMLElement>()
 const wirePaths = ref<string[]>([])
@@ -27,7 +28,7 @@ const comfyWirePath = ref('')
 
 const mobileContainerRef = ref<HTMLElement>()
 const mobileIfYouDotRef = ref<HTMLElement>()
-const mobileReasonDots = ref<HTMLElement[]>([])
+const mobileReasonDots = useTemplateRefsList<HTMLElement>()
 const mobileOutputDotRef = ref<HTMLElement>()
 const mobileComfyDotRef = ref<HTMLElement>()
 const mobileWirePaths = ref<string[]>([])
@@ -88,6 +89,9 @@ function computeMobileWires() {
     mobileComfyWirePath.value = `M${s2.x},${s2.y} C${s2.x},${midY} ${e2.x},${midY} ${e2.x},${e2.y}`
   }
 }
+
+useResizeObserver(containerRef, computeWires)
+useResizeObserver(mobileContainerRef, computeMobileWires)
 
 onMounted(() => {
   requestAnimationFrame(() => {
@@ -164,11 +168,7 @@ onMounted(() => {
                 class="flex items-start gap-3"
               >
                 <span
-                  :ref="
-                    (el) => {
-                      if (el) reasonDots.push(el as HTMLElement)
-                    }
-                  "
+                  :ref="reasonDots.set"
                   class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
                 />
                 <p class="text-primary-warm-white text-base">
@@ -268,11 +268,7 @@ onMounted(() => {
               {{ t(reason, locale) }}
             </p>
             <span
-              :ref="
-                (el) => {
-                  if (el) mobileReasonDots.push(el as HTMLElement)
-                }
-              "
+              :ref="mobileReasonDots.set"
               class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
             />
           </div>

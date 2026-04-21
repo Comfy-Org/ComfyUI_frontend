@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useScroll } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -25,14 +26,14 @@ const feedbacks = [
 ]
 
 const trackRef = ref<HTMLElement>()
-const progress = ref(0)
+const { x } = useScroll(trackRef)
 
-function updateProgress() {
+const progress = computed(() => {
   const el = trackRef.value
-  if (!el) return
+  if (!el) return 0
   const max = el.scrollWidth - el.clientWidth
-  progress.value = max > 0 ? el.scrollLeft / max : 0
-}
+  return max > 0 ? x.value / max : 0
+})
 
 function scroll(direction: -1 | 1) {
   const el = trackRef.value
@@ -41,14 +42,6 @@ function scroll(direction: -1 | 1) {
 }
 
 const progressPercent = computed(() => `${progress.value * 100}%`)
-
-onMounted(() => {
-  trackRef.value?.addEventListener('scroll', updateProgress, { passive: true })
-})
-
-onUnmounted(() => {
-  trackRef.value?.removeEventListener('scroll', updateProgress)
-})
 </script>
 
 <template>

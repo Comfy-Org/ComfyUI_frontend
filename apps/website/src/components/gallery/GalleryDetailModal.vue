@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { useTemplateRefsList, useTimeoutFn } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -21,7 +22,7 @@ const emit = defineEmits<{ close: [] }>()
 
 const activeIndex = ref(initialIndex)
 const transitioning = ref(false)
-const thumbnailRefs = ref<HTMLButtonElement[]>([])
+const thumbnailRefs = useTemplateRefsList<HTMLButtonElement>()
 
 const activeItem = computed(() => items[activeIndex.value])
 
@@ -37,15 +38,32 @@ function scrollToActiveThumbnail() {
 
 watch(activeIndex, scrollToActiveThumbnail)
 
+let pendingIndex = -1
+
+const { start: startFadeIn, stop: stopFadeIn } = useTimeoutFn(
+  () => {
+    transitioning.value = false
+  },
+  50,
+  { immediate: false }
+)
+
+const { start: startFadeOut, stop: stopFadeOut } = useTimeoutFn(
+  () => {
+    activeIndex.value = pendingIndex
+    startFadeIn()
+  },
+  200,
+  { immediate: false }
+)
+
 function selectThumbnail(index: number) {
   if (index === activeIndex.value || transitioning.value) return
+  stopFadeOut()
+  stopFadeIn()
+  pendingIndex = index
   transitioning.value = true
-  setTimeout(() => {
-    activeIndex.value = index
-    setTimeout(() => {
-      transitioning.value = false
-    }, 50)
-  }, 200)
+  startFadeOut()
 }
 
 function handleBackdropClick(e: MouseEvent) {
@@ -231,11 +249,7 @@ onUnmounted(() => {
         <div class="flex items-end gap-3">
           <button
             v-for="(item, i) in items"
-            :ref="
-              (el: any) => {
-                if (el) thumbnailRefs[i] = el
-              }
-            "
+            :ref="thumbnailRefs.set"
             :key="i"
             class="shrink-0 cursor-pointer overflow-hidden rounded-xl border-0 bg-transparent p-0 transition-all duration-200"
             :class="

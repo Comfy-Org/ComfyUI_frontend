@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTemplateRefsList } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -35,7 +36,7 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
-const videoRefs = ref<HTMLVideoElement[]>([])
+const videoRefs = useTemplateRefsList<HTMLVideoElement>()
 
 watch(activeIndex, (current, previous) => {
   videoRefs.value[previous]?.pause()
@@ -87,11 +88,7 @@ watch(activeIndex, (current, previous) => {
           >
             <video
               v-for="(feature, i) in features"
-              :ref="
-                (el) => {
-                  if (el) videoRefs[i] = el as HTMLVideoElement
-                }
-              "
+              :ref="videoRefs.set"
               :key="feature.title"
               :src="feature.video"
               :autoplay="i === 0"
