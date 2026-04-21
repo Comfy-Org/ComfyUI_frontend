@@ -595,7 +595,8 @@ describe('useModelToNodeStore', () => {
       }
       const end = performance.now()
 
-      expect(end - start).toBeLessThan(1000)
+      // 200ms accommodates slower CI runners while still catching real regressions.
+      expect(end - start).toBeLessThan(200)
     })
 
     it('should handle invalid input types gracefully', () => {

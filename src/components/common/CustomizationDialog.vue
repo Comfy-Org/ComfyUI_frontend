@@ -102,7 +102,6 @@ const finalColor = ref(
 const resetCustomization = () => {
   selectedIcon.value =
     iconOptions.find((option) => option.value === props.initialIcon) ??
-    defaultIcon ??
     iconOptions[0]
   finalColor.value =
     props.initialColor || nodeBookmarkStore.defaultBookmarkColor

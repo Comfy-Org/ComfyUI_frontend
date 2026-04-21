@@ -490,6 +490,7 @@ describe('assetsStore - Refactored (Option A)', () => {
   describe('Memory Management', () => {
     it(
       'should cleanup when exceeding MAX_HISTORY_ITEMS',
+      // 6 batches of 200 async store operations exceed the default 5s Vitest timeout on CI.
       { timeout: 15_000 },
       async () => {
         // Load 1200 items (exceeds 1000 limit)
@@ -520,6 +521,7 @@ describe('assetsStore - Refactored (Option A)', () => {
 
     it(
       'should maintain correct state after cleanup',
+      // 6 batches of 200 async store operations exceed the default 5s Vitest timeout on CI.
       { timeout: 15_000 },
       async () => {
         // Load items beyond limit
