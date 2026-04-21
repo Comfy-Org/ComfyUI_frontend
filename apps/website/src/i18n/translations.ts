@@ -1108,10 +1108,6 @@ const translations = {
     en: 'Up to 5 seats per workspace (coming soon!)',
     'zh-CN': '每个工作区最多 5 个席位（即将上线）'
   },
-  'pricing.plan.creator.nextUp': {
-    en: 'Next Up: Team Collaboration Features',
-    'zh-CN': '下一步：团队协作功能'
-  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.summary': {
@@ -1139,10 +1135,6 @@ const translations = {
   'pricing.plan.pro.feature2': {
     en: 'Up to 20 seats per workspace (coming soon!)',
     'zh-CN': '每个工作区最多 20 个席位（即将上线）'
-  },
-  'pricing.plan.pro.nextUp': {
-    en: 'Next Up: Advanced Team Collaboration Features',
-    'zh-CN': '下一步：高级团队协作功能'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
