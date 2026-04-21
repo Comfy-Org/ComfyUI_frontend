@@ -444,9 +444,9 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(
         wrapper.find('[data-testid="upgrade-to-add-credits-button"]').exists()
       ).toBe(true)
-      expect(
-        wrapper.find('[data-testid="add-credits-button"]').exists()
-      ).toBe(false)
+      expect(wrapper.find('[data-testid="add-credits-button"]').exists()).toBe(
+        false
+      )
     })
   })
 
@@ -462,9 +462,9 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('shows add-credits button and hides upgrade-to-add-credits button', () => {
       const wrapper = mountComponent()
-      expect(
-        wrapper.find('[data-testid="add-credits-button"]').exists()
-      ).toBe(true)
+      expect(wrapper.find('[data-testid="add-credits-button"]').exists()).toBe(
+        true
+      )
       expect(
         wrapper.find('[data-testid="upgrade-to-add-credits-button"]').exists()
       ).toBe(false)
@@ -473,9 +473,9 @@ describe('CurrentUserPopoverLegacy', () => {
     it('hides upgrade-to-add-credits button even when on free tier', () => {
       mockIsFreeTier.value = true
       const wrapper = mountComponent()
-      expect(
-        wrapper.find('[data-testid="add-credits-button"]').exists()
-      ).toBe(true)
+      expect(wrapper.find('[data-testid="add-credits-button"]').exists()).toBe(
+        true
+      )
       expect(
         wrapper.find('[data-testid="upgrade-to-add-credits-button"]').exists()
       ).toBe(false)
