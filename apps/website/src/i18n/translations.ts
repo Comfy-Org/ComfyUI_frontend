@@ -204,10 +204,6 @@ const translations = {
     en: 'Videos & case studies from teams building with Comfy',
     'zh-CN': '来自使用 Comfy 构建的团队的视频和案例研究'
   },
-  'caseStudy.watchVideos': {
-    en: 'WATCH VIDEOS',
-    'zh-CN': '观看视频'
-  },
   'caseStudy.seeAll': {
     en: 'SEE ALL CASE STUDIES',
     'zh-CN': '查看全部案例'
