@@ -41,7 +41,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <BrandButton
             :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
             variant="solid"
-            class="mt-8 self-start rounded-2xl"
+            class="mt-8 self-start"
           >
             {{ t('about.careers.cta', locale) }}
           </BrandButton>

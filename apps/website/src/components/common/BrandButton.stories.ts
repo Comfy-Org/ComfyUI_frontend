@@ -18,7 +18,7 @@ const meta: Meta<typeof BrandButton> = {
     },
     size: {
       control: { type: 'select' },
-      options: ['sm', 'lg']
+      options: ['xs', 'sm', 'nav', 'lg']
     }
   },
   args: {
@@ -94,8 +94,16 @@ export const AllVariants: Story = {
     template: `
       <div class="flex flex-col gap-4">
         <div class="flex gap-4 items-center">
+          <BrandButton href="#" variant="solid" size="xs">SOLID XS</BrandButton>
+          <BrandButton href="#" variant="outline" size="xs">OUTLINE XS</BrandButton>
+        </div>
+        <div class="flex gap-4 items-center">
           <BrandButton href="#" variant="solid" size="sm">SOLID SM</BrandButton>
           <BrandButton href="#" variant="outline" size="sm">OUTLINE SM</BrandButton>
+        </div>
+        <div class="flex gap-4 items-center">
+          <BrandButton href="#" variant="solid" size="nav">SOLID NAV</BrandButton>
+          <BrandButton href="#" variant="outline" size="nav">OUTLINE NAV</BrandButton>
         </div>
         <div class="flex gap-4 items-center">
           <BrandButton href="#" variant="solid" size="lg">SOLID LG</BrandButton>

@@ -198,7 +198,7 @@ onMounted(() => {
         :key="cta.href"
         :href="cta.href"
         :variant="cta.primary ? 'solid' : 'outline'"
-        class="px-6 py-2.5"
+        size="nav"
       >
         {{ cta.label }}
       </BrandButton>
