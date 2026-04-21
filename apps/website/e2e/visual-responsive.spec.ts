@@ -6,6 +6,10 @@ import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
 
+const SMALL_VIEWPORTS = VIEWPORTS.filter(
+  (v) => v.name === '1-sm' || v.name === '2-md'
+)
+
 async function assertNoOverflow(page: Page) {
   const overflow = await page.evaluate(
     () =>
@@ -15,23 +19,14 @@ async function assertNoOverflow(page: Page) {
   expect(overflow, 'page has horizontal overflow').toBe(false)
 }
 
-async function freezeVideos(page: Page) {
-  await page.evaluate(() => {
-    for (const video of document.querySelectorAll('video')) {
-      video.pause()
-      video.currentTime = 0
-    }
-  })
-}
-
 async function blockVideoRequests(page: Page) {
   await page.route('**/*.{webm,mp4}', (route) => route.abort())
 }
 
-async function navigateAndFreeze(page: Page, url: string) {
+async function navigateAndSettle(page: Page, url: string) {
   await blockVideoRequests(page)
   await page.goto(url)
-  await freezeVideos(page)
+  await page.waitForLoadState('networkidle')
 }
 
 test.describe('Home', { tag: '@visual' }, () => {
@@ -39,28 +34,25 @@ test.describe('Home', { tag: '@visual' }, () => {
     test.describe(vp.name, () => {
       test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width: vp.width, height: vp.height })
-        await navigateAndFreeze(page, '/')
+        await navigateAndSettle(page, '/')
       })
 
       test('product-cards screenshot', async ({ page }) => {
         const section = page.locator('section', {
           has: page.getByRole('heading', { name: /The AI creation/i })
         })
+        await expect(section).toBeVisible()
         await section.scrollIntoViewIfNeeded()
-        await expect(page).toHaveScreenshot(
-          `home-product-cards-${vp.name}.png`,
-          { maxDiffPixelRatio: 0.01 }
-        )
+        await expect(page).toHaveScreenshot(`home-product-cards-${vp.name}.png`)
       })
 
       test('get-started screenshot', async ({ page }) => {
         const section = page.locator('section', {
           has: page.getByRole('heading', { name: /Get started/i })
         })
+        await expect(section).toBeVisible()
         await section.scrollIntoViewIfNeeded()
-        await expect(page).toHaveScreenshot(`home-get-started-${vp.name}.png`, {
-          maxDiffPixelRatio: 0.01
-        })
+        await expect(page).toHaveScreenshot(`home-get-started-${vp.name}.png`)
       })
     })
   }
@@ -70,65 +62,61 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test(`pricing-tiers-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndFreeze(page, '/cloud/pricing')
+      await navigateAndSettle(page, '/cloud/pricing')
       await assertNoOverflow(page)
 
-      const section = page.locator('section').first()
-      await section.scrollIntoViewIfNeeded()
-      await expect(page).toHaveScreenshot(`pricing-tiers-${vp.name}.png`, {
-        maxDiffPixelRatio: 0.01
+      const section = page.locator('section', {
+        has: page.getByRole('heading', { name: /Pricing/i })
       })
+      await expect(section).toBeVisible()
+      await section.scrollIntoViewIfNeeded()
+      await expect(page).toHaveScreenshot(`pricing-tiers-${vp.name}.png`)
     })
   }
 })
 
 test.describe('Contact', { tag: '@visual' }, () => {
-  for (const vp of VIEWPORTS.filter(
-    (v) => v.name === '1-sm' || v.name === '2-md'
-  )) {
+  for (const vp of SMALL_VIEWPORTS) {
     test(`form-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndFreeze(page, '/contact')
+      await navigateAndSettle(page, '/contact')
 
-      const form = page.locator('form').first()
-      await form.scrollIntoViewIfNeeded()
-      await expect(page).toHaveScreenshot(`contact-form-${vp.name}.png`, {
-        maxDiffPixelRatio: 0.01
+      const section = page.locator('section', {
+        has: page.getByRole('heading', { name: /Create powerful workflows/i })
       })
+      await expect(section).toBeVisible()
+      await section.scrollIntoViewIfNeeded()
+      await expect(page).toHaveScreenshot(`contact-form-${vp.name}.png`)
     })
   }
 })
 
 test.describe('Gallery', { tag: '@visual' }, () => {
-  for (const vp of VIEWPORTS.filter(
-    (v) => v.name === '1-sm' || v.name === '2-md'
-  )) {
+  for (const vp of SMALL_VIEWPORTS) {
     test(`gallery-grid-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndFreeze(page, '/gallery')
+      await navigateAndSettle(page, '/gallery')
 
-      const section = page.locator('section').nth(1)
+      const section = page.getByTestId('gallery-grid')
+      await expect(section).toBeVisible()
       await section.scrollIntoViewIfNeeded()
-      await expect(page).toHaveScreenshot(`gallery-grid-${vp.name}.png`, {
-        maxDiffPixelRatio: 0.01
-      })
+      await expect(page).toHaveScreenshot(`gallery-grid-${vp.name}.png`)
     })
   }
 })
 
 test.describe('About', { tag: '@visual' }, () => {
-  for (const vp of VIEWPORTS.filter(
-    (v) => v.name === '1-sm' || v.name === '2-md'
-  )) {
+  for (const vp of SMALL_VIEWPORTS) {
     test(`hero-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndFreeze(page, '/about')
+      await navigateAndSettle(page, '/about')
 
-      const hero = page.locator('section').first()
-      await hero.scrollIntoViewIfNeeded()
-      await expect(page).toHaveScreenshot(`about-hero-${vp.name}.png`, {
-        maxDiffPixelRatio: 0.01
+      const hero = page.locator('section', {
+        has: page.getByRole('heading', { name: /Build the tools/i })
       })
+      await expect(hero).toBeVisible()
+      await hero.scrollIntoViewIfNeeded()
+      await expect(page).toHaveScreenshot(`about-hero-${vp.name}.png`)
     })
   }
 })
@@ -158,9 +146,9 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   for (const url of pages) {
     for (const vp of VIEWPORTS) {
       const key = `${url} ${vp.name}`
-      if (OVERFLOW_SKIP.has(key)) continue
 
       test(`${url} ${vp.name} no overflow`, async ({ page }) => {
+        test.skip(OVERFLOW_SKIP.has(key), 'Known overflow bug at this viewport')
         await page.setViewportSize({ width: vp.width, height: vp.height })
         await page.goto(url)
         await assertNoOverflow(page)

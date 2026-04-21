@@ -6,6 +6,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: 'html',
+  expect: {
+    toHaveScreenshot: { maxDiffPixels: 50 }
+  },
   use: {
     baseURL: 'http://localhost:4321',
     trace: process.env.CI ? 'on-first-retry' : 'on'
