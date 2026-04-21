@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
+import type { HTMLAttributes } from 'vue'
 
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 
-const { locale = 'en', className = '' } = defineProps<{
+const { locale = 'en', class: customClass = '' } = defineProps<{
   locale?: Locale
-  className?: string
+  class?: HTMLAttributes['class']
 }>()
 
 const { downloadUrl, platform } = useDownloadUrl()
@@ -18,7 +19,7 @@ const { downloadUrl, platform } = useDownloadUrl()
     v-show="platform"
     :href="downloadUrl"
     size="lg"
-    :class-name="`flex items-center justify-center gap-2 ${className}`"
+    :class="`flex items-center justify-center gap-2 ${customClass}`"
   >
     <span class="inline-flex items-center gap-2">
       <img

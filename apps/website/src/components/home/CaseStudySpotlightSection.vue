@@ -53,10 +53,11 @@ const routes = getRoutes(locale)
         <div class="flex flex-col gap-3 sm:flex-row">
           <BrandButton
             :href="routes.customers"
-            :label="t('caseStudy.seeAll', locale)"
             variant="outline"
-            class-name="flex-1 text-center"
-          />
+            class="flex-1 text-center"
+          >
+            {{ t('caseStudy.seeAll', locale) }}
+          </BrandButton>
         </div>
       </div>
     </div>

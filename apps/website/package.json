@@ -17,6 +17,7 @@
     "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
+    "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
     "vue": "catalog:"

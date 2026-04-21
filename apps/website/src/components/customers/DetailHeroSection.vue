@@ -47,15 +47,17 @@ const { label, title, description, primaryButton, secondaryButton, image } =
         <BrandButton
           v-if="primaryButton"
           :href="primaryButton.href"
-          :label="primaryButton.label"
           variant="outline"
-        />
+        >
+          {{ primaryButton.label }}
+        </BrandButton>
         <BrandButton
           v-if="secondaryButton"
           :href="secondaryButton.href"
-          :label="secondaryButton.label"
           variant="solid"
-        />
+        >
+          {{ secondaryButton.label }}
+        </BrandButton>
       </div>
     </div>
 

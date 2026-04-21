@@ -320,12 +320,12 @@ onUnmounted(() => {
       </p>
 
       <div class="mt-10 flex flex-col gap-4 lg:flex-row">
-        <DownloadLocalButton :locale class-name="lg:min-w-60" />
+        <DownloadLocalButton :locale class="lg:min-w-60" />
         <BrandButton
           :href="externalLinks.github"
           variant="outline"
           size="lg"
-          class-name="flex items-center justify-center gap-2 lg:min-w-60"
+          class="flex items-center justify-center gap-2 lg:min-w-60"
         >
           <span
             class="icon-mask size-5 mask-[url('/icons/social/github.svg')]"

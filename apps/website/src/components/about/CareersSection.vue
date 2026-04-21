@@ -40,10 +40,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <div>
           <BrandButton
             :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
-            :label="t('about.careers.cta', locale)"
             variant="solid"
-            class-name="mt-8 self-start rounded-2xl"
-          />
+            class="mt-8 self-start rounded-2xl"
+          >
+            {{ t('about.careers.cta', locale) }}
+          </BrandButton>
           <p class="text-primary-warm-gray mt-6 text-sm">
             {{ t('about.careers.noRole', locale) }}
             <a

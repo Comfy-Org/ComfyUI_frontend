@@ -6,6 +6,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { lockScroll, unlockScroll } from '../../composables/useScrollLock'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import BrandButton from '../common/BrandButton.vue'
 import type { GalleryItem } from './GallerySection.vue'
 
 const {
@@ -148,12 +149,14 @@ onUnmounted(() => {
               <span class="font-bold">{{ activeItem.tool }}</span>
             </p>
           </div>
-          <a
+          <BrandButton
             :href="activeItem.href"
-            class="border-primary-comfy-ink hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow mt-24 inline-flex items-center justify-center rounded-full border-2 px-6 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
+            variant="outline-dark"
+            size="lg"
+            class="mt-24"
           >
             {{ t('gallery.detail.visitHub', locale) }}
-          </a>
+          </BrandButton>
         </div>
 
         <!-- Node link connector (horizontal) -->
@@ -235,12 +238,14 @@ onUnmounted(() => {
               <span class="font-bold">{{ activeItem.tool }}</span>
             </p>
           </div>
-          <a
+          <BrandButton
             :href="activeItem.href"
-            class="border-primary-comfy-ink hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow mt-6 inline-flex w-full items-center justify-center rounded-full border-2 px-6 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
+            variant="outline-dark"
+            size="lg"
+            class="mt-6 w-full"
           >
             {{ t('gallery.detail.visitHub', locale) }}
-          </a>
+          </BrandButton>
         </div>
       </div>
 

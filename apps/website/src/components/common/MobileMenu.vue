@@ -123,10 +123,11 @@ onUnmounted(() => {
           v-for="cta in ctaLinks"
           :key="cta.href"
           :href="cta.href"
-          :label="cta.label"
           :variant="cta.primary ? 'solid' : 'outline'"
-          class-name="w-full py-4 text-center"
-        />
+          class="w-full py-4 text-center"
+        >
+          {{ cta.label }}
+        </BrandButton>
       </div>
     </template>
 

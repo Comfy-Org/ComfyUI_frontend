@@ -237,10 +237,11 @@ onMounted(() => {
       <div class="mt-10">
         <BrandButton
           :href="routes.contact"
-          :label="t('enterprise.hero.contactSales', locale)"
           size="lg"
-          class-name="text-center lg:min-w-60"
-        />
+          class="text-center lg:min-w-60"
+        >
+          {{ t('enterprise.hero.contactSales', locale) }}
+        </BrandButton>
       </div>
     </div>
   </section>

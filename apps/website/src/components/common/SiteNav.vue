@@ -197,10 +197,11 @@ onMounted(() => {
         v-for="cta in ctaButtons"
         :key="cta.href"
         :href="cta.href"
-        :label="cta.label"
         :variant="cta.primary ? 'solid' : 'outline'"
-        class-name="px-6 py-2.5"
-      />
+        class="px-6 py-2.5"
+      >
+        {{ cta.label }}
+      </BrandButton>
     </div>
 
     <!-- Mobile hamburger -->

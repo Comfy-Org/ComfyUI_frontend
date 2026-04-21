@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import BrandButton from '../../common/BrandButton.vue'
+
 interface Feature {
   title: string
   description: string
@@ -60,13 +62,15 @@ defineProps<{
             >
               {{ feature.description2 }}
             </p>
-            <a
+            <BrandButton
               v-if="feature.ctaText && feature.ctaHref"
               :href="feature.ctaHref"
-              class="bg-primary-comfy-yellow text-primary-comfy-ink mt-6 inline-block rounded-full px-6 py-3 text-xs font-bold tracking-wider transition-opacity hover:opacity-90"
+              variant="solid"
+              size="lg"
+              class="mt-6 text-xs"
             >
               {{ feature.ctaText }}
-            </a>
+            </BrandButton>
           </div>
         </div>
 
