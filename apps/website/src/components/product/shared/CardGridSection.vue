@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SectionHeader from '../../common/SectionHeader.vue'
+
 defineProps<{
   heading: string
   subtitle?: string
@@ -10,16 +12,14 @@ defineProps<{
 
 <template>
   <section class="px-4 py-24 lg:px-20">
-    <div class="mx-auto max-w-3xl text-center">
-      <h2
-        class="text-primary-comfy-canvas text-3xl font-light lg:text-5xl/tight"
-      >
-        {{ heading }}
-      </h2>
-      <p v-if="subtitle" class="mt-4 text-sm text-smoke-700 lg:text-base">
-        {{ subtitle }}
-      </p>
-    </div>
+    <SectionHeader>
+      {{ heading }}
+      <template v-if="subtitle" #subtitle>
+        <p class="mt-4 text-sm text-smoke-700 lg:text-base">
+          {{ subtitle }}
+        </p>
+      </template>
+    </SectionHeader>
 
     <div
       :class="

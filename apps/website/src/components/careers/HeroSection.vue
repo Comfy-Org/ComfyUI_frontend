@@ -2,6 +2,8 @@
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import GlassCard from '../common/GlassCard.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -9,11 +11,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <section class="px-6 pt-20 pb-16 md:pt-28 md:pb-24">
     <div class="mx-auto max-w-4xl text-center">
-      <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
-      >
+      <SectionLabel>
         {{ t('careers.hero.label', locale) }}
-      </span>
+      </SectionLabel>
       <h1
         class="text-primary-comfy-canvas mt-4 text-4xl font-light whitespace-pre-line md:text-6xl"
       >
@@ -21,9 +21,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       </h1>
     </div>
 
-    <div
-      class="rounded-5xl bg-transparency-white-t4 mx-auto mt-12 max-w-3xl p-2 md:mt-16"
-    >
+    <GlassCard class="mx-auto mt-12 max-w-3xl md:mt-16">
       <img
         src="https://media.comfy.org/website/careers/hero.webp"
         alt="Comfy team"
@@ -35,6 +33,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <p>{{ t('careers.hero.body3', locale) }}</p>
         <p>{{ t('careers.hero.body4', locale) }}</p>
       </div>
-    </div>
+    </GlassCard>
   </section>
 </template>

@@ -19,12 +19,18 @@ export default defineConfig({
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'] },
-      grepInvert: /@mobile/
+      grepInvert: /@mobile|@visual/
     },
     {
       name: 'mobile',
       use: { ...devices['Pixel 5'] },
       grep: /@mobile/
+    },
+    {
+      name: 'visual',
+      use: { ...devices['Desktop Chrome'] },
+      grep: /@visual/,
+      fullyParallel: false
     }
   ]
 })

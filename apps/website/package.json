@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "dev:no-toolbar": "astro dev --no-toolbar",
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",

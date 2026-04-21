@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
+import SectionLabel from '../common/SectionLabel.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import VideoPlayer from '../common/VideoPlayer.vue'
@@ -44,12 +45,9 @@ useHeroAnimation({
       <div
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-24 lg:pl-12"
       >
-        <span
-          ref="labelRef"
-          class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
-        >
+        <SectionLabel ref="labelRef">
           {{ t('customers.hero.label', locale) }}
-        </span>
+        </SectionLabel>
         <h1
           ref="headingRef"
           class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"

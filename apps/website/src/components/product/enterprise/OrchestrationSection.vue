@@ -5,6 +5,7 @@ import type { Locale } from '../../../i18n/translations'
 
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
+import GlassCard from '../../common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -442,8 +443,8 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="px-4 py-24 lg:px-20">
-    <div
-      class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-8 p-2 lg:flex-row lg:items-stretch lg:gap-16"
+    <GlassCard
+      class="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:gap-16"
     >
       <!-- Image -->
       <div class="lg:flex lg:w-1/2">
@@ -517,6 +518,6 @@ onBeforeUnmount(() => {
           </p>
         </div>
       </div>
-    </div>
+    </GlassCard>
   </section>
 </template>

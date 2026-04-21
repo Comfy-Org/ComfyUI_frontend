@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import BrandButton from '../common/BrandButton.vue'
+import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingTierCard from './PricingTierCard.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
@@ -356,30 +357,14 @@ const activePlanIndex = ref(0)
 
         <!-- Features card -->
         <div class="bg-transparency-white-t4 mt-2 rounded-3xl p-6">
-          <p
-            v-if="plan.featureIntroKey"
-            class="text-primary-comfy-canvas mb-3 text-sm font-semibold"
-          >
-            {{ t(plan.featureIntroKey, locale) }}
-          </p>
-          <ul class="space-y-2">
-            <li
-              v-for="feature in plan.features"
-              :key="feature.text"
-              class="flex items-start gap-2"
-            >
-              <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-              <span class="text-primary-comfy-canvas text-sm">
-                {{ t(feature.text, locale) }}
-              </span>
-            </li>
-          </ul>
-          <p
-            v-if="plan.andMoreKey"
-            class="text-primary-comfy-canvas mt-4 text-sm"
-          >
-            {{ t(plan.andMoreKey, locale) }}
-          </p>
+          <PricingPlanFeatureList
+            :features="plan.features"
+            :feature-intro-key="plan.featureIntroKey"
+            :next-up-key="plan.nextUpKey"
+            :and-more-key="plan.andMoreKey"
+            next-up-class="text-primary-comfy-canvas mt-4 text-sm"
+            :locale
+          />
         </div>
 
         <!-- Image (standard plans only) -->
@@ -423,30 +408,15 @@ const activePlanIndex = ref(0)
 
       <!-- Right side -->
       <div class="bg-primary-comfy-ink rounded-4xl p-8 lg:w-1/2">
-        <p
-          v-if="enterprisePlan.featureIntroKey"
-          class="text-primary-comfy-canvas mb-4 text-sm font-semibold"
-        >
-          {{ t(enterprisePlan.featureIntroKey, locale) }}
-        </p>
-        <ul class="space-y-3">
-          <li
-            v-for="feature in enterprisePlan.features"
-            :key="feature.text"
-            class="flex items-start gap-2"
-          >
-            <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-            <span class="text-primary-comfy-canvas text-sm">
-              {{ t(feature.text, locale) }}
-            </span>
-          </li>
-        </ul>
-        <p
-          v-if="enterprisePlan.andMoreKey"
-          class="text-primary-comfy-canvas/70 mt-4 text-sm"
-        >
-          {{ t(enterprisePlan.andMoreKey, locale) }}
-        </p>
+        <PricingPlanFeatureList
+          :features="enterprisePlan.features"
+          :feature-intro-key="enterprisePlan.featureIntroKey"
+          :and-more-key="enterprisePlan.andMoreKey"
+          and-more-class="text-primary-comfy-canvas/70 mt-4 text-sm"
+          list-gap="space-y-3"
+          intro-margin="mb-4"
+          :locale
+        />
       </div>
     </div>
 
