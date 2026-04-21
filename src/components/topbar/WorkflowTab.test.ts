@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -20,6 +21,14 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
     currentUser: null,
     isAuthenticated: false,
     isLoading: false
+  })
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    currentUser: null,
+    isAuthenticated: false,
+    isInitialized: true
   })
 }))
 
@@ -55,7 +64,14 @@ vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
 }))
 
 vi.mock('./WorkflowTabPopover.vue', () => ({
-  default: { render: () => null }
+  default: {
+    render: () => null,
+    methods: {
+      showPopover: () => {},
+      hidePopover: () => {},
+      togglePopover: () => {}
+    }
+  }
 }))
 
 import WorkflowTab from './WorkflowTab.vue'
@@ -95,11 +111,11 @@ function makeWorkflowOption(overrides: Record<string, unknown> = {}) {
   } as unknown as WorkflowTabProps['workflowOption']
 }
 
-function mountTab({
+function renderTab({
   workflowOverrides = {},
   activeWorkflowKey = 'other-key'
 } = {}) {
-  return mount(WorkflowTab, {
+  return render(WorkflowTab, {
     global: {
       plugins: [
         createTestingPinia({
@@ -129,10 +145,6 @@ function mountTab({
   })
 }
 
-function findIndicator(wrapper: ReturnType<typeof mountTab>) {
-  return wrapper.find('[data-testid="job-state-indicator"]')
-}
-
 describe('WorkflowTab - job state indicator', () => {
   beforeEach(() => {
     mockWorkflowStatus.value = new Map()
@@ -144,46 +156,43 @@ describe('WorkflowTab - job state indicator', () => {
     (status) => {
       mockWorkflowStatus.value = new Map([['/workflows/test.json', status]])
 
-      const wrapper = mountTab()
-      const indicator = findIndicator(wrapper)
-      expect(indicator.exists()).toBe(true)
-      expect(indicator.attributes('data-state')).toBe(status)
-      expect(indicator.attributes('role')).toBe('status')
-      expect(indicator.attributes('aria-label')).toBe(statusAriaLabels[status])
+      renderTab()
+      const indicator = screen.getByTestId('job-state-indicator')
+      expect(indicator.getAttribute('data-state')).toBe(status)
+      expect(indicator.getAttribute('role')).toBe('status')
+      expect(indicator.getAttribute('aria-label')).toBe(
+        statusAriaLabels[status]
+      )
     }
   )
 
   it('shows unsaved dot when no job state and workflow is unsaved', () => {
-    const wrapper = mountTab({
-      workflowOverrides: { isPersisted: false }
-    })
-    expect(findIndicator(wrapper).exists()).toBe(false)
-    const dot = wrapper.find('[data-testid="unsaved-indicator"]')
-    expect(dot.exists()).toBe(true)
-    expect(dot.text()).toBe('•')
+    renderTab({ workflowOverrides: { isPersisted: false } })
+
+    expect(screen.queryByTestId('job-state-indicator')).toBeNull()
+    const dot = screen.getByTestId('unsaved-indicator')
+    expect(dot.textContent).toBe('•')
   })
 
   it('does not show job indicator on active tab', () => {
     mockWorkflowStatus.value = new Map([['/workflows/test.json', 'completed']])
 
-    const wrapper = mountTab({ activeWorkflowKey: 'test-key' })
-    expect(findIndicator(wrapper).exists()).toBe(false)
+    renderTab({ activeWorkflowKey: 'test-key' })
+    expect(screen.queryByTestId('job-state-indicator')).toBeNull()
   })
 
   it('job state replaces unsaved dot', () => {
     mockWorkflowStatus.value = new Map([['/workflows/test.json', 'running']])
 
-    const wrapper = mountTab({
-      workflowOverrides: { isPersisted: false }
-    })
-    const indicator = findIndicator(wrapper)
-    expect(indicator.exists()).toBe(true)
-    expect(indicator.attributes('data-state')).toBe('running')
+    renderTab({ workflowOverrides: { isPersisted: false } })
+    const indicator = screen.getByTestId('job-state-indicator')
+    expect(indicator.getAttribute('data-state')).toBe('running')
   })
 
   it('delegates close to workflow service with the tab workflow', async () => {
-    const wrapper = mountTab()
-    await wrapper.find('button[aria-label="Close"]').trigger('click')
+    renderTab()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('close-workflow-button'))
 
     expect(mockCloseWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test-key' }),
