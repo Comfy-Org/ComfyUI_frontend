@@ -66,7 +66,11 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.drop(options)
   }
 
-  /** Middle mouse button drag — used to pan the graph canvas. */
+  /**
+   * Middle mouse button drag-and-drop. Used by the MMB pan tests across the
+   * graph canvas, widget surfaces (textarea / markdown), and the mask editor
+   * canvas to verify the pan gesture forwards correctly from each surface.
+   */
   async mmbDrag(
     from: Position,
     to: Position,

@@ -17,6 +17,7 @@ browser_tests/
 │   ├── data/             - Static test data (mock API responses, workflow JSONs, node definitions)
 │   ├── components/       - Page object components (locators, user interactions)
 │   │   ├── ContextMenu.ts
+│   │   ├── MaskEditorDialog.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
 │   │   └── Topbar.ts

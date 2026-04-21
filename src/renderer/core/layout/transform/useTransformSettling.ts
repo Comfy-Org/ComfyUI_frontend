@@ -1,4 +1,4 @@
-import { useDebounceFn, useEventListener } from '@vueuse/core'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { ref } from 'vue'
@@ -52,13 +52,21 @@ export function useTransformSettling(
 
   const isTransforming = ref(false)
 
-  const markTransformSettled = useDebounceFn(() => {
-    isTransforming.value = false
-  }, settleDelay)
+  // useTimeoutFn auto-stops the pending timer on scope dispose via VueUse's
+  // tryOnScopeDispose, so the settle timer doesn't outlive an unmounting
+  // component and resurrect `isTransforming` into a disposed scope.
+  const { start: restartSettleTimer } = useTimeoutFn(
+    () => {
+      isTransforming.value = false
+    },
+    settleDelay,
+    { immediate: false }
+  )
 
   function markInteracting() {
     isTransforming.value = true
-    void markTransformSettled()
+    // Each call resets the timer — start() stops any pending one first.
+    restartSettleTimer()
   }
 
   const eventOptions = { capture: true, passive }

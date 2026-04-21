@@ -5,6 +5,8 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { MaskEditorDialog } from '@e2e/fixtures/components/MaskEditorDialog'
 
+const OPEN_MASK_EDITOR_LABEL = 'Edit or mask image'
+
 test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
@@ -35,7 +37,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
     await imagePreview.getByRole('region').hover()
-    await comfyPage.page.getByLabel('Edit or mask image').click()
+    await comfyPage.page.getByLabel(OPEN_MASK_EDITOR_LABEL).click()
 
     const maskEditor = new MaskEditorDialog(comfyPage)
     await maskEditor.waitForOpen()
@@ -104,7 +106,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
       // Hover over the image panel to reveal action buttons
       await imagePreview.getByRole('region').hover()
-      await comfyPage.page.getByLabel('Edit or mask image').click()
+      await comfyPage.page.getByLabel(OPEN_MASK_EDITOR_LABEL).click()
 
       const dialog = new MaskEditorDialog(comfyPage)
       await dialog.waitForOpen()

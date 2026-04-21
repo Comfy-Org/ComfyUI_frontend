@@ -23,12 +23,13 @@ function addMultilineWidget(
   opts: { defaultVal: string; placeholder?: string }
 ) {
   const widgetStore = useWidgetValueStore()
+  const settingStore = useSettingStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.dataset.testid = 'dom-widget-textarea'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
-  inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
+  inputEl.spellcheck = settingStore.get('Comfy.TextareaWidget.Spellcheck')
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
@@ -82,7 +83,7 @@ function addMultilineWidget(
   })
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    const gesturesEnabled = useSettingStore().get(
+    const gesturesEnabled = settingStore.get(
       'LiteGraph.Pointer.TrackpadGestures'
     )
     const deltaX = event.deltaX
