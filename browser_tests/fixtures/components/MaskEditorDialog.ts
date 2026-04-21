@@ -43,8 +43,8 @@ export class MaskEditorDialog {
     this.canvasContainer = this.root.locator('#maskEditorCanvasContainer')
     this.pointerZone = this.root.getByTestId('mask-editor-pointer-zone')
 
-    this.undoButton = this.root.locator('button[title="Undo"]')
-    this.redoButton = this.root.locator('button[title="Redo"]')
+    this.undoButton = this.root.getByRole('button', { name: 'Undo' })
+    this.redoButton = this.root.getByRole('button', { name: 'Redo' })
     this.saveButton = this.root.getByRole('button', { name: 'Save' })
     this.cancelButton = this.root.getByRole('button', { name: 'Cancel' })
     this.invertButton = this.root.getByRole('button', { name: 'Invert' })

@@ -46,14 +46,15 @@ export function isMiddleButtonHeld(event: PointerEvent | MouseEvent): boolean {
 }
 
 /**
- * Checks whether the event is a middle-button state change — i.e. it's a
- * pointerdown / pointerup / auxclick whose `button` field is the middle
- * button. Does not consult the `buttons` bitmask.
+ * Checks whether the event's `button` field identifies the middle button —
+ * i.e. the event was caused by a middle-button press/release/auxclick. Does
+ * not consult the `buttons` bitmask.
  *
- * Use this on handlers that only need to react when the middle button itself
- * transitions (canonical example: pointerup, where {@link isMiddleButtonHeld}
- * returns false because the button has just been released).
+ * Use this on state-transition handlers (pointerdown, pointerup, auxclick)
+ * where `button` is the authoritative source. pointerup in particular cannot
+ * use {@link isMiddleButtonHeld} because the button has just been released
+ * and no longer appears in `buttons`.
  */
-export function isMiddleButtonDown(event: PointerEvent | MouseEvent): boolean {
+export function isMiddleButtonEvent(event: PointerEvent | MouseEvent): boolean {
   return 'button' in event && event.button === 1
 }

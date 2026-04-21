@@ -1,14 +1,10 @@
-import {
-  isMiddleButtonDown,
-  isMiddleButtonHeld,
-  isMiddlePointerInput
-} from '@/base/pointerUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/composables/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -64,23 +60,7 @@ function addMultilineWidget(
     widget.callback?.(widget.value)
   })
 
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
-      app.canvas.processMouseDown(event)
-    }
-  })
-
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if (isMiddleButtonHeld(event)) {
-      app.canvas.processMouseMove(event)
-    }
-  })
-
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (isMiddleButtonDown(event)) {
-      app.canvas.processMouseUp(event)
-    }
-  })
+  forwardMiddleButtonToCanvas(inputEl)
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
     const gesturesEnabled = settingStore.get(

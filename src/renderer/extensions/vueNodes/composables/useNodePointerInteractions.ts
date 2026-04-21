@@ -1,7 +1,7 @@
 import { onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isMiddleButtonDown, isMiddleButtonHeld } from '@/base/pointerUtils'
+import { isMiddleButtonEvent, isMiddleButtonHeld } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -29,7 +29,7 @@ export function useNodePointerInteractions(
     const isMiddle =
       event.type === 'pointermove'
         ? isMiddleButtonHeld(event)
-        : isMiddleButtonDown(event)
+        : isMiddleButtonEvent(event)
     if (!isMiddle) return false
     forwardEventToCanvas(event)
     return true

@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { isMiddleButtonDown, isMiddleButtonHeld } from '@/base/pointerUtils'
+import { isMiddleButtonEvent, isMiddleButtonHeld } from '@/base/pointerUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -79,7 +79,7 @@ export function useCanvasInteractions() {
     const isMiddle =
       event.type === 'pointermove'
         ? isMiddleButtonHeld(event)
-        : isMiddleButtonDown(event)
+        : isMiddleButtonEvent(event)
     if (isMiddle) {
       forwardEventToCanvas(event)
       return

@@ -7,13 +7,9 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
-import {
-  isMiddleButtonDown,
-  isMiddleButtonHeld,
-  isMiddlePointerInput
-} from '@/base/pointerUtils'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/composables/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
@@ -96,23 +92,7 @@ function addMarkdownWidget(
     event.stopPropagation()
   })
 
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
-      app.canvas.processMouseDown(event)
-    }
-  })
-
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if (isMiddleButtonHeld(event)) {
-      app.canvas.processMouseMove(event)
-    }
-  })
-
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (isMiddleButtonDown(event)) {
-      app.canvas.processMouseUp(event)
-    }
-  })
+  forwardMiddleButtonToCanvas(inputEl)
 
   return widget
 }

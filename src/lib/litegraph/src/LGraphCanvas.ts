@@ -1,7 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
-import { isMiddleButtonDown, isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleButtonEvent, isMiddlePointerInput } from '@/base/pointerUtils'
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -1975,7 +1975,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // auxclick (e.g. right-button release), `buttons` may still include the
     // middle bit if middle is held, which would false-positive through
     // isMiddlePointerInput and suppress defaults for unrelated auxclicks.
-    if (isMiddleButtonDown(e)) e.preventDefault()
+    if (isMiddleButtonEvent(e)) e.preventDefault()
   }
 
   /** Captures an event and prevents default - returns true. */
@@ -3820,7 +3820,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this
         )
       }
-    } else if (isMiddleButtonDown(e)) {
+    } else if (isMiddleButtonEvent(e)) {
       this.dirty_canvas = true
       this.dragging_canvas = false
     } else if (e.button === 2) {

@@ -259,8 +259,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await drawStrokeAndExpectPixels(comfyPage, dialog)
 
-    const modifier = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
-    await comfyPage.page.keyboard.press(modifier)
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
 
     await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
   })
@@ -345,11 +344,13 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await expect(dialog.root).toBeHidden()
 
-    // The save pipeline uploads multiple layers (mask + image variants)
-    expect(
-      maskUploadCount + imageUploadCount,
-      'save should trigger upload calls'
-    ).toBeGreaterThan(0)
+    // The save pipeline uploads the mask plus at least one image layer.
+    // Pinning >=1 of each catches regressions where either branch silently
+    // short-circuits, which the prior `sum > 0` assertion would not.
+    expect(maskUploadCount, 'mask upload should fire').toBeGreaterThanOrEqual(1)
+    expect(imageUploadCount, 'image upload should fire').toBeGreaterThanOrEqual(
+      1
+    )
   })
 
   test('save failure keeps dialog open', async ({ comfyPage }) => {
