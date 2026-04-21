@@ -20,12 +20,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     >
       {{ t('gallery.contact.heading', locale) }}
     </h2>
-    <BrandButton
-      href="/contact"
-      variant="outline-dark"
-      size="sm"
-      class="mt-8"
-    >
+    <BrandButton href="/contact" variant="outline-dark" size="sm" class="mt-8">
       {{ t('gallery.contact.cta', locale) }}
     </BrandButton>
   </section>
