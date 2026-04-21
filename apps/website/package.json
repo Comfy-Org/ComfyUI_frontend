@@ -10,7 +10,9 @@
     "preview": "astro preview",
     "typecheck": "astro check",
     "test:e2e": "playwright test",
-    "test:e2e:local": "PLAYWRIGHT_LOCAL=1 playwright test"
+    "test:e2e:local": "PLAYWRIGHT_LOCAL=1 playwright test",
+    "test:visual": "playwright test --project visual",
+    "test:visual:update": "playwright test --project visual --update-snapshots"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
