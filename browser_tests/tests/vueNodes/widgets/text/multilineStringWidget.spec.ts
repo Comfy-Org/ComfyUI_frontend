@@ -87,7 +87,10 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     async ({ comfyPage, comfyMouse }) => {
       await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
-      const markdownWidget = comfyPage.page.locator('.comfy-markdown').first()
+      // WidgetMarkdown.vue renders `.widget-markdown` as the outer wrapper;
+      // the legacy `.comfy-markdown` class added by useMarkdownWidget only
+      // exists on the unmounted DOM widget element, not in the Vue Nodes tree.
+      const markdownWidget = comfyPage.page.locator('.widget-markdown').first()
       await expect(markdownWidget).toBeVisible()
 
       const markdownBounds = await markdownWidget.boundingBox()
