@@ -1,4 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -60,6 +61,41 @@ const SAMPLE_IMPORTED_FILES = [
   'background.jpg',
   'audio_clip.wav'
 ]
+
+async function installClipboardRecorder(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const scopedWindow = window as Window & {
+      __assetClipboardWrites?: string[]
+    }
+    const writes: string[] = []
+
+    scopedWindow.__assetClipboardWrites = writes
+
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          writes.push(text)
+        }
+      } satisfies Pick<Clipboard, 'writeText'>
+    })
+  })
+}
+
+async function readClipboardWrites(page: Page): Promise<string[]> {
+  return await page.evaluate(() => {
+    const scopedWindow = window as Window & {
+      __assetClipboardWrites?: string[]
+    }
+
+    return scopedWindow.__assetClipboardWrites ?? []
+  })
+}
+
+function assetCardLabel(name: string): RegExp {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escapedName}\\s+-\\s+`)
+}
 
 test.describe('Assets sidebar - empty states', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
@@ -602,6 +638,132 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
+  })
+})
+
+test.describe('Assets sidebar - preview and folder view', () => {
+  test.beforeEach(async ({ comfyPage, assetScenario }) => {
+    await installClipboardRecorder(comfyPage.page)
+    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.seedImportedFiles([])
+    await comfyPage.setup()
+  })
+
+  test('opens a generated asset in the gallery dialog', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openAssetPreview('landscape.png')
+
+    await expect(tab.previewDialog).toBeVisible()
+    await expect(tab.previewImage('landscape.png')).toBeVisible()
+  })
+
+  test('opens a multi-output job folder and returns to all assets', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openOutputFolder('abstract_art.png')
+
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect(tab.copyJobIdButton).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(2)
+    await expect(tab.asset('abstract_art-2.png')).toBeVisible()
+    await expect(tab.asset('abstract_art.png')).toBeVisible()
+
+    await tab.backToAssetsButton.click()
+
+    await expect(tab.backToAssetsButton).toBeHidden()
+    await expect(tab.assetCards).toHaveCount(SAMPLE_JOBS.length)
+    await expect(
+      tab.root.getByRole('button', {
+        name: assetCardLabel('abstract_art-2.png')
+      })
+    ).toHaveCount(0)
+  })
+
+  test('copies the folder job ID to the clipboard', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openOutputFolder('abstract_art.png')
+    await tab.copyJobIdButton.click()
+
+    await expect(
+      comfyPage.page.locator('.p-toast-message-success')
+    ).toBeVisible()
+    await expect(
+      comfyPage.page.getByText('Job ID copied to clipboard')
+    ).toBeVisible()
+    expect(await readClipboardWrites(comfyPage.page)).toEqual(['job-gamma'])
+  })
+})
+
+test.describe('Assets sidebar - delete confirmation', () => {
+  test.beforeEach(async ({ comfyPage, assetScenario }) => {
+    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.seedImportedFiles([])
+    await comfyPage.setup()
+  })
+
+  test('confirming delete removes the asset and shows success feedback', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.runContextMenuAction('portrait.png', 'Delete')
+
+    await expect(comfyPage.confirmDialog.root).toBeVisible()
+    await expect(
+      comfyPage.confirmDialog.root.getByText('Delete this asset?')
+    ).toBeVisible()
+    await expect(
+      comfyPage.confirmDialog.root.getByText(
+        'This asset will be permanently removed.'
+      )
+    ).toBeVisible()
+
+    await comfyPage.confirmDialog.click('delete')
+
+    await expect(tab.assetCards).toHaveCount(initialCount - 1, {
+      timeout: 5000
+    })
+    await expect(
+      tab.root.getByRole('button', { name: assetCardLabel('portrait.png') })
+    ).toHaveCount(0)
+    await expect(
+      comfyPage.page.locator('.p-toast-message-success')
+    ).toBeVisible()
+    await expect(
+      comfyPage.page.getByText('Asset deleted successfully')
+    ).toBeVisible()
+  })
+
+  test('cancelling delete preserves the asset', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.runContextMenuAction('portrait.png', 'Delete')
+    await expect(comfyPage.confirmDialog.root).toBeVisible()
+
+    await comfyPage.confirmDialog.click('reject')
+
+    await expect(tab.assetCards).toHaveCount(initialCount)
+    await expect(tab.asset('portrait.png')).toBeVisible()
   })
 })
 
