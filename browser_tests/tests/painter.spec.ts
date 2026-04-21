@@ -9,12 +9,10 @@ import {
   triggerSerialization
 } from '@e2e/helpers/painter'
 
-test.describe('Painter', { tag: '@widget' }, () => {
+test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => window.app?.graph?.clear())
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test(
@@ -371,5 +369,65 @@ test.describe('Painter', { tag: '@widget' }, () => {
 
       await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
     })
+  })
+
+  test.describe('Eraser', () => {
+    test('Eraser removes previously drawn content', async ({ comfyPage }) => {
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      const painterWidget = node.locator('.widget-expands')
+      const canvas = painterWidget.locator('canvas')
+      await expect(canvas).toBeVisible()
+
+      await drawStroke(comfyPage.page, canvas)
+      await comfyPage.nextFrame()
+      await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
+
+      await painterWidget.getByRole('button', { name: 'Eraser' }).click()
+      await drawStroke(comfyPage.page, canvas)
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(
+          () =>
+            canvas.evaluate((el: HTMLCanvasElement) => {
+              const ctx = el.getContext('2d')
+              if (!ctx) return false
+              const cx = Math.floor(el.width / 2)
+              const cy = Math.floor(el.height / 2)
+              const { data } = ctx.getImageData(cx - 5, cy - 5, 10, 10)
+              return data.every((v, i) => i % 4 !== 3 || v === 0)
+            }),
+          { message: 'erased area should be transparent' }
+        )
+        .toBe(true)
+    })
+
+    test('Eraser on empty canvas adds no content', async ({ comfyPage }) => {
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      const painterWidget = node.locator('.widget-expands')
+      const canvas = painterWidget.locator('canvas')
+      await expect(canvas).toBeVisible()
+
+      await painterWidget.getByRole('button', { name: 'Eraser' }).click()
+      await drawStroke(comfyPage.page, canvas)
+      await comfyPage.nextFrame()
+
+      await expect.poll(() => hasCanvasContent(canvas)).toBe(false)
+    })
+  })
+
+  test('Multiple strokes accumulate on the canvas', async ({ comfyPage }) => {
+    const canvas = comfyPage.vueNodes
+      .getNodeLocator('1')
+      .locator('.widget-expands canvas')
+    await expect(canvas).toBeVisible()
+
+    await drawStroke(comfyPage.page, canvas, { yPct: 0.3 })
+    await comfyPage.nextFrame()
+    await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
+
+    await drawStroke(comfyPage.page, canvas, { yPct: 0.7 })
+    await comfyPage.nextFrame()
+    await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
   })
 })

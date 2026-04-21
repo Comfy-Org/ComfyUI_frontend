@@ -68,7 +68,10 @@ export const TestIds = {
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
-    publishTabPanel: 'publish-tab-panel'
+    publishTabPanel: 'publish-tab-panel',
+    apiSignin: 'api-signin-dialog',
+    updatePassword: 'update-password-dialog',
+    cloudNotification: 'cloud-notification-dialog'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -83,7 +86,8 @@ export const TestIds = {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
-    root: 'properties-panel'
+    root: 'properties-panel',
+    errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
     toggle: 'subgraph-editor-toggle',
@@ -102,6 +106,7 @@ export const TestIds = {
     mainImage: 'main-image'
   },
   selectionToolbox: {
+    root: 'selection-toolbox',
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
@@ -109,6 +114,13 @@ export const TestIds = {
   },
   menu: {
     moreMenuContent: 'more-menu-content'
+  },
+  helpCenter: {
+    button: 'help-center-button',
+    popup: 'help-center-popup',
+    backdrop: 'help-center-backdrop',
+    menuItem: (key: string) => `help-menu-item-${key}`,
+    releaseItem: (version: string) => `help-release-item-${version}`
   },
   widgets: {
     container: 'node-widgets',
@@ -132,7 +144,11 @@ export const TestIds = {
     widgetItem: 'builder-widget-item',
     widgetLabel: 'builder-widget-label',
     outputPlaceholder: 'builder-output-placeholder',
-    connectOutputPopover: 'builder-connect-output-popover'
+    connectOutputPopover: 'builder-connect-output-popover',
+    connectOutputSwitch: 'builder-connect-output-switch',
+    emptyWorkflowDialog: 'builder-empty-workflow-dialog',
+    emptyWorkflowBack: 'builder-empty-workflow-back',
+    emptyWorkflowLoadTemplate: 'builder-empty-workflow-load-template'
   },
   outputHistory: {
     outputs: 'linear-outputs',
@@ -158,7 +174,13 @@ export const TestIds = {
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',
     backToWorkflow: 'linear-welcome-back-to-workflow',
-    loadTemplate: 'linear-welcome-load-template'
+    loadTemplate: 'linear-welcome-load-template',
+    arrangePreview: 'linear-arrange-preview',
+    arrangeNoOutputs: 'linear-arrange-no-outputs',
+    arrangeSwitchToOutputs: 'linear-arrange-switch-to-outputs',
+    vueNodeSwitchPopup: 'linear-vue-node-switch-popup',
+    vueNodeSwitchDismiss: 'linear-vue-node-switch-dismiss',
+    vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -183,36 +205,31 @@ export const TestIds = {
   },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
+  },
+  terminal: {
+    root: 'terminal-root',
+    host: 'terminal-host',
+    copyButton: 'terminal-copy-button',
+    errorMessage: 'terminal-error-message',
+    loadingSpinner: 'terminal-loading-spinner'
+  },
+  imageCompare: {
+    viewport: 'image-compare-viewport',
+    empty: 'image-compare-empty',
+    batchNav: 'batch-nav',
+    beforeBatch: 'before-batch',
+    afterBatch: 'after-batch',
+    batchCounter: 'batch-counter',
+    batchNext: 'batch-next',
+    batchPrev: 'batch-prev'
   }
 } as const
 
-/**
- * Helper type for accessing nested TestIds (excludes function values)
- */
-export type TestIdValue =
-  | (typeof TestIds.sidebar)[keyof typeof TestIds.sidebar]
-  | (typeof TestIds.tree)[keyof typeof TestIds.tree]
-  | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
-  | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
-  | (typeof TestIds.keybindings)[keyof typeof TestIds.keybindings]
-  | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
-  | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
-  | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
-  | (typeof TestIds.node)[keyof typeof TestIds.node]
-  | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
-  | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
-  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
-  | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
-  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
-  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
-  | Exclude<
-      (typeof TestIds.templates)[keyof typeof TestIds.templates],
-      (id: string) => string
-    >
-  | (typeof TestIds.user)[keyof typeof TestIds.user]
-  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
-  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
-  | (typeof TestIds.queue)[keyof typeof TestIds.queue]
-  | (typeof TestIds.errors)[keyof typeof TestIds.errors]
-  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
-  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]
+export type TestId<K extends keyof typeof TestIds> = Exclude<
+  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
+  (...args: never[]) => string
+>
+
+export type TestIdValue = {
+  [K in keyof typeof TestIds]: TestId<K>
+}[keyof typeof TestIds]

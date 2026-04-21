@@ -2,10 +2,13 @@ import type { WebSocketRoute } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { comfyPageFixture, comfyExpect as expect } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { webSocketFixture } from '../fixtures/ws'
-import { ExecutionHelper } from '../fixtures/helpers/ExecutionHelper'
+import {
+  comfyPageFixture,
+  comfyExpect as expect
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -40,7 +43,6 @@ function imageOutput(...filenames: string[]) {
 
 test.describe('Output History', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     await comfyPage.nextFrame()

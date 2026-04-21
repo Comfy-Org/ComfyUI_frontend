@@ -18,7 +18,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
       try {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.nextFrame()
 
         const responsePromise = comfyPage.page.waitForResponse('**/api/prompt')
         await comfyPage.command.executeCommand('Comfy.QueuePrompt')

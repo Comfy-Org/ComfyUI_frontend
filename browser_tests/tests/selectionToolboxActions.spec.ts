@@ -28,15 +28,10 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-})
-
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.nextFrame()
   })
 
   test('delete button removes selected node', async ({ comfyPage }) => {
@@ -73,7 +68,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.nextFrame()
 
     await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
@@ -87,7 +81,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.nextFrame()
 
     await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
@@ -164,7 +157,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.nextFrame()
 
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
@@ -191,7 +183,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.nextFrame()
 
     const initialGroupCount = await comfyPage.page.evaluate(
       () => window.app!.graph.groups.length
@@ -233,7 +224,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.nextFrame()
 
     // Select the SaveImage node by panning to it
     const saveImageRef = (

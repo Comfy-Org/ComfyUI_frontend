@@ -68,7 +68,6 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const parentTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(parentTextarea).toBeVisible()
@@ -88,8 +87,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
 
       await expect(subgraphTextarea).toHaveValue(TEST_WIDGET_CONTENT)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       const backToParentTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(backToParentTextarea).toBeVisible()
@@ -115,8 +113,6 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
     test('DOM elements are cleaned up when widget is disconnected from I/O', async ({
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )

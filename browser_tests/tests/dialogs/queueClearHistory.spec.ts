@@ -5,7 +5,6 @@ import {
 
 test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
     await comfyPage.queuePanel.overlayToggle.click()
   })
 
