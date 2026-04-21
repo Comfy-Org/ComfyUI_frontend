@@ -68,10 +68,9 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   }
 
   async function drawStrokeOnPointerZone(page: Page, dialog: MaskEditorDialog) {
-    const pointerZone = dialog.pointerZone
-    await expect(pointerZone).toBeVisible()
+    await expect(dialog.pointerZone).toBeVisible()
 
-    const box = await pointerZone.boundingBox()
+    const box = await dialog.pointerZone.boundingBox()
     if (!box) throw new Error('Pointer zone bounding box not found')
 
     const startX = box.x + box.width * 0.3
@@ -110,11 +109,9 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       const dialog = new MaskEditorDialog(comfyPage)
       await dialog.waitForOpen()
 
-      await expect(
-        dialog.root.locator('.maskEditor-ui-container')
-      ).toBeVisible()
-      await expect(dialog.root.getByText('Save')).toBeVisible()
-      await expect(dialog.root.getByText('Cancel')).toBeVisible()
+      await expect(dialog.toolPanel).toBeVisible()
+      await expect(dialog.saveButton).toBeVisible()
+      await expect(dialog.cancelButton).toBeVisible()
 
       await comfyPage.expectScreenshot(
         dialog.root,
@@ -183,9 +180,9 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       // this the brush circle lands on slightly different pixels between runs
       // and causes flaky screenshot diffs.
       await comfyPage.page.mouse.move(0, 0)
-      await comfyPage.nextFrame()
 
-      await expect(dialog.canvasContainer).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        dialog.canvasContainer,
         'mask-editor-paned-with-mmb.png'
       )
     }
@@ -196,9 +193,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await drawStrokeAndExpectPixels(comfyPage, dialog)
 
-    const undoButton = dialog.root.locator('button[title="Undo"]')
-    await expect(undoButton).toBeVisible()
-    await undoButton.click()
+    await expect(dialog.undoButton).toBeVisible()
+    await dialog.undoButton.click()
 
     await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
   })
@@ -208,14 +204,12 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await drawStrokeAndExpectPixels(comfyPage, dialog)
 
-    const undoButton = dialog.root.locator('button[title="Undo"]')
-    await undoButton.click()
+    await dialog.undoButton.click()
 
     await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
 
-    const redoButton = dialog.root.locator('button[title="Redo"]')
-    await expect(redoButton).toBeVisible()
-    await redoButton.click()
+    await expect(dialog.redoButton).toBeVisible()
+    await dialog.redoButton.click()
 
     await expect
       .poll(() => pollMaskPixelCount(comfyPage.page))
@@ -227,9 +221,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await drawStrokeAndExpectPixels(comfyPage, dialog)
 
-    const clearButton = dialog.root.getByRole('button', { name: 'Clear' })
-    await expect(clearButton).toBeVisible()
-    await clearButton.click()
+    await expect(dialog.clearButton).toBeVisible()
+    await dialog.clearButton.click()
 
     await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
   })
@@ -239,8 +232,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await drawStrokeAndExpectPixels(comfyPage, dialog)
 
-    const cancelButton = dialog.root.getByRole('button', { name: 'Cancel' })
-    await cancelButton.click()
+    await dialog.cancelButton.click()
 
     await expect(dialog.root).toBeHidden()
   })
@@ -252,9 +244,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     expect(dataBefore).not.toBeNull()
     const pixelsBefore = dataBefore!.nonTransparentPixels
 
-    const invertButton = dialog.root.getByRole('button', { name: 'Invert' })
-    await expect(invertButton).toBeVisible()
-    await invertButton.click()
+    await expect(dialog.invertButton).toBeVisible()
+    await dialog.invertButton.click()
 
     await expect
       .poll(() => pollMaskPixelCount(comfyPage.page))
@@ -278,18 +269,13 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     async ({ comfyPage }) => {
       const dialog = await openMaskEditorDialog(comfyPage)
 
-      const toolPanel = dialog.root.locator('.maskEditor-ui-container')
-      await expect(toolPanel).toBeVisible()
+      await expect(dialog.toolPanel).toBeVisible()
 
       // The tool panel should contain exactly 5 tool entries
-      const toolEntries = dialog.root.locator('.maskEditor_toolPanelContainer')
-      await expect(toolEntries).toHaveCount(5)
+      await expect(dialog.toolEntries).toHaveCount(5)
 
       // First tool (MaskPen) should be selected by default
-      const selectedTool = dialog.root.locator(
-        '.maskEditor_toolPanelContainerSelected'
-      )
-      await expect(selectedTool).toHaveCount(1)
+      await expect(dialog.selectedTool).toHaveCount(1)
     }
   )
 
@@ -298,20 +284,16 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    const toolEntries = dialog.root.locator('.maskEditor_toolPanelContainer')
-    await expect(toolEntries).toHaveCount(5)
+    await expect(dialog.toolEntries).toHaveCount(5)
 
     // Click the third tool (Eraser, index 2)
-    await toolEntries.nth(2).click()
+    await dialog.toolEntries.nth(2).click()
 
     // The third tool should now be selected
-    const selectedTool = dialog.root.locator(
-      '.maskEditor_toolPanelContainerSelected'
-    )
-    await expect(selectedTool).toHaveCount(1)
+    await expect(dialog.selectedTool).toHaveCount(1)
 
     // Verify it's the eraser (3rd entry)
-    await expect(toolEntries.nth(2)).toHaveClass(/Selected/)
+    await expect(dialog.toolEntries.nth(2)).toHaveClass(/Selected/)
   })
 
   test('brush settings panel is visible with thickness controls', async ({
@@ -320,14 +302,9 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
     // The side panel should show brush settings by default
-    const thicknessLabel = dialog.root.getByText('Thickness')
-    await expect(thicknessLabel).toBeVisible()
-
-    const opacityLabel = dialog.root.getByText('Opacity').first()
-    await expect(opacityLabel).toBeVisible()
-
-    const hardnessLabel = dialog.root.getByText('Hardness')
-    await expect(hardnessLabel).toBeVisible()
+    await expect(dialog.thicknessLabel).toBeVisible()
+    await expect(dialog.opacityLabel).toBeVisible()
+    await expect(dialog.hardnessLabel).toBeVisible()
   })
 
   test('save uploads all layers and closes dialog', async ({ comfyPage }) => {
@@ -361,9 +338,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       })
     })
 
-    const saveButton = dialog.root.getByRole('button', { name: 'Save' })
-    await expect(saveButton).toBeVisible()
-    await saveButton.click()
+    await expect(dialog.saveButton).toBeVisible()
+    await dialog.saveButton.click()
 
     await expect(dialog.root).toBeHidden()
 
@@ -385,8 +361,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       route.fulfill({ status: 500 })
     )
 
-    const saveButton = dialog.root.getByRole('button', { name: 'Save' })
-    await saveButton.click()
+    await dialog.saveButton.click()
 
     // Dialog should remain open when save fails
     await expect(dialog.root).toBeVisible()
@@ -404,8 +379,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       const pixelsAfterDraw = await getMaskCanvasPixelData(comfyPage.page)
 
       // Switch to eraser tool (3rd tool, index 2)
-      const toolEntries = dialog.root.locator('.maskEditor_toolPanelContainer')
-      await toolEntries.nth(2).click()
+      await dialog.toolEntries.nth(2).click()
 
       // Draw over the same area with the eraser
       await drawStrokeOnPointerZone(comfyPage.page, dialog)
