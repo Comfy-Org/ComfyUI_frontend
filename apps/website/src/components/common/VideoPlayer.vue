@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
+import {
+  refAutoReset,
+  useElementHover,
+  useEventListener,
+  useFullscreen,
+  useMediaControls,
+  useMouseInElement,
+  whenever
+} from '@vueuse/core'
+import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
@@ -25,102 +34,131 @@ const {
   autoplay?: boolean
 }>()
 
-const videoEl = ref<HTMLVideoElement>()
-const playing = ref(false)
-const muted = ref(true)
-const ccEnabled = ref(false)
-const currentTime = ref(0)
-const duration = ref(0)
+const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
+const videoEl = useTemplateRef<HTMLVideoElement>('videoEl')
+const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
 
-const hasSubtitles = computed(() =>
-  tracks.some((t) => t.kind === 'subtitles' || t.kind === 'captions')
+const {
+  playing,
+  currentTime,
+  duration,
+  muted,
+  selectedTrack,
+  enableTrack,
+  disableTrack
+} = useMediaControls(videoEl)
+
+const { isSupported: fullscreenSupported, toggle: toggleFs } =
+  useFullscreen(playerEl)
+
+// Controls fade
+const hovering = useElementHover(playerEl)
+const recentActivity = refAutoReset(false, 800)
+
+const controlsVisible = computed(
+  () => !playing.value || hovering.value || recentActivity.value
 )
 
+function showControls() {
+  recentActivity.value = true
+}
+
+whenever(playing, () => {
+  showControls()
+})
+
+const nativeDuration = shallowRef(0)
+
+function syncNativeDuration() {
+  const elementDuration = videoEl.value?.duration
+
+  nativeDuration.value =
+    elementDuration && Number.isFinite(elementDuration) ? elementDuration : 0
+}
+
+watch(videoEl, syncNativeDuration)
+useEventListener(videoEl, 'loadedmetadata', syncNativeDuration)
+useEventListener(videoEl, 'durationchange', syncNativeDuration)
+
+const effectiveDuration = computed(() => duration.value || nativeDuration.value)
+
+// Scrubber (modeled after VueUse demo Scrubber.vue)
+const scrubbing = shallowRef(false)
+const pendingTime = shallowRef(0)
+const { elementX, elementWidth } = useMouseInElement(scrubberEl)
+
+function stopScrubbing() {
+  scrubbing.value = false
+}
+
+useEventListener('mouseup', stopScrubbing, { passive: true })
+useEventListener('touchend', stopScrubbing, { passive: true })
+useEventListener('touchcancel', stopScrubbing, { passive: true })
+
+watch([scrubbing, elementX], () => {
+  if (!elementWidth.value || !effectiveDuration.value) return
+
+  const nextTime =
+    Math.max(0, Math.min(1, elementX.value / elementWidth.value)) *
+    effectiveDuration.value
+
+  pendingTime.value = nextTime
+
+  if (scrubbing.value) {
+    currentTime.value = nextTime
+  }
+})
+
 const progress = computed(() =>
-  duration.value ? currentTime.value / duration.value : 0
+  effectiveDuration.value ? currentTime.value / effectiveDuration.value : 0
+)
+
+const displayTime = computed(() =>
+  scrubbing.value ? pendingTime.value : currentTime.value
 )
 
 const timestamp = computed(() => {
-  const t = Math.floor(currentTime.value)
+  const t = Math.floor(displayTime.value)
   const m = String(Math.floor(t / 60)).padStart(2, '0')
   const s = String(t % 60).padStart(2, '0')
   return `${m}:${s}`
 })
 
-function togglePlay() {
-  const v = videoEl.value
-  if (!v) return
-  if (v.paused) {
-    v.play().catch(() => {})
-  } else {
-    v.pause()
-  }
-}
+// Subtitles
+const ccEnabled = computed(() => selectedTrack.value !== -1)
+
+const hasSubtitles = computed(() =>
+  tracks.some((t) => t.kind === 'subtitles' || t.kind === 'captions')
+)
 
 function toggleCC() {
-  const v = videoEl.value
-  if (!v) return
-  ccEnabled.value = !ccEnabled.value
-  for (const track of v.textTracks) {
-    if (track.kind === 'subtitles' || track.kind === 'captions') {
-      track.mode = ccEnabled.value ? 'showing' : 'hidden'
-    }
+  if (ccEnabled.value) {
+    disableTrack()
+  } else {
+    enableTrack(0)
   }
 }
 
-function toggleMute() {
-  const v = videoEl.value
-  if (!v) return
-  v.muted = !v.muted
-  muted.value = v.muted
-}
-
+// Fullscreen
 function toggleFullscreen() {
-  const v = videoEl.value
-  if (!v) return
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {})
-  } else if (v.requestFullscreen) {
-    v.requestFullscreen().catch(() => {})
-  } else if ('webkitEnterFullscreen' in v) {
-    ;(
-      v as HTMLVideoElement & { webkitEnterFullscreen: () => void }
-    ).webkitEnterFullscreen()
+  if (fullscreenSupported.value) {
+    toggleFs()
+    return
   }
-}
-
-function hideAllSubtitles() {
-  const v = videoEl.value
-  if (!v) return
-  for (const track of v.textTracks) {
-    if (track.kind === 'subtitles' || track.kind === 'captions') {
-      track.mode = 'hidden'
-    }
-  }
-}
-
-function onTimeUpdate() {
-  const v = videoEl.value
-  if (!v) return
-  currentTime.value = v.currentTime
-  duration.value = v.duration || 0
-}
-
-function onLoadedMetadata() {
-  onTimeUpdate()
-  hideAllSubtitles()
-}
-
-function seek(value: number) {
-  const v = videoEl.value
-  if (!v) return
-  v.currentTime = value
+  const v = videoEl.value as
+    | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+    | null
+  v?.webkitEnterFullscreen?.()
 }
 </script>
 
 <template>
   <div
+    ref="playerEl"
     class="relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black"
+    @pointermove="showControls"
+    @pointerdown="showControls"
+    @focusin="showControls"
   >
     <video
       v-if="src"
@@ -133,11 +171,6 @@ function seek(value: number) {
       playsinline
       :autoplay
       muted
-      @timeupdate="onTimeUpdate"
-      @loadedmetadata="onLoadedMetadata"
-      @play="playing = true"
-      @pause="playing = false"
-      @ended="playing = false"
     >
       <track
         v-for="track in tracks"
@@ -152,7 +185,12 @@ function seek(value: number) {
     <!-- Bottom control bar -->
     <div
       v-if="src"
-      class="absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 lg:px-6 lg:py-5"
+      :class="
+        cn(
+          'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',
+          !controlsVisible && 'pointer-events-none opacity-0'
+        )
+      "
     >
       <!-- Play / Pause button -->
       <button
@@ -166,7 +204,7 @@ function seek(value: number) {
               ? '播放'
               : 'Play'
         "
-        @click="togglePlay"
+        @click="playing = !playing"
       >
         <!-- Pause icon -->
         <svg
@@ -189,22 +227,24 @@ function seek(value: number) {
         </svg>
       </button>
 
-      <!-- Progress bar -->
-      <input
-        type="range"
-        class="video-progress-range flex-1"
-        :value="currentTime"
-        :max="duration || 0"
-        step="0.1"
+      <!-- Progress scrubber -->
+      <div
+        ref="scrubberEl"
+        class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
+        role="slider"
+        tabindex="0"
         :aria-label="locale === 'zh-CN' ? '播放进度' : 'Seek'"
         :aria-valuemin="0"
-        :aria-valuemax="duration || 0"
-        :aria-valuenow="currentTime"
-        :style="{
-          background: `linear-gradient(to right, var(--color-primary-comfy-yellow) ${progress * 100}%, rgb(255 255 255 / 0.2) ${progress * 100}%)`
-        }"
-        @input="seek(Number(($event.target as HTMLInputElement).value))"
-      />
+        :aria-valuemax="effectiveDuration || 0"
+        :aria-valuenow="displayTime"
+        @mousedown="scrubbing = true"
+        @touchstart.passive="scrubbing = true"
+      >
+        <div
+          class="bg-primary-comfy-yellow h-full rounded-full"
+          :style="{ width: `${progress * 100}%` }"
+        />
+      </div>
 
       <!-- Timestamp -->
       <span class="shrink-0 text-xs text-white/80 lg:text-sm">{{
@@ -268,7 +308,7 @@ function seek(value: number) {
               ? '静音'
               : 'Mute'
         "
-        @click="toggleMute"
+        @click="muted = !muted"
       >
         <!-- Muted icon -->
         <svg
@@ -318,37 +358,3 @@ function seek(value: number) {
     </div>
   </div>
 </template>
-
-<!-- Native range pseudo-elements cannot be styled with Tailwind utilities -->
-<style scoped>
-.video-progress-range {
-  appearance: none;
-  height: 4px;
-  border-radius: 9999px;
-  cursor: pointer;
-  outline: none;
-}
-
-.video-progress-range::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 9999px;
-}
-
-.video-progress-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 0;
-  height: 0;
-}
-
-.video-progress-range::-moz-range-thumb {
-  width: 0;
-  height: 0;
-  border: none;
-}
-
-.video-progress-range::-moz-range-progress {
-  height: 4px;
-  border-radius: 9999px;
-  background: var(--color-primary-comfy-yellow);
-}
-</style>
