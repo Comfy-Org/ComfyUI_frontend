@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'

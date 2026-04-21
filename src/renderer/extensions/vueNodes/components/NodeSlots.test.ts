@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
