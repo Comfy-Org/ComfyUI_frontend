@@ -1,4 +1,13 @@
+import { fileURLToPath } from 'node:url'
+
 import { expect, test } from '@playwright/test'
+
+const caseStudyVideoPath = fileURLToPath(
+  new URL(
+    '../../../public/assets/images/cloud-subscription.webm',
+    import.meta.url
+  )
+)
 
 test.describe('Homepage @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -94,6 +103,84 @@ test.describe('Product showcase accordion @interaction', () => {
     await expect(
       page.getByText(/Build powerful AI pipelines by connecting nodes/).first()
     ).toBeHidden()
+  })
+})
+
+test.describe('Video player @interaction', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route(
+      'https://media.comfy.org/website/customers/blackmath/video.webm',
+      (route) =>
+        route.fulfill({
+          contentType: 'video/webm',
+          path: caseStudyVideoPath
+        })
+    )
+
+    await page.goto('/')
+  })
+
+  test('playback advances progress and clicking the scrubber seeks', async ({
+    page
+  }) => {
+    const section = page.locator('section', {
+      has: page.getByText('Customer Stories')
+    })
+    const video = section.locator('video')
+    const scrubber = section.getByRole('slider', { name: 'Seek' })
+
+    await expect
+      .poll(async () =>
+        video.evaluate((element: HTMLVideoElement) => element.duration)
+      )
+      .toBeGreaterThan(0)
+
+    const loadedDuration = await video.evaluate(
+      (element: HTMLVideoElement) => element.duration
+    )
+
+    await expect
+      .poll(async () => Number(await scrubber.getAttribute('aria-valuemax')))
+      .toBeGreaterThan(0)
+
+    await expect(scrubber).toHaveAttribute('aria-valuenow', '0')
+
+    await section.getByRole('button', { name: 'Play' }).click()
+
+    await expect
+      .poll(async () =>
+        video.evaluate((element: HTMLVideoElement) => element.currentTime)
+      )
+      .toBeGreaterThan(0)
+
+    await expect
+      .poll(async () => Number(await scrubber.getAttribute('aria-valuenow')))
+      .toBeGreaterThan(0)
+
+    const scrubberBox = await scrubber.boundingBox()
+
+    expect(scrubberBox).not.toBeNull()
+
+    if (!scrubberBox) {
+      throw new Error('Expected video scrubber bounding box')
+    }
+
+    await scrubber.click({
+      position: {
+        x: scrubberBox.width * 0.75,
+        y: scrubberBox.height / 2
+      }
+    })
+
+    await expect
+      .poll(async () => Number(await scrubber.getAttribute('aria-valuenow')))
+      .toBeGreaterThanOrEqual(loadedDuration * 0.5)
+
+    await expect
+      .poll(async () =>
+        video.evaluate((element: HTMLVideoElement) => element.currentTime)
+      )
+      .toBeGreaterThanOrEqual(loadedDuration * 0.5)
   })
 })
 
