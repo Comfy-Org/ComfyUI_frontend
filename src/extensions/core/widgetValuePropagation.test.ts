@@ -13,7 +13,7 @@ import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
-      graph_mouse: {}
+      graph_mouse: [0, 0]
     }
   }
 }))
@@ -106,7 +106,7 @@ describe('applyFirstWidgetValueToGraph', () => {
       'new value',
       expect.anything(),
       targetNode,
-      expect.anything(),
+      [0, 0],
       expect.anything()
     )
   })

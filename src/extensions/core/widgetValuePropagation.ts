@@ -1,3 +1,4 @@
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -22,7 +23,7 @@ export function applyFirstWidgetValueToGraph(
     value = transformValue(value)
   }
 
-  const graphMouse = app.canvas?.graph_mouse ?? ({} as CanvasPointerEvent)
+  const graphMouse: Point = app.canvas?.graph_mouse ?? [0, 0]
 
   const links = [
     ...output.links.map((linkId) => node.graph!.links[linkId]),
