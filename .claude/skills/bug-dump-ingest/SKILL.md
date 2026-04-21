@@ -1,26 +1,29 @@
 ---
 name: bug-dump-ingest
-description: 'Syncs the #bug-dump Slack channel into Linear as the system of record. Primary mode: bulk sync — every ingestable message becomes a Linear issue with labels (area, env, severity, reporter) in Triage state, marked in Slack via a :white_check_mark: reaction on the parent + a thread reply carrying the Linear URL. Respects the team emoji scheme (:white_check_mark: ticket created, :pr-open: PR open, :question: needs context, :repeat: duplicate). Secondary mode: delegate to red-green-fix for explicitly-approved fixes. Use when asked to sync #bug-dump to Linear, triage slack bugs, run a bug-dump sweep, or ingest bug reports. Triggers on: bug-dump, sync bug-dump, ingest bugs, triage slack bugs, bug sweep.'
+description: 'Syncs the #bug-dump Slack channel into Linear as the system of record AND auto-fixes verified real bugs via red-green-fix. Flow: fetch → mandatory dedupe gate (Linear + gh PR search) → false-defect verification → file Linear (Triage, labeled) → post :white_check_mark: thread reply via slack_send_message (mandatory tool call, not chat output) → if candidate is a verified real bug with no dedupe hit and no open PR, invoke red-green-fix automatically to produce failing test + fix + PR. Respects team emoji scheme (:white_check_mark: ticket created, :pr-open: PR open, :question: needs context, :repeat: duplicate). Use when asked to sync #bug-dump to Linear, triage slack bugs, run a bug-dump sweep, or ingest bug reports. Triggers on: bug-dump, sync bug-dump, ingest bugs, triage slack bugs, bug sweep.'
 ---
 
 # Bug Dump Ingest
 
-**Primary job: sync `#bug-dump` (Slack: `C0A4XMHANP3`) into Linear as the source of truth.** Linear is where status, labels, and follow-up triage happen — this skill just gets every bug into Linear with enough context that a downstream agent or human can work from Linear alone, not from Slack.
-
-Fix workflows (red-green tests, PRs) are a **secondary, opt-in pass** triggered per-candidate with `F`. The default flow files tickets and stops.
+**Primary job: sync `#bug-dump` (Slack: `C0A4XMHANP3`) into Linear as the source of truth, then auto-fix the verified real bugs.** Linear is where status, labels, and follow-up triage happen — this skill gets every bug into Linear with enough context that a downstream agent or human can work from Linear alone. When pre-flight verification confirms a candidate is a real bug (not dedupe, not already in a PR, not out of scope), the skill then invokes `red-green-fix` automatically.
 
 ```text
-fetch → verify false defects → present approvals → create Linear (with labels, Triage state)
-      → thread reply ":white_check_mark: Filed to Linear" (ingested marker)
-      → [optional] delegate to red-green-fix → unit/e2e tests → PR
+fetch → pre-flight dedupe gate (Linear + gh) → verify false defects → present approvals
+      → create Linear (with labels, Triage state)
+      → POST :white_check_mark: thread reply via slack_send_message  (mandatory tool call)
+      → if verification = "real bug" AND no dedupe AND no open PR:
+          invoke Skill(skill="red-green-fix") → POST :pr-open: thread reply
 ```
 
-The skill does NOT auto-add Slack reactions (no `reactions.add` tool is exposed). Instead:
+### Non-negotiable rules
 
-- The **machine-readable ingested marker** is a thread reply whose TEXT starts with `:white_check_mark:` and includes the Linear URL. That string is searchable (`has:link has::white_check_mark:`) and idempotent.
-- The **visible parent-message marker** is a `:white_check_mark:` reaction on the original message — added manually by the human (the skill prints a batch list of permalinks + Linear IDs after each run).
+1. **The thread reply is a tool call, not chat output.** The skill MUST call `mcp__plugin_slack_slack__slack_send_message` with `thread_ts` set. Printing `:white_check_mark: Filed to Linear: ...` into the Claude CLI response is NOT a substitute — the Slack thread is the canonical ingested marker. If the tool call fails, say so explicitly; do not claim success.
+2. **Dedupe is a gate, not a suggestion.** No candidate is proposed for creation until Linear open-issue search AND `gh pr` search have been run and recorded. A hit short-circuits creation to `L` (link) or `pr-open`.
+3. **Auto-fix real bugs.** When the dedupe gate is clean AND false-defect verification is clean AND the candidate isn't on the handoff-exclusion list (see § Handoff conditions), after Linear creation the skill invokes `red-green-fix` via the `Skill` tool — without waiting for an extra human prompt.
 
-Both markers are respected by Processed Detection on subsequent sweeps.
+### What the skill cannot do
+
+The Slack MCP exposes no `reactions.add` tool, so the skill cannot put a `:white_check_mark:` reaction on the parent message. The thread reply with the leading `:white_check_mark:` emoji is the skill's canonical marker; a human can additionally add the parent reaction for channel visibility (see § Parent reaction — optional visibility nudge). Both are respected by Processed Detection.
 
 ## Team emoji scheme
 
@@ -33,7 +36,7 @@ Both markers are respected by Processed Detection on subsequent sweeps.
 
 ## Design Priority
 
-Optimize for **coverage and label quality** over fix-path cleverness. Linear is the downstream triage surface — once every bug is there with status, labels, and context, agents and humans can work from Linear alone. A Linear ticket with a wrong severity is cheap to fix; a Slack-only bug is invisible to downstream tooling.
+Optimize for **coverage, label quality, and proven fixes** over fix-path cleverness. Linear is the downstream triage surface — once every bug is there with status, labels, and context, agents and humans can work from Linear alone. A Linear ticket with a wrong severity is cheap to fix; a Slack-only bug is invisible to downstream tooling; a "filed but not fixed" real regression wastes a human turn that the skill could have spent on a red-green PR.
 
 ## Quick Start
 
@@ -41,13 +44,13 @@ Optimize for **coverage and label quality** over fix-path cleverness. Linear is 
 2. **Fetch** — `slack_read_channel` for `C0A4XMHANP3`; `slack_read_thread` per message with replies.
 3. **Filter** — drop already-processed (see Processed Detection).
 4. **Classify** — bug / discussion / meta (see Classification Rules).
-5. **Verify false defects** — per candidate, run quick checks before proposing (see False-Defect Verification).
-6. **Extract** — normalize to ticket schema (see Ticket Schema).
-7. **Dedupe** — search Linear for open issues with overlapping title/body terms.
-8. **Human approval** — batch table, collect Y/N/?/F per candidate (see Interactive Approval). `F` = file and fix now.
+5. **Pre-flight dedupe gate (MANDATORY)** — for every bug candidate, run Linear open-issue search AND `gh pr` search BEFORE proposing (see § Pre-flight Dedupe Gate). A hit means the candidate goes into the batch as `L` (link) or `pr-open`, not as a new create.
+6. **Verify false defects** — per candidate, run quick checks before proposing (see False-Defect Verification).
+7. **Extract** — normalize to ticket schema (see Ticket Schema).
+8. **Human approval** — batch table, collect Y/N/?/S/L/R per candidate (see Interactive Approval). Default recommendation for clean candidates is `Y` (file + auto-fix).
 9. **Create Linear** — one issue per approved candidate; attach Slack permalink.
-10. **Thread reply (ingested marker)** — `slack_send_message` with `thread_ts` set, message starts with `:white_check_mark: Filed to Linear: <URL>`.
-11. **Fix (for `F` candidates)** — delegate to `red-green-fix` skill: failing unit + e2e tests first, then minimal fix, then PR.
+10. **Thread reply (ingested marker) — MANDATORY TOOL CALL** — call `mcp__plugin_slack_slack__slack_send_message` with `channel_id=C0A4XMHANP3`, `thread_ts=<parent-ts>`, text starting with `:white_check_mark: Filed to Linear: <URL>`. Do not substitute this with chat output. Record the returned `ts` in the session log.
+11. **Auto-fix (clean candidates only)** — if dedupe gate is clean AND false-defect verification is clean AND the candidate isn't on the Handoff-Exclusion list, immediately invoke the `red-green-fix` skill via the `Skill` tool. See § Fix Workflow for the exact call contract.
 12. **Log** — append to session log; update `processed.json`.
 
 ## System Context
@@ -190,40 +193,97 @@ When unsure, mark `medium` and flag for human in the approval batch.
 - `cloud` — jobs, pricing, assets, auth, queue.
 - `templates` — specific template errors.
 
-## Dedupe
+## Pre-flight Dedupe Gate (MANDATORY)
 
-Before proposing a ticket:
+Before any candidate enters the approval table, run BOTH checks below and record the result in the row's `Dedup` and `PR` columns. This is a hard gate — no candidate may be proposed for creation without a verdict.
 
-1. Extract 3-5 keyword terms from the title (strip stopwords).
-2. Query Linear for open issues matching any term (Linear MCP `searchIssues` or GraphQL `issues(filter:{state:{type:{nin:["completed","canceled"]}}})`).
-3. If a clear duplicate (≥80% title overlap or same stack trace), mark `Dedup? Y → LIN-NNN` in the approval table and propose linking instead of creating.
+### Check 1 — Open Linear issues
+
+Extract 3-5 keyword terms from the proposed title (strip stopwords). Query Linear via MCP:
+
+```text
+mcp__linear__list_issues({
+  query: "<keyword-1> <keyword-2>",
+  team: "Frontend Engineering",
+  includeArchived: false,
+  state: ["Triage", "Backlog", "Todo", "In Progress", "In Review"]
+})
+```
+
+Run the query twice if needed with different keyword subsets to catch reworded titles. Treat a hit as a duplicate if any of:
+
+- Title overlap ≥ 80% (after lowercasing + stopword removal)
+- Same reporter + same component reference in description
+- Same stack trace or error code
+
+**Verdict:** set `Dedup: LIN-NNN` and default recommendation to `L` (link, don't create). The human may still override to `Y` to file a separate ticket.
+
+### Check 2 — Open or merged fix PRs on GitHub
+
+```bash
+# Open PRs matching title keywords
+gh pr list --repo Comfy-Org/ComfyUI_frontend --state open \
+  --search "<keyword-1> <keyword-2>" --limit 5 \
+  --json number,title,url,createdAt
+
+# Recent merged fixes (last 30d) — catches "already fixed, waiting to ship"
+gh pr list --repo Comfy-Org/ComfyUI_frontend --state merged \
+  --search "<keyword-1> <keyword-2> merged:>=<YYYY-MM-DD>" --limit 5 \
+  --json number,title,url,mergedAt
+```
+
+Treat a hit as a match if the PR title/body mentions the same component or bug phrase and the PR is unmerged or merged within the window covering the reporter's observation.
+
+**Verdict:**
+
+- Open PR match → set `PR: #NNNN (open)`, recommendation `pr-open` (file Linear with `pr-open` label linking the PR, skip auto-fix).
+- Merged PR match → set `PR: #NNNN (merged)`, recommendation `fixed` (demote in verify, usually skip; human can override if the reporter claims the fix didn't land).
+
+### Failure handling
+
+If either check errors (MCP down, `gh` auth expired), DO NOT proceed to proposal — stop the sweep, report the failure to the user, and let them decide whether to re-run or manually dedupe. A silent skip of dedupe is never acceptable; it's the single biggest source of duplicate tickets.
+
+Log each dedupe query + top hits in `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md` under a per-candidate `Dedup trace:` block so the human can audit.
 
 ## Interactive Approval
 
-Present candidates in batches of 5-10. Table format (9 columns):
+Present candidates in batches of 5-10. Table format (10 columns):
 
 ```text
- #  | Slack (author, time)   | Proposed title                          | Env        | Sev  | Area       | Dedup      | Verify      | Rec
-----+------------------------+-----------------------------------------+------------+------+------------+------------+-------------+-----
- 1  | wavey, 04-20 08:06     | Unet dropdown missing selected model    | cloud prod | low  | ui         | N          | resolved    | N
- 2  | Denys, 04-18 05:45     | Pro plan jobs end at 30 minutes         | cloud prod | high | cloud      | N          | clean       | Y
- 3  | Terry Jia, 04-18 12:52 | Nodes 2.0 canvas lag on large workflows | -          | high | node-system| ? LIN-4521 | clean       | L
+ #  | Slack (author, time)   | Proposed title                          | Env        | Sev  | Area       | Dedup      | PR            | Verify      | Rec
+----+------------------------+-----------------------------------------+------------+------+------------+------------+---------------+-------------+-----
+ 1  | wavey, 04-20 08:06     | Unet dropdown missing selected model    | cloud prod | low  | ui         | -          | -             | resolved    | N
+ 2  | Denys, 04-18 05:45     | Pro plan jobs end at 30 minutes         | cloud prod | high | cloud      | -          | -             | clean       | Y
+ 3  | Terry Jia, 04-18 12:52 | Nodes 2.0 canvas lag on large workflows | -          | high | node-system| LIN-4521   | -             | clean       | L
+ 4  | Pablo, 04-17 08:52     | Multi-asset delete popup shows hashes   | cloud prod | low  | ui         | -          | #11402 (open) | clean       | pr-open
 ```
 
-Each row must show: Slack author + date, proposed title, env tags, severity, area, dedupe status, verify tag (from False-Defect Verification), and agent recommendation.
+Each row MUST show: Slack author + date, proposed title, env tags, severity, area, **dedupe status from the Pre-flight Dedupe Gate**, **open/merged PR hit from the Pre-flight Dedupe Gate**, verify tag (from False-Defect Verification), and agent recommendation.
+
+### Default recommendation logic
+
+The skill computes `Rec` deterministically from the gate results:
+
+- `L` — Dedupe hit on open Linear issue.
+- `pr-open` — Open GitHub PR hit.
+- `fixed` — Merged PR hit within the reporter's observation window.
+- `N` — Verify tag is `resolved`, `expected`, `stale`, or `env` only.
+- `?` — Repro incomplete or classification ambiguous.
+- `Y` — Everything clean AND candidate is not on the § Handoff-Exclusion list. This is the "file + auto-fix" path.
+- `Y (file-only)` — Clean but on the handoff-exclusion list (e.g. touches LGraphNode, needs backend). File Linear, skip auto-fix.
 
 ### Response format
 
-- `Y` — create Linear ticket only (default after → human adds `:white_check_mark:` to parent)
-- `F` — create Linear ticket AND delegate to red-green-fix right now (bot posts `:pr-open:` reply when PR opens)
-- `N` — skip (log reason in session file)
-- `?` — mark as needs-context; skill may post a thread reply asking for repro details and prompts the human to add `:question:` to the parent
-- `L` — link to existing Linear issue instead of creating (agent asks which one if dedupe didn't find it)
-- `R` — duplicate of another bug-dump message or Linear issue; skill links the two and prompts human for `:repeat:` on the parent
-- `E` — edit proposed title/description before creating (agent shows draft for inline tweaks)
-- Bulk responses accepted: `1 Y, 2 F, 3 R LIN-4521, 4 N, 5 ?`
+- `Y` — default path: create Linear ticket, post `:white_check_mark:` thread reply, AND if the candidate is eligible (dedupe clean, verify clean, not on handoff-exclusion list), immediately invoke `red-green-fix` via the `Skill` tool. See § Fix Workflow.
+- `S` — **skip auto-fix** for this row: create Linear ticket + thread reply only, do NOT run red-green-fix. Use when the human knows a specific person is already investigating or wants to batch fixes.
+- `N` — skip entirely (log reason in session file).
+- `?` — mark as needs-context; skill posts a thread reply asking for repro details and prompts the human to add `:question:` to the parent.
+- `L` — link to existing Linear issue instead of creating (skill asks which one if the Pre-flight Dedupe Gate didn't return an exact match).
+- `R` — duplicate of another bug-dump message; skill links the two and prompts the human for `:repeat:` on the parent.
+- `E` — edit proposed title/description before creating (skill shows draft for inline tweaks).
+- Bulk responses accepted: `1 N, 2 Y, 3 L LIN-4521, 4 pr-open #11402, 5 ?` — any row omitted from the response is treated as its computed `Rec` default.
 
-Do not create any Linear issues until all candidates in the batch have a terminal decision. Fix-path (`F`) candidates are deferred until after Linear creation so every fix PR has a linkable `Fixes LIN-NNN`.
+Do not create any Linear issues until all candidates in the batch have a terminal decision. Auto-fix invocations run sequentially AFTER all Linear creates complete, so every `red-green-fix` call has a `Fixes LIN-NNN` to put in the PR body.
 
 ## Linear Integration
 
@@ -311,59 +371,120 @@ Every successful create must set:
 
 If any of these fail, create the ticket without the failing optional field AND log the partial failure to the session log so the human can patch afterward. Do NOT abort an otherwise-valid create because a single label is missing.
 
-## Slack Thread Reply (Ingested Marker)
+## Slack Thread Reply (Ingested Marker) — MANDATORY TOOL CALL
 
-After (successful) Linear creation, post a threaded reply on the original message via `slack_send_message` with `thread_ts` set to the top-level message ts. The reply MUST start with `:white_check_mark:` and include the Linear URL — that's the ingested marker used by future runs' filtering:
+After each successful Linear creation, the skill MUST call `mcp__plugin_slack_slack__slack_send_message` to post a threaded reply on the original message. This is a tool call, not a chat output. The skill is not done with the candidate until this call succeeds.
 
-```text
-:white_check_mark: Filed to Linear: <LINEAR_URL>
-Reporter: <@USER_ID>
-Sev: <severity>  •  Area: <area>
-```
-
-Keep the rest plain text — no markdown tables, no bold. The leading `:white_check_mark:` emoji is NOT decorative — it's the canonical ingested marker because the reactions API isn't available. Future runs filter via Slack search `has:link has::white_check_mark: from:me in:<#C0A4XMHANP3>`.
-
-### Mark the parent message (human step — mandatory for sync visibility)
-
-Thread replies are collapsed in the channel, so the parent message isn't visibly marked until the human adds a `:white_check_mark:` reaction. The skill can't set reactions (no `reactions.add` tool), so after each batch it MUST print a ready-to-use action list:
+### Required call shape
 
 ```text
-Add :white_check_mark: to these parent messages in #bug-dump (click emoji → search "white check"):
-
-1. https://comfy-organization.slack.com/archives/C0A4XMHANP3/p1776639963837519  → LIN-4710
-2. https://comfy-organization.slack.com/archives/C0A4XMHANP3/p1776592837616399  → LIN-4711
-3. ...
-
-(These won't be re-ingested on the next sweep thanks to processed.json, but the :white_check_mark: reaction is the team's visible "handled" indicator in-channel.)
+mcp__plugin_slack_slack__slack_send_message({
+  channel_id: "C0A4XMHANP3",
+  thread_ts: "<parent-message-ts>",   // dotted form, e.g. "1776714531.990509"
+  text: ":white_check_mark: Filed to Linear: <LINEAR_URL>\nReporter: <@USER_ID>\nSev: <severity>  •  Area: <area>"
+})
 ```
 
-If any candidates were `?` (needs context), `R` (duplicate), or already had open PRs, add matching instruction blocks for `:question:`, `:repeat:`, and `:pr-open:` reactions so the channel stays consistent with the team scheme.
+Rules:
 
-Group the list under a clear heading at the end of the session. This is the authoritative ingested marker for humans; the thread reply is the authoritative marker for the skill.
+- `thread_ts` MUST be the parent message ts — never the channel ts, never omitted. An omitted `thread_ts` posts at channel level, which pollutes `#bug-dump` and breaks Processed Detection.
+- The text MUST start with `:white_check_mark:` followed by a space and `Filed to Linear:`. This exact prefix is what future sweeps grep for via `has::white_check_mark: from:me`.
+- The Linear URL MUST be present. No URL = not ingested; future sweeps will re-file the same bug.
+- Plain text only — no markdown tables, no bold, no code fences. Slack renders the emoji shortcode into a real `:white_check_mark:` only when the message is plain text.
+- Capture the returned `ts` and record it in the session log for audit.
 
-### Why two markers (reaction + thread reply)
+### NEVER-do list (common failure mode)
 
-- `:white_check_mark:` **reaction on the parent** — visible in the channel at a glance; catches the eye of humans scanning for unhandled reports.
-- `:white_check_mark:` **thread reply with Linear URL** — scriptable, survives if the reaction is removed, carries the Linear link.
+- **Do NOT** print `:white_check_mark: Filed to Linear: <URL>` into the Claude CLI chat response as a substitute for calling `slack_send_message`. The CLI output is not seen by Slack. If you find yourself typing the marker into a plain assistant message, stop and issue the tool call instead.
+- **Do NOT** claim the thread reply was posted until the `slack_send_message` tool call has returned a success with a `ts`. If the tool call errors, surface the error and halt the batch — do not fabricate a reply.
+- **Do NOT** use any other tool (e.g. `slack_schedule_message`, `slack_send_message_draft`) as a substitute. Only an immediate `slack_send_message` with `thread_ts` set counts as the ingested marker.
 
-Keeping both is cheap and makes processed detection robust to either signal drifting.
+### Fix-path reply (after red-green-fix opens a PR)
 
-### Fix-path reply (after red-green-fix creates a PR)
-
-If the candidate was `F` (file and fix), post a second thread reply when the PR opens — using the team's `:pr-open:` emoji so it aligns with the channel scheme:
+When `red-green-fix` returns a PR URL for an auto-fixed candidate, the skill MUST post a second thread reply on the same parent — again via `slack_send_message`:
 
 ```text
-:pr-open: Fix PR: <PR_URL>
-Red-green verified: <unit or e2e> test proves the regression.
+mcp__plugin_slack_slack__slack_send_message({
+  channel_id: "C0A4XMHANP3",
+  thread_ts: "<same parent ts>",
+  text: ":pr-open: Fix PR: <PR_URL>\nRed-green verified: <unit|e2e> test proves the regression.\nFixes <LIN-ID>"
+})
 ```
 
-Prompt the human to add a `:pr-open:` reaction to the parent (replacing the `:white_check_mark:` from ingest if appropriate, or keeping both — it's the team's call).
+Same "tool call, not chat output" rule applies.
 
-## Fix Workflow (delegated to red-green-fix)
+### Parent reaction — optional visibility nudge (not on critical path)
 
-For candidates approved with `F`, after the Linear issue is created, hand off to the `red-green-fix` skill. That skill already enforces the two-commit red-green sequence — this section covers just the bug-dump-specific wiring.
+The Slack MCP does not expose `reactions.add`, so the skill cannot set a `:white_check_mark:` reaction on the parent. The thread reply above is sufficient for Processed Detection; the parent reaction is a human-only "visible in channel" nudge. At the end of the run, the skill MAY print a compact list for the human:
 
-### Inputs passed to red-green-fix
+```text
+Optional: add :white_check_mark: to parent messages for in-channel visibility.
+  LIN-4710 → <permalink>
+  LIN-4711 → <permalink>
+```
+
+This is a convenience, not a deliverable — a missing parent reaction does not cause re-ingestion.
+
+## Fix Workflow (auto-invoke red-green-fix)
+
+For every `Y` row whose `Rec` resolved to auto-fix (dedupe clean, verify clean, not on handoff-exclusion list), the skill MUST — after Linear creation and the `:white_check_mark:` thread reply — invoke the `red-green-fix` skill via the `Skill` tool. This is a real tool call, not a narrative handoff.
+
+### Required Skill tool call
+
+```text
+Skill({
+  skill: "red-green-fix",
+  args: "<composed prompt — see below>"
+})
+```
+
+Compose `args` as a single self-contained prompt so the sub-invocation has everything it needs without re-reading the Linear issue:
+
+```text
+Bug: <title>
+Linear: <LIN-ID> (<LINEAR_URL>)
+Source: Slack <permalink>
+Reporter: <display-name>
+Env: <env tags>
+Area: <area>
+Branch: fix/<lin-id-lowercase>-<short-slug>
+
+Repro:
+1. <step>
+2. <step>
+
+Expected: <expected behavior>
+Actual: <actual behavior>
+
+Test layer (inferred from area):
+- ui → Vitest colocated + Playwright e2e tagged @regression
+- node-system → Playwright e2e primarily
+- workflow / templates → Playwright e2e
+- cloud → Vitest if client-side; otherwise STOP and label the Linear issue "needs-backend"
+
+Test naming:
+- describe('<LIN-ID>: <one-line bug summary>', ...)
+- Playwright test title must include the LIN-ID.
+
+PR body must include:
+- "Fixes <LIN-ID>"
+- "Source: Slack <permalink>"
+
+Follow the red-green-fix two-commit sequence exactly. Do NOT skip the red commit.
+```
+
+The skill MUST wait for `red-green-fix` to return before moving to the next candidate. Process one auto-fix at a time so branch state is deterministic.
+
+### Verifying the invocation ran
+
+After the `Skill` call returns, the skill MUST confirm at least one of:
+
+1. A new git branch named `fix/<lin-id>-*` exists (`git branch --list "fix/<lin-id>-*"`).
+2. A PR URL is present in `red-green-fix`'s return payload.
+
+If neither is true, the invocation silently no-op'd. Log the failure to the session log as `auto-fix skipped: invocation returned without branch or PR` and continue — do NOT post the `:pr-open:` thread reply.
+
+### Inputs summary
 
 - **Bug description** — the Linear description (includes repro, env, source permalink).
 - **Linear ID** — inserted into the PR body as `Fixes <LIN-ID>`.
@@ -373,6 +494,19 @@ For candidates approved with `F`, after the Linear issue is created, hand off to
   - `node-system` → e2e primarily; unit if isolable
   - `workflow` / `templates` → e2e
   - `cloud` → unit if client-side logic, otherwise flag "backend — out of scope for this repo"
+
+### Handoff-Exclusion list (do NOT auto-invoke red-green-fix)
+
+These rows still get a Linear ticket + `:white_check_mark:` thread reply, but the skill MUST skip the `Skill(skill="red-green-fix")` call and instead post a thread nudge explaining why:
+
+- Repro steps are incomplete (no clear numbered steps, no env) — reply in thread: "Need clearer repro before I can write a failing test. What's the shortest path to reproduce?"
+- Fix requires backend / ComfyUI repo changes (not frontend) — label Linear `needs-backend`.
+- Linear ticket was dedupe-linked rather than newly created — existing owner may already be fixing.
+- Severity is cosmetic AND reporter hasn't asked for a fix — file ticket only.
+- Fix would touch `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph` god-objects (ADR-0003/0008 — always human decision).
+- Pre-flight Dedupe Gate found an open PR (`pr-open`) or a matching merged PR (`fixed`).
+
+When a row is excluded, record the reason in the session log under `auto-fix excluded: <reason>`.
 
 ### Test authoring rules
 
@@ -407,15 +541,7 @@ Both tests MUST be written in the "red" commit BEFORE any fix code (per red-gree
 
 - **Mock data types** — follow `docs/guidance/playwright.md`: mock responses typed from `packages/ingest-types`, `packages/registry-types`, `src/schemas/` — never `as any`.
 
-### Handoff conditions (when NOT to auto-fix)
-
-Bug-dump-ingest must NOT start red-green-fix and instead emit a human nudge when:
-
-- Repro steps are incomplete (no clear numbered steps, no env) — reply in thread: "Need clearer repro before I can write a failing test. What's the shortest path to reproduce?"
-- Fix requires backend / ComfyUI repo changes (not frontend) — label Linear `needs-backend` and skip fix path.
-- Linear issue was dedupe-linked rather than newly created — existing owner may already be fixing.
-- Severity is cosmetic AND reporter hasn't asked for a fix — file ticket only.
-- Fix would touch `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph` god-objects (ADR-0003/0008 — always human decision).
+(The Handoff-Exclusion list above governs when `red-green-fix` is NOT invoked.)
 
 ### PR body template
 
@@ -535,6 +661,6 @@ Never create Linear issues without a human `Y`. This is a hard rule — the skil
 
 ## Related Skills
 
-- `red-green-fix` — invoked for `F` candidates to implement the fix with a proven regression test.
+- `red-green-fix` — auto-invoked via the `Skill` tool for every eligible `Y` candidate to produce a failing test + fix + PR with the red-green CI proof.
 - `writing-playwright-tests` — used by red-green-fix when an e2e test is needed.
 - `hardening-flaky-e2e-tests` — if the e2e test added in the fix PR starts flaking, jump to this skill.
