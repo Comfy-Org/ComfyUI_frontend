@@ -658,6 +658,38 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value).toHaveLength(1)
       expect(dropdownItems.value[0].label).toBe('sunset_photo.png [output]')
     })
+
+    it('renders asset.display_name in label when queue-mapped asset lacks metadata.filename', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'job-1',
+          name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
+          display_name: 'ComfyUI-90_right_00001_.png',
+          preview_url: '/preview.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-1',
+            nodeId: '5',
+            subfolder: ''
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].label).toBe(
+        'ComfyUI-90_right_00001_.png [output]'
+      )
+      expect(dropdownItems.value[0].name).toMatch(/^a1ef7d29.*\.png \[output\]$/)
+    })
   })
 
   describe('selectedSet', () => {
