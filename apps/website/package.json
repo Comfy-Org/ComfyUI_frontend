@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "dev:no-toolbar": "astro dev --no-toolbar",
+    "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
