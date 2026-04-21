@@ -6,12 +6,12 @@ import type { GalleryItem } from './GallerySection.vue'
 const {
   item,
   locale = 'en',
-  hero = false,
+  aspect = 'var(--aspect-ratio-gallery-card)',
   mobile = false
 } = defineProps<{
   item: GalleryItem
   locale?: Locale
-  hero?: boolean
+  aspect?: string
   mobile?: boolean
 }>()
 
@@ -21,8 +21,8 @@ defineEmits<{ click: [] }>()
 <template>
   <div class="group block cursor-pointer" @click="$emit('click')">
     <div
-      class="relative overflow-hidden rounded-2xl"
-      :class="hero ? 'aspect-21/9' : mobile ? 'aspect-4/3' : 'aspect-3/2'"
+      class="rounded-4.5xl relative overflow-hidden"
+      :style="{ aspectRatio: aspect }"
     >
       <video
         v-if="item.video"

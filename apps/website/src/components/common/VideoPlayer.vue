@@ -12,6 +12,7 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
+import PlayPauseButton from './PlayPauseButton.vue'
 
 type VideoTrack = {
   src: string
@@ -25,13 +26,15 @@ const {
   src,
   poster,
   tracks = [],
-  autoplay = false
+  autoplay = false,
+  minimal = false
 } = defineProps<{
   locale?: Locale
   src?: string
   poster?: string
   tracks?: VideoTrack[]
   autoplay?: boolean
+  minimal?: boolean
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -182,19 +185,18 @@ function toggleFullscreen() {
       />
     </video>
 
-    <!-- Bottom control bar -->
+    <!-- Minimal centered play/pause button -->
     <div
-      v-if="src"
+      v-if="minimal && src"
       :class="
         cn(
-          'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',
-          !controlsVisible && 'pointer-events-none opacity-0'
+          'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
+          playing && !hovering && 'pointer-events-none opacity-0'
         )
       "
     >
-      <!-- Play / Pause button -->
-      <button
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-full lg:size-10"
+      <PlayPauseButton
+        :playing
         :aria-label="
           playing
             ? locale === 'zh-CN'
@@ -205,27 +207,34 @@ function toggleFullscreen() {
               : 'Play'
         "
         @click="playing = !playing"
-      >
-        <!-- Pause icon -->
-        <svg
-          v-if="playing"
-          class="size-3 lg:size-4"
-          viewBox="0 0 24 24"
-          fill="#211927"
-        >
-          <rect x="6" y="4" width="4" height="16" />
-          <rect x="14" y="4" width="4" height="16" />
-        </svg>
-        <!-- Play icon -->
-        <svg
-          v-else
-          class="ml-0.5 size-3 lg:size-4"
-          viewBox="0 0 24 24"
-          fill="#211927"
-        >
-          <path d="M8 5v14l11-7z" />
-        </svg>
-      </button>
+      />
+    </div>
+
+    <!-- Bottom control bar -->
+    <div
+      v-if="src && !minimal"
+      :class="
+        cn(
+          'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',
+          !controlsVisible && 'pointer-events-none opacity-0'
+        )
+      "
+    >
+      <!-- Play / Pause button -->
+      <PlayPauseButton
+        :playing
+        size="sm"
+        :aria-label="
+          playing
+            ? locale === 'zh-CN'
+              ? '暂停'
+              : 'Pause'
+            : locale === 'zh-CN'
+              ? '播放'
+              : 'Play'
+        "
+        @click="playing = !playing"
+      />
 
       <!-- Progress scrubber -->
       <div

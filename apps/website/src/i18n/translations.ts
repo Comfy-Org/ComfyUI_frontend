@@ -261,8 +261,8 @@ const translations = {
     'zh-CN': '为您的组织启用集中式安全用户认证，支持 SSO 和 SCIM 配置。'
   },
   'enterprise.team.feature2.cta': {
-    en: 'SET UP SSO',
-    'zh-CN': '设置 SSO'
+    en: 'SEE CLOUD FEATURES',
+    'zh-CN': '查看云功能'
   },
   'enterprise.team.feature3.title': {
     en: 'App Mode',
@@ -1208,7 +1208,7 @@ const translations = {
   // ContactSection
   'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'gallery.contact.heading': {
-    en: 'HAVE SOMETHING COOL TO SHARE?\nGET IN TOUCH.',
+    en: 'Questions? Reach out!',
     'zh-CN': '有精彩作品想要分享？\n联系我们。'
   },
   'gallery.contact.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
@@ -1517,6 +1517,8 @@ const translations = {
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
+  'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
+  'footer.press': { en: 'Press', 'zh-CN': '媒体' },
   'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
   'footer.location': {
     en: 'San Francisco, USA',

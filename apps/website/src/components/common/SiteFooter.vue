@@ -78,17 +78,21 @@ const companyColumn: { title: string; links: FooterLink[] } = {
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
-    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
-    { label: t('footer.support', locale), href: externalLinks.discord }
+    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy }
   ]
 }
 
 const contactColumn = {
   title: t('footer.contact', locale),
-  links: ['hello@comfy.org', 'press@comfy.org'].map((email) => ({
-    label: email,
-    href: `mailto:${email}`
-  }))
+  links: [
+    { label: t('footer.sales', locale), href: routes.contact },
+    {
+      label: t('footer.support', locale),
+      href: externalLinks.discord,
+      external: true
+    },
+    { label: t('footer.press', locale), href: 'mailto:press@comfy.org' }
+  ]
 }
 </script>
 
@@ -98,21 +102,18 @@ const contactColumn = {
     class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20"
   >
     <div
-      class="border-primary-warm-gray flex flex-col gap-12 border-t pt-16 lg:gap-0"
+      class="border-primary-warm-gray grid gap-12 border-t pt-16 lg:grid-cols-2 lg:gap-4"
     >
-      <!-- Desktop: row layout / Mobile: column layout -->
-      <div class="flex flex-col gap-12 lg:flex-row lg:gap-0">
-        <!-- Left: tagline -->
-        <div class="flex-1">
-          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-            {{ t('footer.tagline', locale) }}
-          </p>
-        </div>
+      <!-- Tagline -->
+      <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+        {{ t('footer.tagline', locale) }}
+      </p>
 
-        <!-- Right: link columns (desktop: 3-col, mobile: 2-col + company below) -->
-        <div class="flex flex-1 flex-col gap-12">
-          <!-- Mobile: 2-col grids -->
-          <div class="grid grid-cols-2 gap-12 lg:hidden">
+      <!-- Link columns -->
+      <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
+        <!-- Mobile: 2×2 grid -->
+        <div class="flex flex-col gap-12 lg:hidden">
+          <div class="grid grid-cols-2 gap-12">
             <FooterLinkColumn
               v-for="column in topColumns"
               :key="column.title"
@@ -120,7 +121,7 @@ const contactColumn = {
               :links="column.links"
             />
           </div>
-          <div class="grid grid-cols-2 gap-12 lg:hidden">
+          <div class="grid grid-cols-2 gap-12">
             <FooterLinkColumn
               :title="companyColumn.title"
               :links="companyColumn.links"
@@ -130,29 +131,40 @@ const contactColumn = {
               :links="contactColumn.links"
             />
           </div>
+        </div>
 
-          <!-- Desktop: all columns in a row -->
-          <div class="hidden grid-cols-4 gap-12 lg:grid">
+        <!-- Desktop: 3-col, Company+Contact merged -->
+        <div class="hidden grid-cols-3 gap-12 lg:grid">
+          <FooterLinkColumn
+            v-for="column in topColumns"
+            :key="column.title"
+            :title="column.title"
+            :links="column.links"
+          />
+          <div class="flex flex-col gap-10">
             <FooterLinkColumn
-              v-for="column in [...topColumns, companyColumn, contactColumn]"
-              :key="column.title"
-              :title="column.title"
-              :links="column.links"
+              :title="companyColumn.title"
+              :links="companyColumn.links"
+            />
+            <FooterLinkColumn
+              :title="contactColumn.title"
+              :links="contactColumn.links"
             />
           </div>
         </div>
-      </div>
 
-      <!-- Logo + bottom bar -->
-      <div
-        class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
-      >
-        <canvas ref="canvasRef" class="mt-12 size-52 opacity-80 lg:mt-24" />
+        <!-- Bottom bar -->
         <div class="flex justify-center gap-6 lg:justify-end">
           <p class="text-sm">{{ t('footer.location', locale) }}</p>
           <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
         </div>
       </div>
+
+      <!-- Logo -->
+      <canvas
+        ref="canvasRef"
+        class="pointer-events-none size-52 opacity-80 lg:mt-28"
+      />
     </div>
   </footer>
 </template>
