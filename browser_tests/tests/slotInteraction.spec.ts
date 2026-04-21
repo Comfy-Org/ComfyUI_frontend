@@ -33,10 +33,12 @@ test.describe('Slot Interaction', () => {
       const slotPos = await comfyPage.page.evaluate((targetNodeId) => {
         const node = window.app!.graph!.getNodeById(targetNodeId)
         if (!node) return null
-        const pos = node.getOutputPos(0)
+        const graphPos = node.getOutputPos(0)
         const canvas = window.app!.canvas!
-        const converted = canvas.convertCanvasToOffset(pos)
-        return { x: converted[0], y: converted[1] }
+        // graph coords -> canvas-relative coords -> viewport (client) coords
+        const canvasPos = canvas.convertOffsetToCanvas(graphPos)
+        const rect = canvas.canvas.getBoundingClientRect()
+        return { x: canvasPos[0] + rect.left, y: canvasPos[1] + rect.top }
       }, nodeId)
       if (!slotPos) throw new Error('Expected to resolve output slot position')
 

@@ -76,9 +76,17 @@ describe('isMiddlePointerInput', () => {
     })
   })
 
-  describe('button takes precedence over buttons when both indicate middle', () => {
-    it('returns true when button===1 and buttons===4', () => {
-      const event = new MouseEvent('mousedown', { button: 1, buttons: 4 })
+  describe('button takes precedence over buttons on down/up events', () => {
+    // On pointerdown with button===1, buttons typically also contains 4, but we
+    // want to confirm that the 'button' branch wins even when 'buttons'
+    // disagrees (e.g., synthetic events in tests, or quirky UA behavior).
+    it('returns true when button===1 even if buttons does not include middle', () => {
+      const event = new MouseEvent('mousedown', { button: 1, buttons: 0 })
+      expect(isMiddlePointerInput(event)).toBe(true)
+    })
+
+    it('returns true when button===1 even if buttons reports a different chord', () => {
+      const event = new MouseEvent('mousedown', { button: 1, buttons: 2 })
       expect(isMiddlePointerInput(event)).toBe(true)
     })
   })

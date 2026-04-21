@@ -1,6 +1,7 @@
 <template>
   <div
     ref="pointerZoneRef"
+    data-testid="mask-editor-pointer-zone"
     class="h-full w-[calc(100%-4rem-220px)]"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"

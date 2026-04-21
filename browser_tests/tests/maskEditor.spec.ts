@@ -68,9 +68,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   }
 
   async function drawStrokeOnPointerZone(page: Page, dialog: MaskEditorDialog) {
-    const pointerZone = dialog.root.locator(
-      '.maskEditor-ui-container [class*="w-[calc"]'
-    )
+    const pointerZone = dialog.pointerZone
     await expect(pointerZone).toBeVisible()
 
     const box = await pointerZone.boundingBox()

@@ -25,6 +25,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       const node = comfyPage.vueNodes
         .getNodeByTitle('CLIP Text Encode (Prompt)')
         .first()
+      await expect(node).toBeVisible()
       const nodeBounds = await node.boundingBox()
       if (!nodeBounds) throw new Error('Node bounding box not found')
 

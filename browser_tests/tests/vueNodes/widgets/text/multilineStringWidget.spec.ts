@@ -60,6 +60,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage, comfyMouse }) => {
       const textarea = getFirstMultilineStringWidget(comfyPage)
+      await expect(textarea).toBeVisible()
       const textareaBounds = await textarea.boundingBox()
       if (!textareaBounds) throw new Error('Textarea bounding box not found')
 
