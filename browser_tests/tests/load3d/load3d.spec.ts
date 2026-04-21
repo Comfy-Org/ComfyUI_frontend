@@ -215,28 +215,39 @@ test.describe('Load3D', () => {
     }
   )
 
-  test('Grid toggle flips the Scene Config.showGrid flag', async ({
-    comfyPage,
-    load3d
-  }) => {
-    await expect(load3d.gridToggleButton).toBeVisible()
+  test(
+    'Grid toggle hides and restores the Scene grid helper',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage, load3d }) => {
+      await expect(load3d.gridToggleButton).toBeVisible()
 
-    const node = await comfyPage.nodeOps.getNodeRefById(1)
-    const readShowGrid = async () => {
-      const properties =
-        await node.getProperty<Record<string, { showGrid?: boolean }>>(
-          'properties'
-        )
-      return properties['Scene Config']?.showGrid
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const readShowGrid = async () => {
+        const properties =
+          await node.getProperty<Record<string, { showGrid?: boolean }>>(
+            'properties'
+          )
+        return properties['Scene Config']?.showGrid
+      }
+
+      const initial = (await readShowGrid()) ?? true
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+        maxDiffPixelRatio: 0.05
+      })
+
+      await load3d.gridToggleButton.click()
+      await expect.poll(readShowGrid).toBe(!initial)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-hidden.png', {
+        maxDiffPixelRatio: 0.05
+      })
+
+      await load3d.gridToggleButton.click()
+      await expect.poll(readShowGrid).toBe(initial)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+        maxDiffPixelRatio: 0.05
+      })
     }
-
-    const initial = (await readShowGrid()) ?? true
-    await load3d.gridToggleButton.click()
-    await expect.poll(readShowGrid).toBe(!initial)
-
-    await load3d.gridToggleButton.click()
-    await expect.poll(readShowGrid).toBe(initial)
-  })
+  )
 
   test('Recording controls show stop/export/clear buttons after a recording', async ({
     comfyPage,
