@@ -7,8 +7,10 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
@@ -17,6 +19,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { clearNodePreviewCacheForFilenames } from '../utils/clearNodePreviewCacheForFilenames'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -637,6 +640,24 @@ export function useMediaAssetActions() {
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
+              }
+
+              const graph = app.graph
+              if (graph) {
+                const deletedFilenames = new Set<string>()
+                assetArray.forEach((asset, index) => {
+                  if (results[index].status !== 'fulfilled') return
+                  if (asset.name) deletedFilenames.add(asset.name)
+                  if (asset.asset_hash) deletedFilenames.add(asset.asset_hash)
+                })
+                if (deletedFilenames.size > 0) {
+                  const { nodeToNodeLocatorId } = useWorkflowStore()
+                  clearNodePreviewCacheForFilenames(
+                    graph,
+                    deletedFilenames,
+                    nodeToNodeLocatorId
+                  )
+                }
               }
 
               // Invalidate model caches for affected categories
