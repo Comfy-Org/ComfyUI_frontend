@@ -147,19 +147,18 @@ import {
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-export function sanitizeNodeName(string: string) {
-  let entityMap = {
-    '&': '',
-    '<': '',
-    '>': '',
-    '"': '',
-    "'": '',
-    '`': '',
-    '=': ''
-  }
-  return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
-    return entityMap[s as keyof typeof entityMap]
-  })
+import {
+  isApiJson,
+  positionBatchLayout,
+  sanitizeNodeName,
+  stackNodesVertically
+} from './appUtil'
+
+export {
+  isApiJson,
+  positionBatchLayout,
+  sanitizeNodeName,
+  stackNodesVertically
 }
 
 type Clipspace = {
@@ -1907,61 +1906,20 @@ export class ComfyApp {
     this.canvas.selectItems(videoNodes)
   }
 
-  /**
-   * Positions batched nodes in drag and drop
-   * @param nodes
-   * @param batchNode
-   */
   positionNodes(nodes: LGraphNode[]): void {
-    if (nodes.length <= 1) return
-
-    const [x, y] = nodes[0].getBounding()
-    const nodeHeight = 150
-
-    nodes.forEach((node, index) => {
-      if (index > 0) {
-        node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
-      }
-    })
-
-    this.canvas.graph?.change()
+    if (stackNodesVertically(nodes)) {
+      this.canvas.graph?.change()
+    }
   }
 
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    const [x, y, width] = nodes[0].getBounding()
-    batchNode.pos = [x + width + 100, y + 30]
-
-    // Retrieving Node Height is inconsistent
-    let height = 0
-    if (nodes[0].type === 'LoadImage') {
-      height = 344
-    }
-
-    nodes.forEach((node, index) => {
-      if (index > 0) {
-        node.pos = [x, y + height * index + 25 * (index + 1)]
-      }
-    })
-
+    positionBatchLayout(nodes, batchNode)
     this.canvas.graph?.change()
   }
 
-  // @deprecated
+  /** @deprecated Use {@link isApiJson} from @/scripts/appUtil instead */
   isApiJson(data: unknown): data is ComfyApiWorkflow {
-    if (!_.isObject(data) || Array.isArray(data)) {
-      return false
-    }
-    if (Object.keys(data).length === 0) return false
-
-    return Object.values(data).every((node) => {
-      if (!node || typeof node !== 'object' || Array.isArray(node)) {
-        return false
-      }
-
-      const { class_type: classType, inputs } = node as Record<string, unknown>
-      const inputsIsRecord = _.isObject(inputs) && !Array.isArray(inputs)
-      return typeof classType === 'string' && inputsIsRecord
-    })
+    return isApiJson(data)
   }
 
   loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
