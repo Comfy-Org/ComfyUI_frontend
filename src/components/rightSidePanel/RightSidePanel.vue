@@ -302,7 +302,7 @@ function handleTitleCancel() {
             <button
               v-if="!isEditing"
               :aria-label="t('rightSidePanel.editTitle')"
-              class="relative top-[2px] ml-2 size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              class="relative top-[2px] ml-2 inline-flex shrink-0 cursor-pointer items-center justify-center text-muted-foreground hover:text-base-foreground"
               @click="isEditing = true"
             >
               <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
