@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { fetchModelMetadata } from './missingModelDownload'
+import {
+  fetchModelMetadata,
+  isModelDownloadable
+} from './missingModelDownload'
 
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
@@ -138,5 +141,27 @@ describe('fetchModelMetadata', () => {
     expect(first.fileSize).toBe(2048)
     expect(second.fileSize).toBe(2048)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('isModelDownloadable', () => {
+  it('allows civitai.red URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://civitai.red/api/download/models/12345',
+        directory: 'checkpoints'
+      })
+    ).toBe(true)
+  })
+
+  it('rejects non-allowlisted URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        directory: 'checkpoints'
+      })
+    ).toBe(false)
   })
 })
