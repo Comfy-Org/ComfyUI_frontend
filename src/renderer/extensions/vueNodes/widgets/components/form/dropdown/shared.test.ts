@@ -82,7 +82,12 @@ describe('getDefaultSortOptions', () => {
   const sortOptions = getDefaultSortOptions()
 
   describe('Default sorter', () => {
-    const defaultSorter = sortOptions.find((o) => o.id === 'default')!.sorter
+    const defaultOption = sortOptions.find((o) => o.id === 'default')!
+    const defaultSorter = defaultOption.sorter
+
+    it('labels the default option as "Recent" (matches assetBrowser.sortRecent)', () => {
+      expect(defaultOption.name).toBe('Recent')
+    })
 
     it('returns items in original order', () => {
       const items = [createItem('z'), createItem('a'), createItem('m')]

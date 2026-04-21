@@ -31,6 +31,13 @@ function createSortOption(
   }
 }
 
+/**
+ * The first option uses the `'default'` id (preserves server order) but is
+ * labeled "Recent" because the cloud assets API returns items sorted by
+ * `create_time DESC` (newest first). FormDropdown and FormDropdownMenuActions
+ * rely on the `'default'` id as a sentinel for the unmodified sort state, so
+ * we keep the id while presenting a clearer label to users.
+ */
 export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
     createSortOption('default', t('assetBrowser.sortRecent')),
