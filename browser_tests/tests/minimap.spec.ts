@@ -7,7 +7,7 @@ import {
   clientPointOnMinimapOverlay,
   MINIMAP_POINTER_OPTS,
   readMainCanvasOffset
-} from '@e2e/helpers/minimap'
+} from '@e2e/fixtures/utils/minimapUtils'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
