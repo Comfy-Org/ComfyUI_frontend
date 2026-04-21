@@ -177,15 +177,15 @@ export function useMembersPanel() {
   }
 
   function handleRevokeInvite(invite: PendingInvite) {
-    showRevokeInviteDialog(invite.id)
+    void showRevokeInviteDialog(invite.id)
   }
 
   function handleCreateWorkspace() {
-    showCreateWorkspaceDialog()
+    void showCreateWorkspaceDialog()
   }
 
   function handleRemoveMember(member: WorkspaceMember) {
-    showRemoveMemberDialog(member.id)
+    void showRemoveMemberDialog(member.id)
   }
 
   return {
