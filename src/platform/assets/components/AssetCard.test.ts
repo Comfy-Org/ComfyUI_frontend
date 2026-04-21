@@ -106,5 +106,19 @@ describe('AssetCard', () => {
       expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
       expect(heading).not.toHaveTextContent(HASH)
     })
+
+    it('falls back to display_name when user_metadata.filename and metadata.filename are absent', () => {
+      const asset = createDisplayAsset({
+        metadata: undefined,
+        user_metadata: undefined,
+        display_name: ORIGINAL_FILENAME
+      })
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
+      expect(heading).not.toHaveTextContent(HASH)
+    })
   })
 })
