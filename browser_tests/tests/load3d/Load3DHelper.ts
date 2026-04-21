@@ -34,8 +34,33 @@ export class Load3DHelper {
     return this.node.getByText(name, { exact: true })
   }
 
+  get gizmoToggleButton(): Locator {
+    return this.node.getByRole('button', { name: 'Gizmo' })
+  }
+
+  get gizmoTranslateButton(): Locator {
+    return this.node.getByRole('button', { name: 'Translate' })
+  }
+
+  get gizmoRotateButton(): Locator {
+    return this.node.getByRole('button', { name: 'Rotate' })
+  }
+
+  get gizmoScaleButton(): Locator {
+    return this.node.getByRole('button', { name: 'Scale' })
+  }
+
+  get gizmoResetButton(): Locator {
+    return this.node.getByRole('button', { name: 'Reset Transform' })
+  }
+
   async openMenu(): Promise<void> {
     await this.menuButton.click()
+  }
+
+  async openGizmoCategory(): Promise<void> {
+    await this.openMenu()
+    await this.getMenuCategory('Gizmo').click()
   }
 
   async setBackgroundColor(hex: string): Promise<void> {

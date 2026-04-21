@@ -1,3 +1,4 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type DragHandler = (e: DragEvent) => boolean
@@ -43,9 +44,10 @@ export const useNodeDragAndDrop = <T>(
     return !!e?.dataTransfer?.getData('text/uri-list')
   }
 
-  node.onDragOver = isDraggingFiles
+  const installedDragOver = isDraggingFiles
+  node.onDragOver = installedDragOver
 
-  node.onDragDrop = async function (e: DragEvent) {
+  const installedDragDrop = async function (e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
@@ -73,4 +75,10 @@ export const useNodeDragAndDrop = <T>(
     }
     return true
   }
+  node.onDragDrop = installedDragDrop
+
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    if (node.onDragOver === installedDragOver) node.onDragOver = undefined
+    if (node.onDragDrop === installedDragDrop) node.onDragDrop = undefined
+  })
 }

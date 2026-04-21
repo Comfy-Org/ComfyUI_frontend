@@ -167,7 +167,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       ...mockSystemStats,
       system: {
         ...mockSystemStats.system,
-        argv: ['main.py', '--listen', '0.0.0.0', '--enable-manager']
+        argv: ['main.py', '--enable-manager']
       }
     }
     await comfyPage.page.route('**/system_stats**', async (route) => {
