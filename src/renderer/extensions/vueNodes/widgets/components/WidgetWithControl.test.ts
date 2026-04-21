@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -33,7 +32,6 @@ const ValueControlButtonStub = defineComponent({
 const ValueControlPopoverStub = defineComponent({
   name: 'ValueControlPopover',
   props: { modelValue: { type: String, default: '' } },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
   emits: ['update:modelValue'],
   template: `
     <div data-testid="control-popover">

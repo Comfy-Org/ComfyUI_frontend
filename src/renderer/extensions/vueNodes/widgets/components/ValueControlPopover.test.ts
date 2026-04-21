@@ -1,5 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
-/* eslint-disable vue/no-reserved-component-names */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -17,6 +15,16 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 import ValueControlPopover from './ValueControlPopover.vue'
 
+const CONTROL_LABELS = {
+  fixed: 'Fixed Value',
+  increment: 'Increment Value',
+  decrement: 'Decrement Value',
+  randomize: 'Randomize Value'
+} as const satisfies Record<ControlOptions, string>
+
+const isHTMLInputElement = (el: HTMLElement): el is HTMLInputElement =>
+  el instanceof HTMLInputElement
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -30,13 +38,13 @@ const i18n = createI18n({
             after: 'AFTER',
             postfix: 'running the workflow:'
           },
-          fixed: 'Fixed Value',
+          fixed: CONTROL_LABELS.fixed,
           fixedDesc: 'Leaves value unchanged',
-          increment: 'Increment Value',
+          increment: CONTROL_LABELS.increment,
           incrementDesc: 'Adds 1 to value',
-          decrement: 'Decrement Value',
+          decrement: CONTROL_LABELS.decrement,
           decrementDesc: 'Subtracts 1 from value',
-          randomize: 'Randomize Value',
+          randomize: CONTROL_LABELS.randomize,
           randomizeDesc: 'Shuffles the value'
         }
       }
@@ -93,15 +101,16 @@ describe('ValueControlPopover', () => {
   describe('Option rendering', () => {
     it('renders all four control options', () => {
       renderPopover()
-      expect(screen.getByText('Fixed Value')).toBeInTheDocument()
-      expect(screen.getByText('Increment Value')).toBeInTheDocument()
-      expect(screen.getByText('Decrement Value')).toBeInTheDocument()
-      expect(screen.getByText('Randomize Value')).toBeInTheDocument()
+      for (const label of Object.values(CONTROL_LABELS)) {
+        expect(screen.getByText(label)).toBeInTheDocument()
+      }
     })
 
     it('renders a radio input for each option', () => {
       renderPopover()
-      expect(screen.getAllByRole('radio')).toHaveLength(4)
+      expect(screen.getAllByRole('radio')).toHaveLength(
+        Object.keys(CONTROL_LABELS).length
+      )
     })
   })
 
@@ -110,9 +119,10 @@ describe('ValueControlPopover', () => {
       renderPopover('increment')
       const checked = screen
         .getAllByRole('radio')
-        .find((r) => (r as HTMLInputElement).checked)
+        .filter(isHTMLInputElement)
+        .find((r) => r.checked)
       expect(checked).toBeDefined()
-      expect((checked as HTMLInputElement).value).toBe('increment')
+      expect(checked?.value).toBe('increment')
     })
 
     it('updates v-model when a different option is selected', async () => {
@@ -121,7 +131,8 @@ describe('ValueControlPopover', () => {
 
       const fixedRadio = screen
         .getAllByRole('radio')
-        .find((r) => (r as HTMLInputElement).value === 'fixed')
+        .filter(isHTMLInputElement)
+        .find((r) => r.value === 'fixed')
       expect(fixedRadio).toBeDefined()
 
       await user.click(fixedRadio!)
