@@ -124,7 +124,8 @@ onUnmounted(() => {
           :key="cta.href"
           :href="cta.href"
           :variant="cta.primary ? 'solid' : 'outline'"
-          class="w-full py-4 text-center"
+          size="lg"
+          class="w-full"
         >
           {{ cta.label }}
         </BrandButton>

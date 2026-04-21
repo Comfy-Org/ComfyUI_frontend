@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
+import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
@@ -12,6 +13,17 @@ const { locale = 'en', class: customClass = '' } = defineProps<{
 }>()
 
 const { downloadUrl, platform } = useDownloadUrl()
+
+const iconSrc = computed(() => {
+  switch (platform.value) {
+    case 'mac':
+      return '/icons/os/apple.svg'
+    case 'windows':
+      return '/icons/os/windows.svg'
+    default:
+      return undefined
+  }
+})
 </script>
 
 <template>
@@ -19,24 +31,17 @@ const { downloadUrl, platform } = useDownloadUrl()
     v-show="platform"
     :href="downloadUrl"
     size="lg"
-    :class="`flex items-center justify-center gap-2 ${customClass}`"
+    :class="customClass"
   >
     <span class="inline-flex items-center gap-2">
       <img
-        v-if="platform === 'mac'"
-        src="/icons/os/apple.svg"
+        v-if="iconSrc"
+        :src="iconSrc"
         alt=""
-        class="size-5"
+        class="ppformula-text-center size-5"
         aria-hidden="true"
       />
-      <img
-        v-else-if="platform === 'windows'"
-        src="/icons/os/windows.svg"
-        alt=""
-        class="size-5"
-        aria-hidden="true"
-      />
-      <span class="translate-y-1">{{
+      <span class="ppformula-text-center">{{
         t('download.hero.downloadLocal', locale)
       }}</span>
     </span>

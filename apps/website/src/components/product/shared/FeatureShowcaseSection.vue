@@ -66,8 +66,8 @@ defineProps<{
               v-if="feature.ctaText && feature.ctaHref"
               :href="feature.ctaHref"
               variant="solid"
-              size="lg"
-              class="mt-6 text-xs"
+              size="xs"
+              class="mt-6"
             >
               {{ feature.ctaText }}
             </BrandButton>

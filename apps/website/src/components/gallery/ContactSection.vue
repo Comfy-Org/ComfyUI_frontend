@@ -22,9 +22,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </h2>
     <BrandButton
       href="/contact"
-      variant="outline"
+      variant="outline-dark"
       size="sm"
-      class="mt-8 uppercase"
+      class="mt-8"
     >
       {{ t('gallery.contact.cta', locale) }}
     </BrandButton>
