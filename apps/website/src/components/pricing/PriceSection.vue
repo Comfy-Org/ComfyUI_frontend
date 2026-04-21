@@ -164,7 +164,7 @@ const activePlanIndex = ref(0)
       class="rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:grid-cols-4 lg:gap-2"
     >
       <PricingTierCard v-for="plan in standardPlans" :key="plan.id">
-        <!-- 1. Label + badge -->
+        <!-- Label + badge -->
         <div class="flex items-center gap-2 px-8 pt-8">
           <span
             class="text-primary-comfy-yellow translate-y-0.5 text-base font-bold tracking-wider"
@@ -194,12 +194,12 @@ const activePlanIndex = ref(0)
           </span>
         </div>
 
-        <!-- 2. Summary -->
+        <!-- Summary -->
         <p class="text-primary-comfy-canvas px-8 text-base">
           {{ t(plan.summaryKey, locale) }}
         </p>
 
-        <!-- 3. Price -->
+        <!-- Price -->
         <div v-if="plan.priceKey" class="flex items-baseline gap-1 px-8 pt-4">
           <span
             class="text-primary-comfy-canvas font-formula text-6.5xl font-light"
@@ -212,7 +212,7 @@ const activePlanIndex = ref(0)
         </div>
         <div v-else class="px-8 pt-4" />
 
-        <!-- 4. Credits -->
+        <!-- Credits -->
         <p
           v-if="plan.creditsKey"
           class="text-primary-comfy-canvas px-8 text-sm"
@@ -221,7 +221,7 @@ const activePlanIndex = ref(0)
         </p>
         <div v-else class="px-8" />
 
-        <!-- 5. Estimate -->
+        <!-- Estimate -->
         <p
           v-if="plan.estimateKey"
           class="text-primary-comfy-canvas/80 px-8 text-sm"
@@ -230,19 +230,8 @@ const activePlanIndex = ref(0)
         </p>
         <div v-else class="px-8" />
 
-        <!-- 6. CTA -->
-        <div class="flex self-end px-8 py-4">
-          <BrandButton
-            :href="plan.ctaHref"
-            :label="t(plan.ctaKey, locale)"
-            variant="outline"
-            size="sm"
-            class-name="w-full text-center"
-          />
-        </div>
-
-        <!-- 7. Features -->
-        <div class="px-8 pb-8">
+        <!-- Features -->
+        <div class="px-8 py-4">
           <p class="text-primary-comfy-canvas mb-3 text-sm font-semibold">
             {{
               plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
@@ -266,6 +255,16 @@ const activePlanIndex = ref(0)
           >
             {{ t(plan.nextUpKey, locale) }}
           </p>
+        </div>
+        <!-- CTA -->
+        <div class="flex self-end px-8">
+          <BrandButton
+            :href="plan.ctaHref"
+            :label="t(plan.ctaKey, locale)"
+            variant="outline"
+            size="sm"
+            class-name="w-full text-center"
+          />
         </div>
       </PricingTierCard>
     </div>
