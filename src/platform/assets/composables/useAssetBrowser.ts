@@ -44,6 +44,52 @@ export interface AssetDisplayItem extends AssetItem {
   }
 }
 
+// Identity-stable cache so navigating between filter tabs reuses the same
+// AssetDisplayItem reference for an unchanged AssetItem. Without this every
+// recomputation of `filteredAssets` re-ran the full transform on every asset,
+// which made switching All / Inputs / Outputs tabs noticeably slow at scale
+// and forced downstream `:key` based diffing in the asset grid to re-render
+// every visible card. (FE-229)
+const displayItemCache = new WeakMap<AssetItem, AssetDisplayItem>()
+
+function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
+  const badges: AssetBadge[] = []
+
+  const typeTag = asset.tags.find((tag) => tag !== 'models')
+  if (typeTag) {
+    const badgeLabel = typeTag.includes('/')
+      ? typeTag.substring(typeTag.indexOf('/') + 1)
+      : typeTag
+
+    badges.push({ label: badgeLabel, type: 'type' })
+  }
+
+  for (const model of getAssetBaseModels(asset)) {
+    badges.push({ label: model, type: 'base' })
+  }
+
+  return {
+    ...asset,
+    secondaryText: getAssetFilename(asset),
+    badges,
+    stats: {
+      formattedDate: asset.created_at
+        ? d(new Date(asset.created_at), { dateStyle: 'short' })
+        : undefined,
+      downloadCount: undefined,
+      stars: undefined
+    }
+  }
+}
+
+function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
+  const cached = displayItemCache.get(asset)
+  if (cached) return cached
+  const built = buildDisplayItem(asset)
+  displayItemCache.set(asset, built)
+  return built
+}
+
 /**
  * Asset Browser composable
  * Manages search, filtering, asset transformation and selection logic
@@ -81,46 +127,6 @@ export function useAssetBrowser(
     }
     return selectedNavItem.value
   })
-
-  // Transform API asset to display asset
-  function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
-    const secondaryText = getAssetFilename(asset)
-
-    const badges: AssetBadge[] = []
-
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
-    // Type badge from non-root tag
-    if (typeTag) {
-      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
-      const badgeLabel = typeTag.includes('/')
-        ? typeTag.substring(typeTag.indexOf('/') + 1)
-        : typeTag
-
-      badges.push({ label: badgeLabel, type: 'type' })
-    }
-
-    // Base model badges from metadata
-    const baseModels = getAssetBaseModels(asset)
-    for (const model of baseModels) {
-      badges.push({ label: model, type: 'base' })
-    }
-
-    // Create display stats from API data
-    const stats = {
-      formattedDate: asset.created_at
-        ? d(new Date(asset.created_at), { dateStyle: 'short' })
-        : undefined,
-      downloadCount: undefined, // Not available in API
-      stars: undefined // Not available in API
-    }
-
-    return {
-      ...asset,
-      secondaryText,
-      badges,
-      stats
-    }
-  }
 
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
