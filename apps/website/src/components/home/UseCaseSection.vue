@@ -89,7 +89,7 @@ useParallax([leftImgRef], {
     :class="
       cn(
         'bg-primary-comfy-ink relative isolate px-8 py-20 lg:px-0 lg:py-24',
-        isPinned && 'overflow-hidden lg:h-[calc(100vh+60px)]'
+        isPinned && 'overflow-x-clip lg:h-[calc(100vh+60px)]'
       )
     "
   >

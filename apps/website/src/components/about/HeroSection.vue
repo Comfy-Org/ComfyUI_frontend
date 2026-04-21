@@ -77,6 +77,7 @@ useHeroAnimation({
     <div ref="videoRef" class="-mt-16 px-20 pb-40 lg:-mt-72">
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
+        poster="https://media.comfy.org/website/about/co-founders-poster.webp"
         :tracks="[
           {
             src: 'https://media.comfy.org/website/about/co-founders.en.vtt',
