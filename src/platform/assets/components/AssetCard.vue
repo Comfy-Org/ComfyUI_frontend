@@ -143,7 +143,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetDisplayFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -174,7 +174,7 @@ const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
 const titleId = useId()
 const descId = useId()
 
-const displayName = computed(() => getAssetFilename(asset))
+const displayName = computed(() => getAssetDisplayFilename(asset))
 
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 

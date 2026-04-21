@@ -168,10 +168,26 @@ export function getAssetUserDescription(asset: AssetItem): string {
 
 /**
  * Gets the filename for an asset with fallback chain
- * Checks user_metadata.filename first, then metadata.filename, then asset.name
- * @param asset - The asset to extract filename from
- * @returns The filename string
+ * Checks user_metadata.filename first, then metadata.filename, then asset.name.
+ * Use this for serialized/identifier contexts (workflow widget values,
+ * filename schema validation, missing-model matching) where we need the
+ * canonical filename and MUST NOT substitute a display-only string.
  */
 export function getAssetFilename(asset: AssetItem): string {
   return getStringProperty(asset, 'filename') ?? asset.name
+}
+
+/**
+ * Gets the human-readable filename to render in UI surfaces.
+ * Fallback chain: user_metadata.filename → metadata.filename →
+ * asset.display_name → asset.name.
+ *
+ * `display_name` is populated by queue output mappers in Cloud where
+ * `asset.name` is a content hash. Use this helper for labels/titles only;
+ * for serialized identifiers use {@link getAssetFilename}.
+ */
+export function getAssetDisplayFilename(asset: AssetItem): string {
+  return (
+    getStringProperty(asset, 'filename') ?? asset.display_name ?? asset.name
+  )
 }
