@@ -18,57 +18,38 @@ const mockShowSubscriptionDialog = vi.fn()
 const mockSelectMember = vi.fn()
 const mockToggleSort = vi.fn()
 
-const {
-  mockMembers,
-  mockPendingInvites,
-  mockFilteredMembers,
-  mockFilteredPendingInvites,
-  mockIsPersonalWorkspace,
-  mockIsSingleSeatPlan,
-  mockIsActiveSubscription,
-  mockActiveView,
-  mockSearchQuery,
-  mockPermissions,
-  mockUiConfig
-} = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-
-  return {
-    mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<PendingInvite[]>([]),
-    mockFilteredMembers: ref<WorkspaceMember[]>([]),
-    mockFilteredPendingInvites: ref<PendingInvite[]>([]),
-    mockIsPersonalWorkspace: ref(false),
-    mockIsSingleSeatPlan: ref(false),
-    mockIsActiveSubscription: ref(true),
-    mockActiveView: ref<'active' | 'pending'>('active'),
-    mockSearchQuery: ref(''),
-    mockPermissions: ref({
-      canViewOtherMembers: true,
-      canViewPendingInvites: true,
-      canInviteMembers: true,
-      canManageInvites: true,
-      canRemoveMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
-    }),
-    mockUiConfig: ref({
-      showMembersList: true,
-      showPendingTab: true,
-      showSearch: true,
-      showDateColumn: true,
-      showRoleBadge: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
-      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'leave' | 'delete' | null,
-      workspaceMenuDisabledTooltip: null as string | null
-    })
-  }
+const mockFilteredMembers = ref<WorkspaceMember[]>([])
+const mockFilteredPendingInvites = ref<PendingInvite[]>([])
+const mockIsPersonalWorkspace = ref(false)
+const mockIsSingleSeatPlan = ref(false)
+const mockIsActiveSubscription = ref(true)
+const mockActiveView = ref<'active' | 'pending'>('active')
+const mockSearchQuery = ref('')
+const mockMembers = ref<WorkspaceMember[]>([])
+const mockPendingInvites = ref<PendingInvite[]>([])
+const mockPermissions = ref({
+  canViewOtherMembers: true,
+  canViewPendingInvites: true,
+  canInviteMembers: true,
+  canManageInvites: true,
+  canRemoveMembers: true,
+  canLeaveWorkspace: true,
+  canAccessWorkspaceMenu: true,
+  canManageSubscription: true,
+  canTopUp: true
+})
+const mockUiConfig = ref({
+  showMembersList: true,
+  showPendingTab: true,
+  showSearch: true,
+  showDateColumn: true,
+  showRoleBadge: true,
+  membersGridCols: 'grid-cols-[50%_40%_10%]',
+  pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+  headerGridCols: 'grid-cols-[50%_40%_10%]',
+  showEditWorkspaceMenuItem: true,
+  workspaceMenuAction: 'delete' as 'leave' | 'delete' | null,
+  workspaceMenuDisabledTooltip: null as string | null
 })
 
 vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
@@ -137,7 +118,11 @@ function renderComponent() {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
         UserAvatar: true,
-        Menu: { template: '<div />', props: ['model', 'popup'] }
+        Menu: {
+          template: '<div />',
+          props: ['model', 'popup'],
+          methods: { toggle() {} }
+        }
       },
       directives: { tooltip: () => {} }
     }
@@ -242,25 +227,22 @@ describe('MembersPanelContent', () => {
     it('renders filtered members', () => {
       mockFilteredMembers.value = [
         createMember({ name: 'Alice', email: 'alice@test.com' }),
-        createMember({
-          id: '2',
-          name: 'Bob',
-          email: 'bob@test.com'
-        })
+        createMember({ id: '2', name: 'Bob', email: 'bob@test.com' })
       ]
       renderComponent()
       expect(screen.getByText('Alice')).toBeTruthy()
       expect(screen.getByText('Bob')).toBeTruthy()
     })
 
-    it('shows more options button for non-current members', () => {
-      mockFilteredMembers.value = [
-        createMember({ name: 'Other', email: 'other@test.com' })
-      ]
+    it('selects member before opening the more options menu', async () => {
+      const member = createMember({ name: 'Other', email: 'other@test.com' })
+      mockFilteredMembers.value = [member]
       renderComponent()
-      expect(
-        screen.queryAllByRole('button', { name: 'g.moreOptions' })
-      ).toHaveLength(1)
+      const [moreOptionsButton] = screen.queryAllByRole('button', {
+        name: 'g.moreOptions'
+      })
+      await userEvent.click(moreOptionsButton)
+      expect(mockSelectMember).toHaveBeenCalledWith(member)
     })
 
     it('does not show more options for current user', () => {
