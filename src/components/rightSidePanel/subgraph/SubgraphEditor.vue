@@ -8,15 +8,17 @@ import Button from '@/components/ui/button/Button.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
-  getPromotableWidgets,
   getSourceNodeId,
   getWidgetName,
   isLinkedPromotion,
-  isRecommendedWidget,
   promoteWidget,
   pruneDisconnected
 } from '@/core/graph/subgraph/promotionUtils'
-import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
+import type { WidgetItem } from '@/core/graph/subgraph/widgetClassification'
+import {
+  getPromotableWidgets,
+  isRecommendedWidget
+} from '@/core/graph/subgraph/widgetClassification'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

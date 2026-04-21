@@ -1,6 +1,13 @@
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  getPromotableWidgets,
+  isPreviewPseudoWidget,
+  isRecommendedWidget
+} from '@/core/graph/subgraph/widgetClassification'
+import type { WidgetItem } from '@/core/graph/subgraph/widgetClassification'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -9,19 +16,13 @@ import type {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import {
-  CANVAS_IMAGE_PREVIEW_WIDGET,
-  supportsVirtualCanvasImagePreview
-} from '@/composables/node/canvasImagePreviewTypes'
+import { supportsVirtualCanvasImagePreview } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
-
-export type WidgetItem = [PartialNode, IBaseWidget]
-export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
 export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
@@ -72,25 +73,6 @@ function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
     parent.setDirtyCanvas(true, true)
   }
   useCanvasStore().canvas?.setDirty(true, true)
-}
-
-/** Known non-$$ preview widget types added by core or popular extensions. */
-const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
-
-/**
- * Returns true for pseudo-widgets that display media previews and should
- * be auto-promoted when their node is inside a subgraph.
- * Matches the core `$$` convention as well as custom-node patterns
- * (e.g. VHS `videopreview` with type `"preview"`).
- */
-export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
-  if (widget.name.startsWith('$$')) return true
-  // Custom nodes may set serialize on the widget or in options
-  if (widget.serialize !== false && widget.options?.serialize !== false)
-    return false
-  if (typeof widget.type === 'string' && PREVIEW_WIDGET_TYPES.has(widget.type))
-    return true
-  return false
 }
 
 export function promoteWidget(
@@ -197,50 +179,6 @@ export function tryToggleWidgetPromotion() {
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
   else demoteWidget(node, widget, parents)
-}
-
-const recommendedNodes = [
-  'CLIPTextEncode',
-  'LoadImage',
-  'SaveImage',
-  'PreviewImage'
-]
-const recommendedWidgetNames = ['seed']
-export function isRecommendedWidget([node, widget]: WidgetItem) {
-  return (
-    !widget.computedDisabled &&
-    (recommendedNodes.includes(node.type) ||
-      recommendedWidgetNames.includes(widget.name))
-  )
-}
-
-function supportsVirtualPreviewWidget(node: LGraphNode): boolean {
-  return supportsVirtualCanvasImagePreview(node)
-}
-
-function createVirtualCanvasImagePreviewWidget(): IBaseWidget {
-  return {
-    name: CANVAS_IMAGE_PREVIEW_WIDGET,
-    type: 'IMAGE_PREVIEW',
-    options: { serialize: false },
-    serialize: false,
-    y: 0,
-    computedDisabled: false
-  }
-}
-
-export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
-  const widgets = [...(node.widgets ?? [])]
-
-  const hasCanvasPreviewWidget = widgets.some(
-    (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
-  )
-  const supportsVirtualPreview = supportsVirtualPreviewWidget(node)
-  if (!hasCanvasPreviewWidget && supportsVirtualPreview) {
-    widgets.push(createVirtualCanvasImagePreviewWidget())
-  }
-
-  return widgets
 }
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {

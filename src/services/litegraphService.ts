@@ -6,10 +6,8 @@ import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import {
-  addWidgetPromotionOptions,
-  isPreviewPseudoWidget
-} from '@/core/graph/subgraph/promotionUtils'
+import { addWidgetPromotionOptions } from '@/core/graph/subgraph/promotionUtils'
+import { isPreviewPseudoWidget } from '@/core/graph/subgraph/widgetClassification'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
