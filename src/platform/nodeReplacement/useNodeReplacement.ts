@@ -219,6 +219,7 @@ function replaceWithMapping(
   }
 
   newNode.has_errors = false
+  node.onRemoved?.()
 }
 
 export function useNodeReplacement() {
