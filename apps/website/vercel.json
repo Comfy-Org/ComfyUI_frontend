@@ -4,6 +4,9 @@
   "outputDirectory": "apps/website/dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
+  "github": {
+    "enabled": false
+  },
   "redirects": [
     {
       "source": "/pricing",
