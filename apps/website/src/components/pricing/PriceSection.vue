@@ -95,7 +95,7 @@ const plans: PricingPlan[] = [
     features: [
       { text: 'pricing.plan.pro.feature1' },
       { text: 'pricing.plan.pro.feature2' }
-    ],
+    ]
   },
   {
     id: 'enterprise',
