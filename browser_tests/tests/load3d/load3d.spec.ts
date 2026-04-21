@@ -148,4 +148,127 @@ test.describe('Load3D', () => {
       )
     }
   )
+
+  test(
+    'Uploading a background image populates Scene Config and surfaces panorama/remove controls',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage, load3d }) => {
+      await expect(load3d.uploadBackgroundImageButton).toBeVisible()
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const readBackgroundImage = async () => {
+        const properties =
+          await node.getProperty<Record<string, { backgroundImage?: string }>>(
+            'properties'
+          )
+        return properties['Scene Config']?.backgroundImage ?? ''
+      }
+
+      expect(
+        await readBackgroundImage(),
+        'Scene Config.backgroundImage should start empty'
+      ).toBe('')
+
+      await test.step('Upload an image via file picker', async () => {
+        const uploadResponse = comfyPage.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200
+        )
+        const fileChooser = comfyPage.page.waitForEvent('filechooser')
+        await load3d.uploadBackgroundImageButton.click()
+        await (await fileChooser).setFiles(assetPath('image64x64.webp'))
+        await uploadResponse
+      })
+
+      await expect.poll(readBackgroundImage).not.toBe('')
+      await expect(load3d.panoramaModeButton).toBeVisible()
+      await expect(load3d.removeBackgroundImageButton).toBeVisible()
+
+      await comfyPage.expectScreenshot(
+        load3d.node,
+        'load3d-background-image-tiled.png',
+        { maxDiffPixelRatio: 0.05 }
+      )
+
+      await test.step('Toggling panorama mode updates Scene Config.backgroundRenderMode', async () => {
+        await load3d.panoramaModeButton.click()
+        await expect
+          .poll(async () => {
+            const properties =
+              await node.getProperty<
+                Record<string, { backgroundRenderMode?: string }>
+              >('properties')
+            return properties['Scene Config']?.backgroundRenderMode
+          })
+          .toBe('panorama')
+        await comfyPage.expectScreenshot(
+          load3d.node,
+          'load3d-background-image-panorama.png',
+          { maxDiffPixelRatio: 0.05 }
+        )
+      })
+
+      await test.step('Remove background image clears the Scene Config', async () => {
+        await load3d.removeBackgroundImageButton.click()
+        await expect.poll(readBackgroundImage).toBe('')
+        await expect(load3d.removeBackgroundImageButton).toHaveCount(0)
+        await expect(load3d.panoramaModeButton).toHaveCount(0)
+      })
+    }
+  )
+
+  test('Grid toggle flips the Scene Config.showGrid flag', async ({
+    comfyPage,
+    load3d
+  }) => {
+    await expect(load3d.gridToggleButton).toBeVisible()
+
+    const node = await comfyPage.nodeOps.getNodeRefById(1)
+    const readShowGrid = async () => {
+      const properties =
+        await node.getProperty<Record<string, { showGrid?: boolean }>>(
+          'properties'
+        )
+      return properties['Scene Config']?.showGrid
+    }
+
+    const initial = (await readShowGrid()) ?? true
+    await load3d.gridToggleButton.click()
+    await expect.poll(readShowGrid).toBe(!initial)
+
+    await load3d.gridToggleButton.click()
+    await expect.poll(readShowGrid).toBe(initial)
+  })
+
+  test('Recording controls show stop/export/clear buttons after a recording', async ({
+    comfyPage,
+    load3d
+  }) => {
+    await expect(load3d.recordingButton).toBeVisible()
+    await expect(load3d.stopRecordingButton).toHaveCount(0)
+
+    await test.step('Start recording flips button to stop-recording', async () => {
+      await load3d.recordingButton.click()
+      await expect(load3d.stopRecordingButton).toBeVisible()
+    })
+
+    await test.step('Stop recording surfaces export and clear controls', async () => {
+      await comfyPage.nextFrame()
+      await load3d.stopRecordingButton.click()
+      await expect(load3d.recordingButton).toBeVisible()
+      await expect(load3d.exportRecordingButton).toBeVisible()
+      await expect(load3d.clearRecordingButton).toBeVisible()
+    })
+
+    await test.step('Export recording triggers a scene-recording download', async () => {
+      const downloadPromise = comfyPage.page.waitForEvent('download')
+      await load3d.exportRecordingButton.click()
+      const download = await downloadPromise
+      expect(download.suggestedFilename()).toContain('scene-recording')
+    })
+
+    await test.step('Clear recording removes export and clear controls', async () => {
+      await load3d.clearRecordingButton.click()
+      await expect(load3d.exportRecordingButton).toHaveCount(0)
+      await expect(load3d.clearRecordingButton).toHaveCount(0)
+    })
+  })
 })

@@ -18,6 +18,34 @@ export class Load3DHelper {
     return this.node.getByRole('button', { name: /start recording/i })
   }
 
+  get stopRecordingButton(): Locator {
+    return this.node.getByRole('button', { name: /stop recording/i })
+  }
+
+  get exportRecordingButton(): Locator {
+    return this.node.getByRole('button', { name: /export recording/i })
+  }
+
+  get clearRecordingButton(): Locator {
+    return this.node.getByRole('button', { name: /clear recording/i })
+  }
+
+  get gridToggleButton(): Locator {
+    return this.node.getByRole('button', { name: /show grid/i })
+  }
+
+  get uploadBackgroundImageButton(): Locator {
+    return this.node.getByRole('button', { name: /upload background image/i })
+  }
+
+  get removeBackgroundImageButton(): Locator {
+    return this.node.getByRole('button', { name: /remove background image/i })
+  }
+
+  get panoramaModeButton(): Locator {
+    return this.node.getByRole('button', { name: /^panorama$/i })
+  }
+
   get colorInput(): Locator {
     return this.node.locator('input[type="color"]')
   }
