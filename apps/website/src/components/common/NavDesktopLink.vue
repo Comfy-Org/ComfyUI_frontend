@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 export type NavDropdownItem = {
   label: string
   href: string
@@ -40,7 +42,14 @@ const emit = defineEmits<{
     <button
       v-if="link.items?.length"
       type="button"
-      class="group text-primary-comfy-canvas hover:text-primary-warm-gray flex cursor-pointer items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors"
+      :class="
+        cn(
+          'group flex cursor-pointer items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors',
+          link.items.some((item) => currentPath === item.href)
+            ? 'text-primary-comfy-yellow'
+            : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
+        )
+      "
       aria-haspopup="true"
       :aria-expanded="isOpen"
       @click="emit('toggle', link.label)"
@@ -48,7 +57,14 @@ const emit = defineEmits<{
       {{ link.label }}
       <span
         aria-hidden="true"
-        class="text-primary-comfy-canvas group-hover:text-primary-warm-gray text-base leading-none transition-colors"
+        :class="
+          cn(
+            'text-base leading-none transition-colors',
+            link.items.some((item) => currentPath === item.href)
+              ? 'text-primary-comfy-yellow'
+              : 'text-primary-comfy-canvas group-hover:text-primary-warm-gray'
+          )
+        "
       >
         ▾
       </span>
@@ -58,7 +74,14 @@ const emit = defineEmits<{
       v-else
       :href="link.href"
       :aria-current="currentPath === link.href ? 'page' : undefined"
-      class="text-primary-comfy-canvas hover:text-primary-warm-gray flex items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors"
+      :class="
+        cn(
+          'flex items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors',
+          currentPath === link.href
+            ? 'text-primary-comfy-yellow'
+            : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
+        )
+      "
     >
       {{ link.label }}
     </a>
@@ -67,13 +90,21 @@ const emit = defineEmits<{
       v-if="link.items?.length"
       v-show="isOpen"
       data-testid="nav-dropdown"
-      class="bg-transparency-white-t4 absolute top-full left-0 w-max rounded-xl p-2 shadow-lg backdrop-blur-md"
+      class="bg-transparency-ink-t80 absolute top-full left-0 w-max rounded-xl p-2 shadow-lg backdrop-blur-2xl backdrop-saturate-150"
     >
       <a
         v-for="item in link.items"
         :key="item.href"
         :href="item.href"
-        class="text-primary-comfy-canvas hover:bg-transparency-white-t4 flex items-center gap-2 rounded-sm p-2 text-xs font-medium tracking-wide transition-colors hover:text-white"
+        :aria-current="currentPath === item.href ? 'page' : undefined"
+        :class="
+          cn(
+            'flex items-center gap-2 rounded-sm p-2 text-xs font-medium tracking-wide transition-colors',
+            currentPath === item.href
+              ? 'text-primary-comfy-yellow'
+              : 'text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-white'
+          )
+        "
         @click="emit('close')"
       >
         {{ item.label }}

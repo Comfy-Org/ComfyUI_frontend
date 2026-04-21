@@ -331,9 +331,9 @@ const translations = {
     'zh-CN': '你的团队已经在使用 ComfyUI。放心地扩展它。'
   },
   'enterprise.hero.subtitle': {
-    en: 'ComfyUI Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.',
+    en: 'Comfy Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.',
     'zh-CN':
-      'ComfyUI 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
+      'Comfy 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
   },
   'enterprise.hero.contactSales': {
     en: 'CONTACT SALES',

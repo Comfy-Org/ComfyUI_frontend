@@ -15,7 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div
-      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-x-[10%] lg:translate-y-[150px] lg:self-center xl:size-[clamp(42rem,max(50vh,40vw),44rem)] xl:min-h-[min(40vw,32rem)] xl:min-w-[min(30vw,24rem)]"
+      class="aspect-square w-4/5 max-w-md scale-125 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-10 lg:self-center xl:size-[clamp(42rem,max(50vh,40vw),44rem)] xl:min-h-[min(40vw,32rem)] xl:min-w-[min(30vw,24rem)]"
     >
       <svg
         class="block size-full overflow-visible"
