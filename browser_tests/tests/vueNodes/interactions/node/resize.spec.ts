@@ -1,11 +1,31 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import {
+  RESIZE_HANDLES,
+  hasNorthEdge,
+  hasWestEdge
+} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+
+async function setupResizableNode(comfyPage: ComfyPage, title: string) {
+  const node = await comfyPage.vueNodes.getFixtureByTitle(title)
+  await node.header.click()
+  const box = await node.boundingBox()
+  if (!box) throw new Error(`Node "${title}" bounding box not found`)
+  return { node, box }
+}
 
 test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
+  // Minimap overlays the canvas corners and intercepts pointer events that
+  // happen to land in its hit area during resize drags, so disable it for the
+  // whole suite.
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+  })
+
   test('should resize node without position drift after selecting', async ({
     comfyPage
   }) => {
@@ -49,38 +69,22 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
       .toBeGreaterThan(initialBox.height)
   })
 
-  // Derive test cases from production RESIZE_HANDLES config.
-  // W in corner → X moves (left edge shifts); N → Y moves (top edge shifts).
-  const allCorners = RESIZE_HANDLES.map((h) => h.corner)
-  const expectedCorners = ['SE', 'NE', 'SW', 'NW']
-  expectedCorners.forEach((c) => {
-    if (!allCorners.includes(c as (typeof allCorners)[number])) {
-      throw new Error(
-        `RESIZE_HANDLES is missing corner "${c}" — tests will silently lose coverage`
-      )
-    }
-  })
-
+  // Drag a tested center-positioned node from every non-SE corner so the
+  // non-default switch arms in useNodeResize run under real DOM events.
   const nonSeCornerCases = RESIZE_HANDLES.filter((h) => h.corner !== 'SE').map(
     (h) => ({
       corner: h.corner,
-      dragX: h.corner.includes('W') ? -50 : 50,
-      dragY: h.corner.includes('N') ? -40 : 40,
-      xMoves: h.corner.includes('W'),
-      yMoves: h.corner.includes('N')
+      dragX: hasWestEdge(h.corner) ? -50 : 50,
+      dragY: hasNorthEdge(h.corner) ? -40 : 40
     })
   )
 
   test.describe('corner resize directions', () => {
-    nonSeCornerCases.forEach(({ corner, dragX, dragY, xMoves, yMoves }) => {
+    nonSeCornerCases.forEach(({ corner, dragX, dragY }) => {
       test(`${corner}: size increases and correct edges shift`, async ({
         comfyPage
       }) => {
-        const node =
-          await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-        await node.header.click()
-        const box = await node.boundingBox()
-        if (!box) throw new Error('Node bounding box not found')
+        const { node, box } = await setupResizableNode(comfyPage, 'KSampler')
 
         await node.resizeFromCorner(corner, dragX, dragY)
 
@@ -91,7 +95,7 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
           .poll(async () => (await node.boundingBox())?.height)
           .toBeGreaterThan(box.height)
 
-        if (xMoves) {
+        if (hasWestEdge(corner)) {
           await expect
             .poll(async () => (await node.boundingBox())?.x)
             .toBeLessThan(box.x)
@@ -101,7 +105,7 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
             .toBeCloseTo(box.x, 0)
         }
 
-        if (yMoves) {
+        if (hasNorthEdge(corner)) {
           await expect
             .poll(async () => (await node.boundingBox())?.y)
             .toBeLessThan(box.y)
@@ -115,31 +119,27 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('opposite edge anchoring', () => {
-    nonSeCornerCases.forEach(({ corner, dragX, dragY, xMoves, yMoves }) => {
+    nonSeCornerCases.forEach(({ corner, dragX, dragY }) => {
       test(`${corner} resize keeps opposite corner fixed`, async ({
         comfyPage
       }) => {
-        const node =
-          await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-        await node.header.click()
-        const box = await node.boundingBox()
-        if (!box) throw new Error('Node bounding box not found')
+        const { node, box } = await setupResizableNode(comfyPage, 'KSampler')
 
-        const anchorX = xMoves ? box.x + box.width : box.x
-        const anchorY = yMoves ? box.y + box.height : box.y
+        const anchorX = hasWestEdge(corner) ? box.x + box.width : box.x
+        const anchorY = hasNorthEdge(corner) ? box.y + box.height : box.y
 
         await node.resizeFromCorner(corner, dragX, dragY)
 
         await expect
           .poll(async () => {
             const b = await node.boundingBox()
-            return b ? (xMoves ? b.x + b.width : b.x) : null
+            return b ? (hasWestEdge(corner) ? b.x + b.width : b.x) : null
           })
           .toBeCloseTo(anchorX, 0)
         await expect
           .poll(async () => {
             const b = await node.boundingBox()
-            return b ? (yMoves ? b.y + b.height : b.y) : null
+            return b ? (hasNorthEdge(corner) ? b.y + b.height : b.y) : null
           })
           .toBeCloseTo(anchorY, 0)
       })
@@ -150,10 +150,7 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
     test('SW resize clamps width, keeping right edge fixed', async ({
       comfyPage
     }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-      await node.header.click()
-      const box = await node.boundingBox()
-      if (!box) throw new Error('Node bounding box not found')
+      const { node, box } = await setupResizableNode(comfyPage, 'KSampler')
       const rightEdge = box.x + box.width
 
       await node.resizeFromCorner('SW', box.width + 100, 0)
@@ -172,10 +169,14 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
     test('NE resize clamps height, keeping bottom edge fixed', async ({
       comfyPage
     }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-      await node.header.click()
+      const { node } = await setupResizableNode(comfyPage, 'KSampler')
+
+      // Default nodes render at content-minimum height, so grow south via SE
+      // first to give NE room to shrink back to the clamp.
+      await node.resizeFromCorner('SE', 0, 200)
+
       const box = await node.boundingBox()
-      if (!box) throw new Error('Node bounding box not found')
+      if (!box) throw new Error('Node bounding box not found after SE grow')
       const bottomEdge = box.y + box.height
 
       await node.resizeFromCorner('NE', 0, box.height + 100)
