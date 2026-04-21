@@ -2,45 +2,21 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-type MockRecorderState = {
-  isRecording: ReturnType<typeof ref<boolean>>
-  recordedURL: ReturnType<typeof ref<string | null>>
-  startRecording: ReturnType<typeof vi.fn>
-  stopRecording: ReturnType<typeof vi.fn>
-  mediaRecorder: ReturnType<typeof ref<unknown>>
-}
-type MockPlaybackState = {
-  isPlaying: ReturnType<typeof ref<boolean>>
-  audioElementKey: ReturnType<typeof ref<number>>
-  resetAudioElement: ReturnType<typeof vi.fn>
-  play: ReturnType<typeof vi.fn>
-  stop: ReturnType<typeof vi.fn>
-  getCurrentTime: ReturnType<typeof vi.fn>
-  getDuration: ReturnType<typeof vi.fn>
-  playbackTimerInterval: ReturnType<typeof ref<number | null>>
-  onPlaybackEnded: ReturnType<typeof vi.fn>
-  onMetadataLoaded: ReturnType<typeof vi.fn>
-}
-
-const recorderState = vi.hoisted(() => ({}) as Record<string, unknown>)
-const playbackState = vi.hoisted(() => ({}) as Record<string, unknown>)
-const waveformState = vi.hoisted(() => ({}) as Record<string, unknown>)
-const capturedOptions = vi.hoisted(
-  () =>
-    ({
-      recorder: null as unknown,
-      playback: null as unknown
-    }) as { recorder: unknown; playback: unknown }
-)
+const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
+  vi.hoisted(() => ({
+    useAudioRecorderMock: vi.fn(),
+    useAudioPlaybackMock: vi.fn(),
+    useAudioWaveformMock: vi.fn()
+  }))
 const appMock = vi.hoisted(() => ({
   app: {
     canvas: {
       graph: {
-        getNodeById: (_: unknown) => null as unknown
+        getNodeById: vi.fn<(id: string) => unknown>(() => null)
       }
     }
   }
@@ -48,21 +24,15 @@ const appMock = vi.hoisted(() => ({
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('../composables/audio/useAudioRecorder', () => ({
-  useAudioRecorder: (options: unknown) => {
-    capturedOptions.recorder = options
-    return recorderState
-  }
+  useAudioRecorder: useAudioRecorderMock
 }))
 
 vi.mock('../composables/audio/useAudioPlayback', () => ({
-  useAudioPlayback: (_el: unknown, options: unknown) => {
-    capturedOptions.playback = options
-    return playbackState
-  }
+  useAudioPlayback: useAudioPlaybackMock
 }))
 
 vi.mock('../composables/audio/useAudioWaveform', () => ({
-  useAudioWaveform: () => waveformState
+  useAudioWaveform: useAudioWaveformMock
 }))
 
 vi.mock('@/scripts/app', () => appMock)
@@ -71,7 +41,49 @@ vi.mock('@/scripts/domWidget', () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
+import type { useAudioPlayback } from '../composables/audio/useAudioPlayback'
+import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
+import type { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
+
+type RecorderOptions = NonNullable<Parameters<typeof useAudioRecorder>[0]>
+
+const recorder = {
+  isRecording: ref(false),
+  recordedURL: ref<string | null>(null),
+  mediaRecorder: ref<MediaRecorder | null>(null),
+  startRecording: vi.fn(async () => {}),
+  stopRecording: vi.fn(),
+  dispose: vi.fn()
+} satisfies ReturnType<typeof useAudioRecorder>
+
+const playback = {
+  isPlaying: ref(false),
+  audioElementKey: ref(0),
+  play: vi.fn(async () => true),
+  stop: vi.fn(),
+  onPlaybackEnded: vi.fn(),
+  onMetadataLoaded: vi.fn(),
+  resetAudioElement: vi.fn(async () => {}),
+  getCurrentTime: vi.fn(() => 0),
+  getDuration: vi.fn(() => 0),
+  playbackTimerInterval: ref<ReturnType<typeof setInterval> | null>(null)
+} satisfies ReturnType<typeof useAudioPlayback>
+
+const waveform = {
+  waveformBars: ref<{ height: number }[]>([]),
+  initWaveform: vi.fn(),
+  updateWaveform: vi.fn(),
+  setupAudioContext: vi.fn(async () => {}),
+  setupRecordingVisualization: vi.fn(async () => {}),
+  setupPlaybackVisualization: vi.fn(async () => true),
+  stopWaveform: vi.fn(),
+  dispose: vi.fn()
+} satisfies ReturnType<typeof useAudioWaveform>
+
+useAudioRecorderMock.mockImplementation(() => recorder)
+useAudioPlaybackMock.mockImplementation(() => playback)
+useAudioWaveformMock.mockImplementation(() => waveform)
 
 const i18n = createI18n({
   legacy: false,
@@ -100,55 +112,6 @@ const ButtonStub = defineComponent({
     '<button v-bind="$attrs" :disabled="disabled" type="button"><slot /></button>'
 })
 
-let recorder: MockRecorderState
-let playback: MockPlaybackState
-
-function setRecorderMocks(overrides: Partial<MockRecorderState> = {}) {
-  recorder = {
-    isRecording: ref(false),
-    recordedURL: ref<string | null>(null),
-    startRecording: vi.fn(async () => {}),
-    stopRecording: vi.fn(),
-    mediaRecorder: ref(null),
-    ...overrides
-  } as MockRecorderState
-  Object.keys(recorderState).forEach((k) => delete recorderState[k])
-  Object.assign(recorderState, recorder)
-}
-
-function setPlaybackMocks(overrides: Partial<MockPlaybackState> = {}) {
-  playback = {
-    isPlaying: ref(false),
-    audioElementKey: ref(0),
-    resetAudioElement: vi.fn(async () => {}),
-    play: vi.fn(async () => {}),
-    stop: vi.fn(),
-    getCurrentTime: vi.fn(() => 0),
-    getDuration: vi.fn(() => 0),
-    playbackTimerInterval: ref<number | null>(null),
-    onPlaybackEnded: vi.fn(),
-    onMetadataLoaded: vi.fn(),
-    ...overrides
-  } as MockPlaybackState
-  Object.keys(playbackState).forEach((k) => delete playbackState[k])
-  Object.assign(playbackState, playback)
-}
-
-function setWaveformMocks() {
-  const waveform = {
-    waveformBars: ref<{ height: number }[]>([]),
-    initWaveform: vi.fn(),
-    stopWaveform: vi.fn(),
-    dispose: vi.fn(),
-    setupAudioContext: vi.fn(async () => {}),
-    setupRecordingVisualization: vi.fn(async () => {}),
-    setupPlaybackVisualization: vi.fn(async () => true),
-    updateWaveform: vi.fn()
-  }
-  Object.keys(waveformState).forEach((k) => delete waveformState[k])
-  Object.assign(waveformState, waveform)
-}
-
 function renderWidget(props: { readonly?: boolean; nodeId?: string } = {}) {
   return render(WidgetRecordAudio, {
     global: {
@@ -159,11 +122,35 @@ function renderWidget(props: { readonly?: boolean; nodeId?: string } = {}) {
   })
 }
 
+function getRecorderOptions(): RecorderOptions {
+  const options = vi.mocked(useAudioRecorder).mock.calls.at(-1)?.[0]
+  if (!options) throw new Error('useAudioRecorder has not been called yet')
+  return options
+}
+
 describe('WidgetRecordAudio', () => {
   beforeEach(() => {
-    setRecorderMocks()
-    setPlaybackMocks()
-    setWaveformMocks()
+    recorder.isRecording.value = false
+    recorder.recordedURL.value = null
+    recorder.mediaRecorder.value = null
+    recorder.startRecording.mockClear()
+    recorder.stopRecording.mockClear()
+    recorder.dispose.mockClear()
+
+    playback.isPlaying.value = false
+    playback.audioElementKey.value = 0
+    playback.playbackTimerInterval.value = null
+    playback.play.mockClear()
+    playback.stop.mockClear()
+
+    waveform.waveformBars.value = []
+
+    useAudioRecorderMock.mockClear()
+    useAudioPlaybackMock.mockClear()
+    useAudioWaveformMock.mockClear()
+
+    appMock.app.canvas.graph.getNodeById.mockReset().mockReturnValue(null)
+    isDOMWidgetMock.mockReset().mockReturnValue(false)
   })
 
   describe('Idle state', () => {
@@ -198,20 +185,22 @@ describe('WidgetRecordAudio', () => {
       renderWidget({ readonly: true })
       const user = userEvent.setup()
       const btn = screen.getByRole('button', { name: /Start Recording/i })
-      await user.click(btn).catch(() => {})
+      await user.click(btn)
       expect(recorder.startRecording).not.toHaveBeenCalled()
     })
   })
 
   describe('Recording state', () => {
+    beforeEach(() => {
+      recorder.isRecording.value = true
+    })
+
     it('shows "Listening..." text while recording', () => {
-      setRecorderMocks({ isRecording: ref(true) })
       renderWidget()
       expect(screen.getByText('Listening...')).toBeInTheDocument()
     })
 
     it('renders a stop button while recording', () => {
-      setRecorderMocks({ isRecording: ref(true) })
       renderWidget()
       expect(
         screen.getByRole('button', { name: /Stop Recording/i })
@@ -219,7 +208,6 @@ describe('WidgetRecordAudio', () => {
     })
 
     it('calls stopRecording when the stop button is clicked', async () => {
-      setRecorderMocks({ isRecording: ref(true) })
       renderWidget()
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: /Stop Recording/i }))
@@ -227,7 +215,6 @@ describe('WidgetRecordAudio', () => {
     })
 
     it('disables the Start Recording button while recording', () => {
-      setRecorderMocks({ isRecording: ref(true) })
       renderWidget()
       expect(
         screen.getByRole('button', { name: /Start Recording/i })
@@ -237,7 +224,7 @@ describe('WidgetRecordAudio', () => {
 
   describe('Ready state (has recording, not playing)', () => {
     beforeEach(() => {
-      setRecorderMocks({ recordedURL: ref('blob:fake-url') })
+      recorder.recordedURL.value = 'blob:fake-url'
     })
 
     it('shows "Ready" text', () => {
@@ -255,8 +242,8 @@ describe('WidgetRecordAudio', () => {
 
   describe('Playing state', () => {
     beforeEach(() => {
-      setRecorderMocks({ recordedURL: ref('blob:fake-url') })
-      setPlaybackMocks({ isPlaying: ref(true) })
+      recorder.recordedURL.value = 'blob:fake-url'
+      playback.isPlaying.value = true
     })
 
     it('shows "Playing..." text', () => {
@@ -291,69 +278,58 @@ describe('WidgetRecordAudio', () => {
     }
 
     function primeAudioWidgetInNode(widgets: { element: HTMLAudioElement }[]) {
-      appMock.app.canvas.graph.getNodeById = () =>
-        ({
-          widgets
-        }) as unknown
+      appMock.app.canvas.graph.getNodeById.mockReturnValue({ widgets })
       isDOMWidgetMock.mockReturnValue(true)
     }
 
-    it('replaces the audio widget element src with a new blob URL when a recording completes', async () => {
-      const originalCreateObjectURL = URL.createObjectURL
-      URL.createObjectURL = vi.fn((blob: Blob) => `blob:fake/${blob.size}`)
+    beforeEach(() => {
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(
+        (blob: Blob | MediaSource) =>
+          blob instanceof Blob ? `blob:fake/${blob.size}` : 'blob:fake/media'
+      )
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    })
 
+    afterEach(() => {
+      vi.mocked(URL.createObjectURL).mockRestore()
+      vi.mocked(URL.revokeObjectURL).mockRestore()
+    })
+
+    it('replaces the audio widget element src with a new blob URL when a recording completes', async () => {
       const audioWidget = createAudioWidget()
       primeAudioWidgetInNode([audioWidget])
       renderWidget()
 
-      const options = capturedOptions.recorder as {
-        onRecordingComplete: (blob: Blob) => Promise<void> | void
-      }
       const blob = new Blob(['audio-bytes'], { type: 'audio/webm' })
-      await options.onRecordingComplete(blob)
+      await getRecorderOptions().onRecordingComplete?.(blob)
 
       expect(audioWidget.element.src).toContain('blob:fake/')
-      URL.createObjectURL = originalCreateObjectURL
     })
 
     it('revokes the previous blob URL before replacing it', async () => {
-      const originalCreateObjectURL = URL.createObjectURL
-      const originalRevoke = URL.revokeObjectURL
-      URL.createObjectURL = vi.fn(() => 'blob:fake/new')
-      URL.revokeObjectURL = vi.fn()
+      vi.mocked(URL.createObjectURL).mockReturnValue('blob:fake/new')
 
       const audioWidget = createAudioWidget('blob:stale-existing')
       primeAudioWidgetInNode([audioWidget])
       renderWidget()
 
-      const options = capturedOptions.recorder as {
-        onRecordingComplete: (blob: Blob) => Promise<void> | void
-      }
-      await options.onRecordingComplete(new Blob(['x']))
+      await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
 
       expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:stale-existing')
       expect(audioWidget.element.src).toBe('blob:fake/new')
-
-      URL.createObjectURL = originalCreateObjectURL
-      URL.revokeObjectURL = originalRevoke
     })
 
     it('does not write to non-DOM widgets on the host node', async () => {
-      const originalCreateObjectURL = URL.createObjectURL
-      URL.createObjectURL = vi.fn(() => 'blob:fake/new')
+      vi.mocked(URL.createObjectURL).mockReturnValue('blob:fake/new')
 
       const audioWidget = createAudioWidget('originally-empty')
       primeAudioWidgetInNode([audioWidget])
       isDOMWidgetMock.mockReturnValue(false)
       renderWidget()
 
-      const options = capturedOptions.recorder as {
-        onRecordingComplete: (blob: Blob) => Promise<void> | void
-      }
-      await options.onRecordingComplete(new Blob(['x']))
+      await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
 
       expect(audioWidget.element.src).not.toBe('blob:fake/new')
-      URL.createObjectURL = originalCreateObjectURL
     })
   })
 })
