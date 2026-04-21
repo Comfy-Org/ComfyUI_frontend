@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { TestIds } from '../../fixtures/selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class PropertiesPanelHelper {
   readonly root: Locator
@@ -76,7 +76,7 @@ export class PropertiesPanelHelper {
   async close(): Promise<void> {
     if (await this.root.isVisible()) {
       await this.closeButton.click()
-      await expect(this.root).not.toBeVisible()
+      await expect(this.root).toBeHidden()
     }
   }
 

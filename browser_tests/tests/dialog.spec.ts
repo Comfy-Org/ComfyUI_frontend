@@ -1,315 +1,63 @@
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '../../src/platform/keybindings/types'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
-import { TestIds } from '../fixtures/selectors'
+import type { Keybinding } from '@/platform/keybindings/types'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
+import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
+import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
+import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
-
-  test('Should show error overlay when loading a workflow with missing nodes', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-
-    const messages = errorOverlay.getByTestId(
-      TestIds.dialogs.errorOverlayMessages
-    )
-    await expect(messages).toBeVisible()
-    await expect(messages).toHaveText(/missing.*installed/i)
-  })
-
-  test('Should show error overlay when loading a workflow with missing nodes in subgraphs', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-
-    const messages = errorOverlay.getByTestId(
-      TestIds.dialogs.errorOverlayMessages
-    )
-    await expect(messages).toBeVisible()
-    await expect(messages).toHaveText(/missing.*installed/i)
-
-    // Click "See Errors" to open the errors tab and verify subgraph node content
-    await errorOverlay
-      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
-      .click()
-    await expect(errorOverlay).not.toBeVisible()
-
-    const missingNodeCard = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingNodeCard
-    )
-    await expect(missingNodeCard).toBeVisible()
-
-    // Expand the pack group row to reveal node type names
-    await missingNodeCard
-      .getByRole('button', { name: /expand/i })
-      .first()
-      .click()
-    await expect(
-      missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
-    ).toBeVisible()
-  })
-
-  test('Should show MissingNodeCard in errors tab when clicking See Errors', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-
-    // Click "See Errors" to open the right side panel errors tab
-    await errorOverlay
-      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
-      .click()
-    await expect(errorOverlay).not.toBeVisible()
-
-    // Verify MissingNodeCard is rendered in the errors tab
-    const missingNodeCard = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingNodeCard
-    )
-    await expect(missingNodeCard).toBeVisible()
-  })
-})
-
-test('Does not resurface missing nodes on undo/redo', async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    true
-  )
-  await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-
-  const errorOverlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-  await expect(errorOverlay).toBeVisible()
-
-  // Dismiss the error overlay
-  await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
-  await expect(errorOverlay).not.toBeVisible()
-
-  // Make a change to the graph by moving a node
-  await comfyPage.canvas.click()
-  await comfyPage.nextFrame()
-  await comfyPage.page.keyboard.press('Control+a')
-  await comfyPage.page.mouse.move(400, 300)
-  await comfyPage.page.mouse.down()
-  await comfyPage.page.mouse.move(450, 350, { steps: 5 })
-  await comfyPage.page.mouse.up()
-  await comfyPage.nextFrame()
-
-  // Undo and redo should not resurface the error overlay
-  await comfyPage.keyboard.undo()
-  await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
-
-  await comfyPage.keyboard.redo()
-  await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
-})
-
-test.describe('Execution error', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    await comfyPage.setup()
-  })
-
-  test('Should display an error message when an execution error occurs', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('nodes/execution_error')
-    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-    await comfyPage.nextFrame()
-
-    // Wait for the error overlay to be visible
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-  })
-})
-
-test.describe('Error actions in Errors Tab', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
-
-  test('Should show Find on GitHub and Copy buttons in error card after execution error', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('nodes/execution_error')
-    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-    await comfyPage.nextFrame()
-
-    // Wait for error overlay and click "See Errors"
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-    await errorOverlay
-      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
-      .click()
-    await expect(errorOverlay).not.toBeVisible()
-
-    // Verify Find on GitHub button is present in the error card
-    const findOnGithubButton = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorCardFindOnGithub
-    )
-    await expect(findOnGithubButton).toBeVisible()
-
-    // Verify Copy button is present in the error card
-    const copyButton = comfyPage.page.getByTestId(TestIds.dialogs.errorCardCopy)
-    await expect(copyButton).toBeVisible()
-  })
-})
-
-test.describe('Missing models in Error Tab', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
-      const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
-      return response.ok
-    }, comfyPage.url)
-    expect(cleanupOk).toBeTruthy()
-  })
-
-  test('Should show error overlay with missing models when workflow has missing models', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_models')
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-
-    const messages = errorOverlay.getByTestId(
-      TestIds.dialogs.errorOverlayMessages
-    )
-    await expect(messages).toBeVisible()
-    await expect(messages).toHaveText(/required model.*missing/i)
-  })
-
-  test('Should show missing models from node properties', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'missing/missing_models_from_node_properties'
-    )
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-
-    const messages = errorOverlay.getByTestId(
-      TestIds.dialogs.errorOverlayMessages
-    )
-    await expect(messages).toBeVisible()
-    await expect(messages).toHaveText(/required model.*missing/i)
-  })
-
-  test('Should not show missing models when widget values have changed', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'missing/model_metadata_widget_mismatch'
-    )
-
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).not.toBeVisible()
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlayMessages)
-    ).not.toBeVisible()
-  })
-})
-
 test.describe('Settings', () => {
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId('settings-dialog')
     await expect(settingsDialog).toBeVisible()
     const contentArea = settingsDialog.locator('main')
     await expect(contentArea).toBeVisible()
-    const isUsableHeight = await contentArea.evaluate(
-      (el) => el.clientHeight > 30
-    )
-    expect(isUsableHeight).toBeTruthy()
+    await expect
+      .poll(() => contentArea.evaluate((el) => el.clientHeight))
+      .toBeGreaterThan(30)
   })
 
   test('Can open settings with hotkey', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.down('ControlOrMeta')
     await comfyPage.page.keyboard.press(',')
     await comfyPage.page.keyboard.up('ControlOrMeta')
-    const settingsLocator = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsLocator = comfyPage.page.getByTestId('settings-dialog')
     await expect(settingsLocator).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
-    await expect(settingsLocator).not.toBeVisible()
+    await expect(settingsLocator).toBeHidden()
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
     const maxSpeed = 2.5
     await comfyPage.settings.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
+
     await test.step('Setting should persist', async () => {
-      expect(await comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
-        maxSpeed
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed'))
+        .toBe(maxSpeed)
     })
   })
 
   test('Should persist keybinding setting', async ({ comfyPage }) => {
     // Open the settings dialog
     await comfyPage.page.keyboard.press('Control+,')
-    await comfyPage.page.waitForSelector('[data-testid="settings-dialog"]')
 
     // Open the keybinding tab
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId('settings-dialog')
+    await expect(settingsDialog).toBeVisible()
     await settingsDialog
       .locator('nav [role="button"]', { hasText: 'Keybinding' })
       .click()
-    await comfyPage.page.waitForSelector(
-      '[placeholder="Search Keybindings..."]'
-    )
+    await expect(
+      comfyPage.page.getByPlaceholder('Search Keybindings...')
+    ).toBeVisible()
 
     // Focus the 'New Blank Workflow' row
     const newBlankWorkflowRow = comfyPage.page.locator('tr', {
@@ -359,7 +107,6 @@ test.describe('Support', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Prevent loading the external page
     await comfyPage.page
       .context()
@@ -376,38 +123,6 @@ test.describe('Support', () => {
     expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
 
     await popup.close()
-  })
-})
-
-test.describe('Error dialog', () => {
-  test('Should display an error dialog when graph configure fails', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(() => {
-      const graph = window.graph!
-      ;(graph as { configure: () => void }).configure = () => {
-        throw new Error('Error on configure!')
-      }
-    })
-
-    await comfyPage.workflow.loadWorkflow('default')
-
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
-    await expect(errorDialog).toBeVisible()
-  })
-
-  test('Should display an error dialog when prompt execution fails', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(async () => {
-      const app = window.app!
-      app.api.queuePrompt = () => {
-        throw new Error('Error on queuePrompt!')
-      }
-      await app.queuePrompt(0)
-    })
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
-    await expect(errorDialog).toBeVisible()
   })
 })
 
@@ -438,6 +153,163 @@ test.describe('Signin dialog', () => {
     await input.press('Control+v')
     await expect(input).toHaveValue('test_password')
 
-    expect(await comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
+  })
+
+  test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    const dialog = new SignInDialog(comfyPage.page)
+    const { result: dialogResult } = await dialog.openWithResult()
+
+    await dialog.emailInput.fill('test@example.com')
+    await dialog.passwordInput.fill('TestPassword123!')
+    await expect(dialog.root).toBeVisible()
+
+    await dialog.signInButton.click()
+    await expect(dialog.root).toBeHidden()
+    expect(await dialogResult).toBe(true)
+  })
+
+  test('Sign-in dialog resolves false when closed without sign-in', async ({
+    comfyPage
+  }) => {
+    const dialog = new SignInDialog(comfyPage.page)
+    const { result: dialogResult } = await dialog.openWithResult()
+
+    await dialog.close()
+    await expect(dialog.root).toBeHidden()
+    expect(await dialogResult).toBe(false)
+  })
+})
+
+test('API Nodes sign-in dialog', async ({ comfyPage }) => {
+  const dialog = new ApiSignin(comfyPage.page)
+  const { result: dialogResult } = await dialog.open([
+    'FluxProGenerate',
+    'StableDiffusion3Generate'
+  ])
+
+  await expect(dialog.root.getByText('FluxProGenerate')).toBeVisible()
+  await expect(dialog.root.getByText('StableDiffusion3Generate')).toBeVisible()
+
+  await dialog.cancel.click()
+  await expect(dialog.root).toBeHidden()
+  expect(await dialogResult).toBe(false)
+})
+
+test.describe('Update password dialog', () => {
+  test('Should only allow submission when inputs are valid', async ({
+    comfyPage
+  }) => {
+    const dialog = new UpdatePassword(comfyPage.page)
+    await dialog.open()
+
+    await dialog.confirm.click()
+    await expect(dialog.root, 'Check that password exists').toBeVisible()
+
+    const testPassword = 'Unguessable Password #2'
+    await dialog.password.fill(testPassword)
+
+    await dialog.confirm.click()
+    await expect(dialog.root, 'Check that inputs match').toBeVisible()
+
+    await dialog.confirmPassword.fill(testPassword)
+    await dialog.confirm.click()
+    await expect(dialog.root, 'Dialog closes after submission').toBeHidden()
+  })
+})
+
+test.describe('Cloud notification dialog', () => {
+  test('Should display cloud notification and navigate to comfy.org on Explore', async ({
+    comfyPage
+  }) => {
+    const dialog = new CloudNotification(comfyPage.page)
+    await dialog.open()
+
+    await expect(
+      dialog.root.getByText('Run ComfyUI in the Cloud')
+    ).toBeVisible()
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
+    await dialog.toCloud.click()
+    const popup = await popupPromise
+
+    expect(new URL(popup.url()).hostname).toContain('comfy.org')
+    await popup.close()
+    await expect(dialog.root).toBeHidden()
+  })
+
+  test('Should close when Continue Locally is clicked', async ({
+    comfyPage
+  }) => {
+    const dialog = new CloudNotification(comfyPage.page)
+    await dialog.open()
+
+    await dialog.back.click()
+    await expect(dialog.root).toBeHidden()
+  })
+})
+
+test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
+  const blueprintName = `test-blueprint-overwrite-${Date.now()}`
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+  await comfyPage.settings.setSetting(
+    'Comfy.Workflow.WarnBlueprintOverwrite',
+    true
+  )
+
+  const tab = comfyPage.menu.nodeLibraryTabV2
+
+  await test.step('Publish a basic subgraph', async () => {
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await comfyPage.contextMenu.openForVueNode(ksampler.header)
+    await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
+    await comfyPage.subgraph.publishSubgraph(blueprintName)
+
+    await tab.open()
+    await tab.getFolder('My Blueprints').click()
+    await tab.getFolder('User').click()
+  })
+
+  const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
+
+  await test.step('Edit the published subgraph', async () => {
+    const blueprintNode = tab.getNode(blueprintName)
+    await expect(blueprintNode, 'blueprint visible in library').toBeVisible()
+    await blueprintNode.getByRole('button', { name: 'Edit' }).click()
+    await steps.waitFor({ state: 'visible' })
+  })
+
+  const confirmDialog = comfyPage.confirmDialog.root
+  const { incrementButton } = comfyPage.vueNodes.getInputNumberControls(steps)
+  const dirtyGraphAndSave = async () => {
+    await incrementButton.click()
+    await comfyPage.page.keyboard.press('Control+s')
+  }
+
+  await test.step('No dialog: user prompted on publish', async () => {
+    await dirtyGraphAndSave()
+    await comfyPage.nextFrame()
+    await expect(confirmDialog).toBeHidden()
+  })
+
+  await test.step('Should show dialog', async () => {
+    await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
+    await dirtyGraphAndSave()
+    const { noWarnOverwriteToggle } = comfyPage.confirmDialog
+    await expect(noWarnOverwriteToggle).toBeVisible()
+
+    await test.step('Disable overwrite warning', async () => {
+      await noWarnOverwriteToggle.check()
+      await expect(confirmDialog.getByText(/Re-enable in/i)).toBeVisible()
+      await comfyPage.confirmDialog.click('overwrite')
+    })
+  })
+
+  await test.step('No dialog: disabled by setting', async () => {
+    await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
+    await dirtyGraphAndSave()
+    await comfyPage.nextFrame()
+    await expect(confirmDialog).toBeHidden()
   })
 })

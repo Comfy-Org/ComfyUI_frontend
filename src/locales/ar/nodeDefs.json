@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
+    "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول للفيديو."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير للفيديو."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "إنشاء أو تعديل أو تمديد فيديو باستخدام Seedance 2.0 مع صور أو فيديوهات أو صوتيات مرجعية. يدعم المراجع متعددة الوسائط، وتحرير الفيديو، وتمديد الفيديو.",
+    "display_name": "ByteDance Seedance 2.0 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "إنشاء فيديو باستخدام نماذج Seedance 2.0 بناءً على موجه نصي.",
+    "display_name": "ByteDance Seedance 2.0 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام المطالبة النصية والإطار الأول والأخير.",
     "display_name": "تحويل الإطار الأول-الأخير من ByteDance إلى فيديو",
@@ -1358,6 +1489,36 @@
     "outputs": {
       "0": {
         "name": "قيمة RGB عددية",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "مطابقة ألوان صورة مع أخرى باستخدام خوارزميات متنوعة.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "الصورة أو الصور المرجعية لمطابقة الألوان معها. إذا لم يتم توفيرها، سيتم تخطي المعالجة."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "الصورة أو الصور التي سيتم تطبيق تحويل الألوان عليها."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: كل إطار يُطابق مع image_ref بشكل فردي. uniform: تجميع إحصائيات جميع الإطارات المصدرية كأساس، والمطابقة مع image_ref. target_frame: استخدام إطار محدد كأساس للتحويل إلى image_ref، ويُطبق بشكل موحد على جميع الإطارات (يحافظ على الفروقات النسبية)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -5006,6 +5167,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "مخطط تكراري للصورة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الإضاءة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "أحمر",
+        "tooltip": null
+      },
+      "3": {
+        "name": "أخضر",
+        "tooltip": null
+      },
+      "4": {
+        "name": "أزرق",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "عكس الصورة",
     "inputs": {
@@ -5423,6 +5614,22 @@
       },
       "image": {
         "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "استخراج سلسلة من JSON",
+    "inputs": {
+      "json_string": {
+        "name": "سلسلة_json"
+      },
+      "key": {
+        "name": "مفتاح"
       }
     },
     "outputs": {
@@ -13725,6 +13932,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "يسحب المخرجات المنزوعة الضوضاء نحو الإدخال الكامن. قيمة أعلى = تطابق أقوى مع الإدخال. ۰ لتعطيل الميزة."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "عتبة سيغما التي دونها يتم تعطيل restore_cfg."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "التحكم في قوة التأثير في نهاية العينة (سيغما منخفضة). يتم الاستيفاء خطياً من البداية."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "التحكم في قوة التأثير في بداية العينة (سيغما عالية)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "تهيئة SV3D",
     "inputs": {
@@ -14731,6 +14976,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "إنشاء موسيقى من وصف نصي باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. اترك المدة ۰ ليقوم النموذج بتحديدها تلقائياً من الوصف.",
+    "display_name": "تحويل النص إلى موسيقى بواسطة Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "المدة المستهدفة بالثواني. ضع القيمة ۰ ليقوم النموذج بتحديد المدة تلقائياً من الوصف. الحد الأقصى: ٦ دقائق."
+      },
+      "prompt": {
+        "name": "الوصف",
+        "tooltip": "وصف نصي يصف الموسيقى المطلوب إنشاؤها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج. حالياً يتم تجاهلها من قبل خدمة Sonilo ولكنها موجودة للحفاظ على اتساق الرسم البياني."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "إنشاء موسيقى من محتوى الفيديو باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. يقوم بتحليل الفيديو وإنشاء موسيقى متوافقة.",
+    "display_name": "تحويل الفيديو إلى موسيقى بواسطة Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "prompt": {
+        "name": "الوصف",
+        "tooltip": "وصف نصي اختياري لتوجيه إنشاء الموسيقى. اتركه فارغاً للحصول على أفضل جودة - سيقوم النموذج بتحليل محتوى الفيديو بالكامل."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج. حالياً يتم تجاهلها من قبل خدمة Sonilo ولكنها موجودة للحفاظ على اتساق الرسم البياني."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال لإنشاء الموسيقى منه. الحد الأقصى للمدة: ٦ دقائق."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "يفصل الصوت إلى القناتين اليسرى واليمنى.",
     "display_name": "فصل قنوات الصوت",
@@ -15680,6 +15977,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "صورة UV",
+        "tooltip": null
       }
     }
   },
@@ -15991,6 +16292,10 @@
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
+      },
+      "use_default_template": {
+        "name": "استخدام القالب الافتراضي",
+        "tooltip": "استخدم القالب/الوصف المدمج في النظام إذا كان النموذج يحتوي عليه."
       }
     },
     "outputs": {
@@ -16042,6 +16347,10 @@
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
+      },
+      "use_default_template": {
+        "name": "استخدام القالب الافتراضي",
+        "tooltip": "استخدم القالب/الوصف المدمج في النظام إذا كان النموذج يحتوي عليه."
       }
     },
     "outputs": {
@@ -17939,6 +18248,241 @@
       },
       "width": {
         "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "إنشاء فيديو من صورة الإطار الأول، مع إمكانية إضافة صورة الإطار الأخير وصوت اختياري.",
+    "display_name": "وان 2.7 من صورة إلى فيديو",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم لتوجيه توليد الفيديو (مثل مزامنة الشفاه أو حركة متوافقة مع الإيقاع). المدة: ۲-۳۰ ثانية. إذا لم يتم توفيره، يقوم النموذج تلقائيًا بإنشاء موسيقى خلفية أو مؤثرات صوتية مناسبة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول. يتم اشتقاق نسبة العرض إلى الارتفاع للإخراج من هذه الصورة."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير. يقوم النموذج بإنشاء فيديو ينتقل من الإطار الأول إلى الأخير."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "model_prompt": {
+        "name": "توجيه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt_extend": {
+        "name": "تعزيز التوجيه",
+        "tooltip": "ما إذا كان سيتم تعزيز التوجيه بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "إنشاء فيديو يعرض شخصًا أو كائنًا من مواد مرجعية. يدعم أداء شخصية واحدة وتفاعل عدة شخصيات.",
+    "display_name": "وان 2.7 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "model_prompt": {
+        "name": "توجيه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "ينشئ فيديو بناءً على وصف نصي باستخدام نموذج وان 2.7.",
+    "display_name": "وان 2.7 تحويل النص إلى فيديو",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم لتوجيه توليد الفيديو (مثل مزامنة الشفاه أو الحركة المتوافقة مع الإيقاع). المدة: ٣-٣٠ ثانية. إذا لم يتم توفيره، سيقوم النموذج تلقائيًا بإنشاء موسيقى خلفية أو مؤثرات صوتية مناسبة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "الوصف السلبي"
+      },
+      "model_prompt": {
+        "name": "الوصف"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt_extend": {
+        "name": "توسيع الوصف",
+        "tooltip": "ما إذا كان سيتم تعزيز الوصف بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "استكمال الفيديو من حيث توقف، مع إمكانية التحكم في الإطار الأخير.",
+    "display_name": "وان 2.7 استكمال الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "first_clip": {
+        "name": "المقطع الأول",
+        "tooltip": "الفيديو المدخل للاستكمال منه. المدة: ٢-١٠ ثوانٍ. يتم اشتقاق نسبة العرض إلى الارتفاع من هذا الفيديو."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير. سيتم الانتقال في الاستكمال نحو هذا الإطار."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "الوصف السلبي"
+      },
+      "model_prompt": {
+        "name": "الوصف"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt_extend": {
+        "name": "توسيع الوصف",
+        "tooltip": "ما إذا كان سيتم تعزيز الوصف بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "تحرير فيديو باستخدام تعليمات نصية أو صور مرجعية أو نقل النمط.",
+    "display_name": "وان 2.7 تحرير الفيديو",
+    "inputs": {
+      "audio_setting": {
+        "name": "إعداد الصوت",
+        "tooltip": "'تلقائي': يقرر النموذج ما إذا كان سيعيد توليد الصوت بناءً على الوصف. 'الأصلي': الحفاظ على الصوت الأصلي من الفيديو المدخل."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الوصف"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المراد تحريره."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
       }
     },
     "outputs": {

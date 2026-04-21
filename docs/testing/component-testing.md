@@ -1,5 +1,7 @@
 # Component Testing Guide
 
+> **Note**: New component tests must use `@testing-library/vue` with `@testing-library/user-event`. The examples below that use `@vue/test-utils` (`mount`, `wrapper`) are from legacy tests. An ESLint rule enforces this — importing from `@vue/test-utils` in `*.test.ts` files produces a lint error.
+
 This guide covers patterns and examples for testing Vue components in the ComfyUI Frontend codebase.
 
 ## Table of Contents

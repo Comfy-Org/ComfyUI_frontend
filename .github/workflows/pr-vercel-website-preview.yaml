@@ -1,0 +1,64 @@
+---
+name: 'PR: Vercel Website Preview'
+
+on:
+  workflow_run:
+    workflows: ['CI: Vercel Website Preview']
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download preview metadata
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: vercel-preview
+          run_id: ${{ github.event.workflow_run.id }}
+          path: temp/vercel-preview
+
+      - name: Resolve PR number from workflow_run context
+        id: pr-meta
+        uses: ./.github/actions/resolve-pr-from-workflow-run
+
+      - name: Write report
+        if: steps.pr-meta.outputs.skip != 'true'
+        env:
+          DEPLOYED_AT: ${{ github.event.workflow_run.updated_at }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          STABLE_URL=$(cat temp/vercel-preview/stable-url.txt)
+          UNIQUE_URL=$(cat temp/vercel-preview/url.txt)
+          SHORT_SHA="${HEAD_SHA:0:7}"
+          cat > preview-report.md <<EOF
+          **Website Preview:** $STABLE_URL
+
+          <sub>This commit: $UNIQUE_URL</sub>
+
+          <sub>Last updated: $DEPLOYED_AT for \`$SHORT_SHA\`</sub>
+          EOF
+
+      - name: Post PR comment
+        if: steps.pr-meta.outputs.skip != 'true'
+        uses: ./.github/actions/post-pr-report-comment
+        with:
+          pr-number: ${{ steps.pr-meta.outputs.number }}
+          report-file: ./preview-report.md
+          comment-marker: '<!-- VERCEL_WEBSITE_PREVIEW -->'
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
+    "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "اولین فریم",
+        "tooltip": "تصویر اولین فریم برای ویدیو."
+      },
+      "last_frame": {
+        "name": "آخرین فریم",
+        "tooltip": "تصویر آخرین فریم برای ویدیو."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "Seedance 2.0 برای بالاترین کیفیت؛ Seedance 2.0 Fast برای بهینه‌سازی سرعت."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "تولید، ویرایش یا گسترش ویدیو با استفاده از Seedance 2.0 و تصاویر مرجع، ویدیوها و صدا. پشتیبانی از مرجع چندرسانه‌ای، ویرایش ویدیو و گسترش ویدیو.",
+    "display_name": "ByteDance Seedance 2.0 مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "Seedance 2.0 برای بالاترین کیفیت؛ Seedance 2.0 Fast برای بهینه‌سازی سرعت."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "تولید ویدیو با استفاده از مدل‌های Seedance 2.0 بر اساس پرامپت متنی.",
+    "display_name": "ByteDance Seedance 2.0 متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "Seedance 2.0 برای بالاترین کیفیت؛ Seedance 2.0 Fast برای بهینه‌سازی سرعت."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از پرامپت و اولین و آخرین فریم.",
     "display_name": "تبدیل اولین و آخرین فریم به ویدیو ByteDance",
@@ -1358,6 +1489,36 @@
     "outputs": {
       "0": {
         "name": "مقدار صحیح RGB",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "هماهنگ‌سازی رنگ‌های یک تصویر با تصویر دیگر با استفاده از الگوریتم‌های مختلف.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "تصویر(ها)ی مرجع برای هماهنگ‌سازی رنگ‌ها. در صورت عدم ارائه، پردازش انجام نمی‌شود."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "تصویر(ها)یی که تبدیل رنگ باید بر روی آن‌ها اعمال شود."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: هر فریم به صورت جداگانه با image_ref هماهنگ می‌شود. uniform: آمار تمام فریم‌های منبع به عنوان مبنا جمع‌آوری شده و با image_ref هماهنگ می‌شود. target_frame: یک فریم انتخابی به عنوان مبنا برای تبدیل به image_ref استفاده می‌شود و به طور یکنواخت بر همه فریم‌ها اعمال می‌گردد (تفاوت‌های نسبی حفظ می‌شوند)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -5006,6 +5167,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "هیستوگرام تصویر",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "درخشندگی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "قرمز",
+        "tooltip": null
+      },
+      "3": {
+        "name": "سبز",
+        "tooltip": null
+      },
+      "4": {
+        "name": "آبی",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "معکوس‌سازی تصویر",
     "inputs": {
@@ -5423,6 +5614,22 @@
       },
       "image": {
         "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "استخراج رشته از JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -13725,6 +13932,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "خروجی نویززدایی‌شده را به سمت ورودی latent می‌کشاند. مقدار بالاتر = وفاداری بیشتر به ورودی. ۰ برای غیرفعال‌سازی."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "آستانه سیگما که زیر آن restore_cfg غیرفعال می‌شود."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "کنترل شدت در انتهای نمونه‌گیری (سیگما پایین). به صورت خطی از مقدار ابتدایی میان‌یابی می‌شود."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "کنترل شدت در ابتدای نمونه‌گیری (سیگما بالا)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "شرط‌گذاری SV3D",
     "inputs": {
@@ -14731,6 +14976,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "تولید موسیقی از یک پرامپت متنی با استفاده از مدل هوش مصنوعی Sonilo. مدت زمان را روی ۰ قرار دهید تا مدل آن را از پرامپت تشخیص دهد.",
+    "display_name": "تبدیل متن به موسیقی با Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "مدت زمان هدف به ثانیه. برای تشخیص خودکار مدت زمان توسط مدل، مقدار را روی ۰ قرار دهید. حداکثر: ۶ دقیقه."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای توصیف موسیقی مورد نظر جهت تولید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تکرارپذیری. در حال حاضر توسط سرویس Sonilo نادیده گرفته می‌شود اما برای سازگاری گراف حفظ شده است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "تولید موسیقی از محتوای ویدیویی با استفاده از مدل هوش مصنوعی Sonilo. ویدیو را تحلیل کرده و موسیقی متناسب ایجاد می‌کند.",
+    "display_name": "تبدیل ویدیو به موسیقی با Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی اختیاری برای راهنمایی تولید موسیقی. برای بهترین کیفیت خالی بگذارید - مدل به طور کامل محتوای ویدیو را تحلیل می‌کند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تکرارپذیری. در حال حاضر توسط سرویس Sonilo نادیده گرفته می‌شود اما برای سازگاری گراف حفظ شده است."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "ویدیوی ورودی برای تولید موسیقی. حداکثر مدت زمان: ۶ دقیقه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "صدا را به کانال‌های چپ و راست جدا می‌کند.",
     "display_name": "تقسیم کانال‌های صوتی",
@@ -15680,6 +15977,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "تصویر UV",
+        "tooltip": null
       }
     }
   },
@@ -15991,6 +16292,10 @@
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
       }
     },
     "outputs": {
@@ -16042,6 +16347,10 @@
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
       }
     },
     "outputs": {
@@ -17939,6 +18248,241 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "تولید ویدیو از تصویر فریم اول، با امکان افزودن تصویر فریم آخر و صدا به صورت اختیاری.",
+    "display_name": "وان ۲.۷ تبدیل تصویر به ویدیو",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "صدا برای هدایت تولید ویدیو (مثلاً هماهنگی لب، حرکت هماهنگ با ضرب‌آهنگ). مدت زمان: ۲ تا ۳۰ ثانیه. در صورت عدم ارائه، مدل به طور خودکار موسیقی پس‌زمینه یا افکت صوتی مناسب تولید می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "فریم اول",
+        "tooltip": "تصویر فریم اول. نسبت ابعاد خروجی از این تصویر استخراج می‌شود."
+      },
+      "last_frame": {
+        "name": "فریم آخر",
+        "tooltip": "تصویر فریم آخر. مدل ویدیویی با انتقال از فریم اول به فریم آخر تولید می‌کند."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt_extend": {
+        "name": "گسترش پرامپت",
+        "tooltip": "آیا پرامپت با کمک هوش مصنوعی بهبود یابد یا خیر."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "تولید ویدیو با حضور یک شخص یا شیء بر اساس مواد مرجع. پشتیبانی از اجرای تک‌نفره و تعامل چندنفره.",
+    "display_name": "وان ۲.۷ مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "تولید ویدیو بر اساس یک پرامپت متنی با استفاده از مدل وان ۲.۷.",
+    "display_name": "وان ۲.۷ تبدیل متن به ویدیو",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "صدا برای هدایت تولید ویدیو (مثلاً هماهنگی لب، حرکت مطابق با ضرب). مدت زمان: ۳ تا ۳۰ ثانیه. در صورت عدم ارائه، مدل به طور خودکار موسیقی پس‌زمینه یا افکت صوتی مناسب تولید می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "prompt_extend": {
+        "name": "گسترش پرامپت",
+        "tooltip": "آیا پرامپت با کمک هوش مصنوعی بهبود یابد."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "ادامه دادن یک ویدیو از جایی که متوقف شده است، با امکان کنترل فریم آخر.",
+    "display_name": "وان ۲.۷ ادامه ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_clip": {
+        "name": "کلیپ اول",
+        "tooltip": "ویدیوی ورودی برای ادامه دادن. مدت زمان: ۲ تا ۱۰ ثانیه. نسبت تصویر خروجی از این ویدیو گرفته می‌شود."
+      },
+      "last_frame": {
+        "name": "فریم آخر",
+        "tooltip": "تصویر فریم آخر. ادامه ویدیو به سمت این فریم انتقال می‌یابد."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "prompt_extend": {
+        "name": "گسترش پرامپت",
+        "tooltip": "آیا پرامپت با کمک هوش مصنوعی بهبود یابد."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "ویرایش ویدیو با استفاده از دستور متنی، تصاویر مرجع یا انتقال سبک.",
+    "display_name": "وان ۲.۷ ویرایش ویدیو",
+    "inputs": {
+      "audio_setting": {
+        "name": "تنظیمات صدا",
+        "tooltip": "'auto': مدل تصمیم می‌گیرد که آیا صدا بر اساس پرامپت بازتولید شود یا نه. 'origin': صدای اصلی ویدیوی ورودی حفظ می‌شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی که باید ویرایش شود."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود."
       }
     },
     "outputs": {

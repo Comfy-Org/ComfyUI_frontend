@@ -1,13 +1,12 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { SignInDialog } from '../../fixtures/components/SignInDialog'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 
 test.describe('Sign In dialog', { tag: '@ui' }, () => {
   let dialog: SignInDialog
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     dialog = new SignInDialog(comfyPage.page)
     await dialog.open()
   })
@@ -83,7 +82,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   })
 
   test('Should close dialog via close button', async () => {
-    await dialog.close()
+    await dialog.closeButton.click()
     await expect(dialog.root).toBeHidden()
   })
 

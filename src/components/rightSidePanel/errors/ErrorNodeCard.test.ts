@@ -1,5 +1,6 @@
-import { mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -49,7 +50,7 @@ vi.mock('@/stores/commandStore', () => ({
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: vi.fn(() => ({
     staticUrls: {
-      githubIssues: 'https://github.com/comfyanonymous/ComfyUI/issues'
+      githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
     }
   }))
 }))
@@ -89,16 +90,21 @@ describe('ErrorNodeCard.vue', () => {
     })
   })
 
-  function mountCard(card: ErrorCardData) {
-    return mount(ErrorNodeCard, {
-      props: { card },
+  function renderCard(
+    card: ErrorCardData,
+    options: { initialState?: Record<string, unknown> } = {}
+  ) {
+    const user = userEvent.setup()
+    const onCopyToClipboard = vi.fn()
+    render(ErrorNodeCard, {
+      props: { card, onCopyToClipboard },
       global: {
         plugins: [
           PrimeVue,
           i18n,
           createTestingPinia({
             createSpy: vi.fn,
-            initialState: {
+            initialState: options.initialState ?? {
               systemStats: {
                 systemStats: {
                   system: {
@@ -132,6 +138,7 @@ describe('ErrorNodeCard.vue', () => {
         }
       }
     })
+    return { user, onCopyToClipboard }
   }
 
   let cardIdCounter = 0
@@ -173,76 +180,82 @@ describe('ErrorNodeCard.vue', () => {
       '# ComfyUI Error Report\n## System Information\n- OS: Linux'
     mockGenerateErrorReport.mockReturnValue(reportText)
 
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    renderCard(makeRuntimeErrorCard())
 
-    expect(wrapper.text()).toContain('ComfyUI Error Report')
-    expect(wrapper.text()).toContain('System Information')
-    expect(wrapper.text()).toContain('OS: Linux')
+    await waitFor(() => {
+      expect(screen.getByText(/ComfyUI Error Report/)).toBeInTheDocument()
+    })
+    expect(screen.getByText(/System Information/)).toBeInTheDocument()
+    expect(screen.getByText(/OS: Linux/)).toBeInTheDocument()
   })
 
   it('does not generate report for non-runtime errors', async () => {
-    mountCard(makeValidationErrorCard())
-    await flushPromises()
+    renderCard(makeValidationErrorCard())
+
+    await waitFor(() => {
+      expect(screen.getByText('Input: text')).toBeInTheDocument()
+    })
 
     expect(mockGetLogs).not.toHaveBeenCalled()
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
   })
 
   it('displays original details for non-runtime errors', async () => {
-    const wrapper = mountCard(makeValidationErrorCard())
-    await flushPromises()
+    renderCard(makeValidationErrorCard())
 
-    expect(wrapper.text()).toContain('Input: text')
-    expect(wrapper.text()).not.toContain('ComfyUI Error Report')
+    await waitFor(() => {
+      expect(screen.getByText('Input: text')).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/ComfyUI Error Report/)).not.toBeInTheDocument()
   })
 
   it('copies enriched report when copy button is clicked for runtime error', async () => {
     const reportText = '# Full Report Content'
     mockGenerateErrorReport.mockReturnValue(reportText)
 
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    const { user, onCopyToClipboard } = renderCard(makeRuntimeErrorCard())
 
-    const copyButton = wrapper
-      .findAll('button')
-      .find((btn) => btn.text().includes('Copy'))!
-    expect(copyButton.exists()).toBe(true)
-    await copyButton.trigger('click')
+    await waitFor(() => {
+      expect(screen.getByText(/Full Report Content/)).toBeInTheDocument()
+    })
 
-    const emitted = wrapper.emitted('copyToClipboard')
-    expect(emitted).toHaveLength(1)
-    expect(emitted![0][0]).toContain('# Full Report Content')
+    await user.click(screen.getByRole('button', { name: /Copy/ }))
+
+    expect(onCopyToClipboard).toHaveBeenCalledTimes(1)
+    expect(onCopyToClipboard.mock.calls[0][0]).toContain(
+      '# Full Report Content'
+    )
   })
 
   it('copies original details when copy button is clicked for validation error', async () => {
-    const wrapper = mountCard(makeValidationErrorCard())
-    await flushPromises()
+    const { user, onCopyToClipboard } = renderCard(makeValidationErrorCard())
 
-    const copyButton = wrapper
-      .findAll('button')
-      .find((btn) => btn.text().includes('Copy'))!
-    await copyButton.trigger('click')
+    await waitFor(() => {
+      expect(screen.getByText('Input: text')).toBeInTheDocument()
+    })
 
-    const emitted = wrapper.emitted('copyToClipboard')
-    expect(emitted).toHaveLength(1)
-    expect(emitted![0][0]).toBe('Required input is missing\n\nInput: text')
+    await user.click(screen.getByRole('button', { name: /Copy/ }))
+
+    expect(onCopyToClipboard).toHaveBeenCalledTimes(1)
+    expect(onCopyToClipboard.mock.calls[0][0]).toBe(
+      'Required input is missing\n\nInput: text'
+    )
   })
 
   it('generates report with fallback logs when getLogs fails', async () => {
     mockGetLogs.mockRejectedValue(new Error('Network error'))
 
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    renderCard(makeRuntimeErrorCard())
 
-    // Report is still generated with fallback log message
-    expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
+    await waitFor(() => {
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
+    })
     expect(mockGenerateErrorReport).toHaveBeenCalledWith(
       expect.objectContaining({
         serverLogs: 'Failed to retrieve server logs'
       })
     )
-    expect(wrapper.text()).toContain('ComfyUI Error Report')
+    expect(screen.getByText(/ComfyUI Error Report/)).toBeInTheDocument()
   })
 
   it('falls back to original details when generateErrorReport throws', async () => {
@@ -250,27 +263,28 @@ describe('ErrorNodeCard.vue', () => {
       throw new Error('Serialization error')
     })
 
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    renderCard(makeRuntimeErrorCard())
 
-    expect(wrapper.text()).toContain('Traceback line 1')
+    await waitFor(() => {
+      expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
+    })
   })
 
   it('opens GitHub issues search when Find Issue button is clicked', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    const { user } = renderCard(makeRuntimeErrorCard())
 
-    const findIssuesButton = wrapper
-      .findAll('button')
-      .find((btn) => btn.text().includes('Find on GitHub'))!
-    expect(findIssuesButton.exists()).toBe(true)
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Find on GitHub/ })
+      ).toBeInTheDocument()
+    })
 
-    await findIssuesButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: /Find on GitHub/ }))
 
     expect(openSpy).toHaveBeenCalledWith(
-      expect.stringContaining('github.com/comfyanonymous/ComfyUI/issues?q='),
+      expect.stringContaining('github.com/Comfy-Org/ComfyUI/issues?q='),
       '_blank',
       'noopener,noreferrer'
     )
@@ -284,15 +298,15 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('executes ContactSupport command when Get Help button is clicked', async () => {
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    const { user } = renderCard(makeRuntimeErrorCard())
 
-    const getHelpButton = wrapper
-      .findAll('button')
-      .find((btn) => btn.text().includes('Get Help'))!
-    expect(getHelpButton.exists()).toBe(true)
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Get Help/ })
+      ).toBeInTheDocument()
+    })
 
-    await getHelpButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: /Get Help/ }))
 
     expect(mockExecuteCommand).toHaveBeenCalledWith('Comfy.ContactSupport')
     expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
@@ -304,9 +318,11 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('passes exceptionType from error item to report generator', async () => {
-    mountCard(makeRuntimeErrorCard())
-    await flushPromises()
+    renderCard(makeRuntimeErrorCard())
 
+    await waitFor(() => {
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
+    })
     expect(mockGenerateErrorReport).toHaveBeenCalledWith(
       expect.objectContaining({
         exceptionType: 'RuntimeError'
@@ -329,9 +345,11 @@ describe('ErrorNodeCard.vue', () => {
       ]
     }
 
-    mountCard(card)
-    await flushPromises()
+    renderCard(card)
 
+    await waitFor(() => {
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
+    })
     expect(mockGenerateErrorReport).toHaveBeenCalledWith(
       expect.objectContaining({
         exceptionType: 'Runtime Error'
@@ -340,30 +358,16 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('falls back to original details when systemStats is unavailable', async () => {
-    const wrapper = mount(ErrorNodeCard, {
-      props: { card: makeRuntimeErrorCard() },
-      global: {
-        plugins: [
-          PrimeVue,
-          i18n,
-          createTestingPinia({
-            createSpy: vi.fn,
-            initialState: {
-              systemStats: { systemStats: null }
-            }
-          })
-        ],
-        stubs: {
-          Button: {
-            template:
-              '<button :aria-label="$attrs[\'aria-label\']"><slot /></button>'
-          }
-        }
+    renderCard(makeRuntimeErrorCard(), {
+      initialState: {
+        systemStats: { systemStats: null }
       }
     })
-    await flushPromises()
+
+    await waitFor(() => {
+      expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
+    })
 
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Traceback line 1')
   })
 })

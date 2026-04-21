@@ -31,6 +31,7 @@ import type {
   RunButtonProperties,
   SettingChangedMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -235,8 +236,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED, metadata)
   }
 
   /**

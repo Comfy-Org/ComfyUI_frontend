@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -123,8 +123,12 @@ const pinia = createTestingPinia({
   createSpy: vi.fn
 })
 
-function mountLGraphNode(props: ComponentProps<typeof LGraphNode>) {
-  return mount(LGraphNode, {
+function getNodeRoot(container: Element): HTMLElement {
+  return container.firstElementChild as HTMLElement
+}
+
+function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
+  return render(LGraphNode, {
     props,
     global: {
       plugins: [pinia, i18n],
@@ -170,26 +174,21 @@ describe('LGraphNode', () => {
   })
 
   it('should call resize tracking composable with node ID', () => {
-    mountLGraphNode({ nodeData: mockNodeData })
+    renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(useVueElementTracking).toHaveBeenCalledWith(
-      expect.any(Function),
-      'node'
-    )
-    const idArg = vi.mocked(useVueElementTracking).mock.calls[0]?.[0]
-    const id = toValue(idArg)
-    expect(id).toEqual('test-node-123')
+    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
   })
 
   it('should render with data-node-id attribute', () => {
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.attributes('data-node-id')).toBe('test-node-123')
+    expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
+      'test-node-123'
+    )
   })
 
   it('should render node title', () => {
-    // Don't stub NodeHeader for this test so we can see the title
-    const wrapper = mount(LGraphNode, {
+    const { container } = render(LGraphNode, {
       props: { nodeData: mockNodeData },
       global: {
         plugins: [pinia, i18n],
@@ -202,7 +201,7 @@ describe('LGraphNode', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Test Node')
+    expect(container.textContent).toContain('Test Node')
   })
 
   it('should apply selected styling when selected prop is true', async () => {
@@ -210,89 +209,99 @@ describe('LGraphNode', () => {
     canvasStore.selectedNodeIds.clear()
     canvasStore.selectedNodeIds.add('test-node-123')
 
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+    const root = getNodeRoot(container)
 
-    // Root div should have the selection class
-    expect(wrapper.classes()).toContain('outline-node-component-outline')
+    expect(root).toHaveClass('outline-node-component-outline')
 
-    // The layered outline overlay should be present
-    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
-    expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('border-node-component-outline')
+    const overlay = screen.getByTestId('node-state-outline-overlay')
+    expect(overlay).toHaveClass('border-node-component-outline')
   })
 
   it('should render progress indicator when executing prop is true', () => {
     mockData.mockExecuting = true
 
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+    const root = getNodeRoot(container)
 
-    // Root div should have the executing class
-    expect(wrapper.classes()).toContain('outline-node-stroke-executing')
+    expect(root).toHaveClass('outline-node-stroke-executing')
 
-    // The layered outline overlay should be present
-    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
-    expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('border-node-stroke-executing')
+    const overlay = screen.getByTestId('node-state-outline-overlay')
+    expect(overlay).toHaveClass('border-node-stroke-executing')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {
-    const wrapper = mountLGraphNode({
+    const { container } = renderLGraphNode({
       nodeData: {
         ...mockNodeData,
         flags: { collapsed: true }
       }
     })
+    const root = getNodeRoot(container)
 
-    expect(wrapper.element.style.getPropertyValue('--node-height')).toBe('')
-    expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe(
-      '130px'
-    )
+    expect(root.style.getPropertyValue('--node-height')).toBe('')
+    expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
   })
 
   it('should initialize height CSS vars for expanded nodes', () => {
-    const wrapper = mountLGraphNode({
+    const { container } = renderLGraphNode({
       nodeData: {
         ...mockNodeData,
         flags: { collapsed: false }
       }
     })
+    const root = getNodeRoot(container)
 
-    expect(wrapper.element.style.getPropertyValue('--node-height')).toBe(
-      '130px'
-    )
-    expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
+    expect(root.style.getPropertyValue('--node-height-x')).toBe('')
   })
 
   describe('Reroute node sizing', () => {
     it('should not enforce minimum width for reroute nodes', () => {
-      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
-      const regularWrapper = mountLGraphNode({ nodeData: mockNodeData })
+      const { container: rerouteContainer } = renderLGraphNode({
+        nodeData: mockRerouteNodeData
+      })
+      const { container: regularContainer } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
 
-      const rerouteHasMinWidth = wrapper
-        .classes()
-        .some((c) => c.startsWith('min-w-'))
-      const regularHasMinWidth = regularWrapper
-        .classes()
-        .some((c) => c.startsWith('min-w-'))
+      const rerouteRoot = getNodeRoot(rerouteContainer)
+      const regularRoot = getNodeRoot(regularContainer)
+
+      const rerouteHasMinWidth = [...rerouteRoot.classList].some((c) =>
+        c.startsWith('min-w-')
+      )
+      const regularHasMinWidth = [...regularRoot.classList].some((c) =>
+        c.startsWith('min-w-')
+      )
 
       expect(rerouteHasMinWidth).toBe(false)
       expect(regularHasMinWidth).toBe(true)
     })
 
     it('should use fixed height for reroute nodes', () => {
-      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
-      const hasFixedHeight = wrapper.classes().some((c) => c.startsWith('h-'))
+      const { container } = renderLGraphNode({
+        nodeData: mockRerouteNodeData
+      })
+      const root = getNodeRoot(container)
+      const hasFixedHeight = [...root.classList].some((c) => c.startsWith('h-'))
       expect(hasFixedHeight).toBe(true)
     })
 
     it('should not render resize handle for reroute nodes', () => {
-      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
-      expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(false)
+      const { container } = renderLGraphNode({
+        nodeData: mockRerouteNodeData
+      })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[role="button"][aria-label]')).toBeNull()
     })
 
     it('should render resize handle for regular nodes', () => {
-      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-      expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(true)
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        container.querySelector('[role="button"][aria-label]')
+      ).not.toBeNull()
     })
   })
 
@@ -305,14 +314,16 @@ describe('LGraphNode', () => {
         isSubgraphNode: () => false
       }
 
-      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      const nodeEl = getNodeRoot(container)
+      // eslint-disable-next-line testing-library/no-node-access
+      const parent = nodeEl.parentElement!
 
       const parentListener = vi.fn()
-      const parent = wrapper.element.parentElement
       expect(parent).not.toBeNull()
-      parent!.addEventListener('drop', parentListener)
+      parent.addEventListener('drop', parentListener)
 
-      wrapper.element.dispatchEvent(
+      nodeEl.dispatchEvent(
         new Event('drop', { bubbles: true, cancelable: true })
       )
 
@@ -328,14 +339,16 @@ describe('LGraphNode', () => {
         isSubgraphNode: () => false
       }
 
-      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      const nodeEl = getNodeRoot(container)
+      // eslint-disable-next-line testing-library/no-node-access
+      const parent = nodeEl.parentElement!
 
       const parentListener = vi.fn()
-      const parent = wrapper.element.parentElement
       expect(parent).not.toBeNull()
-      parent!.addEventListener('drop', parentListener)
+      parent.addEventListener('drop', parentListener)
 
-      wrapper.element.dispatchEvent(
+      nodeEl.dispatchEvent(
         new Event('drop', { bubbles: true, cancelable: true })
       )
 

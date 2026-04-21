@@ -231,23 +231,15 @@ export default defineConfig([
     }
   },
   {
-    files: ['tests-ui/**/*'],
-    rules: {
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { disallowTypeAnnotations: false }
-      ]
-    }
-  },
-  {
     files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Program',
-          message: '.spec.ts files are only allowed under browser_tests/tests/'
+          message:
+            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
         }
       ]
     }
@@ -408,26 +400,6 @@ export default defineConfig([
       ]
     }
   },
-  // Browser tests must use comfyPageFixture, not raw @playwright/test test
-  {
-    files: ['browser_tests/tests/**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: '@playwright/test',
-              importNames: ['test'],
-              message:
-                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
-            }
-          ]
-        }
-      ]
-    }
-  },
-
   // Non-composable .ts files must use the global t/d/te, not useI18n()
   {
     files: ['**/*.ts'],
@@ -457,6 +429,66 @@ export default defineConfig([
         'error',
         {
           paths: [useVirtualListRestriction]
+        }
+      ]
+    }
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vue/test-utils',
+              message:
+                'Use @testing-library/vue with @testing-library/user-event instead.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Browser tests must use comfyPageFixture, not raw @playwright/test test
+  {
+    files: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test'],
+              message:
+                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
+            }
+          ],
+          patterns: [
+            {
+              group: ['./**', '../**'],
+              message: 'Use the @e2e/ path alias instead of relative imports.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Enforce @e2e/ alias — no relative imports in browser_tests (non-spec files)
+  {
+    files: ['browser_tests/**/*.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./**', '../**'],
+              message: 'Use the @e2e/ path alias instead of relative imports.'
+            }
+          ]
         }
       ]
     }

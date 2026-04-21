@@ -19,8 +19,22 @@ type ResizeDirection =
 
 const HANDLE_SIZE = 8
 const CORNER_SIZE = 10
+/** Minimum crop width/height in source image pixel space. */
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 2
+
+/**
+ * Next `isLoading` when `imageUrl` transitions. `null` means do not change
+ * `isLoading` (e.g. same URL).
+ */
+export function imageCropLoadingAfterUrlChange(
+  url: string | null,
+  previous: string | null | undefined
+): boolean | null {
+  if (url == null) return false
+  if (url !== previous) return true
+  return null
+}
 
 export const ASPECT_RATIOS = {
   '1:1': 1,
@@ -178,6 +192,13 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const updateImageUrl = () => {
     imageUrl.value = getInputImageUrl()
   }
+
+  watch(imageUrl, (url, previous) => {
+    const next = imageCropLoadingAfterUrlChange(url, previous)
+    if (next !== null) {
+      isLoading.value = next
+    }
+  })
 
   const updateDisplayedDimensions = () => {
     if (!imageEl.value || !containerEl.value) return
@@ -359,11 +380,14 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     imageUrl.value = null
   }
 
-  const capturePointer = (e: PointerEvent) =>
-    (e.target as HTMLElement).setPointerCapture(e.pointerId)
+  const capturePointer = (e: PointerEvent) => {
+    if (e.target instanceof HTMLElement) e.target.setPointerCapture(e.pointerId)
+  }
 
-  const releasePointer = (e: PointerEvent) =>
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+  const releasePointer = (e: PointerEvent) => {
+    if (e.target instanceof HTMLElement)
+      e.target.releasePointerCapture(e.pointerId)
+  }
 
   const handleDragStart = (e: PointerEvent) => {
     if (!imageUrl.value) return

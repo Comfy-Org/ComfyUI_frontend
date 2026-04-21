@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/careers/HeroSection.vue'
+import RolesSection from '../../components/careers/RolesSection.vue'
+import WhyJoinSection from '../../components/careers/WhyJoinSection.vue'
+import TeamPhotosSection from '../../components/careers/TeamPhotosSection.vue'
+import FAQSection from '../../components/common/FAQSection.vue'
+---
+
+<BaseLayout
+  title="招聘 — Comfy"
+  description="加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。"
+>
+  <HeroSection locale="zh-CN" />
+  <RolesSection locale="zh-CN" client:visible />
+  <WhyJoinSection locale="zh-CN" client:visible />
+  <TeamPhotosSection client:visible />
+  <FAQSection
+    headingKey="careers.faq.heading"
+    faqPrefix="careers.faq"
+    faqCount={8}
+    locale="zh-CN"
+    client:visible
+  />
+</BaseLayout>

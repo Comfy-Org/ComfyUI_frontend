@@ -21,6 +21,7 @@ import {
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -86,12 +87,19 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {
   scanAllModelCandidates,
   enrichWithEmbeddedMetadata,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import {
+  scanAllMediaCandidates,
+  verifyCloudMediaCandidates
+} from '@/platform/missingMedia/missingMediaScan'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -100,6 +108,8 @@ import {
   collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
+  isAncestorPathActive,
+  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -1119,23 +1129,35 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodes?: boolean
-      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
+      skipAssetScans?: boolean
+      silentAssetErrors?: boolean
     } = {}
   ) {
     const {
-      showMissingNodes = true,
-      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
-      deferWarnings = false
+      deferWarnings = false,
+      skipAssetScans = false,
+      silentAssetErrors = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
-    useMissingModelStore().clearMissingModels()
+    if (skipAssetScans) {
+      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // so cached results restored by showPendingWarnings still display sizes.
+      // Abort any in-flight verification from the outgoing workflow so a late
+      // result cannot repopulate the store after we've switched workflows.
+      useMissingModelStore().createVerificationAbortController().abort()
+      useMissingMediaStore().createVerificationAbortController().abort()
+      useMissingModelStore().setMissingModels([])
+      useMissingMediaStore().setMissingMedia([])
+    } else {
+      useMissingModelStore().clearMissingModels()
+      useMissingMediaStore().clearMissingMedia()
+    }
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI
@@ -1211,24 +1233,31 @@ export class ComfyApp {
       }
       for (let n of nodes) {
         if (!(n.type in LiteGraph.registered_node_types)) {
-          const replacement = nodeReplacementStore.getReplacementFor(n.type)
-          const cnrId = getCnrIdFromProperties(
-            n.properties as Record<string, unknown> | undefined
-          )
-          const executionId = pathPrefix
-            ? `${pathPrefix}:${n.id}`
-            : String(n.id)
+          // Always sanitize so configure() can handle unregistered types,
+          // but only report as missing if the node is active.
+          const isMuted =
+            n.mode === LGraphEventMode.NEVER ||
+            n.mode === LGraphEventMode.BYPASS
+          if (!isMuted) {
+            const replacement = nodeReplacementStore.getReplacementFor(n.type)
+            const cnrId = getCnrIdFromProperties(
+              n.properties as Record<string, unknown> | undefined
+            )
+            const executionId = pathPrefix
+              ? `${pathPrefix}:${n.id}`
+              : String(n.id)
 
-          missingNodeTypes.push({
-            type: n.type,
-            nodeId: executionId,
-            cnrId,
-            ...(displayName && {
-              hint: t('g.inSubgraph', { name: displayName })
-            }),
-            isReplaceable: replacement !== null,
-            replacement: replacement ?? undefined
-          })
+            missingNodeTypes.push({
+              type: n.type,
+              nodeId: executionId,
+              cnrId,
+              ...(displayName && {
+                hint: t('g.inSubgraph', { name: displayName })
+              }),
+              isReplaceable: replacement !== null,
+              replacement: replacement ?? undefined
+            })
+          }
 
           n.type = sanitizeNodeName(n.type)
         }
@@ -1408,15 +1437,31 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      await this.runMissingModelPipeline(
-        graphData,
-        missingNodeTypes,
-        showMissingNodes,
-        showMissingModels
+      // Drop missing-node entries whose enclosing subgraph is
+      // muted/bypassed. The initial JSON scan only checks each node's
+      // own mode; the cascade from an inactive container is applied here
+      // using the now-configured live graph.
+      const activeMissingNodeTypes = missingNodeTypes.filter(
+        (n) =>
+          typeof n === 'string' ||
+          n.nodeId == null ||
+          isAncestorPathActive(this.rootGraph, String(n.nodeId))
       )
 
+      if (!skipAssetScans) {
+        await this.runMissingModelPipeline(
+          graphData,
+          activeMissingNodeTypes,
+          silentAssetErrors
+        )
+
+        await this.runMissingMediaPipeline(silentAssetErrors)
+      }
+
       if (!deferWarnings) {
-        useWorkflowService().showPendingWarnings()
+        useWorkflowService().showPendingWarnings(undefined, {
+          silent: silentAssetErrors
+        })
       }
 
       void useSubgraphNavigationStore().updateHash()
@@ -1431,8 +1476,7 @@ export class ComfyApp {
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    showMissingNodes: boolean,
-    showMissingModels: boolean
+    silent: boolean = false
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
@@ -1450,7 +1494,7 @@ export class ComfyApp {
 
     const modelStore = useModelStore()
     await modelStore.loadModelFolders()
-    const enrichedCandidates = await enrichWithEmbeddedMetadata(
+    const enrichedAll = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       async (name, directory) => {
@@ -1464,6 +1508,19 @@ export class ComfyApp {
         ? (nodeType, widgetName) =>
             assetService.shouldUseAssetBrowser(nodeType, widgetName)
         : undefined
+    )
+
+    // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
+    // scans only checked each node's own mode; the cascade from an
+    // inactive container to its interior happens here.
+    // Asymmetric on purpose: a candidate dropped here is not resurrected if
+    // the user un-bypasses the container mid-verification. The realtime
+    // mode-change path (handleNodeModeChange → scanAndAddNodeErrors) is
+    // responsible for surfacing errors after an un-bypass.
+    const enrichedCandidates = enrichedAll.filter(
+      (c) =>
+        c.nodeId == null ||
+        isAncestorPathActive(this.rootGraph, String(c.nodeId))
     )
 
     const missingModels: ModelFile[] = enrichedCandidates
@@ -1482,33 +1539,38 @@ export class ComfyApp {
 
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
-      const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodes) {
-        warnings.missingNodeTypes = missingNodeTypes
+      activeWf.pendingWarnings = {
+        ...activeWf.pendingWarnings,
+        missingNodeTypes: missingNodeTypes.length
+          ? missingNodeTypes
+          : undefined,
+        missingModelCandidates: confirmedCandidates.length
+          ? confirmedCandidates
+          : undefined
       }
-      if (confirmedCandidates.length && showMissingModels) {
-        warnings.missingModelCandidates = confirmedCandidates
-      }
-      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
-        activeWf.pendingWarnings = warnings
-      }
+      this.cleanupPendingWarnings(activeWf)
     }
 
-    // Intentionally runs on every graph load (including tab switches and
-    // undo/redo) because missing model state depends on external asset data
-    // that may change between workflow activations.
     if (enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
-        verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+        void verifyAssetSupportedCandidates(
+          enrichedCandidates,
+          controller.signal
+        )
           .then(() => {
             if (controller.signal.aborted) return
-            const confirmed = enrichedCandidates.filter(
-              (c) => c.isMissing === true
+            // Re-check ancestor: user may have bypassed a container
+            // while verification was in flight.
+            const confirmed = enrichedCandidates.filter((c) =>
+              isMissingCandidateActive(this.rootGraph, c)
             )
             if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
             }
+            this.cacheModelCandidates(activeWf, confirmed)
           })
           .catch((err) => {
             console.warn(
@@ -1528,7 +1590,7 @@ export class ComfyApp {
         const controller = missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
         if (confirmed.length) {
-          api
+          void api
             .getFolderPaths()
             .then((paths) => {
               if (controller.signal.aborted) return
@@ -1542,7 +1604,10 @@ export class ComfyApp {
             })
             .finally(() => {
               if (controller.signal.aborted) return
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
+              this.cacheModelCandidates(activeWf, confirmed)
             })
 
           void Promise.allSettled(
@@ -1562,6 +1627,95 @@ export class ComfyApp {
     }
 
     return { missingModels }
+  }
+
+  private cleanupPendingWarnings(wf: {
+    pendingWarnings: PendingWarnings | null
+  }) {
+    if (
+      !wf.pendingWarnings?.missingNodeTypes &&
+      !wf.pendingWarnings?.missingModelCandidates &&
+      !wf.pendingWarnings?.missingMediaCandidates
+    ) {
+      wf.pendingWarnings = null
+    }
+  }
+
+  private cacheModelCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingModelCandidate[]
+  ) {
+    if (!wf) return
+    wf.pendingWarnings = {
+      ...wf.pendingWarnings,
+      missingModelCandidates: confirmed.length ? confirmed : undefined
+    }
+    this.cleanupPendingWarnings(wf)
+  }
+
+  private cacheMediaCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingMediaCandidate[]
+  ) {
+    if (!wf) return
+    wf.pendingWarnings = {
+      ...wf.pendingWarnings,
+      missingMediaCandidates: confirmed.length ? confirmed : undefined
+    }
+    this.cleanupPendingWarnings(wf)
+  }
+
+  private async runMissingMediaPipeline(
+    silent: boolean = false
+  ): Promise<void> {
+    const missingMediaStore = useMissingMediaStore()
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+    // Drop candidates whose enclosing subgraph is muted/bypassed.
+    const candidates = allCandidates.filter((c) =>
+      isAncestorPathActive(this.rootGraph, String(c.nodeId))
+    )
+
+    if (!candidates.length) {
+      this.cacheMediaCandidates(activeWf, [])
+      return
+    }
+
+    if (isCloud) {
+      const controller = missingMediaStore.createVerificationAbortController()
+      void verifyCloudMediaCandidates(candidates, controller.signal)
+        .then(() => {
+          if (controller.signal.aborted) return
+          // Re-check ancestor after async verification (see model pipeline).
+          const confirmed = candidates.filter((c) =>
+            isMissingCandidateActive(this.rootGraph, c)
+          )
+          if (confirmed.length) {
+            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
+          }
+          this.cacheMediaCandidates(activeWf, confirmed)
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Media Pipeline] Asset verification failed:',
+            err
+          )
+          useToastStore().add({
+            severity: 'warn',
+            summary: st(
+              'toastMessages.missingMediaVerificationFailed',
+              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+            ),
+            life: 5000
+          })
+        })
+    } else {
+      const confirmed = candidates.filter((c) => c.isMissing === true)
+      if (confirmed.length) {
+        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
+      }
+      this.cacheMediaCandidates(activeWf, confirmed)
+    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {

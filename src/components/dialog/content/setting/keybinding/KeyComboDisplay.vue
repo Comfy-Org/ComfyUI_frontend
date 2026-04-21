@@ -1,13 +1,12 @@
 <template>
-  <span>
+  <span class="flex flex-row gap-0.5">
     <template v-for="(sequence, index) in keySequences" :key="index">
       <Tag
-        class="bg-interface-menu-keybind-surface-default text-base-foreground"
+        class="min-w-6 justify-center gap-1 bg-interface-menu-keybind-surface-default text-center font-normal text-base-foreground uppercase"
         :severity="isModified ? 'info' : 'secondary'"
       >
         {{ sequence }}
       </Tag>
-      <span v-if="index < keySequences.length - 1" class="px-2">+</span>
     </template>
   </span>
 </template>
