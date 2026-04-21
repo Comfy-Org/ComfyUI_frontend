@@ -45,10 +45,9 @@ describe('getCommonTierBenefits', () => {
     expect(benefits.some((b) => b.key === 'monthlyCredits')).toBe(false)
   })
 
-  it('includes a tier-scoped maxDuration metric for every tier', () => {
-    const tiers = ['free', 'standard', 'creator', 'pro', 'founder'] as const
-
-    for (const tier of tiers) {
+  it.each(['free', 'standard', 'creator', 'pro', 'founder'] as const)(
+    'includes a tier-scoped maxDuration metric for %s',
+    (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)
       const maxDuration = benefits.find((b) => b.key === 'maxDuration')
 
@@ -59,7 +58,7 @@ describe('getCommonTierBenefits', () => {
         label: 't:subscription.maxDurationLabel'
       })
     }
-  })
+  )
 
   it('always includes the gpu feature benefit', () => {
     const benefits = getCommonTierBenefits('creator', translate, formatNumber)
@@ -71,30 +70,34 @@ describe('getCommonTierBenefits', () => {
     })
   })
 
-  it('adds the addCredits benefit for every tier except free', () => {
-    const paidTiers = ['standard', 'creator', 'pro', 'founder'] as const
-
-    for (const tier of paidTiers) {
+  it.each(['standard', 'creator', 'pro', 'founder'] as const)(
+    'adds the addCredits benefit for %s tier',
+    (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)
       expect(benefits.some((b) => b.key === 'addCredits')).toBe(true)
     }
+  )
 
+  it('omits the addCredits benefit for the free tier', () => {
     const freeBenefits = getCommonTierBenefits('free', translate, formatNumber)
     expect(freeBenefits.some((b) => b.key === 'addCredits')).toBe(false)
   })
 
-  it('includes customLoRAs only when the tier has it enabled', () => {
-    const creator = getCommonTierBenefits('creator', translate, formatNumber)
-    const pro = getCommonTierBenefits('pro', translate, formatNumber)
-    expect(creator.some((b) => b.key === 'customLoRAs')).toBe(true)
-    expect(pro.some((b) => b.key === 'customLoRAs')).toBe(true)
+  it.each(['creator', 'pro'] as const)(
+    'includes customLoRAs for %s tier',
+    (tier) => {
+      const benefits = getCommonTierBenefits(tier, translate, formatNumber)
+      expect(benefits.some((b) => b.key === 'customLoRAs')).toBe(true)
+    }
+  )
 
-    const tiersWithoutLoRAs = ['free', 'standard', 'founder'] as const
-    for (const tier of tiersWithoutLoRAs) {
+  it.each(['free', 'standard', 'founder'] as const)(
+    'omits customLoRAs for %s tier',
+    (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)
       expect(benefits.some((b) => b.key === 'customLoRAs')).toBe(false)
     }
-  })
+  )
 
   it('forwards translation params via the provided helpers', () => {
     const tSpy = vi.fn((key: string) => key)

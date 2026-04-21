@@ -1,9 +1,9 @@
+import * as Sentry from '@sentry/vue'
 import _ from 'es-toolkit/compat'
-import * as jsondiffpatch from 'jsondiffpatch'
-import log from 'loglevel'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isDesktop } from '@/platform/distribution/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -20,12 +20,35 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-const logger = log.getLogger('ChangeTracker')
-// Change to debug for more verbose logging
-logger.setLevel('info')
-
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
+}
+
+const reportedInactiveCalls = new Set<string>()
+
+/**
+ * Report a ChangeTracker method being called on an inactive tracker —
+ * a lifecycle violation that usually indicates stale extension state or
+ * an incorrect call ordering. Reports once per method per workflow per
+ * session so the signal is not drowned out by hot-path invocations while
+ * still distinguishing between workflows.
+ */
+function reportInactiveTrackerCall(method: string, workflowPath: string) {
+  const key = `${method}:${workflowPath}`
+  if (reportedInactiveCalls.has(key)) return
+  reportedInactiveCalls.add(key)
+
+  console.warn(`${method}() called on inactive tracker for: ${workflowPath}`)
+
+  if (isDesktop) {
+    Sentry.captureMessage(
+      `ChangeTracker.${method}() called on inactive tracker`,
+      {
+        level: 'warning',
+        tags: { workflow: workflowPath }
+      }
+    )
+  }
 }
 
 export class ChangeTracker {
@@ -77,7 +100,6 @@ export class ChangeTracker {
     // Do not reset the state if we are restoring.
     if (this._restoringState) return
 
-    logger.debug('Reset State')
     if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
   }
@@ -107,10 +129,7 @@ export class ChangeTracker {
    */
   deactivate() {
     if (!isActiveTracker(this)) {
-      logger.warn(
-        'deactivate() called on inactive tracker for:',
-        this.workflow.path
-      )
+      reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
     if (!this._restoringState) this.captureCanvasState()
@@ -165,13 +184,6 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
-      if (logger.getLevel() <= logger.levels.DEBUG && workflow.isModified) {
-        const diff = ChangeTracker.graphDiff(
-          this.initialState,
-          this.activeState
-        )
-        logger.debug('Graph diff:', diff)
-      }
     }
   }
 
@@ -181,19 +193,18 @@ export class ChangeTracker {
    * Calling this on an inactive tracker would capture the wrong graph.
    */
   captureCanvasState() {
+    const isUndoRedoing = this._restoringState
+    const isInsideChangeTransaction = this.changeCount > 0
     if (
       !app.graph ||
-      this.changeCount ||
-      this._restoringState ||
+      isInsideChangeTransaction ||
+      isUndoRedoing ||
       ChangeTracker.isLoadingGraph
     )
       return
 
     if (!isActiveTracker(this)) {
-      logger.warn(
-        'captureCanvasState called on inactive tracker for:',
-        this.workflow.path
-      )
+      reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
 
@@ -207,7 +218,6 @@ export class ChangeTracker {
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
-      logger.debug('Diff detected. Undo queue length:', this.undoQueue.length)
 
       this.activeState = currentState
       this.redoQueue.length = 0
@@ -219,7 +229,7 @@ export class ChangeTracker {
   checkState() {
     if (!ChangeTracker._checkStateWarned) {
       ChangeTracker._checkStateWarned = true
-      logger.warn(
+      console.warn(
         'checkState() is deprecated — use captureCanvasState() instead.'
       )
     }
@@ -248,22 +258,10 @@ export class ChangeTracker {
 
   async undo() {
     await this.updateState(this.undoQueue, this.redoQueue)
-    logger.debug(
-      'Undo. Undo queue length:',
-      this.undoQueue.length,
-      'Redo queue length:',
-      this.redoQueue.length
-    )
   }
 
   async redo() {
     await this.updateState(this.redoQueue, this.undoQueue)
-    logger.debug(
-      'Redo. Undo queue length:',
-      this.undoQueue.length,
-      'Redo queue length:',
-      this.redoQueue.length
-    )
   }
 
   async undoRedo(e: KeyboardEvent) {
@@ -337,7 +335,6 @@ export class ChangeTracker {
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
-          logger.debug('captureCanvasState on keydown')
           changeTracker.captureCanvasState()
         })
       },
@@ -347,25 +344,21 @@ export class ChangeTracker {
     window.addEventListener('keyup', () => {
       if (keyIgnored) {
         keyIgnored = false
-        logger.debug('captureCanvasState on keyup')
         captureState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
-      logger.debug('captureCanvasState on mouseup')
       captureState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
-      logger.debug('captureCanvasState on promptQueued')
       captureState()
     })
 
     api.addEventListener('graphCleared', () => {
-      logger.debug('captureCanvasState on graphCleared')
       captureState()
     })
 
@@ -373,7 +366,6 @@ export class ChangeTracker {
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
-      logger.debug('captureCanvasState on processMouseUp')
       captureState()
       return v
     }
@@ -390,7 +382,6 @@ export class ChangeTracker {
         callback(v)
         captureState()
       }
-      logger.debug('captureCanvasState on prompt')
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
 
@@ -398,7 +389,6 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
-      logger.debug('captureCanvasState on contextMenuClose')
       captureState()
       return v
     }
@@ -500,26 +490,5 @@ export class ChangeTracker {
     }
 
     return false
-  }
-
-  private static graphDiff(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
-    function sortGraphNodes(graph: ComfyWorkflowJSON) {
-      return {
-        links: graph.links,
-        floatingLinks: graph.floatingLinks,
-        reroutes: graph.reroutes,
-        groups: graph.groups,
-        extra: graph.extra,
-        definitions: graph.definitions,
-        subgraphs: graph.subgraphs,
-        nodes: graph.nodes.sort((a, b) => {
-          if (typeof a.id === 'number' && typeof b.id === 'number') {
-            return a.id - b.id
-          }
-          return 0
-        })
-      }
-    }
-    return jsondiffpatch.diff(sortGraphNodes(a), sortGraphNodes(b))
   }
 }
