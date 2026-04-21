@@ -40,63 +40,75 @@ describe('incrementWeight', () => {
 })
 
 describe('findNearestEnclosure', () => {
-  it('returns start and end of a simple parenthesized expression', () => {
-    expect(findNearestEnclosure('(cat)', 2)).toEqual({ start: 1, end: 4 })
-  })
-
-  it('returns null when there are no parentheses', () => {
-    expect(findNearestEnclosure('cat dog', 3)).toBeNull()
-  })
-
-  it('returns null when cursor is outside any enclosure', () => {
-    expect(findNearestEnclosure('(cat) dog', 7)).toBeNull()
-  })
-
-  it('finds the inner enclosure when cursor is on nested content', () => {
-    expect(findNearestEnclosure('(outer (inner) end)', 9)).toEqual({
-      start: 8,
-      end: 13
-    })
-  })
-
-  it('finds the outer enclosure when cursor is on outer content', () => {
-    expect(findNearestEnclosure('(outer (inner) end)', 2)).toEqual({
-      start: 1,
-      end: 18
-    })
-  })
-
-  it('returns null for empty string', () => {
-    expect(findNearestEnclosure('', 0)).toBeNull()
-  })
-
-  it('returns null when opening paren has no matching closing paren', () => {
-    expect(findNearestEnclosure('(cat', 2)).toBeNull()
+  it.each([
+    [
+      'returns start and end of a simple parenthesized expression',
+      '(cat)',
+      2,
+      { start: 1, end: 4 }
+    ],
+    [
+      'finds enclosure when cursor is on opening paren',
+      '(cat)',
+      0,
+      { start: 1, end: 4 }
+    ],
+    ['returns null when there are no parentheses', 'cat dog', 3, null],
+    ['returns null when cursor is outside any enclosure', '(cat) dog', 7, null],
+    [
+      'finds the inner enclosure when cursor is on nested content',
+      '(outer (inner) end)',
+      9,
+      { start: 8, end: 13 }
+    ],
+    [
+      'finds the outer enclosure when cursor is on outer content',
+      '(outer (inner) end)',
+      2,
+      { start: 1, end: 18 }
+    ],
+    ['returns null for empty string', '', 0, null],
+    [
+      'returns null when opening paren has no matching closing paren',
+      '(cat',
+      2,
+      null
+    ]
+  ])('%s', (_, text, cursor, expected) => {
+    expect(findNearestEnclosure(text, cursor)).toEqual(expected)
   })
 })
 
 describe('addWeightToParentheses', () => {
-  it('adds weight 1.0 to a bare parenthesized token', () => {
-    expect(addWeightToParentheses('(cat)')).toBe('(cat:1.0)')
-  })
-
-  it('leaves a token that already has a weight unchanged', () => {
-    expect(addWeightToParentheses('(cat:1.5)')).toBe('(cat:1.5)')
-  })
-
-  it('leaves a token without parentheses unchanged', () => {
-    expect(addWeightToParentheses('cat')).toBe('cat')
-  })
-
-  it('leaves a token with scientific notation weight unchanged', () => {
-    expect(addWeightToParentheses('(cat:1e-3)')).toBe('(cat:1e-3)')
-  })
-
-  it('leaves a token with a negative weight unchanged', () => {
-    expect(addWeightToParentheses('(cat:-0.5)')).toBe('(cat:-0.5)')
-  })
-
-  it('adds weight to a multi-word parenthesized token', () => {
-    expect(addWeightToParentheses('(cat dog)')).toBe('(cat dog:1.0)')
+  it.each([
+    ['adds weight 1.0 to a bare parenthesized token', '(cat)', '(cat:1.0)'],
+    [
+      'leaves a token that already has a weight unchanged',
+      '(cat:1.5)',
+      '(cat:1.5)'
+    ],
+    ['leaves a token without parentheses unchanged', 'cat', 'cat'],
+    [
+      'leaves a token with scientific notation weight unchanged',
+      '(cat:1e-3)',
+      '(cat:1e-3)'
+    ],
+    [
+      'leaves a token with a negative weight unchanged',
+      '(cat:-0.5)',
+      '(cat:-0.5)'
+    ],
+    [
+      'adds weight to a multi-word parenthesized token',
+      '(cat dog)',
+      '(cat dog:1.0)'
+    ],
+    [
+      'adds weight when colon-number appears in content but no trailing weight exists',
+      '(time 12:30)',
+      '(time 12:30:1.0)'
+    ]
+  ])('%s', (_, input, expected) => {
+    expect(addWeightToParentheses(input)).toBe(expected)
   })
 })

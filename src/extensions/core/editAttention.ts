@@ -16,21 +16,24 @@ export function findNearestEnclosure(
   text: string,
   cursorPos: number
 ): Enclosure | null {
-  let start = cursorPos,
-    end = cursorPos
-  let openCount = 0,
+  let start = cursorPos
+  let end = cursorPos
+  let openCount = 0
+  let closeCount = 0
+
+  if (text[cursorPos] === '(') {
+    end = cursorPos + 1
+  } else {
+    while (start >= 0) {
+      start--
+      if (text[start] === '(' && openCount === closeCount) break
+      if (text[start] === '(') openCount++
+      if (text[start] === ')') closeCount++
+    }
+    if (start < 0) return null
+    openCount = 0
     closeCount = 0
-
-  while (start >= 0) {
-    start--
-    if (text[start] === '(' && openCount === closeCount) break
-    if (text[start] === '(') openCount++
-    if (text[start] === ')') closeCount++
   }
-  if (start < 0) return null
-
-  openCount = 0
-  closeCount = 0
 
   while (end < text.length) {
     if (text[end] === ')' && openCount === closeCount) break
@@ -44,17 +47,13 @@ export function findNearestEnclosure(
 }
 
 export function addWeightToParentheses(text: string): string {
-  const parenRegex = /^\((.*)\)$/
-  const parenMatch = text.match(parenRegex)
-
-  const floatRegex = /:([+-]?(\d*\.)?\d+([eE][+-]?\d+)?)/
-  const floatMatch = text.match(floatRegex)
-
-  if (parenMatch && !floatMatch) {
-    return `(${parenMatch[1]}:1.0)`
-  } else {
-    return text
-  }
+  const parenMatch = text.match(/^\((.*)\)$/)
+  if (!parenMatch) return text
+  const innerText = parenMatch[1]
+  const hasTrailingWeight = /(?<!\d):[+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?$/.test(
+    innerText
+  )
+  return hasTrailingWeight ? text : `(${innerText}:1.0)`
 }
 
 app.registerExtension({
@@ -116,32 +115,30 @@ app.registerExtension({
         }
       }
 
-      if (selectedText[selectedText.length - 1] === ' ') {
+      const selectionEndsWithSpace =
+        selectedText[selectedText.length - 1] === ' '
+      if (selectionEndsWithSpace) {
         selectedText = selectedText.substring(0, selectedText.length - 1)
         end -= 1
       }
 
-      if (
-        inputField.value[start - 1] === '(' &&
-        inputField.value[end] === ')'
-      ) {
+      const selectionIsSurroundedByParens =
+        inputField.value[start - 1] === '(' && inputField.value[end] === ')'
+      if (selectionIsSurroundedByParens) {
         start -= 1
         end += 1
         selectedText = inputField.value.substring(start, end)
       }
 
-      if (
-        selectedText[0] !== '(' ||
-        selectedText[selectedText.length - 1] !== ')'
-      ) {
-        selectedText = `(${selectedText})`
-      }
+      const selectionIsNotEnclosedInParens =
+        selectedText[0] !== '(' || selectedText[selectedText.length - 1] !== ')'
+      if (selectionIsNotEnclosedInParens) selectedText = `(${selectedText})`
 
       selectedText = addWeightToParentheses(selectedText)
 
       const weightDelta = event.key === 'ArrowUp' ? delta : -delta
       const updatedText = selectedText.replace(
-        /\((.*):([+-]?\d+(?:\.\d+)?)\)/,
+        /\((.*):([+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?)\)/,
         (_, text, weight) => {
           weight = incrementWeight(weight, weightDelta)
           if (weight == 1) {
