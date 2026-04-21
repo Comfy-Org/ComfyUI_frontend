@@ -299,14 +299,16 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <button
+            <Button
               v-if="!isEditing"
+              variant="link"
+              size="unset"
               :aria-label="t('rightSidePanel.editTitle')"
-              class="relative top-[2px] ml-2 inline-flex shrink-0 cursor-pointer items-center justify-center text-muted-foreground hover:text-base-foreground"
+              class="relative top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
               <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
-            </button>
+            </Button>
           </template>
           <template v-else>
             {{ panelTitle }}
