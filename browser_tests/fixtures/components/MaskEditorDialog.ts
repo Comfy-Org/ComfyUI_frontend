@@ -75,4 +75,15 @@ export class MaskEditorDialog {
       throw new Error('Mask editor canvas container bounding box not found')
     return box
   }
+
+  /**
+   * Moves the cursor off the pointer zone so PointerZone's pointerleave
+   * clears store.brushVisible and the brush cursor overlay is removed from
+   * the next paint. Call this before taking a canvas screenshot to avoid
+   * flaky pixel diffs around the brush circle position.
+   */
+  async hideBrushCursor() {
+    await this.comfyPage.page.mouse.move(0, 0)
+    await this.comfyPage.nextFrame()
+  }
 }

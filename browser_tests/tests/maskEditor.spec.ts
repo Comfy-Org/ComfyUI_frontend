@@ -161,27 +161,16 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
   test(
     'Middle-click drag should pan the mask editor canvas',
-    { tag: '@screenshot' },
+    { tag: ['@screenshot', '@canvas'] },
     async ({ comfyPage, comfyMouse }) => {
       const dialog = await openMaskEditorDialog(comfyPage)
-      const pointerBox = await dialog.getCanvasBoundingBox()
 
-      const start = {
-        x: pointerBox.x + pointerBox.width / 2,
-        y: pointerBox.y + pointerBox.height / 2
-      }
-
-      await comfyMouse.mmbDrag(
-        start,
-        { x: start.x + 140, y: start.y + 90 },
+      await comfyMouse.mmbDragFromCenter(
+        dialog.canvasContainer,
+        { dx: 140, dy: 90 },
         { steps: 10 }
       )
-
-      // Move cursor outside the pointer zone so the brush cursor overlay is
-      // hidden (PointerZone's pointerleave clears store.brushVisible). Without
-      // this the brush circle lands on slightly different pixels between runs
-      // and causes flaky screenshot diffs.
-      await comfyPage.page.mouse.move(0, 0)
+      await dialog.hideBrushCursor()
 
       await comfyPage.expectScreenshot(
         dialog.canvasContainer,

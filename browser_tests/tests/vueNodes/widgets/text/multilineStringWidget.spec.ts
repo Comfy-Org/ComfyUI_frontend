@@ -57,21 +57,12 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
 
   test(
     'Middle-click drag on textarea should pan canvas',
-    { tag: '@screenshot' },
+    { tag: ['@screenshot', '@canvas'] },
     async ({ comfyPage, comfyMouse }) => {
       const textarea = getFirstMultilineStringWidget(comfyPage)
-      await expect(textarea).toBeVisible()
-      const textareaBounds = await textarea.boundingBox()
-      if (!textareaBounds) throw new Error('Textarea bounding box not found')
-
-      const start = {
-        x: textareaBounds.x + textareaBounds.width / 2,
-        y: textareaBounds.y + textareaBounds.height / 2
-      }
-
-      await comfyMouse.mmbDrag(
-        start,
-        { x: start.x + 120, y: start.y + 80 },
+      await comfyMouse.mmbDragFromCenter(
+        textarea,
+        { dx: 120, dy: 80 },
         { steps: 10 }
       )
 
@@ -83,7 +74,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
 
   test(
     'Middle-click drag on markdown widget should pan canvas',
-    { tag: '@screenshot' },
+    { tag: ['@screenshot', '@canvas'] },
     async ({ comfyPage, comfyMouse }) => {
       await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
@@ -91,20 +82,9 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
       // the legacy `.comfy-markdown` class added by useMarkdownWidget only
       // exists on the unmounted DOM widget element, not in the Vue Nodes tree.
       const markdownWidget = comfyPage.page.locator('.widget-markdown').first()
-      await expect(markdownWidget).toBeVisible()
-
-      const markdownBounds = await markdownWidget.boundingBox()
-      if (!markdownBounds)
-        throw new Error('Markdown widget bounding box not found')
-
-      const start = {
-        x: markdownBounds.x + markdownBounds.width / 2,
-        y: markdownBounds.y + markdownBounds.height / 2
-      }
-
-      await comfyMouse.mmbDrag(
-        start,
-        { x: start.x + 120, y: start.y + 80 },
+      await comfyMouse.mmbDragFromCenter(
+        markdownWidget,
+        { dx: 120, dy: 80 },
         { steps: 10 }
       )
 

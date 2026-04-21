@@ -20,23 +20,14 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
 
   test(
     'Middle-click drag on node should pan canvas',
-    { tag: '@screenshot' },
+    { tag: ['@screenshot', '@canvas'] },
     async ({ comfyPage, comfyMouse }) => {
       const node = comfyPage.vueNodes
         .getNodeByTitle('CLIP Text Encode (Prompt)')
         .first()
-      await expect(node).toBeVisible()
-      const nodeBounds = await node.boundingBox()
-      if (!nodeBounds) throw new Error('Node bounding box not found')
-
-      const start = {
-        x: nodeBounds.x + nodeBounds.width / 2,
-        y: nodeBounds.y + nodeBounds.height / 2
-      }
-
-      await comfyMouse.mmbDrag(
-        start,
-        { x: start.x + 140, y: start.y + 90 },
+      await comfyMouse.mmbDragFromCenter(
+        node,
+        { dx: 140, dy: 90 },
         { steps: 10 }
       )
 

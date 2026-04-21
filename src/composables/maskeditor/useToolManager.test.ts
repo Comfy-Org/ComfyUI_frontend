@@ -97,7 +97,9 @@ describe('useToolManager MMB pan branch', () => {
       )
       const store = useMaskEditorStore()
 
-      await handlePointerDown(makePointerEvent('pointerdown', { button: 1 }))
+      await handlePointerDown(
+        makePointerEvent('pointerdown', { button: 1, buttons: 4 })
+      )
 
       expect(handlePanStart).toHaveBeenCalledTimes(1)
       expect(store.brushVisible).toBe(false)
@@ -139,7 +141,11 @@ describe('useToolManager MMB pan branch', () => {
       )
 
       await handlePointerDown(
-        makePointerEvent('pointerdown', { button: 1, pointerType: 'touch' })
+        makePointerEvent('pointerdown', {
+          button: 1,
+          buttons: 4,
+          pointerType: 'touch'
+        })
       )
 
       expect(handlePanStart).not.toHaveBeenCalled()
@@ -153,7 +159,11 @@ describe('useToolManager MMB pan branch', () => {
       )
 
       await handlePointerDown(
-        makePointerEvent('pointerdown', { button: 1, pointerType: 'pen' })
+        makePointerEvent('pointerdown', {
+          button: 1,
+          buttons: 4,
+          pointerType: 'pen'
+        })
       )
 
       expect(addPenPointerId).toHaveBeenCalledTimes(1)
