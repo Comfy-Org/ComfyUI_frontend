@@ -30,42 +30,7 @@ jobs:
 
       - name: Resolve PR from workflow_run context
         id: pr-meta
-        uses: actions/github-script@v8
-        with:
-          script: |
-            let pr = context.payload.workflow_run.pull_requests?.[0];
-            if (!pr) {
-              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.payload.workflow_run.head_sha,
-              });
-              pr = prs.find(p => p.state === 'open');
-            }
-
-            if (!pr) {
-              core.info('No open PR found for this workflow run — skipping.');
-              core.setOutput('skip', 'true');
-              return;
-            }
-
-            // Verify the workflow_run head SHA matches the current PR head
-            const { data: livePr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number,
-            });
-
-            if (livePr.head.sha !== context.payload.workflow_run.head_sha) {
-              core.info(`Stale run: workflow SHA ${context.payload.workflow_run.head_sha} != PR head ${livePr.head.sha}`);
-              core.setOutput('skip', 'true');
-              return;
-            }
-
-            core.setOutput('skip', 'false');
-            core.setOutput('number', String(pr.number));
-            core.setOutput('base', livePr.base.ref);
-            core.setOutput('head-sha', livePr.head.sha);
+        uses: ./.github/actions/resolve-pr-from-workflow-run
 
       - name: Find size workflow run
         if: steps.pr-meta.outputs.skip != 'true'
