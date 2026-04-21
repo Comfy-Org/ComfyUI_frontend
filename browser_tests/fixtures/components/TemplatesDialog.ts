@@ -23,7 +23,7 @@ export class TemplatesDialog {
 
   async selectModelOption(name: string): Promise<void> {
     await this.modelFilter.click()
-    await this.root.getByRole('option', { name }).click()
+    await this.page.getByRole('option', { name }).click()
     await this.page.keyboard.press('Escape')
   }
 }
