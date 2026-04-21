@@ -117,6 +117,12 @@ const props = defineProps<{
   onClose?: () => void
   showLeftPanel?: boolean
   title?: string
+  /**
+   * Storybook/test seam: when provided, bypasses the cloud-only
+   * `assetsStore.getAssets(cacheKey)` fetch and renders this list directly.
+   * Production callers should leave this undefined and rely on the store.
+   */
+  assets?: AssetItem[]
 }>()
 
 const emit = defineEmits<{
@@ -132,7 +138,9 @@ const cacheKey = computed(() => {
   return ''
 })
 
-const fetchedAssets = computed(() => assetStore.getAssets(cacheKey.value))
+const fetchedAssets = computed(
+  () => props.assets ?? assetStore.getAssets(cacheKey.value)
+)
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
 
@@ -141,6 +149,7 @@ const isLoading = computed(
 )
 
 async function refreshAssets(): Promise<void> {
+  if (props.assets) return
   if (props.nodeType) {
     await assetStore.updateModelsForNodeType(props.nodeType)
   } else if (props.assetType) {
