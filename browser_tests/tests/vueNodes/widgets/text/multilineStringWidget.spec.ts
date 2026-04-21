@@ -58,7 +58,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
   test(
     'Middle-click drag on textarea should pan canvas',
     { tag: '@screenshot' },
-    async ({ comfyPage }) => {
+    async ({ comfyPage, comfyMouse }) => {
       const textarea = getFirstMultilineStringWidget(comfyPage)
       const textareaBounds = await textarea.boundingBox()
       if (!textareaBounds) throw new Error('Textarea bounding box not found')
@@ -68,13 +68,11 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
         y: textareaBounds.y + textareaBounds.height / 2
       }
 
-      await comfyPage.page.mouse.move(start.x, start.y)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(start.x + 120, start.y + 80, {
-        steps: 10
-      })
-      await comfyPage.page.mouse.up({ button: 'middle' })
-      await comfyPage.nextFrame()
+      await comfyMouse.mmbDrag(
+        start,
+        { x: start.x + 120, y: start.y + 80 },
+        { steps: 10 }
+      )
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-nodes-paned-with-mmb-over-textarea.png'
@@ -85,7 +83,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
   test(
     'Middle-click drag on markdown widget should pan canvas',
     { tag: '@screenshot' },
-    async ({ comfyPage }) => {
+    async ({ comfyPage, comfyMouse }) => {
       await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
       const markdownWidget = comfyPage.page.locator('.comfy-markdown').first()
@@ -100,13 +98,11 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
         y: markdownBounds.y + markdownBounds.height / 2
       }
 
-      await comfyPage.page.mouse.move(start.x, start.y)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(start.x + 120, start.y + 80, {
-        steps: 10
-      })
-      await comfyPage.page.mouse.up({ button: 'middle' })
-      await comfyPage.nextFrame()
+      await comfyMouse.mmbDrag(
+        start,
+        { x: start.x + 120, y: start.y + 80 },
+        { steps: 10 }
+      )
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-nodes-paned-with-mmb-over-markdown.png'

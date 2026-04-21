@@ -66,6 +66,15 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.drop(options)
   }
 
+  /** Middle mouse button drag — used to pan the graph canvas. */
+  async mmbDrag(
+    from: Position,
+    to: Position,
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await this.dragAndDrop(from, to, { ...options, button: 'middle' })
+  }
+
   /** @see {@link Mouse.move} */
   async move(to: Position, options = ComfyMouse.defaultOptions) {
     await this.mouse.move(to.x, to.y, options)
