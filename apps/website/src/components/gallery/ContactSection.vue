@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -19,11 +20,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     >
       {{ t('gallery.contact.heading', locale) }}
     </h2>
-    <a
+    <BrandButton
       href="mailto:hello@comfy.org"
-      class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink mt-8 inline-flex items-center justify-center rounded-2xl border-2 px-8 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
+      variant="outline"
+      size="sm"
+      class="mt-8 uppercase"
     >
       {{ t('gallery.contact.cta', locale) }}
-    </a>
+    </BrandButton>
   </section>
 </template>

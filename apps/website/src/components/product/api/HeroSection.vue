@@ -224,17 +224,19 @@ onUnmounted(() => {
       <div class="mt-10 flex flex-col gap-4 lg:flex-row">
         <BrandButton
           :href="externalLinks.cloud"
-          :label="t('api.hero.getApiKeys', locale)"
           size="lg"
-          class-name="text-center lg:min-w-60"
-        />
+          class="text-center lg:min-w-60"
+        >
+          {{ t('api.hero.getApiKeys', locale) }}
+        </BrandButton>
         <BrandButton
           :href="externalLinks.docs"
-          :label="t('api.hero.viewDocs', locale)"
           variant="outline"
           size="lg"
-          class-name="text-center lg:min-w-60"
-        />
+          class="text-center lg:min-w-60"
+        >
+          {{ t('api.hero.viewDocs', locale) }}
+        </BrandButton>
       </div>
     </div>
   </section>

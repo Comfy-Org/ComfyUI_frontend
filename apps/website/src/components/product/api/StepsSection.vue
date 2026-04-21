@@ -3,6 +3,7 @@ import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+import BrandButton from '../../common/BrandButton.vue'
 import CardGridSection from '../shared/CardGridSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -59,22 +60,22 @@ const steps = [
       <div
         class="mt-12 flex flex-col items-center gap-4 lg:flex-row lg:justify-center"
       >
-        <a
+        <BrandButton
           :href="externalLinks.cloud"
-          target="_blank"
-          rel="noopener"
-          class="bg-primary-comfy-yellow text-primary-comfy-ink w-full rounded-full px-8 py-4 text-center text-sm font-bold tracking-wider transition-opacity hover:opacity-90 lg:w-auto lg:min-w-48"
+          variant="solid"
+          size="lg"
+          class="w-full text-center lg:w-auto lg:min-w-48"
         >
           {{ t('api.hero.getApiKeys', locale) }}
-        </a>
-        <a
+        </BrandButton>
+        <BrandButton
           :href="externalLinks.docs"
-          target="_blank"
-          rel="noopener"
-          class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink w-full rounded-full border px-8 py-4 text-center text-sm font-bold tracking-wider transition-colors lg:w-auto lg:min-w-48"
+          variant="outline"
+          size="lg"
+          class="w-full text-center lg:w-auto lg:min-w-48"
         >
           {{ t('api.hero.viewDocs', locale) }}
-        </a>
+        </BrandButton>
       </div>
     </template>
   </CardGridSection>

@@ -398,10 +398,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <div class="mt-10">
         <BrandButton
           :href="externalLinks.cloud"
-          :label="t('cloud.hero.cta', locale)"
           size="lg"
-          class-name="text-center lg:min-w-60"
-        />
+          class="text-center lg:min-w-60"
+        >
+          {{ t('cloud.hero.cta', locale) }}
+        </BrandButton>
       </div>
     </div>
   </section>

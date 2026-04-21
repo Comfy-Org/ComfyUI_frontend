@@ -937,6 +937,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.2.0(vue@3.5.13(typescript@5.9.3))
+      cva:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.4(typescript@5.9.3)
       gsap:
         specifier: 'catalog:'
         version: 3.14.2

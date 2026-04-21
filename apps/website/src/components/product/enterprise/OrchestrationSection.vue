@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 
 import { t } from '../../../i18n/translations'
+import BrandButton from '../../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -508,12 +509,9 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="mt-10 lg:mt-0">
-          <a
-            href="/contact"
-            class="bg-primary-comfy-yellow text-primary-comfy-ink inline-block rounded-full px-8 py-4 text-sm font-bold tracking-wider transition-opacity hover:opacity-90"
-          >
+          <BrandButton href="/contact" variant="solid" size="lg">
             {{ t('enterprise.hero.contactSales', locale) }}
-          </a>
+          </BrandButton>
           <p class="mt-4 text-xs text-smoke-500 lg:text-sm">
             {{ t('enterprise.orchestration.footer', locale) }}
           </p>

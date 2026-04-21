@@ -6,6 +6,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
+import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -255,12 +256,9 @@ function handleSubmit() {
 
         <!-- Submit -->
         <div>
-          <button
-            type="submit"
-            class="ppformula-text-center border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink cursor-pointer rounded-lg border px-8 py-3 text-sm font-bold tracking-wider transition-colors"
-          >
+          <BrandButton type="submit" variant="outline" size="sm">
             {{ t(tk('submit'), locale) }}
-          </button>
+          </BrandButton>
         </div>
       </form>
     </div>

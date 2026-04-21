@@ -178,7 +178,7 @@ function getCardClass(layoutClass: string): string {
       <BrandButton
         :href="externalLinks.workflows"
         variant="outline"
-        class-name="mt-4 lg:mt-8 w-full max-w-md text-center text-sm lg:w-auto"
+        class="mt-4 w-full max-w-md text-center text-sm lg:mt-8 lg:w-auto"
       >
         <span class="lg:hidden">{{
           t('cloud.aiModels.ctaMobile', locale)

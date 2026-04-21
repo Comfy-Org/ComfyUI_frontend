@@ -196,10 +196,11 @@ useParallax([leftImgRef], {
 
           <BrandButton
             :href="externalLinks.workflows"
-            :label="t('useCase.cta', locale)"
             variant="outline"
-            class-name="mt-8 text-sm"
-          />
+            class="mt-8 text-sm"
+          >
+            {{ t('useCase.cta', locale) }}
+          </BrandButton>
         </div>
       </div>
 

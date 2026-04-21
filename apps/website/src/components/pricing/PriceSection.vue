@@ -260,11 +260,12 @@ const activePlanIndex = ref(0)
         <div class="flex self-end px-8">
           <BrandButton
             :href="plan.ctaHref"
-            :label="t(plan.ctaKey, locale)"
             variant="outline"
             size="sm"
-            class-name="w-full text-center"
-          />
+            class="w-full text-center"
+          >
+            {{ t(plan.ctaKey, locale) }}
+          </BrandButton>
         </div>
       </PricingTierCard>
     </div>
@@ -353,11 +354,12 @@ const activePlanIndex = ref(0)
           <div class="mt-6">
             <BrandButton
               :href="plan.ctaHref"
-              :label="t(plan.ctaKey, locale)"
               variant="outline"
               size="lg"
-              class-name="w-full text-center"
-            />
+              class="w-full text-center"
+            >
+              {{ t(plan.ctaKey, locale) }}
+            </BrandButton>
           </div>
         </div>
 
@@ -429,12 +431,9 @@ const activePlanIndex = ref(0)
             {{ t(enterprisePlan.summaryKey, locale) }}
           </p>
         </div>
-        <BrandButton
-          :href="enterprisePlan.ctaHref"
-          :label="t(enterprisePlan.ctaKey, locale)"
-          variant="outline"
-          size="lg"
-        />
+        <BrandButton :href="enterprisePlan.ctaHref" variant="outline" size="lg">
+          {{ t(enterprisePlan.ctaKey, locale) }}
+        </BrandButton>
       </div>
 
       <!-- Right side -->

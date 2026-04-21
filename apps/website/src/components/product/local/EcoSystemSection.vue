@@ -32,7 +32,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             :href="externalLinks.github"
             variant="outline"
             size="lg"
-            class-name="flex items-center justify-center gap-2"
+            class="flex items-center justify-center gap-2"
           >
             <span
               class="icon-mask size-5 mask-[url('/icons/social/github.svg')]"
