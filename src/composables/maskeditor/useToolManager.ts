@@ -111,6 +111,15 @@ export function useToolManager(
     }
   )
 
+  // Pan gate shared by pointerdown and pointermove: middle-button (strict so
+  // chorded pointerdown on a non-middle button is not misclassified) OR
+  // space-held left-drag. Extracting this keeps the two handlers readable
+  // and pins the contract tests rely on.
+  const shouldPan = (event: PointerEvent): boolean => {
+    if (isMiddlePointerInput(event)) return true
+    return event.buttons === 1 && keyboard.isKeyDown(' ')
+  }
+
   const handlePointerDown = async (event: PointerEvent): Promise<void> => {
     event.preventDefault()
     if (event.pointerType === 'touch') return
@@ -119,14 +128,8 @@ export function useToolManager(
       panZoom.addPenPointerId(event.pointerId)
     }
 
-    const isSpacePressed = keyboard.isKeyDown(' ')
-
-    if (
-      isMiddlePointerInput(event) ||
-      (event.buttons === 1 && isSpacePressed)
-    ) {
+    if (shouldPan(event)) {
       panZoom.handlePanStart(event)
-
       store.brushVisible = false
       return
     }
@@ -181,12 +184,7 @@ export function useToolManager(
     const newCursorPoint = { x: event.clientX, y: event.clientY }
     panZoom.updateCursorPosition(newCursorPoint)
 
-    const isSpacePressed = keyboard.isKeyDown(' ')
-
-    if (
-      isMiddlePointerInput(event) ||
-      (event.buttons === 1 && isSpacePressed)
-    ) {
+    if (shouldPan(event)) {
       await panZoom.handlePanMove(event)
       return
     }
