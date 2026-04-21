@@ -14,12 +14,12 @@ beforeEach(() => {
 describe('moveNode', () => {
   it('does nothing when node does not exist', () => {
     const { moveNode } = useLayoutMutations()
-    const before1 = layoutStore.getNodeLayoutRef('1').value?.position
-    const before2 = layoutStore.getNodeLayoutRef('2').value?.position
+    const before1 = { ...layoutStore.getNodeLayoutRef('1').value }
+    const before2 = { ...layoutStore.getNodeLayoutRef('2').value }
     moveNode('999', { x: 100, y: 200 })
     expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef('1').value?.position).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef('2').value?.position).toEqual(before2)
+    expect(layoutStore.getNodeLayoutRef('1').value).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value).toEqual(before2)
   })
 
   it('updates node position', () => {
@@ -44,12 +44,12 @@ describe('moveNode', () => {
 describe('resizeNode', () => {
   it('does nothing when node does not exist', () => {
     const { resizeNode } = useLayoutMutations()
-    const before1 = layoutStore.getNodeLayoutRef('1').value?.size
-    const before2 = layoutStore.getNodeLayoutRef('2').value?.size
+    const before1 = { ...layoutStore.getNodeLayoutRef('1').value }
+    const before2 = { ...layoutStore.getNodeLayoutRef('2').value }
     resizeNode('999', { width: 400, height: 200 })
     expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef('1').value?.size).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef('2').value?.size).toEqual(before2)
+    expect(layoutStore.getNodeLayoutRef('1').value).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value).toEqual(before2)
   })
 
   it('updates node size', () => {
@@ -65,12 +65,12 @@ describe('resizeNode', () => {
 describe('setNodeZIndex', () => {
   it('does nothing when node does not exist', () => {
     const { setNodeZIndex } = useLayoutMutations()
-    const before1 = layoutStore.getNodeLayoutRef('1').value?.zIndex
-    const before2 = layoutStore.getNodeLayoutRef('2').value?.zIndex
+    const before1 = { ...layoutStore.getNodeLayoutRef('1').value }
+    const before2 = { ...layoutStore.getNodeLayoutRef('2').value }
     setNodeZIndex('999', 10)
     expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef('1').value?.zIndex).toBe(before1)
-    expect(layoutStore.getNodeLayoutRef('2').value?.zIndex).toBe(before2)
+    expect(layoutStore.getNodeLayoutRef('1').value).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value).toEqual(before2)
   })
 
   it('updates node z-index', () => {
@@ -96,9 +96,12 @@ describe('createNode', () => {
 describe('deleteNode', () => {
   it('does nothing when node does not exist', () => {
     const { deleteNode } = useLayoutMutations()
+    const before1 = { ...layoutStore.getNodeLayoutRef('1').value }
+    const before2 = { ...layoutStore.getNodeLayoutRef('2').value }
     deleteNode('999')
-    expect(layoutStore.getNodeLayoutRef('1').value).not.toBeNull()
-    expect(layoutStore.getNodeLayoutRef('2').value).not.toBeNull()
+    expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
+    expect(layoutStore.getNodeLayoutRef('1').value).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value).toEqual(before2)
   })
 
   it('removes node from the store', () => {
@@ -111,11 +114,11 @@ describe('deleteNode', () => {
 describe('batchMoveNodes', () => {
   it('does nothing when updates array is empty', () => {
     const { batchMoveNodes } = useLayoutMutations()
-    const before1 = layoutStore.getNodeLayoutRef('1').value?.position
-    const before2 = layoutStore.getNodeLayoutRef('2').value?.position
+    const before1 = { ...layoutStore.getNodeLayoutRef('1').value }
+    const before2 = { ...layoutStore.getNodeLayoutRef('2').value }
     batchMoveNodes([])
-    expect(layoutStore.getNodeLayoutRef('1').value?.position).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef('2').value?.position).toEqual(before2)
+    expect(layoutStore.getNodeLayoutRef('1').value).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value).toEqual(before2)
   })
 
   it('updates positions for all found nodes', () => {
