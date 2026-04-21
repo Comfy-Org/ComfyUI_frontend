@@ -33,7 +33,7 @@ test('Audio Widget', async ({ comfyPage }) => {
   })
 
   await test.step('Previews audio files', async () => {
-    expect(loadAudioNode).toContainText('0:00 / 0:20')
+    await expect(loadAudioNode).toContainText('0:00 / 0:20')
 
     expect(await audioPreview.isPlaying()).toBe(false)
     await audioPreview.play.click()
@@ -43,9 +43,12 @@ test('Audio Widget', async ({ comfyPage }) => {
 
     expect(await audioPreview.isMuted()).toBe(false)
     await audioPreview.volume.click()
+    const volumeIcon = audioPreview.volume.locator('i')
+    await expect(volumeIcon).toContainClass('icon-[lucide--volume-x]')
     await expect.poll(() => audioPreview.isMuted()).toBe(true)
     await audioPreview.volume.click()
     await expect.poll(() => audioPreview.isMuted()).toBe(false)
+    await expect(volumeIcon).not.toContainClass('icon-[lucide--volume-x]')
   })
 
   await test.step('Can redownload uploaded file', async () => {
