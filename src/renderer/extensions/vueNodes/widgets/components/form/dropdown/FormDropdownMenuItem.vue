@@ -1,21 +1,15 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
 
 import { AssetKindKey } from './types'
-import type { LayoutMode } from './types'
+import type { FormDropdownMenuItemProps } from './types'
 
-interface Props {
-  index: number
-  selected: boolean
-  previewUrl: string
-  name: string
-  label?: string
-  layout?: LayoutMode
-}
+const props = defineProps<FormDropdownMenuItemProps>()
 
-const props = defineProps<Props>()
+const { t } = useI18n()
 
 const emit = defineEmits<{
   click: [index: number]
@@ -93,15 +87,19 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
+        :aria-label="t('g.selected')"
+        role="img"
         class="absolute top-1 left-1 size-4 rounded-full border border-base-foreground bg-primary-background"
       >
         <i
           class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground"
+          aria-hidden="true"
         />
       </div>
       <video
         v-if="previewUrl && isVideo"
         :src="previewUrl"
+        :aria-label="label ?? name"
         class="size-full object-cover"
         preload="metadata"
         muted

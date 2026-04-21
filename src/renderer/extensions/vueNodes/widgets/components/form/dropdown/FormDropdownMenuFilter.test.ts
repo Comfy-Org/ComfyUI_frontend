@@ -1,5 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
-/* eslint-disable vue/no-reserved-component-names */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,11 +32,10 @@ const i18n = createI18n({
   messages: { en: { g: { import: 'Import' } } }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
+const ButtonStub = {
   inheritAttrs: false,
   template: '<button v-bind="$attrs"><slot /></button>'
-})
+}
 
 const options: FilterOption[] = [
   { value: 'all', name: 'All' },

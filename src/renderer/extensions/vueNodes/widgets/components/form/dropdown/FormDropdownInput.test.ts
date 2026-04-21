@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import FormDropdownInput from './FormDropdownInput.vue'
-import type { FormDropdownItem } from './types'
+import type { FormDropdownInputProps, FormDropdownItem } from './types'
 
 const items: FormDropdownItem[] = [
   { id: 'a', name: 'alpha' },
@@ -11,20 +12,22 @@ const items: FormDropdownItem[] = [
   { id: 'c', name: 'gamma' }
 ]
 
+const uploadLabel = 'Upload'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: { g: { upload: uploadLabel } } }
+})
+
 function renderInput(
-  props: Partial<{
-    isOpen: boolean
-    placeholder: string
-    items: FormDropdownItem[]
-    selected: Set<string>
-    maxSelectable: number
-    uploadable: boolean
-    disabled: boolean
-    accept: string
-  }> = {},
+  props: Partial<FormDropdownInputProps> = {},
   listeners: Record<string, (...args: unknown[]) => void> = {}
 ) {
   return render(FormDropdownInput, {
+    global: {
+      plugins: [i18n]
+    },
     props: {
       items,
       selected: new Set<string>(),
@@ -68,10 +71,7 @@ describe('FormDropdownInput', () => {
       const displayItems: FormDropdownItem[] = [
         { id: 'a', name: 'ALPHA_DISPLAY' }
       ]
-      renderInput({
-        selected: new Set(['a']),
-        ...({ displayItems } as { displayItems: FormDropdownItem[] })
-      })
+      renderInput({ selected: new Set(['a']), displayItems })
       expect(screen.getByText('ALPHA_DISPLAY')).toBeInTheDocument()
     })
   })
@@ -81,65 +81,49 @@ describe('FormDropdownInput', () => {
       const onSelectClick = vi.fn()
       renderInput({}, { onSelectClick })
       const user = userEvent.setup()
-      await user.click(
-        screen.getByRole('button', { name: /select|alpha|beta|gamma/i })
-      )
+      await user.click(screen.getByRole('button', { name: /select/i }))
       expect(onSelectClick).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('Upload affordance', () => {
     it('does not render file input when uploadable is false', () => {
-      const { container } = renderInput({ uploadable: false })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('input[type="file"]')).toBeNull()
+      renderInput({ uploadable: false })
+      expect(screen.queryByLabelText(uploadLabel)).toBeNull()
     })
 
     it('renders a file input when uploadable is true', () => {
-      const { container } = renderInput({ uploadable: true })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const fileInput = container.querySelector('input[type="file"]')
-      expect(fileInput).toBeInTheDocument()
+      renderInput({ uploadable: true })
+      expect(screen.getByLabelText(uploadLabel)).toBeInTheDocument()
     })
 
     it('passes accept attribute to the file input', () => {
-      const { container } = renderInput({
-        uploadable: true,
-        accept: 'image/png'
-      })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const fileInput = container.querySelector('input[type="file"]')
-      expect(fileInput).toHaveAttribute('accept', 'image/png')
+      renderInput({ uploadable: true, accept: 'image/png' })
+      expect(screen.getByLabelText(uploadLabel)).toHaveAttribute(
+        'accept',
+        'image/png'
+      )
     })
 
     it('marks file input multiple when maxSelectable > 1', () => {
-      const { container } = renderInput({ uploadable: true, maxSelectable: 4 })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const fileInput = container.querySelector('input[type="file"]')
-      expect(fileInput).toHaveAttribute('multiple')
+      renderInput({ uploadable: true, maxSelectable: 4 })
+      expect(screen.getByLabelText(uploadLabel)).toHaveAttribute('multiple')
     })
 
     it('does not mark file input multiple when maxSelectable is 1', () => {
-      const { container } = renderInput({ uploadable: true, maxSelectable: 1 })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const fileInput = container.querySelector('input[type="file"]')
-      expect(fileInput).not.toHaveAttribute('multiple')
+      renderInput({ uploadable: true, maxSelectable: 1 })
+      expect(screen.getByLabelText(uploadLabel)).not.toHaveAttribute('multiple')
     })
 
     it('disables file input when disabled prop is true', () => {
-      const { container } = renderInput({ uploadable: true, disabled: true })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const fileInput = container.querySelector('input[type="file"]')
-      expect(fileInput).toBeDisabled()
+      renderInput({ uploadable: true, disabled: true })
+      expect(screen.getByLabelText(uploadLabel)).toBeDisabled()
     })
 
     it('emits file-change when a file is uploaded', async () => {
       const onFileChange = vi.fn()
-      const { container } = renderInput({ uploadable: true }, { onFileChange })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const fileInput = container.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      renderInput({ uploadable: true }, { onFileChange })
+      const fileInput = screen.getByLabelText(uploadLabel) as HTMLInputElement
       const user = userEvent.setup()
       await user.upload(
         fileInput,
