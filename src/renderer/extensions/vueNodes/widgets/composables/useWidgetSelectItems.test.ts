@@ -688,7 +688,9 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].label).toBe(
         'ComfyUI-90_right_00001_.png [output]'
       )
-      expect(dropdownItems.value[0].name).toMatch(/^a1ef7d29.*\.png \[output\]$/)
+      expect(dropdownItems.value[0].name).toMatch(
+        /^a1ef7d29.*\.png \[output\]$/
+      )
     })
   })
 
