@@ -1,17 +1,9 @@
 import type { Locator } from '@playwright/test'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import { RESIZE_HANDLE_ARIA_LABELS_EN } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 import { TestIds } from '@e2e/fixtures/selectors'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
-
-/** Maps corners to their English aria-labels (from resizeHandleConfig i18n) */
-const RESIZE_HANDLE_LABELS: Record<CompassCorners, string> = {
-  SE: 'Resize from bottom-right corner',
-  NE: 'Resize from top-right corner',
-  SW: 'Resize from bottom-left corner',
-  NW: 'Resize from top-left corner'
-}
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
@@ -68,7 +60,7 @@ export class VueNodeFixture {
 
   getResizeHandle(corner: CompassCorners): Locator {
     return this.root.getByRole('button', {
-      name: RESIZE_HANDLE_LABELS[corner]
+      name: RESIZE_HANDLE_ARIA_LABELS_EN[corner]
     })
   }
 
@@ -95,6 +87,5 @@ export class VueNodeFixture {
       steps: 5
     })
     await page.mouse.up()
-    await nextFrame(page)
   }
 }
