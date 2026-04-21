@@ -138,8 +138,8 @@ describe('TabSubgraphInputs drag-and-drop', () => {
 
     unmount()
 
-    expect(mockDraggableCleanup).toHaveBeenCalled()
-    expect(mockDropTargetCleanup).toHaveBeenCalled()
+    expect(mockDraggableCleanup).toHaveBeenCalledTimes(2)
+    expect(mockDropTargetCleanup).toHaveBeenCalledTimes(2)
   })
 
   it('calls movePromotion with correct indices when an item is dropped', () => {

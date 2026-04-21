@@ -177,7 +177,8 @@ function setDraggableState() {
       dropTargetForElements({
         element: item,
         onDrop: ({ source }) => {
-          const fromIndex = source.data.index as number
+          const fromIndex = source.data.index
+          if (typeof fromIndex !== 'number') return
           if (fromIndex === index) return
           promotionStore.movePromotion(
             node.rootGraph.id,
@@ -197,6 +198,7 @@ function setDraggableState() {
 watchDebounced(searchedWidgetsList, () => setDraggableState(), {
   debounce: 100
 })
+watch(promotionEntries, () => nextTick(setDraggableState))
 onMounted(() => setDraggableState())
 onBeforeUnmount(() => cleanupDragAndDrop())
 
