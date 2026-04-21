@@ -30,7 +30,6 @@ interface PricingPlan {
   ctaHref: string
   featureIntroKey?: TranslationKey
   features: PlanFeature[]
-  nextUpKey?: TranslationKey
   andMoreKey?: TranslationKey
   image?: string
   isPopular?: boolean
@@ -81,7 +80,6 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.creator.feature1' },
       { text: 'pricing.plan.creator.feature2' }
     ],
-    nextUpKey: 'pricing.plan.creator.nextUp',
     isPopular: true
   },
   {
@@ -98,7 +96,6 @@ const plans: PricingPlan[] = [
       { text: 'pricing.plan.pro.feature1' },
       { text: 'pricing.plan.pro.feature2' }
     ],
-    nextUpKey: 'pricing.plan.pro.nextUp'
   },
   {
     id: 'enterprise',
@@ -249,12 +246,6 @@ const activePlanIndex = ref(0)
               </span>
             </li>
           </ul>
-          <p
-            v-if="plan.nextUpKey"
-            class="text-primary-comfy-canvas/80 mt-4 text-sm"
-          >
-            {{ t(plan.nextUpKey, locale) }}
-          </p>
         </div>
         <!-- CTA -->
         <div class="flex self-end px-8">
@@ -383,12 +374,6 @@ const activePlanIndex = ref(0)
               </span>
             </li>
           </ul>
-          <p
-            v-if="plan.nextUpKey"
-            class="text-primary-comfy-canvas mt-4 text-sm"
-          >
-            {{ t(plan.nextUpKey, locale) }}
-          </p>
           <p
             v-if="plan.andMoreKey"
             class="text-primary-comfy-canvas mt-4 text-sm"
