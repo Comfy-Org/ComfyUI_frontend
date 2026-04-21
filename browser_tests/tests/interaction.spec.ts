@@ -243,11 +243,11 @@ test.describe('Node Interaction', () => {
         const converted = canvas.convertCanvasToOffset(pos)
         return { x: converted[0], y: converted[1] }
       }, nodeId)
-      expect(slotPos).not.toBeNull()
+      if (!slotPos) throw new Error('Expected to resolve output slot position')
 
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      await comfyPage.page.mouse.move(slotPos!.x, slotPos!.y)
+      await comfyPage.page.mouse.move(slotPos.x, slotPos.y)
       await comfyPage.page.mouse.down({ button: 'middle' })
       await comfyPage.page.mouse.up({ button: 'middle' })
       await comfyPage.nextFrame()

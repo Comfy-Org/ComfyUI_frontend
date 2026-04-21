@@ -11,12 +11,6 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
   const getFirstMultilineStringWidget = (comfyPage: ComfyPage) =>
     getFirstClipNode(comfyPage).getByRole('textbox', { name: 'text' })
 
-  const getCanvasOffset = (comfyPage: ComfyPage) =>
-    comfyPage.page.evaluate(() => {
-      const ds = window.app!.canvas!.ds
-      return [ds.offset[0], ds.offset[1]]
-    })
-
   test('should allow entering text', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
     await textarea.fill('Hello World')
@@ -61,58 +55,62 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await expect(vueContextMenu).toBeVisible()
   })
 
-  test('Middle-click drag on textarea should pan canvas', async ({
-    comfyPage
-  }) => {
-    const textarea = getFirstMultilineStringWidget(comfyPage)
-    const textareaBounds = await textarea.boundingBox()
-    if (!textareaBounds) throw new Error('Textarea bounding box not found')
+  test(
+    'Middle-click drag on textarea should pan canvas',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const textarea = getFirstMultilineStringWidget(comfyPage)
+      const textareaBounds = await textarea.boundingBox()
+      if (!textareaBounds) throw new Error('Textarea bounding box not found')
 
-    const start = {
-      x: textareaBounds.x + textareaBounds.width / 2,
-      y: textareaBounds.y + textareaBounds.height / 2
+      const start = {
+        x: textareaBounds.x + textareaBounds.width / 2,
+        y: textareaBounds.y + textareaBounds.height / 2
+      }
+
+      await comfyPage.page.mouse.move(start.x, start.y)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.move(start.x + 120, start.y + 80, {
+        steps: 10
+      })
+      await comfyPage.page.mouse.up({ button: 'middle' })
+      await comfyPage.nextFrame()
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-paned-with-mmb-over-textarea.png'
+      )
     }
+  )
 
-    const offsetBefore = await getCanvasOffset(comfyPage)
+  test(
+    'Middle-click drag on markdown widget should pan canvas',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
-    await comfyPage.page.mouse.move(start.x, start.y)
-    await comfyPage.page.mouse.down({ button: 'middle' })
-    await comfyPage.page.mouse.move(start.x + 120, start.y + 80, { steps: 10 })
-    await comfyPage.page.mouse.up({ button: 'middle' })
-    await comfyPage.nextFrame()
+      const markdownWidget = comfyPage.page.locator('.comfy-markdown').first()
+      await expect(markdownWidget).toBeVisible()
 
-    await expect
-      .poll(() => getCanvasOffset(comfyPage))
-      .not.toEqual(offsetBefore)
-  })
+      const markdownBounds = await markdownWidget.boundingBox()
+      if (!markdownBounds)
+        throw new Error('Markdown widget bounding box not found')
 
-  test('Middle-click drag on markdown widget should pan canvas', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
+      const start = {
+        x: markdownBounds.x + markdownBounds.width / 2,
+        y: markdownBounds.y + markdownBounds.height / 2
+      }
 
-    const markdownWidget = comfyPage.page.locator('.comfy-markdown').first()
-    await expect(markdownWidget).toBeVisible()
+      await comfyPage.page.mouse.move(start.x, start.y)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.move(start.x + 120, start.y + 80, {
+        steps: 10
+      })
+      await comfyPage.page.mouse.up({ button: 'middle' })
+      await comfyPage.nextFrame()
 
-    const markdownBounds = await markdownWidget.boundingBox()
-    if (!markdownBounds)
-      throw new Error('Markdown widget bounding box not found')
-
-    const start = {
-      x: markdownBounds.x + markdownBounds.width / 2,
-      y: markdownBounds.y + markdownBounds.height / 2
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-paned-with-mmb-over-markdown.png'
+      )
     }
-
-    const offsetBefore = await getCanvasOffset(comfyPage)
-
-    await comfyPage.page.mouse.move(start.x, start.y)
-    await comfyPage.page.mouse.down({ button: 'middle' })
-    await comfyPage.page.mouse.move(start.x + 120, start.y + 80, { steps: 10 })
-    await comfyPage.page.mouse.up({ button: 'middle' })
-    await comfyPage.nextFrame()
-
-    await expect
-      .poll(() => getCanvasOffset(comfyPage))
-      .not.toEqual(offsetBefore)
-  })
+  )
 })
