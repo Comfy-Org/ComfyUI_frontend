@@ -14,6 +14,8 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const GLSL_NODE_ID = '1'
 const GLSL_NODE_TITLE = 'GLSL Shader'
 const PRIMITIVE_FLOAT_NODE_TITLE = 'Float'
+const PRIMITIVE_INT_NODE_TITLE = 'Int'
+const PRIMITIVE_BOOLEAN_NODE_TITLE = 'Boolean'
 
 const RED_SHADER = [
   '#version 300 es',
@@ -98,13 +100,17 @@ class GLSLShaderNode {
   }
 
   /**
-   * Draw the preview blob to a 2D canvas and verify every pixel matches
+   * Draw the preview blob to a 2D canvas and verify every pixel matches.
    */
   async expectEveryPixelToBe(
-    expected: [number, number, number, number]
+    expected: [number, number, number, number],
+    tolerance = 1
   ): Promise<void> {
     const mismatch = await this.previewImage.evaluate(
-      (img: HTMLImageElement, exp: [number, number, number, number]) => {
+      (
+        img: HTMLImageElement,
+        args: { exp: [number, number, number, number]; tol: number }
+      ) => {
         const canvas = document.createElement('canvas')
         canvas.width = img.naturalWidth
         canvas.height = img.naturalHeight
@@ -113,7 +119,7 @@ class GLSLShaderNode {
         const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
         for (let i = 0; i < data.length; i += 4) {
           for (let c = 0; c < 4; c++) {
-            if (Math.abs(data[i + c] - exp[c]) > 1) {
+            if (Math.abs(data[i + c] - args.exp[c]) > args.tol) {
               return {
                 index: i / 4,
                 actual: [data[i], data[i + 1], data[i + 2], data[i + 3]]
@@ -123,10 +129,10 @@ class GLSLShaderNode {
         }
         return null
       },
-      expected
+      { exp: expected, tol: tolerance }
     )
     const message = mismatch
-      ? `expected every pixel ≈ [${expected.join(',')}]; pixel ${mismatch.index} was [${mismatch.actual.join(',')}]`
+      ? `expected every pixel ≈ [${expected.join(',')}] ±${tolerance}; pixel ${mismatch.index} was [${mismatch.actual.join(',')}]`
       : undefined
     expect(mismatch, message).toBeNull()
   }
@@ -337,6 +343,79 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
     })
   })
 
+  test.describe('with primitive int source', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_with_int')
+      await comfyPage.vueNodes.waitForNodes(2)
+    })
+
+    test('refreshes preview when upstream PrimitiveInt value changes', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+      const intValueWidget = comfyPage.vueNodes.getWidgetByName(
+        PRIMITIVE_INT_NODE_TITLE,
+        'value'
+      )
+      const { input: intValueInput } =
+        comfyPage.vueNodes.getInputNumberControls(intValueWidget)
+
+      await glsl.simulateExecutionOutput(ws)
+      const initialSrc = await glsl.waitForBlobSrc()
+
+      await test.step('changing the upstream int value re-renders the preview', async () => {
+        await expect(intValueInput).toBeVisible()
+        await intValueInput.fill('100')
+        await intValueInput.blur()
+
+        await expect.poll(() => glsl.getPreviewSrc()).not.toBe(initialSrc)
+        await expect.poll(() => glsl.getPreviewSrc()).toMatch(/^blob:/)
+      })
+
+      await test.step('upstream int value flows through as the u_int0 uniform', async () => {
+        // Shader writes vec4(float(u_int0) / 100.0, 0, 0, 1); value 100 → red.
+        await glsl.expectEveryPixelToBe([255, 0, 0, 255])
+      })
+    })
+  })
+
+  test.describe('with primitive boolean source', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_with_bool')
+      await comfyPage.vueNodes.waitForNodes(2)
+    })
+
+    test('upstream PrimitiveBoolean value flows through as the u_bool0 uniform', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+      const booleanToggle = comfyPage.vueNodes
+        .getNodeByTitle(PRIMITIVE_BOOLEAN_NODE_TITLE)
+        .getByRole('switch', { name: 'value' })
+
+      await test.step('boolean=false renders blue', async () => {
+        await glsl.simulateExecutionOutput(ws)
+        await glsl.waitForBlobSrc()
+        // Blue (non-max channel) through RGBA16F → PNG round-trip can drift by 2.
+        await glsl.expectEveryPixelToBe([0, 0, 255, 255], 2)
+      })
+
+      await test.step('toggling boolean=true re-renders red', async () => {
+        const blueSrc = (await glsl.getPreviewSrc())!
+        await expect(booleanToggle).toBeVisible()
+        await booleanToggle.click()
+
+        await expect.poll(() => glsl.getPreviewSrc()).not.toBe(blueSrc)
+        await expect.poll(() => glsl.getPreviewSrc()).toMatch(/^blob:/)
+        await glsl.expectEveryPixelToBe([255, 0, 0, 255])
+      })
+    })
+  })
+
   test.describe('GLSL inside a subgraph', () => {
     const SUBGRAPH_NODE_ID = '1'
 
@@ -358,6 +437,37 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
         comfyPage,
         SUBGRAPH_NODE_ID,
         'GLSL Subgraph'
+      )
+
+      await subgraph.simulateExecutionOutput(ws)
+      await expect(subgraph.previewImage).toBeVisible()
+      await subgraph.waitForBlobSrc()
+      await subgraph.expectEveryPixelToBe([255, 0, 0, 255])
+    })
+  })
+
+  test.describe('GLSL inside a subgraph with uniform source', () => {
+    const SUBGRAPH_NODE_ID = '1'
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'nodes/glsl_shader_subgraph_with_float'
+      )
+      await comfyPage.vueNodes.waitForNodes(1)
+    })
+
+    test('extracts uniform sources from inner upstream widgets', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      // Inner PrimitiveFloat is wired to the inner GLSLShader's floats.u_float0
+      // input. useGLSLUniforms.extractUniformSources should pick it up and feed
+      // 1.0 as u_float0 — shader outputs vec4(u_float0, 0, 0, 1) → red.
+      const subgraph = new GLSLShaderNode(
+        comfyPage,
+        SUBGRAPH_NODE_ID,
+        'GLSL Subgraph With Float'
       )
 
       await subgraph.simulateExecutionOutput(ws)
