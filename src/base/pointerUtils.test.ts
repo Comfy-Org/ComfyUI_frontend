@@ -244,4 +244,21 @@ describe('isMiddleForPointerEvent', () => {
       isMiddleForPointerEvent(new MouseEvent('auxclick', { button: 2 }))
     ).toBe(false)
   })
+
+  it('dispatches pointercancel through isMiddleButtonHeld (button field is -1 per spec)', () => {
+    // Per the Pointer Events spec, pointercancel always carries
+    // `button === -1` because no button state changed. Identifying a
+    // middle-button cancel has to come from the `buttons` bitmask instead.
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointercancel', { buttons: 4 }))
+    ).toBe(true)
+
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointercancel', { buttons: 5 }))
+    ).toBe(true)
+
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointercancel', { buttons: 1 }))
+    ).toBe(false)
+  })
 })

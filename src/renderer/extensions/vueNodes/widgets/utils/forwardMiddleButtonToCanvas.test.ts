@@ -18,12 +18,11 @@ vi.mock('@/scripts/app', () => ({
 
 describe('forwardMiddleButtonToCanvas', () => {
   let inputEl: HTMLElement
-  let cleanup: () => void
 
   beforeEach(() => {
     vi.clearAllMocks()
     inputEl = document.createElement('div')
-    cleanup = forwardMiddleButtonToCanvas(inputEl)
+    forwardMiddleButtonToCanvas(inputEl)
   })
 
   describe('pointerdown — strict semantic', () => {
@@ -86,22 +85,6 @@ describe('forwardMiddleButtonToCanvas', () => {
 
     it('does NOT forward a left pointerup', () => {
       inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 0 }))
-      expect(processMouseUp).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('cleanup', () => {
-    it('removes all listeners when the returned cleanup fn is called', () => {
-      cleanup()
-
-      inputEl.dispatchEvent(
-        new PointerEvent('pointerdown', { button: 1, buttons: 4 })
-      )
-      inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 4 }))
-      inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
-
-      expect(processMouseDown).not.toHaveBeenCalled()
-      expect(processMouseMove).not.toHaveBeenCalled()
       expect(processMouseUp).not.toHaveBeenCalled()
     })
   })

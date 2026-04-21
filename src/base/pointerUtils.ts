@@ -66,8 +66,10 @@ export function isMiddleButtonEvent(event: PointerEvent | MouseEvent): boolean {
  *
  * - pointerdown → {@link isMiddlePointerInput} (strict, rejects chorded
  *   pointerdowns where middle is only incidentally held)
- * - pointermove → {@link isMiddleButtonHeld} (bitmask, keeps a chorded
- *   drag alive when the user adds/removes other buttons mid-gesture)
+ * - pointermove and pointercancel → {@link isMiddleButtonHeld} (bitmask,
+ *   keeps a chorded drag alive when the user adds/removes other buttons
+ *   mid-gesture; pointercancel reports `button = -1` per spec so the
+ *   `button` field cannot be used to identify a middle-button cancel)
  * - pointerup and everything else → {@link isMiddleButtonEvent} (`button`
  *   field, the only reliable source on release)
  *
@@ -79,6 +81,8 @@ export function isMiddleForPointerEvent(
   event: PointerEvent | MouseEvent
 ): boolean {
   if (event.type === 'pointerdown') return isMiddlePointerInput(event)
-  if (event.type === 'pointermove') return isMiddleButtonHeld(event)
+  if (event.type === 'pointermove' || event.type === 'pointercancel') {
+    return isMiddleButtonHeld(event)
+  }
   return isMiddleButtonEvent(event)
 }

@@ -11,45 +11,29 @@ import { app } from '@/scripts/app'
  * gets strict semantics, pointermove survives chorded buttons via the held
  * bitmask, and pointerup uses the `button` field after release.
  *
- * Returns a cleanup function that removes all three listeners. Callers that
- * outlive the input element (e.g. a widget that may be rewired) should hold
- * onto the return value and invoke it on teardown; when the element is simply
- * garbage-collected the listeners are reclaimed automatically.
+ * No explicit cleanup is returned: the three listeners are attached directly
+ * to the widget-owned input element and only capture `app.canvas` (a
+ * singleton). When the widget's DOM element is detached and GC'd, the
+ * listeners go with it. If a future widget lifecycle ever rebinds the same
+ * element across instances, this will need to grow a disposer — for now,
+ * simpler is better.
  */
-export function forwardMiddleButtonToCanvas(inputEl: HTMLElement): () => void {
-  const controller = new AbortController()
-  const { signal } = controller
-  const listenerOptions: AddEventListenerOptions = { signal }
+export function forwardMiddleButtonToCanvas(inputEl: HTMLElement): void {
+  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
+    if (isMiddleForPointerEvent(event)) {
+      app.canvas.processMouseDown(event)
+    }
+  })
 
-  inputEl.addEventListener(
-    'pointerdown',
-    (event: PointerEvent) => {
-      if (isMiddleForPointerEvent(event)) {
-        app.canvas.processMouseDown(event)
-      }
-    },
-    listenerOptions
-  )
+  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
+    if (isMiddleForPointerEvent(event)) {
+      app.canvas.processMouseMove(event)
+    }
+  })
 
-  inputEl.addEventListener(
-    'pointermove',
-    (event: PointerEvent) => {
-      if (isMiddleForPointerEvent(event)) {
-        app.canvas.processMouseMove(event)
-      }
-    },
-    listenerOptions
-  )
-
-  inputEl.addEventListener(
-    'pointerup',
-    (event: PointerEvent) => {
-      if (isMiddleForPointerEvent(event)) {
-        app.canvas.processMouseUp(event)
-      }
-    },
-    listenerOptions
-  )
-
-  return () => controller.abort()
+  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
+    if (isMiddleForPointerEvent(event)) {
+      app.canvas.processMouseUp(event)
+    }
+  })
 }

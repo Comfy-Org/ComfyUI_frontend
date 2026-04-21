@@ -335,11 +335,14 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     // The save pipeline uploads the mask plus at least one image layer.
     // Pinning >=1 of each catches regressions where either branch silently
-    // short-circuits, which the prior `sum > 0` assertion would not.
-    expect(maskUploadCount, 'mask upload should fire').toBeGreaterThanOrEqual(1)
-    expect(imageUploadCount, 'image upload should fire').toBeGreaterThanOrEqual(
-      1
-    )
+    // short-circuits. Poll because `dialog.root` can hide before both route
+    // handlers have actually incremented their counters on CI.
+    await expect
+      .poll(() => maskUploadCount, { message: 'mask upload should fire' })
+      .toBeGreaterThanOrEqual(1)
+    await expect
+      .poll(() => imageUploadCount, { message: 'image upload should fire' })
+      .toBeGreaterThanOrEqual(1)
   })
 
   test('save failure keeps dialog open', async ({ comfyPage }) => {
