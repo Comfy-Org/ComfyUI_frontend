@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
+  isMiddleForPointerEvent,
   isMiddlePointerInput
 } from '@/base/pointerUtils'
 
@@ -173,5 +174,74 @@ describe('isMiddleButtonEvent', () => {
     // is a left-button event, not a middle-button event.
     const event = new MouseEvent('mousedown', { button: 0, buttons: 5 })
     expect(isMiddleButtonEvent(event)).toBe(false)
+  })
+})
+
+describe('isMiddleForPointerEvent', () => {
+  it('dispatches pointerdown through isMiddlePointerInput (strict buttons)', () => {
+    // Middle-only pointerdown → true
+    expect(
+      isMiddleForPointerEvent(
+        new PointerEvent('pointerdown', { button: 1, buttons: 4 })
+      )
+    ).toBe(true)
+
+    // Chorded pointerdown (left pressed while middle is incidentally held) →
+    // strict semantics reject; must NOT forward as middle.
+    expect(
+      isMiddleForPointerEvent(
+        new PointerEvent('pointerdown', { button: 0, buttons: 5 })
+      )
+    ).toBe(false)
+  })
+
+  it('dispatches pointermove through isMiddleButtonHeld (bitmask)', () => {
+    // Middle-only move → true
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointermove', { buttons: 4 }))
+    ).toBe(true)
+
+    // Chorded move (middle + left, middle + right, all three) → still held,
+    // forwarding must survive the chord.
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointermove', { buttons: 5 }))
+    ).toBe(true)
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointermove', { buttons: 6 }))
+    ).toBe(true)
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointermove', { buttons: 7 }))
+    ).toBe(true)
+
+    // No middle bit → false
+    expect(
+      isMiddleForPointerEvent(new PointerEvent('pointermove', { buttons: 1 }))
+    ).toBe(false)
+  })
+
+  it('dispatches pointerup through isMiddleButtonEvent (button field)', () => {
+    // Middle released, buttons already dropped middle — must still identify
+    // this as a middle event via `button`.
+    expect(
+      isMiddleForPointerEvent(
+        new PointerEvent('pointerup', { button: 1, buttons: 0 })
+      )
+    ).toBe(true)
+
+    // Non-middle pointerup → false
+    expect(
+      isMiddleForPointerEvent(
+        new PointerEvent('pointerup', { button: 0, buttons: 0 })
+      )
+    ).toBe(false)
+  })
+
+  it('falls back to isMiddleButtonEvent for other event types (e.g. auxclick)', () => {
+    expect(
+      isMiddleForPointerEvent(new MouseEvent('auxclick', { button: 1 }))
+    ).toBe(true)
+    expect(
+      isMiddleForPointerEvent(new MouseEvent('auxclick', { button: 2 }))
+    ).toBe(false)
   })
 })

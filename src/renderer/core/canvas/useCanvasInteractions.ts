@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { isMiddleButtonEvent, isMiddleButtonHeld } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -72,15 +72,11 @@ export function useCanvasInteractions() {
    * be forwarded to canvas (e.g., space+drag for panning)
    */
   const handlePointer = (event: PointerEvent) => {
-    // pointermove reports held state in `buttons`, so use the bitmask check
-    // there to keep chorded interactions (middle+left, etc.) alive. down/up
-    // use `button` for the released/pressed transition so a left-click with
-    // middle incidentally held is not misclassified as middle input.
-    const isMiddle =
-      event.type === 'pointermove'
-        ? isMiddleButtonHeld(event)
-        : isMiddleButtonEvent(event)
-    if (isMiddle) {
+    // Route through the shared type-dispatcher so pointerdown uses strict
+    // semantics (chorded left-click with middle held is NOT middle input),
+    // pointermove uses the bitmask held check to survive chords, and
+    // pointerup identifies the released button via `button`.
+    if (isMiddleForPointerEvent(event)) {
       forwardEventToCanvas(event)
       return
     }

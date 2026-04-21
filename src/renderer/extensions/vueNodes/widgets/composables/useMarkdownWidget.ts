@@ -9,7 +9,7 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/composables/forwardMiddleButtonToCanvas'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'

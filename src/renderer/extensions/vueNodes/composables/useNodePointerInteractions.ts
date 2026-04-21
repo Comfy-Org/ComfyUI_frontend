@@ -1,7 +1,7 @@
 import { onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isMiddleButtonEvent, isMiddleButtonHeld } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -22,15 +22,7 @@ export function useNodePointerInteractions(
   const { nodeManager } = useVueNodeLifecycle()
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-    // pointermove reports held buttons in `buttons`, so use the bitmask check
-    // to keep chorded gestures (middle held + left press) routed to the
-    // canvas mid-drag. down/up use `button` so a left-click with middle
-    // incidentally held is not misclassified as middle input.
-    const isMiddle =
-      event.type === 'pointermove'
-        ? isMiddleButtonHeld(event)
-        : isMiddleButtonEvent(event)
-    if (!isMiddle) return false
+    if (!isMiddleForPointerEvent(event)) return false
     forwardEventToCanvas(event)
     return true
   }

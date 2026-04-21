@@ -58,3 +58,27 @@ export function isMiddleButtonHeld(event: PointerEvent | MouseEvent): boolean {
 export function isMiddleButtonEvent(event: PointerEvent | MouseEvent): boolean {
   return 'button' in event && event.button === 1
 }
+
+/**
+ * Dispatches between the three middle-button predicates based on the event's
+ * type, so a single handler bound to multiple pointer events picks the right
+ * semantic per event:
+ *
+ * - pointerdown → {@link isMiddlePointerInput} (strict, rejects chorded
+ *   pointerdowns where middle is only incidentally held)
+ * - pointermove → {@link isMiddleButtonHeld} (bitmask, keeps a chorded
+ *   drag alive when the user adds/removes other buttons mid-gesture)
+ * - pointerup and everything else → {@link isMiddleButtonEvent} (`button`
+ *   field, the only reliable source on release)
+ *
+ * Use this at sites that wire the same callback to pointerdown, pointermove,
+ * and pointerup together (e.g. capture-phase forwarders). Handlers that only
+ * care about a single event type should call the specific helper directly.
+ */
+export function isMiddleForPointerEvent(
+  event: PointerEvent | MouseEvent
+): boolean {
+  if (event.type === 'pointerdown') return isMiddlePointerInput(event)
+  if (event.type === 'pointermove') return isMiddleButtonHeld(event)
+  return isMiddleButtonEvent(event)
+}
