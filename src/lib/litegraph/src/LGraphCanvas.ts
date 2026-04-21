@@ -1971,7 +1971,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** Prevents default for middle-click auxclick only. */
   _preventMiddleAuxClick(e: MouseEvent): void {
-    if (isMiddlePointerInput(e)) e.preventDefault()
+    // Gate on the released button, not the held bitmask. On a non-middle
+    // auxclick (e.g. right-button release), `buttons` may still include the
+    // middle bit if middle is held, which would false-positive through
+    // isMiddlePointerInput and suppress defaults for unrelated auxclicks.
+    if (isMiddleButtonDown(e)) e.preventDefault()
   }
 
   /** Captures an event and prevents default - returns true. */
