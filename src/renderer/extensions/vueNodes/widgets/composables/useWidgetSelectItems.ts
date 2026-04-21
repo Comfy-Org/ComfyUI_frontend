@@ -146,18 +146,34 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     { immediate: true }
   )
 
+  const inputAssetsByName = computed<Map<string, AssetItem>>(() => {
+    const map = new Map<string, AssetItem>()
+    const assets = options.inputMediaAssets?.media.value
+    if (!assets) return map
+    for (const asset of assets) {
+      map.set(asset.name, asset)
+    }
+    return map
+  })
+
   const inputItems = computed<FormDropdownItem[]>(() => {
     const values = toValue(options.values) || []
     if (!Array.isArray(values)) return []
 
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
-    return values.map((value, index) => ({
-      id: `input-${index}`,
-      preview_url: getMediaUrl(String(value), 'input', kind),
-      name: String(value),
-      label: getDisplayLabel(String(value), labelFn)
-    }))
+    const lookup = inputAssetsByName.value
+    return values.map((value, index) => {
+      const name = String(value)
+      const matched = lookup.get(name)
+      return {
+        id: `input-${index}`,
+        preview_url: getMediaUrl(name, 'input', kind),
+        name,
+        label: getDisplayLabel(name, labelFn),
+        created_at: matched?.created_at
+      }
+    })
   })
 
   const outputItems = computed<FormDropdownItem[]>(() => {

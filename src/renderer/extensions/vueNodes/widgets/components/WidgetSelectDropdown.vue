@@ -48,6 +48,7 @@ const modelValue = defineModel<string | undefined>({
 const { t } = useI18n()
 
 const outputMediaAssets = useMediaAssets('output')
+const inputMediaAssets = useMediaAssets('input')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -84,6 +85,7 @@ const {
   modelValue,
   assetKind: () => props.assetKind,
   outputMediaAssets,
+  inputMediaAssets,
   assetData,
   isAssetMode: () => props.isAssetMode
 })
@@ -146,8 +148,12 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.loading.value) {
+  if (!isOpen) return
+  if (!outputMediaAssets.loading.value) {
     void outputMediaAssets.refresh()
+  }
+  if (!inputMediaAssets.loading.value) {
+    void inputMediaAssets.refresh()
   }
 }
 </script>
