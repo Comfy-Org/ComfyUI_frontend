@@ -28,6 +28,17 @@ const RED_SHADER = [
   '}'
 ].join('\n')
 
+/** Wait until an `<img>` locator has finished decoding. */
+async function waitForImageDecoded(image: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      image.evaluate(
+        (el: HTMLImageElement) => el.complete && el.naturalWidth > 0
+      )
+    )
+    .toBe(true)
+}
+
 /** Page-object helper bound to the GLSLShader node under test. */
 class GLSLShaderNode {
   readonly node: Locator
@@ -106,6 +117,7 @@ class GLSLShaderNode {
     expected: [number, number, number, number],
     tolerance = 1
   ): Promise<void> {
+    await waitForImageDecoded(this.previewImage)
     const mismatch = await this.previewImage.evaluate(
       (
         img: HTMLImageElement,
@@ -155,7 +167,9 @@ async function dropImageOntoLoadImage(
   await comfyPage.dragDrop.dragAndDropFile(filename, {
     dropPosition: { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
   })
-  await expect(node.locator('.image-preview img')).toBeVisible()
+  const preview = node.locator('.image-preview img')
+  await expect(preview).toBeVisible()
+  await waitForImageDecoded(preview)
 }
 
 test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
@@ -300,7 +314,7 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     const LOAD_IMAGE_NODE_ID = '2'
 
-    test('uses upstream image dimensions and binds it as u_image0', async ({
+    test('uses upstream image dimensions', async ({
       comfyPage,
       getWebSocket
     }) => {
