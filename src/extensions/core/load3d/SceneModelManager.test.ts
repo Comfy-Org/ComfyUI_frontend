@@ -1,8 +1,12 @@
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { EventManagerInterface } from './interfaces'
+import {
+  DEFAULT_MODEL_CAPABILITIES,
+  type ModelAdapterCapabilities
+} from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
+import type { EventManagerInterface } from './interfaces'
 
 function createMockRenderer(): THREE.WebGLRenderer {
   return {
@@ -23,6 +27,7 @@ function createManager(
   overrides: {
     scene?: THREE.Scene
     eventManager?: EventManagerInterface
+    capabilities?: ModelAdapterCapabilities
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
@@ -32,6 +37,7 @@ function createManager(
   const getActiveCamera = () => camera
   const setupCamera = vi.fn()
   const setupGizmo = vi.fn()
+  const capabilities = overrides.capabilities ?? DEFAULT_MODEL_CAPABILITIES
 
   const manager = new SceneModelManager(
     scene,
@@ -39,7 +45,8 @@ function createManager(
     eventManager,
     getActiveCamera,
     setupCamera,
-    setupGizmo
+    setupGizmo,
+    () => capabilities
   )
 
   return {
@@ -386,8 +393,17 @@ describe('SceneModelManager', () => {
       expect(renderer.outputColorSpace).toBe(THREE.SRGBColorSpace)
     })
 
-    it('delegates to handlePLYModeSwitch for BufferGeometry original model', async () => {
-      const { manager, eventManager } = createManager()
+    it('rebuilds the scene object when capability requiresMaterialRebuild is set', async () => {
+      const { manager, eventManager } = createManager({
+        capabilities: {
+          fitToViewer: true,
+          requiresMaterialRebuild: true,
+          gizmoTransform: true,
+          lighting: true,
+          exportable: true,
+          materialModes: ['original', 'normal', 'wireframe']
+        }
+      })
       const model = createMeshModel()
       await manager.setupModel(model)
 
@@ -575,29 +591,18 @@ describe('SceneModelManager', () => {
     })
   })
 
-  describe('containsSplatMesh', () => {
-    it('returns false when no model', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh()).toBe(false)
-    })
-
-    it('returns false for regular model', async () => {
-      const { manager } = createManager()
-      const model = createMeshModel()
-      await manager.setupModel(model)
-
-      expect(manager.containsSplatMesh()).toBe(false)
-    })
-
-    it('returns false for explicit null argument', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh(null)).toBe(false)
-    })
-  })
-
   describe('PLY mode switching', () => {
+    const PLY_CAPABILITIES: ModelAdapterCapabilities = {
+      fitToViewer: true,
+      requiresMaterialRebuild: true,
+      gizmoTransform: true,
+      lighting: true,
+      exportable: true,
+      materialModes: ['original', 'pointCloud', 'normal', 'wireframe']
+    }
+
     function createPLYManager() {
-      const ctx = createManager()
+      const ctx = createManager({ capabilities: PLY_CAPABILITIES })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
@@ -655,7 +660,9 @@ describe('SceneModelManager', () => {
     })
 
     it('uses vertex colors when available', () => {
-      const { manager, scene } = createManager()
+      const { manager, scene } = createManager({
+        capabilities: PLY_CAPABILITIES
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
