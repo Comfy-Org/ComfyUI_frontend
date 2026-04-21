@@ -22,7 +22,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isDOMWidget } from '@/scripts/domWidget'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
@@ -66,6 +66,12 @@ export interface SafeWidgetData {
   hasLayoutSize?: boolean
   /** Whether widget is a DOM widget */
   isDOMWidget?: boolean
+  /**
+   * Whether widget is a Vue component-backed widget (e.g. `multi_select`
+   * combos). Rendered through `WidgetComponent` so the widget's own Vue
+   * component is mounted inside the Nodes 2.0 tree.
+   */
+  isComponentWidget?: boolean
   /**
    * Widget options needed for render decisions.
    * Note: Most metadata should be accessed via widgetValueStore.getWidget().
@@ -343,6 +349,7 @@ function safeWidgetMapper(
         callback,
         hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
+        isComponentWidget: isComponentWidget(widget),
         options: isPromotedPseudoWidget
           ? {
               ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
