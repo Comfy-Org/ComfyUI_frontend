@@ -126,4 +126,14 @@ describe('attachContextMenuGuard', () => {
 
     expect(onMenu).toHaveBeenCalledOnce()
   })
+
+  it('detects a chorded (LMB+RMB) right-drag via buttons bitmask', () => {
+    dispose = attachContextMenuGuard(target, onMenu, { dragThreshold: 5 })
+
+    target.dispatchEvent(rightMouse('mousedown', 100, 100))
+    target.dispatchEvent(rightMouse('mousemove', 200, 200, 3))
+    target.dispatchEvent(rightMouse('contextmenu', 100, 100))
+
+    expect(onMenu).not.toHaveBeenCalled()
+  })
 })

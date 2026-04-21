@@ -23,6 +23,7 @@ const mtlLoaderStub = {
 }
 const objLoaderStub = {
   setWorkerUrl: vi.fn(),
+  setTerminateWorkerOnLoad: vi.fn(),
   setMaterials: vi.fn(),
   loadAsync: vi.fn<(url: string) => Promise<THREE.Object3D>>()
 }
@@ -58,6 +59,7 @@ vi.mock('three/examples/jsm/loaders/MTLLoader', () => ({
 vi.mock('wwobjloader2', () => ({
   OBJLoader2Parallel: class {
     setWorkerUrl = objLoaderStub.setWorkerUrl
+    setTerminateWorkerOnLoad = objLoaderStub.setTerminateWorkerOnLoad
     setMaterials = objLoaderStub.setMaterials
     loadAsync = objLoaderStub.loadAsync
   },
@@ -121,6 +123,11 @@ describe('MeshModelAdapter', () => {
         'gltf',
         'glb'
       ])
+    })
+
+    it('configures the OBJ worker to terminate after each load', () => {
+      new MeshModelAdapter()
+      expect(objLoaderStub.setTerminateWorkerOnLoad).toHaveBeenCalledWith(true)
     })
   })
 

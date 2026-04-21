@@ -38,6 +38,7 @@ export class MeshModelAdapter implements ModelAdapter {
       true,
       new URL(OBJLoader2WorkerUrl, import.meta.url)
     )
+    this.objLoader.setTerminateWorkerOnLoad(true)
   }
 
   async load(

@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
@@ -174,6 +174,12 @@ const availableCategories = computed(() => {
   return categories
 })
 
+watch(availableCategories, (categories) => {
+  if (!categories.includes(activeCategory.value)) {
+    activeCategory.value = 'scene'
+  }
+})
+
 const showSceneControls = computed(
   () => activeCategory.value === 'scene' && !!sceneConfig.value
 )
@@ -185,13 +191,16 @@ const showCameraControls = computed(
 )
 const showLightControls = computed(
   () =>
+    canUseLighting &&
     activeCategory.value === 'light' &&
     !!lightConfig.value &&
     !!modelConfig.value
 )
-const showExportControls = computed(() => activeCategory.value === 'export')
+const showExportControls = computed(
+  () => canExport && activeCategory.value === 'export'
+)
 const showGizmoControls = computed(
-  () => activeCategory.value === 'gizmo' && !!modelConfig.value
+  () => canUseGizmo && activeCategory.value === 'gizmo' && !!modelConfig.value
 )
 
 const toggleMenu = () => {

@@ -781,6 +781,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       await load3d.loadModel(modelUrl)
+      captureAdapterFlags(load3d)
 
       const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
       if (modelWidget) {

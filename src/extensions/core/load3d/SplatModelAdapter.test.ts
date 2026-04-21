@@ -5,16 +5,21 @@ import type { ModelLoadContext } from './ModelAdapter'
 import * as ModelAdapterModule from './ModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 
-const splatMeshCtor = vi.fn()
+const { splatMeshCtor } = vi.hoisted(() => ({
+  splatMeshCtor: vi.fn<(opts: { fileBytes: ArrayBuffer }) => void>()
+}))
 
-vi.mock('@sparkjsdev/spark', () => ({
-  SplatMesh: class extends THREE.Object3D {
-    constructor(opts: { fileBytes: ArrayBuffer }) {
-      super()
-      splatMeshCtor(opts)
+vi.mock('@sparkjsdev/spark', async () => {
+  const three = await import('three')
+  return {
+    SplatMesh: class extends three.Object3D {
+      constructor(opts: { fileBytes: ArrayBuffer }) {
+        super()
+        splatMeshCtor(opts)
+      }
     }
   }
-}))
+})
 
 function makeContext(): ModelLoadContext {
   return {

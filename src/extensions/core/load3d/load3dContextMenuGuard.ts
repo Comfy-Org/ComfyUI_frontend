@@ -31,7 +31,7 @@ export function attachContextMenuGuard(
     'mousemove',
     (e) => {
       if (
-        e.buttons === 2 &&
+        (e.buttons & 2) === 2 &&
         exceedsClickThreshold(
           start,
           { x: e.clientX, y: e.clientY },

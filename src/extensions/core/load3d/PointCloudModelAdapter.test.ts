@@ -8,7 +8,9 @@ import {
   buildPointCloudForMaterialMode
 } from './PointCloudModelAdapter'
 
-const mockSettingGet = vi.fn<(key: string) => unknown>()
+const { mockSettingGet } = vi.hoisted(() => ({
+  mockSettingGet: vi.fn<(key: string) => unknown>()
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: mockSettingGet })
@@ -103,6 +105,28 @@ describe('PointCloudModelAdapter', () => {
       const child = result!.children[0]
       expect(child).toBeInstanceOf(THREE.Mesh)
       expect(ctx.setOriginalModel).toHaveBeenCalledTimes(1)
+    })
+
+    it('applies MeshNormalMaterial when materialMode is normal at load time', async () => {
+      const adapter = new PointCloudModelAdapter()
+      const ctx = makeContext('normal')
+
+      const result = await adapter.load(ctx, '/api/view?', 'cloud.ply')
+
+      const mesh = result!.children[0] as THREE.Mesh
+      expect(mesh).toBeInstanceOf(THREE.Mesh)
+      expect(mesh.material).toBeInstanceOf(THREE.MeshNormalMaterial)
+    })
+
+    it('applies wireframe MeshBasicMaterial when materialMode is wireframe at load time', async () => {
+      const adapter = new PointCloudModelAdapter()
+      const ctx = makeContext('wireframe')
+
+      const result = await adapter.load(ctx, '/api/view?', 'cloud.ply')
+
+      const mesh = result!.children[0] as THREE.Mesh
+      expect(mesh.material).toBeInstanceOf(THREE.MeshBasicMaterial)
+      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
     })
 
     it('returns a Group containing Points when materialMode is pointCloud', async () => {

@@ -49,13 +49,42 @@ export class PointCloudModelAdapter implements ModelAdapter {
     plyGeometry.computeVertexNormals()
 
     const hasVertexColors = plyGeometry.attributes.color !== undefined
-
-    if (ctx.materialMode === 'pointCloud') {
-      return buildPointsGroup(ctx, plyGeometry, hasVertexColors)
-    }
-
-    return buildMeshGroup(ctx, plyGeometry, hasVertexColors)
+    return buildGroupForMaterialMode(
+      ctx,
+      plyGeometry,
+      hasVertexColors,
+      ctx.materialMode
+    )
   }
+}
+
+function buildGroupForMaterialMode(
+  ctx: ModelLoadContext,
+  geometry: THREE.BufferGeometry,
+  hasVertexColors: boolean,
+  mode: MaterialMode
+): THREE.Group {
+  if (mode === 'pointCloud') {
+    return buildPointsGroup(ctx, geometry, hasVertexColors)
+  }
+
+  const group = buildMeshGroup(ctx, geometry, hasVertexColors)
+
+  if (mode === 'normal' || mode === 'wireframe') {
+    const mesh = group.children[0] as THREE.Mesh
+    mesh.material =
+      mode === 'normal'
+        ? new THREE.MeshNormalMaterial({
+            flatShading: false,
+            side: THREE.DoubleSide
+          })
+        : new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            wireframe: true
+          })
+  }
+
+  return group
 }
 
 function buildPointsGroup(
@@ -136,25 +165,5 @@ export function buildPointCloudForMaterialMode(
     materialMode: mode
   }
 
-  if (mode === 'pointCloud') {
-    return buildPointsGroup(ctx, geometry, hasVertexColors)
-  }
-
-  const group = buildMeshGroup(ctx, geometry, hasVertexColors)
-
-  if (mode === 'normal' || mode === 'wireframe') {
-    const mesh = group.children[0] as THREE.Mesh
-    mesh.material =
-      mode === 'normal'
-        ? new THREE.MeshNormalMaterial({
-            flatShading: false,
-            side: THREE.DoubleSide
-          })
-        : new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            wireframe: true
-          })
-  }
-
-  return group
+  return buildGroupForMaterialMode(ctx, geometry, hasVertexColors, mode)
 }
