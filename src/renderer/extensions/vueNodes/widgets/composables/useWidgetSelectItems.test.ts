@@ -630,6 +630,36 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('FE-228: output dropdown label uses human-readable filename', () => {
+    it('renders metadata.filename in label when asset.name is a hash', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-hash-1',
+          name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
+          asset_hash:
+            'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
+          preview_url: '/preview.png',
+          tags: ['output'],
+          metadata: {
+            filename: 'sunset_photo.png'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].label).toBe('sunset_photo.png [output]')
+    })
+  })
+
   describe('selectedSet', () => {
     beforeEach(() => {
       setActivePinia(createTestingPinia({ stubActions: false }))
