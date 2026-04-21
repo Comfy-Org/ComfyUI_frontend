@@ -14,8 +14,12 @@ beforeEach(() => {
 describe('moveNode', () => {
   it('does nothing when node does not exist', () => {
     const { moveNode } = useLayoutMutations()
+    const before1 = layoutStore.getNodeLayoutRef('1').value?.position
+    const before2 = layoutStore.getNodeLayoutRef('2').value?.position
     moveNode('999', { x: 100, y: 200 })
     expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
+    expect(layoutStore.getNodeLayoutRef('1').value?.position).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value?.position).toEqual(before2)
   })
 
   it('updates node position', () => {
@@ -40,8 +44,12 @@ describe('moveNode', () => {
 describe('resizeNode', () => {
   it('does nothing when node does not exist', () => {
     const { resizeNode } = useLayoutMutations()
+    const before1 = layoutStore.getNodeLayoutRef('1').value?.size
+    const before2 = layoutStore.getNodeLayoutRef('2').value?.size
     resizeNode('999', { width: 400, height: 200 })
     expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
+    expect(layoutStore.getNodeLayoutRef('1').value?.size).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value?.size).toEqual(before2)
   })
 
   it('updates node size', () => {
@@ -57,8 +65,12 @@ describe('resizeNode', () => {
 describe('setNodeZIndex', () => {
   it('does nothing when node does not exist', () => {
     const { setNodeZIndex } = useLayoutMutations()
+    const before1 = layoutStore.getNodeLayoutRef('1').value?.zIndex
+    const before2 = layoutStore.getNodeLayoutRef('2').value?.zIndex
     setNodeZIndex('999', 10)
     expect(layoutStore.getNodeLayoutRef('999').value).toBeNull()
+    expect(layoutStore.getNodeLayoutRef('1').value?.zIndex).toBe(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value?.zIndex).toBe(before2)
   })
 
   it('updates node z-index', () => {
@@ -86,6 +98,7 @@ describe('deleteNode', () => {
     const { deleteNode } = useLayoutMutations()
     deleteNode('999')
     expect(layoutStore.getNodeLayoutRef('1').value).not.toBeNull()
+    expect(layoutStore.getNodeLayoutRef('2').value).not.toBeNull()
   })
 
   it('removes node from the store', () => {
@@ -98,9 +111,11 @@ describe('deleteNode', () => {
 describe('batchMoveNodes', () => {
   it('does nothing when updates array is empty', () => {
     const { batchMoveNodes } = useLayoutMutations()
-    const before = layoutStore.getNodeLayoutRef('1').value?.position
+    const before1 = layoutStore.getNodeLayoutRef('1').value?.position
+    const before2 = layoutStore.getNodeLayoutRef('2').value?.position
     batchMoveNodes([])
-    expect(layoutStore.getNodeLayoutRef('1').value?.position).toEqual(before)
+    expect(layoutStore.getNodeLayoutRef('1').value?.position).toEqual(before1)
+    expect(layoutStore.getNodeLayoutRef('2').value?.position).toEqual(before2)
   })
 
   it('updates positions for all found nodes', () => {
@@ -146,6 +161,26 @@ describe('bringNodeToFront', () => {
   it('gives the node a higher z-index than all other nodes', () => {
     const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
     setNodeZIndex('2', 10)
+    bringNodeToFront('1')
+    const z1 = layoutStore.getNodeLayoutRef('1').value?.zIndex ?? 0
+    const z2 = layoutStore.getNodeLayoutRef('2').value?.zIndex ?? 0
+    expect(z1).toBeGreaterThan(z2)
+  })
+
+  it('gives the node a higher z-index when all nodes start at the same level', () => {
+    const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
+    setNodeZIndex('1', 5)
+    setNodeZIndex('2', 5)
+    bringNodeToFront('1')
+    const z1 = layoutStore.getNodeLayoutRef('1').value?.zIndex ?? 0
+    const z2 = layoutStore.getNodeLayoutRef('2').value?.zIndex ?? 0
+    expect(z1).toBeGreaterThan(z2)
+  })
+
+  it('remains frontmost when the already-leading node is brought to front again', () => {
+    const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
+    setNodeZIndex('1', 20)
+    setNodeZIndex('2', 5)
     bringNodeToFront('1')
     const z1 = layoutStore.getNodeLayoutRef('1').value?.zIndex ?? 0
     const z2 = layoutStore.getNodeLayoutRef('2').value?.zIndex ?? 0
