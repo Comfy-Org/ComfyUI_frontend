@@ -184,10 +184,13 @@ const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
 
-const { isLoading, error } = useImage({
-  src: asset.preview_url ?? '',
-  alt: displayName.value
-})
+const { isLoading, error } = useImage(
+  {
+    src: asset.preview_url ?? '',
+    alt: displayName.value
+  },
+  { onError: () => {} }
+)
 
 function handleSelect() {
   acknowledgeAsset(asset.id)

@@ -63,5 +63,7 @@ const imageOptions = computed(() => ({
   src: normalizedPreviewUrl.value ?? ''
 }))
 
-const { isReady, isLoading, error } = useImage(imageOptions)
+const { isReady, isLoading, error } = useImage(imageOptions, {
+  onError: () => {}
+})
 </script>

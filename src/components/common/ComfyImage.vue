@@ -51,5 +51,8 @@ const {
   alt?: string
 }>()
 
-const { error } = useImage(computed(() => ({ src, alt })))
+const { error } = useImage(
+  computed(() => ({ src, alt })),
+  { onError: () => {} }
+)
 </script>

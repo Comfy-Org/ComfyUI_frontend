@@ -34,10 +34,13 @@ const emit = defineEmits<{
   view: []
 }>()
 
-const { state, error, isReady } = useImage({
-  src: asset.src ?? '',
-  alt: getAssetDisplayName(asset)
-})
+const { state, error, isReady } = useImage(
+  {
+    src: asset.src ?? '',
+    alt: getAssetDisplayName(asset)
+  },
+  { onError: () => {} }
+)
 
 whenever(
   () =>
