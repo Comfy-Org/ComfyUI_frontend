@@ -32,7 +32,11 @@ const borderStyle = computed(() =>
       )
     "
   >
-    <div v-if="!hideLayoutField" class="content-center-safe truncate">
+    <div
+      v-if="!hideLayoutField"
+      data-testid="widget-layout-field-label"
+      class="content-center-safe truncate"
+    >
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>

@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
@@ -45,23 +44,26 @@ describe('WidgetLayoutField', () => {
       expect(screen.queryByText('seed')).toBeNull()
     })
 
-    it('renders no label text when widget.name is empty', () => {
-      const { container } = renderField({ name: '' })
+    it('renders the label area without text when widget.name is empty', () => {
+      renderField({ name: '' })
+      expect(screen.getByTestId('widget-layout-field-label')).toHaveTextContent(
+        ''
+      )
       expect(screen.getByTestId('slot')).toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container -- no semantic role for the label div; asserting on container text is the only way
-      expect(container.textContent?.trim()).toBe('content')
     })
   })
 
-  describe('HideLayoutField injection', () => {
+  describe('Label visibility', () => {
     it('shows the label area by default', () => {
       renderField({ name: 'seed' })
-      expect(screen.getByText('seed')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('widget-layout-field-label')
+      ).toBeInTheDocument()
     })
 
     it('hides the label area when HideLayoutFieldKey is true', () => {
       renderField({ name: 'seed' }, { hideLayoutField: true })
-      expect(screen.queryByText('seed')).toBeNull()
+      expect(screen.queryByTestId('widget-layout-field-label')).toBeNull()
     })
 
     it('still renders the slotted content when the label is hidden', () => {

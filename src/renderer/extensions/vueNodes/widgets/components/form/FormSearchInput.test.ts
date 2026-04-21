@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import FormSearchInput from './FormSearchInput.vue'
@@ -19,10 +20,7 @@ const i18n = createI18n({
   }
 })
 
-type Searcher = (
-  query: string,
-  onCleanup: (fn: () => void) => void
-) => Promise<void>
+type Searcher = NonNullable<ComponentProps<typeof FormSearchInput>['searcher']>
 
 function renderSearch(
   initialQuery: string = '',
