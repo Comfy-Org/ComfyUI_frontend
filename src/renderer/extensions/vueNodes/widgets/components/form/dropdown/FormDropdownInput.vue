@@ -17,6 +17,7 @@ interface Props {
   uploadable: boolean
   disabled: boolean
   accept?: string
+  ariaLabel?: string
 }
 
 const {
@@ -28,7 +29,8 @@ const {
   maxSelectable,
   uploadable,
   disabled,
-  accept
+  accept,
+  ariaLabel
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -61,6 +63,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      :aria-label="ariaLabel"
       :class="
         cn(
           theButtonStyle,

@@ -172,6 +172,7 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :multiple="false"
       :uploadable
       :accept="acceptTypes"
+      :aria-label="widget.name"
       :filter-options
       :show-ownership-filter
       :ownership-options
