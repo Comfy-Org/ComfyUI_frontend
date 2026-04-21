@@ -113,8 +113,8 @@ export function useToolManager(
 
   // Pan gate shared by pointerdown and pointermove: middle-button (strict so
   // chorded pointerdown on a non-middle button is not misclassified) OR
-  // space-held left-drag. Extracting this keeps the two handlers readable
-  // and pins the contract tests rely on.
+  // space-held left-drag. Extracting keeps both handlers as a single
+  // early-exit against one named contract instead of a repeated boolean.
   const shouldPan = (event: PointerEvent): boolean => {
     if (isMiddlePointerInput(event)) return true
     return event.buttons === 1 && keyboard.isKeyDown(' ')
@@ -136,7 +136,6 @@ export function useToolManager(
 
     if (store.currentTool === Tools.PaintPen && event.button === 0) {
       await brushDrawing.startDrawing(event)
-
       return
     }
 
@@ -173,7 +172,6 @@ export function useToolManager(
 
     if ([0, 2].includes(event.button) && isDrawingTool) {
       await brushDrawing.startDrawing(event)
-      return
     }
   }
 
@@ -209,7 +207,6 @@ export function useToolManager(
 
     if (event.buttons === 1 || event.buttons === 2) {
       await brushDrawing.handleDrawing(event)
-      return
     }
   }
 
