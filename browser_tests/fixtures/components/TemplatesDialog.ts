@@ -7,7 +7,7 @@ export class TemplatesDialog {
 
   constructor(public readonly page: Page) {
     this.root = page.getByRole('dialog')
-    this.modelFilter = this.root.getByRole('combobox', { name: /Model/ })
+    this.modelFilter = this.root.getByRole('button', { name: /Model Filter/ })
     this.resultsCount = this.root.getByText(/Showing.*of.*templates/i)
   }
 
