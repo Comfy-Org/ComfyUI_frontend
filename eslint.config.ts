@@ -287,8 +287,7 @@ export default defineConfig([
       ],
       // Tests routinely define stub and harness components side-by-side with the
       // system under test, which is a distinct use case from production SFCs.
-      'vue/one-component-per-file': 'off',
-      'vue/no-reserved-component-names': 'off'
+      'vue/one-component-per-file': 'off'
     }
   },
   {

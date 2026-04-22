@@ -2,15 +2,15 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetLayoutField from './WidgetLayoutField.vue'
 
-type WidgetShape = {
-  name: string
-  label?: string
-  borderStyle?: string
-}
+type WidgetShape = Pick<
+  SimplifiedWidget<string>,
+  'name' | 'label' | 'borderStyle'
+>
 
 function renderField(
   widget: WidgetShape,

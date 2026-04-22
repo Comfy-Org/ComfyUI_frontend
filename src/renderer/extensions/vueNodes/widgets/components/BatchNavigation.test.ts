@@ -13,7 +13,6 @@ const i18n = createI18n({
 })
 
 const ButtonStub = defineComponent({
-  name: 'Button',
   inheritAttrs: false,
   props: { disabled: { type: Boolean, default: false } },
   template:

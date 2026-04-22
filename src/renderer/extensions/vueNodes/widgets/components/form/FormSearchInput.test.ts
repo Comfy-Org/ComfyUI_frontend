@@ -107,6 +107,7 @@ describe('FormSearchInput', () => {
       query.value = 'a'
       query.value = 'ab'
       query.value = 'abc'
+      // refDebounced delay is 250ms — 100ms is still within the window
       await vi.advanceTimersByTimeAsync(100)
       expect(searcher).not.toHaveBeenCalled()
 
