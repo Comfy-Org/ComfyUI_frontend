@@ -7,6 +7,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -64,12 +65,9 @@ function handleSubmit() {
   <section ref="sectionRef" class="px-4 py-20 lg:flex lg:px-20 lg:py-24">
     <!-- Left column: intro + image -->
     <div class="lg:w-1/2">
-      <span
-        ref="badgeRef"
-        class="text-primary-comfy-yellow text-xs font-bold tracking-wider"
-      >
+      <SectionLabel ref="badgeRef">
         {{ t(tk('badge'), locale) }}
-      </span>
+      </SectionLabel>
 
       <h1
         ref="headingRef"
@@ -96,7 +94,7 @@ function handleSubmit() {
         </p>
       </div>
 
-      <div ref="imageRef" class="mt-8 -ml-20 overflow-hidden rounded-2xl">
+      <div ref="imageRef" class="mt-8 overflow-hidden rounded-2xl lg:-ml-20">
         <img
           src="https://media.comfy.org/website/contact/c-projection.webp"
           alt=""
@@ -163,7 +161,7 @@ function handleSubmit() {
           <p class="text-primary-comfy-canvas text-xs">
             {{ t(tk('packageQuestion'), locale) }}
           </p>
-          <div class="mt-3 flex gap-3">
+          <div class="mt-3 flex flex-wrap gap-3">
             <label
               v-for="opt in packageOptions"
               :key="opt"

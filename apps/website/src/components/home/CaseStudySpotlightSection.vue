@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
+import GlassCard from '../common/GlassCard.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -12,8 +13,8 @@ const routes = getRoutes(locale)
 
 <template>
   <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
-    <div
-      class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-12 p-2 lg:flex-row lg:items-stretch lg:gap-8"
+    <GlassCard
+      class="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >
       <!-- Left: video -->
       <div class="flex-1 overflow-hidden rounded-4xl">
@@ -61,6 +62,6 @@ const routes = getRoutes(locale)
           </BrandButton>
         </div>
       </div>
-    </div>
+    </GlassCard>
   </section>
 </template>

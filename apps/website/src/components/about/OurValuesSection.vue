@@ -3,6 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -34,11 +35,9 @@ const values: {
 <template>
   <section class="px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto max-w-5xl text-center">
-      <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
-      >
+      <SectionLabel>
         {{ t('about.values.label', locale) }}
-      </span>
+      </SectionLabel>
       <h2
         class="text-primary-comfy-canvas mt-6 text-3xl font-light lg:text-5xl"
       >

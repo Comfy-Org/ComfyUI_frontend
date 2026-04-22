@@ -30,6 +30,7 @@ const iconSrc = computed(() => {
   <BrandButton
     v-show="platform"
     :href="downloadUrl"
+    target="_blank"
     size="lg"
     :class="customClass"
   >

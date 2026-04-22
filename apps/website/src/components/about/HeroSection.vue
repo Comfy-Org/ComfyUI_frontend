@@ -5,6 +5,7 @@ import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -46,12 +47,9 @@ useHeroAnimation({
       <div
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-24 lg:pl-12"
       >
-        <span
-          ref="labelRef"
-          class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
-        >
+        <SectionLabel ref="labelRef">
           {{ t('about.hero.label', locale) }}
-        </span>
+        </SectionLabel>
         <h1
           ref="headingRef"
           class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
@@ -73,7 +71,7 @@ useHeroAnimation({
     </div>
 
     <!-- Video overlapping the hero graphic -->
-    <div ref="videoRef" class="-mt-16 px-20 pb-40 lg:-mt-72">
+    <div ref="videoRef" class="-mt-16 px-4 pb-20 lg:-mt-72 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
         poster="https://media.comfy.org/website/about/co-founders-poster.webp"

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import type { GalleryItem } from './GallerySection.vue'
+
+import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {
   item,
@@ -48,19 +49,7 @@ defineEmits<{ click: [] }>()
           <div class="gap-2">
             <p class="text-sm font-bold text-white">{{ item.title }}</p>
             <p class="text-primary-comfy-canvas text-xs">
-              {{ t('gallery.card.by', locale) }}
-              <span class="text-primary-comfy-yellow">{{
-                item.userAlias
-              }}</span>
-              <template v-if="item.teamAlias">
-                {{ t('gallery.card.and', locale) }}
-                <span class="text-primary-comfy-yellow">{{
-                  item.teamAlias
-                }}</span>
-                {{ t('gallery.card.teamUsing', locale) }}
-              </template>
-              <template v-else> using </template>
-              <span class="text-primary-comfy-yellow">{{ item.tool }}</span>
+              <GalleryItemAttribution :item :locale />
             </p>
           </div>
           <span
@@ -89,15 +78,7 @@ defineEmits<{ click: [] }>()
     <div v-if="mobile" class="mt-2 gap-2">
       <p class="text-sm font-bold text-white">{{ item.title }}</p>
       <p class="text-primary-comfy-canvas text-xs">
-        {{ t('gallery.card.by', locale) }}
-        <span class="text-primary-comfy-yellow">{{ item.userAlias }}</span>
-        <template v-if="item.teamAlias">
-          {{ t('gallery.card.and', locale) }}
-          <span class="text-primary-comfy-yellow">{{ item.teamAlias }}</span>
-          {{ t('gallery.card.teamUsing', locale) }}
-        </template>
-        <template v-else> using </template>
-        <span class="text-primary-comfy-yellow">{{ item.tool }}</span>
+        <GalleryItemAttribution :item :locale />
       </p>
     </div>
   </div>

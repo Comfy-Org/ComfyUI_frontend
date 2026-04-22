@@ -8,11 +8,13 @@ import { brandButtonVariants } from './brandButton.variants'
 
 const {
   href,
+  target,
   variant,
   size,
   class: customClass = ''
 } = defineProps<{
   href?: string
+  target?: string
   variant?: BrandButtonVariants['variant']
   size?: BrandButtonVariants['size']
   class?: HTMLAttributes['class']
@@ -23,6 +25,7 @@ const {
   <component
     :is="href ? 'a' : 'button'"
     :href
+    :target
     :class="cn(brandButtonVariants({ variant, size }), customClass)"
   >
     <span class="ppformula-text-center">

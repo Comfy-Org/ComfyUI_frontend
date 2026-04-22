@@ -10,6 +10,7 @@ import { scrollTo } from '../../scripts/smoothScroll'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
+import SectionLabel from './SectionLabel.vue'
 import { deriveSections } from '../../config/contentSections'
 
 const {
@@ -201,11 +202,9 @@ function scrollToSection(id: string) {
               v-else-if="block.type === 'author'"
               :class="cn('mt-8 rounded-2xl p-6', 'bg-(--site-bg-soft)')"
             >
-              <span
-                class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
-              >
+              <SectionLabel>
                 {{ t(key(section.id, `block.${i}.label`), locale) }}
-              </span>
+              </SectionLabel>
               <p class="text-primary-comfy-canvas mt-2 text-sm font-semibold">
                 {{ t(key(section.id, `block.${i}.name`), locale) }}
               </p>

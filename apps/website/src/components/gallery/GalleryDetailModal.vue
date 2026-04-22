@@ -7,6 +7,7 @@ import { t } from '../../i18n/translations'
 import { lockScroll, unlockScroll } from '../../composables/useScrollLock'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from '../common/BrandButton.vue'
+import GalleryItemAttribution from './GalleryItemAttribution.vue'
 import type { GalleryItem } from './GallerySection.vue'
 
 const {
@@ -138,15 +139,11 @@ onUnmounted(() => {
           >
             <h2 class="text-2xl font-bold">{{ activeItem.title }}</h2>
             <p class="mt-2 text-xs">
-              {{ t('gallery.card.by', locale) }}
-              <span class="font-bold">{{ activeItem.userAlias }}</span>
-              <template v-if="activeItem.teamAlias">
-                {{ t('gallery.card.and', locale) }}
-                <span class="font-bold">{{ activeItem.teamAlias }}</span>
-                {{ t('gallery.card.teamUsing', locale) }}
-              </template>
-              <template v-else> using </template>
-              <span class="font-bold">{{ activeItem.tool }}</span>
+              <GalleryItemAttribution
+                :item="activeItem"
+                highlight-class="font-bold"
+                :locale
+              />
             </p>
           </div>
           <BrandButton
@@ -227,15 +224,11 @@ onUnmounted(() => {
           >
             <h2 class="text-xl font-bold">{{ activeItem.title }}</h2>
             <p class="mt-2 text-xs">
-              {{ t('gallery.card.by', locale) }}
-              <span class="font-bold">{{ activeItem.userAlias }}</span>
-              <template v-if="activeItem.teamAlias">
-                {{ t('gallery.card.and', locale) }}
-                <span class="font-bold">{{ activeItem.teamAlias }}</span>
-                {{ t('gallery.card.teamUsing', locale) }}
-              </template>
-              <template v-else> using </template>
-              <span class="font-bold">{{ activeItem.tool }}</span>
+              <GalleryItemAttribution
+                :item="activeItem"
+                highlight-class="font-bold"
+                :locale
+              />
             </p>
           </div>
           <BrandButton

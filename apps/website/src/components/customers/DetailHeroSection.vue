@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BrandButton from '../common/BrandButton.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 
 interface ButtonProps {
   label: string
@@ -20,12 +21,9 @@ const { label, title, description, primaryButton, secondaryButton, image } =
 <template>
   <section class="pt-16 lg:px-20 lg:pt-40 lg:pb-8">
     <div class="mx-auto flex max-w-4xl flex-col items-center text-center">
-      <span
-        v-if="label"
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
-      >
+      <SectionLabel v-if="label">
         {{ label }}
-      </span>
+      </SectionLabel>
 
       <h1
         class="text-primary-comfy-canvas mt-4 text-3xl/tight font-light lg:text-5xl/tight"

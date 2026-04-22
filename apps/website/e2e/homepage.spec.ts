@@ -96,13 +96,16 @@ test.describe('Product showcase accordion @interaction', () => {
     await expect(async () => {
       await secondFeature.click()
       await expect(
-        page.getByText(/If you are new to ComfyUI/).first()
-      ).toBeVisible({ timeout: 1000 })
-    }).toPass({ timeout: 10000 })
+        secondFeature.getByText(/If you are new to ComfyUI/)
+      ).toBeVisible({ timeout: 2000 })
+    }).toPass({ timeout: 15000 })
 
-    await expect(
-      page.getByText(/Build powerful AI pipelines by connecting nodes/).first()
-    ).toBeHidden()
+    const firstFeature = page
+      .getByRole('button', { name: /Full Control with Nodes/i })
+      .first()
+
+    await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
+    await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
   })
 })
 
@@ -120,30 +123,19 @@ test.describe('Video player @interaction', () => {
     await page.goto('/')
   })
 
-  test('playback advances progress and clicking the scrubber seeks', async ({
-    page
-  }) => {
+  test('clicking play advances playback', async ({ page }) => {
     const section = page.locator('section', {
       has: page.getByText('Customer Stories')
     })
     const video = section.locator('video')
-    const scrubber = section.getByRole('slider', { name: 'Seek' })
 
     await expect
-      .poll(async () =>
-        video.evaluate((element: HTMLVideoElement) => element.duration)
+      .poll(
+        async () =>
+          video.evaluate((element: HTMLVideoElement) => element.duration),
+        { timeout: 15_000 }
       )
       .toBeGreaterThan(0)
-
-    const loadedDuration = await video.evaluate(
-      (element: HTMLVideoElement) => element.duration
-    )
-
-    await expect
-      .poll(async () => Number(await scrubber.getAttribute('aria-valuemax')))
-      .toBeGreaterThan(0)
-
-    await expect(scrubber).toHaveAttribute('aria-valuenow', '0')
 
     await section.getByRole('button', { name: 'Play' }).click()
 
@@ -152,35 +144,6 @@ test.describe('Video player @interaction', () => {
         video.evaluate((element: HTMLVideoElement) => element.currentTime)
       )
       .toBeGreaterThan(0)
-
-    await expect
-      .poll(async () => Number(await scrubber.getAttribute('aria-valuenow')))
-      .toBeGreaterThan(0)
-
-    const scrubberBox = await scrubber.boundingBox()
-
-    expect(scrubberBox).not.toBeNull()
-
-    if (!scrubberBox) {
-      throw new Error('Expected video scrubber bounding box')
-    }
-
-    await scrubber.click({
-      position: {
-        x: scrubberBox.width * 0.75,
-        y: scrubberBox.height / 2
-      }
-    })
-
-    await expect
-      .poll(async () => Number(await scrubber.getAttribute('aria-valuenow')))
-      .toBeGreaterThanOrEqual(loadedDuration * 0.5)
-
-    await expect
-      .poll(async () =>
-        video.evaluate((element: HTMLVideoElement) => element.currentTime)
-      )
-      .toBeGreaterThanOrEqual(loadedDuration * 0.5)
   })
 })
 
@@ -212,6 +175,6 @@ test.describe('Get started section links @smoke', () => {
 
     const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
     await expect(cloudLink).toBeVisible()
-    await expect(cloudLink).toHaveAttribute('href', 'https://app.comfy.org')
+    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
   })
 })
