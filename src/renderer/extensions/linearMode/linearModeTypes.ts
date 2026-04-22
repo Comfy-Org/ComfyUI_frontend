@@ -1,4 +1,4 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 export interface InProgressItem {
@@ -10,7 +10,7 @@ export interface InProgressItem {
 }
 
 export interface OutputSelection {
-  asset?: AssetItem
+  job?: JobListItem
   output?: ResultItemImpl
   canShowPreview: boolean
   latentPreviewUrl?: string

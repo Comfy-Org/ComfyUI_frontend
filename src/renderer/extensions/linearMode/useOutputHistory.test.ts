@@ -2,13 +2,13 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 
-const mediaRef = ref<AssetItem[]>([])
+const mediaRef = ref<JobListItem[]>([])
 const pendingResolveRef = ref(new Set<string>())
 const inProgressItemsRef = ref<InProgressItem[]>([])
 const activeWorkflowInProgressItemsRef = ref<InProgressItem[]>([])
@@ -115,25 +115,29 @@ vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
   }
 }))
 
-function makeAsset(
+function makeJob(
   id: string,
-  jobId: string,
   opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
-): AssetItem {
+): JobListItem {
   return {
     id,
-    name: `${id}.png`,
-    tags: [],
-    preview_url: `/view?filename=${id}.png`,
-    user_metadata: {
-      jobId,
-      nodeId: '1',
-      subfolder: '',
-      ...(opts?.allOutputs ? { allOutputs: opts.allOutputs } : {}),
-      ...(opts?.outputCount !== undefined
-        ? { outputCount: opts.outputCount }
-        : {})
-    }
+    status: 'completed',
+    create_time: 0,
+    //name: `${id}.png`,
+    //tags: [],
+    output_count: opts?.outputCount,
+    outputs: opts?.allOutputs && unflatResults(opts.allOutputs),
+    priority: 0
+    //preview_url: `/view?filename=${id}.png`,
+    //user_metadata: {
+    //  jobId,
+    //  nodeId: '1',
+    //  subfolder: '',
+    //  ...(opts?.allOutputs ? { allOutputs: opts.allOutputs } : {}),
+    //  ...(opts?.outputCount !== undefined
+    //    ? { outputCount: opts.outputCount }
+    //    : {})
+    //}
   }
 }
 
@@ -145,6 +149,18 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
     nodeId,
     mediaType: 'images'
   })
+}
+
+function unflatResults(results: ResultItemImpl[]) {
+  const ret: Record<string, Record<string, ResultItemImpl[]>> = {}
+  for (const result of results) {
+    ret[result.nodeId] ??= {}
+    const nodeOutputs = ret[result.nodeId]
+
+    nodeOutputs[result.mediaType] ??= []
+    nodeOutputs[result.mediaType].push(result)
+  }
+  return ret
 }
 
 describe(useOutputHistory, () => {
@@ -172,22 +188,22 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      mediaRef.value = [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
+      mediaRef.value = [makeJob('job-1'), makeJob('job-2')]
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(outputs.value).toHaveLength(1)
+      expect(outputs.value[0].id).toBe('a1')
     })
 
     it('returns empty when no workflow is active', () => {
       activeWorkflowPathRef.value = ''
       jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
-      mediaRef.value = [makeAsset('a1', 'job-1')]
+      mediaRef.value = [makeJob('job-1')]
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(0)
+      expect(outputs.value).toHaveLength(0)
     })
 
     it('updates when active workflow changes', async () => {
@@ -195,19 +211,19 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      mediaRef.value = [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
+      mediaRef.value = [makeJob('job-1'), makeJob('job-2')]
 
       activeWorkflowPathRef.value = 'workflows/a.json'
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(outputs.value).toHaveLength(1)
+      expect(outputs.value[0].id).toBe('a1')
 
       activeWorkflowPathRef.value = 'workflows/b.json'
       await nextTick()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a2')
+      expect(outputs.value).toHaveLength(1)
+      expect(outputs.value[0].id).toBe('a2')
     })
   })
 
@@ -222,7 +238,7 @@ describe(useOutputHistory, () => {
     it('returns outputs from metadata allOutputs when count matches', () => {
       useAppModeStore().selectedOutputs.push('1')
       const results = [makeResult('a.png'), makeResult('b.png')]
-      const asset = makeAsset('a1', 'job-1', {
+      const asset = makeJob('job-1', {
         allOutputs: results,
         outputCount: 2
       })
@@ -242,7 +258,7 @@ describe(useOutputHistory, () => {
         makeResult('b.png', '2'),
         makeResult('c.png', '3')
       ]
-      const asset = makeAsset('a1', 'job-1', {
+      const asset = makeJob('job-1', {
         allOutputs: results,
         outputCount: 3
       })
@@ -259,7 +275,7 @@ describe(useOutputHistory, () => {
 
     it('returns empty when no output nodes are selected', () => {
       const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
-      const asset = makeAsset('a1', 'job-1', {
+      const asset = makeJob('job-1', {
         allOutputs: results,
         outputCount: 2
       })
@@ -272,7 +288,7 @@ describe(useOutputHistory, () => {
 
     it('returns consistent filtered outputs across repeated calls', () => {
       const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
-      const asset = makeAsset('a1', 'job-1', {
+      const asset = makeJob('job-1', {
         allOutputs: results,
         outputCount: 2
       })
@@ -306,7 +322,7 @@ describe(useOutputHistory, () => {
           output: makeResult('b.png')
         }
       ]
-      const asset = makeAsset('a1', 'job-1')
+      const asset = makeJob('job-1')
 
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
@@ -329,7 +345,7 @@ describe(useOutputHistory, () => {
           }
         }
       })
-      const asset = makeAsset('a1', 'job-1')
+      const asset = makeJob('job-1')
 
       const { allOutputs } = useOutputHistory()
 
@@ -348,7 +364,7 @@ describe(useOutputHistory, () => {
     it('resolves pending jobs when history outputs load', async () => {
       useAppModeStore().selectedOutputs.push('1')
       const results = [makeResult('a.png')]
-      const asset = makeAsset('a1', 'job-1', {
+      const asset = makeJob('job-1', {
         allOutputs: results,
         outputCount: 1
       })
@@ -367,7 +383,7 @@ describe(useOutputHistory, () => {
     it('does not select first history when a selection exists', async () => {
       useAppModeStore().selectedOutputs.push('1')
       const results = [makeResult('a.png')]
-      const asset = makeAsset('a1', 'job-1', {
+      const asset = makeJob('job-1', {
         allOutputs: results,
         outputCount: 1
       })
@@ -397,7 +413,7 @@ describe(useOutputHistory, () => {
   describe('selectFirstHistory', () => {
     it('selects first media item', () => {
       jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
-      mediaRef.value = [makeAsset('a1', 'job-1')]
+      mediaRef.value = [makeJob('job-1')]
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()

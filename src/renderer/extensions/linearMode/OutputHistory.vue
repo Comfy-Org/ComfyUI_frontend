@@ -28,12 +28,13 @@ import OutputPreviewItem from '@/renderer/extensions/linearMode/OutputPreviewIte
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useHistoryStore, useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
   useOutputHistory()
 const { hasOutputs } = storeToRefs(useAppModeStore())
+const historyStore = useHistoryStore()
 const queueStore = useQueueStore()
 const store = useLinearOutputStore()
 const workflowStore = useWorkflowStore()
@@ -56,7 +57,7 @@ const hasActiveContent = computed(
 )
 
 const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => allOutputs(a).length > 0)
+  outputs.value.filter((a) => allOutputs(a).length > 0)
 )
 
 const selectableItems = computed(() => {
@@ -71,7 +72,7 @@ const selectableItems = computed(() => {
       itemId: item.id
     })
   }
-  for (const asset of outputs.media.value) {
+  for (const asset of outputs.value) {
     const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
       items.push({
@@ -137,11 +138,11 @@ function doEmit() {
     }
     return
   }
-  const asset = outputs.media.value.find((a) => a.id === sel.assetId)
-  const output = asset ? allOutputs(asset)[sel.key] : undefined
-  const isFirst = outputs.media.value[0]?.id === sel.assetId
+  const job = outputs.value.find((a) => a.id === sel.assetId)
+  const output = job ? allOutputs(job)[sel.key] : undefined
+  const isFirst = outputs.value[0]?.id === sel.assetId
   emit('updateSelection', {
-    asset,
+    job,
     output,
     canShowPreview: isFirst
   })
@@ -170,7 +171,7 @@ watch(
 
 // Keep history selection stable on media changes
 watch(
-  () => outputs.media.value,
+  () => outputs.value,
   (newAssets, oldAssets) => {
     if (
       newAssets.length === oldAssets.length ||
@@ -219,8 +220,8 @@ watch(
   }
 )
 
-useInfiniteScroll(outputsRef, outputs.loadMore, {
-  canLoadMore: () => outputs.hasMore.value
+useInfiniteScroll(outputsRef, historyStore.loadMoreHistory, {
+  canLoadMore: () => historyStore.hasMoreHistory
 })
 
 function navigateToAdjacent(direction: 1 | -1) {

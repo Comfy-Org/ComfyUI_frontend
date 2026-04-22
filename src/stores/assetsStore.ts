@@ -1,6 +1,6 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { difference } from 'es-toolkit'
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
@@ -13,7 +13,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
-import { TaskItemImpl } from './queueStore'
+import { TaskItemImpl, useHistoryStore } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
 
@@ -84,12 +84,16 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
   )
 }
 
-const BATCH_SIZE = 200
-const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
-
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const historyStore = useHistoryStore()
+
+  const { isLoadingMore, hasMoreHistory, historyError } =
+    storeToRefs(historyStore)
+  const historyAssets = computed(() =>
+    mapHistoryToAssets(historyStore.historyItems)
+  )
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -105,15 +109,6 @@ export const useAssetsStore = defineStore('assets', () => {
   const isAssetDeleting = (assetId: string): boolean => {
     return deletingAssetIds.has(assetId)
   }
-
-  // Pagination state
-  const historyOffset = ref(0)
-  const hasMoreHistory = ref(true)
-  const isLoadingMore = ref(false)
-
-  const allHistoryItems = ref<AssetItem[]>([])
-
-  const loadedIds = shallowReactive(new Set<string>())
 
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -131,120 +126,6 @@ export const useAssetsStore = defineStore('assets', () => {
       console.error('Error fetching input assets:', err)
     }
   })
-
-  /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
-   */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
-    if (!loadMore) {
-      historyOffset.value = 0
-      hasMoreHistory.value = true
-      allHistoryItems.value = []
-      loadedIds.clear()
-    }
-
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
-
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
-
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
-        loadedIds.add(asset.id)
-
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
-      }
-    } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
-    }
-
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
-
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
-
-    return allHistoryItems.value
-  }
-
-  const historyAssets = ref<AssetItem[]>([])
-  const historyLoading = ref(false)
-  const historyError = ref<unknown>(null)
-
-  /**
-   * Initial load of history assets
-   */
-  const updateHistory = async () => {
-    historyLoading.value = true
-    historyError.value = null
-    try {
-      await fetchHistoryAssets(false)
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error fetching history assets:', err)
-      historyError.value = err
-      // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      historyLoading.value = false
-    }
-  }
-
-  /**
-   * Load more history items (infinite scroll)
-   */
-  const loadMoreHistory = async () => {
-    // Guard: prevent concurrent loads and check if more items available
-    if (!hasMoreHistory.value || isLoadingMore.value) return
-
-    isLoadingMore.value = true
-    historyError.value = null
-
-    try {
-      await fetchHistoryAssets(true)
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error loading more history:', err)
-      historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      isLoadingMore.value = false
-    }
-  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -726,7 +607,7 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssets,
     historyAssets,
     inputLoading,
-    historyLoading,
+    historyLoading: isLoadingMore,
     inputError,
     historyError,
     hasMoreHistory,
@@ -739,8 +620,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Actions
     updateInputs,
-    updateHistory,
-    loadMoreHistory,
+    updateHistory: historyStore.updateHistory,
+    loadMoreHistory: historyStore.loadMoreHistory,
 
     // Input mapping helpers
     inputAssetsByFilename,
