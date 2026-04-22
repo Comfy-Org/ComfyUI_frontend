@@ -143,7 +143,7 @@ function getCardClass(layoutClass: string): string {
               />
 
               <div
-                class="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-black/15"
+                class="absolute inset-0 bg-linear-to-t from-black/50 via-black/5 to-black/35"
               />
 
               <div
@@ -166,7 +166,7 @@ function getCardClass(layoutClass: string): string {
               </div>
 
               <p
-                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-2xl/tight font-light whitespace-pre-line lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
+                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-2xl/tight font-light whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
                 {{ t(card.titleKey, locale) }}
               </p>
