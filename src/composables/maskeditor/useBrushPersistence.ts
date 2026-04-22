@@ -19,16 +19,20 @@ function loadBrushFromStorage(): Brush | null {
   }
 }
 
+const debouncedWrite = debounce((serialized: string): void => {
+  try {
+    setStorageValue(STORAGE_KEY, serialized)
+  } catch (error) {
+    console.error('Failed to save brush to cache:', error)
+  }
+}, 300)
+
 export function useBrushPersistence() {
   const store = useMaskEditorStore()
 
-  const save = debounce((): void => {
-    try {
-      setStorageValue(STORAGE_KEY, JSON.stringify(store.brushSettings))
-    } catch (error) {
-      console.error('Failed to save brush to cache:', error)
-    }
-  }, 300)
+  function save(): void {
+    debouncedWrite(JSON.stringify(store.brushSettings))
+  }
 
   function loadAndApply(): void {
     const cached = loadBrushFromStorage()

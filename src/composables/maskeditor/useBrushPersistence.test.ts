@@ -88,4 +88,14 @@ describe('save', () => {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(saved.size).toBe(99)
   })
+
+  it('captures settings at call time so a subsequent store reset does not overwrite the save', () => {
+    const store = useMaskEditorStore()
+    store.brushSettings.size = 77
+    const { save } = useBrushPersistence()
+    save()
+    store.brushSettings.size = 10
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(saved.size).toBe(77)
+  })
 })
