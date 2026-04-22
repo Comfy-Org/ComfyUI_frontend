@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test'
 
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 
+import { test } from './fixtures/blockExternalMedia'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -24,12 +25,7 @@ async function assertNoOverflow(page: Page) {
     .toBe(false)
 }
 
-async function blockVideoRequests(page: Page) {
-  await page.route('**/*.{webm,mp4}', (route) => route.abort())
-}
-
 async function navigateAndSettle(page: Page, url: string) {
-  await blockVideoRequests(page)
   await page.goto(url)
   await page.waitForLoadState('networkidle')
 }
