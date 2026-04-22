@@ -1,7 +1,7 @@
 <template>
   <BaseViewTemplate dark>
     <main
-      class="relative flex w-full max-w-lg flex-col gap-6 rounded-lg bg-(--comfy-menu-bg) p-8 shadow-lg"
+      class="relative my-8 flex w-full max-w-lg flex-col gap-6 rounded-lg bg-(--comfy-menu-bg) p-8 shadow-lg"
     >
       <header class="flex flex-col gap-1">
         <h1 class="text-xl font-semibold text-neutral-100">
@@ -338,7 +338,7 @@ function connectAndGo() {
   const base = normalizeUrl(backendUrl.value)
   localStorage.setItem(STORAGE_KEY, base)
   // Full page reload so ComfyApi constructor picks up the new backend URL
-  window.location.href = '/'
+  window.location.href = import.meta.env.BASE_URL || '/'
 }
 
 const version = __COMFYUI_FRONTEND_VERSION__
