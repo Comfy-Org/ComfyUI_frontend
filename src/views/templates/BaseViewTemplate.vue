@@ -14,9 +14,7 @@
       class="app-drag h-(--comfy-topbar-height) w-full"
     />
     <div class="grid w-full grow place-items-center overflow-auto">
-      <div class="py-8">
-        <slot />
-      </div>
+      <slot />
     </div>
   </div>
 </template>
