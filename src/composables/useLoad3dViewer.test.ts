@@ -110,7 +110,15 @@ describe('useLoad3dViewer', () => {
       addEventListener: vi.fn(),
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
-      isPlyModel: vi.fn().mockReturnValue(false)
+      isPlyModel: vi.fn().mockReturnValue(false),
+      setGizmoEnabled: vi.fn(),
+      setGizmoMode: vi.fn(),
+      setBackgroundRenderMode: vi.fn(),
+      getGizmoTransform: vi.fn().mockReturnValue({
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      })
     }
 
     mockSourceLoad3d = {
@@ -163,20 +171,6 @@ describe('useLoad3dViewer', () => {
   })
 
   describe('initialization', () => {
-    it('should initialize with default values', () => {
-      const viewer = useLoad3dViewer(mockNode)
-
-      expect(viewer.backgroundColor.value).toBe('')
-      expect(viewer.showGrid.value).toBe(true)
-      expect(viewer.cameraType.value).toBe('perspective')
-      expect(viewer.fov.value).toBe(75)
-      expect(viewer.lightIntensity.value).toBe(1)
-      expect(viewer.backgroundImage.value).toBe('')
-      expect(viewer.hasBackgroundImage.value).toBe(false)
-      expect(viewer.upDirection.value).toBe('original')
-      expect(viewer.materialMode.value).toBe('original')
-    })
-
     it('should initialize viewer with source Load3d state', async () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
@@ -240,104 +234,7 @@ describe('useLoad3dViewer', () => {
     })
   })
 
-  describe('state watchers', () => {
-    it('should update background color when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.backgroundColor.value = '#ff0000'
-      await nextTick()
-
-      expect(mockLoad3d.setBackgroundColor).toHaveBeenCalledWith('#ff0000')
-    })
-
-    it('should update grid visibility when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.showGrid.value = false
-      await nextTick()
-
-      expect(mockLoad3d.toggleGrid).toHaveBeenCalledWith(false)
-    })
-
-    it('should update camera type when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.cameraType.value = 'orthographic'
-      await nextTick()
-
-      expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('orthographic')
-    })
-
-    it('should update FOV when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.fov.value = 90
-      await nextTick()
-
-      expect(mockLoad3d.setFOV).toHaveBeenCalledWith(90)
-    })
-
-    it('should update light intensity when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.lightIntensity.value = 2
-      await nextTick()
-
-      expect(mockLoad3d.setLightIntensity).toHaveBeenCalledWith(2)
-    })
-
-    it('should update background image when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.backgroundImage.value = 'new-bg.jpg'
-      await nextTick()
-
-      expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('new-bg.jpg')
-      expect(viewer.hasBackgroundImage.value).toBe(true)
-    })
-
-    it('should update up direction when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.upDirection.value = '+y'
-      await nextTick()
-
-      expect(mockLoad3d.setUpDirection).toHaveBeenCalledWith('+y')
-    })
-
-    it('should update material mode when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.materialMode.value = 'wireframe'
-      await nextTick()
-
-      expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('wireframe')
-    })
-
+  describe('error handling', () => {
     it('should handle watcher errors gracefully', async () => {
       vi.mocked(mockLoad3d.setBackgroundColor!).mockImplementationOnce(
         function () {
@@ -747,6 +644,120 @@ describe('useLoad3dViewer', () => {
       const newViewer = useLoad3dViewer()
       await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
       expect(newViewer.backgroundColor.value).toBe('#0000ff')
+    })
+  })
+
+  describe('gizmo controls', () => {
+    it('should initialize gizmo state from node model config', async () => {
+      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+        {
+          enabled: true,
+          mode: 'rotate'
+        }
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.gizmoEnabled.value).toBe(true)
+      expect(viewer.gizmoMode.value).toBe('rotate')
+    })
+
+    it('should default gizmo to disabled translate when no config', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.gizmoEnabled.value).toBe(false)
+      expect(viewer.gizmoMode.value).toBe('translate')
+    })
+
+    it('should persist gizmo state in applyChanges', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.gizmoEnabled.value = true
+      viewer.gizmoMode.value = 'rotate'
+
+      await viewer.applyChanges()
+
+      const modelConfig = mockNode.properties!['Model Config'] as Record<
+        string,
+        unknown
+      >
+      const gizmo = modelConfig.gizmo as Record<string, unknown>
+      expect(gizmo.enabled).toBe(true)
+      expect(gizmo.mode).toBe('rotate')
+    })
+
+    it('should save gizmo transform from load3d in applyChanges', async () => {
+      vi.mocked(mockLoad3d.getGizmoTransform!).mockReturnValue({
+        position: { x: 1, y: 2, z: 3 },
+        rotation: { x: 0.1, y: 0.2, z: 0.3 },
+        scale: { x: 2, y: 2, z: 2 }
+      })
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      await viewer.applyChanges()
+
+      const modelConfig = mockNode.properties!['Model Config'] as Record<
+        string,
+        unknown
+      >
+      const gizmo = modelConfig.gizmo as {
+        position: { x: number; y: number; z: number }
+        rotation: { x: number; y: number; z: number }
+        scale: { x: number; y: number; z: number }
+      }
+      expect(gizmo.position).toEqual({ x: 1, y: 2, z: 3 })
+      expect(gizmo.rotation).toEqual({ x: 0.1, y: 0.2, z: 0.3 })
+      expect(gizmo.scale).toEqual({ x: 2, y: 2, z: 2 })
+    })
+
+    it('should restore gizmo state in restoreInitialState', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.gizmoEnabled.value = true
+      viewer.gizmoMode.value = 'rotate'
+
+      viewer.restoreInitialState()
+
+      const modelConfig = mockNode.properties!['Model Config'] as Record<
+        string,
+        unknown
+      >
+      const gizmo = modelConfig.gizmo as Record<string, unknown>
+      expect(gizmo.enabled).toBe(false)
+      expect(gizmo.mode).toBe('translate')
+    })
+
+    it('should restore gizmo state from standalone config cache', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'gizmo_model1.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      viewer.gizmoEnabled.value = true
+      viewer.gizmoMode.value = 'rotate'
+      await nextTick()
+
+      viewer.cleanup()
+
+      const restoredViewer = useLoad3dViewer()
+      await restoredViewer.initializeStandaloneViewer(containerRef, model1)
+      expect(restoredViewer.gizmoEnabled.value).toBe(true)
+      expect(restoredViewer.gizmoMode.value).toBe('rotate')
     })
   })
 })

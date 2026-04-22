@@ -188,6 +188,11 @@ describe('assetMetadataUtils', () => {
         expected: 'Civitai'
       },
       {
+        name: 'returns Civitai for civitai.red',
+        url: 'https://civitai.red/models/123',
+        expected: 'Civitai'
+      },
+      {
         name: 'returns Hugging Face for huggingface.co',
         url: 'https://huggingface.co/org/model',
         expected: 'Hugging Face'

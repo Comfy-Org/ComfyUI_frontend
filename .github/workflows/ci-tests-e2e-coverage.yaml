@@ -98,3 +98,50 @@ jobs:
           flags: e2e
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+      - name: Generate HTML coverage report
+        run: |
+          if [ ! -s coverage/playwright/coverage.lcov ]; then
+            echo "No coverage data; generating placeholder report."
+            mkdir -p coverage/html
+            echo '<html><body><h1>No E2E coverage data available for this run.</h1></body></html>' > coverage/html/index.html
+            exit 0
+          fi
+          genhtml coverage/playwright/coverage.lcov \
+            -o coverage/html \
+            --title "ComfyUI E2E Coverage" \
+            --no-function-coverage \
+            --precision 1
+
+      - name: Upload HTML report artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage-html
+          path: coverage/html/
+          retention-days: 30
+
+  deploy:
+    needs: merge
+    if: github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download HTML report
+        uses: actions/download-artifact@v7
+        with:
+          name: e2e-coverage-html
+          path: coverage/html
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: coverage/html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

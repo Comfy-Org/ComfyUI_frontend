@@ -361,9 +361,17 @@ export const generateUUID = (): string => {
  */
 export const isCivitaiModelUrl = (url: string): boolean => {
   if (!isValidUrl(url)) return false
-  if (!url.includes('civitai.com')) return false
 
   const urlObj = new URL(url)
+  const hostname = urlObj.hostname.toLowerCase()
+  const isCivitaiHost =
+    hostname === 'civitai.com' ||
+    hostname.endsWith('.civitai.com') ||
+    hostname === 'civitai.red' ||
+    hostname.endsWith('.civitai.red')
+  if (!isCivitaiHost) {
+    return false
+  }
   const pathname = urlObj.pathname
 
   return (

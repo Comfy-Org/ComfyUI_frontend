@@ -41,7 +41,7 @@
             v-if="widget.slotMetadata"
             :slot-data="{
               name: widget.name,
-              type: widget.type,
+              type: widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
             :node-id="nodeData?.id != null ? String(nodeData.id) : ''"

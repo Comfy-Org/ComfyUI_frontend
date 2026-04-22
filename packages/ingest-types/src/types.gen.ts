@@ -50,6 +50,72 @@ export type HubAssetUploadUrlRequest = {
   content_type: string
 }
 
+/**
+ * Partial update for a published hub workflow (admin moderation). All fields are optional. Semantics match UpdateHubProfileRequest / avatar_token:
+ *
+ * * field omitted or null — leave unchanged
+ * * string field = ""     — clear (for clearable string fields)
+ * * array field  = []     — clear the list
+ * * any other value       — set to the provided value
+ *
+ * Array fields use full-replacement (PUT) semantics when a value is supplied. The two single-value thumbnail token fields accept only upload tokens (not existing URLs) since omitting them already expresses "keep the current value".
+ * Backend note: cleared string columns are persisted as the empty string "" in the Ent schema (description, thumbnail_url, thumbnail_comparison_url, tutorial_url). thumbnail_type is the only true SQL-nullable column but is not clearable via this endpoint.
+ *
+ */
+export type UpdateHubWorkflowRequest = {
+  /**
+   * Display name. Not clearable. Null/omit leaves unchanged; empty string is invalid.
+   */
+  name?: string | null
+  /**
+   * Workflow description. Send "" to clear. Null/omit leaves unchanged.
+   */
+  description?: string | null
+  /**
+   * Full replacement of tag slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  tags?: Array<string> | null
+  /**
+   * Full replacement of model slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  models?: Array<string> | null
+  /**
+   * Full replacement of custom_node slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  custom_nodes?: Array<string> | null
+  /**
+   * Tutorial URL. Send "" to clear. Null/omit leaves unchanged.
+   */
+  tutorial_url?: string | null
+  /**
+   * Thumbnail kind. Null/omit leaves unchanged; not clearable via this endpoint. If set to image_comparison, both the thumbnail and comparison thumbnail must resolve to a value on the stored record after this update is applied (either already present and not being cleared, or supplied as a token in this request).
+   *
+   */
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  /**
+   * Token from POST /api/hub/assets/upload-url for a newly uploaded thumbnail. Null/omit leaves the existing thumbnail unchanged. Send "" to clear. (PATCH does not accept an existing public URL here — to keep the current thumbnail, simply omit the field.)
+   *
+   */
+  thumbnail_token?: string | null
+  /**
+   * Token from POST /api/hub/assets/upload-url for a newly uploaded comparison thumbnail. Null/omit leaves unchanged. Send "" to clear. (PATCH does not accept an existing public URL here — to keep the current comparison thumbnail, simply omit the field.)
+   *
+   */
+  thumbnail_comparison_token?: string | null
+  /**
+   * Full replacement of sample images. Each element is either a token from /api/hub/assets/upload-url or an existing public URL. Send [] to clear. Null/omit leaves unchanged.
+   *
+   */
+  sample_image_tokens_or_urls?: Array<string> | null
+  /**
+   * Admin-only full replacement of the hub_workflow_detail.metadata JSON object. Null/omit leaves unchanged. Send {} to clear all keys. Accepts arbitrary JSON (size, vram, open_source, media_type, logos, etc.).
+   *
+   */
+  metadata?: {
+    [key: string]: unknown
+  } | null
+}
+
 export type PublishHubWorkflowRequest = {
   /**
    * Username of the hub profile to publish under. The authenticated user must belong to the workspace that owns this profile.
@@ -264,8 +330,26 @@ export type HubWorkflowTemplateEntry = {
   thumbnailVariant?: string
   mediaType?: string
   mediaSubtype?: string
+  /**
+   * Workflow asset size in bytes.
+   */
   size?: number
+  /**
+   * Approximate VRAM requirement in bytes.
+   */
   vram?: number
+  /**
+   * Usage count reported upstream.
+   */
+  usage?: number
+  /**
+   * Search ranking score reported upstream.
+   */
+  searchRank?: number
+  /**
+   * Whether the template belongs to a module marked as essential.
+   */
+  isEssential?: boolean
   openSource?: boolean
   profile?: HubProfileSummary
   tutorialUrl?: string
@@ -1109,6 +1193,143 @@ export type JwksResponse = {
   keys: Array<JwkKey>
 }
 
+export type VerifyApiKeyResponse = {
+  /**
+   * Firebase UID of the key creator
+   */
+  user_id: string
+  /**
+   * User's email address
+   */
+  email: string
+  /**
+   * User's display name
+   */
+  name: string
+  /**
+   * Whether the user is an admin
+   */
+  is_admin: boolean
+  /**
+   * Workspace ID for billing attribution
+   */
+  workspace_id: string
+  /**
+   * Type of workspace
+   */
+  workspace_type: 'personal' | 'team'
+  /**
+   * User's role in the workspace
+   */
+  role: 'owner' | 'member'
+  /**
+   * Whether the workspace has available funds for usage
+   */
+  has_funds: boolean
+  /**
+   * Whether the workspace has an active subscription
+   */
+  is_active: boolean
+  /**
+   * Permissions granted by this key. Always includes the role permission
+   * (`owner:*` or `member:*`). May also include `partner-node:use`,
+   * which is a **staging-only shim** used to gate partner-node access
+   * for non-admin users during testing. No production code path checks
+   * this permission today; it is emitted for parity with the Cloud JWT
+   * claim set so JWT and API-key callers see the same permissions.
+   *
+   */
+  permissions: Array<string>
+}
+
+export type VerifyApiKeyRequest = {
+  /**
+   * The full plaintext API key to verify
+   */
+  api_key: string
+}
+
+export type ListWorkspaceApiKeysResponse = {
+  api_keys: Array<WorkspaceApiKeyInfo>
+}
+
+export type WorkspaceApiKeyInfo = {
+  /**
+   * API key ID
+   */
+  id: string
+  /**
+   * Workspace this key belongs to
+   */
+  workspace_id: string
+  /**
+   * User who created this key
+   */
+  user_id: string
+  /**
+   * User-provided label
+   */
+  name: string
+  /**
+   * First 8 chars after prefix for display
+   */
+  key_prefix: string
+  /**
+   * When the key expires (if set)
+   */
+  expires_at?: string
+  /**
+   * Last time the key was used
+   */
+  last_used_at?: string
+  /**
+   * When the key was revoked (if revoked)
+   */
+  revoked_at?: string
+  /**
+   * When the key was created
+   */
+  created_at: string
+}
+
+export type CreateWorkspaceApiKeyResponse = {
+  /**
+   * API key ID
+   */
+  id: string
+  /**
+   * User-provided label
+   */
+  name: string
+  /**
+   * The full plaintext API key (only shown once)
+   */
+  key: string
+  /**
+   * First 8 chars after prefix for display
+   */
+  key_prefix: string
+  /**
+   * When the key expires (if set)
+   */
+  expires_at?: string
+  /**
+   * When the key was created
+   */
+  created_at: string
+}
+
+export type CreateWorkspaceApiKeyRequest = {
+  /**
+   * User-provided label for the key
+   */
+  name: string
+  /**
+   * Optional expiration timestamp
+   */
+  expires_at?: string
+}
+
 export type AcceptInviteResponse = {
   /**
    * ID of the workspace joined
@@ -1434,6 +1655,9 @@ export type JobDetailResponse = {
   workflow?: {
     [key: string]: unknown
   }
+  /**
+   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
+   */
   execution_error?: ExecutionError
   /**
    * Job creation timestamp (Unix timestamp in milliseconds)
@@ -1489,6 +1713,9 @@ export type JobEntry = {
    * User-friendly job status
    */
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
+   */
   execution_error?: ExecutionError
   /**
    * Job creation timestamp (Unix timestamp in milliseconds)
@@ -1619,6 +1846,9 @@ export type AssetMetadataResponse = {
    * Preview image as base64-encoded data URL
    */
   preview_image?: string
+  /**
+   * Validation results for the file
+   */
   validation?: ValidationResult
 }
 
@@ -1779,34 +2009,6 @@ export type AssetCreated = Asset & {
   created_new: boolean
 }
 
-/**
- * Response after sending an invite email
- */
-export type SendUserInviteEmailResponse = {
-  /**
-   * Whether the email was sent successfully
-   */
-  success: boolean
-  /**
-   * A message describing the result
-   */
-  message: string
-}
-
-/**
- * Request to send an invite email to a user
- */
-export type SendUserInviteEmailRequest = {
-  /**
-   * The email address to send the invitation to
-   */
-  email: string
-  /**
-   * Whether to force send the invite even if user already exists or has been invited
-   */
-  force?: boolean
-}
-
 export type SetReviewStatusResponse = {
   /**
    * The share IDs that were submitted for review
@@ -1827,34 +2029,6 @@ export type SetReviewStatusRequest = {
    * The review decision for the workflows
    */
   status: 'approved' | 'rejected'
-}
-
-/**
- * Response after successfully claiming an invite code
- */
-export type InviteCodeClaimResponse = {
-  /**
-   * Whether the claim was successful
-   */
-  success: boolean
-  /**
-   * Success message
-   */
-  message: string
-}
-
-/**
- * Invite code status response
- */
-export type InviteCodeStatusResponse = {
-  /**
-   * Whether the code has been claimed
-   */
-  claimed: boolean
-  /**
-   * Whether the code has expired
-   */
-  expired: boolean
 }
 
 /**
@@ -1886,7 +2060,11 @@ export type CreateSessionResponse = {
  */
 export type UserResponse = {
   /**
-   * User status (active or waitlisted)
+   * Firebase UID of the authenticated user
+   */
+  id: string
+  /**
+   * User status (always "active" for authenticated users)
    */
   status: string
 }
@@ -2167,11 +2345,11 @@ export type QueueInfo = {
   /**
    * Array of currently running job items
    */
-  queue_running?: Array<Array<unknown>>
+  queue_running?: Array<[unknown, unknown, unknown, unknown, unknown]>
   /**
    * Array of pending job items (ordered by creation time, oldest first)
    */
-  queue_pending?: Array<Array<unknown>>
+  queue_pending?: Array<[unknown, unknown, unknown, unknown, unknown]>
 }
 
 /**
@@ -2445,6 +2623,10 @@ export type ExportDownloadUrlResponse = {
   expires_at?: string
 }
 
+export type BindingErrorResponse = {
+  message: string
+}
+
 export type ErrorResponse = {
   code: string
   message: string
@@ -2709,6 +2891,35 @@ export type GetFeaturesResponses = {
 
 export type GetFeaturesResponse =
   GetFeaturesResponses[keyof GetFeaturesResponses]
+
+export type GetNodeReplacementsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/node_replacements'
+}
+
+export type GetNodeReplacementsErrors = {
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetNodeReplacementsError =
+  GetNodeReplacementsErrors[keyof GetNodeReplacementsErrors]
+
+export type GetNodeReplacementsResponses = {
+  /**
+   * Success - Node replacement mappings
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetNodeReplacementsResponse =
+  GetNodeReplacementsResponses[keyof GetNodeReplacementsResponses]
 
 export type GetWorkflowTemplatesData = {
   body?: never
@@ -3185,7 +3396,7 @@ export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
 
 export type ViewFileResponses = {
   /**
-   * Success - File content returned (used when channel or res parameter is present)
+   * Processed PNG image with extracted channel
    */
   200: Blob | File
 }
@@ -5919,6 +6130,168 @@ export type RemoveWorkspaceMemberResponses = {
 export type RemoveWorkspaceMemberResponse =
   RemoveWorkspaceMemberResponses[keyof RemoveWorkspaceMemberResponses]
 
+export type ListWorkspaceApiKeysData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspace/api-keys'
+}
+
+export type ListWorkspaceApiKeysErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListWorkspaceApiKeysError =
+  ListWorkspaceApiKeysErrors[keyof ListWorkspaceApiKeysErrors]
+
+export type ListWorkspaceApiKeysResponses = {
+  /**
+   * List of API keys
+   */
+  200: ListWorkspaceApiKeysResponse
+}
+
+export type ListWorkspaceApiKeysResponse2 =
+  ListWorkspaceApiKeysResponses[keyof ListWorkspaceApiKeysResponses]
+
+export type CreateWorkspaceApiKeyData = {
+  body: CreateWorkspaceApiKeyRequest
+  path?: never
+  query?: never
+  url: '/api/workspace/api-keys'
+}
+
+export type CreateWorkspaceApiKeyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not a workspace member or personal workspace
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error
+   */
+  422: ErrorResponse
+  /**
+   * Key limit reached
+   */
+  429: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateWorkspaceApiKeyError =
+  CreateWorkspaceApiKeyErrors[keyof CreateWorkspaceApiKeyErrors]
+
+export type CreateWorkspaceApiKeyResponses = {
+  /**
+   * API key created (plaintext returned once)
+   */
+  201: CreateWorkspaceApiKeyResponse
+}
+
+export type CreateWorkspaceApiKeyResponse2 =
+  CreateWorkspaceApiKeyResponses[keyof CreateWorkspaceApiKeyResponses]
+
+export type RevokeWorkspaceApiKeyData = {
+  body?: never
+  path: {
+    /**
+     * API key ID to revoke
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspace/api-keys/{id}'
+}
+
+export type RevokeWorkspaceApiKeyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not authorized to revoke this key
+   */
+  403: ErrorResponse
+  /**
+   * API key not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevokeWorkspaceApiKeyError =
+  RevokeWorkspaceApiKeyErrors[keyof RevokeWorkspaceApiKeyErrors]
+
+export type RevokeWorkspaceApiKeyResponses = {
+  /**
+   * API key revoked
+   */
+  204: void
+}
+
+export type RevokeWorkspaceApiKeyResponse =
+  RevokeWorkspaceApiKeyResponses[keyof RevokeWorkspaceApiKeyResponses]
+
+export type VerifyWorkspaceApiKeyData = {
+  body: VerifyApiKeyRequest
+  path?: never
+  query?: {
+    /**
+     * When true, fetches real billing status from the billing service and populates has_funds and is_active accordingly. When false or omitted, the billing lookup is skipped and has_funds/is_active are returned as true (optimistic defaults). Use true when the caller needs to gate access based on billing (e.g. partner node auth); omit for identity-only lookups (e.g. key caching).
+     */
+    include_billing?: boolean
+  }
+  url: '/admin/api/keys/verify'
+}
+
+export type VerifyWorkspaceApiKeyErrors = {
+  /**
+   * Invalid key or unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type VerifyWorkspaceApiKeyError =
+  VerifyWorkspaceApiKeyErrors[keyof VerifyWorkspaceApiKeyErrors]
+
+export type VerifyWorkspaceApiKeyResponses = {
+  /**
+   * Key is valid
+   */
+  200: VerifyApiKeyResponse
+}
+
+export type VerifyWorkspaceApiKeyResponse =
+  VerifyWorkspaceApiKeyResponses[keyof VerifyWorkspaceApiKeyResponses]
+
 export type GetUserData = {
   body?: never
   path?: never
@@ -5943,121 +6316,6 @@ export type GetUserResponses = {
 }
 
 export type GetUserResponse = GetUserResponses[keyof GetUserResponses]
-
-export type GetInviteCodeStatusData = {
-  body?: never
-  path: {
-    /**
-     * The invite code to check
-     */
-    code: string
-  }
-  query?: never
-  url: '/api/invite_code/{code}/status'
-}
-
-export type GetInviteCodeStatusErrors = {
-  /**
-   * Unauthorized - Firebase authentication required
-   */
-  401: ErrorResponse
-  /**
-   * Invite code not found
-   */
-  404: ErrorResponse
-}
-
-export type GetInviteCodeStatusError =
-  GetInviteCodeStatusErrors[keyof GetInviteCodeStatusErrors]
-
-export type GetInviteCodeStatusResponses = {
-  /**
-   * Success - invite code exists
-   */
-  200: InviteCodeStatusResponse
-}
-
-export type GetInviteCodeStatusResponse =
-  GetInviteCodeStatusResponses[keyof GetInviteCodeStatusResponses]
-
-export type ClaimInviteCodeData = {
-  body?: never
-  path: {
-    /**
-     * The invite code to claim
-     */
-    code: string
-  }
-  query?: never
-  url: '/api/invite_code/{code}/claim'
-}
-
-export type ClaimInviteCodeErrors = {
-  /**
-   * Bad request - invite code already claimed or expired
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized - Firebase authentication required
-   */
-  401: ErrorResponse
-  /**
-   * Invite code not found
-   */
-  404: ErrorResponse
-}
-
-export type ClaimInviteCodeError =
-  ClaimInviteCodeErrors[keyof ClaimInviteCodeErrors]
-
-export type ClaimInviteCodeResponses = {
-  /**
-   * Success - invite code claimed successfully
-   */
-  200: InviteCodeClaimResponse
-}
-
-export type ClaimInviteCodeResponse =
-  ClaimInviteCodeResponses[keyof ClaimInviteCodeResponses]
-
-export type SendUserInviteEmailData = {
-  body: SendUserInviteEmailRequest
-  path?: never
-  query?: never
-  url: '/admin/api/send_user_invite_email'
-}
-
-export type SendUserInviteEmailErrors = {
-  /**
-   * Bad request - invalid email or parameters
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized - authentication required
-   */
-  401: ErrorResponse
-  /**
-   * Forbidden - insufficient permissions
-   */
-  403: ErrorResponse
-  /**
-   * Internal server error
-   */
-  500: ErrorResponse
-}
-
-export type SendUserInviteEmailError =
-  SendUserInviteEmailErrors[keyof SendUserInviteEmailErrors]
-
-export type SendUserInviteEmailResponses = {
-  /**
-   * Success - invite email sent successfully
-   */
-  200: SendUserInviteEmailResponse
-}
-
-export type SendUserInviteEmailResponse2 =
-  SendUserInviteEmailResponses[keyof SendUserInviteEmailResponses]
 
 export type SetReviewStatusData = {
   body: SetReviewStatusRequest
@@ -6097,6 +6355,51 @@ export type SetReviewStatusResponses = {
 
 export type SetReviewStatusResponse2 =
   SetReviewStatusResponses[keyof SetReviewStatusResponses]
+
+export type UpdateHubWorkflowData = {
+  body: UpdateHubWorkflowRequest
+  path: {
+    share_id: string
+  }
+  query?: never
+  url: '/admin/api/hub/workflows/{share_id}'
+}
+
+export type UpdateHubWorkflowErrors = {
+  /**
+   * Bad request - invalid field, unknown label slug, or invalid media token
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Not found - no published workflow for the given share_id
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateHubWorkflowError =
+  UpdateHubWorkflowErrors[keyof UpdateHubWorkflowErrors]
+
+export type UpdateHubWorkflowResponses = {
+  /**
+   * Updated hub workflow detail
+   */
+  200: HubWorkflowDetail
+}
+
+export type UpdateHubWorkflowResponse =
+  UpdateHubWorkflowResponses[keyof UpdateHubWorkflowResponses]
 
 export type GetDeletionRequestData = {
   body?: never
@@ -6229,6 +6532,65 @@ export type ReportPartnerUsageResponses = {
 
 export type ReportPartnerUsageResponse =
   ReportPartnerUsageResponses[keyof ReportPartnerUsageResponses]
+
+export type UpdateSubscriptionCacheData = {
+  body: {
+    /**
+     * Firebase UID of the user whose cache should be updated.
+     */
+    user_id: string
+    /**
+     * Whether the user currently has an active personal subscription.
+     * When false, any cached entry is cleared.
+     *
+     */
+    is_active: boolean
+    /**
+     * Subscription tier (e.g. `PRO`, `CREATOR`). Required when
+     * `is_active=true`; ignored otherwise. Unknown values are treated as a
+     * no-op rather than cached, so a schema drift between services cannot
+     * poison the cache.
+     *
+     */
+    tier?: string
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/update-subscription-cache'
+}
+
+export type UpdateSubscriptionCacheErrors = {
+  /**
+   * Missing or invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Cache write failed (Redis unavailable, DEL/SET error, marshal error).
+   * Caller should retry — state on the ingest side is unchanged.
+   *
+   */
+  500: ErrorResponse
+}
+
+export type UpdateSubscriptionCacheError =
+  UpdateSubscriptionCacheErrors[keyof UpdateSubscriptionCacheErrors]
+
+export type UpdateSubscriptionCacheResponses = {
+  /**
+   * Cache updated successfully
+   */
+  200: {
+    /**
+     * One of `updated` (cache entry written), `cleared` (cache entry
+     * removed), or `skipped` (defensive no-op for missing / unknown tier).
+     *
+     */
+    status?: string
+  }
+}
+
+export type UpdateSubscriptionCacheResponse =
+  UpdateSubscriptionCacheResponses[keyof UpdateSubscriptionCacheResponses]
 
 export type GetJobStatusData = {
   body?: never
@@ -7612,7 +7974,50 @@ export type GetExtensionsData = {
 
 export type GetExtensionsResponses = {
   /**
-   * JSON array of extension file paths
+   * URL paths (relative to web root) of available extension JS files
+   */
+  200: Array<string>
+}
+
+export type GetExtensionsResponse =
+  GetExtensionsResponses[keyof GetExtensionsResponses]
+
+export type GetNodeInfoSchemaData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/experiment/nodes'
+}
+
+export type GetNodeInfoSchemaResponses = {
+  /**
+   * Full node schema JSON
+   */
+  200: unknown
+}
+
+export type GetNodeByIdData = {
+  body?: never
+  path: {
+    /**
+     * Node class_type identifier
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/experiment/nodes/{id}'
+}
+
+export type GetNodeByIdErrors = {
+  /**
+   * Node not found
+   */
+  404: unknown
+}
+
+export type GetNodeByIdResponses = {
+  /**
+   * Node definition JSON
    */
   200: unknown
 }
@@ -7699,38 +8104,87 @@ export type GetVhsQueryVideoData = {
 
 export type GetVhsQueryVideoErrors = {
   /**
+   * Missing required query parameter. Produced by the oapi-codegen
+   * wrapper via echo.NewHTTPError, so the body shape matches Echo's
+   * default HTTPError serialization rather than ErrorResponse.
+   *
+   */
+  400: BindingErrorResponse
+  /**
    * Unauthorized
    */
-  401: unknown
+  401: ErrorResponse
 }
+
+export type GetVhsQueryVideoError =
+  GetVhsQueryVideoErrors[keyof GetVhsQueryVideoErrors]
 
 export type GetVhsQueryVideoResponses = {
   /**
    * Video metadata
    */
-  200: unknown
+  200: {
+    /**
+     * Source video metadata
+     */
+    source: {
+      /**
+       * [width, height] in pixels
+       */
+      size: [number, number]
+      /**
+       * Frames per second
+       */
+      fps: number
+      /**
+       * Total frame count
+       */
+      frames: number
+      /**
+       * Duration in seconds
+       */
+      duration: number
+    }
+  }
 }
 
-export type GetUsersRawData = {
+export type GetVhsQueryVideoResponse =
+  GetVhsQueryVideoResponses[keyof GetVhsQueryVideoResponses]
+
+export type GetUsersInfoData = {
   body?: never
   path?: never
   query?: never
   url: '/api/users'
 }
 
-export type GetUsersRawErrors = {
+export type GetUsersInfoErrors = {
   /**
    * Unauthorized
    */
-  401: unknown
+  401: ErrorResponse
 }
 
-export type GetUsersRawResponses = {
+export type GetUsersInfoError = GetUsersInfoErrors[keyof GetUsersInfoErrors]
+
+export type GetUsersInfoResponses = {
   /**
-   * User list
+   * Userdata storage information
    */
-  200: unknown
+  200: {
+    /**
+     * Where user data is stored (always "server" in cloud)
+     */
+    storage: string
+    /**
+     * Whether user data has been migrated (always true in cloud)
+     */
+    migrated: boolean
+  }
 }
+
+export type GetUsersInfoResponse =
+  GetUsersInfoResponses[keyof GetUsersInfoResponses]
 
 export type GetApiViewVideoAliasData = {
   body?: never
@@ -7833,15 +8287,19 @@ export type GetHealthErrors = {
   /**
    * Service is unhealthy
    */
-  503: unknown
+  503: string
 }
+
+export type GetHealthError = GetHealthErrors[keyof GetHealthErrors]
 
 export type GetHealthResponses = {
   /**
    * Service is healthy
    */
-  200: unknown
+  200: string
 }
+
+export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses]
 
 export type GetOpenapiSpecData = {
   body?: never
@@ -8040,6 +8498,60 @@ export type GetStaticExtensionsErrors = {
 export type GetStaticExtensionsResponses = {
   /**
    * Static file
+   */
+  200: unknown
+}
+
+export type GetCustomNodeProxyData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/__custom_node_proxy/{path}'
+}
+
+export type GetCustomNodeProxyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Path not in allowlist
+   */
+  403: unknown
+}
+
+export type GetCustomNodeProxyResponses = {
+  /**
+   * Proxied response
+   */
+  200: unknown
+}
+
+export type PostCustomNodeProxyData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/__custom_node_proxy/{path}'
+}
+
+export type PostCustomNodeProxyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Path not in allowlist
+   */
+  403: unknown
+}
+
+export type PostCustomNodeProxyResponses = {
+  /**
+   * Proxied response
    */
   200: unknown
 }
