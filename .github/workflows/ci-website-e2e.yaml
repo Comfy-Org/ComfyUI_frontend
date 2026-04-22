@@ -24,10 +24,28 @@ jobs:
   website-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      conclusion: ${{ steps.status.outputs.conclusion }}
+    permissions:
+      pull-requests: write
+      contents: read
+    env:
+      COMMENT_MARKER: '<!-- WEBSITE_E2E_STATUS -->'
     steps:
       - uses: actions/checkout@v6
+
+      - name: Post starting comment
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BODY="${COMMENT_MARKER}
+          ## 🌐 Website E2E: ⏳ Running..."
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$EXISTING" --field body="$BODY"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
+          fi
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -42,11 +60,6 @@ jobs:
         id: tests
         run: pnpm --filter @comfyorg/website test:e2e
 
-      - name: Set job status
-        id: status
-        if: always()
-        run: echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
-
       - name: Upload test report
         uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
@@ -55,59 +68,42 @@ jobs:
           path: apps/website/playwright-report/
           retention-days: 14
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
-        with:
-          name: website-test-results
-          path: apps/website/test-results/
-          retention-days: 14
-
-  comment-on-pr-start:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
-    permissions:
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Post starting comment
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-website-e2e-deploy-and-comment.sh
-          ./scripts/cicd/pr-website-e2e-deploy-and-comment.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
-            "starting"
-
-  deploy-and-comment:
-    needs: [website-e2e]
-    runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
-    permissions:
-      pull-requests: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Download Playwright report
-        if: needs.website-e2e.outputs.conclusion == 'success'
-        uses: actions/download-artifact@v7
-        with:
-          name: website-playwright-report
-          path: website-playwright-report
-
-      - name: Deploy report and comment on PR
+      - name: Deploy report to Cloudflare
+        id: deploy
+        if: always() && !cancelled()
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          GITHUB_TOKEN: ${{ github.token }}
-          WORKFLOW_CONCLUSION: ${{ needs.website-e2e.outputs.conclusion }}
-          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          chmod +x scripts/cicd/pr-website-e2e-deploy-and-comment.sh
-          ./scripts/cicd/pr-website-e2e-deploy-and-comment.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
-            "completed"
+          npm install -g wrangler@^4.0.0
+          BRANCH=$(echo "${{ github.head_ref || github.ref_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
+          URL=$(wrangler pages deploy apps/website/playwright-report \
+            --project-name=comfyui-website-e2e \
+            --branch="$BRANCH" 2>&1 | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Post result comment
+        if: always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ steps.tests.outcome }}" = "success" ]; then
+            STATUS="✅ Passed"
+          else
+            STATUS="❌ Failed"
+          fi
+          REPORT_URL="${{ steps.deploy.outputs.url }}"
+          if [ -n "$REPORT_URL" ]; then
+            BODY="${COMMENT_MARKER}
+          ## 🌐 Website E2E: ${STATUS} — [View Report](${REPORT_URL})"
+          else
+            BODY="${COMMENT_MARKER}
+          ## 🌐 Website E2E: ${STATUS}"
+          fi
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$EXISTING" --field body="$BODY"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
+          fi
