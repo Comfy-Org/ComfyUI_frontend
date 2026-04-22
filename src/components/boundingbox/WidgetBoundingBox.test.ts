@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -27,7 +26,7 @@ const ScrubableNumberInputStub = defineComponent({
     step: { type: Number, default: 1 },
     disabled: { type: Boolean, default: false }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
+
   emits: ['update:modelValue'],
   template: `
     <input
