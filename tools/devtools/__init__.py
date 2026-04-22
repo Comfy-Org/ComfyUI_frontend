@@ -96,5 +96,27 @@ async def set_settings(request: Request):
     except Exception as e:
         return web.Response(status=500, text=f"Error: {str(e)}")
 
+@server.PromptServer.instance.routes.delete("/devtools/view")
+async def set_settings(request: Request):
+    print(request.rel_url.query)
+    try:
+        filename = request.rel_url.query['filename']
+        type = request.rel_url.query.get('type', 'output')
+        output_dir = folder_paths.get_directory_by_type(type)
+        if "subfolder" in request.rel_url.query:
+            full_output_dir = os.path.join(output_dir, request.rel_url.query["subfolder"])
+            if os.path.commonpath((os.path.abspath(full_output_dir), output_dir)) != output_dir:
+                return web.Response(status=403)
+            output_dir = full_output_dir
+        filename = os.path.basename(filename)
+        file = os.path.join(output_dir, filename)
+        print(file)
+        if (os.path.exists(file)):
+            os.remove(file)
+        return web.Response(status=200)
+    except Exception as e:
+        print(e)
+        return web.Response(status=500, text=f"Error: {str(e)}")
+
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

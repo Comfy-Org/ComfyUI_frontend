@@ -184,6 +184,8 @@ export class ComfyPage {
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
 
+  protected teardownCallbacks: (() => Promise<unknown>)[] = []
+
   /** Test user ID for the current context */
   get id() {
     return this.userIds[comfyPageFixture.info().parallelIndex]
@@ -414,6 +416,23 @@ export class ComfyPage {
     }, focusMode)
     await this.nextFrame()
   }
+
+  async teardown() {
+    await Promise.all(this.teardownCallbacks.map((cb) => cb()))
+  }
+  onTeardown(cb: () => Promise<unknown>) {
+    this.teardownCallbacks.push(cb)
+  }
+  deleteFileAfterTest(file: {
+    filename: string
+    subfolder?: string
+    type?: string
+  }) {
+    const url = `${this.url}/api/devtools/view?${new URLSearchParams(file)}`
+    this.onTeardown(async () => {
+      this.request.delete(url)
+    })
+  }
 }
 
 export const testComfySnapToGridGridSize = 50
@@ -496,6 +515,8 @@ export const comfyPageFixture = base.extend<{
     await use(comfyPage)
 
     if (needsPerf) await comfyPage.perf.dispose()
+
+    await comfyPage.teardown()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

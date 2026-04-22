@@ -30,6 +30,7 @@ test('Load Video', async ({ comfyPage }) => {
 
   await test.step('Can upload a video file', async () => {
     await loadVideo.upload.setInputFiles(assetPath(`workflowInMedia/${file1}`))
+    comfyPage.deleteFileAfterTest({ filename: file1, type: 'input' })
     await expect(loadVideoNode).toContainText(file1)
     await expect(loadVideo.video).toBeVisible()
   })
@@ -37,6 +38,7 @@ test('Load Video', async ({ comfyPage }) => {
   await test.step('Can update displayed video', async () => {
     const initialSrc = await loadVideo.videoSrc()
     await loadVideo.upload.setInputFiles(assetPath(`workflowInMedia/${file2}`))
+    comfyPage.deleteFileAfterTest({ filename: file2, type: 'input' })
     await expect(loadVideoNode).toContainText(file2)
     await expect.poll(() => loadVideo.videoSrc()).not.toEqual(initialSrc)
   })

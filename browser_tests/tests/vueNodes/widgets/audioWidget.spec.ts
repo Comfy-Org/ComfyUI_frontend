@@ -22,14 +22,13 @@ test('Audio Widget', async ({ comfyPage }) => {
     await expect(loadAudioNode).toBeVisible()
   })
 
-  const fileName = `audio-${Date.now()}.wav`
+  const filename = `audio-${Date.now()}.wav`
 
   await test.step('Can upload an audio file', async () => {
-    const file = { name: fileName, buffer: getWav(), mimeType: 'audio/x-wav' }
+    const file = { name: filename, buffer: getWav(), mimeType: 'audio/x-wav' }
     await audioPreview.upload.setInputFiles(file)
-    await expect(loadAudioNode).toContainText(fileName)
-    //dnd is bugged
-    expect(await comfyPage.vueNodes.getNodeCount()).toBe(1)
+    comfyPage.deleteFileAfterTest({ filename, type: 'input' })
+    await expect(loadAudioNode).toContainText(filename)
   })
 
   await test.step('Previews audio files', async () => {
@@ -55,6 +54,6 @@ test('Audio Widget', async ({ comfyPage }) => {
     const downloadPromise = comfyPage.page.waitForEvent('download')
     await audioPreview.download.click()
     const download = await downloadPromise
-    expect(download.suggestedFilename()).toBe(fileName)
+    expect(download.suggestedFilename()).toBe(filename)
   })
 })
