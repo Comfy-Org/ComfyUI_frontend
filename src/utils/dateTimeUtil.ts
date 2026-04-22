@@ -1,3 +1,26 @@
+const isoFractionalSecondsPattern = /\.(\d+)(?=Z|[+-]\d{2}:?\d{2}|$)/
+
+/**
+ * Parse an ISO 8601 date string tolerantly. Some JavaScript Date parsers reject
+ * fractional seconds unless they are exactly 3 digits, which turns values like
+ * "2026-04-18T10:04:55.6Z" or "2026-04-18T10:04:55.6513Z" into Invalid Date.
+ * This helper normalizes the fractional portion to millisecond precision first.
+ *
+ * @returns Parsed Date, or null if the string is missing or unparseable.
+ */
+export function parseIsoDateSafe(
+  input: string | null | undefined
+): Date | null {
+  if (!input) return null
+  const normalized = input.replace(
+    isoFractionalSecondsPattern,
+    (_, fractionalSeconds: string) =>
+      `.${fractionalSeconds.slice(0, 3).padEnd(3, '0')}`
+  )
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 /**
  * Return a local date key in YYYY-MM-DD format for grouping.
  *

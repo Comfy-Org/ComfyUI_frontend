@@ -19,8 +19,10 @@
         </span>
       </div>
       <div class="flex gap-3 text-xs text-muted">
-        <span>{{ $t('secrets.createdAt', { date: createdDate }) }}</span>
-        <span v-if="secret.last_used_at">
+        <span v-if="createdDate">
+          {{ $t('secrets.createdAt', { date: createdDate }) }}
+        </span>
+        <span v-if="lastUsedDate">
           {{ $t('secrets.lastUsed', { date: lastUsedDate }) }}
         </span>
       </div>
@@ -57,6 +59,7 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
 import { getProviderLabel, getProviderLogo } from '../providers'
 import type { SecretMetadata } from '../types'
@@ -79,13 +82,11 @@ const emit = defineEmits<{
 const providerLabel = computed(() => getProviderLabel(secret.provider))
 const providerLogo = computed(() => getProviderLogo(secret.provider))
 
-function formatDateString(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString()
+function formatIsoDate(iso: string | undefined | null): string {
+  const date = parseIsoDateSafe(iso)
+  return date ? date.toLocaleDateString() : ''
 }
 
-const createdDate = computed(() => formatDateString(secret.created_at))
-const lastUsedDate = computed(() =>
-  secret.last_used_at ? formatDateString(secret.last_used_at) : ''
-)
+const createdDate = computed(() => formatIsoDate(secret.created_at))
+const lastUsedDate = computed(() => formatIsoDate(secret.last_used_at))
 </script>
