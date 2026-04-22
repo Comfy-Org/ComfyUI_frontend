@@ -41,15 +41,13 @@ useHeroAnimation({
         />
       </div>
 
-      <!-- Text content -->
+      <!-- Text -->
       <div
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
-        <div ref="labelRef">
-          <SectionLabel>
-            {{ t('customers.hero.label', locale) }}
-          </SectionLabel>
-        </div>
+        <SectionLabel ref="labelRef">
+          {{ t('customers.hero.label', locale) }}
+        </SectionLabel>
         <h1
           ref="headingRef"
           class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
@@ -58,18 +56,15 @@ useHeroAnimation({
         </h1>
         <p
           ref="bodyRef"
-          class="text-primary-warm-gray mt-6 max-w-md text-sm/relaxed lg:text-base"
+          class="text-primary-comfy-canvas mt-6 max-w-lg text-base"
         >
           {{ t('customers.hero.body', locale) }}
         </p>
       </div>
     </div>
 
-    <!-- Video overlapping the hero graphic -->
-    <div
-      ref="videoRef"
-      class="-mt-16 px-4 pb-20 lg:-mt-[22vw] lg:px-20 lg:pb-40"
-    >
+    <!-- Video -->
+    <div ref="videoRef" class="px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/customers/blackmath/video.webm"
         poster="https://media.comfy.org/website/customers/blackmath/poster.webp"
