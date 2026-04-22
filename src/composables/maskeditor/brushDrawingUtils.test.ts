@@ -24,17 +24,24 @@ function makeMockCtx() {
   } as unknown as CanvasRenderingContext2D
 }
 
-function makeMockCanvas() {
+function makeMockCanvas(nullCtx = false) {
   const imageData = { data: new Uint8ClampedArray(40 * 40 * 4) }
-  const ctx2d = {
-    createImageData: vi.fn(() => imageData),
-    putImageData: vi.fn()
-  }
+  const ctx2d = nullCtx
+    ? null
+    : { createImageData: vi.fn(() => imageData), putImageData: vi.fn() }
   return {
     width: 0,
     height: 0,
     getContext: vi.fn(() => ctx2d)
   } as unknown as HTMLCanvasElement
+}
+
+function spyOnCreateElement(nullCtx = false) {
+  const originalCreateElement = document.createElement.bind(document)
+  vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    if (tag === 'canvas') return makeMockCanvas(nullCtx)
+    return originalCreateElement(tag)
+  })
 }
 
 const point: Point = { x: 10, y: 10 }
@@ -98,23 +105,31 @@ describe('drawRgbShape', () => {
   })
 
   describe('Rect brush with soft hardness', () => {
-    const originalCreateElement = document.createElement.bind(document)
+    beforeEach(() => spyOnCreateElement())
+    afterEach(() => vi.restoreAllMocks())
 
-    beforeEach(() => {
-      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-        if (tag === 'canvas') return makeMockCanvas()
-        return originalCreateElement(tag)
-      })
-    })
-
-    afterEach(() => {
-      vi.restoreAllMocks()
-    })
-
-    it('draws the cached brush texture at the correct offset', () => {
+    it('draws the cached brush texture at the correct offset without using a gradient', () => {
       const ctx = makeMockCtx()
-      drawRgbShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, '#ff0000')
+      drawRgbShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, '#00ff00')
       expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0)
+      expect(ctx.createRadialGradient).not.toHaveBeenCalled()
+    })
+
+    it('reuses the cached texture on a second call with identical parameters', () => {
+      const ctx = makeMockCtx()
+      drawRgbShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, '#00ff00')
+      drawRgbShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, '#00ff00')
+      const [firstCall, secondCall] = vi.mocked(ctx.drawImage).mock.calls
+      expect(firstCall[0]).toBe(secondCall[0])
+    })
+
+    it('throws when the canvas context is unavailable', () => {
+      vi.restoreAllMocks()
+      spyOnCreateElement(true)
+      const ctx = makeMockCtx()
+      expect(() =>
+        drawRgbShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, '#aabbcc')
+      ).toThrow('Unable to create 2D canvas context for brush texture')
     })
   })
 })
@@ -141,29 +156,43 @@ describe('drawMaskShape', () => {
   })
 
   describe('Rect brush with soft hardness', () => {
-    const originalCreateElement = document.createElement.bind(document)
+    beforeEach(() => spyOnCreateElement())
+    afterEach(() => vi.restoreAllMocks())
 
-    beforeEach(() => {
-      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-        if (tag === 'canvas') return makeMockCanvas()
-        return originalCreateElement(tag)
-      })
-    })
-
-    afterEach(() => {
-      vi.restoreAllMocks()
-    })
-
-    it('draws the cached brush texture at the correct offset when not erasing', () => {
+    it('draws the cached texture without a gradient when not erasing', () => {
       const ctx = makeMockCtx()
-      drawMaskShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, false, maskColor)
+      drawMaskShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, false, {
+        r: 0,
+        g: 255,
+        b: 0
+      })
       expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0)
+      expect(ctx.createRadialGradient).not.toHaveBeenCalled()
     })
 
-    it('draws the cached brush texture at the correct offset when erasing', () => {
+    it('draws the cached texture without a gradient when erasing', () => {
       const ctx = makeMockCtx()
       drawMaskShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, true, maskColor)
       expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0)
+      expect(ctx.createRadialGradient).not.toHaveBeenCalled()
+    })
+
+    it('uses a different cached texture for erase vs paint', () => {
+      const paintCtx = makeMockCtx()
+      const eraseCtx = makeMockCtx()
+      drawMaskShape(paintCtx, point, BrushShape.Rect, 10, 0.5, 0.8, false, {
+        r: 0,
+        g: 0,
+        b: 255
+      })
+      drawMaskShape(eraseCtx, point, BrushShape.Rect, 10, 0.5, 0.8, true, {
+        r: 0,
+        g: 0,
+        b: 255
+      })
+      const paintTexture = vi.mocked(paintCtx.drawImage).mock.calls[0][0]
+      const eraseTexture = vi.mocked(eraseCtx.drawImage).mock.calls[0][0]
+      expect(paintTexture).not.toBe(eraseTexture)
     })
   })
 })

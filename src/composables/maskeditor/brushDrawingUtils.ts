@@ -102,17 +102,22 @@ function getCachedBrushTexture(
   color: string,
   opacity: number
 ): HTMLCanvasElement {
-  const cacheKey = `${radius}_${hardness}_${color}_${opacity}`
+  const cacheKey = `${radius}_${hardness}_${color}`
+  const cached = brushTextureCache.get(cacheKey)
+  if (cached) return cached
 
-  if (brushTextureCache.has(cacheKey)) {
-    return brushTextureCache.get(cacheKey)!
+  const size = Math.max(1, Math.ceil(radius * 2))
+  if (!Number.isFinite(size)) {
+    throw new Error(`Invalid brush radius: ${radius}`)
   }
 
-  const size = Math.ceil(radius * 2)
   const tempCanvas = document.createElement('canvas')
-  const tempCtx = tempCanvas.getContext('2d')!
   tempCanvas.width = size
   tempCanvas.height = size
+  const tempCtx = tempCanvas.getContext('2d')
+  if (!tempCtx) {
+    throw new Error('Unable to create 2D canvas context for brush texture')
+  }
 
   const centerX = size / 2
   const centerY = size / 2
