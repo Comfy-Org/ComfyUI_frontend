@@ -94,13 +94,21 @@ export class LoaderManager implements LoaderManagerInterface {
   }
 
   private pickAdapter(extension: string): ModelAdapter | null {
-    if (this.meshAdapter.extensions.includes(extension as never)) {
+    if (
+      (this.meshAdapter.extensions as readonly string[]).includes(extension)
+    ) {
       return this.meshAdapter
     }
-    if (this.splatAdapter.extensions.includes(extension as never)) {
+    if (
+      (this.splatAdapter.extensions as readonly string[]).includes(extension)
+    ) {
       return this.splatAdapter
     }
-    if (this.pointCloudAdapter.extensions.includes(extension as never)) {
+    if (
+      (this.pointCloudAdapter.extensions as readonly string[]).includes(
+        extension
+      )
+    ) {
       return getPLYEngine() === 'sparkjs'
         ? this.splatAdapter
         : this.pointCloudAdapter

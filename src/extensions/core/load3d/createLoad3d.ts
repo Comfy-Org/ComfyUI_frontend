@@ -81,9 +81,14 @@ export function buildLoad3dDeps(container: Element | HTMLElement): Load3dDeps {
     getActiveCamera,
     (size, center) => cameraManager.setupForModel(size, center),
     (model) => gizmoManager.setupForModel(model),
-    () =>
-      loaderManagerRef.getCurrentAdapter()?.capabilities ??
-      DEFAULT_MODEL_CAPABILITIES
+    () => {
+      if (!loaderManagerRef)
+        throw new Error('LoaderManager not yet initialized')
+      return (
+        loaderManagerRef.getCurrentAdapter()?.capabilities ??
+        DEFAULT_MODEL_CAPABILITIES
+      )
+    }
   )
 
   const loaderManager = new LoaderManager(modelManager, eventManager)
