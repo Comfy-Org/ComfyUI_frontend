@@ -549,14 +549,18 @@ describe('litegraphService', () => {
           .spyOn(console, 'error')
           .mockImplementation(() => {})
 
-        const service = await getService()
-        // Pass a node that will throw due to missing properties
-        const badNode = { flags: { collapsed: false } } as never
-        // nodeOutputStore.getNodeOutputs will return undefined,
-        // so this shouldn't throw to the caller
-        service.updatePreviews(badNode)
+        mockNodeOutputStore.getNodeOutputs.mockImplementation(() => {
+          throw new Error('test error')
+        })
 
-        // The function should catch errors internally
+        const service = await getService()
+        const badNode = { flags: { collapsed: false } } as never
+        expect(() => service.updatePreviews(badNode)).not.toThrow()
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Error drawing node background',
+          expect.any(Error)
+        )
+
         consoleSpy.mockRestore()
       })
 
