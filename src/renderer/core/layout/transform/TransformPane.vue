@@ -47,7 +47,7 @@ const offsetWrapperRef = useTemplateRef('offsetWrapperRef')
 const contentBounds = useContentBounds()
 
 // Collect changed node IDs between RAF frames for differential updates.
-let pendingChangedIds = new Set<string>()
+const pendingChangedIds = new Set<string>()
 let needsFullScan = true
 
 const unsubscribe = layoutStore.onChange((change: LayoutChange) => {
@@ -115,7 +115,7 @@ useRafFn(
     } else if (pendingChangedIds.size > 0) {
       contentBounds.updateChanged(pendingChangedIds, getNodeLayout)
     }
-    pendingChangedIds = new Set()
+    pendingChangedIds.clear()
 
     contentBounds.flush()
     applyStyles()
