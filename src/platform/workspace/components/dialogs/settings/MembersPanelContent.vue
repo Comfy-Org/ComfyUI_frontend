@@ -198,190 +198,47 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
-import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import type {
-  PendingInvite,
-  WorkspaceMember
-} from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
+import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { t } = useI18n()
-const toast = useToast()
-const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
 const {
-  showRemoveMemberDialog,
-  showRevokeInviteDialog,
-  showCreateWorkspaceDialog
-} = useDialogService()
-const workspaceStore = useTeamWorkspaceStore()
-const {
+  searchQuery,
+  activeView,
+  maxSeats,
+  isSingleSeatPlan,
+  personalWorkspaceMember,
+  filteredMembers,
+  filteredPendingInvites,
+  memberMenuItems,
+  isPersonalWorkspace,
   members,
   pendingInvites,
-  isInPersonalWorkspace: isPersonalWorkspace
-} = storeToRefs(workspaceStore)
-const { copyInviteLink } = workspaceStore
-const { permissions, uiConfig } = useWorkspaceUI()
-const {
+  permissions,
+  uiConfig,
   isActiveSubscription,
-  subscription,
+  userPhotoUrl,
+  isCurrentUser,
+  selectMember,
+  toggleSort,
   showSubscriptionDialog,
-  getMaxSeats
-} = useBillingContext()
-
-const maxSeats = computed(() => {
-  if (isPersonalWorkspace.value) return 1
-  const tier = subscription.value?.tier
-  if (!tier) return 1
-  const tierKey = TIER_TO_KEY[tier]
-  if (!tierKey) return 1
-  return getMaxSeats(tierKey)
-})
-
-const isSingleSeatPlan = computed(() => {
-  if (isPersonalWorkspace.value) return false
-  if (!isActiveSubscription.value) return true
-  return maxSeats.value <= 1
-})
-
-const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
-  id: 'self',
-  name: userDisplayName.value ?? '',
-  email: userEmail.value ?? '',
-  role: 'owner' as const,
-  joinDate: new Date(0)
-}))
-
-const searchQuery = ref('')
-const activeView = ref<'active' | 'pending'>('active')
-const sortField = ref<'inviteDate' | 'expiryDate' | 'joinDate'>('inviteDate')
-const sortDirection = ref<'asc' | 'desc'>('desc')
+  handleCopyInviteLink,
+  handleRevokeInvite,
+  handleCreateWorkspace
+} = useMembersPanel()
 
 const memberMenu = ref<InstanceType<typeof Menu> | null>(null)
-const selectedMember = ref<WorkspaceMember | null>(null)
-
-const memberMenuItems = computed(() => [
-  {
-    label: t('workspacePanel.members.actions.removeMember'),
-    icon: 'pi pi-user-minus',
-    command: () => {
-      if (selectedMember.value) {
-        handleRemoveMember(selectedMember.value)
-      }
-    }
-  }
-])
 
 function showMemberMenu(event: Event, member: WorkspaceMember) {
-  selectedMember.value = member
+  selectMember(member)
   memberMenu.value?.toggle(event)
-}
-
-function isCurrentUser(member: WorkspaceMember): boolean {
-  return member.email.toLowerCase() === userEmail.value?.toLowerCase()
-}
-
-const filteredMembers = computed(() => {
-  let result = [...members.value]
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (member) =>
-        member.name.toLowerCase().includes(query) ||
-        member.email.toLowerCase().includes(query)
-    )
-  }
-
-  result.sort((a, b) => {
-    if (a.role === 'owner' && b.role !== 'owner') return -1
-    if (a.role !== 'owner' && b.role === 'owner') return 1
-
-    const aIsCurrentUser = isCurrentUser(a)
-    const bIsCurrentUser = isCurrentUser(b)
-    if (aIsCurrentUser && !bIsCurrentUser) return -1
-    if (!aIsCurrentUser && bIsCurrentUser) return 1
-
-    const aValue = a.joinDate.getTime()
-    const bValue = b.joinDate.getTime()
-    return sortDirection.value === 'asc' ? aValue - bValue : bValue - aValue
-  })
-
-  return result
-})
-
-const filteredPendingInvites = computed(() => {
-  let result = [...pendingInvites.value]
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter((invite) =>
-      invite.email.toLowerCase().includes(query)
-    )
-  }
-
-  const field = sortField.value === 'joinDate' ? 'inviteDate' : sortField.value
-  result.sort((a, b) => {
-    const aDate = a[field]
-    const bDate = b[field]
-    if (!aDate || !bDate) return 0
-    const aValue = aDate.getTime()
-    const bValue = bDate.getTime()
-    return sortDirection.value === 'asc' ? aValue - bValue : bValue - aValue
-  })
-
-  return result
-})
-
-function toggleSort(field: 'inviteDate' | 'expiryDate' | 'joinDate') {
-  if (sortField.value === field) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortField.value = field
-    sortDirection.value = 'desc'
-  }
-}
-
-async function handleCopyInviteLink(invite: PendingInvite) {
-  try {
-    await copyInviteLink(invite.id)
-    toast.add({
-      severity: 'success',
-      summary: t('g.copied'),
-      life: 2000
-    })
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error')
-    })
-  }
-}
-
-function handleRevokeInvite(invite: PendingInvite) {
-  showRevokeInviteDialog(invite.id)
-}
-
-function handleCreateWorkspace() {
-  showCreateWorkspaceDialog()
-}
-
-function handleRemoveMember(member: WorkspaceMember) {
-  showRemoveMemberDialog(member.id)
 }
 </script>
