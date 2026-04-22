@@ -109,12 +109,11 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       const workflow = await comfyPage.workflow.getExportedWorkflow()
       const ksampler = workflow.nodes.find((n) => n.type === 'KSampler')
 
-      // The original workflow had widgets_values: [42, 20, 7, "euler", "normal"]
-      // mapped to: seed=42, steps=20, cfg=7, sampler_name="euler", scheduler="normal"
       expect(ksampler?.widgets_values).toBeDefined()
       const widgetValues = ksampler!.widgets_values as unknown[]
-      expect(widgetValues).toContain(42)
-      expect(widgetValues).toContain(20)
+      expect(widgetValues).toEqual(
+        expect.arrayContaining([42, 20, 7, 'euler', 'normal'])
+      )
     })
 
     test('Success toast is shown after replacement', async ({ comfyPage }) => {
