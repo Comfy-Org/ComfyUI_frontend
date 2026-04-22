@@ -2,6 +2,7 @@ import { capitalize } from 'es-toolkit'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
+import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
@@ -79,8 +80,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
     return [
       { name: 'All', value: 'all' },
-      { name: 'Inputs', value: 'inputs' },
-      { name: 'Outputs', value: 'outputs' }
+      { name: t('sideToolbar.labels.imported'), value: 'inputs' },
+      { name: t('sideToolbar.labels.generated'), value: 'outputs' }
     ]
   })
 
