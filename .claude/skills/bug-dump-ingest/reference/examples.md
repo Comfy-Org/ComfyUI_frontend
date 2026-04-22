@@ -96,7 +96,7 @@ Discord thread: https://discord.com/channels/.../1494078128971055145
 
 **Classification**: bug, `area: node-system`, `severity: high`.
 
-**Dedupe**: Run Linear search for `nodes 2.0 performance` and `canvas lag`. Likely matches exist — flag `Dedup? ?` and ask human which ticket to link to.
+**Dedupe**: Post `@Linear search nodes 2.0 performance canvas lag` (Team: Frontend Engineering, Status: open) in the candidate's thread. Likely matches exist — flag `Dedup? ?` and ask human which ticket to link to.
 
 ---
 

@@ -45,7 +45,7 @@ Transformations:
 
 ## `description`
 
-Structure — see `linear-api.md` Description Template. Key rules:
+Structure — see `linear-api.md` § "Description body template". Key rules:
 
 - Lead with **Repro** numbered list. Extract from the message body; if no steps are given, write "Repro: [Slack message body quoted verbatim]" and flag for human in approval.
 - Preserve the reporter's own words in the Repro section when they include "step 1 / step 2" markers.

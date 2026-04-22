@@ -1,24 +1,25 @@
 ---
 name: bug-dump-ingest
-description: 'Syncs the #bug-dump Slack channel into Linear as the system of record AND auto-fixes verified real bugs via red-green-fix. Flow: fetch → mandatory dedupe gate (Linear + gh PR search) → false-defect verification → file Linear (Triage, labeled) → post :white_check_mark: thread reply via slack_send_message (mandatory tool call, not chat output) → if candidate is a verified real bug with no dedupe hit and no open PR, invoke red-green-fix automatically to produce failing test + fix + PR. Respects team emoji scheme (:white_check_mark: ticket created, :pr-open: PR open, :question: needs context, :repeat: duplicate). Use when asked to sync #bug-dump to Linear, triage slack bugs, run a bug-dump sweep, or ingest bug reports. Triggers on: bug-dump, sync bug-dump, ingest bugs, triage slack bugs, bug sweep.'
+description: 'Syncs the #bug-dump Slack channel into Linear as the system of record AND auto-fixes verified real bugs via red-green-fix. Every Linear operation (create, search, link, label) is performed by posting an @Linear mention in the bug-dump thread — no Linear MCP, no API key. Flow: fetch → mandatory dedupe gate (@Linear search + gh PR search) → false-defect verification → post @Linear create in thread (tool call) → parse bot card for FE-NNNN + URL → post :white_check_mark: confirmation reply → if candidate is a verified real bug with no dedupe hit and no open PR, invoke red-green-fix automatically to produce failing test + fix + PR. Respects team emoji scheme (:white_check_mark: ticket created, :pr-open: PR open, :question: needs context, :repeat: duplicate). Use when asked to sync #bug-dump to Linear, triage slack bugs, run a bug-dump sweep, or ingest bug reports. Triggers on: bug-dump, sync bug-dump, ingest bugs, triage slack bugs, bug sweep.'
 ---
 
 # Bug Dump Ingest
 
-**Primary job: sync `#bug-dump` (Slack: `C0A4XMHANP3`) into Linear as the source of truth, then auto-fix the verified real bugs.** Linear is where status, labels, and follow-up triage happen — this skill gets every bug into Linear with enough context that a downstream agent or human can work from Linear alone. When pre-flight verification confirms a candidate is a real bug (not dedupe, not already in a PR, not out of scope), the skill then invokes `red-green-fix` automatically.
+**Primary job: sync `#bug-dump` (Slack: `C0A4XMHANP3`) into Linear as the source of truth, then auto-fix the verified real bugs.** Linear is where status, labels, and follow-up triage happen — this skill gets every bug into Linear with enough context that a downstream agent or human can work from Linear alone. **Every Linear action is performed by mentioning `@Linear` in the bug-dump thread**; there is no Linear MCP and no API key path. When pre-flight verification confirms a candidate is a real bug (not dedupe, not already in a PR, not out of scope), the skill then invokes `red-green-fix` automatically.
 
 ```text
-fetch → pre-flight dedupe gate (Linear + gh) → verify false defects → present approvals
-      → create Linear (with labels, Triage state)
-      → POST :white_check_mark: thread reply via slack_send_message  (mandatory tool call)
+fetch → pre-flight dedupe gate (@Linear search + gh) → verify false defects → present approvals
+      → POST "@Linear create ..." thread reply via slack_send_message  (mandatory tool call)
+      → poll slack_read_thread → parse Linear bot card for FE-NNNN + URL
+      → POST :white_check_mark: confirmation thread reply via slack_send_message
       → if verification = "real bug" AND no dedupe AND no open PR:
           invoke Skill(skill="red-green-fix") → POST :pr-open: thread reply
 ```
 
 ### Non-negotiable rules
 
-1. **The thread reply is a tool call, not chat output.** The skill MUST call `mcp__plugin_slack_slack__slack_send_message` with `thread_ts` set. Printing `:white_check_mark: Filed to Linear: ...` into the Claude CLI response is NOT a substitute — the Slack thread is the canonical ingested marker. If the tool call fails, say so explicitly; do not claim success.
-2. **Dedupe is a gate, not a suggestion.** No candidate is proposed for creation until Linear open-issue search AND `gh pr` search have been run and recorded. A hit short-circuits creation to `L` (link) or `pr-open`.
+1. **Linear actions are Slack tool calls.** The skill MUST drive Linear by calling `mcp__plugin_slack_slack__slack_send_message` with `thread_ts` set and text that mentions `@Linear`. There is no MCP-direct path and no API-key path. Printing `@Linear create ...` into the Claude CLI response is NOT a substitute — the Slack thread reply is what triggers the Linear bot, and its card is the canonical receipt.
+2. **Dedupe is a gate, not a suggestion.** No candidate is proposed for creation until `@Linear search` AND `gh pr` search have been run and recorded. A hit short-circuits creation to `L` (link) or `pr-open`.
 3. **Auto-fix real bugs.** When the dedupe gate is clean AND false-defect verification is clean AND the candidate isn't on the handoff-exclusion list (see § Handoff conditions), after Linear creation the skill invokes `red-green-fix` via the `Skill` tool — without waiting for an extra human prompt.
 
 ### What the skill cannot do
@@ -44,30 +45,31 @@ Optimize for **coverage, label quality, and proven fixes** over fix-path clevern
 2. **Fetch** — `slack_read_channel` for `C0A4XMHANP3`; `slack_read_thread` per message with replies.
 3. **Filter** — drop already-processed (see Processed Detection).
 4. **Classify** — bug / discussion / meta (see Classification Rules).
-5. **Pre-flight dedupe gate (MANDATORY)** — for every bug candidate, run Linear open-issue search AND `gh pr` search BEFORE proposing (see § Pre-flight Dedupe Gate). A hit means the candidate goes into the batch as `L` (link) or `pr-open`, not as a new create.
+5. **Pre-flight dedupe gate (MANDATORY)** — for every bug candidate, run `@Linear search` AND `gh pr` search BEFORE proposing (see § Pre-flight Dedupe Gate). A hit means the candidate goes into the batch as `L` (link) or `pr-open`, not as a new create.
 6. **Verify false defects** — per candidate, run quick checks before proposing (see False-Defect Verification).
 7. **Extract** — normalize to ticket schema (see Ticket Schema).
 8. **Human approval** — batch table, collect Y/N/?/S/L/R per candidate (see Interactive Approval). Default recommendation for clean candidates is `Y` (file + auto-fix).
-9. **Create Linear** — one issue per approved candidate; attach Slack permalink.
-10. **Thread reply (ingested marker) — MANDATORY TOOL CALL** — call `mcp__plugin_slack_slack__slack_send_message` with `channel_id=C0A4XMHANP3`, `thread_ts=<parent-ts>`, text starting with `:white_check_mark: Filed to Linear: <URL>`. Do not substitute this with chat output. Record the returned `ts` in the session log.
-11. **Auto-fix (clean candidates only)** — if dedupe gate is clean AND false-defect verification is clean AND the candidate isn't on the Handoff-Exclusion list, immediately invoke the `red-green-fix` skill via the `Skill` tool. See § Fix Workflow for the exact call contract.
-12. **Log** — append to session log; update `processed.json`.
+9. **Post `@Linear create` thread reply — MANDATORY TOOL CALL** — for each approved `Y`/`L` row, call `mcp__plugin_slack_slack__slack_send_message` with `channel_id=C0A4XMHANP3`, `thread_ts=<parent-ts>`, and text starting with `@Linear create` (see § Linear Slack Bot Integration). Do NOT print the command into chat as a substitute.
+10. **Capture the Linear bot card** — poll `slack_read_thread` up to 3× with ~3s spacing, parse the first Linear-app reply for the `FE-NNNN` identifier and `https://linear.app/...` URL. No URL = not ingested; never fabricate one.
+11. **Post `:white_check_mark:` confirmation reply — MANDATORY TOOL CALL** — call `slack_send_message` again with text starting with `:white_check_mark: Filed to Linear: <URL>` so future sweeps can detect the marker via `has::white_check_mark: from:me`. Record both `ts` values in the session log.
+12. **Auto-fix (clean candidates only)** — if dedupe gate is clean AND false-defect verification is clean AND the candidate isn't on the Handoff-Exclusion list, immediately invoke the `red-green-fix` skill via the `Skill` tool. See § Fix Workflow for the exact call contract.
+13. **Log** — append to session log; update `processed.json`.
 
 ## System Context
 
-| Item               | Value                                                                                                                             |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Source channel     | `#bug-dump` (`C0A4XMHANP3`)                                                                                                       |
-| Destination        | Linear — default team: `Frontend Engineering` (resolve `teamId` and `key` at session start via `teams { nodes { id key name } }`) |
-| Default state      | `Triage` — created tickets land here for downstream sorting                                                                       |
-| State dir          | `~/temp/bug-dump-ingest/`                                                                                                         |
-| Processed registry | `~/temp/bug-dump-ingest/processed.json`                                                                                           |
-| Session log        | `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md`                                                                                    |
-| Drafts (no-MCP)    | `~/temp/bug-dump-ingest/drafts/*.md`                                                                                              |
+| Item               | Value                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Source channel     | `#bug-dump` (`C0A4XMHANP3`)                                                                                                |
+| Destination        | Linear `Frontend Engineering` team, via the Linear Slack app (`@Linear`). Team is named in every `@Linear create` message. |
+| Default state      | `Triage` — every `@Linear create` message includes `Status: Triage`                                                        |
+| State dir          | `~/temp/bug-dump-ingest/`                                                                                                  |
+| Processed registry | `~/temp/bug-dump-ingest/processed.json`                                                                                    |
+| Session log        | `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md`                                                                             |
+| Drafts (failure)   | `~/temp/bug-dump-ingest/drafts/*.md` — written only when `@Linear` never replies, so the human can retry manually          |
 
 ## Label Taxonomy
 
-Every created Linear issue MUST get the following labels (create labels in Linear if they don't exist yet):
+Every created Linear issue MUST get the following labels, passed as a comma-separated list in the `Labels:` line of the `@Linear create` message. The Linear Slack app creates missing labels on first use:
 
 | Label kind   | Values                                                                         | Source                    |
 | ------------ | ------------------------------------------------------------------------------ | ------------------------- |
@@ -197,26 +199,37 @@ When unsure, mark `medium` and flag for human in the approval batch.
 
 Before any candidate enters the approval table, run BOTH checks below and record the result in the row's `Dedup` and `PR` columns. This is a hard gate — no candidate may be proposed for creation without a verdict.
 
-### Check 1 — Open Linear issues
+### Check 1 — Open Linear issues (via `@Linear search`)
 
-Extract 3-5 keyword terms from the proposed title (strip stopwords). Query Linear via MCP:
+Extract 3-5 keyword terms from the proposed title (strip stopwords). Post a search command to the bug-dump thread — use a scratch thread if no parent `ts` is available yet, but prefer the candidate's own parent thread so the search card becomes part of that thread's audit trail:
 
 ```text
-mcp__linear__list_issues({
-  query: "<keyword-1> <keyword-2>",
-  team: "Frontend Engineering",
-  includeArchived: false,
-  state: ["Triage", "Backlog", "Todo", "In Progress", "In Review"]
+mcp__plugin_slack_slack__slack_send_message({
+  channel_id: "C0A4XMHANP3",
+  thread_ts: "<parent-ts>",
+  text: "@Linear search <keyword-1> <keyword-2>\nTeam: Frontend Engineering\nStatus: open"
 })
 ```
 
-Run the query twice if needed with different keyword subsets to catch reworded titles. Treat a hit as a duplicate if any of:
+Poll `slack_read_thread` for up to 10s; parse the Linear app's card reply for `FE-NNNN` identifiers and URLs. Run the search twice with different keyword subsets if the first returns zero hits — reworded titles are the top false-negative class.
+
+If `@Linear search` is not supported by the workspace's Linear app version, fall back to a Slack search for prior `@Linear` card replies in the channel:
+
+```text
+mcp__plugin_slack_slack__slack_search_public({
+  query: "in:<#C0A4XMHANP3> from:@Linear <keyword-1> <keyword-2>"
+})
+```
+
+This scans past Linear bot replies in the channel — any reply containing a matching `FE-NNNN` URL is a candidate duplicate. Record which dedupe path was used in the session log.
+
+Treat a hit as a duplicate if any of:
 
 - Title overlap ≥ 80% (after lowercasing + stopword removal)
 - Same reporter + same component reference in description
 - Same stack trace or error code
 
-**Verdict:** set `Dedup: LIN-NNN` and default recommendation to `L` (link, don't create). The human may still override to `Y` to file a separate ticket.
+**Verdict:** set `Dedup: FE-NNNN` and default recommendation to `L` (link, don't create). The human may still override to `Y` to file a separate ticket.
 
 ### Check 2 — Open or merged fix PRs on GitHub
 
@@ -241,7 +254,7 @@ Treat a hit as a match if the PR title/body mentions the same component or bug p
 
 ### Failure handling
 
-If either check errors (MCP down, `gh` auth expired), DO NOT proceed to proposal — stop the sweep, report the failure to the user, and let them decide whether to re-run or manually dedupe. A silent skip of dedupe is never acceptable; it's the single biggest source of duplicate tickets.
+If either check errors (Linear Slack app silent or not in channel, `gh` auth expired), DO NOT proceed to proposal — stop the sweep, report the failure to the user, and let them decide whether to re-run or manually dedupe. A silent skip of dedupe is never acceptable; it's the single biggest source of duplicate tickets.
 
 Log each dedupe query + top hits in `~/temp/bug-dump-ingest/session-YYYY-MM-DD.md` under a per-candidate `Dedup trace:` block so the human can audit.
 
@@ -254,7 +267,7 @@ Present candidates in batches of 5-10. Table format (10 columns):
 ----+------------------------+-----------------------------------------+------------+------+------------+------------+---------------+-------------+-----
  1  | wavey, 04-20 08:06     | Unet dropdown missing selected model    | cloud prod | low  | ui         | -          | -             | resolved    | N
  2  | Denys, 04-18 05:45     | Pro plan jobs end at 30 minutes         | cloud prod | high | cloud      | -          | -             | clean       | Y
- 3  | Terry Jia, 04-18 12:52 | Nodes 2.0 canvas lag on large workflows | -          | high | node-system| LIN-4521   | -             | clean       | L
+ 3  | Terry Jia, 04-18 12:52 | Nodes 2.0 canvas lag on large workflows | -          | high | node-system| FE-4521    | -             | clean       | L
  4  | Pablo, 04-17 08:52     | Multi-asset delete popup shows hashes   | cloud prod | low  | ui         | -          | #11402 (open) | clean       | pr-open
 ```
 
@@ -281,99 +294,114 @@ The skill computes `Rec` deterministically from the gate results:
 - `L` — link to existing Linear issue instead of creating (skill asks which one if the Pre-flight Dedupe Gate didn't return an exact match).
 - `R` — duplicate of another bug-dump message; skill links the two and prompts the human for `:repeat:` on the parent.
 - `E` — edit proposed title/description before creating (skill shows draft for inline tweaks).
-- Bulk responses accepted: `1 N, 2 Y, 3 L LIN-4521, 4 pr-open #11402, 5 ?` — any row omitted from the response is treated as its computed `Rec` default.
+- Bulk responses accepted: `1 N, 2 Y, 3 L FE-4521, 4 pr-open #11402, 5 ?` — any row omitted from the response is treated as its computed `Rec` default.
 
-Do not create any Linear issues until all candidates in the batch have a terminal decision. Auto-fix invocations run sequentially AFTER all Linear creates complete, so every `red-green-fix` call has a `Fixes LIN-NNN` to put in the PR body.
+Do not post any `@Linear create` messages until all candidates in the batch have a terminal decision. Auto-fix invocations run sequentially AFTER every `@Linear create` has produced a parsed `FE-NNNN`, so every `red-green-fix` call has a `Fixes FE-NNNN` to put in the PR body.
 
-## Linear Integration
+## Linear Slack Bot Integration (@Linear)
 
-### Setup (one-time, per machine)
+Every Linear action — create, search, link, label, status change — is performed by posting a message to the candidate's thread in `#bug-dump` that mentions `@Linear`. The Linear Slack app parses the mention and responds with a card in the same thread. There is no Linear MCP path and no `LINEAR_API_KEY` path; see `reference/linear-api.md` § "Why no direct API path" for the rationale.
 
-Pick ONE of the following. The skill detects which is active at run time and uses it.
+### Prerequisites
 
-**Option A — Official Linear MCP (recommended, OAuth-based, no API key):**
+- The Comfy Slack workspace already has the Linear Slack app installed (this is how humans add `@Linear` mentions today).
+- Channel `C0A4XMHANP3` is connected to the `Frontend Engineering` Linear team.
+- No per-machine setup. If a `@Linear` invocation produces no bot reply, the app is not in the channel — surface to the human, do NOT retry silently.
 
-Register via the Claude CLI at user scope (no repo edits):
+### Create an issue
 
-```bash
-claude mcp add --transport sse --scope user linear https://mcp.linear.app/sse
+For each approved `Y` candidate, call:
+
+```text
+mcp__plugin_slack_slack__slack_send_message({
+  channel_id: "C0A4XMHANP3",
+  thread_ts: "<parent-ts>",
+  text: "@Linear create\nTeam: Frontend Engineering\nTitle: <title>\nStatus: Triage\nLabels: source:bug-dump, area:<area>, env:<env>, sev:<severity>, reporter:<handle>\n\n<description>\n\nSource: <slack-permalink>"
+})
 ```
 
-Restart your Claude Code session. On first call to a `mcp__linear__*` tool, Claude Code opens a browser flow to authorize. Tokens are stored by the MCP server — no `LINEAR_API_KEY` in env.
+Rules:
 
-Alternative: check it into the repo via `.mcp.json` (shared config) and pre-approve it in `.claude/settings.local.json`:
+- First line MUST be `@Linear create` — this is the command token.
+- `Team: Frontend Engineering` is required on every create — without it the bot falls back to the workspace default, which may route to a different team.
+- `Status: Triage` pins the initial state (per § System Context).
+- `Labels:` — comma-separated, full `source:bug-dump, area:*, env:*, sev:*, reporter:*` set per § Label Taxonomy. Missing labels are auto-created by the Linear Slack app on first use.
+- Description body is markdown — see `reference/linear-api.md` § "Description body template" and `reference/schema.md` for per-field extraction.
+- Use real newlines (not literal `\n`) when constructing the text.
 
-```jsonc
-// .mcp.json (repo root, committed)
-{
-  "mcpServers": {
-    "linear": { "type": "sse", "url": "https://mcp.linear.app/sse" }
-  }
-}
+After the tool call returns, poll `slack_read_thread` for the Linear app's reply card (up to 3× with ~3s spacing). Parse the card for:
+
+- An `FE-NNNN` identifier
+- A `https://linear.app/<org>/issue/FE-NNNN` URL
+
+The URL is the ingested receipt. The skill then posts the `:white_check_mark:` confirmation reply (§ Slack Thread Reply).
+
+### Search (dedupe)
+
+See § Pre-flight Dedupe Gate § Check 1 for the search command shape and handling of the bot's reply. The search is a tool call in the candidate's thread — not a chat aside.
+
+### Link an existing issue (`L` response)
+
+When the human picks `L FE-4521` for a row, do NOT post `@Linear create`. Instead:
+
+```text
+mcp__plugin_slack_slack__slack_send_message({
+  channel_id: "C0A4XMHANP3",
+  thread_ts: "<parent-ts>",
+  text: "@Linear link FE-4521"
+})
 ```
 
-```jsonc
-// .claude/settings.local.json (gitignored, per-user)
-{ "enabledMcpjsonServers": ["linear"] }
+The bot replies with the linked issue card. Then post the `:white_check_mark:` confirmation reply (adjusted to say `Linked to Linear:` rather than `Filed to Linear:`) so Processed Detection still matches.
+
+### Label / status updates
+
+When a later sweep needs to flip a ticket (e.g. a PR opened after initial ingest, so add `pr-open` and link):
+
+```text
+mcp__plugin_slack_slack__slack_send_message({
+  channel_id: "C0A4XMHANP3",
+  thread_ts: "<parent-ts>",
+  text: "@Linear FE-4521 add-labels pr-open"
+})
 ```
 
-**Option B — Community / self-hosted Linear MCP (API key in config):**
+Status changes are rarely driven by this skill directly — Linear auto-moves issues to `In Review` when a PR with `Fixes FE-NNNN` is opened, and the `red-green-fix` skill handles that PR body.
 
-Register via CLI, passing `LINEAR_API_KEY` through stdio env:
+### Captured fields per create
 
-```bash
-claude mcp add --scope user linear -- npx -y @tacticlaunch/mcp-linear
-# then set LINEAR_API_KEY in the shell the MCP server starts from
-```
+Every successful create must produce, via the Linear bot's reply card:
 
-Or write `.mcp.json` directly:
+- `identifier` — e.g. `FE-4710`, used in `Fixes <LIN-ID>` references and session log
+- `url` — `https://linear.app/.../issue/FE-4710`, included verbatim in the `:white_check_mark:` reply
+- `ts` of the Linear bot's card reply — recorded in session log for audit
 
-```jsonc
-{
-  "mcpServers": {
-    "linear": {
-      "command": "npx",
-      "args": ["-y", "@tacticlaunch/mcp-linear"],
-      "env": { "LINEAR_API_KEY": "lin_api_..." }
-    }
-  }
-}
-```
+If the card is missing the URL or identifier, fall through to the failure path below — do NOT fabricate either value.
 
-Get `lin_api_...` from Linear → Settings → API → Personal API keys.
+### Failure path
 
-**Option C — No MCP, use GraphQL directly (slowest, still per-run):**
+If the Linear bot does not reply within the poll window, OR replies with a parse error (`couldn't parse`, `no team matched`, `failed`):
 
-```bash
-export LINEAR_API_KEY="lin_api_..."
-```
+1. Write a draft markdown file to `~/temp/bug-dump-ingest/drafts/NN-short-slug.md` containing the full `@Linear create` text that was sent plus any partial bot reply.
+2. Post a thread reply that is explicit about the failure — do NOT include `:white_check_mark:` or a fake Linear URL:
+   ```text
+   :warning: bug-dump-ingest: @Linear did not respond. Drafted at ~/temp/bug-dump-ingest/drafts/<slug>.md — please file manually and reply with the FE-NNNN.
+   ```
+3. Skip auto-fix for this candidate (no Linear ID = no `Fixes` reference).
+4. Log the failure in the session log.
 
-Then the skill uses `curl` against `https://api.linear.app/graphql` per `reference/linear-api.md`.
-
-### Resolution order at run time
-
-1. **Linear MCP** — if `mcp__linear__*` tools are present, use `createIssue` / `searchIssues` / `listTeams`. Prefer this path.
-2. **Linear GraphQL** — if `LINEAR_API_KEY` is set, use curl.
-3. **Draft fallback** — if neither, write one markdown file per approved ticket into `~/temp/bug-dump-ingest/drafts/NN-short-slug.md` and ask the human to paste. Still post a Slack thread reply, but worded as "Drafted — awaiting Linear link" (do NOT include `:white_check_mark:` until a real Linear URL exists, otherwise the ingested marker is a lie).
-
-Never invent a Linear URL. If creation fails, the thread reply must NOT pretend a ticket exists — reply with a clear "ingestion failed, see drafts" message instead.
-
-### Per-issue Linear fields to populate
-
-Every successful create must set:
-
-- `teamId` — FRONTEND team (cached from session setup)
-- `stateId` — Triage state (cached from session setup)
-- `title` — concise noun phrase (see Ticket Schema § title)
-- `description` — markdown body (see `reference/linear-api.md` Description Template)
-- `labelIds` — label set per Label Taxonomy; create missing labels via `labelCreate` before the issue create
-- `attachments` (via `attachmentCreate` or description links) — Slack permalink for source
-
-If any of these fail, create the ticket without the failing optional field AND log the partial failure to the session log so the human can patch afterward. Do NOT abort an otherwise-valid create because a single label is missing.
+Never invent a Linear URL. Never post `:white_check_mark: Filed to Linear: ...` without a real URL parsed from a real Linear bot card.
 
 ## Slack Thread Reply (Ingested Marker) — MANDATORY TOOL CALL
 
-After each successful Linear creation, the skill MUST call `mcp__plugin_slack_slack__slack_send_message` to post a threaded reply on the original message. This is a tool call, not a chat output. The skill is not done with the candidate until this call succeeds.
+Every approved candidate produces **two** mandatory `slack_send_message` calls in the parent thread:
+
+1. The `@Linear create` (or `@Linear link`) command — see § Linear Slack Bot Integration.
+2. The `:white_check_mark:` confirmation reply described below, posted after a real `FE-NNNN` + URL have been parsed from the Linear bot's card.
+
+The second reply is what future sweeps grep for via `has::white_check_mark: from:me`. Even though the Linear bot's own card already contains the URL, the `:white_check_mark:` prefix is the canonical Processed Detection marker — without it, a future sweep may re-ingest the same bug.
+
+The skill is not done with a candidate until BOTH calls have succeeded. If either fails, do not claim the candidate is ingested.
 
 ### Required call shape
 
@@ -395,9 +423,10 @@ Rules:
 
 ### NEVER-do list (common failure mode)
 
-- **Do NOT** print `:white_check_mark: Filed to Linear: <URL>` into the Claude CLI chat response as a substitute for calling `slack_send_message`. The CLI output is not seen by Slack. If you find yourself typing the marker into a plain assistant message, stop and issue the tool call instead.
+- **Do NOT** print `@Linear create ...` or `:white_check_mark: Filed to Linear: <URL>` into the Claude CLI chat response as a substitute for calling `slack_send_message`. The CLI output is not seen by Slack. If you find yourself typing either into a plain assistant message, stop and issue the tool call instead.
 - **Do NOT** claim the thread reply was posted until the `slack_send_message` tool call has returned a success with a `ts`. If the tool call errors, surface the error and halt the batch — do not fabricate a reply.
-- **Do NOT** use any other tool (e.g. `slack_schedule_message`, `slack_send_message_draft`) as a substitute. Only an immediate `slack_send_message` with `thread_ts` set counts as the ingested marker.
+- **Do NOT** use any other tool (e.g. `slack_schedule_message`, `slack_send_message_draft`) as a substitute. Only an immediate `slack_send_message` with `thread_ts` set counts — the Linear Slack app does not trigger on scheduled/draft messages.
+- **Do NOT** substitute any direct Linear API call (MCP, GraphQL, curl) for the `@Linear` mention. The Slack thread is intentionally the single audit trail.
 
 ### Fix-path reply (after red-green-fix opens a PR)
 
@@ -654,7 +683,7 @@ Never create Linear issues without a human `Y`. This is a hard rule — the skil
 
 ## Reference Files
 
-- `reference/linear-api.md` — GraphQL snippets for create/search/link.
+- `reference/linear-api.md` — `@Linear` Slack bot command reference (create, search, link, labels, status).
 - `reference/schema.md` — full ticket schema with field-by-field extraction notes.
 - `reference/examples.md` — worked examples drawn from real #bug-dump messages.
 - `reference/verify-commands.md` — cookbook of false-defect verification commands per bug class.

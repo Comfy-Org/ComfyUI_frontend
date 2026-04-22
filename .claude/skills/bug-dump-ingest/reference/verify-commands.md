@@ -20,14 +20,22 @@ Verify tag: `fixed` if a merged PR explicitly matches; `pr-open` if an open PR m
 
 ## 2. Check for existing open Linear issue
 
-```bash
-# Via Linear MCP (preferred)
-#   mcp__linear__searchIssues({ query: "<keyword>", state: "open" })
+```text
+# Primary: @Linear search in the candidate's bug-dump thread
+#   mcp__plugin_slack_slack__slack_send_message({
+#     channel_id: "C0A4XMHANP3",
+#     thread_ts: "<parent-ts>",
+#     text: "@Linear search <keyword-1> <keyword-2>\nTeam: Frontend Engineering\nStatus: open"
+#   })
+#   → poll slack_read_thread, parse the Linear app's reply card for FE-NNNN matches.
 #
-# Via GraphQL fallback — see reference/linear-api.md
+# Fallback: grep past @Linear bot replies in the channel for prior ingested titles
+#   mcp__plugin_slack_slack__slack_search_public({
+#     query: "in:<#C0A4XMHANP3> from:@Linear <keyword-1> <keyword-2>"
+#   })
 ```
 
-Verify tag: `dedupe` with the `LIN-XXX` identifier in the approval row.
+Verify tag: `dedupe` with the `FE-NNNN` identifier in the approval row. See `reference/linear-api.md` § "Search existing open issues (dedupe)" for full handling.
 
 ## 3. Feature actually exists in codebase
 
