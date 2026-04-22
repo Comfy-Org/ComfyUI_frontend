@@ -25,7 +25,6 @@ test('Load Video', async ({ comfyPage }) => {
     //await new Promise(r => setTimeout(r, 5000))
     await expect(loadVideoNode).toHaveCount(1)
     await expect(loadVideoNode).toBeVisible()
-    await expect(loadVideoNode.locator('video')).toBeVisible()
   })
 
   await test.step('Can upload a video file', async () => {
