@@ -19,28 +19,38 @@ import BaseLayout from '../layouts/BaseLayout.astro'
           href="/svg/404-title.svg#title404"
         ></use>
         <g id="board"></g>
-      </svg>
-
-      <div
-        class="absolute inset-0 z-2 hidden items-center justify-center rounded-lg bg-primary-comfy-ink/85"
-        id="overlay">
-        <div
-          class="rounded-lg border border-primary-comfy-plum bg-primary-comfy-ink px-12 py-8 text-center">
-          <h2
-            class="mb-2 text-xl tracking-widest text-primary-comfy-yellow empty:hidden"
-            id="ovTitle">
-          </h2>
-          <p
-            class="my-1 text-xs tracking-widest text-primary-comfy-canvas"
-            id="ovMsg">
-          </p>
-          <button
-            class="mt-4 cursor-pointer rounded border-none bg-primary-comfy-plum px-5 py-2.5 font-inherit text-xs uppercase tracking-widest text-primary-comfy-canvas hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
-            id="ovBtn"
-            >START</button
+        <g
+          fill="currentColor"
+          class="text-secondary-mauve"
+          transform="matrix(0.9346 -0.02737 -0.00901 1.0422 -597.31 -135.88)">
+          <text
+            id="startCta"
+            x="300"
+            y="200"
+            font-family="'PP Formula', sans-serif"
+            font-size="32"
+            letter-spacing="0.15em"
+            text-anchor="end"
+            dominant-baseline="middle"
+            transform="rotate(-31 400 200)"
+            class="cursor-pointer uppercase"
+            >CLICK TO START</text
           >
-        </div>
-      </div>
+          <text
+            id="scoreLine"
+            x="300"
+            y="232"
+            font-family="'PP Formula', sans-serif"
+            font-size="20"
+            letter-spacing="0.12em"
+            text-anchor="end"
+            dominant-baseline="middle"
+            transform="rotate(-31 400 200)"
+            display="none"
+            class="uppercase"
+          ></text>
+        </g>
+      </svg>
 
       <div
         class="absolute inset-0 z-2 hidden items-center justify-center rounded-lg bg-primary-comfy-ink/85"

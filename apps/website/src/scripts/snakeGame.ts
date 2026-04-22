@@ -62,14 +62,10 @@ function requireElement<T extends Element>(
 const isSVGSVG = (el: Element): el is SVGSVGElement =>
   el instanceof SVGSVGElement
 const isSVGG = (el: Element): el is SVGGElement => el instanceof SVGGElement
+const isSVGText = (el: Element): el is SVGTextElement =>
+  el instanceof SVGTextElement
 const isHTMLDiv = (el: Element): el is HTMLDivElement =>
   el instanceof HTMLDivElement
-const isHTMLButton = (el: Element): el is HTMLButtonElement =>
-  el instanceof HTMLButtonElement
-const isHTMLHeading = (el: Element): el is HTMLHeadingElement =>
-  el instanceof HTMLHeadingElement
-const isHTMLParagraph = (el: Element): el is HTMLParagraphElement =>
-  el instanceof HTMLParagraphElement
 
 function setOverlayVisible(el: HTMLElement, visible: boolean) {
   el.classList.toggle('hidden', !visible)
@@ -371,14 +367,13 @@ function onEat() {
 
 // ------- GAME STATE -------
 const board = requireElement('board', isSVGG)
-const overlay = requireElement('overlay', isHTMLDiv)
-const ovBtn = requireElement('ovBtn', isHTMLButton)
-const ovTitle = requireElement('ovTitle', isHTMLHeading)
-const ovMsg = requireElement('ovMsg', isHTMLParagraph)
 const pauseOverlay = requireElement('pauseOverlay', isHTMLDiv)
 const svg = requireElement('game', isSVGSVG)
+const startCta = requireElement('startCta', isSVGText)
+const scoreLine = requireElement('scoreLine', isSVGText)
 
 let best = loadBest()
+let waitingToStart = true
 
 let snake: Cell[]
 let dir: Dir
@@ -489,12 +484,15 @@ function gameOver() {
     window.clearInterval(tickHandle)
     tickHandle = null
   }
+  const finalScore = score
+  const finalBest = best
   triggerExplosion()
   restartTimeout = window.setTimeout(() => {
-    ovTitle.textContent = 'GAME OVER'
-    ovMsg.textContent = `Score: ${score}  |  Best: ${best}`
-    ovBtn.textContent = 'PLAY AGAIN'
-    setOverlayVisible(overlay, true)
+    waitingToStart = true
+    startCta.removeAttribute('display')
+    scoreLine.textContent = `Last Score: ${finalScore}  |  Best: ${finalBest}`
+    scoreLine.removeAttribute('display')
+    reset()
   }, EXPLODE_DURATION_MS + 300)
 }
 
@@ -646,10 +644,10 @@ function mouseTargetDir(): Dir | null {
 function onKeyDown(e: KeyboardEvent) {
   const key = e.key.toLowerCase()
 
-  if (overlay.classList.contains('flex')) {
+  if (waitingToStart) {
     if (key === 'enter' || key === ' ') {
       e.preventDefault()
-      ovBtn.click()
+      startGame()
     }
     return
   }
@@ -673,15 +671,14 @@ function onKeyDown(e: KeyboardEvent) {
 
 document.addEventListener('keydown', onKeyDown)
 
-ovBtn.addEventListener('click', startGame)
-
 function startGame() {
   if (restartTimeout !== null) {
     window.clearTimeout(restartTimeout)
     restartTimeout = null
   }
-  setOverlayVisible(overlay, false)
-  reset()
+  waitingToStart = false
+  startCta.setAttribute('display', 'none')
+  scoreLine.setAttribute('display', 'none')
   if (tickHandle !== null) window.clearInterval(tickHandle)
   tickHandle = window.setInterval(step, TICK_MS)
 }
@@ -702,10 +699,15 @@ function destroy() {
   document.removeEventListener('keydown', onKeyDown)
   svg.removeEventListener('mousemove', onMouseMove)
   svg.removeEventListener('mouseleave', onMouseLeave)
-  ovBtn.removeEventListener('click', startGame)
+  svg.removeEventListener('click', onSvgClick)
 }
+
+function onSvgClick() {
+  if (waitingToStart) startGame()
+}
+
+svg.addEventListener('click', onSvgClick)
 
 updateViewBox()
 reset()
-setOverlayVisible(overlay, true)
 window.addEventListener('pagehide', destroy)
