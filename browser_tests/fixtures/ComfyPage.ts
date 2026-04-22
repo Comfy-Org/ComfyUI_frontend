@@ -429,9 +429,7 @@ export class ComfyPage {
     type?: string
   }) {
     const url = `${this.url}/api/devtools/view?${new URLSearchParams(file)}`
-    this.onTeardown(async () => {
-      this.request.delete(url)
-    })
+    this.onTeardown(() => this.request.delete(url))
   }
 }
 

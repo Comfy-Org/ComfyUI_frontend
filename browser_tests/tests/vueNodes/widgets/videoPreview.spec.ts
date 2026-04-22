@@ -44,7 +44,7 @@ test('Load Video', async ({ comfyPage }) => {
   })
 
   await test.step('Can display multiple video', async () => {
-    expect(loadVideo.navigationDots).toBeHidden()
+    await expect(loadVideo.navigationDots).toBeHidden()
 
     //forcibly display multiple video files at once
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
@@ -74,7 +74,7 @@ test('Load Video', async ({ comfyPage }) => {
 
   await test.step('Can redownload uploaded file', async () => {
     await loadVideo.video.hover()
-    expect(loadVideo.download).toBeVisible()
+    await expect(loadVideo.download).toBeVisible()
 
     const downloadPromise = comfyPage.page.waitForEvent('download')
     await loadVideo.download.click()
