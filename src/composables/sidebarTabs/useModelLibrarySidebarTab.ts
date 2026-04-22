@@ -2,7 +2,7 @@ import { markRaw } from 'vue'
 
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import { isDesktop } from '@/platform/distribution/types'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useElectronDownloadStore } from '@/platform/electronDownload/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {

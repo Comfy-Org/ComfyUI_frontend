@@ -1,43 +1,11 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { DownloadState } from '@comfyorg/comfyui-electron-types'
-import * as Sentry from '@sentry/vue'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { reportDownloadFailure } from '@/platform/electronDownload/downloadFailureReporter'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI } from '@/utils/envUtil'
-
-/** Strip query/hash from a URL to avoid leaking tokens in reporting. */
-function safeUrlParts(raw: string): { origin: string; path: string } {
-  try {
-    const u = new URL(raw)
-    return { origin: u.host, path: u.pathname }
-  } catch {
-    return { origin: 'unknown', path: raw }
-  }
-}
-
-function reportDownloadFailure(download: ElectronDownload) {
-  const { origin, path } = safeUrlParts(download.url)
-  Sentry.captureException(
-    new Error(
-      `Electron model download failed: ${download.message ?? 'unknown reason'}`
-    ),
-    {
-      tags: {
-        feature: 'electron_download',
-        error_type: 'download_failed',
-        origin
-      },
-      extra: {
-        filename: download.filename,
-        url_path: path,
-        progress: download.progress,
-        message: download.message ?? null
-      }
-    }
-  )
-}
 
 export interface ElectronDownload extends Pick<
   DownloadState,

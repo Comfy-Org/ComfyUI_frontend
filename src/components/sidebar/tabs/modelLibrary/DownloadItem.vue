@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import ElectronDownloadProgress from '@/platform/electronDownload/components/ElectronDownloadProgress.vue'
-import type { ElectronDownload } from '@/stores/electronDownloadStore'
+import type { ElectronDownload } from '@/platform/electronDownload/electronDownloadStore'
 
 const { download } = defineProps<{
   download: ElectronDownload

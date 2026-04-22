@@ -1,7 +1,7 @@
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useElectronDownloadStore } from '@/platform/electronDownload/electronDownloadStore'
 
 export function useElectronDownload(url: MaybeRefOrGetter<string | undefined>) {
   const store = useElectronDownloadStore()

@@ -10,7 +10,7 @@ const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
 vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
-vi.mock('@/stores/electronDownloadStore', () => ({}))
+vi.mock('@/platform/electronDownload/electronDownloadStore', () => ({}))
 
 let testId = 0
 

@@ -73,7 +73,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useElectronDownload } from '@/platform/electronDownload/composables/useElectronDownload'
-import type { ElectronDownload } from '@/stores/electronDownloadStore'
+import type { ElectronDownload } from '@/platform/electronDownload/electronDownloadStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const { download } = defineProps<{

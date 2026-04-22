@@ -1,6 +1,6 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useElectronDownloadStore } from '@/platform/electronDownload/electronDownloadStore'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
