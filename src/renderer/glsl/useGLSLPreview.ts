@@ -410,6 +410,7 @@ function createInnerPreview(
       const result = r.compileFragment(source)
       if (!result.success) {
         lastError.value = result.log
+        console.warn('[GLSL] shader compilation failed:', result.log)
         return
       }
       lastError.value = null

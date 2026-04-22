@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 /* eslint-disable vue/no-unused-emit-declarations */
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
