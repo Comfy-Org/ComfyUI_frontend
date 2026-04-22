@@ -4,11 +4,11 @@
       cn(
         'mt-2 flex w-full items-center gap-2 rounded-lg border px-2 py-1.5',
         isError
-          ? 'border-red-700/40 bg-red-700/10'
+          ? 'border-danger-100/40 bg-danger-100/10'
           : 'border-border bg-muted/20'
       )
     "
-    role="alert"
+    :role="isError ? 'alert' : 'status'"
   >
     <i
       aria-hidden="true"
@@ -16,7 +16,7 @@
         cn(
           'size-4 shrink-0',
           isError
-            ? 'icon-[lucide--alert-circle] text-red-500'
+            ? 'icon-[lucide--alert-circle] text-danger-100'
             : 'icon-[lucide--x-circle] text-muted-foreground'
         )
       "
@@ -68,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -88,5 +89,5 @@ const { t } = useI18n()
 
 const { remove } = useElectronDownload(() => download.url)
 
-const isError = computed(() => download.status === 'error')
+const isError = computed(() => download.status === DownloadStatus.ERROR)
 </script>
