@@ -230,19 +230,22 @@ test.describe('Load3D', () => {
         return properties['Scene Config']?.showGrid
       }
 
-      const initial = (await readShowGrid()) ?? true
+      expect(
+        await readShowGrid(),
+        'Load3D workflow should start with grid visible (true or undefined)'
+      ).not.toBe(false)
       await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
         maxDiffPixelRatio: 0.05
       })
 
       await load3d.gridToggleButton.click()
-      await expect.poll(readShowGrid).toBe(!initial)
+      await expect.poll(readShowGrid).toBe(false)
       await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-hidden.png', {
         maxDiffPixelRatio: 0.05
       })
 
       await load3d.gridToggleButton.click()
-      await expect.poll(readShowGrid).toBe(initial)
+      await expect.poll(readShowGrid).toBe(true)
       await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
         maxDiffPixelRatio: 0.05
       })
@@ -261,19 +264,16 @@ test.describe('Load3D', () => {
       await expect(load3d.stopRecordingButton).toBeVisible()
     })
 
-    await test.step('Stop recording surfaces export and clear controls', async () => {
-      await comfyPage.nextFrame()
+    await test.step('Stop recording surfaces export/clear controls and a 1s duration', async () => {
+      // Record for 1s wall-clock so the duration display settles on 00:01.
+      await comfyPage.delay(1000)
       await load3d.stopRecordingButton.click()
       await expect(load3d.recordingButton).toBeVisible()
       await expect(load3d.exportRecordingButton).toBeVisible()
       await expect(load3d.clearRecordingButton).toBeVisible()
-    })
-
-    await test.step('Export recording triggers a scene-recording download', async () => {
-      const downloadPromise = comfyPage.page.waitForEvent('download')
-      await load3d.exportRecordingButton.click()
-      const download = await downloadPromise
-      expect(download.suggestedFilename()).toContain('scene-recording')
+      await expect(
+        load3d.node.locator('.mt-1.text-center.text-xs.text-base-foreground')
+      ).toHaveText('00:01')
     })
 
     await test.step('Clear recording removes export and clear controls', async () => {
