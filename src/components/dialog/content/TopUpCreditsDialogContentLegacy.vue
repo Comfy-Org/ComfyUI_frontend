@@ -13,6 +13,7 @@
       </h2>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
         <i class="icon-[lucide--x] size-6" />
@@ -52,7 +53,7 @@
     <!-- Amount (USD) / Credits -->
     <div class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
