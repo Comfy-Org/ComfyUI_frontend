@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import type { PromptResponse } from '@/schemas/apiSchema'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -65,15 +67,16 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
 
   test('Run button sends prompt when clicked', async ({ comfyPage }) => {
     let promptQueued = false
+    const mockResponse: PromptResponse = {
+      prompt_id: 'test-id',
+      node_errors: {},
+      error: ''
+    }
     await comfyPage.page.route('**/api/prompt', async (route) => {
       promptQueued = true
       await route.fulfill({
         status: 200,
-        body: JSON.stringify({
-          prompt_id: 'test-id',
-          number: 1,
-          node_errors: {}
-        })
+        body: JSON.stringify(mockResponse)
       })
     })
 
