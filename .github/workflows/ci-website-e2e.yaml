@@ -24,6 +24,8 @@ jobs:
   website-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      conclusion: ${{ steps.status.outputs.conclusion }}
     steps:
       - uses: actions/checkout@v6
 
@@ -37,7 +39,13 @@ jobs:
         run: pnpm --filter @comfyorg/website build
 
       - name: Run Playwright tests
+        id: tests
         run: pnpm --filter @comfyorg/website test:e2e
+
+      - name: Set job status
+        id: status
+        if: always()
+        run: echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
@@ -54,3 +62,52 @@ jobs:
           name: website-test-results
           path: apps/website/test-results/
           retention-days: 14
+
+  comment-on-pr-start:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cicd/pr-website-e2e-deploy-and-comment.sh
+          ./scripts/cicd/pr-website-e2e-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "starting"
+
+  deploy-and-comment:
+    needs: [website-e2e]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download Playwright report
+        if: needs.website-e2e.outputs.conclusion == 'success'
+        uses: actions/download-artifact@v7
+        with:
+          name: website-playwright-report
+          path: website-playwright-report
+
+      - name: Deploy report and comment on PR
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_CONCLUSION: ${{ needs.website-e2e.outputs.conclusion }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          chmod +x scripts/cicd/pr-website-e2e-deploy-and-comment.sh
+          ./scripts/cicd/pr-website-e2e-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "completed"
