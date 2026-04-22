@@ -22,7 +22,7 @@ test('Load Video', async ({ comfyPage }) => {
 
     await comfyPage.page.mouse.dblclick(500, 300, { delay: 5 })
     await comfyPage.searchBox.fillAndSelectFirstNode('Load Video')
-    //await new Promise(r => setTimeout(r, 5000))
+
     await expect(loadVideoNode).toHaveCount(1)
     await expect(loadVideoNode).toBeVisible()
   })

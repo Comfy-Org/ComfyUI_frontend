@@ -104,7 +104,7 @@ async def delete_file(request: Request):
         output_dir = folder_paths.get_directory_by_type(type)
         subfolder = request.rel_url.query.get('subfolder', '')
         filepath = os.path.join(output_dir, subfolder, filename)
-        if os.path.commonpath(output_dir, filepath) != output_dir:
+        if os.path.commonpath([output_dir, filepath]) != output_dir:
             return web.Response(status=403)
         if (os.path.exists(filepath)):
             os.remove(filepath)
