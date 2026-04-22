@@ -121,4 +121,41 @@ describe('AssetCard', () => {
       expect(heading).not.toHaveTextContent(HASH)
     })
   })
+
+  describe('preserves user-curated display name', () => {
+    const CURATED_NAME = 'My Favorite SDXL LoRA'
+    const MODEL_FILENAME = 'lora_v1_epoch4.safetensors'
+
+    it('renders the curated name (user_metadata.name) when it differs from the raw asset.name', () => {
+      const asset = createDisplayAsset({
+        id: 'model-1',
+        name: MODEL_FILENAME,
+        asset_hash: undefined,
+        tags: ['models', 'loras'],
+        user_metadata: { name: CURATED_NAME },
+        metadata: { filename: MODEL_FILENAME }
+      })
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(CURATED_NAME)
+      expect(heading).not.toHaveTextContent(MODEL_FILENAME)
+    })
+
+    it('ignores user_metadata.name that duplicates the hash and falls back to metadata.filename', () => {
+      const asset = createDisplayAsset({
+        name: HASH,
+        asset_hash: HASH,
+        user_metadata: { name: HASH },
+        metadata: { filename: ORIGINAL_FILENAME }
+      })
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
+      expect(heading).not.toHaveTextContent(HASH)
+    })
+  })
 })
