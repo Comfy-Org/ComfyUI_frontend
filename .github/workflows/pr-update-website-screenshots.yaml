@@ -29,11 +29,16 @@ jobs:
     steps:
       - name: Get PR info
         id: pr-info
-        run: |
-          echo "pr-number=${{ github.event.number || github.event.issue.number }}" >> $GITHUB_OUTPUT
-          echo "branch=$(gh pr view ${{ github.event.number || github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prNumber = ${{ github.event.number || github.event.issue.number }}
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: prNumber
+            })
+            core.setOutput('pr-number', prNumber)
+            core.setOutput('branch', pr.head.ref)
 
       - uses: actions/checkout@v6
         with:
@@ -82,6 +87,15 @@ jobs:
 
       - name: Remove label
         if: always() && github.event_name == 'pull_request'
-        run: gh pr edit ${{ steps.pr-info.outputs.pr-number }} --remove-label "Update Website Screenshots"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v8
+        with:
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                ...context.repo,
+                issue_number: ${{ steps.pr-info.outputs.pr-number }},
+                name: 'Update Website Screenshots'
+              })
+            } catch (e) {
+              // Label may already be removed
+            }
