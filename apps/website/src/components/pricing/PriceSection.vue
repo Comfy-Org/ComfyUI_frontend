@@ -177,7 +177,7 @@ const activePlanIndex = ref(0)
               aria-hidden="true"
             />
             <span
-              class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center px-2 text-[10px] font-bold tracking-wider"
+              class="bg-primary-comfy-yellow font-formula-narrow text-primary-comfy-ink flex items-center px-2 text-sm font-bold tracking-wider"
             >
               <span class="ppformula-text-center">
                 {{ t('pricing.badge.popular', locale) }}

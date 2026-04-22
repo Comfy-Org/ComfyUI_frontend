@@ -59,10 +59,10 @@ const values: {
           >
             <NodeBadge
               :segments="values[0].segments"
-              segment-class="lg:py-3"
+              size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
               {{ t(values[0].bodyKey, locale) }}
             </p>
           </div>
@@ -77,10 +77,10 @@ const values: {
           >
             <NodeBadge
               :segments="values[1].segments"
-              segment-class="lg:py-3"
+              size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
               {{ t(values[1].bodyKey, locale) }}
             </p>
           </div>
@@ -100,10 +100,10 @@ const values: {
         <div class="border-primary-comfy-yellow rounded-3xl border p-8">
           <NodeBadge
             :segments="values[2].segments"
-            segment-class="px-3"
+            size-class="h-9 lg:h-12"
             text-class="text-2xl lg:text-3xl"
           />
-          <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+          <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
             {{ t(values[2].bodyKey, locale) }}
           </p>
         </div>
@@ -122,10 +122,10 @@ const values: {
         <div class="border-primary-comfy-yellow rounded-3xl border p-8">
           <NodeBadge
             :segments="values[3].segments"
-            segment-class="px-3"
+            size-class="h-9 lg:h-12"
             text-class="text-2xl lg:text-3xl"
           />
-          <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+          <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
             {{ t(values[3].bodyKey, locale) }}
           </p>
         </div>
@@ -151,10 +151,10 @@ const values: {
           >
             <NodeBadge
               :segments="value.segments"
-              segment-class="px-3"
+              size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
               {{ t(value.bodyKey, locale) }}
             </p>
           </div>

@@ -1193,6 +1193,7 @@ const translations = {
   'gallery.card.by': { en: 'By', 'zh-CN': '作者' },
   'gallery.card.and': { en: 'and', 'zh-CN': '和' },
   'gallery.card.teamUsing': { en: 'team using', 'zh-CN': '团队使用' },
+  'gallery.card.using': { en: 'using', 'zh-CN': '使用' },
   'gallery.detail.visitHub': {
     en: 'VISIT COMMUNITY HUB',
     'zh-CN': '访问社区中心'
@@ -1467,11 +1468,11 @@ const translations = {
   },
 
   // SiteNav
-  'nav.products': { en: 'PRODUCTS', 'zh-CN': '产品' },
-  'nav.pricing': { en: 'PRICING', 'zh-CN': '价格' },
-  'nav.community': { en: 'COMMUNITY', 'zh-CN': '社区' },
-  'nav.resources': { en: 'RESOURCES', 'zh-CN': '资源' },
-  'nav.company': { en: 'COMPANY', 'zh-CN': '公司' },
+  'nav.products': { en: 'Products', 'zh-CN': '产品' },
+  'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
+  'nav.community': { en: 'Community', 'zh-CN': '社区' },
+  'nav.resources': { en: 'Resources', 'zh-CN': '资源' },
+  'nav.company': { en: 'Company', 'zh-CN': '公司' },
   'nav.comfyLocal': { en: 'Comfy Local', 'zh-CN': 'Comfy 本地版' },
   'nav.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
   'nav.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },

@@ -39,7 +39,7 @@ const iconSrc = computed(() => {
         v-if="iconSrc"
         :src="iconSrc"
         alt=""
-        class="ppformula-text-center size-5"
+        class="ppformula-text-center size-5 -translate-y-0.75"
         aria-hidden="true"
       />
       <span class="ppformula-text-center">{{

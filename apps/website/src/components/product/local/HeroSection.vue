@@ -325,16 +325,14 @@ onUnmounted(() => {
           :href="externalLinks.github"
           variant="outline"
           size="lg"
-          class="flex gap-2 lg:min-w-60"
+          class="lg:min-w-60"
         >
           <span class="inline-flex items-center gap-2">
             <i
-              class="icon-mask size-5 mask-[url('/icons/social/github.svg')]"
+              class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"
               aria-hidden="true"
             />
-            <span class="ppformula-text-center">
-              {{ t('download.hero.installGithub', locale) }}
-            </span>
+            {{ t('download.hero.installGithub', locale) }}
           </span>
         </BrandButton>
       </div>

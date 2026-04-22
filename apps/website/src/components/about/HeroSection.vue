@@ -56,7 +56,10 @@ useHeroAnimation({
         >
           {{ t('about.hero.heading', locale) }}
         </h1>
-        <p ref="bodyRef" class="text-primary-warm-gray mt-6 max-w-sm text-base">
+        <p
+          ref="bodyRef"
+          class="text-primary-comfy-canvas mt-6 max-w-sm text-base"
+        >
           {{ t('about.hero.body', locale) }}
         </p>
         <div ref="ctaRef" class="mt-8">

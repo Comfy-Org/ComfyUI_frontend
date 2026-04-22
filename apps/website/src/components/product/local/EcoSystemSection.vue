@@ -12,10 +12,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <section class="px-4 py-24 lg:px-20 lg:py-40">
     <div
-      class="flex flex-col-reverse items-stretch gap-10 lg:flex-row lg:gap-16"
+      class="bg-transparency-white-t4 rounded-5xl flex flex-col-reverse items-stretch gap-10 p-2 lg:flex-row lg:gap-8"
     >
       <!-- Text content -->
-      <div class="flex flex-1 flex-col justify-between">
+      <div class="flex flex-1 flex-col justify-between p-6">
         <div>
           <h2 class="text-primary-comfy-canvas text-3xl font-light lg:text-4xl">
             {{ t('download.ecosystem.heading', locale) }}
@@ -28,33 +28,28 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <!-- CTA buttons -->
         <div class="mt-10 flex flex-col gap-4 lg:flex-row">
           <DownloadLocalButton :locale />
-          <BrandButton
-            :href="externalLinks.github"
-            variant="outline"
-            size="lg"
-            class="gap-2"
-          >
-            <span
-              class="icon-mask size-5 mask-[url('/icons/social/github.svg')]"
-              aria-hidden="true"
-            />
-            {{ t('download.hero.installGithub', locale) }}
+          <BrandButton :href="externalLinks.github" variant="outline" size="lg">
+            <span class="inline-flex items-center gap-2">
+              <i
+                class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"
+                aria-hidden="true"
+              />
+              {{ t('download.hero.installGithub', locale) }}
+            </span>
           </BrandButton>
         </div>
       </div>
 
       <!-- TODO: Replace with final ecosystem illustration -->
-      <div class="flex-1">
-        <div
-          class="aspect-4/3 w-full overflow-hidden rounded-3xl bg-linear-to-b from-emerald-300 to-amber-200"
-        >
-          <div class="flex h-full items-center justify-center">
-            <span
-              class="bg-primary-comfy-ink text-primary-comfy-yellow rounded-full px-4 py-2 text-sm font-bold"
-            >
-              4x
-            </span>
-          </div>
+      <div
+        class="rounded-4.5xl aspect-4/3 w-full flex-1 overflow-hidden bg-linear-to-b from-emerald-300 to-amber-200"
+      >
+        <div class="flex h-full items-center justify-center">
+          <span
+            class="bg-primary-comfy-ink text-primary-comfy-yellow rounded-full px-4 py-2 text-sm font-bold"
+          >
+            4x
+          </span>
         </div>
       </div>
     </div>

@@ -125,10 +125,7 @@ onUnmounted(() => {
       </button>
 
       <!-- Desktop layout -->
-      <div
-        class="relative hidden w-full items-start pt-12 lg:flex"
-        style="max-height: calc(100vh - 13rem)"
-      >
+      <div class="relative hidden min-h-0 w-full flex-1 pt-12 lg:flex">
         <!-- Left: info card -->
         <div
           class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-5xl relative z-10 flex w-80 shrink-0 flex-col justify-between self-start p-8"
@@ -243,7 +240,9 @@ onUnmounted(() => {
       </div>
 
       <!-- Thumbnail strip -->
-      <div class="scrollbar-none mx-auto mt-6 max-w-full overflow-x-auto px-6">
+      <div
+        class="scrollbar-none mx-auto mt-6 h-16 max-w-full overflow-x-auto px-6 lg:h-30"
+      >
         <div class="flex items-end gap-3">
           <button
             v-for="(item, i) in items"

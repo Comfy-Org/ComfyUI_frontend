@@ -167,7 +167,7 @@ watch(activeIndex, (current, previous) => {
               "
               @click="activeIndex = i"
             >
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center justify-between gap-3">
                 <h3 class="text-2xl/tight font-medium">
                   {{ feature.title }}
                 </h3>

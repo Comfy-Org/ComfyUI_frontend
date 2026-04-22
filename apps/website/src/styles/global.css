@@ -42,8 +42,8 @@
 }
 
 @font-face {
-  font-family: 'PP Formula Condensed';
-  src: url('/fonts/PPFormula-CondensedSemibold.woff2') format('woff2');
+  font-family: 'PP Formula Narrow';
+  src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -63,7 +63,7 @@
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
-  --font-formula-condensed: 'PP Formula Condensed', sans-serif;
+  --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
   --radius-4xl: 2rem;

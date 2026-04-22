@@ -129,7 +129,7 @@ onMounted(() => {
       <!-- Left column: Why + IF YOU -->
       <div class="flex w-64 shrink-0 flex-col gap-3">
         <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-          <p class="text-primary-warm-white text-2xl font-light">
+          <p class="text-primary-comfy-canvas text-2xl font-light">
             {{ t('about.careers.whyTitleBefore', locale) }}
             <br />
             <span
@@ -142,7 +142,7 @@ onMounted(() => {
           class="flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
         >
           <span
-            class="text-primary-warm-white text-xs font-bold tracking-wider"
+            class="text-primary-comfy-canvas text-xs font-bold tracking-wider"
           >
             {{ t('about.careers.whyLabel', locale) }}
           </span>
@@ -170,7 +170,7 @@ onMounted(() => {
                 :ref="reasonDots.set"
                 class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
               />
-              <p class="text-primary-warm-white text-base">
+              <p class="text-primary-comfy-canvas text-base">
                 {{ t(reason, locale) }}
               </p>
             </div>
@@ -227,7 +227,7 @@ onMounted(() => {
     </svg>
 
     <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-      <p class="text-primary-warm-white text-2xl font-light">
+      <p class="text-primary-comfy-canvas text-2xl font-light">
         {{ t('about.careers.whyTitleBefore', locale) }}
         <br />
         <span
@@ -240,7 +240,7 @@ onMounted(() => {
     <div
       class="mt-3 flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
     >
-      <span class="text-primary-warm-white text-xs font-bold tracking-wider">
+      <span class="text-primary-comfy-canvas text-xs font-bold tracking-wider">
         {{ t('about.careers.whyLabel', locale) }}
       </span>
       <span
@@ -262,7 +262,7 @@ onMounted(() => {
           :key="reason"
           class="flex items-start justify-between gap-4"
         >
-          <p class="text-primary-warm-white text-base">
+          <p class="text-primary-comfy-canvas text-base">
             {{ t(reason, locale) }}
           </p>
           <span

@@ -98,11 +98,11 @@ onUnmounted(() => {
   >
     <!-- Main list -->
     <template v-if="!activeSection">
-      <div class="flex flex-1 flex-col gap-2">
+      <div class="flex flex-1 flex-col gap-8">
         <template v-for="link in links" :key="link.label">
           <button
             v-if="link.items"
-            class="text-primary-warm-gray text-left text-3xl font-medium"
+            class="text-primary-comfy-canvas text-left text-3xl font-medium"
             @click="activeSection = link.label"
           >
             {{ link.label }}
@@ -110,7 +110,7 @@ onUnmounted(() => {
           <a
             v-else
             :href="link.href"
-            class="text-primary-warm-gray text-3xl font-medium"
+            class="text-primary-comfy-canvas text-3xl font-medium"
             @click="onNavigate"
           >
             {{ link.label }}
@@ -139,26 +139,32 @@ onUnmounted(() => {
           class="text-primary-comfy-yellow mb-6 flex items-center gap-2 text-sm font-bold tracking-wide uppercase"
           @click="activeSection = null"
         >
-          <span aria-hidden="true">&lsaquo;</span>
+          <span
+            aria-hidden="true"
+            class="bg-primary-comfy-yellow size-3 -translate-y-px rotate-180"
+            style="
+              mask: url('/icons/arrow-right.svg') center / contain no-repeat;
+            "
+          />
           {{ t('nav.back', locale) }}
         </button>
 
-        <p class="text-primary-warm-gray mb-4 text-sm">
+        <p class="text-primary-warm-gray mb-8 text-sm font-bold uppercase">
           {{ activeSection }}
         </p>
 
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-8 pl-2">
           <a
             v-for="item in activeSectionItems"
             :key="item.href"
             :href="item.href"
-            class="text-primary-warm-gray flex items-center gap-3 text-3xl font-medium"
+            class="text-primary-comfy-canvas flex items-center gap-3 text-3xl font-medium"
             @click="onNavigate"
           >
             {{ item.label }}
             <span
               v-if="item.badge"
-              class="bg-primary-comfy-yellow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-xs font-bold"
+              class="bg-primary-comfy-yellow font-formula-narrow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-xs font-semibold"
             >
               <span class="ppformula-text-center inline-block skew-x-12">{{
                 item.badge

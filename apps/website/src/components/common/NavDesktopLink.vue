@@ -110,7 +110,7 @@ const emit = defineEmits<{
         {{ item.label }}
         <span
           v-if="item.badge"
-          class="bg-primary-comfy-yellow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-[9px]/3 leading-none font-bold"
+          class="bg-primary-comfy-yellow font-formula-narrow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-[9px]/3 leading-none font-bold"
         >
           <span class="ppformula-text-center inline-block skew-x-12">{{
             item.badge
