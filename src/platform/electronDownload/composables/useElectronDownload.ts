@@ -15,7 +15,7 @@ import { useElectronDownloadStore } from '@/platform/electronDownload/electronDo
  * Exposed from the composable so consumers don't have to duplicate the
  * DownloadStatus taxonomy.
  */
-export type ElectronDownloadPhase = 'none' | 'active' | 'stopped'
+type ElectronDownloadPhase = 'none' | 'active' | 'stopped'
 
 export function useElectronDownload(url: MaybeRefOrGetter<string | undefined>) {
   const store = useElectronDownloadStore()
