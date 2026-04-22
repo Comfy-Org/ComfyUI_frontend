@@ -12,6 +12,10 @@ permissions:
   pull-requests: write
   actions: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   comment:
     runs-on: ubuntu-latest
@@ -31,38 +35,24 @@ jobs:
 
       - name: Resolve PR number from workflow_run context
         id: pr-meta
-        uses: actions/github-script@v8
-        with:
-          script: |
-            let pr = context.payload.workflow_run.pull_requests?.[0];
-            if (!pr) {
-              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.payload.workflow_run.head_sha,
-              });
-              pr = prs.find(p => p.state === 'open');
-            }
-
-            if (!pr) {
-              core.info('No open PR found for this workflow run — skipping.');
-              core.setOutput('skip', 'true');
-              return;
-            }
-
-            core.setOutput('skip', 'false');
-            core.setOutput('number', String(pr.number));
-
-      - name: Read preview URL
-        if: steps.pr-meta.outputs.skip != 'true'
-        id: meta
-        run: |
-          echo "url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/resolve-pr-from-workflow-run
 
       - name: Write report
         if: steps.pr-meta.outputs.skip != 'true'
+        env:
+          DEPLOYED_AT: ${{ github.event.workflow_run.updated_at }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          echo "**Website Preview:** ${{ steps.meta.outputs.url }}" > preview-report.md
+          STABLE_URL=$(cat temp/vercel-preview/stable-url.txt)
+          UNIQUE_URL=$(cat temp/vercel-preview/url.txt)
+          SHORT_SHA="${HEAD_SHA:0:7}"
+          cat > preview-report.md <<EOF
+          **Website Preview:** $STABLE_URL
+
+          <sub>This commit: $UNIQUE_URL</sub>
+
+          <sub>Last updated: $DEPLOYED_AT for \`$SHORT_SHA\`</sub>
+          EOF
 
       - name: Post PR comment
         if: steps.pr-meta.outputs.skip != 'true'
