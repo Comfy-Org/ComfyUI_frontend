@@ -96,7 +96,7 @@ onMounted(() => {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     ctx.save()
-    ctx.translate(-150, 0)
+    ctx.translate(-500, 350)
 
     ctx.save()
     ctx.transform(-1, 0, 0, 1, 1516, 112)
@@ -188,17 +188,17 @@ onUnmounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(8vw,10rem)]"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (stacks above on mobile, right on lg) -->
     <div
-      class="w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:translate-y-[40px] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:scale-[1.95] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <canvas
         ref="canvasRef"
         class="block w-full"
         width="1619"
-        height="1024"
+        height="1400"
         aria-hidden="true"
       />
     </div>

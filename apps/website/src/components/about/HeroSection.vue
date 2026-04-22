@@ -27,7 +27,7 @@ useHeroAnimation({
 </script>
 
 <template>
-  <section ref="sectionRef" class="pt-12 lg:pt-20">
+  <section ref="sectionRef" class="pt-12 lg:pt-14">
     <div
       class="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left"
     >
@@ -45,7 +45,7 @@ useHeroAnimation({
 
       <!-- Text -->
       <div
-        class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-24 lg:pl-12"
+        class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
           {{ t('about.hero.label', locale) }}
@@ -74,7 +74,10 @@ useHeroAnimation({
     </div>
 
     <!-- Video overlapping the hero graphic -->
-    <div ref="videoRef" class="-mt-16 px-4 pb-20 lg:-mt-72 lg:px-20 lg:pb-40">
+    <div
+      ref="videoRef"
+      class="-mt-16 px-4 pb-20 lg:-mt-[22vw] lg:px-20 lg:pb-40"
+    >
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
         poster="https://media.comfy.org/website/about/co-founders-poster.webp"
