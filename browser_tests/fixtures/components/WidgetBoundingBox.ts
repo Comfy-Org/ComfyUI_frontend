@@ -2,8 +2,6 @@ import type { Locator } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 
-export type BoundingBoxCoord = 'x' | 'y' | 'width' | 'height'
-
 class BoundingBoxCoordinate {
   public readonly root: Locator
   public readonly input: Locator
@@ -15,10 +13,6 @@ class BoundingBoxCoordinate {
     this.input = root.locator('input')
     this.incrementButton = root.getByTestId(TestIds.widgets.increment)
     this.decrementButton = root.getByTestId(TestIds.widgets.decrement)
-  }
-
-  async read(): Promise<string> {
-    return await this.input.inputValue()
   }
 
   async type(value: string | number): Promise<void> {
@@ -56,18 +50,5 @@ export class WidgetBoundingBoxFixture {
     this.height = new BoundingBoxCoordinate(
       this.root.getByTestId('bounding-box-height')
     )
-  }
-
-  get coords(): Record<BoundingBoxCoord, BoundingBoxCoordinate> {
-    return { x: this.x, y: this.y, width: this.width, height: this.height }
-  }
-
-  async readAll(): Promise<Record<BoundingBoxCoord, string>> {
-    return {
-      x: await this.x.read(),
-      y: await this.y.read(),
-      width: await this.width.read(),
-      height: await this.height.read()
-    }
   }
 }
