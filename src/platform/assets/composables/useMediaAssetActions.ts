@@ -3,7 +3,7 @@ import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, downloadFileAsync } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -68,26 +68,26 @@ export function useMediaAssetActions() {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
-    try {
-      const filename = getAssetDisplayName(targetAsset)
-      // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
-      const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
+    const filename = getAssetDisplayName(targetAsset)
+    const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
-      downloadFile(downloadUrl, filename)
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', 1),
-        life: 2000
-      })
-    } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+    downloadFileAsync(downloadUrl, filename).then(
+      () => {
+        toast.add({
+          severity: 'success',
+          summary: t('g.success'),
+          detail: t('mediaAsset.selection.downloadsStarted', 1),
+          life: 2000
+        })
+      },
+      () => {
+        toast.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('g.failedToDownloadImage')
+        })
+      }
+    )
   }
 
   /**

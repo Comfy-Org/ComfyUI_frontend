@@ -49,9 +49,16 @@
             <button
               :class="actionButtonClass"
               :aria-label="t('g.downloadImage')"
+              :disabled="downloading"
               @click="handleDownload"
             >
-              <i class="icon-[lucide--arrow-down-to-line] size-4" />
+              <i
+                :class="
+                  downloading
+                    ? 'icon-[lucide--loader-circle] size-4 animate-spin'
+                    : 'icon-[lucide--arrow-down-to-line] size-4'
+                "
+              />
             </button>
             <button
               :class="actionButtonClass"
@@ -163,7 +170,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -197,6 +204,21 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  downloadIfIdle: download
+} = useDownloadFile()
+
+watch(downloadError, (err) => {
+  if (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  }
+})
 
 const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
@@ -349,15 +371,7 @@ function handleEditMask() {
 function handleDownload() {
   const src = activeItem.value ? getItemSrc(activeItem.value) : ''
   if (!src) return
-  try {
-    downloadFile(src)
-  } catch {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
-    })
-  }
+  void download(src)
 }
 
 function handleRemove() {

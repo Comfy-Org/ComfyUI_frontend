@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFileAsync } from '@/base/common/downloadUtil'
+import { useDownloadFile } from '@/base/common/useDownloadFile'
+import Loader from '@/components/loader/Loader.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
@@ -23,7 +26,13 @@ import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
+const toastStore = useToastStore()
 const mediaActions = useMediaAssetActions()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  downloadIfIdle: download
+} = useDownloadFile()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
@@ -39,6 +48,16 @@ const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
 
+watch(downloadError, (err) => {
+  if (err) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  }
+})
+
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
   selectedOutput.value = sel.output
@@ -47,9 +66,33 @@ function handleSelection(sel: OutputSelection) {
   showSkeleton.value = sel.showSkeleton ?? false
 }
 
-function downloadAsset(item?: AssetItem) {
-  for (const output of allOutputs(item))
-    downloadFile(output.url, output.filename)
+const downloadingAll = ref(false)
+
+async function downloadAsset(item?: AssetItem) {
+  if (downloadingAll.value) return
+
+  const outputs = allOutputs(item)
+  if (outputs.length === 0) return
+
+  downloadingAll.value = true
+  try {
+    await Promise.all(
+      outputs.map((output) => downloadFileAsync(output.url, output.filename))
+    )
+  } catch {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  } finally {
+    downloadingAll.value = false
+  }
+}
+
+function handleSingleDownload() {
+  if (!selectedOutput.value?.url) return
+  void download(selectedOutput.value.url)
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
@@ -93,13 +136,11 @@ async function rerun(e: Event) {
       v-tooltip.top="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
-      @click="
-        () => {
-          if (selectedOutput?.url) downloadFile(selectedOutput.url)
-        }
-      "
+      :disabled="downloading"
+      @click="handleSingleDownload"
     >
-      <i class="icon-[lucide--download]" />
+      <Loader v-if="downloading" size="sm" />
+      <i v-else class="icon-[lucide--download]" />
     </Button>
     <Button
       v-if="isWorkflowActive && !selectedItem"
