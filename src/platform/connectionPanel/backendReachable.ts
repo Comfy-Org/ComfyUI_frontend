@@ -7,9 +7,27 @@
 const BACKEND_URL_KEY = 'comfyui-preview-backend-url'
 const PROBE_TIMEOUT_MS = 3000
 
+function resolveProbeBase(): string {
+  const stored = localStorage.getItem(BACKEND_URL_KEY)
+  if (stored) {
+    try {
+      // Only treat the stored value as a backend override when it's a
+      // well-formed absolute URL — otherwise fall through to same-origin.
+      const url = new URL(stored)
+      return url.origin + url.pathname.replace(/\/+$/, '')
+    } catch {
+      // Ignore malformed entries; same-origin probe is safer than a
+      // relative URL that misses the router's subpath base.
+    }
+  }
+  // Mirror ComfyApi's same-origin base so subpath deployments probe the
+  // backend that would actually serve the app.
+  if (typeof window === 'undefined') return ''
+  return window.location.pathname.split('/').slice(0, -1).join('/')
+}
+
 export async function isBackendReachable(): Promise<boolean> {
-  const backendUrl = localStorage.getItem(BACKEND_URL_KEY) || ''
-  const apiBase = backendUrl.replace(/\/+$/, '')
+  const apiBase = resolveProbeBase()
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
