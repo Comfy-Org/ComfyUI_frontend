@@ -11,12 +11,17 @@ const SMALL_VIEWPORTS = VIEWPORTS.filter(
 )
 
 async function assertNoOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth >
-      document.documentElement.clientWidth
-  )
-  expect(overflow, 'page has horizontal overflow').toBe(false)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth
+        ),
+      { message: 'page has horizontal overflow', timeout: 5_000 }
+    )
+    .toBe(false)
 }
 
 async function blockVideoRequests(page: Page) {

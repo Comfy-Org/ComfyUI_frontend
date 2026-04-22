@@ -75,16 +75,22 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
         run: |
-          BRANCH=$(echo "${{ github.head_ref || github.ref_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
+          BRANCH=$(echo "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
+          DEPLOY_OK=false
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
             OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
-              --branch="$BRANCH" 2>&1) && break || echo "$OUTPUT"
+              --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
             [ $i -lt 3 ] && sleep 10
           done
           echo "$OUTPUT"
+          if [ "$DEPLOY_OK" != "true" ]; then
+            echo "::error::All 3 deployment attempts failed"
+            exit 1
+          fi
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
