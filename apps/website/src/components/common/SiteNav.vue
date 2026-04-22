@@ -88,11 +88,15 @@ const navLinks: NavLink[] = [
 const ctaButtons = [
   {
     label: t('nav.downloadLocal', locale),
+    prefix: 'DOWNLOAD',
+    core: 'LOCAL',
     href: routes.download,
     primary: false
   },
   {
     label: t('nav.launchCloud', locale),
+    prefix: 'LAUNCH',
+    core: 'CLOUD',
     href: externalLinks.cloud,
     primary: true
   }
@@ -159,22 +163,34 @@ onMounted(() => {
   />
 
   <nav
-    class="bg-primary-comfy-ink fixed inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-5 lg:px-10 lg:py-8 xl:px-20"
+    class="bg-primary-comfy-ink fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-4 px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
-    <a :href="routes.home" aria-label="Comfy home">
-      <img src="/icons/logomark.svg" alt="Comfy" class="h-8 lg:hidden" />
+    <a
+      :href="routes.home"
+      class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
+      aria-label="Comfy home"
+    >
       <img
-        src="/icons/logo.svg"
+        src="/icons/logomark.svg"
         alt="Comfy"
-        class="hidden h-10 w-36 object-contain object-left lg:block"
+        class="col-span-full row-span-full h-8"
       />
+      <div
+        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+      >
+        <img
+          src="/icons/logo.svg"
+          alt="Comfy"
+          class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+        />
+      </div>
     </a>
 
     <!-- Desktop nav links -->
     <div
       data-testid="desktop-nav-links"
-      class="hidden items-center gap-4 lg:flex xl:gap-10"
+      class="hidden items-center gap-[clamp(1rem,2.5vw,2.5rem)] lg:flex"
     >
       <NavDesktopLink
         v-for="link in navLinks"
@@ -191,7 +207,7 @@ onMounted(() => {
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2 lg:flex"
     >
       <BrandButton
         v-for="cta in ctaButtons"
@@ -199,8 +215,13 @@ onMounted(() => {
         :href="cta.href"
         :variant="cta.primary ? 'solid' : 'outline'"
         size="nav"
+        :aria-label="cta.label"
       >
-        {{ cta.label }}
+        <span
+          class="inline-block max-w-0 overflow-hidden align-bottom transition-[max-width] duration-300 ease-in-out xl:max-w-28"
+          aria-hidden="true"
+          >{{ cta.prefix }}&nbsp;</span
+        >{{ cta.core }}
       </BrandButton>
     </div>
 
