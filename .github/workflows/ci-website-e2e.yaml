@@ -27,25 +27,26 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
-    env:
-      COMMENT_MARKER: '<!-- WEBSITE_E2E_STATUS -->'
     steps:
       - uses: actions/checkout@v6
 
       - name: Post starting comment
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          BODY="${COMMENT_MARKER}
-          ## 🌐 Website E2E: ⏳ Running..."
-          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
-          if [ -n "$EXISTING" ]; then
-            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$EXISTING" --field body="$BODY"
-          else
-            gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
-          fi
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- WEBSITE_E2E_STATUS -->'
+            const body = `${marker}\n## 🌐 Website E2E: ⏳ Running...`
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number
+            })
+            const existing = comments.find(c => c.body.includes(marker))
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body })
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body })
+            }
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -66,7 +67,7 @@ jobs:
         with:
           name: website-playwright-report
           path: apps/website/playwright-report/
-          retention-days: 14
+          retention-days: 30
 
       - name: Deploy report to Cloudflare
         id: deploy
@@ -75,35 +76,43 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npm install -g wrangler@^4.0.0
           BRANCH=$(echo "${{ github.head_ref || github.ref_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
-          URL=$(wrangler pages deploy apps/website/playwright-report \
-            --project-name=comfyui-website-e2e \
-            --branch="$BRANCH" 2>&1 | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+          npx wrangler@^4.0.0 pages project create comfyui-website-e2e --production-branch=main 2>/dev/null || true
+          for i in 1 2 3; do
+            echo "Deployment attempt $i of 3..."
+            OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+              --project-name=comfyui-website-e2e \
+              --branch="$BRANCH" 2>&1) && break || echo "$OUTPUT"
+            [ $i -lt 3 ] && sleep 10
+          done
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
-      - name: Post result comment
-        if: always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ steps.tests.outcome }}" = "success" ]; then
-            STATUS="✅ Passed"
-          else
-            STATUS="❌ Failed"
-          fi
-          REPORT_URL="${{ steps.deploy.outputs.url }}"
-          if [ -n "$REPORT_URL" ]; then
-            BODY="${COMMENT_MARKER}
-          ## 🌐 Website E2E: ${STATUS} — [View Report](${REPORT_URL})"
-          else
-            BODY="${COMMENT_MARKER}
-          ## 🌐 Website E2E: ${STATUS}"
-          fi
-          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
-          if [ -n "$EXISTING" ]; then
-            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$EXISTING" --field body="$BODY"
-          else
-            gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
-          fi
+      - name: Post result comment and summary
+        if: always() && !cancelled()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const passed = '${{ steps.tests.outcome }}' === 'success'
+            const status = passed ? '✅ Passed' : '❌ Failed'
+            const reportUrl = '${{ steps.deploy.outputs.url }}'
+            const link = reportUrl ? ` — [View Report](${reportUrl})` : ''
+            const summary = `## 🌐 Website E2E: ${status}${link}`
+
+            await core.summary.addRaw(summary).write()
+
+            if (context.eventName === 'pull_request' && !context.payload.pull_request.head.repo.fork) {
+              const marker = '<!-- WEBSITE_E2E_STATUS -->'
+              const body = `${marker}\n${summary}`
+              const { data: comments } = await github.rest.issues.listComments({
+                ...context.repo,
+                issue_number: context.issue.number
+              })
+              const existing = comments.find(c => c.body.includes(marker))
+              if (existing) {
+                await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body })
+              } else {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body })
+              }
+            }
