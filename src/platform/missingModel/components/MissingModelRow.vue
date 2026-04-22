@@ -152,13 +152,13 @@
           class="flex w-full items-start py-1"
         >
           <ElectronDownloadProgress
-            v-if="activeElectronDownload"
-            :download="activeElectronDownload"
+            v-if="electronDownloadPhase === 'active' && electronDownload"
+            :download="electronDownload"
             class="w-full"
           />
           <ElectronDownloadStoppedNotice
-            v-else-if="stoppedElectronDownload"
-            :download="stoppedElectronDownload"
+            v-else-if="electronDownloadPhase === 'stopped' && electronDownload"
+            :download="electronDownload"
             @retry="handleDownload"
           />
           <Button
@@ -182,7 +182,7 @@
 
         <TransitionCollapse>
           <MissingModelLibrarySelect
-            v-if="!urlInputs[modelKey] && !electronDownload"
+            v-if="!urlInputs[modelKey] && electronDownloadPhase === 'none'"
             :model-value="getComboValue(model.representative)"
             :options="comboOptions"
             :show-divider="isAssetSupported || downloadable"
@@ -244,22 +244,8 @@ const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
 )
 
-const { download: electronDownload } = useElectronDownload(
-  () => model.representative.url
-)
-
-const activeElectronDownload = computed(() => {
-  const dl = electronDownload.value
-  if (!dl) return undefined
-  if (dl.status === 'cancelled' || dl.status === 'error') return undefined
-  return dl
-})
-
-const stoppedElectronDownload = computed(() => {
-  const dl = electronDownload.value
-  if (dl?.status === 'cancelled' || dl?.status === 'error') return dl
-  return undefined
-})
+const { download: electronDownload, phase: electronDownloadPhase } =
+  useElectronDownload(() => model.representative.url)
 
 const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
 const comboOptions = computed(() => getComboOptions(model.representative))
