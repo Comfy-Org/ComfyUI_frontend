@@ -151,7 +151,18 @@
           v-else-if="!isCloud && downloadable"
           class="flex w-full items-start py-1"
         >
+          <ElectronDownloadProgress
+            v-if="activeElectronDownload"
+            :download="activeElectronDownload"
+            class="w-full"
+          />
+          <ElectronDownloadStoppedNotice
+            v-else-if="stoppedElectronDownload"
+            :download="stoppedElectronDownload"
+            @retry="handleDownload"
+          />
           <Button
+            v-else
             data-testid="missing-model-download"
             variant="secondary"
             size="md"
@@ -171,7 +182,7 @@
 
         <TransitionCollapse>
           <MissingModelLibrarySelect
-            v-if="!urlInputs[modelKey]"
+            v-if="!urlInputs[modelKey] && !electronDownload"
             :model-value="getComboValue(model.representative)"
             :options="comboOptions"
             :show-divider="isAssetSupported || downloadable"
@@ -190,6 +201,9 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import ElectronDownloadProgress from '@/platform/electronDownload/components/ElectronDownloadProgress.vue'
+import ElectronDownloadStoppedNotice from '@/platform/electronDownload/components/ElectronDownloadStoppedNotice.vue'
+import { useElectronDownload } from '@/platform/electronDownload/composables/useElectronDownload'
 import MissingModelStatusCard from '@/platform/missingModel/components/MissingModelStatusCard.vue'
 import MissingModelUrlInput from '@/platform/missingModel/components/MissingModelUrlInput.vue'
 import MissingModelLibrarySelect from '@/platform/missingModel/components/MissingModelLibrarySelect.vue'
@@ -229,6 +243,23 @@ const { copyToClipboard } = useCopyToClipboard()
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
 )
+
+const { download: electronDownload } = useElectronDownload(
+  () => model.representative.url
+)
+
+const activeElectronDownload = computed(() => {
+  const dl = electronDownload.value
+  if (!dl) return undefined
+  if (dl.status === 'cancelled' || dl.status === 'error') return undefined
+  return dl
+})
+
+const stoppedElectronDownload = computed(() => {
+  const dl = electronDownload.value
+  if (dl?.status === 'cancelled' || dl?.status === 'error') return dl
+  return undefined
+})
 
 const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
 const comboOptions = computed(() => getComboOptions(model.representative))

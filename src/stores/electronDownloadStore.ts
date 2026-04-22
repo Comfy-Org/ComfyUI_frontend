@@ -1,10 +1,43 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { DownloadState } from '@comfyorg/comfyui-electron-types'
+import * as Sentry from '@sentry/vue'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI } from '@/utils/envUtil'
+
+/** Strip query/hash from a URL to avoid leaking tokens in reporting. */
+function safeUrlParts(raw: string): { origin: string; path: string } {
+  try {
+    const u = new URL(raw)
+    return { origin: u.host, path: u.pathname }
+  } catch {
+    return { origin: 'unknown', path: raw }
+  }
+}
+
+function reportDownloadFailure(download: ElectronDownload) {
+  const { origin, path } = safeUrlParts(download.url)
+  Sentry.captureException(
+    new Error(
+      `Electron model download failed: ${download.message ?? 'unknown reason'}`
+    ),
+    {
+      tags: {
+        feature: 'electron_download',
+        error_type: 'download_failed',
+        origin
+      },
+      extra: {
+        filename: download.filename,
+        url_path: path,
+        progress: download.progress,
+        message: download.message ?? null
+      }
+    }
+  )
+}
 
 export interface ElectronDownload extends Pick<
   DownloadState,
@@ -13,12 +46,18 @@ export interface ElectronDownload extends Pick<
   progress?: number
   savePath?: string
   status?: DownloadStatus
+  message?: string
 }
 
 /** Electron downloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
   const DownloadManager = isDesktop ? electronAPI().DownloadManager : undefined
+
+  // Electron reports user-initiated cancels as status=ERROR (not CANCELLED), so
+  // we remember URLs whose cancel we dispatched and translate the next error
+  // event to CANCELLED in the progress handler.
+  const userCancelledUrls = new Set<string>()
 
   const findByUrl = (url: string) =>
     downloads.value.find((download) => url === download.url)
@@ -33,17 +72,33 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     }
 
     DownloadManager.onDownloadProgress((data) => {
-      if (!findByUrl(data.url)) {
+      // Translate the error event that Electron emits on user cancel into
+      // CANCELLED so the UI can visually differentiate intentional stops.
+      const userCancelled =
+        userCancelledUrls.has(data.url) && data.status === DownloadStatus.ERROR
+
+      const existing = findByUrl(data.url)
+      const previousStatus = existing?.status
+      if (!existing) {
         downloads.value.push(data)
       }
 
       const download = findByUrl(data.url)
+      if (!download) return
 
-      if (download) {
-        download.progress = data.progress
-        download.status = data.status
-        download.filename = data.filename
-        download.savePath = data.savePath
+      download.progress = data.progress
+      download.status = userCancelled ? DownloadStatus.CANCELLED : data.status
+      download.filename = data.filename
+      download.savePath = data.savePath
+      download.message = data.message
+
+      // Report genuine failures to Sentry once per ERROR transition. User
+      // cancels are already translated to CANCELLED above so they're skipped.
+      if (
+        download.status === DownloadStatus.ERROR &&
+        previousStatus !== DownloadStatus.ERROR
+      ) {
+        reportDownloadFailure(download)
       }
     })
   }
@@ -58,10 +113,20 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     url: string
     savePath: string
     filename: string
-  }) => DownloadManager!.startDownload(url, savePath, filename)
+  }) => {
+    userCancelledUrls.delete(url)
+    return DownloadManager!.startDownload(url, savePath, filename)
+  }
   const pause = (url: string) => DownloadManager!.pauseDownload(url)
   const resume = (url: string) => DownloadManager!.resumeDownload(url)
-  const cancel = (url: string) => DownloadManager!.cancelDownload(url)
+  const cancel = (url: string) => {
+    userCancelledUrls.add(url)
+    return DownloadManager!.cancelDownload(url)
+  }
+  const remove = (url: string) => {
+    userCancelledUrls.delete(url)
+    downloads.value = downloads.value.filter((download) => download.url !== url)
+  }
 
   return {
     downloads,
@@ -69,6 +134,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     pause,
     resume,
     cancel,
+    remove,
     findByUrl,
     initialize,
     inProgressDownloads: computed(() =>
