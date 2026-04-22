@@ -4000,6 +4000,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/seedance/visual-validate/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceCreateVisualValidateSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/visual-validate/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seedanceGetVisualValidateSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seedanceGetAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seedance/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * BytePlus real-person verification callback landing page
+         * @description Browser-facing landing page that BytePlus redirects the end user to after H5 liveness is complete. Logs the callback parameters and returns plain HTML the user sees in their browser. Client polls seedanceGetVisualValidateSession to observe the actual result.
+         */
+        get: operations["seedanceVisualValidateCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/wan/api/v1/services/aigc/video-generation/video-synthesis": {
         parameters: {
             query?: never;
@@ -14399,6 +14483,70 @@ export interface components {
                 /** @description For the video generation model, the number of input tokens is not calculated and defaults to 0. Therefore, total_tokens = completion_tokens. */
                 total_tokens?: number;
             };
+        };
+        SeedanceCreateVisualValidateSessionResponse: {
+            /**
+             * Format: uuid
+             * @description Session identifier. Clients poll seedanceGetVisualValidateSession with this.
+             */
+            session_id: string;
+            /** @description BytePlus-issued H5 liveness link. Open in a browser with camera access. Valid for ~120 seconds. */
+            h5_link: string;
+        };
+        SeedanceGetVisualValidateSessionResponse: {
+            /** Format: uuid */
+            session_id: string;
+            /** @enum {string} */
+            status: "pending" | "completed" | "failed";
+            /** @description Populated only when status == completed. This is the BytePlus Asset Group ID the user will upload assets into. */
+            group_id?: string | null;
+            error_code?: string | null;
+            error_message?: string | null;
+        };
+        SeedanceCreateAssetRequest: {
+            /** @description BytePlus Asset Group ID the asset will belong to. Caller must own this group. */
+            group_id: string;
+            /** @description Publicly accessible URL of the asset. */
+            url: string;
+            /** @description Optional asset name, up to 64 characters. */
+            name?: string;
+            /** @enum {string} */
+            asset_type: "Image" | "Video" | "Audio";
+            moderation?: components["schemas"]["SeedanceAssetModeration"];
+            /** @description BytePlus project name. Defaults to "default". Must match the Asset Group's project. */
+            project_name?: string;
+        };
+        SeedanceAssetModeration: {
+            /**
+             * @description Content Pre-filter review strategy. "Skip" bypasses most non-baseline policies (requires Secure Mode off on the account).
+             * @enum {string}
+             */
+            strategy: "Default" | "Skip";
+        };
+        SeedanceCreateAssetResponse: {
+            /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
+            asset_id: string;
+        };
+        SeedanceGetAssetResponse: {
+            id: string;
+            name?: string | null;
+            /** @description Access URL valid for ~12 hours. */
+            url?: string | null;
+            /** @enum {string} */
+            asset_type: "Image" | "Video" | "Audio";
+            group_id: string;
+            /** @enum {string} */
+            status: "Active" | "Processing" | "Failed";
+            error?: components["schemas"]["SeedanceAssetError"];
+            /** Format: date-time */
+            create_time?: string | null;
+            /** Format: date-time */
+            update_time?: string | null;
+            project_name?: string | null;
+        };
+        SeedanceAssetError: {
+            code: string;
+            message: string;
         };
         WanVideoGenerationRequest: {
             /**
@@ -30342,6 +30490,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceCreateVisualValidateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verification session created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceCreateVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceGetVisualValidateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session id returned by seedanceCreateVisualValidateSession */
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceGetVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeedanceCreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset creation accepted (asynchronous — poll seedanceGetAsset) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceCreateAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceGetAsset: {
+        parameters: {
+            query?: {
+                /** @description BytePlus project name. Defaults to "default" if omitted. Must match the ProjectName used at create time. */
+                project_name?: string;
+            };
+            header?: never;
+            path: {
+                /** @description BytePlus-issued asset id returned by seedanceCreateAsset */
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceGetAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceVisualValidateCallback: {
+        parameters: {
+            query: {
+                bytedToken: string;
+                resultCode: string;
+                algorithmBaseRespCode?: string;
+                reqMeasureInfoValue?: string;
+                verify_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Landing page shown to the user's browser */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
                 };
             };
         };
