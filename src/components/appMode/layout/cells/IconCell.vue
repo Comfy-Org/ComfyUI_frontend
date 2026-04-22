@@ -24,56 +24,23 @@ defineProps<{
 <template>
   <button
     type="button"
-    class="icon-cell"
-    :class="{ 'icon-cell--active': active }"
+    :class="[
+      'duration-layout flex size-full items-center justify-center border-none bg-transparent p-0 text-layout-text transition-colors ease-layout',
+      'cursor-pointer not-disabled:hover:bg-layout-cell-hover',
+      'disabled:cursor-not-allowed disabled:opacity-40',
+      { 'bg-layout-cell-hover': active }
+    ]"
     :aria-label="label"
     :title="label"
     :disabled="disabled"
     @click="() => onActivate?.()"
   >
-    <i :class="[icon, 'icon-cell__icon']" />
-    <span v-if="inlineLabel" class="icon-cell__label">{{ label }}</span>
+    <i :class="[icon, 'size-5']" />
+    <span
+      v-if="inlineLabel"
+      class="ml-2 text-layout-md font-medium whitespace-nowrap"
+    >
+      {{ label }}
+    </span>
   </button>
 </template>
-
-<style scoped>
-.icon-cell {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--layout-color-text);
-  cursor: pointer;
-  transition: background-color var(--layout-transition-duration)
-    var(--layout-transition-easing);
-}
-
-.icon-cell:hover:not(:disabled) {
-  background-color: var(--layout-color-cell-hover);
-}
-
-.icon-cell:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-.icon-cell--active {
-  background-color: var(--layout-color-cell-hover);
-}
-
-.icon-cell__icon {
-  width: 20px;
-  height: 20px;
-}
-
-.icon-cell__label {
-  margin-left: 8px;
-  font-size: var(--layout-font-md);
-  font-weight: 500;
-  white-space: nowrap;
-}
-</style>

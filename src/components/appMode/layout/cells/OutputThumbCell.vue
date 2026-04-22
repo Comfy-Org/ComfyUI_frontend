@@ -6,19 +6,31 @@
  * layout. Clicking sets the shared linearOutputStore selection; the
  * (hidden but still mounted) OutputHistory inside LinearPreview reacts
  * and emits updateSelection, which drives the main canvas.
+ *
+ * Media rendering (image/video/fallback-icon + video-play overlay) is
+ * delegated to OutputHistoryItem so we only own the button wrapper and
+ * selection state. That keeps the mediaType fan-out — including future
+ * additions like audio/3d — in one place.
+ *
+ * The [&_img], [&_video], [&_i] arbitrary variants stretch
+ * OutputHistoryItem's size-10 (40×40) elements to fill our 48×48 cell.
  */
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
+import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const {
+  asset,
+  output,
+  outputIndex = 0
+} = defineProps<{
   asset: AssetItem
   output: ResultItemImpl
   /** Index of this output within the asset's outputs list. */
@@ -28,9 +40,7 @@ const props = defineProps<{
 const store = useLinearOutputStore()
 const { selectedId } = storeToRefs(store)
 
-const selectionId = computed(
-  () => `history:${props.asset.id}:${props.outputIndex ?? 0}`
-)
+const selectionId = computed(() => `history:${asset.id}:${outputIndex}`)
 
 const isActive = computed(() => selectedId.value === selectionId.value)
 
@@ -42,64 +52,20 @@ function onClick() {
 <template>
   <button
     type="button"
-    class="output-thumb"
+    :class="[
+      'm-0 flex size-full cursor-pointer overflow-hidden rounded-layout-cell border-2 border-transparent bg-layout-cell p-0',
+      'duration-layout transition-[border-color] ease-layout',
+      'hover:border-white/20',
+      'data-[active=true]:border-layout-cell-hover',
+      '[&_img]:pointer-events-none [&_img]:size-full [&_img]:object-cover',
+      '[&_video]:pointer-events-none [&_video]:size-full [&_video]:object-cover',
+      '[&_i]:m-auto [&_i]:size-3/5 [&_i]:text-layout-mute'
+    ]"
     :data-active="isActive"
     :aria-pressed="isActive"
+    :aria-label="asset.name ?? t('linearMode.outputThumbAlt')"
     @click="onClick"
   >
-    <img
-      v-if="getMediaType(output) === 'images'"
-      class="output-thumb__media"
-      loading="lazy"
-      :src="output.url"
-      :alt="asset.name ?? t('linearMode.outputThumbAlt')"
-    />
-    <video
-      v-else-if="getMediaType(output) === 'video'"
-      class="output-thumb__media"
-      preload="metadata"
-      :src="output.url"
-      muted
-    />
-    <i v-else class="output-thumb__icon icon-[lucide--file]" />
+    <OutputHistoryItem :output="output" />
   </button>
 </template>
-
-<style scoped>
-.output-thumb {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  border: 2px solid transparent;
-  border-radius: var(--layout-cell-radius);
-  background-color: var(--layout-color-cell-fill);
-  cursor: pointer;
-  overflow: hidden;
-  transition: border-color var(--layout-transition-duration)
-    var(--layout-transition-easing);
-}
-
-.output-thumb:hover {
-  border-color: rgb(255 255 255 / 0.2);
-}
-
-.output-thumb[data-active='true'] {
-  border-color: var(--layout-color-cell-hover);
-}
-
-.output-thumb__media {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-}
-
-.output-thumb__icon {
-  width: 60%;
-  height: 60%;
-  margin: auto;
-  color: var(--layout-color-text-muted);
-}
-</style>

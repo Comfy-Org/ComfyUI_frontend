@@ -7,6 +7,11 @@
  * opens an embedded Typeform in a popover on desktop, external link
  * on mobile) paired with the same two lines of text from the old
  * LinearFeedback component.
+ *
+ * Arbitrary variants on the wrapper mute TypeformPopoverButton's
+ * `variant="inverted"` (which renders a loud white button — too bright
+ * inside a dark layout cell) so the chrome blends in, and match the
+ * 20px icon size used by sibling IconCells.
  */
 import { useI18n } from 'vue-i18n'
 
@@ -22,55 +27,15 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="feedback-cell">
-    <TypeformPopoverButton :data-tf-widget="WIDGET_ID" align="start" />
-    <div class="feedback-cell__text">
+  <div
+    class="flex size-full items-center gap-2 px-1 [&_a_i,&_button_i]:size-5 [&_a,&_button]:bg-transparent! [&_a,&_button]:text-layout-mute! [&_a:hover,&_button:hover]:bg-layout-cell-hover! [&_a:hover,&_button:hover]:text-layout-text!"
+  >
+    <TypeformPopoverButton :data-tf-widget="WIDGET_ID" />
+    <div
+      class="flex flex-col overflow-hidden text-layout-md leading-[1.1] whitespace-nowrap text-layout-mute"
+    >
       <span>{{ t('linearMode.beta') }}</span>
       <span>{{ t('linearMode.giveFeedback') }}</span>
     </div>
   </div>
 </template>
-
-<style scoped>
-.feedback-cell {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  gap: 8px;
-  padding: 0 4px;
-}
-
-.feedback-cell__text {
-  display: flex;
-  flex-direction: column;
-  font-size: var(--layout-font-md);
-  line-height: 1.1;
-  color: var(--layout-color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-/* TypeformPopoverButton uses variant="inverted" which renders a
-   white button — too loud inside a dark layout cell. Mute it to
-   match the cell text color and let the cell bg show through. */
-.feedback-cell :deep(button),
-.feedback-cell :deep(a) {
-  background-color: transparent !important;
-  color: var(--layout-color-text-muted) !important;
-}
-
-.feedback-cell :deep(button:hover),
-.feedback-cell :deep(a:hover) {
-  background-color: var(--layout-color-cell-hover) !important;
-  color: var(--layout-color-text) !important;
-}
-
-/* Match the 20px icon size of the Builder / Share IconCells so all
-   chrome icons read at the same scale. */
-.feedback-cell :deep(button i),
-.feedback-cell :deep(a i) {
-  width: 20px;
-  height: 20px;
-}
-</style>

@@ -96,6 +96,11 @@ interface InputEntryWithMeta extends InputCellEntry {
 }
 
 const inputEntries = computed<InputEntryWithMeta[]>(() => {
+  // Reactive dependency on graphNodes without reading it for
+  // computation — input entries are resolved from appModeStore below,
+  // but the computed must re-run when the graph reconfigures (e.g.
+  // after app.loadGraphData) so stale selected-input entries get
+  // pruned. `void` subscribes to the ref without TS unused-value noise.
   void graphNodes.value
   const nodeDataByNode = new Map<
     LGraphNode,
@@ -319,9 +324,15 @@ const selectedHistory = computed<{
 } | null>(() => {
   const id = selectedId.value
   if (!id || !id.startsWith('history:')) return null
-  const [, assetIdStr, kStr] = id.split(':')
-  const assetId = assetIdStr
-  const outputIndex = Number(kStr)
+  // Parse `history:<assetId>:<outputIndex>` — the outputIndex is a
+  // trailing integer; asset IDs are not guaranteed by the type to
+  // exclude colons, so split on the last colon to keep the assetId
+  // whole even if it happens to contain one.
+  const afterPrefix = id.substring('history:'.length)
+  const lastColon = afterPrefix.lastIndexOf(':')
+  if (lastColon === -1) return null
+  const assetId = afterPrefix.substring(0, lastColon)
+  const outputIndex = Number(afterPrefix.substring(lastColon + 1))
   if (!assetId || Number.isNaN(outputIndex)) return null
   const asset = outputs.media.value.find((a) => a.id === assetId)
   if (!asset) return null
@@ -338,12 +349,12 @@ async function loadSelectedWorkflow() {
   const { workflow } = await extractWorkflowFromAsset(sel.asset)
   if (!workflow) return
   if (workflow.id !== app.rootGraph.id) {
-    app.loadGraphData(workflow)
+    await app.loadGraphData(workflow)
     return
   }
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) {
-    app.loadGraphData(workflow)
+    await app.loadGraphData(workflow)
     return
   }
   changeTracker.redoQueue = []
@@ -357,12 +368,12 @@ async function actionRerun() {
       metadata: { subscribe_to_run: false, trigger_source: 'linear' }
     })
   } catch (error) {
-    console.error('[LayoutView] rerun failed:', error)
+    toastErrorHandler(error)
   }
 }
 
 function actionReuseParams() {
-  void loadSelectedWorkflow()
+  loadSelectedWorkflow().catch(toastErrorHandler)
 }
 
 function actionDownload() {
@@ -390,6 +401,13 @@ watch(
       // Guard against race: if the URL changed before load, skip.
       if (selectedHistory.value?.output.url !== url) return
       dimensions.value = { w: img.naturalWidth, h: img.naturalHeight }
+    }
+    img.onerror = () => {
+      // Same race guard. Log for observability but don't toast — a
+      // broken thumbnail shouldn't pop a user-facing error; dimensions
+      // already defaults to null via the watch reset above.
+      if (selectedHistory.value?.output.url !== url) return
+      console.warn('[LayoutView] failed to load image for dimensions:', url)
     }
     img.src = url
   },
@@ -596,17 +614,21 @@ const cells = computed<LayoutCellPlacement[]>(() => {
           :label="t('g.download')"
           :on-activate="actionDownload"
         />
-        <button
+        <div
           v-else-if="cell.kind === 'action-info'"
-          type="button"
-          class="info-cell"
+          class="duration-layout flex size-full cursor-default items-center gap-2 rounded-layout-cell bg-layout-cell px-3 font-inter text-layout-md text-layout-text transition-colors ease-layout hover:bg-layout-cell-hover"
           :title="infoTitle"
-          :aria-label="infoTitle"
         >
-          <i class="info-cell__icon icon-[lucide--file]" />
-          <span v-if="infoDims" class="info-cell__dims">{{ infoDims }}</span>
-          <span class="info-cell__label">{{ infoLabel }}</span>
-        </button>
+          <i class="icon-[lucide--file] size-5 shrink-0" aria-hidden="true" />
+          <span
+            v-if="infoDims"
+            class="shrink-0 text-layout-text tabular-nums"
+            >{{ infoDims }}</span
+          >
+          <span class="min-w-0 truncate tracking-[0.02em] tabular-nums">{{
+            infoLabel
+          }}</span>
+        </div>
         <FeedbackCell v-else-if="cell.kind === 'system-feedback'" />
         <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
         <JobQueueCell v-else-if="cell.kind === 'system-job-queue'" />
@@ -632,7 +654,7 @@ const cells = computed<LayoutCellPlacement[]>(() => {
       <PanelBlockList
         :rows="panelRows"
         :input-entry-map="inputEntryMap"
-        :on-reorder="moveBlock"
+        @reorder="moveBlock"
       />
     </FloatingPanel>
   </div>
@@ -645,16 +667,16 @@ const cells = computed<LayoutCellPlacement[]>(() => {
 .layout-view {
   position: absolute;
   inset: 0;
-  background-color: var(--layout-color-canvas);
+  background-color: var(--color-layout-canvas);
   /* Form-builder dot grid — decorative. Not aligned with LayoutGrid
      cell positions (the grid's gaps expand to absorb viewport slack,
      so cell corners drift relative to any fixed-pitch pattern). */
   background-image: radial-gradient(
     circle,
-    var(--layout-color-grid-dot) 1px,
+    var(--color-layout-grid-dot) 1px,
     transparent 1.5px
   );
-  background-size: var(--layout-dot-grid-size) var(--layout-dot-grid-size);
+  background-size: var(--spacing-layout-dot) var(--spacing-layout-dot);
   background-position: 0 0;
   /* Clip LinearPreview's inner absolute-positioned layers (image,
      skeletons, welcome) so they can never paint above the layout-view
@@ -671,13 +693,13 @@ const cells = computed<LayoutCellPlacement[]>(() => {
      unset. */
   --welcome-panel-offset-left: 0;
   --welcome-panel-offset-right: calc(
-    var(--panel-dock-width, 420px) + var(--layout-outer-padding, 16px)
+    var(--panel-dock-width, 420px) + var(--spacing-layout-outer, 16px)
   );
 }
 
 .layout-view[data-panel-side='left'] {
   --welcome-panel-offset-left: calc(
-    var(--panel-dock-width, 420px) + var(--layout-outer-padding, 16px)
+    var(--panel-dock-width, 420px) + var(--spacing-layout-outer, 16px)
   );
   --welcome-panel-offset-right: 0;
 }
@@ -727,48 +749,5 @@ const cells = computed<LayoutCellPlacement[]>(() => {
 .layout-view :deep(.layout-cell[data-cell-kind='system-run']) {
   border: none;
   background-color: transparent;
-}
-
-.info-cell {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border: none;
-  border-radius: var(--layout-cell-radius);
-  background-color: var(--layout-color-cell-fill);
-  color: var(--layout-color-text);
-  cursor: default;
-  font-family: inherit;
-  font-size: var(--layout-font-md);
-  transition: background-color var(--layout-transition-duration)
-    var(--layout-transition-easing);
-}
-
-.info-cell:hover {
-  background-color: var(--layout-color-cell-hover);
-}
-
-.info-cell__icon {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-}
-
-.info-cell__dims {
-  flex-shrink: 0;
-  color: var(--layout-color-text);
-  font-variant-numeric: tabular-nums;
-}
-
-.info-cell__label {
-  min-width: 0;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 </style>

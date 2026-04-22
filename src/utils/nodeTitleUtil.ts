@@ -43,12 +43,13 @@ const SHORT_NODE_LABELS: Record<string, string> = {
  * a label.
  */
 export function friendlyNodeLabel(title: string | undefined | null): string {
-  if (!title) return ''
-  const match = title.match(/\(([^)]+)\)/)
+  const trimmed = title?.trim() ?? ''
+  if (!trimmed) return ''
+  const match = trimmed.match(/\(([^)]+)\)/)
   const inside = match?.[1]?.trim()
   if (inside && inside.length > 0) return inside
-  const short = SHORT_NODE_LABELS[title.trim().toLowerCase()]
-  return short ?? title
+  const short = SHORT_NODE_LABELS[trimmed.toLowerCase()]
+  return short ?? trimmed
 }
 
 export function resolveNodeDisplayName(

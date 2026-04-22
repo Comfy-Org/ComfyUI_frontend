@@ -76,7 +76,7 @@ const emptyCopy = computed(() => {
            the canvas; radius + colors align with design tokens. -->
       <div
         v-else
-        class="m-2 flex flex-1 items-center justify-center rounded-(--layout-cell-radius) border-2 border-dashed border-primary-background/60 bg-primary-background/10 p-6 text-center text-sm text-primary-background"
+        class="m-2 flex flex-1 items-center justify-center rounded-layout-cell border-2 border-dashed border-primary-background/60 bg-primary-background/10 p-6 text-center text-sm text-primary-background"
       >
         {{ emptyCopy }}
       </div>
@@ -128,21 +128,26 @@ const emptyCopy = computed(() => {
 
 /* Disabled footer preview — Run + BatchCount look exactly like App Mode
    so the builder is WYSIWYG, but they're inert and dimmed to signal
-   "available after you open this in App Mode." */
+   "available after you open this in App Mode."
+   Interaction blocking lives on the inner rows, not the wrapper,
+   so the wrapper can still receive hover events — otherwise the
+   `title` tooltip and `cursor: not-allowed` would be unreachable. */
 .builder-panel-footer-disabled {
   display: flex;
   flex-direction: column;
   gap: 8px;
   opacity: 0.55;
-  pointer-events: none;
   user-select: none;
   cursor: not-allowed;
 }
 
 .builder-panel-footer-row {
-  height: var(--layout-cell-size);
-  background-color: var(--layout-color-cell-fill);
-  border-radius: var(--layout-cell-radius);
+  height: var(--spacing-layout-cell);
+  background-color: var(--color-secondary-background);
+  border-radius: var(--radius-layout-cell);
+  /* Swallow clicks on the cells inside without blocking hover on the
+     wrapper — keeps the disabled-state tooltip + cursor discoverable. */
+  pointer-events: none;
 }
 
 .builder-panel-footer-run {

@@ -5,10 +5,11 @@
         :class="
           cn(
             'builder-menu-trigger absolute z-1000 inline-flex cursor-pointer items-center gap-2 border-none transition-colors',
-            'hover:bg-(--layout-color-cell-hover)',
-            'data-[state=open]:bg-(--layout-color-cell-hover)'
+            'hover:bg-secondary-background-hover',
+            'data-[state=open]:bg-secondary-background-hover'
           )
         "
+        :data-sidebar="sidebarLocation"
         :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       >
         <i class="icon-[lucide--hammer] size-5" />
@@ -45,6 +46,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -57,6 +59,10 @@ const { setMode } = useAppMode()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
+const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
 
 const menuItems = computed(() => [
   {
@@ -104,12 +110,18 @@ function onExitBuilder(close: () => void) {
    4px radius, 48px tall. Sits just right of the SideToolbar using the
    same --sidebar-width the graph-mode chrome reacts to. */
 .builder-menu-trigger {
-  top: calc(var(--workflow-tabs-height) + var(--layout-outer-padding));
-  left: calc(var(--sidebar-width, 0px) + var(--layout-outer-padding));
-  height: var(--layout-cell-size);
+  top: calc(var(--workflow-tabs-height) + var(--spacing-layout-outer));
+  /* Default position assumes sidebar-on-right → trigger flush with the
+     left viewport edge (+ outer padding). Sidebar-on-left pushes it
+     right by --sidebar-width so it clears the sidebar column. */
+  left: var(--spacing-layout-outer);
+  height: var(--spacing-layout-cell);
   padding: 0 12px;
-  color: var(--layout-color-text);
-  background-color: var(--layout-color-cell-fill);
-  border-radius: var(--layout-cell-radius);
+  color: var(--color-base-foreground);
+  background-color: var(--color-secondary-background);
+  border-radius: var(--radius-layout-cell);
+}
+.builder-menu-trigger[data-sidebar='left'] {
+  left: calc(var(--sidebar-width, 0px) + var(--spacing-layout-outer));
 }
 </style>

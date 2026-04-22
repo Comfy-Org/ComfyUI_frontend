@@ -4,9 +4,14 @@
  *
  * Dispatches the same commands LinearControls does: Comfy.QueuePromptFront
  * with shift held (priority queue), Comfy.QueuePrompt otherwise.
+ *
+ * Visual treatment comes from the shared Button primitive's `primary`
+ * variant — App Mode no longer owns a bespoke accent color. If the
+ * "Run = green" convention lands app-wide, it'll flip here for free.
  */
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -31,46 +36,14 @@ async function handleClick(e: Event) {
 </script>
 
 <template>
-  <button
-    type="button"
-    class="run-cell"
+  <Button
+    variant="primary"
+    size="unset"
+    class="size-full rounded-lg text-layout-xl"
     data-testid="layout-run-cell"
     @click="handleClick"
   >
-    <i class="run-cell__icon icon-[lucide--play]" />
+    <i class="icon-[lucide--play] size-(--text-layout-xl)" />
     {{ t('menu.run') }}
-  </button>
+  </Button>
 </template>
-
-<style scoped>
-.run-cell {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--layout-color-accent);
-  color: var(--layout-color-accent-foreground);
-  font-size: var(--layout-font-xl);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--layout-transition-duration)
-    var(--layout-transition-easing);
-}
-
-.run-cell:hover {
-  background-color: var(--layout-color-accent-hover);
-}
-
-.run-cell:active {
-  background-color: var(--layout-color-accent-active);
-}
-
-.run-cell__icon {
-  width: var(--layout-font-xl);
-  height: var(--layout-font-xl);
-}
-</style>

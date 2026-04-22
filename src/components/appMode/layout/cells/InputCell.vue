@@ -7,6 +7,10 @@
  * then DropZone + NodeWidgets with the specific Tailwind classes that
  * force full-width widget layout) — no custom scoped CSS fighting
  * NodeWidgets internals.
+ *
+ * Arbitrary variants on the body wrapper override NodeWidgets' internal
+ * text-xs type scale to the layout scale, and let multiline textareas
+ * fill the cell body without their own min-height / resize-y overrides.
  */
 import { provide } from 'vue'
 
@@ -38,21 +42,26 @@ provide(HideLayoutFieldKey, true)
 </script>
 
 <template>
-  <div class="input-cell">
-    <div class="input-cell__header">
-      <span class="input-cell__label">
+  <!-- gap-2.5 (10px) matches panel-block-list's block-to-block gap so
+       vertical rhythm stays uniform: label→input == input→next-label. -->
+  <div class="box-border flex size-full min-h-0 min-w-0 flex-col gap-2.5">
+    <div class="flex min-h-4 shrink-0 items-center gap-1">
+      <span class="truncate text-layout-md text-layout-text">
         {{ entry.widget.label || entry.widget.name }}
       </span>
       <!-- Node-title subtitle so users can disambiguate widgets that
            share a label (e.g. two "text" inputs from positive + negative
            prompt nodes). Strips the technical node class name via
            friendlyNodeLabel — "CLIP Text Encode (Positive Prompt)"
-           becomes "Positive Prompt". Matches AppModeWidgetList. -->
-      <span class="input-cell__subtitle">
+           becomes "Positive Prompt". Matches AppModeWidgetList. Subtitle
+           shares the label's size; color alone creates hierarchy. -->
+      <span class="flex-1 truncate text-right text-layout-md text-layout-mute">
         {{ friendlyNodeLabel(entry.node.title) }}
       </span>
     </div>
-    <div class="input-cell__body">
+    <div
+      class="min-h-0 flex-1 overflow-hidden [&_input]:text-layout-md! [&_textarea]:h-full! [&_textarea]:min-h-0! [&_textarea]:resize-none! [&_textarea]:text-layout-md!"
+    >
       <DropZone>
         <NodeWidgets
           :node-data="entry.nodeData"
@@ -62,70 +71,3 @@ provide(HideLayoutFieldKey, true)
     </div>
   </div>
 </template>
-
-<style scoped>
-.input-cell {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  /* Matches the 10px gap between blocks (panel-block-list) so vertical
-     rhythm stays consistent: label→input equals input→next-label. */
-  gap: 10px;
-  box-sizing: border-box;
-}
-
-.input-cell__header {
-  flex-shrink: 0;
-  display: flex;
-  min-height: 16px;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-}
-
-.input-cell__label {
-  font-size: var(--layout-font-md);
-  color: var(--layout-color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Subtitle shares the label's base size; color alone (muted vs. primary)
-   creates the hierarchy. Same treatment used by AppModeWidgetList so
-   both rendering paths read identically. */
-.input-cell__subtitle {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--layout-font-md);
-  color: var(--layout-color-text-muted);
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.input-cell__body {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Widget content (textareas, inputs, dropdowns) normally renders at
-   text-xs via WidgetTextarea/WidgetInputNumber. Override to the
-   default layout scale. */
-.input-cell__body :deep(textarea),
-.input-cell__body :deep(input) {
-  font-size: var(--layout-font-md) !important;
-}
-
-/* Let multiline textareas fill the cell body. */
-.input-cell__body :deep(textarea) {
-  height: 100% !important;
-  min-height: 0 !important;
-  resize: none !important;
-}
-</style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useAppMode } from '@/composables/useAppMode'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
@@ -12,6 +13,7 @@ import AppModeWordmark from './AppModeWordmark.vue'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
+const { toastErrorHandler } = useErrorHandling()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes, panelPreset } = storeToRefs(appModeStore)
 
@@ -39,7 +41,7 @@ async function runFromPill(e: MouseEvent) {
       metadata: { subscribe_to_run: false, trigger_source: 'linear' }
     })
   } catch (error) {
-    console.error('[LinearWelcome] Queue prompt failed:', error)
+    toastErrorHandler(error)
   }
 }
 </script>
@@ -58,12 +60,12 @@ async function runFromPill(e: MouseEvent) {
       :class="[
         'flex h-full max-w-2xl flex-col justify-start gap-6 pb-6',
         panelSide === 'left'
-          ? 'ml-auto items-end pr-(--layout-outer-padding,16px) pl-6 text-right'
-          : 'items-start pr-6 pl-(--layout-outer-padding,16px) text-left'
+          ? 'ml-auto items-end pr-layout-outer pl-6 text-right'
+          : 'items-start pr-6 pl-layout-outer text-left'
       ]"
       :style="{
         paddingTop:
-          'calc(var(--layout-outer-padding, 16px) + var(--layout-cell-size, 48px) + var(--layout-gutter-min, 8px))'
+          'calc(var(--spacing-layout-outer, 16px) + var(--spacing-layout-cell, 48px) + var(--spacing-layout-gutter, 8px))'
       }"
     >
       <div class="flex flex-col gap-2">
@@ -85,18 +87,15 @@ async function runFromPill(e: MouseEvent) {
         <p class="mt-0 text-base-foreground">
           <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
             <template #runButton>
-              <button
-                type="button"
-                class="mx-1 inline-flex translate-y-px transform cursor-pointer items-center gap-2 rounded-md border-0 px-4 py-1.5 text-xl font-medium outline-none focus:outline-none"
-                :style="{
-                  backgroundColor: 'var(--layout-color-accent)',
-                  color: 'var(--layout-color-accent-foreground)'
-                }"
+              <Button
+                variant="primary"
+                size="unset"
+                class="mx-1 translate-y-px transform px-4 py-1.5 text-xl"
                 @click="runFromPill"
               >
                 <i class="icon-[lucide--play] size-5" />
                 {{ t('menu.run') }}
-              </button>
+              </Button>
             </template>
           </i18n-t>
         </p>

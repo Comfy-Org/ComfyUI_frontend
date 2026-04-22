@@ -7,7 +7,7 @@
  * reorder via useBlockDrag. Drop indicators: horizontal line between
  * rows, vertical line between columns.
  */
-import { computed, useTemplateRef } from 'vue'
+import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import InputCell from '../cells/InputCell.vue'
@@ -19,17 +19,20 @@ import { useBlockDrag } from './useBlockDrag'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+defineProps<{
   rows: BlockRow[]
   inputEntryMap: Map<string, InputCellEntry>
-  onReorder?: (from: BlockPos, target: DropTarget) => void
+}>()
+
+const emit = defineEmits<{
+  reorder: [from: BlockPos, target: DropTarget]
 }>()
 
 const listEl = useTemplateRef<HTMLElement>('listEl')
 
 const { draggingPos, dropTarget, startDrag } = useBlockDrag({
   listEl,
-  onCommit: (from, target) => props.onReorder?.(from, target)
+  onCommit: (from, target) => emit('reorder', from, target)
 })
 
 function isDragging(row: number, col: number) {
@@ -39,25 +42,26 @@ function isDragging(row: number, col: number) {
 // --- Drop indicator predicates ------------------------------------------
 // Rendering the indicator inline (as a sibling in the flex flow) keeps
 // the layout math simple — no absolute positioning gymnastics.
+//
+// Plain functions, not computed(): the template re-reads these every
+// render anyway, and returning a fresh ComputedRefImpl per call would
+// allocate N × M wrappers per pointermove during a drag.
+function showRowIndicator(rowIndex: number): boolean {
+  const target = dropTarget.value
+  if (!target) return false
+  if (target.kind === 'newRowBefore') return target.rowIndex === rowIndex
+  if (target.kind === 'newRowAfter') return target.rowIndex === rowIndex - 1
+  return false
+}
 
-const showRowIndicator = (rowIndex: number) =>
-  computed(() => {
-    const t = dropTarget.value
-    if (!t) return false
-    if (t.kind === 'newRowBefore') return t.rowIndex === rowIndex
-    if (t.kind === 'newRowAfter') return t.rowIndex === rowIndex - 1
-    return false
-  })
-
-const showColIndicator = (rowIndex: number, colIndex: number) =>
-  computed(() => {
-    const t = dropTarget.value
-    if (!t) return false
-    if (t.rowIndex !== rowIndex) return false
-    if (t.kind === 'columnBefore') return t.colIndex === colIndex
-    if (t.kind === 'columnAfter') return t.colIndex === colIndex - 1
-    return false
-  })
+function showColIndicator(rowIndex: number, colIndex: number): boolean {
+  const target = dropTarget.value
+  if (!target) return false
+  if (target.rowIndex !== rowIndex) return false
+  if (target.kind === 'columnBefore') return target.colIndex === colIndex
+  if (target.kind === 'columnAfter') return target.colIndex === colIndex - 1
+  return false
+}
 </script>
 
 <template>
@@ -68,7 +72,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
     >
       <!-- Horizontal drop indicator (between-row). -->
       <li
-        v-show="showRowIndicator(rowIdx).value"
+        v-show="showRowIndicator(rowIdx)"
         class="drop-indicator drop-indicator--row"
         aria-hidden="true"
       />
@@ -76,7 +80,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
         <template v-for="(block, colIdx) in row" :key="block.id">
           <!-- Vertical drop indicator (between-column). -->
           <span
-            v-show="showColIndicator(rowIdx, colIdx).value"
+            v-show="showColIndicator(rowIdx, colIdx)"
             class="drop-indicator drop-indicator--col"
             aria-hidden="true"
           />
@@ -125,7 +129,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
         </template>
         <!-- Trailing column drop indicator (after last col in this row). -->
         <span
-          v-show="showColIndicator(rowIdx, row.length).value"
+          v-show="showColIndicator(rowIdx, row.length)"
           class="drop-indicator drop-indicator--col"
           aria-hidden="true"
         />
@@ -133,7 +137,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
     </template>
     <!-- Trailing row drop indicator (after the last row). -->
     <li
-      v-show="showRowIndicator(rows.length).value"
+      v-show="showRowIndicator(rows.length)"
       class="drop-indicator drop-indicator--row"
       aria-hidden="true"
     />
@@ -168,10 +172,9 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   display: block;
   flex: 1 1 0;
   min-width: 0;
-  border-radius: var(--layout-cell-radius);
+  border-radius: var(--radius-layout-cell);
   background-color: transparent;
-  transition: opacity var(--layout-transition-duration)
-    var(--layout-transition-easing);
+  transition: opacity var(--duration-layout) var(--ease-layout);
 }
 
 .panel-block--dragging {
@@ -197,8 +200,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   background: transparent;
   cursor: grab;
   opacity: 0;
-  transition: opacity var(--layout-transition-duration)
-    var(--layout-transition-easing);
+  transition: opacity var(--duration-layout) var(--ease-layout);
   touch-action: none;
 }
 .panel-block:hover .panel-block__grip,
@@ -214,7 +216,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   height: 100%;
   background-image: radial-gradient(
     circle,
-    var(--layout-color-text-muted) 1px,
+    var(--color-layout-mute) 1px,
     transparent 1.2px
   );
   background-size: 4px 4px;

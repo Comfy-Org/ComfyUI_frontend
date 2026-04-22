@@ -21,48 +21,20 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 </script>
 
 <template>
-  <div class="batch-count-cell">
-    <span class="batch-count-cell__label">
+  <div class="flex size-full items-center justify-center gap-2 px-2">
+    <span class="shrink-0 text-layout-md whitespace-nowrap text-layout-text">
       {{ t('linearMode.runCount') }}
     </span>
+    <!-- w-20 (5rem) sized for up to 3 digits between the − / + controls.
+         [&_input]:* centers the numeric value between ScrubableNumberInput's
+         minus and plus buttons and forces the layout type scale over the
+         widget's default text-xs. -->
     <ScrubableNumberInput
       v-model="batchCount"
       :aria-label="t('linearMode.runCount')"
       :min="1"
       :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-      class="batch-count-cell__input"
+      class="w-20 shrink-0 [&_input]:text-center [&_input]:text-layout-md"
     />
   </div>
 </template>
-
-<style scoped>
-.batch-count-cell {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 8px;
-}
-
-.batch-count-cell .batch-count-cell__label {
-  flex-shrink: 0;
-  font-size: var(--layout-font-md);
-  color: var(--layout-color-text);
-  white-space: nowrap;
-}
-
-.batch-count-cell__input {
-  flex: 0 0 auto;
-  /* Sized for up to 3 digits between the − / + controls. */
-  width: 5rem;
-}
-
-/* Center the number value inside ScrubableNumberInput so it sits
-   between the − and + controls rather than biased to one side. */
-.batch-count-cell :deep(input) {
-  text-align: center;
-  font-size: var(--layout-font-md);
-}
-</style>

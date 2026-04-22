@@ -29,8 +29,9 @@
  * or collapsing the panel in either view updates both (WYSIWYG by
  * construction).
  */
+import { useElementSize } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, toRef } from 'vue'
+import { computed, toRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -39,22 +40,20 @@ import PanelDragPreview from './PanelDragPreview.vue'
 import type { PanelPreset } from './panelTypes'
 import { usePanelDrag } from './usePanelDrag'
 
-const props = withDefaults(
-  defineProps<{
-    preset: PanelPreset
-    collapsed?: boolean
-    title?: string
-    movable?: boolean
-    /** Preset to restore when the user picks "Reset layout". */
-    defaultPreset?: PanelPreset
-  }>(),
-  {
-    collapsed: false,
-    title: undefined,
-    movable: false,
-    defaultPreset: 'right-dock'
-  }
-)
+const {
+  preset,
+  collapsed = false,
+  title,
+  movable = false,
+  defaultPreset = 'right-dock'
+} = defineProps<{
+  preset: PanelPreset
+  collapsed?: boolean
+  title?: string
+  movable?: boolean
+  /** Preset to restore when the user picks "Reset layout". */
+  defaultPreset?: PanelPreset
+}>()
 
 const emit = defineEmits<{
   'update:preset': [preset: PanelPreset]
@@ -65,18 +64,25 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const { isDragging, snapTarget, onHeaderPointerDown } = usePanelDrag({
-  currentPreset: toRef(props, 'preset'),
+  currentPreset: toRef(() => preset),
   onCommit: (preset) => emit('update:preset', preset)
 })
 
+// Measure the live panel so the drag preview matches its content-fit
+// height. Only consumed while dragging; rounded to int to avoid
+// subpixel jitter in the blue rectangle.
+const panelRef = useTemplateRef<HTMLElement>('panelRef')
+const { height: panelHeight } = useElementSize(panelRef)
+const previewHeight = computed(() => Math.round(panelHeight.value))
+
 const positionClass = computed(() => [
-  `floating-panel--${props.preset}`,
-  props.movable && isDragging.value ? 'floating-panel--dragging' : null,
-  props.collapsed ? 'floating-panel--collapsed' : null
+  `floating-panel--${preset}`,
+  movable && isDragging.value ? 'floating-panel--dragging' : null,
+  collapsed ? 'floating-panel--collapsed' : null
 ])
 
 function handleHeaderPointerDown(e: PointerEvent) {
-  if (!props.movable) return
+  if (!movable) return
   // Ignore pointerdown on interactive header controls so clicking the
   // collapse chevron / menu button doesn't start a drag.
   const target = e.target as HTMLElement | null
@@ -85,24 +91,24 @@ function handleHeaderPointerDown(e: PointerEvent) {
 }
 
 function toggleCollapsed() {
-  emit('update:collapsed', !props.collapsed)
+  emit('update:collapsed', !collapsed)
 }
 
 const menuEntries = computed<MenuItem[]>(() => [
   {
-    label: props.collapsed
+    label: collapsed
       ? t('linearMode.floatingPanel.showPanel')
       : t('linearMode.floatingPanel.hidePanel'),
-    icon: props.collapsed
+    icon: collapsed
       ? 'icon-[lucide--chevron-down]'
       : 'icon-[lucide--chevron-right]',
-    command: () => emit('update:collapsed', !props.collapsed)
+    command: () => emit('update:collapsed', !collapsed)
   },
   {
     label: t('linearMode.floatingPanel.resetLayout'),
     icon: 'icon-[lucide--rotate-ccw]',
     command: () => {
-      emit('update:preset', props.defaultPreset)
+      emit('update:preset', defaultPreset)
       emit('update:collapsed', false)
       emit('reset-layout')
     }
@@ -111,7 +117,7 @@ const menuEntries = computed<MenuItem[]>(() => [
 </script>
 
 <template>
-  <section class="floating-panel" :class="positionClass">
+  <section ref="panelRef" class="floating-panel" :class="positionClass">
     <header
       class="floating-panel__header"
       :class="{ 'floating-panel__header--movable': movable }"
@@ -171,7 +177,11 @@ const menuEntries = computed<MenuItem[]>(() => [
       <slot name="footer" />
     </div>
   </section>
-  <PanelDragPreview v-if="movable && isDragging" :preset="snapTarget" />
+  <PanelDragPreview
+    v-if="movable && isDragging"
+    :preset="snapTarget"
+    :panel-height="previewHeight"
+  />
 </template>
 
 <style scoped>
@@ -180,8 +190,8 @@ const menuEntries = computed<MenuItem[]>(() => [
   display: flex;
   flex-direction: column;
   width: var(--panel-dock-width, 420px);
-  max-width: calc(100vw - var(--layout-outer-padding) * 2);
-  background-color: var(--layout-color-cell-fill);
+  max-width: calc(100vw - var(--spacing-layout-outer) * 2);
+  background-color: var(--color-layout-cell);
   border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 10px;
   box-shadow:
@@ -191,81 +201,86 @@ const menuEntries = computed<MenuItem[]>(() => [
   overflow: hidden;
   z-index: 10;
   transition:
-    top var(--layout-transition-duration) var(--layout-transition-easing),
-    bottom var(--layout-transition-duration) var(--layout-transition-easing),
-    left var(--layout-transition-duration) var(--layout-transition-easing),
-    right var(--layout-transition-duration) var(--layout-transition-easing),
-    max-height var(--layout-transition-duration) var(--layout-transition-easing),
-    height var(--layout-transition-duration) var(--layout-transition-easing),
-    opacity var(--layout-transition-duration) var(--layout-transition-easing);
+    top var(--duration-layout) var(--ease-layout),
+    bottom var(--duration-layout) var(--ease-layout),
+    left var(--duration-layout) var(--ease-layout),
+    right var(--duration-layout) var(--ease-layout),
+    max-height var(--duration-layout) var(--ease-layout),
+    height var(--duration-layout) var(--ease-layout),
+    opacity var(--duration-layout) var(--ease-layout);
 }
 
 /* While dragging, fade the live panel so the blue preview reads as the
    destination and the panel itself reads as the thing being moved. */
 .floating-panel--dragging {
   opacity: 0.55;
-  transition: opacity var(--layout-transition-duration)
-    var(--layout-transition-easing);
+  transition: opacity var(--duration-layout) var(--ease-layout);
 }
 
 /* Collapsed state: let the section size itself to just the header pill.
-   The preset positioning still anchors top/left/right (or bottom), so
-   only the height constraint needs releasing. */
+   Only release size constraints (height, max-height) — NOT positional
+   anchors. Presets like float-br / float-bl anchor with `bottom` only,
+   so resetting `bottom: auto` here would strip their anchor and the
+   collapsed pill would jump to the top of the viewport. */
 .floating-panel--collapsed {
-  bottom: auto !important;
   height: auto !important;
   max-height: none !important;
 }
 
-/* Preset positions — hard-coded for Phase 4-A. Drag commits these
-   same values. */
+/* Preset positions. Each preset pins one anchor edge and uses
+   `max-height` (not `bottom` / `height`) so the panel shrinks to its
+   content when there's slack, and scrolls the body when content
+   exceeds the cap. */
 .floating-panel--right-dock {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  right: var(--layout-outer-padding);
-  bottom: var(--layout-outer-padding);
+  right: var(--spacing-layout-outer);
+  max-height: calc(
+    100% - var(--spacing-layout-outer) * 2 - var(--spacing-layout-cell) -
+      var(--spacing-layout-gutter)
+  );
 }
 .floating-panel--left-dock {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  left: var(--layout-outer-padding);
-  bottom: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+  left: var(--spacing-layout-outer);
+  max-height: calc(
+    100% - var(--spacing-layout-outer) * 2 - var(--spacing-layout-cell) * 2 -
+      var(--spacing-layout-gutter) * 2
   );
 }
 .floating-panel--float-tr {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  right: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  right: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 .floating-panel--float-br {
-  bottom: var(--layout-outer-padding);
-  right: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  bottom: var(--spacing-layout-outer);
+  right: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 .floating-panel--float-tl {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  left: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  left: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 .floating-panel--float-bl {
   bottom: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  left: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  left: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 
 /* Header — the Vizcom-style strip that also acts as the drag grip.
@@ -278,7 +293,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   padding: 8px 10px;
   min-height: 48px;
   user-select: none;
-  background-color: var(--layout-color-header-fill);
+  background-color: var(--color-layout-header-fill);
 }
 
 /* Movable header: grab cursor + touch-action so pointer capture works
@@ -305,14 +320,13 @@ const menuEntries = computed<MenuItem[]>(() => [
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--layout-color-text);
+  color: var(--color-layout-text);
   cursor: pointer;
-  transition: background-color var(--layout-transition-duration)
-    var(--layout-transition-easing);
+  transition: background-color var(--duration-layout) var(--ease-layout);
 }
 
 .floating-panel__header-control:hover {
-  background-color: var(--layout-color-cell-hover);
+  background-color: var(--color-layout-cell-hover);
 }
 
 .floating-panel__header-control > i {
@@ -321,9 +335,9 @@ const menuEntries = computed<MenuItem[]>(() => [
 }
 
 .floating-panel__title {
-  font-size: var(--layout-font-md);
+  font-size: var(--text-layout-md);
   font-weight: 600;
-  color: var(--layout-color-text);
+  color: var(--color-layout-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -344,6 +358,6 @@ const menuEntries = computed<MenuItem[]>(() => [
 .floating-panel__footer {
   flex-shrink: 0;
   padding: 16px;
-  background-color: var(--layout-color-header-fill);
+  background-color: var(--color-layout-header-fill);
 }
 </style>

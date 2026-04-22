@@ -290,20 +290,20 @@ defineExpose({ handleDragDrop })
    App Mode read identically. Label + subtitle share the base size;
    color alone separates primary from secondary. */
 .app-mode-widget-label {
-  font-size: var(--layout-font-md);
-  color: var(--layout-color-text);
+  font-size: var(--text-layout-md);
+  color: var(--color-base-foreground);
 }
 
 .app-mode-widget-subtitle {
-  font-size: var(--layout-font-md);
-  color: var(--layout-color-text-muted);
+  font-size: var(--text-layout-md);
+  color: var(--color-muted-foreground);
 }
 
 [data-testid='builder-widget-item'] :deep(textarea),
 [data-testid='builder-widget-item'] :deep(input),
 [data-testid='app-mode-widget-item'] :deep(textarea),
 [data-testid='app-mode-widget-item'] :deep(input) {
-  font-size: var(--layout-font-md);
+  font-size: var(--text-layout-md);
 }
 
 /* Between-widget vertical rhythm — 10px matches the header→body gap

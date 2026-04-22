@@ -3,6 +3,11 @@
  * PanelDragPreview — translucent Yves Klein blue rectangle rendered at
  * the snap-target preset's bounds while a panel is being dragged.
  * Appears above the live panel to signal where the panel will land.
+ *
+ * Passing `panelHeight` makes the preview match the live panel's
+ * content-fit height instead of stretching to the preset's full
+ * `max-height`. Each preset's CSS `max-height` still caps the preview
+ * on small viewports.
  */
 import { computed } from 'vue'
 
@@ -10,15 +15,20 @@ import type { PanelPreset } from './panelTypes'
 
 const props = defineProps<{
   preset: PanelPreset
+  panelHeight?: number
 }>()
 
 const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
+const heightStyle = computed(() =>
+  props.panelHeight != null ? { height: `${props.panelHeight}px` } : undefined
+)
 </script>
 
 <template>
   <div
     class="panel-drag-preview"
     :class="presetClass"
+    :style="heightStyle"
     aria-hidden="true"
     data-testid="panel-drag-preview"
   />
@@ -35,61 +45,66 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
   pointer-events: none;
   z-index: 20;
   transition:
-    top var(--layout-transition-duration) var(--layout-transition-easing),
-    bottom var(--layout-transition-duration) var(--layout-transition-easing),
-    left var(--layout-transition-duration) var(--layout-transition-easing),
-    right var(--layout-transition-duration) var(--layout-transition-easing),
-    max-height var(--layout-transition-duration) var(--layout-transition-easing);
+    top var(--duration-layout) var(--ease-layout),
+    bottom var(--duration-layout) var(--ease-layout),
+    left var(--duration-layout) var(--ease-layout),
+    right var(--duration-layout) var(--ease-layout),
+    max-height var(--duration-layout) var(--ease-layout);
 }
 
-/* Mirror FloatingPanel's preset positions exactly so the preview lines
-   up with where the panel will land. */
+/* Mirror FloatingPanel's preset positions. Height comes from the
+   inline `panelHeight` prop so the preview shrinks to match the live
+   panel's content-fit size; each preset's `max-height` still caps it
+   on short viewports. */
 .panel-drag-preview--right-dock {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  right: var(--layout-outer-padding);
-  bottom: var(--layout-outer-padding);
+  right: var(--spacing-layout-outer);
+  max-height: calc(
+    100% - var(--spacing-layout-outer) * 2 - var(--spacing-layout-cell) -
+      var(--spacing-layout-gutter)
+  );
 }
 .panel-drag-preview--left-dock {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  left: var(--layout-outer-padding);
-  bottom: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+  left: var(--spacing-layout-outer);
+  max-height: calc(
+    100% - var(--spacing-layout-outer) * 2 - var(--spacing-layout-cell) * 2 -
+      var(--spacing-layout-gutter) * 2
   );
 }
 .panel-drag-preview--float-tr {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  right: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  right: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 .panel-drag-preview--float-br {
-  bottom: var(--layout-outer-padding);
-  right: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  bottom: var(--spacing-layout-outer);
+  right: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 .panel-drag-preview--float-tl {
   top: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  left: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  left: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 .panel-drag-preview--float-bl {
   bottom: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) +
+      var(--spacing-layout-gutter)
   );
-  left: var(--layout-outer-padding);
-  height: calc(50% - var(--layout-outer-padding) - 4px);
+  left: var(--spacing-layout-outer);
+  max-height: calc(50% - var(--spacing-layout-outer) - 4px);
 }
 </style>

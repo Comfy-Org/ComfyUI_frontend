@@ -6,8 +6,17 @@
  * classify the pointer's position inside that block's rect into one of
  * four zones — left edge → columnBefore, right edge → columnAfter,
  * upper middle → newRowBefore, lower middle → newRowAfter.
+ *
+ * Drag contract:
+ * - Starts on grip pointerdown; only activates (`draggingPos` set) once
+ *   the pointer moves past `DRAG_THRESHOLD_PX`, so a plain click on the
+ *   grip doesn't count as a drag.
+ * - Only responds to the pointer that started the drag (activePointerId
+ *   filter).
+ * - Ends on pointerup / pointercancel / window blur.
  */
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { useEventListener, useWindowFocus } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import type { BlockPos, DropTarget } from './panelTypes'
@@ -23,6 +32,8 @@ interface UseBlockDragOptions {
 const EDGE_FRACTION = 0.3
 const EDGE_MIN_PX = 40
 const EDGE_MAX_PX = 140
+/** Pointer must move at least this far (px) to count as a drag, not a click. */
+const DRAG_THRESHOLD_PX = 5
 
 function computeDropTarget(
   container: HTMLElement,
@@ -74,29 +85,23 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
   const draggingPos = ref<BlockPos | null>(null)
   const dropTarget = ref<DropTarget | null>(null)
 
+  // Non-reactive drag state.
   let activePointerId: number | null = null
   let capturedEl: HTMLElement | null = null
+  let startX = 0
+  let startY = 0
+  let movedFarEnough = false
+  let pendingPos: BlockPos | null = null
 
   const isDragging = computed(() => draggingPos.value !== null)
 
-  function onPointerMove(e: PointerEvent) {
-    const container = opts.listEl.value
-    if (!container || draggingPos.value === null) return
-    dropTarget.value = computeDropTarget(container, e.clientX, e.clientY)
+  function isOurPointer(e: PointerEvent): boolean {
+    return activePointerId !== null && e.pointerId === activePointerId
   }
 
-  function cleanupListeners() {
-    window.removeEventListener('pointermove', onPointerMove)
-    window.removeEventListener('pointerup', onPointerUp)
-    window.removeEventListener('pointercancel', onPointerCancel)
-  }
-
-  function endDrag(commit: boolean) {
-    const from = draggingPos.value
-    const target = dropTarget.value
+  function reset() {
     draggingPos.value = null
     dropTarget.value = null
-
     if (capturedEl && activePointerId !== null) {
       try {
         capturedEl.releasePointerCapture(activePointerId)
@@ -106,42 +111,68 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     }
     activePointerId = null
     capturedEl = null
-    cleanupListeners()
-
-    if (!commit || !from || !target) return
-    opts.onCommit(from, target)
+    movedFarEnough = false
+    pendingPos = null
   }
 
-  function onPointerUp() {
-    endDrag(true)
-  }
-  function onPointerCancel() {
-    endDrag(false)
-  }
+  useEventListener(window, 'pointermove', (e: PointerEvent) => {
+    if (!isOurPointer(e)) return
+    if (!movedFarEnough) {
+      const dx = e.clientX - startX
+      const dy = e.clientY - startY
+      if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
+      movedFarEnough = true
+      // Promote the pending position into the live drag state. Render
+      // side-effect: the source block gets the .panel-block--dragging
+      // class (opacity fade) and drop indicators start rendering.
+      if (pendingPos) draggingPos.value = { ...pendingPos }
+    }
+    const container = opts.listEl.value
+    if (container) {
+      dropTarget.value = computeDropTarget(container, e.clientX, e.clientY)
+    }
+  })
+
+  useEventListener(window, 'pointerup', (e: PointerEvent) => {
+    if (!isOurPointer(e)) return
+    const from = draggingPos.value
+    const target = dropTarget.value
+    reset()
+    // If we never crossed the threshold, draggingPos is null and we
+    // skip the commit — a click on the grip is a no-op.
+    if (from && target) opts.onCommit(from, target)
+  })
+
+  useEventListener(window, 'pointercancel', (e: PointerEvent) => {
+    if (!isOurPointer(e)) return
+    reset()
+  })
+
+  // Abandon on window blur so a drag doesn't survive alt-tab / OS modals.
+  const focused = useWindowFocus()
+  watch(focused, (nowFocused) => {
+    if (!nowFocused && activePointerId !== null) reset()
+  })
 
   function startDrag(pos: BlockPos, e: PointerEvent) {
     if (e.button !== 0 && e.pointerType === 'mouse') return
     const target = e.currentTarget as HTMLElement
     activePointerId = e.pointerId
     capturedEl = target
+    startX = e.clientX
+    startY = e.clientY
+    movedFarEnough = false
+    pendingPos = pos
     try {
       target.setPointerCapture(e.pointerId)
     } catch {
       // ignore
     }
-    draggingPos.value = { ...pos }
-    const container = opts.listEl.value
-    if (container) {
-      dropTarget.value = computeDropTarget(container, e.clientX, e.clientY)
-    }
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp)
-    window.addEventListener('pointercancel', onPointerCancel)
+    // draggingPos + dropTarget stay null until the threshold crosses —
+    // so a click on the grip is a no-op.
     e.preventDefault()
     e.stopPropagation()
   }
-
-  onBeforeUnmount(cleanupListeners)
 
   return {
     draggingPos,

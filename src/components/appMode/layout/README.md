@@ -4,9 +4,11 @@ Components for App Mode's layout system — a full-viewport output canvas with f
 
 ## Before editing anything in this folder
 
-**Read [`design-tokens.css`](./design-tokens.css) first.** It's the single source of truth for visual constants — type scale, colors, grid dimensions, motion timing. Reference tokens via `var(--layout-*)` in scoped styles. **Don't hardcode values**; if you need one that doesn't exist, add it to `design-tokens.css` with a comment on intent.
+**Read [`packages/design-system/src/css/layout.css`](../../../../packages/design-system/src/css/layout.css) first.** It's the single source of truth for layout visual constants — grid dimensions, type scale, radii, motion — expressed as Tailwind v4 `@theme` entries so each token generates a utility class. Prefer those utilities (`h-layout-cell`, `text-layout-xl`, `rounded-layout-cell`, `duration-layout`, `ease-layout`) over ad-hoc values.
 
-The type scale is deliberately tight: **4 sizes only** (`md` / `lg` / `xl` / `hero`). Resist adding a fifth.
+Alias-layer colors live as design-system semantic tokens (`bg-base-background`, `bg-secondary-background`, `text-base-foreground`, `text-muted-foreground`). Layout-specific derived colors (`--color-layout-header-fill`, `--color-layout-grid-dot`) are defined on `:root` in the same file.
+
+The type scale is deliberately tight: **4 sizes only** (`layout-md` / `layout-lg` / `layout-xl` / `layout-hero`). Resist adding a fifth.
 
 ## Structure
 
@@ -14,15 +16,15 @@ The type scale is deliberately tight: **4 sizes only** (`md` / `lg` / `xl` / `he
 - `LayoutView.vue` — runtime view. Mounts `LinearPreview` as the full-viewport background layer, the grid above it, and one or more floating panels on top.
 - `cells/` — individual cell components. Each cell fills its assigned grid area and renders one coherent piece of UI.
 - `panels/` — floating-panel shell + snap-drag + Notion-style block list.
-- `design-tokens.css` — visual constants. Import it once (in `LayoutView.vue`); tokens cascade to every cell + panel via CSS custom properties on `.layout-view`.
+- Tokens are loaded globally via `@comfyorg/design-system/css/style.css` (imported once at the app entry), so no per-view CSS import is needed.
 
 ## Cell conventions
 
-- Cell roots fill their grid area: `width: 100%; height: 100%` (or absolute fill if the cell is a positioning context).
+- Cell roots fill their grid area: `size-full` (or absolute fill if the cell is a positioning context).
 - Visible cell background is applied by `LayoutGrid` via the `.layout-cell:has(> *)` selector — individual cells don't set their own outer background.
-- Text at `var(--layout-font-md)` unless there's a concrete reason otherwise.
-- Padding uses the token-implied rhythm (multiples of `--layout-gutter-min`).
-- No decorative chrome: no shadows, no gradients, no rounded corners larger than `--layout-cell-radius`. Accent color only for primary action / active states.
+- Text at `text-layout-md` unless there's a concrete reason otherwise.
+- Padding uses the token-implied rhythm (multiples of `gap-layout-gutter`).
+- No decorative chrome: no shadows, no gradients, no rounded corners larger than `rounded-layout-cell`. Accent / primary color is owned by the shared `Button` primitive, not cells.
 
 ## Phase map
 
