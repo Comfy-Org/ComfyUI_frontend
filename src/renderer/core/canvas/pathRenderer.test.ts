@@ -177,11 +177,16 @@ describe('CanvasPathRenderer', () => {
         patterns: { disabled: disabledPattern }
       })
 
+      const strokeStyleValues: unknown[] = []
+      Object.defineProperty(ctx, 'strokeStyle', {
+        get: () => strokeStyleValues.at(-1) ?? '',
+        set: (v: unknown) => strokeStyleValues.push(v),
+        configurable: true
+      })
+
       renderer.drawLink(ctx, link, context)
 
-      // The initial strokeStyle is set to the disabled pattern before drawLinkPath
-      // drawLinkPath then overrides it, but the initial assignment still happens
-      expect(ctx.save).toHaveBeenCalled()
+      expect(strokeStyleValues).toContain(disabledPattern)
     })
   })
 
