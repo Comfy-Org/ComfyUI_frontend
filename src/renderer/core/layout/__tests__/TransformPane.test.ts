@@ -1,26 +1,32 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, reactive } from 'vue'
 
+import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 import TransformPane from '../transform/TransformPane.vue'
 
-const mockData = vi.hoisted(() => ({
-  mockTransformStyle: {
-    transform: 'scale(1) translate(0px, 0px)',
-    transformOrigin: '0 0'
-  },
-  mockCamera: { x: 0, y: 0, z: 1 }
-}))
+const mockCamera = reactive({ x: 0, y: 0, z: 1 })
+
+const { mockNodes, mockVersion } = vi.hoisted(() => {
+  const { ref: createRef } = require('vue')
+  return {
+    mockNodes: createRef(new Map()),
+    mockVersion: createRef(0)
+  }
+})
 
 vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   const syncWithCanvas = vi.fn()
   return {
     useTransformState: () => ({
-      camera: computed(() => mockData.mockCamera),
-      transformStyle: computed(() => mockData.mockTransformStyle),
+      camera: mockCamera,
+      transformStyle: computed(() => ({
+        transform: `scale3d(${mockCamera.z}, ${mockCamera.z}, ${mockCamera.z}) translate3d(${mockCamera.x}px, ${mockCamera.y}px, 0)`,
+        transformOrigin: '0 0'
+      })),
       canvasToScreen: vi.fn(),
       screenToCanvas: vi.fn(),
       isNodeInViewport: vi.fn(),
@@ -28,6 +34,15 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
     })
   }
 })
+
+vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+  layoutStore: {
+    getAllNodes: () => computed(() => mockNodes.value),
+    getVersion: () => computed(() => mockVersion.value),
+    onChange: vi.fn(() => () => {}),
+    getNodeLayoutRef: (id: string) => computed(() => mockNodes.value.get(id) ?? null)
+  }
+}))
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -60,11 +75,10 @@ describe('TransformPane', () => {
       expect(screen.getByTestId('transform-pane')).toBeInTheDocument()
     })
 
-    it('should apply transform style from composable', async () => {
-      mockData.mockTransformStyle = {
-        transform: 'scale(2) translate(100px, 50px)',
-        transformOrigin: '0 0'
-      }
+    it('should apply camera transform via RAF', async () => {
+      mockCamera.x = 100
+      mockCamera.y = 50
+      mockCamera.z = 2
 
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
@@ -72,15 +86,18 @@ describe('TransformPane', () => {
           canvas: mockCanvas
         }
       })
+
+      await nextTick()
+      vi.advanceTimersToNextFrame()
       await nextTick()
 
       const transformPane = screen.getByTestId('transform-pane')
-      expect(transformPane.getAttribute('style')).toContain(
-        'transform: scale(2) translate(100px, 50px)'
-      )
+      const style = transformPane.getAttribute('style')
+      expect(style).toContain('scale3d(2, 2, 2)')
+      expect(style).toContain('translate3d(100px, 50px, 0)')
     })
 
-    it('should render slot content', () => {
+    it('should render slot content inside offset wrapper', () => {
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
         props: {
@@ -169,19 +186,42 @@ describe('TransformPane', () => {
     })
   })
 
-  describe('transform state integration', () => {
-    it('should provide transform utilities to child components', () => {
+  describe('content bounds offset', () => {
+    it('should adjust transform to compensate for negative-coordinate nodes', async () => {
+      mockCamera.x = 10
+      mockCamera.y = 20
+      mockCamera.z = 1
+
+      const nodeLayout: NodeLayout = {
+        id: '1',
+        position: { x: -500, y: -300 },
+        size: { width: 200, height: 100 },
+        zIndex: 0,
+        visible: true,
+        bounds: { x: -500, y: -300, width: 200, height: 100 }
+      }
+      mockNodes.value = new Map([['1', nodeLayout]])
+      mockVersion.value = 1
+
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
+        props: { canvas: mockCanvas }
       })
 
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.canvasToScreen).toBeDefined()
-      expect(transformState.screenToCanvas).toBeDefined()
+      await nextTick()
+      vi.advanceTimersToNextFrame()
+      await nextTick()
+
+      const pane = screen.getByTestId('transform-pane')
+      const style = pane.getAttribute('style') ?? ''
+
+      // Pane should have explicit dimensions (not 100%)
+      expect(style).toMatch(/width:\s*\d+px/)
+      expect(style).toMatch(/height:\s*\d+px/)
+
+      // Camera translation should be adjusted by offset (camera - offset)
+      // so it won't match the raw camera values
+      expect(style).not.toContain('translate3d(10px, 20px, 0)')
     })
   })
 
