@@ -25,25 +25,37 @@
           {{ item.value.label }}
         </slot>
       </span>
-      <button
-        :class="
-          cn(
-            'hover:text-foreground flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground',
-            'opacity-0 group-hover/tree-node:opacity-100'
-          )
-        "
-        :aria-label="$t('icon.bookmark')"
-        @click.stop="toggleBookmark"
-      >
-        <i
-          :class="
-            cn(
-              isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
-              'text-xs'
-            )
-          "
-        />
-      </button>
+      <div class="flex shrink-0 items-center gap-0.5">
+        <Button
+          v-if="isUserBlueprint"
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
+          :aria-label="$t('g.delete')"
+          @click.stop="deleteBlueprint"
+        >
+          <i class="icon-[lucide--trash-2] bg-destructive-background" />
+        </Button>
+        <Button
+          v-if="isUserBlueprint"
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
+          :aria-label="$t('g.edit')"
+          @click.stop="editBlueprint"
+        >
+          <i class="icon-[lucide--square-pen]" />
+        </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
+          :aria-label="$t('icon.bookmark')"
+          @click.stop="toggleBookmark"
+        >
+          <i :class="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'" />
+        </Button>
+      </div>
     </div>
 
     <!-- Folder -->
@@ -53,6 +65,7 @@
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
+      @contextmenu="clearContextMenuNode"
     >
       <i
         v-if="item.hasChildren"
@@ -94,8 +107,10 @@ import { computed, inject } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import Button from '@/components/ui/button/Button.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -120,6 +135,7 @@ const emit = defineEmits<{
 
 const contextMenuNode = inject(InjectKeyContextMenuNode)
 const nodeBookmarkStore = useNodeBookmarkStore()
+const subgraphStore = useSubgraphStore()
 
 const nodeDef = computed(() => item.value.data)
 
@@ -128,10 +144,27 @@ const isBookmarked = computed(() => {
   return nodeBookmarkStore.isBookmarked(nodeDef.value)
 })
 
+const isUserBlueprint = computed(() =>
+  subgraphStore.isUserBlueprint(nodeDef.value?.name)
+)
+
 function toggleBookmark() {
   if (nodeDef.value) {
     nodeBookmarkStore.toggleBookmark(nodeDef.value)
   }
+}
+
+function deleteBlueprint() {
+  if (nodeDef.value) {
+    void subgraphStore.deleteBlueprint(nodeDef.value.name)
+  }
+}
+const editBlueprint = async () => {
+  if (!nodeDef.value)
+    throw new Error(
+      'Failed to edit subgraph blueprint lacking backing node data'
+    )
+  await useSubgraphStore().editBlueprint(nodeDef.value.name)
 }
 
 const {
@@ -163,6 +196,12 @@ function handleClick(
 function handleContextMenu() {
   if (contextMenuNode) {
     contextMenuNode.value = item.value
+  }
+}
+
+function clearContextMenuNode() {
+  if (contextMenuNode) {
+    contextMenuNode.value = null
   }
 }
 

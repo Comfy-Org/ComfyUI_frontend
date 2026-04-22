@@ -56,16 +56,14 @@ export const zIntInputOptions = zNumericInputOptions.extend({
     .optional()
 })
 
+export const zColorStop = z.object({
+  offset: z.number(),
+  color: z.tuple([z.number(), z.number(), z.number()])
+})
+
 export const zFloatInputOptions = zNumericInputOptions.extend({
   round: z.union([z.number(), z.literal(false)]).optional(),
-  gradient_stops: z
-    .array(
-      z.object({
-        offset: z.number(),
-        color: z.tuple([z.number(), z.number(), z.number()])
-      })
-    )
-    .optional()
+  gradient_stops: z.array(zColorStop).optional()
 })
 
 export const zBooleanInputOptions = zBaseInputOptions.extend({

@@ -3,6 +3,7 @@
     <div
       v-if="loading"
       class="absolute inset-0 z-50 flex items-center justify-center bg-backdrop/50"
+      data-testid="loading-overlay"
     >
       <div class="flex flex-col items-center">
         <div class="grid place-items-center">

@@ -63,7 +63,7 @@ function onCustomComboCreated(this: LGraphNode) {
         (w) => w.name.startsWith('option') && w.value
       ).map((w) => `${w.value}`)
     )
-    if (app.configuringGraph) return
+    if (app.configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -71,6 +71,9 @@ function onCustomComboCreated(this: LGraphNode) {
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
     this.applyToGraph!()
   )
+  this.onAdded = useChainCallback(this.onAdded, function () {
+    updateCombo()
+  })
 
   function addOption(node: LGraphNode) {
     if (!node.widgets) return
@@ -78,16 +81,17 @@ function onCustomComboCreated(this: LGraphNode) {
     const widgetName = `option${newCount}`
     const widget = node.addWidget('string', widgetName, '', () => {})
     if (!widget) return
+    let localValue = `${widget.value ?? ''}`
 
     Object.defineProperty(widget, 'value', {
       get() {
-        return useWidgetValueStore().getWidget(
-          app.rootGraph.id,
-          node.id,
-          widgetName
-        )?.value
+        return (
+          useWidgetValueStore().getWidget(app.rootGraph.id, node.id, widgetName)
+            ?.value ?? localValue
+        )
       },
       set(v: string) {
+        localValue = v
         const state = useWidgetValueStore().getWidget(
           app.rootGraph.id,
           node.id,

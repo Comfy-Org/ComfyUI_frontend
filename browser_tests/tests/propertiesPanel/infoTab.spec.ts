@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { PropertiesPanelHelper } from './PropertiesPanelHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Properties panel - Info tab', () => {
   let panel: PropertiesPanelHelper

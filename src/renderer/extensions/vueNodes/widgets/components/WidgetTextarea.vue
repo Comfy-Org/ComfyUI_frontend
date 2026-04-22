@@ -23,7 +23,9 @@
         cn(
           WidgetInputBaseClass,
           'size-full resize-none text-xs',
-          !hideLayoutField && 'pt-5'
+          !hideLayoutField && 'pt-5',
+          // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
+          'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
       :placeholder

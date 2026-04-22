@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ContentSection from '../../components/common/ContentSection.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+---
+
+<BaseLayout
+  title="服务条款 — Comfy"
+  description="ComfyUI 及相关 Comfy 服务的服务条款。"
+  noindex
+>
+  <HeroSection title="服务条款" />
+  <ContentSection prefix="tos" locale="zh-CN" client:load />
+</BaseLayout>

@@ -1,7 +1,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-import type { PerfMeasurement } from '../fixtures/helpers/PerformanceHelper'
+import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 
 export interface PerfReport {
   timestamp: string
@@ -41,6 +41,7 @@ export function logMeasurement(
     if (formatter) return formatter(m)
     return `${f}=${m[f]}`
   })
+  // oxlint-disable-next-line no-console -- perf reporter intentionally logs to stdout
   console.log(`${label}: ${parts.join(', ')}`)
 }
 

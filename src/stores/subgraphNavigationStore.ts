@@ -9,8 +9,9 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -138,12 +139,17 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // Cache miss — fit to content after the canvas has the new graph.
-      // rAF fires after layout + paint, when nodes are positioned.
-      const expectedGraphId = graphId
+      // First visit — fit to content so subgraph nodes are visible
       requestAnimationFrame(() => {
-        if (getActiveGraphId() !== expectedGraphId) return
+        if (getActiveGraphId() !== graphId) return
+        if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
+        // fitView changes scale/offset, so re-sync slot positions for
+        // collapsed nodes whose DOM-relative measurement is now stale.
+        requestAnimationFrame(() => {
+          if (getActiveGraphId() !== graphId) return
+          requestSlotLayoutSyncForAllNodes()
+        })
       })
     }
 

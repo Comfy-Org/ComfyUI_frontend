@@ -44,6 +44,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 ## Build, Test, and Development Commands
 
 - `pnpm dev`: Start Vite dev server.
+- `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
 - `pnpm dev:electron`: Dev server with Electron API mocks
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
@@ -179,6 +180,12 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 24. Do not use function expressions if it's possible to use function declarations instead
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
+## Design Standards
+
+Before implementing any user-facing feature, consult the [Comfy Design Standards](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) Figma file. Use the Figma MCP to fetch it live — the file is the single source of truth and may be updated by designers at any time.
+
+See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
+
 ## Testing Guidelines
 
 See @docs/testing/\*.md for detailed patterns.
@@ -226,6 +233,7 @@ See @docs/testing/\*.md for detailed patterns.
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
 - PrimeVue: <https://primevue.org>
+- Comfy Design Standards: <https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards>
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
@@ -311,6 +319,9 @@ When referencing Comfy-Org repos:
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
+- NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
+  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
+  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
 
 ## Agent-only rules
 

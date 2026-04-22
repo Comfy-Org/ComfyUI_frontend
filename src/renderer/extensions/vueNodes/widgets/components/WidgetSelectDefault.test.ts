@@ -1,12 +1,37 @@
-import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+/* eslint-disable vue/one-component-per-file */
+/* eslint-disable vue/no-unused-emit-declarations */
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
+import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
+
+const WidgetLayoutFieldStub = defineComponent({
+  name: 'WidgetLayoutField',
+  template: '<div><slot /></div>'
+})
+
+const SelectPlusStub = defineComponent({
+  name: 'SelectPlus',
+  props: {
+    options: { type: Array, default: () => [] },
+    modelValue: { type: String, default: undefined }
+  },
+  emits: ['update:modelValue', 'show', 'filter'],
+  template: `<div data-testid="select-plus" :data-options="JSON.stringify(options)">
+    <button data-testid="trigger-show" @click="$emit('show')">show</button>
+    <button data-testid="trigger-filter" @click="$emit('filter')">filter</button>
+  </div>`
+})
+
+function getSelectOptions(): string[] {
+  const el = screen.getByTestId('select-plus')
+  return JSON.parse(el.getAttribute('data-options') ?? '[]')
+}
 
 describe('WidgetSelectDefault', () => {
   const createWidget = (
@@ -18,91 +43,74 @@ describe('WidgetSelectDefault', () => {
     options: { values } as SimplifiedWidget['options']
   })
 
-  const mountComponent = (widget: SimplifiedWidget<string | undefined>) =>
-    mount(WidgetSelectDefault, {
+  function renderComponent(widget: SimplifiedWidget<string | undefined>) {
+    return render(WidgetSelectDefault, {
       props: { widget },
       global: {
         plugins: [PrimeVue],
-        components: { SelectPlus }
+        stubs: {
+          SelectPlus: SelectPlusStub,
+          WidgetLayoutField: WidgetLayoutFieldStub
+        }
       }
     })
+  }
 
   describe('array-valued options', () => {
     it('resolves options from a plain array', () => {
-      const widget = createWidget(['a', 'b', 'c'])
-      const wrapper = mountComponent(widget)
+      renderComponent(createWidget(['a', 'b', 'c']))
 
-      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
-        'a',
-        'b',
-        'c'
-      ])
+      expect(getSelectOptions()).toEqual(['a', 'b', 'c'])
     })
 
     it('reactively updates when widget prop changes', async () => {
-      const widget = createWidget(['x', 'y'])
-      const wrapper = mountComponent(widget)
+      const { rerender } = renderComponent(createWidget(['x', 'y']))
 
-      await wrapper.setProps({ widget: createWidget(['x', 'y', 'z']) })
+      await rerender({ widget: createWidget(['x', 'y', 'z']) })
 
-      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
-        'x',
-        'y',
-        'z'
-      ])
+      expect(getSelectOptions()).toEqual(['x', 'y', 'z'])
     })
   })
 
   describe('undefined/empty options', () => {
     it('returns empty array when values is undefined', () => {
-      const widget = createWidget(undefined)
-      const wrapper = mountComponent(widget)
+      renderComponent(createWidget(undefined))
 
-      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([])
+      expect(getSelectOptions()).toEqual([])
     })
   })
 
   describe('function-valued options', () => {
     it('resolves options from a function', () => {
-      const widget = createWidget(() => ['a', 'b', 'c'])
-      const wrapper = mountComponent(widget)
+      renderComponent(createWidget(() => ['a', 'b', 'c']))
 
-      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
-        'a',
-        'b',
-        'c'
-      ])
+      expect(getSelectOptions()).toEqual(['a', 'b', 'c'])
     })
 
     it('re-evaluates function on show event', async () => {
       let items = ['x', 'y']
-      const widget = createWidget(() => items)
-      const wrapper = mountComponent(widget)
+      renderComponent(createWidget(() => items))
 
       items = ['x', 'y', 'z']
-      wrapper.findComponent(SelectPlus).vm.$emit('show')
-      await nextTick()
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('trigger-show'))
 
-      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
-        'x',
-        'y',
-        'z'
-      ])
+      await waitFor(() => {
+        expect(getSelectOptions()).toEqual(['x', 'y', 'z'])
+      })
     })
 
     it('re-evaluates function on filter event', async () => {
       let items = ['a']
-      const widget = createWidget(() => items)
-      const wrapper = mountComponent(widget)
+      renderComponent(createWidget(() => items))
 
       items = ['a', 'b']
-      wrapper.findComponent(SelectPlus).vm.$emit('filter')
-      await nextTick()
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('trigger-filter'))
 
-      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
-        'a',
-        'b'
-      ])
+      await waitFor(() => {
+        expect(getSelectOptions()).toEqual(['a', 'b'])
+      })
     })
   })
 })

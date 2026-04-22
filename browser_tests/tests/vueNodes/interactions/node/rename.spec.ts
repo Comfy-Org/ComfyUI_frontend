@@ -1,17 +1,10 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import { TestIds } from '../../../../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
-test.describe('Vue Nodes Renaming', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
   test('should display node title', async ({ comfyPage }) => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await expect(vueNode.header).toContainText('KSampler')
@@ -23,7 +16,7 @@ test.describe('Vue Nodes Renaming', () => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     // Test renaming with Enter
     await vueNode.setTitle('My Custom Sampler')
-    await expect(await vueNode.getTitle()).toBe('My Custom Sampler')
+    await expect(vueNode.title).toHaveText('My Custom Sampler')
     await expect(vueNode.header).toContainText('My Custom Sampler')
 
     // Test cancel with Escape
@@ -34,7 +27,7 @@ test.describe('Vue Nodes Renaming', () => {
     await comfyPage.nextFrame()
 
     // Title should remain as the previously saved value
-    await expect(await vueNode.getTitle()).toBe('My Custom Sampler')
+    await expect(vueNode.title).toHaveText('My Custom Sampler')
   })
 
   test('Double click node body does not trigger edit', async ({
@@ -50,6 +43,6 @@ test.describe('Vue Nodes Renaming', () => {
     const editingTitleInput = comfyPage.page.getByTestId(
       TestIds.node.titleInput
     )
-    await expect(editingTitleInput).not.toBeVisible()
+    await expect(editingTitleInput).toBeHidden()
   })
 })

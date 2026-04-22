@@ -1,17 +1,23 @@
 import type { Locator } from '@playwright/test'
 
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
-  LGraphNode
-} from '../../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyPage } from '../ComfyPage'
-import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
-import type { Position, Size } from '../types'
-import { NodeReference } from '../utils/litegraphUtils'
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { Position, Size } from '@e2e/fixtures/types'
+import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class NodeOperationsHelper {
-  constructor(private comfyPage: ComfyPage) {}
+  public readonly promptDialogInput: Locator
+
+  constructor(private comfyPage: ComfyPage) {
+    this.promptDialogInput = this.page.locator(
+      '.p-dialog-content input[type="text"]'
+    )
+  }
 
   private get page() {
     return this.comfyPage.page
@@ -31,6 +37,12 @@ export class NodeOperationsHelper {
         ).length || 0
       )
     })
+  }
+
+  /** Remove all nodes from the graph and clean. */
+  async clearGraph() {
+    await this.comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
+    await this.comfyPage.command.executeCommand('Comfy.ClearWorkflow')
   }
 
   /** Reads from `window.app.graph` (the root workflow graph). */
@@ -111,6 +123,27 @@ export class NodeOperationsHelper {
     }
   }
 
+  async getSerializedGraph(): Promise<ComfyWorkflowJSON> {
+    return this.page.evaluate(
+      () => window.app!.graph.serialize() as ComfyWorkflowJSON
+    )
+  }
+
+  async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
+    await this.page.evaluate(
+      (d) => window.app!.loadGraphData(d, true, true, null),
+      data
+    )
+  }
+
+  async repositionNodes(
+    positions: Record<string, [number, number]>
+  ): Promise<void> {
+    const data = await this.getSerializedGraph()
+    applyNodePositions(data, positions)
+    await this.loadGraph(data)
+  }
+
   async resizeNode(
     nodePos: Position,
     nodeSize: Size,
@@ -131,13 +164,11 @@ export class NodeOperationsHelper {
       { x: bottomRight.x - 2, y: bottomRight.y - 1 },
       target
     )
-    await this.comfyPage.nextFrame()
     if (revertAfter) {
       await this.comfyPage.canvasOps.dragAndDrop(
         { x: target.x - 2, y: target.y - 1 },
         bottomRight
       )
-      await this.comfyPage.nextFrame()
     }
   }
 
@@ -149,11 +180,6 @@ export class NodeOperationsHelper {
     }
     await node.clickContextMenuOption('Convert to Group Node')
     await this.fillPromptDialog(groupNodeName)
-    await this.comfyPage.nextFrame()
-  }
-
-  get promptDialogInput(): Locator {
-    return this.page.locator('.p-dialog-content input[type="text"]')
   }
 
   async fillPromptDialog(value: string): Promise<void> {
@@ -161,6 +187,22 @@ export class NodeOperationsHelper {
     await this.page.keyboard.press('Enter')
     await this.promptDialogInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
+  }
+
+  async panToNode(nodeRef: NodeReference): Promise<void> {
+    const nodePos = await nodeRef.getPosition()
+    await this.page.evaluate((pos) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+      canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
+      canvas.setDirty(true, true)
+    }, nodePos)
+    await this.comfyPage.nextFrame()
+  }
+
+  async selectNodeWithPan(nodeRef: NodeReference): Promise<void> {
+    await this.panToNode(nodeRef)
+    await nodeRef.click('title')
   }
 
   async dragTextEncodeNode2(): Promise<void> {
@@ -171,7 +213,6 @@ export class NodeOperationsHelper {
         y: 300
       }
     )
-    await this.comfyPage.nextFrame()
   }
 
   async adjustEmptyLatentWidth(): Promise<void> {
@@ -183,5 +224,15 @@ export class NodeOperationsHelper {
     await dialogInput.fill('128')
     await dialogInput.press('Enter')
     await this.comfyPage.nextFrame()
+  }
+}
+
+function applyNodePositions(
+  data: ComfyWorkflowJSON,
+  positions: Record<string, [number, number]>
+): void {
+  for (const node of data.nodes) {
+    const pos = positions[String(node.id)]
+    if (pos) node.pos = pos
   }
 }

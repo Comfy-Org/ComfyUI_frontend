@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
@@ -293,7 +293,7 @@ describe(createPromotedWidgetView, () => {
       value: 'initial',
       options: {}
     } satisfies Pick<IBaseWidget, 'name' | 'type' | 'value' | 'options'>
-    const fallbackWidget = fromAny<IBaseWidget, unknown>(fallbackWidgetShape)
+    const fallbackWidget = fromPartial<IBaseWidget>(fallbackWidgetShape)
     innerNode.widgets = [fallbackWidget]
 
     const widgetValueStore = useWidgetValueStore()

@@ -51,7 +51,10 @@
         }
       "
     >
-      <div class="flex min-w-40 flex-col gap-2 p-2">
+      <div
+        class="flex min-w-40 flex-col gap-2 p-2"
+        data-testid="more-menu-content"
+      >
         <slot :close="hide" />
       </div>
     </Popover>

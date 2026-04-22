@@ -22,7 +22,14 @@
     >
       <template #dropdownicon>
         <i
-          class="icon-[lucide--chevron-down] size-4 text-component-node-foreground-secondary"
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] size-4',
+              props.widget.options?.disabled
+                ? 'bg-component-node-foreground-secondary'
+                : 'bg-muted-foreground'
+            )
+          "
         />
       </template>
     </SelectPlus>

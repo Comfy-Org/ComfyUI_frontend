@@ -1,5 +1,7 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -19,11 +21,10 @@ describe('WidgetImageCompare Display', () => {
       options
     })
 
-  const mountComponent = (
-    widget: SimplifiedWidget<ImageCompareValue | string>,
-    readonly = false
-  ) => {
-    return mount(WidgetImageCompare, {
+  function renderComponent(
+    widget: SimplifiedWidget<ImageCompareValue | string>
+  ) {
+    return render(WidgetImageCompare, {
       global: {
         mocks: {
           $t: (key: string, params?: Record<string, unknown>) => {
@@ -35,8 +36,7 @@ describe('WidgetImageCompare Display', () => {
         }
       },
       props: {
-        widget,
-        readonly
+        widget
       }
     })
   }
@@ -48,17 +48,17 @@ describe('WidgetImageCompare Display', () => {
         afterImages: ['https://example.com/after.jpg']
       }
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
+      const images = screen.getAllByRole('img')
       expect(images).toHaveLength(2)
 
       // After image is first (background), before image is second (overlay)
-      expect(images[0].attributes('src')).toBe('https://example.com/after.jpg')
-      expect(images[1].attributes('src')).toBe('https://example.com/before.jpg')
+      expect(images[0]).toHaveAttribute('src', 'https://example.com/after.jpg')
+      expect(images[1]).toHaveAttribute('src', 'https://example.com/before.jpg')
 
       images.forEach((img) => {
-        expect(img.classes()).toContain('object-contain')
+        expect(img).toHaveClass('object-contain')
       })
     })
   })
@@ -72,63 +72,62 @@ describe('WidgetImageCompare Display', () => {
         beforeAlt: 'Original design',
         afterAlt: 'Updated design'
       }
-      const customWrapper = mountComponent(
-        createImageCompareWidget(customAltValue)
-      )
-      const customImages = customWrapper.findAll('img')
+      renderComponent(createImageCompareWidget(customAltValue))
+      const customImages = screen.getAllByRole('img')
       // DOM order: [after, before]
-      expect(customImages[0].attributes('alt')).toBe('Updated design')
-      expect(customImages[1].attributes('alt')).toBe('Original design')
+      expect(customImages[0]).toHaveAttribute('alt', 'Updated design')
+      expect(customImages[1]).toHaveAttribute('alt', 'Original design')
+    })
 
-      // Test default alt text
+    it('handles default alt text', () => {
       const defaultAltValue: ImageCompareValue = {
         beforeImages: ['https://example.com/before.jpg'],
         afterImages: ['https://example.com/after.jpg']
       }
-      const defaultWrapper = mountComponent(
-        createImageCompareWidget(defaultAltValue)
-      )
-      const defaultImages = defaultWrapper.findAll('img')
-      expect(defaultImages[0].attributes('alt')).toBe('After image')
-      expect(defaultImages[1].attributes('alt')).toBe('Before image')
+      renderComponent(createImageCompareWidget(defaultAltValue))
+      const defaultImages = screen.getAllByRole('img')
+      expect(defaultImages[0]).toHaveAttribute('alt', 'After image')
+      expect(defaultImages[1]).toHaveAttribute('alt', 'Before image')
+    })
 
-      // Test empty string alt text (falls back to default)
+    it('handles empty string alt text (falls back to default)', () => {
       const emptyAltValue: ImageCompareValue = {
         beforeImages: ['https://example.com/before.jpg'],
         afterImages: ['https://example.com/after.jpg'],
         beforeAlt: '',
         afterAlt: ''
       }
-      const emptyWrapper = mountComponent(
-        createImageCompareWidget(emptyAltValue)
-      )
-      const emptyImages = emptyWrapper.findAll('img')
-      expect(emptyImages[0].attributes('alt')).toBe('After image')
-      expect(emptyImages[1].attributes('alt')).toBe('Before image')
+      renderComponent(createImageCompareWidget(emptyAltValue))
+      const emptyImages = screen.getAllByRole('img')
+      expect(emptyImages[0]).toHaveAttribute('alt', 'After image')
+      expect(emptyImages[1]).toHaveAttribute('alt', 'Before image')
     })
 
     it('handles partial image URLs gracefully', () => {
       // Only before image provided
-      const beforeOnlyWrapper = mountComponent(
+      renderComponent(
         createImageCompareWidget({
           beforeImages: ['https://example.com/before.jpg']
         })
       )
-      const beforeOnlyImages = beforeOnlyWrapper.findAll('img')
+      const beforeOnlyImages = screen.getAllByRole('img')
       expect(beforeOnlyImages).toHaveLength(1)
-      expect(beforeOnlyImages[0].attributes('src')).toBe(
+      expect(beforeOnlyImages[0]).toHaveAttribute(
+        'src',
         'https://example.com/before.jpg'
       )
+    })
 
-      // Only after image provided
-      const afterOnlyWrapper = mountComponent(
+    it('handles only after image provided', () => {
+      renderComponent(
         createImageCompareWidget({
           afterImages: ['https://example.com/after.jpg']
         })
       )
-      const afterOnlyImages = afterOnlyWrapper.findAll('img')
+      const afterOnlyImages = screen.getAllByRole('img')
       expect(afterOnlyImages).toHaveLength(1)
-      expect(afterOnlyImages[0].attributes('src')).toBe(
+      expect(afterOnlyImages[0]).toHaveAttribute(
+        'src',
         'https://example.com/after.jpg'
       )
     })
@@ -138,12 +137,12 @@ describe('WidgetImageCompare Display', () => {
     it('handles string value as before image only', () => {
       const value = 'https://example.com/single.jpg'
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
+      const images = screen.getAllByRole('img')
       expect(images).toHaveLength(1)
-      expect(images[0].attributes('src')).toBe('https://example.com/single.jpg')
-      expect(images[0].attributes('alt')).toBe('Before image')
+      expect(images[0]).toHaveAttribute('src', 'https://example.com/single.jpg')
+      expect(images[0]).toHaveAttribute('alt', 'Before image')
     })
   })
 
@@ -154,9 +153,9 @@ describe('WidgetImageCompare Display', () => {
         afterImages: ['https://example.com/after.jpg']
       }
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget, true)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
+      const images = screen.getAllByRole('img')
       expect(images).toHaveLength(2)
     })
   })
@@ -164,11 +163,10 @@ describe('WidgetImageCompare Display', () => {
   describe('Edge Cases', () => {
     it('shows no images message when widget value is empty string', () => {
       const widget = createImageCompareWidget('')
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
-      expect(images).toHaveLength(0)
-      expect(wrapper.text()).toContain('imageCompare.noImages')
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
     })
 
     it('shows no images message when both arrays are empty', () => {
@@ -177,51 +175,53 @@ describe('WidgetImageCompare Display', () => {
         afterImages: []
       }
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
-      expect(images).toHaveLength(0)
-      expect(wrapper.text()).toContain('imageCompare.noImages')
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
     })
 
     it('shows no images message for empty object value', () => {
       const value: ImageCompareValue = {} as ImageCompareValue
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
-      expect(images).toHaveLength(0)
-      expect(wrapper.text()).toContain('imageCompare.noImages')
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
     })
 
     it('handles special content - long URLs, special characters, and long alt text', () => {
       const longUrl = 'https://example.com/' + 'a'.repeat(1000) + '.jpg'
-      const longUrlWrapper = mountComponent(
+      renderComponent(
         createImageCompareWidget({
           beforeImages: [longUrl],
           afterImages: [longUrl]
         })
       )
-      const longUrlImages = longUrlWrapper.findAll('img')
-      expect(longUrlImages[0].attributes('src')).toBe(longUrl)
-      expect(longUrlImages[1].attributes('src')).toBe(longUrl)
+      const longUrlImages = screen.getAllByRole('img')
+      expect(longUrlImages[0]).toHaveAttribute('src', longUrl)
+      expect(longUrlImages[1]).toHaveAttribute('src', longUrl)
+    })
 
+    it('handles special characters in URLs', () => {
       const specialUrl =
         'https://example.com/path with spaces & symbols!@#$.jpg'
-      const specialUrlWrapper = mountComponent(
+      renderComponent(
         createImageCompareWidget({
           beforeImages: [specialUrl],
           afterImages: [specialUrl]
         })
       )
-      const specialUrlImages = specialUrlWrapper.findAll('img')
-      expect(specialUrlImages[0].attributes('src')).toBe(specialUrl)
-      expect(specialUrlImages[1].attributes('src')).toBe(specialUrl)
+      const specialUrlImages = screen.getAllByRole('img')
+      expect(specialUrlImages[0]).toHaveAttribute('src', specialUrl)
+      expect(specialUrlImages[1]).toHaveAttribute('src', specialUrl)
+    })
 
+    it('handles long alt text', () => {
       const longAlt =
         'Very long alt text that exceeds normal length: ' +
         'description '.repeat(50)
-      const longAltWrapper = mountComponent(
+      renderComponent(
         createImageCompareWidget({
           beforeImages: ['https://example.com/before.jpg'],
           afterImages: ['https://example.com/after.jpg'],
@@ -229,9 +229,9 @@ describe('WidgetImageCompare Display', () => {
           afterAlt: longAlt
         })
       )
-      const longAltImages = longAltWrapper.findAll('img')
-      expect(longAltImages[0].attributes('alt')).toBe(longAlt)
-      expect(longAltImages[1].attributes('alt')).toBe(longAlt)
+      const longAltImages = screen.getAllByRole('img')
+      expect(longAltImages[0]).toHaveAttribute('alt', longAlt)
+      expect(longAltImages[1]).toHaveAttribute('alt', longAlt)
     })
   })
 
@@ -242,12 +242,12 @@ describe('WidgetImageCompare Display', () => {
         afterImages: ['https://example.com/after.jpg']
       }
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const images = wrapper.findAll('img')
-      expect(images[0].attributes('src')).toBe('https://example.com/after.jpg')
-      expect(images[1].attributes('src')).toBe('https://example.com/before.jpg')
-      expect(images[1].classes()).toContain('absolute')
+      const images = screen.getAllByRole('img')
+      expect(images[0]).toHaveAttribute('src', 'https://example.com/after.jpg')
+      expect(images[1]).toHaveAttribute('src', 'https://example.com/before.jpg')
+      expect(images[1]).toHaveClass('absolute')
     })
   })
 
@@ -255,27 +255,29 @@ describe('WidgetImageCompare Display', () => {
     it('works with various URL types - data URLs and blob URLs', () => {
       const dataUrl =
         'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-      const dataUrlWrapper = mountComponent(
+      renderComponent(
         createImageCompareWidget({
           beforeImages: [dataUrl],
           afterImages: [dataUrl]
         })
       )
-      const dataUrlImages = dataUrlWrapper.findAll('img')
-      expect(dataUrlImages[0].attributes('src')).toBe(dataUrl)
-      expect(dataUrlImages[1].attributes('src')).toBe(dataUrl)
+      const dataUrlImages = screen.getAllByRole('img')
+      expect(dataUrlImages[0]).toHaveAttribute('src', dataUrl)
+      expect(dataUrlImages[1]).toHaveAttribute('src', dataUrl)
+    })
 
+    it('works with blob URLs', () => {
       const blobUrl =
         'blob:http://example.com/12345678-1234-1234-1234-123456789012'
-      const blobUrlWrapper = mountComponent(
+      renderComponent(
         createImageCompareWidget({
           beforeImages: [blobUrl],
           afterImages: [blobUrl]
         })
       )
-      const blobUrlImages = blobUrlWrapper.findAll('img')
-      expect(blobUrlImages[0].attributes('src')).toBe(blobUrl)
-      expect(blobUrlImages[1].attributes('src')).toBe(blobUrl)
+      const blobUrlImages = screen.getAllByRole('img')
+      expect(blobUrlImages[0]).toHaveAttribute('src', blobUrl)
+      expect(blobUrlImages[1]).toHaveAttribute('src', blobUrl)
     })
   })
 
@@ -286,18 +288,16 @@ describe('WidgetImageCompare Display', () => {
         afterImages: ['https://example.com/after.jpg']
       }
       const widget = createImageCompareWidget(value)
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const slider = wrapper.find('[role="presentation"]')
-      expect(slider.exists()).toBe(true)
+      expect(screen.getByRole('presentation')).toBeInTheDocument()
     })
 
     it('does not render slider when no images', () => {
       const widget = createImageCompareWidget('')
-      const wrapper = mountComponent(widget)
+      renderComponent(widget)
 
-      const slider = wrapper.find('[role="presentation"]')
-      expect(slider.exists()).toBe(false)
+      expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
     })
   })
 
@@ -314,18 +314,15 @@ describe('WidgetImageCompare Display', () => {
 
     it('shows batch nav when either side has multiple images', () => {
       const value: ImageCompareValue = { beforeImages, afterImages }
-      const wrapper = mountComponent(createImageCompareWidget(value))
+      renderComponent(createImageCompareWidget(value))
 
-      expect(wrapper.find('[data-testid="batch-nav"]').exists()).toBe(true)
-
-      const beforeBatch = wrapper.find('[data-testid="before-batch"]')
-      const afterBatch = wrapper.find('[data-testid="after-batch"]')
-      expect(beforeBatch.find('[data-testid="batch-counter"]').text()).toBe(
-        '1 / 3'
-      )
-      expect(afterBatch.find('[data-testid="batch-counter"]').text()).toBe(
-        '1 / 2'
-      )
+      expect(screen.getByTestId('batch-nav')).toBeInTheDocument()
+      expect(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
+      ).toHaveTextContent('1 / 3')
+      expect(
+        within(screen.getByTestId('after-batch')).getByTestId('batch-counter')
+      ).toHaveTextContent('1 / 2')
     })
 
     it('hides batch nav for single images', () => {
@@ -333,92 +330,93 @@ describe('WidgetImageCompare Display', () => {
         beforeImages: ['https://example.com/a1.jpg'],
         afterImages: ['https://example.com/b1.jpg']
       }
-      const wrapper = mountComponent(createImageCompareWidget(value))
+      renderComponent(createImageCompareWidget(value))
 
-      expect(wrapper.find('[data-testid="batch-nav"]').exists()).toBe(false)
+      expect(screen.queryByTestId('batch-nav')).not.toBeInTheDocument()
     })
 
     it('hides batch nav when no batch arrays are provided', () => {
-      const wrapper = mountComponent(
-        createImageCompareWidget({} as ImageCompareValue)
-      )
+      renderComponent(createImageCompareWidget({} as ImageCompareValue))
 
-      expect(wrapper.find('[data-testid="batch-nav"]').exists()).toBe(false)
+      expect(screen.queryByTestId('batch-nav')).not.toBeInTheDocument()
     })
 
     it('navigates before images with prev/next buttons', async () => {
+      const user = userEvent.setup()
       const value: ImageCompareValue = { beforeImages, afterImages }
-      const wrapper = mountComponent(createImageCompareWidget(value))
-      const beforeBatch = wrapper.find('[data-testid="before-batch"]')
+      renderComponent(createImageCompareWidget(value))
+
+      const beforeBatch = screen.getByTestId('before-batch')
+      const images = screen.getAllByRole('img')
 
       // Initially shows first before image
-      expect(wrapper.findAll('img')[1].attributes('src')).toBe(
-        'https://example.com/a1.jpg'
-      )
+      expect(images[1]).toHaveAttribute('src', 'https://example.com/a1.jpg')
 
       // Click next on before
-      await beforeBatch.find('[data-testid="batch-next"]').trigger('click')
-      expect(wrapper.findAll('img')[1].attributes('src')).toBe(
+      const nextBtn = within(beforeBatch).getByTestId('batch-next')
+      await user.click(nextBtn)
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
         'https://example.com/a2.jpg'
       )
-      expect(beforeBatch.find('[data-testid="batch-counter"]').text()).toBe(
-        '2 / 3'
-      )
+      expect(
+        within(beforeBatch).getByTestId('batch-counter')
+      ).toHaveTextContent('2 / 3')
 
       // Click next again
-      await beforeBatch.find('[data-testid="batch-next"]').trigger('click')
-      expect(wrapper.findAll('img')[1].attributes('src')).toBe(
+      await user.click(nextBtn)
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
         'https://example.com/a3.jpg'
       )
-      expect(beforeBatch.find('[data-testid="batch-counter"]').text()).toBe(
-        '3 / 3'
-      )
+      expect(
+        within(beforeBatch).getByTestId('batch-counter')
+      ).toHaveTextContent('3 / 3')
 
       // Next button should be disabled at last index
-      expect(
-        beforeBatch.find('[data-testid="batch-next"]').attributes('disabled')
-      ).toBeDefined()
+      expect(nextBtn).toBeDisabled()
 
       // Click prev
-      await beforeBatch.find('[data-testid="batch-prev"]').trigger('click')
-      expect(wrapper.findAll('img')[1].attributes('src')).toBe(
+      const prevBtn = within(beforeBatch).getByTestId('batch-prev')
+      await user.click(prevBtn)
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
         'https://example.com/a2.jpg'
       )
     })
 
     it('navigates after images independently from before images', async () => {
+      const user = userEvent.setup()
       const value: ImageCompareValue = { beforeImages, afterImages }
-      const wrapper = mountComponent(createImageCompareWidget(value))
-      const afterBatch = wrapper.find('[data-testid="after-batch"]')
+      renderComponent(createImageCompareWidget(value))
+
+      const afterBatch = screen.getByTestId('after-batch')
 
       // Navigate after to index 1
-      await afterBatch.find('[data-testid="batch-next"]').trigger('click')
-      expect(afterBatch.find('[data-testid="batch-counter"]').text()).toBe(
+      const nextBtn = within(afterBatch).getByTestId('batch-next')
+      await user.click(nextBtn)
+      expect(within(afterBatch).getByTestId('batch-counter')).toHaveTextContent(
         '2 / 2'
       )
 
       // After image should be b2, before image should still be a1
-      const images = wrapper.findAll('img')
-      expect(images[0].attributes('src')).toBe('https://example.com/b2.jpg')
-      expect(images[1].attributes('src')).toBe('https://example.com/a1.jpg')
+      const images = screen.getAllByRole('img')
+      expect(images[0]).toHaveAttribute('src', 'https://example.com/b2.jpg')
+      expect(images[1]).toHaveAttribute('src', 'https://example.com/a1.jpg')
     })
 
     it('disables prev button at first index', () => {
       const value: ImageCompareValue = { beforeImages, afterImages }
-      const wrapper = mountComponent(createImageCompareWidget(value))
+      renderComponent(createImageCompareWidget(value))
 
-      expect(
-        wrapper
-          .find('[data-testid="before-batch"]')
-          .find('[data-testid="batch-prev"]')
-          .attributes('disabled')
-      ).toBeDefined()
-      expect(
-        wrapper
-          .find('[data-testid="after-batch"]')
-          .find('[data-testid="batch-prev"]')
-          .attributes('disabled')
-      ).toBeDefined()
+      const beforePrev = within(screen.getByTestId('before-batch')).getByTestId(
+        'batch-prev'
+      )
+      const afterPrev = within(screen.getByTestId('after-batch')).getByTestId(
+        'batch-prev'
+      )
+      expect(beforePrev).toBeDisabled()
+      expect(afterPrev).toBeDisabled()
     })
 
     it('only shows controls for the side with multiple images', () => {
@@ -426,16 +424,13 @@ describe('WidgetImageCompare Display', () => {
         beforeImages,
         afterImages: ['https://example.com/b1.jpg']
       }
-      const wrapper = mountComponent(createImageCompareWidget(value))
+      renderComponent(createImageCompareWidget(value))
 
-      expect(wrapper.find('[data-testid="batch-nav"]').exists()).toBe(true)
+      expect(screen.getByTestId('batch-nav')).toBeInTheDocument()
       expect(
-        wrapper
-          .find('[data-testid="before-batch"]')
-          .find('[data-testid="batch-counter"]')
-          .exists()
-      ).toBe(true)
-      expect(wrapper.find('[data-testid="after-batch"]').exists()).toBe(false)
+        within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('after-batch')).not.toBeInTheDocument()
     })
   })
 })

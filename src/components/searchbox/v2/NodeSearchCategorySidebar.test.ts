@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -23,25 +24,48 @@ describe('NodeSearchCategorySidebar', () => {
     setupTestPinia()
   })
 
-  async function createWrapper(props = {}) {
-    const wrapper = mount(NodeSearchCategorySidebar, {
-      props: { selectedCategory: 'most-relevant', ...props },
+  async function createRender(props = {}) {
+    const user = userEvent.setup()
+    const onUpdateSelectedCategory = vi.fn()
+    const baseProps = { selectedCategory: 'most-relevant', ...props }
+
+    let currentProps = { ...baseProps }
+    let rerenderFn: (
+      p: typeof baseProps & Record<string, unknown>
+    ) => void = () => {}
+
+    function makeProps(overrides = {}) {
+      const merged = { ...currentProps, ...overrides }
+      return {
+        ...merged,
+        'onUpdate:selectedCategory': (val: string) => {
+          onUpdateSelectedCategory(val)
+          currentProps = { ...currentProps, selectedCategory: val }
+          rerenderFn(makeProps())
+        }
+      }
+    }
+
+    const result = render(NodeSearchCategorySidebar, {
+      props: makeProps(),
       global: { plugins: [testI18n] }
     })
+    rerenderFn = (p) => result.rerender(p)
     await nextTick()
-    return wrapper
+    return { user, onUpdateSelectedCategory }
   }
 
   async function clickCategory(
-    wrapper: ReturnType<typeof mount>,
+    user: ReturnType<typeof userEvent.setup>,
     text: string,
     exact = false
   ) {
-    const btn = wrapper
-      .findAll('button')
-      .find((b) => (exact ? b.text().trim() === text : b.text().includes(text)))
+    const buttons = screen.getAllByRole('button')
+    const btn = buttons.find((b) =>
+      exact ? b.textContent?.trim() === text : b.textContent?.includes(text)
+    )
     expect(btn, `Expected to find a button with text "${text}"`).toBeDefined()
-    await btn!.trigger('click')
+    await user.click(btn!)
     await nextTick()
   }
 
@@ -56,37 +80,35 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      await createRender()
 
-      expect(wrapper.text()).toContain('Most relevant')
-      expect(wrapper.text()).toContain('Recents')
-      expect(wrapper.text()).toContain('Favorites')
-      expect(wrapper.text()).toContain('Essentials')
-      expect(wrapper.text()).toContain('Blueprints')
-      expect(wrapper.text()).toContain('Partner')
-      expect(wrapper.text()).toContain('Comfy')
-      expect(wrapper.text()).toContain('Extensions')
+      expect(screen.getByText('Most relevant')).toBeInTheDocument()
+      expect(screen.getByText('Recents')).toBeInTheDocument()
+      expect(screen.getByText('Favorites')).toBeInTheDocument()
+      expect(screen.getByText('Essentials')).toBeInTheDocument()
+      expect(screen.getByText('Blueprints')).toBeInTheDocument()
+      expect(screen.getByText('Partner')).toBeInTheDocument()
+      expect(screen.getByText('Comfy')).toBeInTheDocument()
+      expect(screen.getByText('Extensions')).toBeInTheDocument()
     })
 
     it('should mark the selected preset category as selected', async () => {
-      const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
+      await createRender({ selectedCategory: 'most-relevant' })
 
-      const mostRelevantBtn = wrapper.find(
-        '[data-testid="category-most-relevant"]'
+      expect(screen.getByTestId('category-most-relevant')).toHaveAttribute(
+        'aria-current',
+        'true'
       )
-
-      expect(mostRelevantBtn.attributes('aria-current')).toBe('true')
     })
 
     it('should emit update:selectedCategory when preset is clicked', async () => {
-      const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
+      const { user, onUpdateSelectedCategory } = await createRender({
+        selectedCategory: 'most-relevant'
+      })
 
-      await clickCategory(wrapper, 'Favorites')
+      await clickCategory(user, 'Favorites')
 
-      expect(wrapper.emitted('update:selectedCategory')).toBeTruthy()
-      expect(wrapper.emitted('update:selectedCategory')![0]).toEqual([
-        'favorites'
-      ])
+      expect(onUpdateSelectedCategory).toHaveBeenCalledWith('favorites')
     })
   })
 
@@ -99,11 +121,11 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      await createRender()
 
-      expect(wrapper.text()).toContain('sampling')
-      expect(wrapper.text()).toContain('loaders')
-      expect(wrapper.text()).toContain('conditioning')
+      expect(screen.getByText('sampling')).toBeInTheDocument()
+      expect(screen.getByText('loaders')).toBeInTheDocument()
+      expect(screen.getByText('conditioning')).toBeInTheDocument()
     })
 
     it('should emit update:selectedCategory when category is clicked', async () => {
@@ -112,13 +134,11 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user, onUpdateSelectedCategory } = await createRender()
 
-      await clickCategory(wrapper, 'sampling')
+      await clickCategory(user, 'sampling')
 
-      expect(wrapper.emitted('update:selectedCategory')![0]).toEqual([
-        'sampling'
-      ])
+      expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
     })
   })
 
@@ -131,14 +151,16 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user } = await createRender()
 
-      expect(wrapper.text()).not.toContain('advanced')
+      expect(screen.queryByText('advanced')).not.toBeInTheDocument()
 
-      await clickCategory(wrapper, 'sampling')
+      await clickCategory(user, 'sampling')
 
-      expect(wrapper.text()).toContain('advanced')
-      expect(wrapper.text()).toContain('basic')
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+        expect(screen.getByText('basic')).toBeInTheDocument()
+      })
     })
 
     it('should collapse sibling category when another is expanded', async () => {
@@ -150,17 +172,21 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user } = await createRender()
 
       // Expand sampling
-      await clickCategory(wrapper, 'sampling', true)
-      expect(wrapper.text()).toContain('advanced')
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
       // Expand image — sampling should collapse
-      await clickCategory(wrapper, 'image', true)
+      await clickCategory(user, 'image', true)
 
-      expect(wrapper.text()).toContain('upscale')
-      expect(wrapper.text()).not.toContain('advanced')
+      await waitFor(() => {
+        expect(screen.getByText('upscale')).toBeInTheDocument()
+        expect(screen.queryByText('advanced')).not.toBeInTheDocument()
+      })
     })
 
     it('should emit update:selectedCategory when subcategory is clicked', async () => {
@@ -170,16 +196,19 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user, onUpdateSelectedCategory } = await createRender()
 
       // Expand sampling category
-      await clickCategory(wrapper, 'sampling', true)
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
       // Click on advanced subcategory
-      await clickCategory(wrapper, 'advanced')
+      await clickCategory(user, 'advanced')
 
-      const emitted = wrapper.emitted('update:selectedCategory')!
-      expect(emitted[emitted.length - 1]).toEqual(['sampling/advanced'])
+      const calls = onUpdateSelectedCategory.mock.calls
+      expect(calls[calls.length - 1]).toEqual(['sampling/advanced'])
     })
   })
 
@@ -190,13 +219,12 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper({ selectedCategory: 'sampling' })
+      await createRender({ selectedCategory: 'sampling' })
 
-      expect(
-        wrapper
-          .find('[data-testid="category-sampling"]')
-          .attributes('aria-current')
-      ).toBe('true')
+      expect(screen.getByTestId('category-sampling')).toHaveAttribute(
+        'aria-current',
+        'true'
+      )
     })
 
     it('should emit selected subcategory when expanded', async () => {
@@ -206,14 +234,19 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
+      const { user, onUpdateSelectedCategory } = await createRender({
+        selectedCategory: 'most-relevant'
+      })
 
       // Expand and click subcategory
-      await clickCategory(wrapper, 'sampling', true)
-      await clickCategory(wrapper, 'advanced')
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
+      await clickCategory(user, 'advanced')
 
-      const emitted = wrapper.emitted('update:selectedCategory')!
-      expect(emitted[emitted.length - 1]).toEqual(['sampling/advanced'])
+      const calls = onUpdateSelectedCategory.mock.calls
+      expect(calls[calls.length - 1]).toEqual(['sampling/advanced'])
     })
   })
 
@@ -225,29 +258,31 @@ describe('NodeSearchCategorySidebar', () => {
     ])
     await nextTick()
 
-    const wrapper = await createWrapper()
+    const { user, onUpdateSelectedCategory } = await createRender()
 
     // Only top-level visible initially
-    expect(wrapper.text()).toContain('api')
-    expect(wrapper.text()).not.toContain('image')
-    expect(wrapper.text()).not.toContain('BFL')
+    expect(screen.getByText('api')).toBeInTheDocument()
+    expect(screen.queryByText('image')).not.toBeInTheDocument()
+    expect(screen.queryByText('BFL')).not.toBeInTheDocument()
 
     // Expand api
-    await clickCategory(wrapper, 'api', true)
-
-    expect(wrapper.text()).toContain('image')
-    expect(wrapper.text()).not.toContain('BFL')
+    await clickCategory(user, 'api', true)
+    await waitFor(() => {
+      expect(screen.getByText('image')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('BFL')).not.toBeInTheDocument()
 
     // Expand image
-    await clickCategory(wrapper, 'image', true)
-
-    expect(wrapper.text()).toContain('BFL')
+    await clickCategory(user, 'image', true)
+    await waitFor(() => {
+      expect(screen.getByText('BFL')).toBeInTheDocument()
+    })
 
     // Click BFL and verify emission
-    await clickCategory(wrapper, 'BFL', true)
+    await clickCategory(user, 'BFL', true)
 
-    const emitted = wrapper.emitted('update:selectedCategory')!
-    expect(emitted[emitted.length - 1]).toEqual(['api/image/BFL'])
+    const calls = onUpdateSelectedCategory.mock.calls
+    expect(calls[calls.length - 1]).toEqual(['api/image/BFL'])
   })
 
   it('should emit category without root/ prefix', async () => {
@@ -256,10 +291,10 @@ describe('NodeSearchCategorySidebar', () => {
     ])
     await nextTick()
 
-    const wrapper = await createWrapper()
+    const { user, onUpdateSelectedCategory } = await createRender()
 
-    await clickCategory(wrapper, 'sampling')
+    await clickCategory(user, 'sampling')
 
-    expect(wrapper.emitted('update:selectedCategory')![0][0]).toBe('sampling')
+    expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
   })
 })

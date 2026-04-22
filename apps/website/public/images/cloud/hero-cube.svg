@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" fill="none">
+  <!-- Background geometric lines -->
+  <g stroke="#49378B" stroke-width="1.5" fill="none" opacity="0.4">
+    <!-- Outer hexagonal frame layers -->
+    <path d="M400 80 L600 200 L600 440 L400 560 L200 440 L200 200 Z" />
+    <path d="M400 120 L570 220 L570 420 L400 520 L230 420 L230 220 Z" />
+    <!-- Connector lines going up -->
+    <line x1="300" y1="160" x2="300" y2="60" />
+    <line x1="400" y1="120" x2="400" y2="20" />
+    <line x1="500" y1="160" x2="500" y2="60" />
+    <!-- Bottom platform layers -->
+    <path d="M250 520 L550 520 L600 560 L600 600 L400 700 L200 600 L200 560 Z" opacity="0.3" />
+    <path d="M280 620 L520 620 L560 650 L560 680 L400 760 L240 680 L240 650 Z" opacity="0.2" />
+    <path d="M320 700 L480 700 L510 720 L510 740 L400 800 L290 740 L290 720 Z" opacity="0.15" />
+  </g>
+
+  <!-- 3D Isometric cube cluster -->
+  <g transform="translate(400, 380)">
+    <!-- Back layer cubes (purple/dark) -->
+    <!-- Top back -->
+    <g transform="translate(0, -100)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#49378B" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#5a45a0" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#3d2d75" />
+    </g>
+
+    <!-- Middle row - left back -->
+    <g transform="translate(-70, -55)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#49378B" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#5a45a0" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#3d2d75" />
+    </g>
+    <!-- Middle row - right back -->
+    <g transform="translate(70, -55)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#49378B" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#5a45a0" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#3d2d75" />
+    </g>
+
+    <!-- Yellow accent cubes - front facing -->
+    <!-- Top -->
+    <g transform="translate(0, -65)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#d4e04e" />
+      <polygon points="0,-5 -35,-20 -35,20 0,40" fill="#e0ec50" />
+    </g>
+
+    <!-- Middle left yellow -->
+    <g transform="translate(-70, -20)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#d4e04e" />
+      <polygon points="0,-5 -35,-20 -35,20 0,40" fill="#e0ec50" />
+    </g>
+    <!-- Middle right yellow -->
+    <g transform="translate(70, -20)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#d4e04e" />
+      <polygon points="0,-5 -35,-20 -35,20 0,40" fill="#e0ec50" />
+    </g>
+
+    <!-- Center purple -->
+    <g transform="translate(0, -20)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#49378B" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#5a45a0" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#3d2d75" />
+    </g>
+
+    <!-- Bottom row -->
+    <g transform="translate(-70, 25)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#49378B" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#5a45a0" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#3d2d75" />
+    </g>
+    <g transform="translate(70, 25)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#49378B" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#5a45a0" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#3d2d75" />
+    </g>
+
+    <!-- Front bottom yellow -->
+    <g transform="translate(0, 25)">
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-40 35,-20 0,-5 -35,-20" fill="#f2ff59" />
+      <polygon points="0,-5 35,-20 35,20 0,40" fill="#d4e04e" />
+      <polygon points="0,-5 -35,-20 -35,20 0,40" fill="#e0ec50" />
+    </g>
+
+    <!-- Outer corner yellow accents -->
+    <g transform="translate(-105, 5)">
+      <polygon points="0,-25 20,-12 20,12 0,25 -20,12 -20,-12" fill="#f2ff59" />
+      <polygon points="0,-25 20,-12 0,-2 -20,-12" fill="#f2ff59" />
+      <polygon points="0,-2 20,-12 20,12 0,25" fill="#d4e04e" />
+    </g>
+    <g transform="translate(105, 5)">
+      <polygon points="0,-25 20,-12 20,12 0,25 -20,12 -20,-12" fill="#f2ff59" />
+      <polygon points="0,-25 20,-12 0,-2 -20,-12" fill="#f2ff59" />
+      <polygon points="0,-2 -20,-12 -20,12 0,25" fill="#e0ec50" />
+    </g>
+    <g transform="translate(0, -135)">
+      <polygon points="0,-25 20,-12 20,12 0,25 -20,12 -20,-12" fill="#f2ff59" />
+      <polygon points="0,-25 20,-12 0,-2 -20,-12" fill="#f2ff59" />
+    </g>
+  </g>
+
+  <!-- Bottom arrow/chevron shape -->
+  <path d="M340 780 L400 820 L460 780 L460 850 L400 890 L340 850 Z" fill="#211927" stroke="#49378B" stroke-width="1" opacity="0.5" />
+</svg>

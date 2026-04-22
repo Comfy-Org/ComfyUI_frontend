@@ -1,9 +1,9 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
-const POPOVER_SELECTOR = '[data-testid="nightly-survey-popover"]'
 
 const mockIsNightly = vi.hoisted(() => ({ value: true }))
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
@@ -60,20 +60,24 @@ describe('NightlySurveyPopover', () => {
   afterEach(() => {
     localStorage.clear()
     vi.useRealTimers()
-    document.body.innerHTML = ''
   })
 
-  async function mountComponent(config = defaultConfig) {
+  async function renderComponent(
+    config = defaultConfig,
+    eventHandlers: Record<string, ReturnType<typeof vi.fn>> = {}
+  ) {
     const { default: NightlySurveyPopover } =
       await import('./NightlySurveyPopover.vue')
-    return mount(NightlySurveyPopover, {
-      props: { config },
+    return render(NightlySurveyPopover, {
+      props: {
+        config,
+        ...eventHandlers
+      },
       global: {
         stubs: {
           Teleport: true
         }
-      },
-      attachTo: document.body
+      }
     })
   }
 
@@ -81,80 +85,89 @@ describe('NightlySurveyPopover', () => {
     it('shows popover after delay when eligible', async () => {
       setFeatureUsage('test-feature', 5)
 
-      const wrapper = await mountComponent()
+      await renderComponent()
       await nextTick()
 
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(false)
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
 
       await vi.advanceTimersByTimeAsync(100)
       await nextTick()
 
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(true)
+      expect(screen.getByTestId('nightly-survey-popover')).toBeInTheDocument()
     })
 
     it('does not show when not eligible', async () => {
       setFeatureUsage('test-feature', 1)
 
-      const wrapper = await mountComponent()
+      await renderComponent()
       await nextTick()
       await vi.advanceTimersByTimeAsync(1000)
       await nextTick()
 
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(false)
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
     })
 
     it('does not show on cloud', async () => {
       mockIsCloud.value = true
       setFeatureUsage('test-feature', 5)
 
-      const wrapper = await mountComponent()
+      await renderComponent()
       await nextTick()
       await vi.advanceTimersByTimeAsync(1000)
       await nextTick()
 
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(false)
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('user actions', () => {
     it('emits shown event when displayed', async () => {
       setFeatureUsage('test-feature', 5)
+      const onShown = vi.fn()
 
-      const wrapper = await mountComponent()
+      await renderComponent(defaultConfig, { onShown })
       await vi.advanceTimersByTimeAsync(100)
       await nextTick()
 
-      expect(wrapper.emitted('shown')).toHaveLength(1)
+      expect(onShown).toHaveBeenCalledTimes(1)
     })
 
     it('emits dismissed when close button clicked', async () => {
       setFeatureUsage('test-feature', 5)
+      const onDismissed = vi.fn()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-      const wrapper = await mountComponent()
+      await renderComponent(defaultConfig, { onDismissed })
       await vi.advanceTimersByTimeAsync(100)
       await nextTick()
 
-      const closeButton = wrapper.find('[aria-label="g.close"]')
-      await closeButton.trigger('click')
+      const closeButton = screen.getByRole('button', { name: 'g.close' })
+      await user.click(closeButton)
 
-      expect(wrapper.emitted('dismissed')).toHaveLength(1)
+      expect(onDismissed).toHaveBeenCalledTimes(1)
     })
 
     it('emits optedOut when opt out button clicked', async () => {
       setFeatureUsage('test-feature', 5)
+      const onOptedOut = vi.fn()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-      const wrapper = await mountComponent()
+      await renderComponent(defaultConfig, { onOptedOut })
       await vi.advanceTimersByTimeAsync(100)
       await nextTick()
 
-      const buttons = wrapper.findAll('button')
-      const optOutButton = buttons.find((b) =>
-        b.text().includes('nightlySurvey.dontAskAgain')
-      )
-      expect(optOutButton).toBeDefined()
-      await optOutButton!.trigger('click')
+      const optOutButton = screen.getByRole('button', {
+        name: /nightlySurvey.dontAskAgain/
+      })
+      await user.click(optOutButton)
 
-      expect(wrapper.emitted('optedOut')).toHaveLength(1)
+      expect(onOptedOut).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -162,7 +175,7 @@ describe('NightlySurveyPopover', () => {
     it('uses custom delay from config', async () => {
       setFeatureUsage('test-feature', 5)
 
-      const wrapper = await mountComponent({
+      await renderComponent({
         ...defaultConfig,
         delayMs: 500
       })
@@ -170,17 +183,19 @@ describe('NightlySurveyPopover', () => {
 
       await vi.advanceTimersByTimeAsync(400)
       await nextTick()
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(false)
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
 
       await vi.advanceTimersByTimeAsync(100)
       await nextTick()
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(true)
+      expect(screen.getByTestId('nightly-survey-popover')).toBeInTheDocument()
     })
 
     it('does not show when config is disabled', async () => {
       setFeatureUsage('test-feature', 5)
 
-      const wrapper = await mountComponent({
+      await renderComponent({
         ...defaultConfig,
         enabled: false
       })
@@ -188,7 +203,9 @@ describe('NightlySurveyPopover', () => {
       await vi.advanceTimersByTimeAsync(1000)
       await nextTick()
 
-      expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(false)
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
     })
   })
 })

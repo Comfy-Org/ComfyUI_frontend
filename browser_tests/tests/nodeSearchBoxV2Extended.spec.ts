@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node search box V2 extended', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -39,10 +39,11 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount)
   })
 
   test('Search clears when reopening', async ({ comfyPage }) => {
@@ -55,7 +56,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
     await comfyPage.canvasOps.doubleClick()
     await expect(searchBoxV2.input).toBeVisible()
@@ -75,9 +76,10 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.categoryButton('loaders').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const loaderResults = await searchBoxV2.results.allTextContents()
 
-      expect(samplingResults).not.toEqual(loaderResults)
+      await expect
+        .poll(() => searchBoxV2.results.allTextContents())
+        .not.toEqual(samplingResults)
     })
   })
 
@@ -102,19 +104,18 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         .click()
 
       // Verify filter chip appeared and results changed
-      const filterChip = searchBoxV2.dialog.locator(
-        '[data-testid="filter-chip"]'
-      )
+      const filterChip = searchBoxV2.dialog.getByTestId('filter-chip')
       await expect(filterChip).toBeVisible()
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const filteredResults = await searchBoxV2.results.allTextContents()
-      expect(filteredResults).not.toEqual(unfilteredResults)
+      await expect
+        .poll(() => searchBoxV2.results.allTextContents())
+        .not.toEqual(unfilteredResults)
 
       // Remove filter by clicking the chip delete button
       await filterChip.getByTestId('chip-delete').click()
 
       // Filter chip should be removed
-      await expect(filterChip).not.toBeVisible()
+      await expect(filterChip).toBeHidden()
       await expect(searchBoxV2.results.first()).toBeVisible()
     })
   })

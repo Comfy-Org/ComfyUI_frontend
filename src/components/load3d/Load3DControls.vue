@@ -6,19 +6,21 @@
     @pointerup.stop
     @wheel.stop
   >
-    <div class="show-menu relative">
+    <div class="relative">
       <Button
+        ref="menuTriggerRef"
         variant="textonly"
         size="icon"
         :aria-label="$t('menu.showMenu')"
         class="rounded-full"
         @click="toggleMenu"
       >
-        <i class="pi pi-bars text-lg text-base-foreground" />
+        <i class="icon-[lucide--menu] text-lg text-base-foreground" />
       </Button>
 
       <div
         v-show="isMenuOpen"
+        ref="menuPanelRef"
         class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
       >
         <div class="flex flex-col">
@@ -42,7 +44,6 @@
         </div>
       </div>
     </div>
-
     <div v-show="activeCategory" class="rounded-lg bg-smoke-700/30">
       <SceneControls
         v-if="showSceneControls"
@@ -51,6 +52,9 @@
         v-model:background-image="sceneConfig!.backgroundImage"
         v-model:background-render-mode="sceneConfig!.backgroundRenderMode"
         v-model:fov="cameraConfig!.fov"
+        :hdri-active="
+          !!lightConfig?.hdri?.hdriPath && !!lightConfig?.hdri?.enabled
+        "
         @update-background-image="handleBackgroundImageUpdate"
       />
 
@@ -70,31 +74,51 @@
         v-model:fov="cameraConfig!.fov"
       />
 
-      <LightControls
-        v-if="showLightControls"
-        v-model:light-intensity="lightConfig!.intensity"
-        v-model:material-mode="modelConfig!.materialMode"
-      />
+      <div v-if="showLightControls" class="flex flex-col">
+        <LightControls
+          v-model:light-intensity="lightConfig!.intensity"
+          v-model:material-mode="modelConfig!.materialMode"
+          v-model:hdri-config="lightConfig!.hdri"
+        />
+
+        <HDRIControls
+          v-model:hdri-config="lightConfig!.hdri"
+          :has-background-image="!!sceneConfig?.backgroundImage"
+          @update-hdri-file="handleHDRIFileUpdate"
+        />
+      </div>
 
       <ExportControls
         v-if="showExportControls"
         @export-model="handleExportModel"
+      />
+
+      <GizmoControls
+        v-if="showGizmoControls"
+        v-model:gizmo-config="modelConfig!.gizmo"
+        @toggle-gizmo="handleToggleGizmo"
+        @set-gizmo-mode="handleSetGizmoMode"
+        @reset-gizmo-transform="handleResetGizmoTransform"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
+import GizmoControls from '@/components/load3d/controls/GizmoControls.vue'
+import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   CameraConfig,
+  GizmoMode,
   LightConfig,
   ModelConfig,
   SceneConfig
@@ -117,12 +141,24 @@ const cameraConfig = defineModel<CameraConfig>('cameraConfig')
 const lightConfig = defineModel<LightConfig>('lightConfig')
 
 const isMenuOpen = ref(false)
+const menuPanelRef = ref<HTMLElement | null>(null)
+const menuTriggerRef = ref<InstanceType<typeof Button> | null>(null)
+
+useDismissableOverlay({
+  isOpen: isMenuOpen,
+  getOverlayEl: () => menuPanelRef.value,
+  getTriggerEl: () => menuTriggerRef.value?.$el ?? null,
+  onDismiss: () => {
+    isMenuOpen.value = false
+  }
+})
 const activeCategory = ref<string>('scene')
 const categoryLabels: Record<string, string> = {
   scene: 'load3d.scene',
   model: 'load3d.model',
   camera: 'load3d.camera',
   light: 'load3d.light',
+  gizmo: 'load3d.gizmo.label',
   export: 'load3d.export'
 }
 
@@ -131,7 +167,7 @@ const availableCategories = computed(() => {
     return ['scene', 'model', 'camera']
   }
 
-  return ['scene', 'model', 'camera', 'light', 'export']
+  return ['scene', 'model', 'camera', 'light', 'gizmo', 'export']
 })
 
 const showSceneControls = computed(
@@ -150,6 +186,9 @@ const showLightControls = computed(
     !!modelConfig.value
 )
 const showExportControls = computed(() => activeCategory.value === 'export')
+const showGizmoControls = computed(
+  () => activeCategory.value === 'gizmo' && !!modelConfig.value
+)
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -160,21 +199,30 @@ const selectCategory = (category: string) => {
   isMenuOpen.value = false
 }
 
+const categoryIcons = {
+  scene: 'icon-[lucide--image]',
+  model: 'icon-[lucide--box]',
+  camera: 'icon-[lucide--camera]',
+  light: 'icon-[lucide--sun]',
+  gizmo: 'icon-[lucide--move-3d]',
+  export: 'icon-[lucide--download]'
+} as const
+
 const getCategoryIcon = (category: string) => {
-  const icons = {
-    scene: 'pi pi-image',
-    model: 'pi pi-box',
-    camera: 'pi pi-camera',
-    light: 'pi pi-sun',
-    export: 'pi pi-download'
-  }
-  // @ts-expect-error fixme ts strict error
-  return `${icons[category]} text-base-foreground text-lg`
+  const icon =
+    category in categoryIcons
+      ? categoryIcons[category as keyof typeof categoryIcons]
+      : 'icon-[lucide--circle]'
+  return cn(icon, 'text-lg text-base-foreground')
 }
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
   (e: 'exportModel', format: string): void
+  (e: 'updateHdriFile', file: File | null): void
+  (e: 'toggleGizmo', enabled: boolean): void
+  (e: 'setGizmoMode', mode: GizmoMode): void
+  (e: 'resetGizmoTransform'): void
 }>()
 
 const handleBackgroundImageUpdate = (file: File | null) => {
@@ -185,19 +233,19 @@ const handleExportModel = (format: string) => {
   emit('exportModel', format)
 }
 
-const closeSlider = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-
-  if (!target.closest('.show-menu')) {
-    isMenuOpen.value = false
-  }
+const handleHDRIFileUpdate = (file: File | null) => {
+  emit('updateHdriFile', file)
 }
 
-onMounted(() => {
-  document.addEventListener('click', closeSlider)
-})
+const handleToggleGizmo = (enabled: boolean) => {
+  emit('toggleGizmo', enabled)
+}
 
-onUnmounted(() => {
-  document.removeEventListener('click', closeSlider)
-})
+const handleSetGizmoMode = (mode: GizmoMode) => {
+  emit('setGizmoMode', mode)
+}
+
+const handleResetGizmoTransform = () => {
+  emit('resetGizmoTransform')
+}
 </script>

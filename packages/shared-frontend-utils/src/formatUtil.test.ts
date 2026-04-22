@@ -7,6 +7,7 @@ import {
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
+  isCivitaiModelUrl,
   isPreviewableMediaType,
   truncateFilename
 } from './formatUtil'
@@ -62,7 +63,8 @@ describe('formatUtil', () => {
         { filename: 'animation.gif', expected: 'image' },
         { filename: 'web.webp', expected: 'image' },
         { filename: 'bitmap.bmp', expected: 'image' },
-        { filename: 'modern.avif', expected: 'image' }
+        { filename: 'modern.avif', expected: 'image' },
+        { filename: 'logo.svg', expected: 'image' }
       ]
 
       it.for(imageTestCases)(
@@ -354,6 +356,14 @@ describe('formatUtil', () => {
     it('returns false for text/other', () => {
       expect(isPreviewableMediaType('text')).toBe(false)
       expect(isPreviewableMediaType('other')).toBe(false)
+    })
+  })
+
+  describe('isCivitaiModelUrl', () => {
+    it('recognizes civitai.red model URLs', () => {
+      expect(
+        isCivitaiModelUrl('https://civitai.red/api/download/models/123456')
+      ).toBe(true)
     })
   })
 })

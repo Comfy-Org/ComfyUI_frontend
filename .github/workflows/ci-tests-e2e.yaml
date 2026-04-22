@@ -8,6 +8,7 @@ on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
     paths-ignore: ['**/*.md']
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -86,6 +87,7 @@ jobs:
         run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
         uses: actions/upload-artifact@v6
@@ -94,6 +96,15 @@ jobs:
           name: blob-report-chromium-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      - name: Upload shard coverage data
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage-shard-${{ matrix.shardIndex }}
+          path: coverage/playwright/
+          retention-days: 1
+          if-no-files-found: warn
 
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes

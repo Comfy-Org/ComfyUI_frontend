@@ -143,9 +143,10 @@ app.registerExtension({
         throw new Error(err)
       }
       const data = await resp.json()
-      const serverName = data.name ?? name
-      const subfolder = data.subfolder ?? 'webcam'
-      return `${subfolder}/${serverName} [temp]`
+      const serverName = data.name || name
+      const subfolder = data.subfolder || 'webcam'
+      const type = data.type || 'temp'
+      return `${subfolder}/${serverName} [${type}]`
     }
 
     // @ts-expect-error fixme ts strict error

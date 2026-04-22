@@ -26,9 +26,12 @@ export class ManageGroupNode {
     await this.footer.getByText('Close').click()
   }
 
+  get selectedNodeTypeSelect(): Locator {
+    return this.header.locator('select').first()
+  }
+
   async getSelectedNodeType() {
-    const select = this.header.locator('select').first()
-    return await select.inputValue()
+    return await this.selectedNodeTypeSelect.inputValue()
   }
 
   async selectNode(name: string) {

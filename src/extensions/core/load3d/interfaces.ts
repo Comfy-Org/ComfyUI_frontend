@@ -33,10 +33,21 @@ export interface SceneConfig {
   backgroundRenderMode?: BackgroundRenderModeType
 }
 
+export type GizmoMode = 'translate' | 'rotate' | 'scale'
+
+export interface GizmoConfig {
+  enabled: boolean
+  mode: GizmoMode
+  position: { x: number; y: number; z: number }
+  rotation: { x: number; y: number; z: number }
+  scale: { x: number; y: number; z: number }
+}
+
 export interface ModelConfig {
   upDirection: UpDirection
   materialMode: MaterialMode
   showSkeleton: boolean
+  gizmo?: GizmoConfig
 }
 
 export interface CameraConfig {
@@ -46,6 +57,14 @@ export interface CameraConfig {
 }
 
 export interface LightConfig {
+  intensity: number
+  hdri?: HDRIConfig
+}
+
+export interface HDRIConfig {
+  enabled: boolean
+  hdriPath: string
+  showAsBackground: boolean
   intensity: number
 }
 
