@@ -79,7 +79,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       return [{ name: capitalize(categoryName), value: 'all' }]
     }
     return [
-      { name: 'All', value: 'all' },
+      { name: t('g.all'), value: 'all' },
       { name: t('sideToolbar.labels.imported'), value: 'inputs' },
       { name: t('sideToolbar.labels.generated'), value: 'outputs' }
     ]
