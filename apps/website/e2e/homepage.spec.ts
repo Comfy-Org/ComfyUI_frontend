@@ -94,13 +94,11 @@ test.describe('Product showcase accordion @interaction', () => {
       .first()
 
     await secondFeature.scrollIntoViewIfNeeded()
+    await secondFeature.click()
 
-    await expect(async () => {
-      await secondFeature.click()
-      await expect(
-        secondFeature.getByText(/If you are new to ComfyUI/)
-      ).toBeVisible({ timeout: 2000 })
-    }).toPass({ timeout: 15000 })
+    await expect(
+      secondFeature.getByText(/If you are new to ComfyUI/)
+    ).toBeVisible()
 
     const firstFeature = page
       .getByRole('button', { name: /Full Control with Nodes/i })

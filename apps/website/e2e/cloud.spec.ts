@@ -125,11 +125,13 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     await firstQuestion.scrollIntoViewIfNeeded()
 
     await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
     ).toBeVisible()
 
     await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
     ).toBeHidden()

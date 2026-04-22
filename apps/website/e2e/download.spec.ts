@@ -130,11 +130,13 @@ test.describe('FAQ accordion @interaction', () => {
     await firstQuestion.scrollIntoViewIfNeeded()
 
     await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
     await expect(
       page.getByText(/A dedicated GPU is strongly recommended/i)
     ).toBeVisible()
 
     await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await expect(
       page.getByText(/A dedicated GPU is strongly recommended/i)
     ).toBeHidden()
