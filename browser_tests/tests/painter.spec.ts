@@ -19,7 +19,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.describe('Widget rendering', () => {
     test('Node enforces minimum size', async ({ comfyPage }) => {
       const size = await comfyPage.page.evaluate(() => {
-        const graph = window.graph as unknown as TestGraphAccess | undefined
+        const graph = window.graph as TestGraphAccess | undefined
         const node = graph?._nodes_by_id?.['1']
         return node?.size as [number, number] | undefined
       })
@@ -32,14 +32,13 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       comfyPage
     }) => {
       const hiddenFlags = await comfyPage.page.evaluate(() => {
-        const graph = window.graph as unknown as TestGraphAccess | undefined
+        const graph = window.graph as TestGraphAccess | undefined
         const node = graph?._nodes_by_id?.['1']
         return (node?.widgets ?? [])
           .filter((w) => ['width', 'height', 'bg_color'].includes(w.name))
           .map((w) => w.options.hidden ?? false)
       })
-      expect(hiddenFlags).toHaveLength(3)
-      expect(hiddenFlags.every(Boolean)).toBe(true)
+      expect(hiddenFlags).toEqual([true, true, true])
     })
   })
 
@@ -160,10 +159,9 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         box.x + box.width * 0.7,
         box.y + box.height * 0.5
       )
-      const transform2 = await cursor.evaluate(
-        (el: HTMLElement) => el.style.transform
-      )
-      expect(transform1).not.toBe(transform2)
+      await expect
+        .poll(() => cursor.evaluate((el: HTMLElement) => el.style.transform))
+        .not.toBe(transform1)
 
       await comfyPage.page.mouse.move(0, 0)
       await expect(cursor).toBeHidden()
@@ -263,14 +261,15 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       const hardnessRow = painterWidget.getByTestId('painter-hardness-row')
       const hardnessSlider = hardnessRow.getByRole('slider')
 
-      await expect(hardnessRow.locator('span').last()).toHaveText('100%')
+      const hardnessDisplay = hardnessRow.getByTestId('painter-hardness-value')
+      await expect(hardnessDisplay).toHaveText('100%')
 
       await hardnessSlider.focus()
       for (let i = 0; i < 10; i++) {
         await hardnessSlider.press('ArrowLeft')
       }
 
-      await expect(hardnessRow.locator('span').last()).toHaveText('90%')
+      await expect(hardnessDisplay).toHaveText('90%')
     })
 
     test('Color picker changes the color of drawn strokes', async ({

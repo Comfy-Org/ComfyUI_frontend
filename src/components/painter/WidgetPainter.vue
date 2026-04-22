@@ -189,7 +189,9 @@
               (v) => v?.length && (brushHardnessPercent = v[0])
             "
           />
-          <span class="text-node-text-muted w-8 text-center text-xs"
+          <span
+            class="text-node-text-muted w-8 text-center text-xs"
+            data-testid="painter-hardness-value"
             >{{ brushHardnessPercent }}%</span
           >
         </div>
