@@ -24,7 +24,7 @@ export const CONTROL_OPTIONS = [
 ] as const
 export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 
-function isControlOption(val: WidgetValue): val is ControlOptions {
+export function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
 

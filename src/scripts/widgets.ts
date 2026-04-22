@@ -7,7 +7,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
-import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
+import { isControlOption } from '@/types/simplifiedWidget'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useCurveWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useCurveWidget'
@@ -82,15 +82,16 @@ export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 /**
- * The v3 backend schema allows `control_after_generate` to be one of the
- * control mode strings ('fixed', 'increment', 'decrement', 'randomize') to
- * specify the default mode. Legacy callers used an arbitrary string here as
- * a custom widget name, so we only treat unknown strings as names.
+ * Finds a user-visible control_after_generate widget that is separate from
+ * the hidden ACW. API nodes define control_after_generate as an explicit
+ * COMBO input alongside seed, producing two widgets with the same name.
  */
-function isControlAfterGenerateMode(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    (CONTROL_OPTIONS as readonly string[]).includes(value)
+export function findExternalControlWidget(
+  node: LGraphNode,
+  cagWidget: IBaseWidget
+): IBaseWidget | undefined {
+  return node.widgets?.find(
+    (w) => w.name === cagWidget.name && w !== cagWidget && !w[IS_CONTROL_WIDGET]
   )
 }
 
@@ -104,7 +105,7 @@ export function addValueControlWidget(
 ): IComboWidget {
   const rawName = inputData?.[1]?.control_after_generate
   const name =
-    typeof rawName === 'string' && !isControlAfterGenerateMode(rawName)
+    typeof rawName === 'string' && !isControlOption(rawName)
       ? rawName
       : widgetName
   const widgets = addValueControlWidgets(
@@ -138,7 +139,7 @@ export function addValueControlWidgets(
       typeof inputData?.[1]?.[defaultName] === 'string' &&
       !(
         defaultName === 'control_after_generate' &&
-        isControlAfterGenerateMode(inputData[1][defaultName])
+        isControlOption(inputData[1][defaultName])
       )
     ) {
       name = inputData?.[1]?.[defaultName]
@@ -196,15 +197,7 @@ export function addValueControlWidgets(
   }
 
   const applyWidgetControl = () => {
-    // For API nodes: the user-visible control_after_generate COMBO widget is a
-    // separate explicit input. Sync its value into this hidden ACW so the
-    // user's choice actually drives execution.
-    const externalControl = node.widgets?.find(
-      (w) =>
-        w.name === valueControl.name &&
-        w !== valueControl &&
-        !w[IS_CONTROL_WIDGET]
-    )
+    const externalControl = findExternalControlWidget(node, valueControl)
     if (externalControl !== undefined) {
       valueControl.value = externalControl.value as string
     }

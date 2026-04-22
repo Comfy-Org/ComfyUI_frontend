@@ -26,7 +26,7 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
-import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
+import { IS_CONTROL_WIDGET, findExternalControlWidget } from '@/scripts/widgets'
 
 import type {
   LGraph,
@@ -161,12 +161,9 @@ export function getControlWidget(
     widget.linkedWidgets?.find((w) => w.name === 'control_after_generate')
   if (!cagWidget) return
 
-  // For API nodes: an explicit user-visible control_after_generate COMBO widget
-  // exists alongside the hidden ACW. Use it as the source of truth for display
-  // and write-through so changes the user makes actually take effect.
-  const externalControl = node?.widgets?.find(
-    (w) => w.name === cagWidget.name && w !== cagWidget && !w[IS_CONTROL_WIDGET]
-  )
+  const externalControl = node
+    ? findExternalControlWidget(node, cagWidget)
+    : undefined
   const displayWidget = externalControl ?? cagWidget
 
   return {
