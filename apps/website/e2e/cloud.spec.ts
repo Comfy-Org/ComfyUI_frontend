@@ -111,6 +111,8 @@ test.describe('Cloud FAQ accordion @interaction', () => {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
+    // Gate: wait for Vue hydration to bind aria-expanded
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
     await expect(
@@ -123,6 +125,8 @@ test.describe('Cloud FAQ accordion @interaction', () => {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
+    // Gate: wait for Vue hydration to bind aria-expanded
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
