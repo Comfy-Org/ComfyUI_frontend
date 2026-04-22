@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFileAsync } from '@/base/common/downloadUtil'
 import { useDownloadFile } from '@/base/common/useDownloadFile'
+import Loader from '@/components/loader/Loader.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
@@ -30,7 +31,7 @@ const mediaActions = useMediaAssetActions()
 const {
   isLoading: downloading,
   error: downloadError,
-  execute: download
+  downloadIfIdle: download
 } = useDownloadFile()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
@@ -75,17 +76,15 @@ async function downloadAsset(item?: AssetItem) {
 
   downloadingAll.value = true
   try {
-    const results = await Promise.allSettled(
+    await Promise.all(
       outputs.map((output) => downloadFileAsync(output.url, output.filename))
     )
-    const failCount = results.filter((r) => r.status === 'rejected').length
-    if (failCount > 0) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+  } catch {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
   } finally {
     downloadingAll.value = false
   }
@@ -140,13 +139,8 @@ async function rerun(e: Event) {
       :disabled="downloading"
       @click="handleSingleDownload"
     >
-      <i
-        :class="
-          downloading
-            ? 'icon-[lucide--loader-circle] animate-spin'
-            : 'icon-[lucide--download]'
-        "
-      />
+      <Loader v-if="downloading" size="sm" />
+      <i v-else class="icon-[lucide--download]" />
     </Button>
     <Button
       v-if="isWorkflowActive && !selectedItem"

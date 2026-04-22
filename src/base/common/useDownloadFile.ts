@@ -6,12 +6,12 @@ import { downloadFileAsync } from '@/base/common/downloadUtil'
 export function useDownloadFile(): {
   isLoading: Ref<boolean>
   error: Ref<Error | undefined>
-  execute: (url: string, filename?: string) => Promise<void>
+  downloadIfIdle: (url: string, filename?: string) => Promise<void>
 } {
   const isLoading = ref(false)
   const error = ref<Error | undefined>()
 
-  async function execute(url: string, filename?: string): Promise<void> {
+  async function downloadIfIdle(url: string, filename?: string): Promise<void> {
     if (isLoading.value) return
     error.value = undefined
     isLoading.value = true
@@ -25,5 +25,5 @@ export function useDownloadFile(): {
     }
   }
 
-  return { isLoading, error, execute }
+  return { isLoading, error, downloadIfIdle }
 }

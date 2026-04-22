@@ -34,8 +34,8 @@ describe('useDownloadFile', () => {
       })
     )
 
-    const { isLoading, execute } = useDownloadFile()
-    const promise = execute('https://example.com/file.png')
+    const { isLoading, downloadIfIdle } = useDownloadFile()
+    const promise = downloadIfIdle('https://example.com/file.png')
 
     await nextTick()
     expect(isLoading.value).toBe(true)
@@ -48,8 +48,8 @@ describe('useDownloadFile', () => {
   it('sets error ref when download fails', async () => {
     mockDownloadFileAsync.mockRejectedValue(new Error('Network error'))
 
-    const { error, execute } = useDownloadFile()
-    await execute('https://example.com/file.png')
+    const { error, downloadIfIdle } = useDownloadFile()
+    await downloadIfIdle('https://example.com/file.png')
 
     expect(error.value).toBeInstanceOf(Error)
     expect(error.value?.message).toBe('Network error')
@@ -59,21 +59,21 @@ describe('useDownloadFile', () => {
     mockDownloadFileAsync.mockRejectedValueOnce(new Error('fail'))
     mockDownloadFileAsync.mockResolvedValueOnce(undefined)
 
-    const { error, isLoading, execute } = useDownloadFile()
+    const { error, isLoading, downloadIfIdle } = useDownloadFile()
 
-    await execute('https://example.com/a.png')
+    await downloadIfIdle('https://example.com/a.png')
     expect(error.value).toBeDefined()
     expect(isLoading.value).toBe(false)
 
-    await execute('https://example.com/b.png')
+    await downloadIfIdle('https://example.com/b.png')
     expect(error.value).toBeUndefined()
   })
 
   it('passes url and filename to downloadFileAsync', async () => {
     mockDownloadFileAsync.mockResolvedValue(undefined)
 
-    const { execute } = useDownloadFile()
-    await execute('https://example.com/file.png', 'custom.png')
+    const { downloadIfIdle } = useDownloadFile()
+    await downloadIfIdle('https://example.com/file.png', 'custom.png')
 
     expect(mockDownloadFileAsync).toHaveBeenCalledWith(
       'https://example.com/file.png',
@@ -89,12 +89,12 @@ describe('useDownloadFile', () => {
       })
     )
 
-    const { isLoading, execute } = useDownloadFile()
-    const promise = execute('https://example.com/a.png')
+    const { isLoading, downloadIfIdle } = useDownloadFile()
+    const promise = downloadIfIdle('https://example.com/a.png')
     await nextTick()
     expect(isLoading.value).toBe(true)
 
-    await execute('https://example.com/b.png')
+    await downloadIfIdle('https://example.com/b.png')
     expect(mockDownloadFileAsync).toHaveBeenCalledTimes(1)
 
     resolveDownload()
@@ -115,13 +115,13 @@ describe('useDownloadFile', () => {
     const first = useDownloadFile()
     const second = useDownloadFile()
 
-    const promise1 = first.execute('https://example.com/a.png')
+    const promise1 = first.downloadIfIdle('https://example.com/a.png')
     await nextTick()
 
     expect(first.isLoading.value).toBe(true)
     expect(second.isLoading.value).toBe(false)
 
-    await second.execute('https://example.com/b.png')
+    await second.downloadIfIdle('https://example.com/b.png')
     expect(second.isLoading.value).toBe(false)
     expect(first.isLoading.value).toBe(true)
 

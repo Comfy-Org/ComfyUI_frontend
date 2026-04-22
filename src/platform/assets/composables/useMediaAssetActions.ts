@@ -64,30 +64,30 @@ export function useMediaAssetActions() {
     }
   }
 
-  const downloadAsset = async (asset?: AssetItem) => {
+  const downloadAsset = (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
-    try {
-      const filename = getAssetDisplayName(targetAsset)
-      // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
-      const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
+    const filename = getAssetDisplayName(targetAsset)
+    const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
-      await downloadFileAsync(downloadUrl, filename)
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', 1),
-        life: 2000
-      })
-    } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+    downloadFileAsync(downloadUrl, filename).then(
+      () => {
+        toast.add({
+          severity: 'success',
+          summary: t('g.success'),
+          detail: t('mediaAsset.selection.downloadsStarted', 1),
+          life: 2000
+        })
+      },
+      () => {
+        toast.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('g.failedToDownloadImage')
+        })
+      }
+    )
   }
 
   /**

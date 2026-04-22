@@ -212,7 +212,7 @@ const toastStore = useToastStore()
 const {
   isLoading: downloading,
   error: downloadError,
-  execute: download
+  downloadIfIdle: download
 } = useDownloadFile()
 
 watch(downloadError, (err) => {
