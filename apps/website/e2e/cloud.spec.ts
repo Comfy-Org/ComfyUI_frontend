@@ -41,13 +41,11 @@ test.describe('Cloud page @smoke', () => {
   test('AIModelsSection heading and 5 model cards are visible', async ({
     page
   }) => {
-    await expect(
-      page.getByRole('heading', { name: /leading AI models/i })
-    ).toBeVisible()
+    const heading = page.getByRole('heading', { name: /leading AI models/i })
+    await expect(heading).toBeVisible()
 
-    const grid = page.locator('.grid', {
-      has: page.getByText('Grok Imagine')
-    })
+    const section = heading.locator('xpath=ancestor::section')
+    const grid = section.locator('.grid')
     const modelCards = grid.locator('a[href="https://comfy.org/workflows"]')
     await expect(modelCards).toHaveCount(5)
   })
@@ -100,13 +98,13 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     await page.goto('/cloud')
   })
 
-  test('all FAQs are expanded by default', async ({ page }) => {
+  test('all FAQs are collapsed by default', async ({ page }) => {
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
-    ).toBeVisible()
+    ).toBeHidden()
   })
 
-  test('clicking an expanded FAQ collapses it', async ({ page }) => {
+  test('clicking a collapsed FAQ expands it', async ({ page }) => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
@@ -115,10 +113,10 @@ test.describe('Cloud FAQ accordion @interaction', () => {
 
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
-    ).toBeHidden()
+    ).toBeVisible()
   })
 
-  test('clicking a collapsed FAQ expands it again', async ({ page }) => {
+  test('clicking an expanded FAQ collapses it again', async ({ page }) => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
@@ -127,11 +125,11 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     await firstQuestion.click()
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
-    ).toBeHidden()
+    ).toBeVisible()
 
     await firstQuestion.click()
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
-    ).toBeVisible()
+    ).toBeHidden()
   })
 })
