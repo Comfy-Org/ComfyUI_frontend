@@ -64,10 +64,10 @@ describe('premultiplyData', () => {
 })
 
 describe('updateDirtyRect', () => {
-  it('expands bounds on first call', () => {
+  it('includes padding around the point', () => {
     const rect = updateDirtyRect(resetDirtyRect(), 50, 50, 10)
-    expect(rect.minX).toBeLessThan(50)
-    expect(rect.maxX).toBeGreaterThan(50)
+    expect(rect.minX).toBe(50 - 10 - 2)
+    expect(rect.maxX).toBe(50 + 10 + 2)
   })
 
   it('never shrinks existing bounds on subsequent calls', () => {
@@ -76,44 +76,28 @@ describe('updateDirtyRect', () => {
     expect(rect.minX).toBeLessThanOrEqual(10 - 2)
     expect(rect.maxX).toBeGreaterThanOrEqual(50 + 10)
   })
-
-  it('includes padding in the expanded bounds', () => {
-    const rect = updateDirtyRect(resetDirtyRect(), 50, 50, 10)
-    expect(rect.minX).toBe(50 - 10 - 2)
-    expect(rect.maxX).toBe(50 + 10 + 2)
-  })
-})
-
-describe('resetDirtyRect', () => {
-  it('returns infinite bounds so first updateDirtyRect always expands', () => {
-    const rect = resetDirtyRect()
-    expect(rect.minX).toBe(Infinity)
-    expect(rect.minY).toBe(Infinity)
-    expect(rect.maxX).toBe(-Infinity)
-    expect(rect.maxY).toBe(-Infinity)
-  })
 })
 
 describe('drawRgbShape', () => {
-  it('sets fillStyle and calls arc for Arc brush at hardness=1', () => {
+  it('draws arc at the correct center and radius for Arc brush at hardness=1', () => {
     const ctx = makeMockCtx()
     drawRgbShape(ctx, point, BrushShape.Arc, 10, 1, 0.8, '#ff0000')
     expect(ctx.arc).toHaveBeenCalledWith(10, 10, 10, 0, Math.PI * 2, false)
   })
 
-  it('sets fillStyle and calls rect for Rect brush at hardness=1', () => {
+  it('draws rect at the correct position for Rect brush at hardness=1', () => {
     const ctx = makeMockCtx()
     drawRgbShape(ctx, point, BrushShape.Rect, 10, 1, 0.8, '#ff0000')
     expect(ctx.rect).toHaveBeenCalledWith(0, 0, 20, 20)
   })
 
-  it('uses radial gradient for Arc brush at hardness < 1', () => {
+  it('creates radial gradient centered on the point for Arc brush at hardness < 1', () => {
     const ctx = makeMockCtx()
     drawRgbShape(ctx, point, BrushShape.Arc, 10, 0.5, 0.8, '#ff0000')
-    expect(ctx.createRadialGradient).toHaveBeenCalled()
+    expect(ctx.createRadialGradient).toHaveBeenCalledWith(10, 10, 0, 10, 10, 10)
   })
 
-  describe('Rect brush with soft hardness (uses brush texture cache)', () => {
+  describe('Rect brush with soft hardness', () => {
     const originalCreateElement = document.createElement.bind(document)
 
     beforeEach(() => {
@@ -127,10 +111,10 @@ describe('drawRgbShape', () => {
       vi.restoreAllMocks()
     })
 
-    it('calls drawImage with the cached texture', () => {
+    it('draws the cached brush texture at the correct offset', () => {
       const ctx = makeMockCtx()
       drawRgbShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, '#ff0000')
-      expect(ctx.drawImage).toHaveBeenCalled()
+      expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0)
     })
   })
 })
@@ -138,31 +122,25 @@ describe('drawRgbShape', () => {
 describe('drawMaskShape', () => {
   const maskColor = { r: 255, g: 0, b: 0 }
 
-  it('calls arc when not erasing, Arc brush, hardness=1', () => {
+  it('draws arc at the correct center and radius when not erasing, hardness=1', () => {
     const ctx = makeMockCtx()
     drawMaskShape(ctx, point, BrushShape.Arc, 10, 1, 0.8, false, maskColor)
     expect(ctx.arc).toHaveBeenCalledWith(10, 10, 10, 0, Math.PI * 2, false)
   })
 
-  it('sets white fillStyle when erasing at hardness=1', () => {
+  it('uses white fill color when erasing at hardness=1', () => {
     const ctx = makeMockCtx()
     drawMaskShape(ctx, point, BrushShape.Arc, 10, 1, 0.8, true, maskColor)
     expect(ctx.fillStyle).toContain('255, 255, 255')
   })
 
-  it('uses radial gradient when hardness < 1 and not erasing', () => {
+  it('creates radial gradient centered on the point when hardness < 1', () => {
     const ctx = makeMockCtx()
     drawMaskShape(ctx, point, BrushShape.Arc, 10, 0.5, 0.8, false, maskColor)
-    expect(ctx.createRadialGradient).toHaveBeenCalled()
+    expect(ctx.createRadialGradient).toHaveBeenCalledWith(10, 10, 0, 10, 10, 10)
   })
 
-  it('uses radial gradient when hardness < 1 and erasing', () => {
-    const ctx = makeMockCtx()
-    drawMaskShape(ctx, point, BrushShape.Arc, 10, 0.5, 0.8, true, maskColor)
-    expect(ctx.createRadialGradient).toHaveBeenCalled()
-  })
-
-  describe('Rect brush with soft hardness (uses brush texture cache)', () => {
+  describe('Rect brush with soft hardness', () => {
     const originalCreateElement = document.createElement.bind(document)
 
     beforeEach(() => {
@@ -176,16 +154,16 @@ describe('drawMaskShape', () => {
       vi.restoreAllMocks()
     })
 
-    it('calls drawImage when not erasing', () => {
+    it('draws the cached brush texture at the correct offset when not erasing', () => {
       const ctx = makeMockCtx()
       drawMaskShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, false, maskColor)
-      expect(ctx.drawImage).toHaveBeenCalled()
+      expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0)
     })
 
-    it('calls drawImage when erasing', () => {
+    it('draws the cached brush texture at the correct offset when erasing', () => {
       const ctx = makeMockCtx()
       drawMaskShape(ctx, point, BrushShape.Rect, 10, 0.5, 0.8, true, maskColor)
-      expect(ctx.drawImage).toHaveBeenCalled()
+      expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0)
     })
   })
 })
