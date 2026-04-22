@@ -97,11 +97,7 @@ function createTrackingStub(
     componentName === 'InputSlot' ? 'stub-input-slot' : 'stub-output-slot'
   return defineComponent({
     name: componentName,
-    props: {
-      slotData: { type: Object as PropType<StubSlotData>, required: true },
-      nodeId: { type: String, required: false, default: '' },
-      index: { type: Number, required: true }
-    },
+    props: STUB_SLOT_PROPS,
     setup(props) {
       const key = `${props.slotData?.name ?? ''}`
       mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
@@ -159,6 +155,20 @@ function mountSlotsWithTracking(
   })
 }
 
+const INPUT_SLOT_SELECTOR = '.stub-input-slot'
+const OUTPUT_SLOT_SELECTOR = '.stub-output-slot'
+
+function querySlotElements(
+  container: Element,
+  selector: string
+): HTMLElement[] {
+  // eslint-disable-next-line testing-library/no-node-access
+  const nodes = container.querySelectorAll(selector)
+  return Array.from(nodes).filter(
+    (el): el is HTMLElement => el instanceof HTMLElement
+  )
+}
+
 function getRenderedSlotIndex(container: Element, slotName: string) {
   // eslint-disable-next-line testing-library/no-node-access
   const el = container.querySelector(`[data-name="${slotName}"]`)
@@ -180,10 +190,7 @@ describe('NodeSlots.vue', () => {
 
     const { container } = mountSlots(makeNodeData({ inputs }))
 
-    const inputEls = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      container.querySelectorAll('.stub-input-slot')
-    ) as HTMLElement[]
+    const inputEls = querySlotElements(container, INPUT_SLOT_SELECTOR)
     expect(inputEls).toHaveLength(2)
 
     const info = inputEls.map((el) => ({
@@ -221,10 +228,7 @@ describe('NodeSlots.vue', () => {
     ]
 
     const { container } = mountSlots(makeNodeData({ outputs }))
-    const outputEls = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      container.querySelectorAll('.stub-output-slot')
-    ) as HTMLElement[]
+    const outputEls = querySlotElements(container, OUTPUT_SLOT_SELECTOR)
 
     expect(outputEls).toHaveLength(2)
     const outInfo = outputEls.map((el) => ({
@@ -272,10 +276,8 @@ describe('NodeSlots.vue', () => {
 
   it('renders nothing when there are no inputs/outputs', () => {
     const { container } = mountSlots(makeNodeData({ inputs: [], outputs: [] }))
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelectorAll('.stub-input-slot')).toHaveLength(0)
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelectorAll('.stub-output-slot')).toHaveLength(0)
+    expect(querySlotElements(container, INPUT_SLOT_SELECTOR)).toHaveLength(0)
+    expect(querySlotElements(container, OUTPUT_SLOT_SELECTOR)).toHaveLength(0)
   })
 
   it('passes correct actual indices for multi-group input layout', () => {
@@ -289,10 +291,7 @@ describe('NodeSlots.vue', () => {
 
     const { container } = mountSlots(makeNodeData({ inputs }))
 
-    const inputEls = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      container.querySelectorAll('.stub-input-slot')
-    ) as HTMLElement[]
+    const inputEls = querySlotElements(container, INPUT_SLOT_SELECTOR)
 
     expect(inputEls).toHaveLength(5)
 
