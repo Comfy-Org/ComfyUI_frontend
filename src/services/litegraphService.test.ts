@@ -127,11 +127,13 @@ vi.mock('@/stores/subgraphStore', () => ({
   })
 }))
 
+const mockNodeOutputStore = vi.hoisted(() => ({
+  getNodeOutputs: vi.fn(),
+  getNodePreviews: vi.fn()
+}))
+
 vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    getNodeOutputs: vi.fn(),
-    getNodePreviews: vi.fn()
-  })
+  useNodeOutputStore: () => mockNodeOutputStore
 }))
 
 vi.mock('@/composables/node/useNodeAnimatedImage', () => ({
@@ -555,7 +557,6 @@ describe('litegraphService', () => {
       })
 
       it('skips collapsed nodes', async () => {
-        const { useNodeOutputStore } = await import('@/stores/nodeOutputStore')
         const service = await getService()
         const node = {
           flags: { collapsed: true },
@@ -566,10 +567,7 @@ describe('litegraphService', () => {
 
         service.updatePreviews(node)
 
-        // getNodeOutputs should not be called for collapsed nodes
-        expect(
-          vi.mocked(useNodeOutputStore().getNodeOutputs)
-        ).not.toHaveBeenCalled()
+        expect(mockNodeOutputStore.getNodeOutputs).not.toHaveBeenCalled()
       })
     })
   })
