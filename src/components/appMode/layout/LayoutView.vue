@@ -407,7 +407,7 @@ watch(
       // broken thumbnail shouldn't pop a user-facing error; dimensions
       // already defaults to null via the watch reset above.
       if (selectedHistory.value?.output.url !== url) return
-      console.warn('[LayoutView] failed to load image for dimensions:', url)
+      console.warn('[LayoutView] failed to load image for dimensions')
     }
     img.src = url
   },

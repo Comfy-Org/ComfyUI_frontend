@@ -8,16 +8,11 @@
  * rows, vertical line between columns.
  */
 import { useTemplateRef } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import InputCell from '../cells/InputCell.vue'
 import type { InputCellEntry } from '../cells/InputCell.vue'
-import RunCell from '../cells/RunCell.vue'
-import BatchCountCell from '../cells/BatchCountCell.vue'
 import type { BlockPos, BlockRow, DropTarget } from './panelTypes'
 import { useBlockDrag } from './useBlockDrag'
-
-const { t } = useI18n()
 
 defineProps<{
   rows: BlockRow[]
@@ -91,39 +86,27 @@ function showColIndicator(rowIndex: number, colIndex: number): boolean {
             :data-block-col="colIdx"
             :data-block-kind="block.kind"
           >
-            <button
-              type="button"
+            <!-- Grip is a pointer-only affordance — hidden from the tab
+                 order and screen readers until keyboard reorder
+                 (Enter/Space to grab, arrow keys to move, Enter to drop)
+                 lands as a follow-up. Was a focusable <button>, but tabbing
+                 to it did nothing, which is the focusable-but-inert
+                 antipattern. -->
+            <span
               class="panel-block__grip"
-              :aria-label="
-                t('linearMode.blockDragReorderAria', { kind: block.kind })
-              "
+              aria-hidden="true"
               @pointerdown="startDrag({ row: rowIdx, col: colIdx }, $event)"
             >
               <span class="panel-block__grip-dots" aria-hidden="true" />
-            </button>
+            </span>
             <div class="panel-block__content">
-              <template v-if="block.kind === 'input'">
-                <div
-                  v-if="inputEntryMap.get(block.entryKey)"
-                  class="panel-block__input"
-                  :data-multiline="block.isMultiline ? 'true' : 'false'"
-                >
-                  <InputCell :entry="inputEntryMap.get(block.entryKey)!" />
-                </div>
-              </template>
-              <template v-else-if="block.kind === 'run'">
-                <div class="panel-block__run">
-                  <div
-                    v-if="block.withBatchCount"
-                    class="panel-block__run-batch"
-                  >
-                    <BatchCountCell />
-                  </div>
-                  <div class="panel-block__run-button">
-                    <RunCell />
-                  </div>
-                </div>
-              </template>
+              <div
+                v-if="inputEntryMap.get(block.entryKey)"
+                class="panel-block__input"
+                :data-multiline="block.isMultiline ? 'true' : 'false'"
+              >
+                <InputCell :entry="inputEntryMap.get(block.entryKey)!" />
+              </div>
             </div>
           </div>
         </template>
@@ -258,12 +241,6 @@ function showColIndicator(rowIndex: number, colIndex: number): boolean {
   display: none !important;
 }
 
-/* BatchCountCell: remove horizontal padding so it aligns with the Run
-   button below it. */
-.panel-block__run-batch :deep(.batch-count-cell) {
-  padding: 0;
-}
-
 /* All input blocks use content-driven height. Unset InputCell's
    overflow: hidden + flex: 1 on the body so cells don't clip or
    stretch their content. */
@@ -287,21 +264,6 @@ function showColIndicator(rowIndex: number, colIndex: number): boolean {
   min-height: 2.5em !important;
   max-height: 50vh !important;
   resize: none !important;
-}
-
-.panel-block__run {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0;
-}
-
-.panel-block__run-batch {
-  height: 48px;
-}
-
-.panel-block__run-button {
-  height: 48px;
 }
 
 /* Both drop-indicator types (row + column) share the same accent so the

@@ -24,7 +24,7 @@ export type DropTarget =
   | { kind: 'newRowBefore'; rowIndex: number }
   | { kind: 'newRowAfter'; rowIndex: number }
 
-export type BlockConfig = InputBlock | RunBlock
+export type BlockConfig = InputBlock
 
 interface InputBlockBase {
   id: string
@@ -35,11 +35,3 @@ interface InputBlockBase {
   isMultiline?: boolean
 }
 export type InputBlock = InputBlockBase
-
-interface RunBlockBase {
-  id: string
-  kind: 'run'
-  /** Whether to show the batch-count row above the run button. */
-  withBatchCount?: boolean
-}
-export type RunBlock = RunBlockBase
