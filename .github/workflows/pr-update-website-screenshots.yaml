@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [labeled]
   issue_comment:
-    types: [created]
+    types: [created, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
@@ -16,8 +16,10 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.58.1-noble
     timeout-minutes: 15
+    # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
     if: >
-      ( github.event_name == 'pull_request' && github.event.label.name == 'Update Website Screenshots' ) ||
+      ( github.event_name == 'pull_request' &&
+        github.event.label.name == 'Update Website Screenshots' ) ||
       ( github.event.issue.pull_request &&
         github.event_name == 'issue_comment' &&
         (
@@ -25,8 +27,29 @@ jobs:
           github.event.comment.author_association == 'MEMBER' ||
           github.event.comment.author_association == 'COLLABORATOR'
         ) &&
-        startsWith(github.event.comment.body, '/update-website-screenshots') )
+        startsWith(github.event.comment.body, '/update-website-screenshots') ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        github.event.comment.user.login == 'github-actions[bot]' &&
+        github.actor != 'github-actions[bot]' &&
+        contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
+        contains(github.event.comment.body, '- [x] Update website screenshots') )
     steps:
+      - name: Verify sender permissions
+        if: >
+          github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->')
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              ...context.repo,
+              username: context.actor
+            })
+            if (!['admin', 'write'].includes(data.permission)) {
+              core.setFailed(`User ${context.actor} does not have write access`)
+            }
+
       - name: Get PR info
         id: pr-info
         uses: actions/github-script@v8

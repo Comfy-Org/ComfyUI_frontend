@@ -96,6 +96,38 @@ jobs:
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
+      - name: Categorize failures
+        id: failures
+        if: always() && !cancelled() && steps.tests.outcome != 'success'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs')
+            const report = JSON.parse(fs.readFileSync('apps/website/results.json', 'utf8'))
+
+            function isFailed(t) { return t.status === 'unexpected' || t.status === 'flaky' }
+            function isVisual(spec) {
+              return spec.file?.includes('visual') ||
+                spec.tests?.some(t => t.results?.some(r => r.error?.message?.includes('toHaveScreenshot')))
+            }
+            function specsOf(suite) {
+              return [
+                ...(suite.specs || []),
+                ...(suite.suites || []).flatMap(specsOf)
+              ]
+            }
+
+            // True:  Visual
+            // False: Other
+            const failed = specsOf(report)
+              .flatMap(spec => (spec.tests || [])
+              .filter(isFailed)
+              .map(() => isVisual(spec)))
+
+            const screenshotFailures = failed.filter(Boolean).length
+            core.setOutput('screenshot', screenshotFailures)
+            core.setOutput('other', failed.length - screenshotFailures)
+
       - name: Post result comment and summary
         if: always() && !cancelled()
         uses: actions/github-script@v8
@@ -107,11 +139,23 @@ jobs:
             const link = reportUrl ? ` — [View Report](${reportUrl})` : ''
             const summary = `## 🌐 Website E2E: ${status}${link}`
 
+            const screenshotFailures = parseInt('${{ steps.failures.outputs.screenshot }}') || 0
+            const otherFailures = parseInt('${{ steps.failures.outputs.other }}') || 0
+            let details = ''
+            if (screenshotFailures > 0) {
+              const s = screenshotFailures === 1 ? '' : 's'
+              details += `\n\n- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`
+            }
+            if (otherFailures > 0) {
+              const s = otherFailures === 1 ? '' : 's'
+              details += `\n\n**Warning:** ${otherFailures} non-screenshot failure${s} — these require manual review`
+            }
+
             await core.summary.addRaw(summary).write()
 
             if (context.eventName === 'pull_request' && !context.payload.pull_request.head.repo.fork) {
               const marker = '<!-- WEBSITE_E2E_STATUS -->'
-              const body = `${marker}\n${summary}`
+              const body = `${marker}\n${summary}${details}`
               const { data: comments } = await github.rest.issues.listComments({
                 ...context.repo,
                 issue_number: context.issue.number
