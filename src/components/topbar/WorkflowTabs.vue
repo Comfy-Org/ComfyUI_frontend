@@ -95,7 +95,10 @@
         <i class="icon-[lucide--message-square-text]" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
-      <LoginButton v-else-if="isDesktop" class="p-1" />
+      <LoginButton
+        v-else-if="flags.showSignInButton ?? isDesktop"
+        class="p-1"
+      />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -112,6 +115,7 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackUrl } from '@/platform/support/config'
@@ -140,6 +144,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
 
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 const { title, description, cta, href, bg } = defineProps<{
   title: string
   description: string
@@ -11,8 +13,12 @@ const { title, description, cta, href, bg } = defineProps<{
 <template>
   <a
     :href="href"
-    class="flex flex-col justify-between rounded-2xl p-8 transition-opacity hover:opacity-90"
-    :class="bg"
+    :class="
+      cn(
+        'flex flex-col justify-between rounded-2xl p-8 transition-opacity hover:opacity-90',
+        bg
+      )
+    "
   >
     <h3 class="text-3xl font-light whitespace-pre-line text-white lg:text-4xl">
       {{ title }}

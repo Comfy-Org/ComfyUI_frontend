@@ -27,7 +27,7 @@ const row2 = [
       <img
         src="/icons/node-link.svg"
         alt=""
-        class="-my-3.5 scale-25 rotate-90 lg:-my-1.75 lg:scale-100"
+        class="-my-3 scale-30 rotate-90 transition-all duration-300 sm:-my-2.5 sm:scale-50 lg:-my-1.75 lg:scale-100"
         aria-hidden="true"
       />
 

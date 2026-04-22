@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CloudBannerSection from '../../components/product/shared/CloudBannerSection.vue'
+import HeroSection from '../../components/product/api/HeroSection.vue'
+import AutomationSection from '../../components/product/api/AutomationSection.vue'
+import StepsSection from '../../components/product/api/StepsSection.vue'
+import ReasonSection from '../../components/product/api/ReasonSection.vue'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+---
+
+<BaseLayout title="Comfy API">
+  <CloudBannerSection locale="zh-CN" />
+  <HeroSection locale="zh-CN" />
+  <AutomationSection locale="zh-CN" />
+  <StepsSection locale="zh-CN" />
+  <ReasonSection locale="zh-CN" />
+  <ProductCardsSection locale="zh-CN" exclude-product="api" label-key="products.labelProducts" />
+</BaseLayout>

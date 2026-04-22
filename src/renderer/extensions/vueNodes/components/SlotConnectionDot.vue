@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 
-import { getSlotColor } from '@/constants/slotColors'
+import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { cn } from '@/utils/tailwindUtil'
@@ -32,10 +32,10 @@ const types = computed(() => {
   //TODO Support connected/disconnected colors?
   if (!props.slotData) return [getSlotColor()]
   if (props.slotData.type === '*') return ['']
-  const typesSet = new Set(
-    `${props.slotData.type}`.split(',').map(getSlotColor)
-  )
-  return [...typesSet].slice(0, 3)
+  return `${props.slotData.type}`
+    .split(',')
+    .map(getSlotColor)
+    .slice(0, MAX_MULTITYPE_SLICES)
 })
 
 defineExpose({

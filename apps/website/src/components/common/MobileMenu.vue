@@ -109,7 +109,7 @@ onUnmounted(() => {
     role="dialog"
     aria-modal="true"
     :aria-label="t('nav.menu', locale)"
-    class="bg-primary-comfy-ink fixed inset-0 z-40 flex flex-col px-6 pt-24 pb-8 md:hidden"
+    class="bg-primary-comfy-ink fixed inset-0 z-40 flex flex-col px-6 pt-24 pb-8 lg:hidden"
   >
     <!-- Main list -->
     <template v-if="!activeSection">
@@ -173,7 +173,9 @@ onUnmounted(() => {
               v-if="item.badge"
               class="bg-primary-comfy-yellow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-xs font-bold"
             >
-              <span class="inline-block skew-x-12">{{ item.badge }}</span>
+              <span class="ppformula-text-center inline-block skew-x-12">{{
+                item.badge
+              }}</span>
             </span>
             <img
               v-if="item.external"
