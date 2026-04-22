@@ -7,7 +7,6 @@ import type {
 } from '@/renderer/core/canvas/pathRenderer'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 
-// --- Path2D stub ---
 class StubPath2D {
   calls: Array<{ method: string; args: unknown[] }> = []
   moveTo(...args: unknown[]) {
@@ -29,7 +28,6 @@ class StubPath2D {
 
 vi.stubGlobal('Path2D', StubPath2D)
 
-// --- Canvas context stub ---
 function createMockCtx(): CanvasRenderingContext2D {
   return {
     save: vi.fn(),
@@ -87,8 +85,6 @@ describe('CanvasPathRenderer', () => {
     renderer = new CanvasPathRenderer()
   })
 
-  // ── determineLinkColor (tested via drawLink) ──────────────────────
-
   describe('link color determination', () => {
     it('uses highlighted color when link is highlighted', () => {
       const ctx = createMockCtx()
@@ -139,8 +135,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── drawLink border ───────────────────────────────────────────────
-
   describe('drawLink border', () => {
     it('draws border when borderWidth is set and not lowQuality', () => {
       const ctx = createMockCtx()
@@ -174,8 +168,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── disabled pattern ──────────────────────────────────────────────
-
   describe('disabled links', () => {
     it('applies disabled pattern when link is disabled', () => {
       const ctx = createMockCtx()
@@ -192,8 +184,6 @@ describe('CanvasPathRenderer', () => {
       expect(ctx.save).toHaveBeenCalled()
     })
   })
-
-  // ── buildLinearPath ───────────────────────────────────────────────
 
   describe('linear path mode', () => {
     it('builds a 4-point path with directional offsets', () => {
@@ -273,8 +263,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── buildStraightPath ─────────────────────────────────────────────
-
   describe('straight path mode', () => {
     it('builds a 6-point path with mid-X routing', () => {
       const ctx = createMockCtx()
@@ -330,8 +318,6 @@ describe('CanvasPathRenderer', () => {
       expect(lineToCalls[3].args).toEqual([100, 310])
     })
   })
-
-  // ── buildSplinePath ───────────────────────────────────────────────
 
   describe('spline path mode', () => {
     it('uses provided control points for cubic bezier', () => {
@@ -402,8 +388,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── calculateControlPoints / getDirectionOffset ───────────────────
-
   describe('auto-calculated control points', () => {
     it('produces control points offset in the start/end directions', () => {
       const ctx = createMockCtx()
@@ -454,8 +438,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── findPointOnBezier ─────────────────────────────────────────────
-
   describe('findPointOnBezier', () => {
     const p0: Point = { x: 0, y: 0 }
     const p1: Point = { x: 100, y: 0 }
@@ -480,8 +462,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── getLinkCenter ─────────────────────────────────────────────────
-
   describe('getLinkCenter', () => {
     it('returns midpoint between start and end', () => {
       const link = makeLink({
@@ -491,8 +471,6 @@ describe('CanvasPathRenderer', () => {
       expect(renderer.getLinkCenter(link)).toEqual({ x: 100, y: 50 })
     })
   })
-
-  // ── calculateCenterPoint (via drawLink) ───────────────────────────
 
   describe('center point calculation', () => {
     it('calculates spline center using bezier at t=0.5', () => {
@@ -651,8 +629,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── drawArrows ────────────────────────────────────────────────────
-
   describe('arrows', () => {
     it('draws arrows at 0.25 and 0.75 positions when showArrows=true', () => {
       const ctx = createMockCtx()
@@ -680,8 +656,6 @@ describe('CanvasPathRenderer', () => {
       expect(ctx.fill).not.toHaveBeenCalled()
     })
   })
-
-  // ── drawCenterMarker ──────────────────────────────────────────────
 
   describe('center marker', () => {
     it('draws circle marker when conditions are met', () => {
@@ -808,8 +782,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── drawFlowAnimation ─────────────────────────────────────────────
-
   describe('flow animation', () => {
     it('draws 5 circles when flow is enabled', () => {
       const ctx = createMockCtx()
@@ -846,8 +818,6 @@ describe('CanvasPathRenderer', () => {
       expect(ctx.arc).not.toHaveBeenCalled()
     })
   })
-
-  // ── drawDraggingLink ──────────────────────────────────────────────
 
   describe('drawDraggingLink', () => {
     it('draws a link from fixed to drag point', () => {
@@ -933,8 +903,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── computeConnectionPoint (via arrows) ───────────────────────────
-
   describe('computeConnectionPoint', () => {
     it('returns start at t=0 and end at t=1', () => {
       const ctx = createMockCtx()
@@ -957,8 +925,6 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
-  // ── drawLink returns Path2D ───────────────────────────────────────
-
   describe('drawLink return value', () => {
     it('returns a Path2D for hit detection', () => {
       const ctx = createMockCtx()
@@ -970,8 +936,6 @@ describe('CanvasPathRenderer', () => {
       expect(result).toBeInstanceOf(StubPath2D)
     })
   })
-
-  // ── direction offset calculations ─────────────────────────────────
 
   describe('direction offsets', () => {
     it.each([
