@@ -50,7 +50,7 @@ function getMediaUrl(
   type: 'input' | 'output',
   assetKind: AssetKind | undefined
 ): string {
-  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? '')) return ''
+  if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
@@ -183,7 +183,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       items.push({
         id: `output-${asset.id}`,
         preview_url:
-          asset.preview_url || getMediaUrl(asset.name, 'output', kind),
+          kind === 'mesh'
+            ? ''
+            : asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,
         label: getDisplayLabel(annotatedPath, labelFn)
       })

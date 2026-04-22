@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -10,6 +10,27 @@ import type { AssetKind } from '@/types/widgetTypes'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
+
+const mockFindServerPreviewUrl = vi.hoisted(() => vi.fn())
+const mockIsAssetPreviewSupported = vi.hoisted(() => vi.fn(() => true))
+const intersectionCallbacks = vi.hoisted(
+  () => [] as Array<(entries: Array<{ isIntersecting: boolean }>) => void>
+)
+
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  findServerPreviewUrl: (name: string) => mockFindServerPreviewUrl(name),
+  isAssetPreviewSupported: () => mockIsAssetPreviewSupported()
+}))
+
+vi.mock('@vueuse/core', () => ({
+  useIntersectionObserver: (
+    _ref: unknown,
+    cb: (entries: Array<{ isIntersecting: boolean }>) => void
+  ) => {
+    intersectionCallbacks.push(cb)
+    return { stop: vi.fn() }
+  }
+}))
 
 const selectedLabel = 'Selected'
 
@@ -48,7 +69,23 @@ function renderItem(
   })
 }
 
+function fireIntersection(isIntersecting = true) {
+  for (const cb of intersectionCallbacks) {
+    cb([{ isIntersecting }])
+  }
+}
+
+async function flushPromises() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 describe('FormDropdownMenuItem', () => {
+  beforeEach(() => {
+    intersectionCallbacks.length = 0
+    mockFindServerPreviewUrl.mockReset()
+    mockIsAssetPreviewSupported.mockReset().mockReturnValue(true)
+  })
+
   describe('Label and name', () => {
     it('renders name when no label is provided', () => {
       renderItem({ name: 'alpha' })
@@ -88,6 +125,85 @@ describe('FormDropdownMenuItem', () => {
         { assetKind: 'image' }
       )
       expect(screen.queryByRole('img', { name: 'item_name' })).toBeNull()
+    })
+
+    it('does not look up mesh preview when kind is image', async () => {
+      renderItem({ previewUrl: '/preview.png' }, { assetKind: 'image' })
+      fireIntersection(true)
+      await flushPromises()
+      expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Mesh thumbnail resolution', () => {
+    it('shows 3D placeholder icon when mesh preview is unresolved', () => {
+      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      expect(screen.getByTestId('dropdown-item-mesh-placeholder')).toBeTruthy()
+    })
+
+    it('looks up preview with basename after intersection fires', async () => {
+      mockFindServerPreviewUrl.mockResolvedValue('/api/view?preview=1')
+      renderItem({ name: '3d/sub/model.glb' }, { assetKind: 'mesh' })
+      fireIntersection(true)
+      await flushPromises()
+      expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('model.glb')
+    })
+
+    it('strips [output] suffix before taking basename', async () => {
+      mockFindServerPreviewUrl.mockResolvedValue(null)
+      renderItem({ name: 'mesh/scene.glb [output]' }, { assetKind: 'mesh' })
+      fireIntersection(true)
+      await flushPromises()
+      expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('scene.glb')
+    })
+
+    it('renders resolved URL in img once findServerPreviewUrl returns', async () => {
+      mockFindServerPreviewUrl.mockResolvedValue('/api/preview/resolved.png')
+      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      fireIntersection(true)
+      const img = (await screen.findByAltText(
+        '3d/model.glb'
+      )) as HTMLImageElement
+      expect(img.getAttribute('src')).toBe('/api/preview/resolved.png')
+    })
+
+    it('skips lookup when asset preview is unsupported', async () => {
+      mockIsAssetPreviewSupported.mockReturnValue(false)
+      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      fireIntersection(true)
+      await flushPromises()
+      expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
+    })
+
+    it('only looks up once for repeated intersection events', async () => {
+      mockFindServerPreviewUrl.mockResolvedValue(null)
+      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      fireIntersection(true)
+      fireIntersection(true)
+      fireIntersection(true)
+      await flushPromises()
+      expect(mockFindServerPreviewUrl).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not look up when not yet intersecting', async () => {
+      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      fireIntersection(false)
+      await flushPromises()
+      expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
+    })
+
+    it('ignores the previewUrl prop for mesh kind', async () => {
+      mockFindServerPreviewUrl.mockResolvedValue(null)
+      renderItem(
+        {
+          name: '3d/model.glb',
+          previewUrl: '/api/view?filename=model.glb&type=input'
+        },
+        { assetKind: 'mesh' }
+      )
+      fireIntersection(true)
+      await flushPromises()
+      expect(screen.queryByAltText('3d/model.glb')).toBeNull()
     })
   })
 
