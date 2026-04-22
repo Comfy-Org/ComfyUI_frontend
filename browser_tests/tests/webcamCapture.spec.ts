@@ -60,7 +60,7 @@ async function parseMultipartRequest(request: Request): Promise<FormData> {
  * Returns the mutable list of captured upload requests - callers poll its
  * length to wait for the upload to fire.
  */
-async function interceptUpload(page: Page): Promise<Request[]> {
+async function captureUploadsDuringQueue(page: Page): Promise<Request[]> {
   const uploadRequests: Request[] = []
   const uploadResponse: UploadImageResponse = {
     name: 'captured.png',
@@ -149,8 +149,8 @@ test.describe(
       const webcam = new WebcamCaptureFixture(comfyPage)
 
       await expect(webcam.captureButton).toBeEnabled()
-      await expect(webcam.waitingButton).toHaveCount(0)
-      await expect(webcam.errorMessage).toHaveCount(0)
+      await expect(webcam.waitingButton).toBeHidden()
+      await expect(webcam.errorMessage).toBeHidden()
     })
 
     test('auto-populates width and height from the video stream', async ({
@@ -175,8 +175,8 @@ test.describe(
       const webcam = new WebcamCaptureFixture(comfyPage)
 
       await expect(webcam.waitingButton).toBeDisabled()
-      await expect(webcam.captureButton).toHaveCount(0)
-      await expect(webcam.errorMessage).toHaveCount(0)
+      await expect(webcam.captureButton).toBeHidden()
+      await expect(webcam.errorMessage).toBeHidden()
     })
 
     test('surfaces the underlying rejection reason when denied', async ({
@@ -191,7 +191,7 @@ test.describe(
         webcam.errorMessage.filter({ hasText: 'Permission denied by test' })
       ).toBeVisible()
       await expect(webcam.waitingButton).toBeDisabled()
-      await expect(webcam.captureButton).toHaveCount(0)
+      await expect(webcam.captureButton).toBeHidden()
     })
 
     test('auto-captures and uploads a frame when queued with capture-on-queue', async ({
@@ -205,7 +205,7 @@ test.describe(
         'workflow asset ships with capture_on_queue enabled'
       ).toBeChecked()
 
-      const uploads = await interceptUpload(comfyPage.page)
+      const uploads = await captureUploadsDuringQueue(comfyPage.page)
       await comfyPage.runButton.click()
 
       await expect.poll(() => uploads.length).toBeGreaterThan(0)
@@ -222,7 +222,7 @@ test.describe(
       const webcam = new WebcamCaptureFixture(comfyPage)
       await webcam.waitForStreamReady()
 
-      await expect(webcam.previewImage).toHaveCount(0)
+      await expect(webcam.previewImage).toBeHidden()
       await webcam.captureButton.click()
       await expect(webcam.previewImage).toBeVisible()
     })
@@ -263,9 +263,20 @@ test.describe(
       await webcam.captureButton.click()
       await expect(webcam.previewImage).toBeVisible()
 
-      const uploads = await interceptUpload(comfyPage.page)
+      const uploads = await captureUploadsDuringQueue(comfyPage.page)
       await comfyPage.runButton.click()
       await expect.poll(() => uploads.length).toBeGreaterThan(0)
+      const form = await parseMultipartRequest(uploads[0])
+      const uploaded = form.get('image')
+      if (!(uploaded instanceof Blob))
+        throw new Error('uploaded image is not a Blob')
+      const uploadedBase64 = Buffer.from(await uploaded.arrayBuffer()).toString(
+        'base64'
+      )
+      await expect(webcam.previewImage).toHaveAttribute(
+        'src',
+        `data:image/png;base64,${uploadedBase64}`
+      )
     })
 
     test('explains the secure-context requirement on insecure origins', async ({
