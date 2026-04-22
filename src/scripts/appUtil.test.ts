@@ -112,6 +112,12 @@ describe('positionBatchLayout', () => {
     expect(node2.pos).toEqual([100, 544 + 50])
   })
 
+  it('handles empty nodes array without throwing', () => {
+    const batchNode = createNodeLike([50, 50], [0, 0, 0, 0])
+    positionBatchLayout([], batchNode)
+    expect(batchNode.pos).toEqual([50, 50])
+  })
+
   it('uses zero height for non-LoadImage nodes', () => {
     const node1 = createNodeLike([100, 200], [100, 200, 300, 400], 'Other')
     const node2 = createNodeLike([0, 0], [0, 0, 200, 100], 'Other')

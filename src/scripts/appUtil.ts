@@ -76,6 +76,10 @@ export function positionBatchLayout(
   }[],
   batchNode: { pos: [number, number] }
 ): void {
+  if (nodes.length === 0) {
+    return
+  }
+
   const [x, y, width] = nodes[0].getBounding()
   batchNode.pos = [x + width + 100, y + 30]
 
