@@ -695,7 +695,7 @@ class LayoutStoreImpl implements LayoutStore {
       if (!segmentLayout) continue
 
       if (ctx && segmentLayout.path) {
-        // Match LiteGraph behavior: hit test uses device pixel ratio for coordinates
+        // TODO: Migrate to canvas.dpr once layoutStore has access to the active viewport
         const dpi =
           (typeof window !== 'undefined' && window?.devicePixelRatio) || 1
         const hit = ctx.isPointInStroke(

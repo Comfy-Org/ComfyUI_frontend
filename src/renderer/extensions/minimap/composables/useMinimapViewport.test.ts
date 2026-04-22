@@ -42,6 +42,7 @@ describe('useMinimapViewport', () => {
         width: 1600,
         height: 1200
       } as HTMLCanvasElement,
+      dpr: 2,
       ds: {
         scale: 1,
         offset: [0, 0]

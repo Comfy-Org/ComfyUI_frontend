@@ -48,7 +48,7 @@ function applyViewport(
   viewport: CanvasViewport,
   fg: HTMLCanvasElement,
   bg: HTMLCanvasElement
-): void {
+): CanvasViewport {
   fg.width = viewport.physicalWidth
   fg.height = viewport.physicalHeight
   bg.width = viewport.physicalWidth
@@ -58,6 +58,7 @@ function applyViewport(
   bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
 
   currentGeneration = viewport.generation
+  return viewport
 }
 
 export { measureViewport, measureViewportFromElement, applyViewport }

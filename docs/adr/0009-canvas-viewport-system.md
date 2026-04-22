@@ -4,7 +4,7 @@ Date: 2026-04-20
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -48,6 +48,8 @@ A `devAssert(condition, message)` utility throws in DEV mode and `console.error`
 
 The existing `LGraphCanvas.resize()` method and `resizeCanvas()` in app.ts are both replaced by calls through the viewport system. Both paths collapse into one: measure → apply → draw.
 
+`LGraphCanvas` stores a `dpr` property that is set whenever a viewport is applied. All internal DPR consumers (`drawFrontCanvas`, `drawBackCanvas`, `centerOnNode`, `renderInfo`, `processMouseDown` hit testing, LOD threshold calculation) read `this.dpr` instead of `window.devicePixelRatio`. External consumers with access to the canvas instance (e.g. `litegraphService`, minimap composables) also read `canvas.dpr`. The only code that reads `window.devicePixelRatio` directly is (a) the viewport measurement functions themselves, (b) `DragAndScale` which doesn't have access to the canvas instance, and (c) `layoutStore` which operates at a layer without a direct canvas reference.
+
 The viewport system composes with the existing `CanvasScheduler` — the scheduler handles **when** (deferring until the canvas is visible), the viewport handles **what** (correct DPR-scaled dimensions applied atomically to both canvases). Neither modifies the other.
 
 ### Design Principles
@@ -77,12 +79,10 @@ Following the ECS principles established in [ADR 0008](0008-entity-component-sys
 
 ### Negative
 
-- All existing `window.devicePixelRatio` reads in LGraphCanvas need migration to use the viewport's `dpr` field. This migration is incremental and not blocking.
 - Adds a new abstraction layer that all canvas-sizing code must flow through.
-- A lint rule banning direct `window.devicePixelRatio` reads in canvas code requires team awareness during the migration period.
+- `DragAndScale` and `layoutStore` still read `window.devicePixelRatio` directly because they lack a reference to the canvas instance. A future refactor could thread the `dpr` value through, but the current exception is documented and stable.
 
 ## Notes
 
 - References [ADR 0008](0008-entity-component-system.md) for the design principles (plain data components, pure system functions, no methods on entities).
 - The `devAssert` utility is general-purpose and can be used beyond canvas sizing for any invariant that should be loud in development but non-fatal in production.
-- Migration of existing DPR reads in LGraphCanvas (`centerOnNode`, `renderInfo`, `processMouseDown` hit testing, `drawBackCanvas` `setTransform`, font scaling) can be done incrementally in follow-up PRs. This ADR covers the foundation and the critical resize path.
