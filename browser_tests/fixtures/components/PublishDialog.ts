@@ -7,18 +7,38 @@ export class PublishDialog extends BaseDialog {
   readonly nav: Locator
   readonly footer: Locator
   readonly savePrompt: Locator
+  readonly describeStep: Locator
+  readonly finishStep: Locator
+  readonly profilePrompt: Locator
+  readonly gateFlow: Locator
+  readonly nameInput: Locator
+  readonly descriptionTextarea: Locator
+  readonly tagsInput: Locator
+  readonly backButton: Locator
+  readonly nextButton: Locator
+  readonly publishButton: Locator
 
   constructor(page: Page) {
     super(page, TestIds.publish.dialog)
     this.nav = this.root.getByTestId(TestIds.publish.nav)
     this.footer = this.root.getByTestId(TestIds.publish.footer)
     this.savePrompt = this.root.getByTestId(TestIds.publish.savePrompt)
+    this.describeStep = this.root.getByTestId(TestIds.publish.describeStep)
+    this.finishStep = this.root.getByTestId(TestIds.publish.finishStep)
+    this.profilePrompt = this.root.getByTestId(TestIds.publish.profilePrompt)
+    this.gateFlow = this.root.getByTestId(TestIds.publish.gateFlow)
+    this.nameInput = this.describeStep.getByRole('textbox').first()
+    this.descriptionTextarea = this.describeStep.locator('textarea')
+    this.tagsInput = this.describeStep.getByRole('list').first()
+    this.backButton = this.footer.getByRole('button', { name: 'Back' })
+    this.nextButton = this.footer.getByRole('button', { name: 'Next' })
+    this.publishButton = this.footer.getByRole('button', {
+      name: 'Publish to ComfyHub'
+    })
   }
 
-  /**
-   * Opens the publish dialog via the dialog service's showPublishDialog(),
-   * which uses Vite-bundled lazy imports that work in both dev and production.
-   */
+  // Uses showPublishDialog() via Vite-bundled lazy imports that work in both
+  // dev and production, rather than clicking through the UI.
   async open(): Promise<void> {
     await this.page.evaluate(async () => {
       await window.app!.extensionManager.dialog.showPublishDialog()
@@ -26,57 +46,9 @@ export class PublishDialog extends BaseDialog {
     await this.waitForVisible()
   }
 
-  // Step content locators
-
-  get describeStep(): Locator {
-    return this.root.getByTestId(TestIds.publish.describeStep)
-  }
-
-  get finishStep(): Locator {
-    return this.root.getByTestId(TestIds.publish.finishStep)
-  }
-
-  get profilePrompt(): Locator {
-    return this.root.getByTestId(TestIds.publish.profilePrompt)
-  }
-
-  get gateFlow(): Locator {
-    return this.root.getByTestId(TestIds.publish.gateFlow)
-  }
-
-  // Describe step locators
-
-  get nameInput(): Locator {
-    return this.describeStep.getByRole('textbox').first()
-  }
-
-  get descriptionTextarea(): Locator {
-    return this.describeStep.locator('textarea')
-  }
-
-  get tagsInput(): Locator {
-    return this.describeStep.getByRole('list').first()
-  }
-
   tagSuggestion(name: string): Locator {
     return this.describeStep.getByText(name, { exact: true })
   }
-
-  // Footer button locators
-
-  get backButton(): Locator {
-    return this.footer.getByRole('button', { name: 'Back' })
-  }
-
-  get nextButton(): Locator {
-    return this.footer.getByRole('button', { name: 'Next' })
-  }
-
-  get publishButton(): Locator {
-    return this.footer.getByRole('button', { name: 'Publish to ComfyHub' })
-  }
-
-  // Nav locators
 
   navStep(label: string): Locator {
     return this.nav.getByRole('button', { name: label })
@@ -85,8 +57,6 @@ export class PublishDialog extends BaseDialog {
   currentNavStep(): Locator {
     return this.nav.locator('[aria-current="step"]')
   }
-
-  // Navigation helpers
 
   async goNext(): Promise<void> {
     await this.nextButton.click()
