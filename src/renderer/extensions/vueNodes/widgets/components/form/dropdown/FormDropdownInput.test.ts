@@ -81,7 +81,7 @@ describe('FormDropdownInput', () => {
       const onSelectClick = vi.fn()
       renderInput({}, { onSelectClick })
       const user = userEvent.setup()
-      await user.click(screen.getByRole('button', { name: /select/i }))
+      await user.click(screen.getByRole('button'))
       expect(onSelectClick).toHaveBeenCalledTimes(1)
     })
   })

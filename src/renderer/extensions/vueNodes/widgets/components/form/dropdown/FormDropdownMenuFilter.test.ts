@@ -1,30 +1,35 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
 
-const mocks = vi.hoisted(
-  () =>
-    ({
-      isEnabled: false,
-      showUploadDialog: (() => {}) as () => void
-    }) as { isEnabled: boolean; showUploadDialog: () => void }
-)
-
 vi.mock('@/platform/assets/composables/useModelUpload', async () => {
-  const { computed } = await import('vue')
+  const { ref } = await import('vue')
+  const isUploadButtonEnabled = ref(false)
+  const showUploadDialog = vi.fn()
   return {
     useModelUpload: () => ({
-      isUploadButtonEnabled: computed(() => mocks.isEnabled),
-      showUploadDialog: mocks.showUploadDialog
+      isUploadButtonEnabled,
+      showUploadDialog
     })
   }
 })
 
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
+
+function getUploadMock() {
+  const service = useModelUpload()
+  return {
+    isUploadButtonEnabled:
+      service.isUploadButtonEnabled as unknown as Ref<boolean>,
+    showUploadDialog: vi.mocked(service.showUploadDialog)
+  }
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -66,12 +71,10 @@ function renderMenu(
 }
 
 describe('FormDropdownMenuFilter', () => {
-  let showDialogSpy: ReturnType<typeof vi.fn>
-
   beforeEach(() => {
-    mocks.isEnabled = false
-    showDialogSpy = vi.fn()
-    mocks.showUploadDialog = showDialogSpy as unknown as () => void
+    const upload = getUploadMock()
+    upload.isUploadButtonEnabled.value = false
+    upload.showUploadDialog.mockReset()
   })
 
   describe('Filter options', () => {
@@ -103,19 +106,19 @@ describe('FormDropdownMenuFilter', () => {
 
   describe('Upload button', () => {
     it('is hidden when upload button flag is disabled', () => {
-      mocks.isEnabled = false
+      getUploadMock().isUploadButtonEnabled.value = false
       renderMenu(singleOption)
       expect(screen.queryByRole('button', { name: /Import/i })).toBeNull()
     })
 
     it('is hidden when there are multiple filter options, even if upload enabled', () => {
-      mocks.isEnabled = true
+      getUploadMock().isUploadButtonEnabled.value = true
       renderMenu(options)
       expect(screen.queryByRole('button', { name: /Import/i })).toBeNull()
     })
 
     it('is shown when upload is enabled and there is a single option', () => {
-      mocks.isEnabled = true
+      getUploadMock().isUploadButtonEnabled.value = true
       renderMenu(singleOption)
       expect(
         screen.getByRole('button', { name: /Import/i })
@@ -123,11 +126,12 @@ describe('FormDropdownMenuFilter', () => {
     })
 
     it('calls showUploadDialog when the import button is clicked', async () => {
-      mocks.isEnabled = true
+      const upload = getUploadMock()
+      upload.isUploadButtonEnabled.value = true
       renderMenu(singleOption)
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: /Import/i }))
-      expect(showDialogSpy).toHaveBeenCalledTimes(1)
+      expect(upload.showUploadDialog).toHaveBeenCalledTimes(1)
     })
   })
 })
