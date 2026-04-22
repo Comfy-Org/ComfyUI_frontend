@@ -1034,8 +1034,8 @@ const translations = {
     'zh-CN': '每月包含 400 积分'
   },
   'pricing.plan.free.estimate': {
-    en: '~35 5s videos using the Wan 2.2 Image-to-Video template*',
-    'zh-CN': '约可生成 35 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+    en: '~35 5s videos*',
+    'zh-CN': '约可生成 35 个 5 秒视频*'
   },
   'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
   'pricing.plan.free.feature1': {
@@ -1058,8 +1058,8 @@ const translations = {
     'zh-CN': '每月包含 4,200 积分，并支持充值'
   },
   'pricing.plan.standard.estimate': {
-    en: '~380 5s videos using the Wan 2.2 Image-to-Video template*',
-    'zh-CN': '约可生成 380 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+    en: '~380 5s videos*',
+    'zh-CN': '约可生成 380 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
     en: 'SUBSCRIBE TO STANDARD',
@@ -1089,8 +1089,8 @@ const translations = {
     'zh-CN': '每月包含 7,400 积分，并支持充值'
   },
   'pricing.plan.creator.estimate': {
-    en: '~670 5s videos using the Wan 2.2 Image-to-Video template*',
-    'zh-CN': '约可生成 670 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+    en: '~670 5s videos*',
+    'zh-CN': '约可生成 670 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
     en: 'SUBSCRIBE TO CREATOR',
@@ -1120,8 +1120,8 @@ const translations = {
     'zh-CN': '每月包含 21,100 积分，并支持充值'
   },
   'pricing.plan.pro.estimate': {
-    en: '~1,915 5s videos using the Wan 2.2 Image-to-Video template*',
-    'zh-CN': '约可生成 1,915 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+    en: '~1,915 5s videos*',
+    'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
   'pricing.plan.pro.featureIntro': {
