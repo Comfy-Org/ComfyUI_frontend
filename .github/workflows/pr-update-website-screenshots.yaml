@@ -13,6 +13,8 @@ concurrency:
 jobs:
   update-screenshots:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
     timeout-minutes: 15
     if: >
       ( github.event_name == 'pull_request' && github.event.label.name == 'Update Website Screenshots' ) ||
@@ -38,11 +40,11 @@ jobs:
           ref: ${{ steps.pr-info.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Install pnpm
+        run: corepack enable && corepack prepare
 
-      - name: Install Playwright browsers
-        run: pnpm --filter @comfyorg/website exec playwright install --with-deps chromium
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build website
         run: pnpm --filter @comfyorg/website build
