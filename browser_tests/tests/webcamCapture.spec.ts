@@ -261,6 +261,7 @@ test.describe(
       ).not.toBeChecked()
 
       await webcam.captureButton.click()
+      await expect(webcam.previewImage).toBeVisible()
 
       const uploads = await interceptUpload(comfyPage.page)
       await comfyPage.runButton.click()
