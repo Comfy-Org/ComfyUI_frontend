@@ -11,11 +11,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row lg:items-center lg:overflow-visible lg:pb-73"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row lg:items-center lg:overflow-visible lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div
-      class="aspect-square w-4/5 max-w-md scale-125 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-10 lg:self-center xl:size-[clamp(42rem,max(50vh,40vw),44rem)] xl:min-h-[min(40vw,32rem)] xl:min-w-[min(30vw,24rem)]"
+      class="aspect-square w-4/5 max-w-md scale-125 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-10 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         class="block size-full overflow-visible"
@@ -379,27 +379,27 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
     <!-- Text -->
     <div
-      class="relative z-10 mt-17 w-full px-4 pb-16 lg:mt-0 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-24"
+      class="relative z-10 mt-17 w-full px-4 pb-16 lg:mt-0 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
     >
       <ProductHeroBadge text="CLOUD" />
 
       <h1
-        class="text-primary-comfy-canvas mt-8 text-4xl/tight font-light whitespace-pre-line md:text-5xl/tight lg:max-w-2xl lg:text-6xl/tight"
+        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('cloud.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-8 max-w-md text-sm lg:mt-10 lg:text-base"
+        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
       >
         {{ t('cloud.hero.subtitle', locale) }}
       </p>
 
-      <div class="mt-10">
+      <div class="mt-8">
         <BrandButton
           :href="externalLinks.cloud"
           size="lg"
-          class="text-center lg:min-w-60"
+          class="text-center lg:min-w-60 lg:p-4"
         >
           {{ t('cloud.hero.cta', locale) }}
         </BrandButton>

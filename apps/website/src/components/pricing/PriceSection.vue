@@ -123,15 +123,15 @@ const activePlanIndex = ref(0)
 </script>
 
 <template>
-  <section class="px-4 py-16 lg:px-20 lg:py-24">
+  <section class="px-4 py-16 lg:px-20 lg:py-14">
     <!-- Header -->
-    <div class="mx-auto mb-12 max-w-3xl text-center lg:mb-16">
+    <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <h1
-        class="text-primary-comfy-canvas font-formula text-4xl font-light lg:text-6xl"
+        class="text-primary-comfy-canvas font-formula text-4xl font-light lg:text-5xl"
       >
         {{ t('pricing.title', locale) }}
       </h1>
-      <p class="text-primary-comfy-canvas mt-4 text-base">
+      <p class="text-primary-comfy-canvas mt-3 text-base">
         {{ t('pricing.subtitle', locale) }}
       </p>
     </div>
@@ -163,7 +163,7 @@ const activePlanIndex = ref(0)
     >
       <PricingTierCard v-for="plan in standardPlans" :key="plan.id">
         <!-- Label + badge -->
-        <div class="flex items-center gap-2 px-8 pt-8">
+        <div class="flex items-center gap-2 px-6 pt-6">
           <span
             class="text-primary-comfy-yellow translate-y-0.5 text-base font-bold tracking-wider"
           >
@@ -193,14 +193,14 @@ const activePlanIndex = ref(0)
         </div>
 
         <!-- Summary -->
-        <p class="text-primary-comfy-canvas px-8 text-base">
+        <p class="text-primary-comfy-canvas px-6 text-sm">
           {{ t(plan.summaryKey, locale) }}
         </p>
 
         <!-- Price -->
-        <div v-if="plan.priceKey" class="flex items-baseline gap-1 px-8 pt-4">
+        <div v-if="plan.priceKey" class="flex items-baseline gap-1 px-6 pt-2">
           <span
-            class="text-primary-comfy-canvas font-formula text-6.5xl font-light"
+            class="text-primary-comfy-canvas font-formula text-5xl font-light"
           >
             {{ t(plan.priceKey, locale) }}
           </span>
@@ -208,29 +208,29 @@ const activePlanIndex = ref(0)
             {{ t('pricing.plan.period', locale) }}
           </span>
         </div>
-        <div v-else class="px-8 pt-4" />
+        <div v-else class="px-6 pt-2" />
 
         <!-- Credits -->
         <p
           v-if="plan.creditsKey"
-          class="text-primary-comfy-canvas px-8 text-sm"
+          class="text-primary-comfy-canvas px-6 text-sm"
         >
           {{ t(plan.creditsKey, locale) }}
         </p>
-        <div v-else class="px-8" />
+        <div v-else class="px-6" />
 
         <!-- Estimate -->
         <p
           v-if="plan.estimateKey"
-          class="text-primary-comfy-canvas/80 px-8 text-sm"
+          class="text-primary-comfy-canvas/80 px-6 text-xs"
         >
           {{ t(plan.estimateKey, locale) }}
         </p>
-        <div v-else class="px-8" />
+        <div v-else class="px-6" />
 
         <!-- Features -->
-        <div class="px-8 py-4">
-          <p class="text-primary-comfy-canvas mb-3 text-sm font-semibold">
+        <div class="px-6 py-3">
+          <p class="text-primary-comfy-canvas mb-2 text-sm font-semibold">
             {{
               plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
             }}
@@ -249,7 +249,7 @@ const activePlanIndex = ref(0)
           </ul>
         </div>
         <!-- CTA -->
-        <div class="flex self-end px-8">
+        <div class="flex self-end px-6">
           <BrandButton
             :href="plan.ctaHref"
             variant="outline"

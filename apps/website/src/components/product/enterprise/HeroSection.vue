@@ -35,11 +35,11 @@ onMounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(15vw,25rem)]"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (overlaps text slightly; stacks above on mobile, right on lg) -->
     <div
-      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:translate-y-[100px] lg:self-center xl:size-[clamp(42rem,max(50vh,40vw),44rem)] xl:min-h-[min(40vw,32rem)] xl:min-w-[min(30vw,24rem)]"
+      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:translate-y-[40px] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
@@ -218,27 +218,27 @@ onMounted(() => {
 
     <!-- Text -->
     <div
-      class="relative z-10 w-full px-4 pb-16 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-24"
+      class="relative z-10 w-full px-4 pb-16 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
     >
       <ProductHeroBadge text="ENTERPRISE" />
 
       <h1
-        class="text-primary-comfy-canvas mt-8 text-4xl/tight font-light whitespace-pre-line md:text-5xl/tight lg:max-w-2xl lg:text-6xl/tight"
+        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('enterprise.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-8 max-w-md text-sm lg:mt-10 lg:text-base"
+        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
       >
         {{ t('enterprise.hero.subtitle', locale) }}
       </p>
 
-      <div class="mt-10">
+      <div class="mt-8">
         <BrandButton
           :href="routes.contact"
           size="lg"
-          class="text-center lg:min-w-60"
+          class="text-center lg:min-w-60 lg:p-4"
         >
           {{ t('enterprise.hero.contactSales', locale) }}
         </BrandButton>
