@@ -82,7 +82,8 @@ export const useCanvasScheduler = createSharedComposable(
     watch(
       () => canvasStore.linearMode,
       (isLinear, wasLinear) => {
-        if (wasLinear && !isLinear && queue.length > 0) {
+        const canvasBecameVisible = wasLinear && !isLinear
+        if (canvasBecameVisible && queue.length > 0) {
           requestFlush()
         }
       }
