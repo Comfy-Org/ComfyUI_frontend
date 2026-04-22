@@ -271,9 +271,7 @@ test.describe('Load3D', () => {
       await expect(load3d.recordingButton).toBeVisible()
       await expect(load3d.exportRecordingButton).toBeVisible()
       await expect(load3d.clearRecordingButton).toBeVisible()
-      await expect(
-        load3d.node.locator('.mt-1.text-center.text-xs.text-base-foreground')
-      ).toHaveText('00:01')
+      await expect(load3d.recordingDuration).toHaveText('00:01')
     })
 
     await test.step('Clear recording removes export and clear controls', async () => {

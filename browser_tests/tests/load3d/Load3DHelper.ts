@@ -30,6 +30,10 @@ export class Load3DHelper {
     return this.node.getByRole('button', { name: /clear recording/i })
   }
 
+  get recordingDuration(): Locator {
+    return this.node.getByTestId(TestIds.load3d.recordingDuration)
+  }
+
   get gridToggleButton(): Locator {
     return this.node.getByRole('button', { name: /show grid/i })
   }
