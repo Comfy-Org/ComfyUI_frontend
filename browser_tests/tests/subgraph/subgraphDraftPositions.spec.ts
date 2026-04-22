@@ -42,7 +42,7 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
-      await expect(
+      expect(
         positionsBefore.length,
         'Expected nodes before reload'
       ).toBeGreaterThan(0)
