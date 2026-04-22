@@ -184,8 +184,6 @@ export class ComfyPage {
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
 
-  protected teardownCallbacks: (() => Promise<unknown>)[] = []
-
   /** Test user ID for the current context */
   get id() {
     return this.userIds[comfyPageFixture.info().parallelIndex]
@@ -416,20 +414,27 @@ export class ComfyPage {
     }, focusMode)
     await this.nextFrame()
   }
+}
+
+class ComfyFiles {
+  protected teardownCallbacks: (() => Promise<unknown>)[] = []
+
+  constructor(protected readonly comfyPage: ComfyPage) {}
 
   async teardown() {
     await Promise.all(this.teardownCallbacks.map((cb) => cb()))
   }
-  onTeardown(cb: () => Promise<unknown>) {
-    this.teardownCallbacks.push(cb)
-  }
-  deleteFileAfterTest(file: {
+
+  deleteAfterTest(file: {
     filename: string
     subfolder?: string
     type?: string
   }) {
-    const url = `${this.url}/api/devtools/view?${new URLSearchParams(file)}`
-    this.onTeardown(() => this.request.delete(url))
+    this.teardownCallbacks.push(() =>
+      this.comfyPage.request.delete(
+        `${this.comfyPage.url}/api/devtools/view?${new URLSearchParams(file)}`
+      )
+    )
   }
 }
 
@@ -440,6 +445,7 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
+  comfyFiles: ComfyFiles
 }>({
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -513,12 +519,15 @@ export const comfyPageFixture = base.extend<{
     await use(comfyPage)
 
     if (needsPerf) await comfyPage.perf.dispose()
-
-    await comfyPage.teardown()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
     await use(comfyMouse)
+  },
+  comfyFiles: async ({ comfyPage }, use) => {
+    const comfyFiles = new ComfyFiles(comfyPage)
+    await use(comfyFiles)
+    await comfyFiles.teardown()
   }
 })
 

@@ -4,15 +4,13 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test('Audio Widget', async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+test('@vue-nodes Audio Widget', async ({ comfyPage, comfyFiles }) => {
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
-  await comfyPage.vueNodes.waitForNodes()
 
   const loadAudioNode = comfyPage.vueNodes.getNodeByTitle('Load Audio')
   const audioPreview = new AudioPreview(loadAudioNode)
 
-  await test.step('Can add node', async () => {
+  await test.step('Add node', async () => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
 
@@ -24,14 +22,14 @@ test('Audio Widget', async ({ comfyPage }) => {
 
   const filename = `audio-${Date.now()}.wav`
 
-  await test.step('Can upload an audio file', async () => {
+  await test.step('Upload an audio file', async () => {
     const file = { name: filename, buffer: getWav(), mimeType: 'audio/x-wav' }
     await audioPreview.upload.setInputFiles(file)
-    comfyPage.deleteFileAfterTest({ filename, type: 'input' })
+    comfyFiles.deleteAfterTest({ filename, type: 'input' })
     await expect(loadAudioNode).toContainText(filename)
   })
 
-  await test.step('Previews audio files', async () => {
+  await test.step('Preview audio file', async () => {
     await expect(loadAudioNode).toContainText('0:00 / 0:20')
 
     expect(await audioPreview.isPlaying()).toBe(false)
@@ -50,7 +48,7 @@ test('Audio Widget', async ({ comfyPage }) => {
     await expect(volumeIcon).not.toContainClass('icon-[lucide--volume-x]')
   })
 
-  await test.step('Can redownload uploaded file', async () => {
+  await test.step('Redownload uploaded file', async () => {
     const downloadPromise = comfyPage.page.waitForEvent('download')
     await audioPreview.download.click()
     const download = await downloadPromise

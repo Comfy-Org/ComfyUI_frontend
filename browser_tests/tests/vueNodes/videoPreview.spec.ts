@@ -5,18 +5,16 @@ import {
 import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test('Load Video', async ({ comfyPage }) => {
-  const file1 = 'workflow.mp4'
-  const file2 = 'workflow.webm'
+const file1 = 'workflow.mp4' as const
+const file2 = 'workflow.webm' as const
 
-  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+test('@vue-nodes Load Video', async ({ comfyPage, comfyFiles }) => {
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
-  await comfyPage.vueNodes.waitForNodes()
 
   const loadVideoNode = comfyPage.vueNodes.getNodeByTitle('Load Video')
   const loadVideo = new VideoPreview(loadVideoNode)
 
-  await test.step('Can add node', async () => {
+  await test.step('Add node', async () => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
 
@@ -27,22 +25,22 @@ test('Load Video', async ({ comfyPage }) => {
     await expect(loadVideoNode).toBeVisible()
   })
 
-  await test.step('Can upload a video file', async () => {
+  await test.step('Upload a video file', async () => {
     await loadVideo.upload.setInputFiles(assetPath(`workflowInMedia/${file1}`))
-    comfyPage.deleteFileAfterTest({ filename: file1, type: 'input' })
+    comfyFiles.deleteAfterTest({ filename: file1, type: 'input' })
     await expect(loadVideoNode).toContainText(file1)
     await expect(loadVideo.video).toBeVisible()
   })
 
-  await test.step('Can update displayed video', async () => {
+  await test.step('Update displayed video', async () => {
     const initialSrc = await loadVideo.videoSrc()
     await loadVideo.upload.setInputFiles(assetPath(`workflowInMedia/${file2}`))
-    comfyPage.deleteFileAfterTest({ filename: file2, type: 'input' })
+    comfyFiles.deleteAfterTest({ filename: file2, type: 'input' })
     await expect(loadVideoNode).toContainText(file2)
     await expect.poll(() => loadVideo.videoSrc()).not.toEqual(initialSrc)
   })
 
-  await test.step('Can display multiple video', async () => {
+  await test.step('Display multiple videmus', async () => {
     await expect(loadVideo.navigationDots).toBeHidden()
 
     //forcibly display multiple video files at once
