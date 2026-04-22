@@ -39,7 +39,11 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
     const menu = comfyPage.page.getByRole('menu')
     await expect(menu).toBeVisible()
 
-    await expect(menu.getByRole('menuitem').first()).toBeVisible()
+    const items = menu.getByRole('menuitem')
+    await expect(items).toHaveCount(3)
+    await expect(items.nth(0)).toHaveText('Run')
+    await expect(items.nth(1)).toHaveText('Run (On Change)')
+    await expect(items.nth(2)).toHaveText('Run (Instant)')
   })
 
   test('Queue mode menu closes after selecting a mode', async ({
