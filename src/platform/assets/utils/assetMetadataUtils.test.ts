@@ -5,6 +5,7 @@ import {
   getAssetAdditionalTags,
   getAssetBaseModel,
   getAssetBaseModels,
+  getAssetCardTitle,
   getAssetDescription,
   getAssetDisplayFilename,
   getAssetDisplayName,
@@ -339,6 +340,47 @@ describe('assetMetadataUtils', () => {
 
     it('falls back to asset.name when neither filename metadata nor display_name exist', () => {
       expect(getAssetDisplayFilename(mockAsset)).toBe(mockAsset.name)
+    })
+  })
+
+  describe('getAssetCardTitle', () => {
+    it('returns user_metadata.name when it differs from asset.name', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'lora_v1.safetensors',
+        user_metadata: { name: 'My Favorite LoRA' },
+        metadata: { filename: 'lora_v1.safetensors' }
+      }
+      expect(getAssetCardTitle(asset)).toBe('My Favorite LoRA')
+    })
+
+    it('returns metadata.name when user_metadata.name is absent and it differs from asset.name', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'model_file.safetensors',
+        metadata: { name: 'Curated Model' }
+      }
+      expect(getAssetCardTitle(asset)).toBe('Curated Model')
+    })
+
+    it('falls through to the filename helper when curated name equals asset.name (hash case)', () => {
+      const HASH = 'blake3:abc'
+      const asset = {
+        ...mockAsset,
+        name: HASH,
+        user_metadata: { name: HASH },
+        metadata: { filename: 'sunset.png' }
+      }
+      expect(getAssetCardTitle(asset)).toBe('sunset.png')
+    })
+
+    it('falls through to display_name when neither curated name nor filename metadata exist', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'hash.png',
+        display_name: 'pretty.png'
+      }
+      expect(getAssetCardTitle(asset)).toBe('pretty.png')
     })
   })
 })

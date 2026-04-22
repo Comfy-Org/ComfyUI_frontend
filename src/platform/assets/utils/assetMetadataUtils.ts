@@ -191,3 +191,16 @@ export function getAssetDisplayFilename(asset: AssetItem): string {
     getStringProperty(asset, 'filename') ?? asset.display_name ?? asset.name
   )
 }
+
+/**
+ * Gets the title to render on an asset browser card / delete confirmation.
+ * Prefers a user-curated name (user_metadata.name / metadata.name) when it
+ * actually differs from asset.name, so a user-renamed model keeps its
+ * display name. Falls through to {@link getAssetDisplayFilename} when the
+ * curated name is absent or equal to asset.name (Cloud hash case).
+ */
+export function getAssetCardTitle(asset: AssetItem): string {
+  const curatedName = getStringProperty(asset, 'name')
+  if (curatedName && curatedName !== asset.name) return curatedName
+  return getAssetDisplayFilename(asset)
+}
