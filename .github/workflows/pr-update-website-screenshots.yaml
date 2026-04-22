@@ -1,0 +1,83 @@
+name: 'PR: Update Website Screenshots'
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      ( github.event_name == 'pull_request' && github.event.label.name == 'Update Website Screenshots' ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        ) &&
+        startsWith(github.event.comment.body, '/update-website-screenshots') )
+    steps:
+      - name: Get PR info
+        id: pr-info
+        run: |
+          echo "pr-number=${{ github.event.number || github.event.issue.number }}" >> $GITHUB_OUTPUT
+          echo "branch=$(gh pr view ${{ github.event.number || github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pr-info.outputs.branch }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @comfyorg/website exec playwright install --with-deps chromium
+
+      - name: Build website
+        run: pnpm --filter @comfyorg/website build
+
+      - name: Update screenshots
+        run: pnpm --filter @comfyorg/website test:visual:update
+        continue-on-error: true
+
+      - name: Commit updated screenshots
+        id: commit
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+          if [ -z "$(git status --porcelain=v1 --untracked-files=all -- apps/website/e2e/)" ]; then
+            echo "No screenshot changes to commit"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+          git add apps/website/e2e/
+          git commit -m "[automated] Update website screenshot expectations"
+          git push origin ${{ steps.pr-info.outputs.branch }}
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-screenshot-update-report
+          path: apps/website/playwright-report/
+          retention-days: 14
+
+      - name: Remove label
+        if: always() && github.event_name == 'pull_request'
+        run: gh pr edit ${{ steps.pr-info.outputs.pr-number }} --remove-label "Update Website Screenshots"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

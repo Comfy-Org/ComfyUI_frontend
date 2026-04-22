@@ -1,0 +1,56 @@
+name: 'CI: Website E2E'
+
+on:
+  push:
+    branches: [main, website/*]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  website-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @comfyorg/website exec playwright install --with-deps chromium
+
+      - name: Build website
+        run: pnpm --filter @comfyorg/website build
+
+      - name: Run Playwright tests
+        run: pnpm --filter @comfyorg/website test:e2e
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-playwright-report
+          path: apps/website/playwright-report/
+          retention-days: 14
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-test-results
+          path: apps/website/test-results/
+          retention-days: 14
