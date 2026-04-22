@@ -77,7 +77,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           BRANCH=$(echo "${{ github.head_ref || github.ref_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
-          npx wrangler@^4.0.0 pages project create comfyui-website-e2e --production-branch=main 2>/dev/null || true
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
             OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
