@@ -66,7 +66,7 @@ const cards = excludeProduct
     <div
       :class="
         cn(
-          'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-2',
+          'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-0 lg:p-2',
           cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )
       "

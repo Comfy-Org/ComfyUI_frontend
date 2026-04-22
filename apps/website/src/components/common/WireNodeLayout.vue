@@ -205,7 +205,10 @@ onMounted(() => {
   </div>
 
   <!-- Mobile layout -->
-  <div ref="mobileContainerRef" class="relative mx-auto max-w-6xl lg:hidden">
+  <div
+    ref="mobileContainerRef"
+    class="relative mx-auto max-w-6xl overflow-x-clip lg:hidden"
+  >
     <svg
       class="pointer-events-none absolute inset-0 z-10 size-full overflow-visible"
     >
