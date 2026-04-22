@@ -122,7 +122,7 @@ onUnmounted(() => {
     >
       <!-- Close button -->
       <button
-        aria-label="Close"
+        :aria-label="t('gallery.detail.close', locale)"
         class="border-primary-comfy-yellow bg-primary-comfy-ink hover:bg-primary-comfy-yellow group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 transition-colors lg:top-8 lg:right-26"
         @click="emit('close')"
       >

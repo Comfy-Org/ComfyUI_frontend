@@ -93,6 +93,7 @@ onUnmounted(() => {
     ref="menuRef"
     role="dialog"
     aria-modal="true"
+    :inert="!open"
     :aria-label="t('nav.menu', locale)"
     class="bg-primary-comfy-ink fixed inset-0 z-40 flex flex-col px-6 pt-24 pb-8 lg:hidden"
   >

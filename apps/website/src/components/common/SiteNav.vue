@@ -144,11 +144,7 @@ whenever(isDesktop, () => {
 onMounted(() => {
   currentPath.value = window.location.pathname
   useEventListener(document, 'keydown', onKeydown)
-  useEventListener(
-    document,
-    'astro:after-swap' as keyof DocumentEventMap,
-    onNavigate
-  )
+  useEventListener(document, 'astro:after-swap', onNavigate)
 })
 </script>
 

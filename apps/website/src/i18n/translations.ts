@@ -1204,6 +1204,7 @@ const translations = {
   'gallery.card.and': { en: 'and', 'zh-CN': '和' },
   'gallery.card.teamUsing': { en: 'team using', 'zh-CN': '团队使用' },
   'gallery.card.using': { en: 'using', 'zh-CN': '使用' },
+  'gallery.detail.close': { en: 'Close', 'zh-CN': '关闭' },
   'gallery.detail.visitHub': {
     en: 'VISIT COMMUNITY HUB',
     'zh-CN': '访问社区中心'

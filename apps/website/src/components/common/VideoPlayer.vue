@@ -227,7 +227,7 @@ function toggleFullscreen() {
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
-        @click="playing = !playing"
+        @toggle="playing = !playing"
       />
     </div>
 
@@ -248,7 +248,7 @@ function toggleFullscreen() {
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
-        @click="playing = !playing"
+        @toggle="playing = !playing"
       />
 
       <!-- Progress scrubber -->
@@ -283,10 +283,10 @@ function toggleFullscreen() {
         @click="toggleFullscreen"
       >
         <svg
-          class="size-3.5 lg:size-4"
+          class="text-primary-comfy-ink size-3.5 lg:size-4"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#211927"
+          stroke="currentColor"
           stroke-width="2.5"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -329,10 +329,10 @@ function toggleFullscreen() {
         <!-- Muted icon -->
         <svg
           v-if="muted"
-          class="size-3.5 lg:size-4"
+          class="text-primary-comfy-ink size-3.5 lg:size-4"
           viewBox="0 0 24 24"
-          fill="#211927"
-          stroke="#211927"
+          fill="currentColor"
+          stroke="currentColor"
           stroke-width="1.5"
           aria-hidden="true"
         >
@@ -347,10 +347,10 @@ function toggleFullscreen() {
         <!-- Unmuted icon -->
         <svg
           v-else
-          class="size-3.5 lg:size-4"
+          class="text-primary-comfy-ink size-3.5 lg:size-4"
           viewBox="0 0 24 24"
-          fill="#211927"
-          stroke="#211927"
+          fill="currentColor"
+          stroke="currentColor"
           stroke-width="1.5"
           aria-hidden="true"
         >

@@ -6,7 +6,7 @@ const { playing = false, size = 'md' } = defineProps<{
   size?: 'sm' | 'md'
 }>()
 
-defineEmits<{ click: [] }>()
+defineEmits<{ toggle: [] }>()
 </script>
 
 <template>
@@ -18,13 +18,18 @@ defineEmits<{ click: [] }>()
         size === 'sm' ? 'size-8 lg:size-10' : 'size-12'
       )
     "
-    @click="$emit('click')"
+    @click="$emit('toggle')"
   >
     <svg
       v-if="playing"
-      :class="cn(size === 'sm' ? 'size-3 lg:size-4' : 'size-4')"
+      :class="
+        cn(
+          'text-primary-comfy-ink',
+          size === 'sm' ? 'size-3 lg:size-4' : 'size-4'
+        )
+      "
       viewBox="0 0 24 24"
-      fill="#211927"
+      fill="currentColor"
       aria-hidden="true"
     >
       <rect x="6" y="4" width="4" height="16" />
@@ -32,9 +37,14 @@ defineEmits<{ click: [] }>()
     </svg>
     <svg
       v-else
-      :class="cn('ml-0.5', size === 'sm' ? 'size-3 lg:size-4' : 'size-4')"
+      :class="
+        cn(
+          'text-primary-comfy-ink ml-0.5',
+          size === 'sm' ? 'size-3 lg:size-4' : 'size-4'
+        )
+      "
       viewBox="0 0 24 24"
-      fill="#211927"
+      fill="currentColor"
       aria-hidden="true"
     >
       <path d="M8 5v14l11-7z" />
