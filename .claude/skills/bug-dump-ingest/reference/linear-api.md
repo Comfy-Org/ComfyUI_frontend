@@ -141,13 +141,13 @@ Record the bot reply's `ts` alongside the captured URL and identifier in the ses
 
 ## Failure modes & handling
 
-| Symptom                                                    | Likely cause                                   | Handling                                                                                                                                     |
-| ---------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| No bot reply within 10s                                    | Linear app not in channel, or bot outage       | Halt the batch, surface to human, do NOT fabricate a Linear URL. Remaining approved candidates stay queued for re-run.                       |
-| Bot replies with "no team matched"                         | Team name typo or Linear workspace drift       | Re-send with the exact team name from the Linear workspace (default: `Frontend Engineering`). If it still fails, ask the human to verify.    |
-| Bot replies with "couldn't parse labels"                   | One of the labels has syntax the bot rejects   | Drop the offending label, re-send; log the partial-label failure so the human can patch after.                                               |
-| Bot creates the issue but reply lacks the URL              | Rare bot format change                         | Re-fetch the thread after ~5s; if URL still absent, open Linear search via `@Linear search <title>` and recover the identifier + URL.        |
-| Multiple `@Linear` replies match (duplicate card)          | The skill retried without polling first        | Keep the earliest card's URL; log the extras. Never re-issue `@Linear create` for the same candidate without confirming the first card failed. |
+| Symptom                                           | Likely cause                                 | Handling                                                                                                                                       |
+| ------------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| No bot reply within 10s                           | Linear app not in channel, or bot outage     | Halt the batch, surface to human, do NOT fabricate a Linear URL. Remaining approved candidates stay queued for re-run.                         |
+| Bot replies with "no team matched"                | Team name typo or Linear workspace drift     | Re-send with the exact team name from the Linear workspace (default: `Frontend Engineering`). If it still fails, ask the human to verify.      |
+| Bot replies with "couldn't parse labels"          | One of the labels has syntax the bot rejects | Drop the offending label, re-send; log the partial-label failure so the human can patch after.                                                 |
+| Bot creates the issue but reply lacks the URL     | Rare bot format change                       | Re-fetch the thread after ~5s; if URL still absent, open Linear search via `@Linear search <title>` and recover the identifier + URL.          |
+| Multiple `@Linear` replies match (duplicate card) | The skill retried without polling first      | Keep the earliest card's URL; log the extras. Never re-issue `@Linear create` for the same candidate without confirming the first card failed. |
 
 Never retry `@Linear create` without first running `@Linear search` for the same title keywords — a duplicate card is worse than an initial failure because the human has to close one of them manually.
 
