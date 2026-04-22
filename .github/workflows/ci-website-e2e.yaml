@@ -38,7 +38,13 @@ jobs:
         with:
           script: |
             const marker = '<!-- WEBSITE_E2E_STATUS -->'
-            const body = `${marker}\n## 🌐 Website E2E: ⏳ Running...`
+            const body = [
+              marker,
+              '## 🌐 Website E2E',
+              '',
+              '> [!NOTE]',
+              `> Tests are running… [View workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+            ].join('\n')
             const { data: comments } = await github.rest.issues.listComments({
               ...context.repo,
               issue_number: context.issue.number
@@ -134,28 +140,54 @@ jobs:
         with:
           script: |
             const passed = '${{ steps.tests.outcome }}' === 'success'
-            const status = passed ? '✅ Passed' : '❌ Failed'
             const reportUrl = '${{ steps.deploy.outputs.url }}'
-            const link = reportUrl ? ` — [View Report](${reportUrl})` : ''
-            const summary = `## 🌐 Website E2E: ${status}${link}`
-
             const screenshotFailures = parseInt('${{ steps.failures.outputs.screenshot }}') || 0
             const otherFailures = parseInt('${{ steps.failures.outputs.other }}') || 0
-            let details = ''
-            if (screenshotFailures > 0) {
-              const s = screenshotFailures === 1 ? '' : 's'
-              details += `\n\n- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`
-            }
-            if (otherFailures > 0) {
-              const s = otherFailures === 1 ? '' : 's'
-              details += `\n\n**Warning:** ${otherFailures} non-screenshot failure${s} — these require manual review`
+
+            const lines = ['## 🌐 Website E2E', '']
+
+            if (passed) {
+              lines.push('> [!TIP]', '> All tests passed.')
+            } else {
+              lines.push('> [!CAUTION]', '> Some tests failed.')
             }
 
+            // Results table
+            const rows = [
+              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
+            ]
+            if (!passed) {
+              rows.push(
+                ['Screenshot diffs', String(screenshotFailures)],
+                ['Other failures', String(otherFailures)]
+              )
+            }
+            lines.push(
+              '',
+              '| | |',
+              '|---|---|',
+              ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
+            )
+
+            if (screenshotFailures > 0) {
+              const s = screenshotFailures === 1 ? '' : 's'
+              lines.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
+            }
+            if (otherFailures > 0) {
+              lines.push(
+                '',
+                '> [!WARNING]',
+                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
+              )
+            }
+
+            const summary = lines.join('\n')
             await core.summary.addRaw(summary).write()
 
             if (context.eventName === 'pull_request' && !context.payload.pull_request.head.repo.fork) {
               const marker = '<!-- WEBSITE_E2E_STATUS -->'
-              const body = `${marker}\n${summary}${details}`
+              const body = `${marker}\n${summary}`
               const { data: comments } = await github.rest.issues.listComments({
                 ...context.repo,
                 issue_number: context.issue.number
