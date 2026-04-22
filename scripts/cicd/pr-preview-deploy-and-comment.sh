@@ -45,14 +45,12 @@ fi
 # Configuration
 COMMENT_MARKER="<!-- COMFYUI_PREVIEW_DEPLOY -->"
 
-# Install wrangler if not available (output to stderr for debugging)
-if ! command -v wrangler > /dev/null 2>&1; then
-    echo "Installing wrangler v4..." >&2
-    npm install -g wrangler@^4.0.0 >&2 || {
-        echo "Failed to install wrangler" >&2
-        echo "failed"
-        exit 1
-    }
+# Resolve wrangler invocation: prefer a locally-available binary, otherwise
+# run via pnpm dlx to honour the repo's package-manager policy.
+if command -v wrangler > /dev/null 2>&1; then
+    WRANGLER="wrangler"
+else
+    WRANGLER="pnpm dlx wrangler@^4.0.0"
 fi
 
 # Deploy frontend preview, WARN: ensure inputs are sanitized before calling this function
@@ -71,7 +69,7 @@ deploy_preview() {
     while [ $i -le 3 ]; do
         echo "Deployment attempt $i of 3..." >&2
         # Branch is already sanitized, use it directly
-        if output=$(wrangler pages deploy "$dir" \
+        if output=$($WRANGLER pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
 
