@@ -203,7 +203,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.page.keyboard.press('Escape')
 
       // Verify the filter selection panel is hidden
-      await expect(panel.header).not.toBeVisible()
+      await expect(panel.header).toBeHidden()
 
       // Verify the node search dialog is still visible
       await expect(comfyPage.searchBox.input).toBeVisible()
@@ -303,8 +303,8 @@ test.describe('Release context menu', { tag: '@node' }, () => {
         'CLIP | CLIP'
       )
       await comfyPage.page.mouse.move(10, 10)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'link-release-context-menu.png'
       )
     }

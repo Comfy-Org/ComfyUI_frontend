@@ -27,9 +27,7 @@ test.describe('Workflow sidebar - search', () => {
     await searchInput.fill('alpha')
 
     await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
-    await expect(
-      findWorkflow(comfyPage.page, 'beta-workflow')
-    ).not.toBeVisible()
+    await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeHidden()
   })
 
   test('Clearing search restores all workflows', async ({ comfyPage }) => {
@@ -38,9 +36,7 @@ test.describe('Workflow sidebar - search', () => {
 
     const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
     await searchInput.fill('alpha')
-    await expect(
-      findWorkflow(comfyPage.page, 'beta-workflow')
-    ).not.toBeVisible()
+    await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeHidden()
 
     await searchInput.fill('')
 
@@ -55,11 +51,7 @@ test.describe('Workflow sidebar - search', () => {
     const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
     await searchInput.fill('nonexistent_xyz')
 
-    await expect(
-      findWorkflow(comfyPage.page, 'alpha-workflow')
-    ).not.toBeVisible()
-    await expect(
-      findWorkflow(comfyPage.page, 'beta-workflow')
-    ).not.toBeVisible()
+    await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeHidden()
+    await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeHidden()
   })
 })

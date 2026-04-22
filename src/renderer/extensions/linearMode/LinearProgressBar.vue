@@ -3,8 +3,6 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
-defineOptions({ inheritAttrs: false })
-
 const {
   class: className,
   overallOpacity = 1,
@@ -32,11 +30,13 @@ const executionStore = useExecutionStore()
     "
   >
     <div
+      data-testid="linear-progress-overall"
       class="absolute inset-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
       :class="cn(rounded && 'rounded-sm')"
       :style="{ width: `${totalPercent}%`, opacity: overallOpacity }"
     />
     <div
+      data-testid="linear-progress-node"
       class="absolute inset-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
       :class="cn(rounded && 'rounded-sm')"
       :style="{ width: `${currentNodePercent}%`, opacity: activeOpacity }"

@@ -32,7 +32,20 @@ async function dragByIndex(items: Locator, fromIndex: number, toIndex: number) {
 }
 
 export class BuilderSelectHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  /** All IoItem locators in the current step sidebar. */
+  public readonly inputItems: Locator
+  /** All IoItem title locators in the inputs step sidebar. */
+  public readonly inputItemTitles: Locator
+  /** All widget label locators in the preview/arrange sidebar. */
+  public readonly previewWidgetLabels: Locator
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.inputItems = this.page.getByTestId(TestIds.builder.ioItem)
+    this.inputItemTitles = this.page.getByTestId(TestIds.builder.ioItemTitle)
+    this.previewWidgetLabels = this.page.getByTestId(
+      TestIds.builder.widgetLabel
+    )
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -43,12 +56,9 @@ export class BuilderSelectHelper {
    * @param title The widget title shown in the IoItem.
    */
   getInputItemMenu(title: string): Locator {
-    return this.page
-      .getByTestId(TestIds.builder.ioItem)
+    return this.inputItems
       .filter({
-        has: this.page
-          .getByTestId(TestIds.builder.ioItemTitle)
-          .getByText(title, { exact: true })
+        has: this.inputItemTitles.getByText(title, { exact: true })
       })
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
@@ -141,6 +151,7 @@ export class BuilderSelectHelper {
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
       .getByLabel(widgetName, { exact: true })
+    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
     await widgetLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
@@ -150,29 +161,11 @@ export class BuilderSelectHelper {
    * Useful for asserting "Widget not visible" on disconnected inputs.
    */
   getInputItemSubtitle(title: string): Locator {
-    return this.page
-      .getByTestId(TestIds.builder.ioItem)
+    return this.inputItems
       .filter({
-        has: this.page
-          .getByTestId(TestIds.builder.ioItemTitle)
-          .getByText(title, { exact: true })
+        has: this.inputItemTitles.getByText(title, { exact: true })
       })
       .getByTestId(TestIds.builder.ioItemSubtitle)
-  }
-
-  /** All IoItem locators in the current step sidebar. */
-  get inputItems(): Locator {
-    return this.page.getByTestId(TestIds.builder.ioItem)
-  }
-
-  /** All IoItem title locators in the inputs step sidebar. */
-  get inputItemTitles(): Locator {
-    return this.page.getByTestId(TestIds.builder.ioItemTitle)
-  }
-
-  /** All widget label locators in the preview/arrange sidebar. */
-  get previewWidgetLabels(): Locator {
-    return this.page.getByTestId(TestIds.builder.widgetLabel)
   }
 
   /**
@@ -180,8 +173,7 @@ export class BuilderSelectHelper {
    * Items are identified by their 0-based position among visible IoItems.
    */
   async dragInputItem(fromIndex: number, toIndex: number) {
-    const items = this.page.getByTestId(TestIds.builder.ioItem)
-    await dragByIndex(items, fromIndex, toIndex)
+    await dragByIndex(this.inputItems, fromIndex, toIndex)
     await this.comfyPage.nextFrame()
   }
 
@@ -208,6 +200,7 @@ export class BuilderSelectHelper {
     const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
       String(nodeRef.id)
     )
+    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
     await nodeLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }

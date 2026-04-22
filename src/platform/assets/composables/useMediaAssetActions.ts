@@ -595,7 +595,7 @@ export function useMediaAssetActions() {
                 count: assetArray.length
               }),
           type: 'delete',
-          itemList: assetArray.map((asset) => asset.name),
+          itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
           onConfirm: async () => {
             // Show loading overlay for all assets being deleted
             assetArray.forEach((asset) =>

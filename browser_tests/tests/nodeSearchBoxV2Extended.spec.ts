@@ -39,7 +39,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
@@ -56,7 +56,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
     await comfyPage.canvasOps.doubleClick()
     await expect(searchBoxV2.input).toBeVisible()
@@ -104,9 +104,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         .click()
 
       // Verify filter chip appeared and results changed
-      const filterChip = searchBoxV2.dialog.locator(
-        '[data-testid="filter-chip"]'
-      )
+      const filterChip = searchBoxV2.dialog.getByTestId('filter-chip')
       await expect(filterChip).toBeVisible()
       await expect(searchBoxV2.results.first()).toBeVisible()
       await expect
@@ -117,7 +115,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await filterChip.getByTestId('chip-delete').click()
 
       // Filter chip should be removed
-      await expect(filterChip).not.toBeVisible()
+      await expect(filterChip).toBeHidden()
       await expect(searchBoxV2.results.first()).toBeVisible()
     })
   })

@@ -13,7 +13,6 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-      await comfyPage.nextFrame()
     })
 
     async function openMoreOptions(comfyPage: ComfyPage) {
@@ -35,21 +34,16 @@ test.describe(
       await comfyPage.nextFrame()
 
       await ksamplerNodes[0].click('title')
-      await comfyPage.nextFrame()
 
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible({
-        timeout: 5000
-      })
+      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      const moreOptionsBtn = comfyPage.page.locator(
-        '[data-testid="more-options-button"]'
-      )
-      await expect(moreOptionsBtn).toBeVisible({ timeout: 3000 })
+      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+      await expect(moreOptionsBtn).toBeVisible()
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
       const menu = comfyPage.page.locator('.p-contextmenu')
-      await expect(menu).toBeVisible({ timeout: 3000 })
+      await expect(menu).toBeVisible()
 
       // Wait for constrainMenuHeight (runs via requestAnimationFrame in onMenuShow)
       await comfyPage.nextFrame()
@@ -68,8 +62,7 @@ test.describe(
           () => rootList.evaluate((el) => el.scrollHeight > el.clientHeight),
           {
             message:
-              'Menu should overflow vertically so this test exercises the viewport clamp',
-            timeout: 3000
+              'Menu should overflow vertically so this test exercises the viewport clamp'
           }
         )
         .toBe(true)
@@ -97,9 +90,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // The node should be removed from the graph
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 3000 })
-        .toBe(0)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     })
   }
 )

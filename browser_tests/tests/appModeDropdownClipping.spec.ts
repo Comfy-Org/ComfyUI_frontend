@@ -75,9 +75,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     ]
     await comfyPage.appMode.enterAppModeWithInputs(inputs)
 
-    await expect(comfyPage.appMode.linearWidgets).toBeVisible({
-      timeout: 5000
-    })
+    await expect(comfyPage.appMode.linearWidgets).toBeVisible()
 
     // Scroll to bottom so the codec widget is at the clipping edge
     const widgetList = comfyPage.appMode.linearWidgets
@@ -90,7 +88,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     await codecSelect.click()
 
     const overlay = comfyPage.page.locator('.p-select-overlay').first()
-    await expect(overlay).toBeVisible({ timeout: 5000 })
+    await expect(overlay).toBeVisible()
 
     await expect
       .poll(() =>
@@ -123,9 +121,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     ]
     await comfyPage.appMode.enterAppModeWithInputs(inputs)
 
-    await expect(comfyPage.appMode.linearWidgets).toBeVisible({
-      timeout: 5000
-    })
+    await expect(comfyPage.appMode.linearWidgets).toBeVisible()
 
     // Scroll to bottom so the image widget is at the clipping edge
     const widgetList = comfyPage.appMode.linearWidgets
@@ -144,7 +140,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     // The unstyled PrimeVue Popover renders with role="dialog".
     // Locate the one containing the image grid (filter buttons like "All", "Inputs").
     const popover = comfyPage.appMode.imagePickerPopover
-    await expect(popover).toBeVisible({ timeout: 5000 })
+    await expect(popover).toBeVisible()
 
     await expect
       .poll(() =>

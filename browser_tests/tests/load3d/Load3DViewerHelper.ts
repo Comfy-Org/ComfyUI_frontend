@@ -25,6 +25,6 @@ export class Load3DViewerHelper {
   }
 
   async waitForClosed(): Promise<void> {
-    await expect(this.dialog).toBeHidden({ timeout: 5000 })
+    await expect(this.dialog).toBeHidden()
   }
 }

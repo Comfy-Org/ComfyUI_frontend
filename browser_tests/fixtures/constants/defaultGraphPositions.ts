@@ -10,6 +10,7 @@ export const DefaultGraphPositions = {
   textEncodeNode2: { x: 622, y: 400 },
   textEncodeNodeToggler: { x: 430, y: 171 },
   emptySpaceClick: { x: 35, y: 31 },
+  emptyCanvasClick: { x: 50, y: 500 },
 
   // Slot positions
   clipTextEncodeNode1InputSlot: { x: 427, y: 198 },
@@ -39,6 +40,7 @@ export const DefaultGraphPositions = {
   textEncodeNode2: Position
   textEncodeNodeToggler: Position
   emptySpaceClick: Position
+  emptyCanvasClick: Position
   clipTextEncodeNode1InputSlot: Position
   clipTextEncodeNode2InputSlot: Position
   clipTextEncodeNode2InputLinkPath: Position

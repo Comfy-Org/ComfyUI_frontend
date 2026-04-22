@@ -10,59 +10,70 @@
       ref="containerEl"
       class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
     >
-      <div v-if="isLoading" class="flex size-full items-center justify-center">
-        <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
-      </div>
-
       <div
-        v-else-if="!imageUrl"
+        v-if="!imageUrl"
         class="flex size-full flex-col items-center justify-center text-center"
+        data-testid="crop-empty-state"
       >
-        <i class="mb-2 icon-[lucide--image] size-12" />
+        <i
+          class="mb-2 icon-[lucide--image] size-12"
+          data-testid="crop-empty-icon"
+        />
         <p class="text-sm">{{ $t('imageCrop.noInputImage') }}</p>
       </div>
 
-      <img
-        v-else
-        ref="imageEl"
-        :src="imageUrl"
-        :alt="$t('imageCrop.cropPreviewAlt')"
-        draggable="false"
-        class="block size-full object-contain select-none"
-        @load="handleImageLoad"
-        @error="handleImageError"
-        @dragstart.prevent
-      />
+      <template v-else>
+        <img
+          ref="imageEl"
+          :src="imageUrl"
+          :alt="$t('imageCrop.cropPreviewAlt')"
+          draggable="false"
+          class="block size-full object-contain select-none"
+          @load="handleImageLoad"
+          @error="handleImageError"
+          @dragstart.prevent
+        />
 
-      <div
-        v-if="imageUrl && !isLoading"
-        :class="
-          cn(
-            'absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
-            isDisabled && 'pointer-events-none opacity-60'
-          )
-        "
-        :style="cropBoxStyle"
-        @pointerdown="handleDragStart"
-        @pointermove="handleDragMove"
-        @pointerup="handleDragEnd"
-      />
-
-      <template v-for="handle in resizeHandles" :key="handle.direction">
         <div
-          v-show="imageUrl && !isLoading"
+          v-if="isLoading"
+          aria-live="polite"
+          class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node-component-surface/90"
+        >
+          <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
+        </div>
+
+        <div
+          v-if="!isLoading"
           :class="
             cn(
-              'absolute',
-              handle.class,
+              'absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
               isDisabled && 'pointer-events-none opacity-60'
             )
           "
-          :style="handle.style"
-          @pointerdown="(e) => handleResizeStart(e, handle.direction)"
-          @pointermove="handleResizeMove"
-          @pointerup="handleResizeEnd"
+          :style="cropBoxStyle"
+          data-testid="crop-overlay"
+          @pointerdown="handleDragStart"
+          @pointermove="handleDragMove"
+          @pointerup="handleDragEnd"
         />
+
+        <template v-for="handle in resizeHandles" :key="handle.direction">
+          <div
+            v-show="!isLoading"
+            :data-testid="`crop-resize-${handle.direction}`"
+            :class="
+              cn(
+                'absolute',
+                handle.class,
+                isDisabled && 'pointer-events-none opacity-60'
+              )
+            "
+            :style="handle.style"
+            @pointerdown="(e) => handleResizeStart(e, handle.direction)"
+            @pointermove="handleResizeMove"
+            @pointerup="handleResizeEnd"
+          />
+        </template>
       </template>
     </div>
 

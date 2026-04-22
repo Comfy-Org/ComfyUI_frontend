@@ -11,7 +11,7 @@ test.describe('Properties panel - Open and close', () => {
   })
 
   test('should open via actionbar toggle button', async ({ comfyPage }) => {
-    await expect(panel.root).not.toBeVisible()
+    await expect(panel.root).toBeHidden()
     await comfyPage.actionbar.propertiesButton.click()
     await expect(panel.root).toBeVisible()
   })
@@ -20,13 +20,13 @@ test.describe('Properties panel - Open and close', () => {
     await comfyPage.actionbar.propertiesButton.click()
     await expect(panel.root).toBeVisible()
     await panel.closeButton.click()
-    await expect(panel.root).not.toBeVisible()
+    await expect(panel.root).toBeHidden()
   })
 
   test('should close via close button after opening', async ({ comfyPage }) => {
     await comfyPage.actionbar.propertiesButton.click()
     await expect(panel.root).toBeVisible()
     await panel.close()
-    await expect(panel.root).not.toBeVisible()
+    await expect(panel.root).toBeHidden()
   })
 })

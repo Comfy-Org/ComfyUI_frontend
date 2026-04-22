@@ -202,6 +202,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       'domNodes'
     ])
   })
+
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {

@@ -27,7 +27,7 @@ test.describe('Properties panel - Node selection', () => {
     })
 
     test('should not show Nodes tab for single node', async () => {
-      await expect(panel.getTab('Nodes')).not.toBeVisible()
+      await expect(panel.getTab('Nodes')).toBeHidden()
     })
 
     test('should display node widgets in Parameters tab', async () => {
@@ -65,7 +65,7 @@ test.describe('Properties panel - Node selection', () => {
         'KSampler',
         'CLIP Text Encode (Prompt)'
       ])
-      await expect(panel.getTab('Info')).not.toBeVisible()
+      await expect(panel.getTab('Info')).toBeHidden()
     })
   })
 

@@ -1,0 +1,41 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import DetailHeroSection from '../../../components/customers/DetailHeroSection.vue'
+import ContentSection from '../../../components/common/ContentSection.vue'
+import WhatsNextSection from '../../../components/customers/WhatsNextSection.vue'
+import { customerStories, getNextStory, getStoryBySlug } from '../../../config/customerStories'
+import { t } from '../../../i18n/translations'
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return customerStories.map((story) => ({
+    params: { slug: story.slug }
+  }))
+}
+
+const { slug } = Astro.params
+const story = getStoryBySlug(slug as string)!
+const title = t(story.title, 'zh-CN')
+const nextStory = getNextStory(slug as string)
+---
+
+<BaseLayout title={`${title} — Comfy`}>
+  <DetailHeroSection
+    label={t(story.category, 'zh-CN')}
+    title={title}
+    description={t(story.body, 'zh-CN')}
+    image={story.detailImage}
+  />
+  <ContentSection
+    prefix={story.detailPrefix}
+    locale="zh-CN"
+    readMoreHref={story.readMoreHref}
+    client:load
+  />
+  <WhatsNextSection
+    title={t(nextStory.title, 'zh-CN')}
+    image={nextStory.image}
+    href={`/zh-CN/customers/${nextStory.slug}`}
+    locale="zh-CN"
+  />
+</BaseLayout>

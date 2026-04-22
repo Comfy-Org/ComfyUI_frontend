@@ -40,13 +40,14 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).not.toBeVisible()
+    ).toBeHidden()
 
     // If the node's multiline text widget is visible, then it was loaded successfully
     await expect(comfyPage.page.locator('.comfy-multiline-input')).toHaveCount(
       1
     )
   })
+
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/old_workflow_converted_input')
     const node = await comfyPage.nodeOps.getNodeRefById('1')
@@ -62,6 +63,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     expect(vaeInput!.link).toBeNull()
     expect(convertedInput!.link).not.toBeNull()
   })
+
   test('Renamed converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
     const node = await comfyPage.nodeOps.getNodeRefById('3')
@@ -69,10 +71,12 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     const renamedInput = inputs.find((w) => w.name === 'breadth')
     expect(renamedInput).toBeUndefined()
   })
+
   test('slider', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/simple_slider')
     await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
   })
+
   test('unknown converted widget', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow(
       'missing/missing_nodes_converted_widget'
@@ -81,6 +85,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
       'missing_nodes_converted_widget.png'
     )
   })
+
   test('dynamically added input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/dynamically_added_input')
     await expect(comfyPage.canvas).toHaveScreenshot(

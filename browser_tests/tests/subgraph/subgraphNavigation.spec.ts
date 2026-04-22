@@ -33,15 +33,10 @@ function hasVisibleNodeInViewport() {
 
 test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
   test.describe('Subgraph Navigation and UI', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Breadcrumb updates when subgraph node title is changed', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
-      await comfyPage.nextFrame()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('10')
       const nodePos = await subgraphNode.getPosition()
@@ -53,8 +48,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await expect(breadcrumb).toBeVisible({ timeout: 20_000 })
       const initialBreadcrumbText = (await breadcrumb.textContent()) ?? ''
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       await comfyPage.canvas.dblclick({
         position: {
@@ -68,8 +62,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.keyboard.press('Control+a')
       await comfyPage.page.keyboard.type(UPDATED_SUBGRAPH_TITLE)
-      await comfyPage.page.keyboard.press('Enter')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Enter')
 
       await subgraphNode.navigateIntoSubgraph()
       await expect(breadcrumb).toBeVisible()
@@ -82,7 +75,6 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
       const backButton = breadcrumb.locator('.back-button')
@@ -94,13 +86,11 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await expect(backButton).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.nextFrame()
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
       await expect(backButton).toHaveCount(0)
 
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
       await expect(backButton).toHaveCount(0)
@@ -108,13 +98,8 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
   })
 
   test.describe('Navigation Hotkeys', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Navigation hotkey can be customized', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       await comfyPage.settings.setSetting('Comfy.Keybinding.NewBindings', [
         {
@@ -143,7 +128,6 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.page.reload()
       await comfyPage.setup()
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -153,8 +137,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
       await expect
         .poll(() => comfyPage.subgraph.isInSubgraph(), {
           message:
@@ -162,8 +145,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         })
         .toBe(true)
 
-      await comfyPage.page.keyboard.press('Alt+q')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+q')
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
 
@@ -171,7 +153,6 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -191,8 +172,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         comfyPage.page.getByTestId(TestIds.dialogs.settings)
       ).toBeVisible()
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.settings)
@@ -200,8 +180,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
   })
@@ -213,15 +192,12 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.navigateIntoSubgraph()
 
       await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
-          timeout: 5_000
-        })
+        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
         .toBe(true)
     })
 
@@ -237,9 +213,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.vueNodes.enterSubgraph('11')
 
       await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
-          timeout: 5_000
-        })
+        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
         .toBe(true)
     })
 
@@ -263,13 +237,11 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const ds = window.app!.canvas.ds
-              return { scale: ds.scale, offset: [...ds.offset] }
-            }),
-          { timeout: 5_000 }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const ds = window.app!.canvas.ds
+            return { scale: ds.scale, offset: [...ds.offset] }
+          })
         )
         .toEqual({
           scale: expect.closeTo(rootViewport.scale, 2),
@@ -286,7 +258,6 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
 
@@ -310,16 +281,13 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate((nodeId) => {
-              return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-            }, subgraphNodeId),
-          { timeout: 2_000 }
+        .poll(() =>
+          comfyPage.page.evaluate((nodeId) => {
+            return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
+          }, subgraphNodeId)
         )
         .toBeUndefined()
     })
@@ -328,7 +296,6 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
 
@@ -344,26 +311,22 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.nextFrame()
 
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const graph = window.app!.canvas.graph!
-              const subgraphNode = graph.nodes.find(
-                (node) =>
-                  typeof node.isSubgraphNode === 'function' &&
-                  node.isSubgraphNode()
-              )
-              if (!subgraphNode) return { exists: false, progress: null }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            const subgraphNode = graph.nodes.find(
+              (node) =>
+                typeof node.isSubgraphNode === 'function' &&
+                node.isSubgraphNode()
+            )
+            if (!subgraphNode) return { exists: false, progress: null }
 
-              return { exists: true, progress: subgraphNode.progress }
-            }),
-          { timeout: 5_000 }
+            return { exists: true, progress: subgraphNode.progress }
+          })
         )
         .toEqual({ exists: true, progress: undefined })
     })

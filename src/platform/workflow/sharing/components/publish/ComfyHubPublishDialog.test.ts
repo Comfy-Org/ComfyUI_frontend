@@ -11,8 +11,10 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
+const mockToastAdd = vi.hoisted(() => vi.fn())
+
 vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
+  useToast: () => ({ add: mockToastAdd })
 }))
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
@@ -218,6 +220,9 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
     expect(onClose).toHaveBeenCalledOnce()
   })
 

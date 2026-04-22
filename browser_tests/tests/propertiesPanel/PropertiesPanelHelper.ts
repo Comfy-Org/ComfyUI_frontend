@@ -76,7 +76,7 @@ export class PropertiesPanelHelper {
   async close(): Promise<void> {
     if (await this.root.isVisible()) {
       await this.closeButton.click()
-      await expect(this.root).not.toBeVisible()
+      await expect(this.root).toBeHidden()
     }
   }
 

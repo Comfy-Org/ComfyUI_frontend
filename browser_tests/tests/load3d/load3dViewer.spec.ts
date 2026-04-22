@@ -18,9 +18,7 @@ test.describe('Load3D Viewer', () => {
 
     const nodeRef = await comfyPage.nodeOps.getNodeRefById(1)
     const modelFileWidget = await nodeRef.getWidget(0)
-    await expect
-      .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
-      .toContain('cube.obj')
+    await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
     await load3d.waitForModelLoaded()
   })

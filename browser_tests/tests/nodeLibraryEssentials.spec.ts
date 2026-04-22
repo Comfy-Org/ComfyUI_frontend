@@ -5,8 +5,6 @@ import {
 
 test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Enable the essentials feature flag via the reactive serverFeatureFlags ref.
     // In production, this flag comes via WebSocket or remoteConfig (cloud only).
     // The localhost test server has neither, so we set it directly.

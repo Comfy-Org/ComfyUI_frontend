@@ -5,10 +5,6 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('Properties panel opens with workflow overview', async ({
     comfyPage
   }) => {

@@ -9,6 +9,7 @@ const test = comfyPageFixture
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
@@ -30,7 +31,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
-    await expect(comfyPage.selectionToolbox).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeHidden()
 
     // Select multiple nodes
     await comfyPage.nodeOps.selectNodes([
@@ -86,7 +87,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(nodePos.x + 200, nodePos.y + 200)
     await comfyPage.nextFrame()
-    await expect(comfyPage.selectionToolbox).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeHidden()
   })
 
   test('shows border only with multiple selections', async ({ comfyPage }) => {
@@ -127,7 +128,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.workflow.loadWorkflow('groups/single_group')
 
     // Select group + node should show bypass button
-    await comfyPage.page.focus('canvas')
+    await comfyPage.canvas.focus()
     await comfyPage.page.keyboard.press('Control+A')
     await expect(
       comfyPage.page.locator(
@@ -141,7 +142,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       comfyPage.page.locator(
         '.selection-toolbox *[data-testid="bypass-button"]'
       )
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test.describe('Color Picker', () => {
@@ -169,7 +170,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await blueColorOption.click()
 
       // Dropdown should close after selection
-      await expect(colorPickerGroup).not.toBeVisible()
+      await expect(colorPickerGroup).toBeHidden()
 
       // Node should have the selected color class/style
       // Note: Exact verification method depends on how color is applied to nodes
@@ -266,8 +267,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
         .click()
 
       // Undo the colorization
-      await comfyPage.page.keyboard.press('Control+Z')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+Z')
 
       // Node should be uncolored again
       const selectedNode = (

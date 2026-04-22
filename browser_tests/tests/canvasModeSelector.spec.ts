@@ -29,7 +29,6 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.command.executeCommand('Comfy.Canvas.Unlock')
-    await comfyPage.nextFrame()
   })
 
   test.describe('Trigger button', () => {
@@ -46,7 +45,6 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
         comfyPage
       }) => {
         await comfyPage.command.executeCommand(mode.activateCommand)
-        await comfyPage.nextFrame()
         const { trigger } = getLocators(comfyPage.page)
         const modeIcon = trigger.locator('i[aria-hidden="true"]').first()
         await expect(modeIcon).toHaveClass(mode.iconPattern)
@@ -70,7 +68,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(menu).toBeVisible()
       await trigger.click()
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
       await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     })
 
@@ -81,7 +79,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(menu).toBeVisible()
       await handItem.click()
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
     })
 
     test('closes when Escape is pressed', async ({ comfyPage }) => {
@@ -91,7 +89,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(menu).toBeVisible()
       await selectItem.press('Escape')
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
       await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     })
   })
@@ -103,7 +101,6 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       }) => {
         if (!mode.isReadOnly) {
           await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
-          await comfyPage.nextFrame()
         }
         const { trigger, menu, selectItem, handItem } = getLocators(
           comfyPage.page
@@ -156,7 +153,6 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
         comfyPage
       }) => {
         await comfyPage.command.executeCommand(mode.activateCommand)
-        await comfyPage.nextFrame()
         const { trigger, menu, selectItem, handItem } = getLocators(
           comfyPage.page
         )
@@ -197,7 +193,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await selectItem.press('ArrowDown')
       await handItem.press('Escape')
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
       await expect(trigger).toBeFocused()
     })
   })
@@ -208,7 +204,6 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
         comfyPage
       }) => {
         await comfyPage.command.executeCommand(mode.activateCommand)
-        await comfyPage.nextFrame()
         const { trigger, menu, selectItem, handItem } = getLocators(
           comfyPage.page
         )
@@ -229,8 +224,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
         await comfyPage.canvasOps.isReadOnly(),
         'Precondition: canvas starts unlocked'
       ).toBe(false)
-      await comfyPage.canvas.press('KeyH')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyH')
       expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
       const { trigger } = getLocators(comfyPage.page)
       const modeIcon = trigger.locator('i[aria-hidden="true"]').first()
@@ -241,13 +235,11 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       comfyPage
     }) => {
       await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
-      await comfyPage.nextFrame()
       expect(
         await comfyPage.canvasOps.isReadOnly(),
         'Precondition: canvas starts locked'
       ).toBe(true)
-      await comfyPage.canvas.press('KeyV')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyV')
       expect(await comfyPage.canvasOps.isReadOnly()).toBe(false)
       const { trigger } = getLocators(comfyPage.page)
       const modeIcon = trigger.locator('i[aria-hidden="true"]').first()

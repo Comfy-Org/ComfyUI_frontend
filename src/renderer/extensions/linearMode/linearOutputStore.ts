@@ -246,7 +246,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     if (!isJobForActiveWorkflow(jobId)) return
 
     const sel = selectedId.value
-    if (!sel || sel.startsWith('slot:') || isFollowing.value) {
+    if (!sel || isFollowing.value) {
       selectedId.value = slotId
       isFollowing.value = true
       return

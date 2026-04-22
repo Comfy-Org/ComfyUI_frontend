@@ -154,6 +154,7 @@ function dragDrop(e: DragEvent) {
         @drop="dragDrop"
       >
         <LinearProgressBar
+          data-testid="linear-header-progress-bar"
           class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
         <LinearPreview

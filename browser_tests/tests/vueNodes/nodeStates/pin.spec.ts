@@ -6,12 +6,7 @@ import {
 const PIN_HOTKEY = 'p'
 const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
-test.describe('Vue Node Pin', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Pin', { tag: '@vue-nodes' }, () => {
   test('should allow toggling pin on a selected node with hotkey', async ({
     comfyPage
   }) => {
@@ -24,7 +19,7 @@ test.describe('Vue Node Pin', () => {
     await expect(pinIndicator).toBeVisible()
 
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
-    await expect(pinIndicator).not.toBeVisible()
+    await expect(pinIndicator).toBeHidden()
   })
 
   test('should allow toggling pin on multiple selected nodes with hotkey', async ({
@@ -43,8 +38,8 @@ test.describe('Vue Node Pin', () => {
     await expect(pinIndicator2).toBeVisible()
 
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
-    await expect(pinIndicator1).not.toBeVisible()
-    await expect(pinIndicator2).not.toBeVisible()
+    await expect(pinIndicator1).toBeHidden()
+    await expect(pinIndicator2).toBeHidden()
   })
 
   test('should not allow dragging pinned nodes', async ({ comfyPage }) => {

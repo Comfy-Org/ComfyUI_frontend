@@ -74,16 +74,24 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
       return node!.id
     })
 
+    // Wait for the asset widget to mount AND its value to resolve.
+    // The widget type becomes 'asset' before the value is populated,
+    // so poll for both conditions together to avoid a race where the
+    // type check passes but the value is still the placeholder.
     await expect
-      .poll(async () => {
-        return await comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph.getNodeById(id)
-          const widget = node?.widgets?.find(
-            (w: { name: string }) => w.name === 'ckpt_name'
-          )
-          return String(widget?.value ?? '')
-        }, nodeId)
-      })
+      .poll(
+        () =>
+          comfyPage.page.evaluate((id) => {
+            const node = window.app!.graph.getNodeById(id)
+            const widget = node?.widgets?.find(
+              (w: { name: string }) => w.name === 'ckpt_name'
+            )
+            if (widget?.type !== 'asset') return 'waiting:type'
+            const val = String(widget?.value ?? '')
+            return val === 'Select model' ? 'waiting:value' : val
+          }, nodeId),
+        { timeout: 15_000 }
+      )
       .toBe(CLOUD_ASSETS[0].name)
   })
 })

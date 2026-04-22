@@ -6,16 +6,24 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "test:e2e": "playwright test",
+    "test:e2e:local": "PLAYWRIGHT_LOCAL=1 playwright test"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
+    "gsap": "catalog:",
+    "lenis": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@astrojs/check": "catalog:",
     "@astrojs/vue": "catalog:",
+    "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "astro": "catalog:",
     "tailwindcss": "catalog:",
@@ -74,6 +82,16 @@
         "options": {
           "cwd": "apps/website",
           "command": "astro check"
+        }
+      },
+      "test:e2e": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "cwd": "apps/website",
+          "command": "playwright test"
         }
       }
     }

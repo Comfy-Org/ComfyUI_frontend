@@ -109,6 +109,6 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
       expect(r.switchOutputLinkIds).toEqual(
         expect.arrayContaining([r.cfg85LinkId, r.cfg86LinkId])
       )
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   })
 })

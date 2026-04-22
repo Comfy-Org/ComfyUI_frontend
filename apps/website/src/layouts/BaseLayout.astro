@@ -2,6 +2,9 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
+import type { Locale } from '../i18n/translations'
+import SiteFooter from '../components/common/SiteFooter.vue'
+import SiteNav from '../components/common/SiteNav.vue'
 
 interface Props {
   title: string
@@ -20,7 +23,8 @@ const {
 const siteBase = Astro.site ?? 'https://comfy.org'
 const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
-const locale = Astro.currentLocale ?? 'en'
+const rawLocale = Astro.currentLocale ?? 'en'
+const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
@@ -29,7 +33,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: 'Comfy Org',
   url: 'https://comfy.org',
-  logo: 'https://comfy.org/favicon.svg',
+  logo: 'https://comfy.org/icons/logomark.svg',
   sameAs: [
     'https://github.com/comfyanonymous/ComfyUI',
     'https://discord.gg/comfyorg',
@@ -57,7 +61,7 @@ const websiteJsonLd = {
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/logomark.svg" type="image/svg+xml" />
     <link rel="canonical" href={canonicalURL.href} />
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
@@ -81,8 +85,8 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
-    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
@@ -102,7 +106,7 @@ const websiteJsonLd = {
 
     <ClientRouter />
   </head>
-  <body class="bg-black text-white font-inter antialiased">
+  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
       <noscript>
         <iframe
@@ -114,8 +118,17 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <slot />
+    <SiteNav locale={locale} client:load />
+    <main class="mt-20 lg:mt-32">
+      <slot />
+    </main>
+    <SiteFooter locale={locale} client:load />
 
     <Analytics />
+
+    <script>
+      import { initSmoothScroll } from '../scripts/smoothScroll'
+      initSmoothScroll()
+    </script>
   </body>
 </html>

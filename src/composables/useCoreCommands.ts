@@ -1164,7 +1164,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (description === null) return
 
         extra.BlueprintDescription = description.trim() || undefined
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
     },
     {
@@ -1201,7 +1201,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
 
         extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
     },
     {

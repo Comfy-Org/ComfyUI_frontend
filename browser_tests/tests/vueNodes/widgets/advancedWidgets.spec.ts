@@ -3,9 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Advanced Widget Visibility', () => {
+test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting(
       'Comfy.Node.AlwaysShowAdvancedWidgets',
       false
@@ -43,12 +42,8 @@ test.describe('Advanced Widget Visibility', () => {
     await expect(node.getByLabel('height', { exact: true })).toBeVisible()
 
     // Advanced widgets should not be rendered
-    await expect(
-      node.getByLabel('max_shift', { exact: true })
-    ).not.toBeVisible()
-    await expect(
-      node.getByLabel('base_shift', { exact: true })
-    ).not.toBeVisible()
+    await expect(node.getByLabel('max_shift', { exact: true })).toBeHidden()
+    await expect(node.getByLabel('base_shift', { exact: true })).toBeHidden()
 
     // "Show advanced inputs" button should be present
     await expect(node.getByText('Show advanced inputs')).toBeVisible()
@@ -97,6 +92,6 @@ test.describe('Advanced Widget Visibility', () => {
     await expect(node.getByLabel('base_shift', { exact: true })).toBeVisible()
 
     // The toggle button should not be shown when global setting is active
-    await expect(node.getByText('Show advanced inputs')).not.toBeVisible()
+    await expect(node.getByText('Show advanced inputs')).toBeHidden()
   })
 })

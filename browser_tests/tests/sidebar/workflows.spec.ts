@@ -2,10 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { openErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
@@ -249,7 +249,7 @@ test.describe('Workflows sidebar', () => {
       .toEqual('workflow1')
   })
 
-  test('Reports missing nodes warning again when switching back to workflow', async ({
+  test('Restores missing nodes errors silently when switching back to workflow', async ({
     comfyPage
   }) => {
     await comfyPage.settings.setSetting(
@@ -265,17 +265,23 @@ test.describe('Workflows sidebar', () => {
 
     // Dismiss the error overlay
     await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeHidden()
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
-    // Switch back to the missing_nodes workflow — overlay should reappear
-    // so users can install missing node packs without a page reload
+    // Switch back to the missing_nodes workflow — overlay should NOT
+    // reappear (silent restore), but errors tab should have content
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
-    await expect(errorOverlay).toBeVisible()
+    await expect(errorOverlay).toBeHidden()
+
+    // Errors tab should still show missing nodes after silent restore
+    await openErrorsTab(comfyPage)
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
+    ).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({
@@ -289,9 +295,7 @@ test.describe('Workflows sidebar', () => {
     )
     await closeButton.click()
     await expect
-      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames(), {
-        timeout: 5000
-      })
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
   })
 
@@ -318,7 +322,7 @@ test.describe('Workflows sidebar', () => {
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
     await comfyPage.contextMenu.clickMenuItem('Delete')
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    await expect(workflowsTab.getOpenedItem(filename)).toBeHidden()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
@@ -339,7 +343,7 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.confirmDialog.click('delete')
 
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    await expect(workflowsTab.getOpenedItem(filename)).toBeHidden()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
@@ -370,7 +374,7 @@ test.describe('Workflows sidebar', () => {
     // Wait for workflow to appear in Browse section after sync
     const workflowItem =
       comfyPage.menu.workflowsTab.getPersistedItem('workflow1')
-    await expect(workflowItem).toBeVisible({ timeout: 3000 })
+    await expect(workflowItem).toBeVisible()
 
     const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 

@@ -7,7 +7,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
@@ -26,7 +25,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await errorOverlay
       .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
       .click()
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeHidden()
   }
 
   test('Should show Find on GitHub and Copy buttons in error card', async ({

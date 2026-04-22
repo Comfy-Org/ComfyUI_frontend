@@ -82,11 +82,9 @@ export async function builderSaveAs(
   viewType: 'App' | 'Node graph' = 'App'
 ) {
   await appMode.footer.saveAsButton.click()
-  await comfyExpect(appMode.saveAs.nameInput).toBeVisible({ timeout: 5000 })
+  await comfyExpect(appMode.saveAs.nameInput).toBeVisible()
   await appMode.saveAs.fillAndSave(workflowName, viewType)
-  await comfyExpect(appMode.saveAs.successMessage).toBeVisible({
-    timeout: 5000
-  })
+  await comfyExpect(appMode.saveAs.successMessage).toBeVisible()
 }
 
 /**

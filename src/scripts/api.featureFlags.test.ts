@@ -234,6 +234,163 @@ describe('API Feature Flags', () => {
     })
   })
 
+  describe('progress_text binary message parsing', () => {
+    /**
+     * Build a legacy progress_text binary message:
+     * [4B event_type=3][4B node_id_len][node_id_bytes][text_bytes]
+     */
+    function buildLegacyProgressText(
+      nodeId: string,
+      text: string
+    ): ArrayBuffer {
+      const encoder = new TextEncoder()
+      const nodeIdBytes = encoder.encode(nodeId)
+      const textBytes = encoder.encode(text)
+      const buf = new ArrayBuffer(4 + 4 + nodeIdBytes.length + textBytes.length)
+      const view = new DataView(buf)
+      view.setUint32(0, 3) // event type
+      view.setUint32(4, nodeIdBytes.length)
+      new Uint8Array(buf, 8, nodeIdBytes.length).set(nodeIdBytes)
+      new Uint8Array(buf, 8 + nodeIdBytes.length, textBytes.length).set(
+        textBytes
+      )
+      return buf
+    }
+
+    /**
+     * Build a new-format progress_text binary message:
+     * [4B event_type=3][4B prompt_id_len][prompt_id_bytes][4B node_id_len][node_id_bytes][text_bytes]
+     */
+    function buildNewProgressText(
+      promptId: string,
+      nodeId: string,
+      text: string
+    ): ArrayBuffer {
+      const encoder = new TextEncoder()
+      const promptIdBytes = encoder.encode(promptId)
+      const nodeIdBytes = encoder.encode(nodeId)
+      const textBytes = encoder.encode(text)
+      const buf = new ArrayBuffer(
+        4 + 4 + promptIdBytes.length + 4 + nodeIdBytes.length + textBytes.length
+      )
+      const view = new DataView(buf)
+      let offset = 0
+      view.setUint32(offset, 3) // event type
+      offset += 4
+      view.setUint32(offset, promptIdBytes.length)
+      offset += 4
+      new Uint8Array(buf, offset, promptIdBytes.length).set(promptIdBytes)
+      offset += promptIdBytes.length
+      view.setUint32(offset, nodeIdBytes.length)
+      offset += 4
+      new Uint8Array(buf, offset, nodeIdBytes.length).set(nodeIdBytes)
+      offset += nodeIdBytes.length
+      new Uint8Array(buf, offset, textBytes.length).set(textBytes)
+      return buf
+    }
+
+    let dispatchedEvents: { nodeId: string; text: string; prompt_id?: string }[]
+    let listener: EventListener
+
+    beforeEach(async () => {
+      dispatchedEvents = []
+      listener = ((e: CustomEvent) => {
+        dispatchedEvents.push(e.detail)
+      }) as EventListener
+      api.addEventListener('progress_text', listener)
+
+      // Connect the WebSocket so the message handler is active
+      const initPromise = api.init()
+      wsEventHandlers['open'](new Event('open'))
+      wsEventHandlers['message']({
+        data: JSON.stringify({
+          type: 'status',
+          data: {
+            status: { exec_info: { queue_remaining: 0 } },
+            sid: 'test-sid'
+          }
+        })
+      })
+      await initPromise
+    })
+
+    afterEach(() => {
+      api.removeEventListener('progress_text', listener)
+    })
+
+    it('should parse legacy format when server does not support progress_text_metadata', () => {
+      // Restore real getClientFeatureFlags (advertises support)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_progress_text_metadata: true
+      })
+      // Server does NOT echo support
+      api.serverFeatureFlags.value = {}
+
+      const msg = buildLegacyProgressText('42', 'Generating image...')
+      wsEventHandlers['message']({ data: msg })
+
+      expect(dispatchedEvents).toHaveLength(1)
+      expect(dispatchedEvents[0]).toEqual({
+        nodeId: '42',
+        text: 'Generating image...'
+      })
+    })
+
+    it('should parse new format when server supports progress_text_metadata', () => {
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_progress_text_metadata: true
+      })
+      api.serverFeatureFlags.value = {
+        supports_progress_text_metadata: true
+      }
+
+      const msg = buildNewProgressText('prompt-abc', '42', 'Step 5/20')
+      wsEventHandlers['message']({ data: msg })
+
+      expect(dispatchedEvents).toHaveLength(1)
+      expect(dispatchedEvents[0]).toEqual({
+        nodeId: '42',
+        text: 'Step 5/20',
+        prompt_id: 'prompt-abc'
+      })
+    })
+
+    it('should not corrupt legacy messages when client advertises support but server does not', () => {
+      // This is the exact bug scenario: client says it supports the flag,
+      // server doesn't, but the decoder checks the client flag and tries
+      // to parse a prompt_id that isn't there.
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_progress_text_metadata: true
+      })
+      api.serverFeatureFlags.value = {}
+
+      // Send multiple legacy messages to ensure none are corrupted
+      const messages = [
+        buildLegacyProgressText('7', 'Loading model...'),
+        buildLegacyProgressText('12', 'Sampling 3/20'),
+        buildLegacyProgressText('99', 'VAE decode')
+      ]
+
+      for (const msg of messages) {
+        wsEventHandlers['message']({ data: msg })
+      }
+
+      expect(dispatchedEvents).toHaveLength(3)
+      expect(dispatchedEvents[0]).toMatchObject({
+        nodeId: '7',
+        text: 'Loading model...'
+      })
+      expect(dispatchedEvents[1]).toMatchObject({
+        nodeId: '12',
+        text: 'Sampling 3/20'
+      })
+      expect(dispatchedEvents[2]).toMatchObject({
+        nodeId: '99',
+        text: 'VAE decode'
+      })
+    })
+  })
+
   describe('Dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()

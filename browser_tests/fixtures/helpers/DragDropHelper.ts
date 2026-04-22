@@ -5,17 +5,10 @@ import type { Page } from '@playwright/test'
 import type { Position } from '@e2e/fixtures/types'
 import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
-
-  private async nextFrame(): Promise<void> {
-    await this.page.evaluate(() => {
-      return new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve())
-      })
-    })
-  }
 
   async dragAndDropExternalResource(
     options: {
@@ -145,7 +138,7 @@ export class DragDropHelper {
       await uploadResponsePromise
     }
 
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async dragAndDropFile(

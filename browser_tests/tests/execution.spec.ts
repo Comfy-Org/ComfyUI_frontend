@@ -63,19 +63,13 @@ test.describe(
 
       await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
       await expect
-        .poll(async () => (await input.getWidget(0)).getValue(), {
-          timeout: 2_000
-        })
+        .poll(async () => (await input.getWidget(0)).getValue())
         .toBe('foo')
       await expect
-        .poll(async () => (await output1.getWidget(0)).getValue(), {
-          timeout: 2_000
-        })
+        .poll(async () => (await output1.getWidget(0)).getValue())
         .toBe('foo')
       await expect
-        .poll(async () => (await output2.getWidget(0)).getValue(), {
-          timeout: 2_000
-        })
+        .poll(async () => (await output2.getWidget(0)).getValue())
         .toBe('')
     })
   }

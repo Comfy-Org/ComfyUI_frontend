@@ -13,10 +13,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 type TestSettingId = keyof Settings
 
 test.describe('Topbar commands', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('Should allow registering topbar commands', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       window.app!.registerExtension({

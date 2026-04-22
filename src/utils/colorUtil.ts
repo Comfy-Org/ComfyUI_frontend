@@ -36,7 +36,7 @@ export function isTransparent(color: string) {
   return false
 }
 
-function rgbToHsl({ r, g, b }: RGB): HSL {
+export function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255
   b /= 255
@@ -80,6 +80,11 @@ export function hexToRgb(hex: string): RGB {
     b = parseInt(hex.slice(5, 7), 16)
   }
   return { r, g, b }
+}
+
+export function hexToInt(hex: string): number {
+  const { r, g, b } = hexToRgb(hex)
+  return (r << 16) | (g << 8) | b
 }
 
 export function rgbToHex({ r, g, b }: RGB): string {
