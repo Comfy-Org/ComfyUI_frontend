@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import type * as RekaUi from 'reka-ui'
 
 import './testUtils/mockTanstackVirtualizer'
 
@@ -26,6 +27,83 @@ const hoisted = vi.hoisted(() => ({
 vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
   default: hoisted.jobDetailsPopoverStub
 }))
+
+vi.mock('reka-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof RekaUi>()
+  const { computed, defineComponent, h, inject, provide } = await import('vue')
+  const popoverOpenKey = Symbol('popoverOpen')
+
+  return {
+    ...actual,
+    PopoverAnchor: {
+      name: 'PopoverAnchor',
+      template: '<slot />'
+    },
+    PopoverContent: defineComponent({
+      name: 'PopoverContent',
+      props: {
+        align: { type: String, default: undefined },
+        collisionPadding: { type: Number, default: undefined },
+        positionStrategy: { type: String, default: undefined },
+        reference: { type: null, default: undefined },
+        side: { type: String, default: undefined },
+        sideOffset: { type: Number, default: undefined },
+        sticky: { type: String, default: undefined }
+      },
+      emits: ['mouseenter', 'mouseleave'],
+      setup(props, { attrs, emit, slots }) {
+        const isOpen = inject(
+          popoverOpenKey,
+          computed(() => false)
+        )
+        return () =>
+          isOpen.value
+            ? h(
+                'div',
+                {
+                  class: attrs.class,
+                  'data-align': props.align,
+                  'data-collision-padding': props.collisionPadding,
+                  'data-position-strategy': props.positionStrategy,
+                  'data-reference-bound': props.reference ? 'true' : 'false',
+                  'data-side': props.side,
+                  'data-side-offset': props.sideOffset,
+                  'data-sticky': props.sticky,
+                  onMouseenter: () => emit('mouseenter'),
+                  onMouseleave: () => emit('mouseleave')
+                },
+                slots.default?.()
+              )
+            : null
+      }
+    }),
+    PopoverPortal: {
+      name: 'PopoverPortal',
+      template: '<div><slot /></div>'
+    },
+    PopoverRoot: defineComponent({
+      name: 'PopoverRoot',
+      props: {
+        open: { type: Boolean, default: false }
+      },
+      setup(props, { slots }) {
+        provide(
+          popoverOpenKey,
+          computed(() => props.open)
+        )
+
+        return () =>
+          h(
+            'div',
+            {
+              'data-open': props.open
+            },
+            slots.default?.()
+          )
+      }
+    })
+  }
+})
 
 const AssetsListItemStub = defineComponent({
   name: 'AssetsListItem',
@@ -151,30 +229,6 @@ function renderJobAssetsList({
   })
 
   return { ...result, user }
-}
-
-function createDomRect({
-  top,
-  left,
-  width,
-  height
-}: {
-  top: number
-  left: number
-  width: number
-  height: number
-}): DOMRect {
-  return {
-    x: left,
-    y: top,
-    top,
-    left,
-    width,
-    height,
-    right: left + width,
-    bottom: top + height,
-    toJSON: () => ''
-  } as DOMRect
 }
 
 afterEach(() => {
@@ -378,54 +432,22 @@ describe('JobAssetsList', () => {
     expect(container.querySelector('.job-details-popover-stub')).toBeNull()
   })
 
-  it('positions the popover to the right of rows near the left viewport edge', async () => {
+  it('anchors the popover to the active row through Reka', async () => {
     vi.useFakeTimers()
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
 
-    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1280)
-    vi.spyOn(jobRow, 'getBoundingClientRect').mockReturnValue(
-      createDomRect({
-        top: 100,
-        left: 40,
-        width: 200,
-        height: 48
-      })
-    )
-
     await fireEvent.mouseEnter(jobRow)
     await vi.advanceTimersByTimeAsync(200)
     await nextTick()
 
     const popover = container.querySelector('.job-details-popover')!
-    expect(popover.getAttribute('style')).toContain('left: 248px;')
-  })
-
-  it('positions the popover to the left of rows near the right viewport edge', async () => {
-    vi.useFakeTimers()
-    const job = buildJob()
-    const { container } = renderJobAssetsList({ jobs: [job] })
-
-    const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
-
-    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1280)
-    vi.spyOn(jobRow, 'getBoundingClientRect').mockReturnValue(
-      createDomRect({
-        top: 100,
-        left: 980,
-        width: 200,
-        height: 48
-      })
-    )
-
-    await fireEvent.mouseEnter(jobRow)
-    await vi.advanceTimersByTimeAsync(200)
-    await nextTick()
-
-    const popover = container.querySelector('.job-details-popover')!
-    expect(popover.getAttribute('style')).toContain('left: 672px;')
+    expect(popover.getAttribute('data-reference-bound')).toBe('true')
+    expect(popover.getAttribute('data-side')).toBe('right')
+    expect(popover.getAttribute('data-position-strategy')).toBe('fixed')
+    expect(popover.getAttribute('style') ?? '').not.toContain('left:')
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
@@ -458,7 +480,7 @@ describe('JobAssetsList', () => {
     expect(container.querySelector('.job-details-popover-stub')).toBeNull()
   })
 
-  it('shows the new popover after the previous row hides while the next row stays hovered', async () => {
+  it('updates the visible popover without closing when hovering another row', async () => {
     vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
@@ -479,17 +501,21 @@ describe('JobAssetsList', () => {
 
     await fireEvent.mouseLeave(firstRow)
     await fireEvent.mouseEnter(secondRow)
-
-    await vi.advanceTimersByTimeAsync(150)
-    await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
-
-    await vi.advanceTimersByTimeAsync(50)
     await nextTick()
 
-    const popoverStub = container.querySelector('.job-details-popover-stub')!
-    expect(popoverStub).not.toBeNull()
-    expect(popoverStub.getAttribute('data-job-id')).toBe('job-2')
+    expect(
+      container
+        .querySelector('.job-details-popover-stub')
+        ?.getAttribute('data-job-id')
+    ).toBe('job-2')
+
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+    expect(
+      container
+        .querySelector('.job-details-popover-stub')
+        ?.getAttribute('data-job-id')
+    ).toBe('job-2')
   })
 
   it('does not show details if the hovered row disappears before the show delay ends', async () => {
