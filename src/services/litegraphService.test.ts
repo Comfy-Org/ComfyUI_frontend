@@ -260,6 +260,10 @@ function createMockWidget(overrides: Record<string, unknown> = {}) {
 describe('litegraphService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFavoritedWidgetsStore.isFavorited.mockReturnValue(false)
+    mockPrompt.mockReset()
+    mockCreateBounds.mockReset()
+    mockCanvas.graph.getNodeById.mockReset()
     mockCanvas.ds.scale = 1
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.visible_area = [0, 0, 800, 600]
