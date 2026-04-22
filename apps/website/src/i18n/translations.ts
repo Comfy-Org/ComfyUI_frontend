@@ -1179,6 +1179,16 @@ const translations = {
     'zh-CN': 'Comfy 计划\n包含哪些内容'
   },
 
+  // VideoPlayer
+  'player.play': { en: 'Play', 'zh-CN': '播放' },
+  'player.pause': { en: 'Pause', 'zh-CN': '暂停' },
+  'player.seek': { en: 'Seek', 'zh-CN': '播放进度' },
+  'player.fullscreen': { en: 'Fullscreen', 'zh-CN': '全屏' },
+  'player.mute': { en: 'Mute', 'zh-CN': '静音' },
+  'player.unmute': { en: 'Unmute', 'zh-CN': '取消静音' },
+  'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
+  'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {

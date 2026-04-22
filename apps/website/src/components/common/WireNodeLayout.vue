@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
+import type { Ref } from 'vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
@@ -8,6 +10,7 @@ import { onMounted, ref } from 'vue'
 import { t } from '../../i18n/translations'
 
 type TranslationKey = Parameters<typeof t>[0]
+type Point = { x: number; y: number }
 
 const {
   reasons,
@@ -35,7 +38,7 @@ const mobileComfyDotRef = ref<HTMLElement>()
 const mobileWirePaths = ref<string[]>([])
 const mobileComfyWirePath = ref('')
 
-function center(el: HTMLElement, container: DOMRect) {
+function center(el: HTMLElement, container: DOMRect): Point {
   const r = el.getBoundingClientRect()
   return {
     x: r.left + r.width / 2 - container.left,
@@ -43,60 +46,79 @@ function center(el: HTMLElement, container: DOMRect) {
   }
 }
 
-function computeWires() {
-  const c = containerRef.value
-  const dot = ifYouDotRef.value
-  if (!c || !dot) return
+function computeWireSet(
+  container: HTMLElement | undefined,
+  sourceDot: HTMLElement | undefined,
+  targetDots: HTMLElement[],
+  outputDot: HTMLElement | undefined,
+  comfyDot: HTMLElement | undefined,
+  pathsRef: Ref<string[]>,
+  comfyPathRef: Ref<string>,
+  reasonCurve: (s: Point, e: Point, i: number) => string,
+  comfyCurve: (s: Point, e: Point) => string
+) {
+  if (!container || !sourceDot) return
+  const cRect = container.getBoundingClientRect()
+  const s = center(sourceDot, cRect)
 
-  const cRect = c.getBoundingClientRect()
-  const s = center(dot, cRect)
-
-  wirePaths.value = reasonDots.value.map((el) => {
+  pathsRef.value = targetDots.map((el, i) => {
     const e = center(el, cRect)
-    const midX = s.x + (e.x - s.x) * 0.45
-    return `M${s.x},${s.y} C${midX},${s.y} ${midX},${e.y} ${e.x},${e.y}`
+    return reasonCurve(s, e, i)
   })
 
-  const outputDot = reasonOutputDotRef.value
-  const comfyDot = comfyDotRef.value
   if (outputDot && comfyDot) {
     const s2 = center(outputDot, cRect)
     const e2 = center(comfyDot, cRect)
-    const midX = s2.x + (e2.x - s2.x) * 0.5
-    comfyWirePath.value = `M${s2.x},${s2.y} C${midX},${s2.y} ${midX},${e2.y} ${e2.x},${e2.y}`
+    comfyPathRef.value = comfyCurve(s2, e2)
   }
+}
+
+function computeDesktopWires() {
+  computeWireSet(
+    containerRef.value,
+    ifYouDotRef.value,
+    reasonDots.value,
+    reasonOutputDotRef.value,
+    comfyDotRef.value,
+    wirePaths,
+    comfyWirePath,
+    (s, e) => {
+      const midX = s.x + (e.x - s.x) * 0.45
+      return `M${s.x},${s.y} C${midX},${s.y} ${midX},${e.y} ${e.x},${e.y}`
+    },
+    (s, e) => {
+      const midX = s.x + (e.x - s.x) * 0.5
+      return `M${s.x},${s.y} C${midX},${s.y} ${midX},${e.y} ${e.x},${e.y}`
+    }
+  )
 }
 
 function computeMobileWires() {
-  const c = mobileContainerRef.value
-  const dot = mobileIfYouDotRef.value
-  if (!c || !dot) return
-
-  const cRect = c.getBoundingClientRect()
-  const s = center(dot, cRect)
-
-  mobileWirePaths.value = mobileReasonDots.value.map((el, i) => {
-    const e = center(el, cRect)
-    const spread = (i + 1) * 14
-    return `M${s.x},${s.y} C${s.x + spread},${s.y + 40} ${e.x + spread},${e.y - 40} ${e.x},${e.y}`
-  })
-
-  const outputDot = mobileOutputDotRef.value
-  const comfyDot = mobileComfyDotRef.value
-  if (outputDot && comfyDot) {
-    const s2 = center(outputDot, cRect)
-    const e2 = center(comfyDot, cRect)
-    const midY = s2.y + (e2.y - s2.y) * 0.5
-    mobileComfyWirePath.value = `M${s2.x},${s2.y} C${s2.x},${midY} ${e2.x},${midY} ${e2.x},${e2.y}`
-  }
+  computeWireSet(
+    mobileContainerRef.value,
+    mobileIfYouDotRef.value,
+    mobileReasonDots.value,
+    mobileOutputDotRef.value,
+    mobileComfyDotRef.value,
+    mobileWirePaths,
+    mobileComfyWirePath,
+    (s, e, i) => {
+      const spread = (i + 1) * 14
+      return `M${s.x},${s.y} C${s.x + spread},${s.y + 40} ${e.x + spread},${e.y - 40} ${e.x},${e.y}`
+    },
+    (s, e) => {
+      const midY = s.y + (e.y - s.y) * 0.5
+      return `M${s.x},${s.y} C${s.x},${midY} ${e.x},${midY} ${e.x},${e.y}`
+    }
+  )
 }
 
-useResizeObserver(containerRef, computeWires)
+useResizeObserver(containerRef, computeDesktopWires)
 useResizeObserver(mobileContainerRef, computeMobileWires)
 
 onMounted(() => {
   requestAnimationFrame(() => {
-    computeWires()
+    computeDesktopWires()
     computeMobileWires()
   })
 })
@@ -112,14 +134,14 @@ onMounted(() => {
         v-for="(d, i) in wirePaths"
         :key="'wire-' + i"
         :d="d"
-        stroke="#F2FF59"
+        class="stroke-primary-comfy-yellow"
         stroke-width="1.5"
         fill="none"
       />
       <path
         v-if="comfyWirePath"
         :d="comfyWirePath"
-        stroke="#F2FF59"
+        class="stroke-primary-comfy-yellow"
         stroke-width="1.5"
         fill="none"
       />
@@ -216,14 +238,14 @@ onMounted(() => {
         v-for="(d, i) in mobileWirePaths"
         :key="'m-wire-' + i"
         :d="d"
-        stroke="#F2FF59"
+        class="stroke-primary-comfy-yellow"
         stroke-width="1.5"
         fill="none"
       />
       <path
         v-if="mobileComfyWirePath"
         :d="mobileComfyWirePath"
-        stroke="#F2FF59"
+        class="stroke-primary-comfy-yellow"
         stroke-width="1.5"
         fill="none"
       />

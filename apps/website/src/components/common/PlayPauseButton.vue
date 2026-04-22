@@ -25,6 +25,7 @@ defineEmits<{ click: [] }>()
       :class="cn(size === 'sm' ? 'size-3 lg:size-4' : 'size-4')"
       viewBox="0 0 24 24"
       fill="#211927"
+      aria-hidden="true"
     >
       <rect x="6" y="4" width="4" height="16" />
       <rect x="14" y="4" width="4" height="16" />
@@ -34,6 +35,7 @@ defineEmits<{ click: [] }>()
       :class="cn('ml-0.5', size === 'sm' ? 'size-3 lg:size-4' : 'size-4')"
       viewBox="0 0 24 24"
       fill="#211927"
+      aria-hidden="true"
     >
       <path d="M8 5v14l11-7z" />
     </svg>

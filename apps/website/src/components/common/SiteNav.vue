@@ -244,8 +244,9 @@ onMounted(() => {
       <img
         v-if="!mobileMenuOpen"
         src="/icons/breadthumb.svg"
-        alt="Menu"
+        alt=""
         class="h-3"
+        aria-hidden="true"
       />
       <img
         v-else

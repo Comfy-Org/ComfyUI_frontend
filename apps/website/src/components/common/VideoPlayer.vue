@@ -11,6 +11,7 @@ import {
 } from '@vueuse/core'
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
+import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
 import PlayPauseButton from './PlayPauseButton.vue'
 
@@ -121,9 +122,9 @@ const displayTime = computed(() =>
 )
 
 const timestamp = computed(() => {
-  const t = Math.floor(displayTime.value)
-  const m = String(Math.floor(t / 60)).padStart(2, '0')
-  const s = String(t % 60).padStart(2, '0')
+  const secs = Math.floor(displayTime.value)
+  const m = String(Math.floor(secs / 60)).padStart(2, '0')
+  const s = String(secs % 60).padStart(2, '0')
   return `${m}:${s}`
 })
 
@@ -131,7 +132,7 @@ const timestamp = computed(() => {
 const ccEnabled = computed(() => selectedTrack.value !== -1)
 
 const hasSubtitles = computed(() =>
-  tracks.some((t) => t.kind === 'subtitles' || t.kind === 'captions')
+  tracks.some((tr) => tr.kind === 'subtitles' || tr.kind === 'captions')
 )
 
 function toggleCC() {
@@ -140,6 +141,32 @@ function toggleCC() {
   } else {
     enableTrack(0)
   }
+}
+
+// Scrubber keyboard support
+function handleScrubberKeydown(e: KeyboardEvent) {
+  if (!effectiveDuration.value) return
+
+  switch (e.key) {
+    case 'ArrowRight':
+      currentTime.value = Math.min(
+        currentTime.value + 5,
+        effectiveDuration.value
+      )
+      break
+    case 'ArrowLeft':
+      currentTime.value = Math.max(currentTime.value - 5, 0)
+      break
+    case 'Home':
+      currentTime.value = 0
+      break
+    case 'End':
+      currentTime.value = effectiveDuration.value
+      break
+    default:
+      return
+  }
+  e.preventDefault()
 }
 
 // Fullscreen
@@ -198,13 +225,7 @@ function toggleFullscreen() {
       <PlayPauseButton
         :playing
         :aria-label="
-          playing
-            ? locale === 'zh-CN'
-              ? '暂停'
-              : 'Pause'
-            : locale === 'zh-CN'
-              ? '播放'
-              : 'Play'
+          playing ? t('player.pause', locale) : t('player.play', locale)
         "
         @click="playing = !playing"
       />
@@ -225,13 +246,7 @@ function toggleFullscreen() {
         :playing
         size="sm"
         :aria-label="
-          playing
-            ? locale === 'zh-CN'
-              ? '暂停'
-              : 'Pause'
-            : locale === 'zh-CN'
-              ? '播放'
-              : 'Play'
+          playing ? t('player.pause', locale) : t('player.play', locale)
         "
         @click="playing = !playing"
       />
@@ -242,10 +257,11 @@ function toggleFullscreen() {
         class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
         role="slider"
         tabindex="0"
-        :aria-label="locale === 'zh-CN' ? '播放进度' : 'Seek'"
+        :aria-label="t('player.seek', locale)"
         :aria-valuemin="0"
         :aria-valuemax="effectiveDuration || 0"
         :aria-valuenow="displayTime"
+        @keydown="handleScrubberKeydown"
         @mousedown="scrubbing = true"
         @touchstart.passive="scrubbing = true"
       >
@@ -263,7 +279,7 @@ function toggleFullscreen() {
       <!-- Fullscreen button -->
       <button
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
-        :aria-label="locale === 'zh-CN' ? '全屏' : 'Fullscreen'"
+        :aria-label="t('player.fullscreen', locale)"
         @click="toggleFullscreen"
       >
         <svg
@@ -274,6 +290,7 @@ function toggleFullscreen() {
           stroke-width="2.5"
           stroke-linecap="round"
           stroke-linejoin="round"
+          aria-hidden="true"
         >
           <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3" />
           <path d="M16 21h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
@@ -293,12 +310,8 @@ function toggleFullscreen() {
         "
         :aria-label="
           ccEnabled
-            ? locale === 'zh-CN'
-              ? '关闭字幕'
-              : 'Subtitles off'
-            : locale === 'zh-CN'
-              ? '开启字幕'
-              : 'Subtitles on'
+            ? t('player.subtitlesOff', locale)
+            : t('player.subtitlesOn', locale)
         "
         @click="toggleCC"
       >
@@ -309,13 +322,7 @@ function toggleFullscreen() {
       <button
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
         :aria-label="
-          muted
-            ? locale === 'zh-CN'
-              ? '取消静音'
-              : 'Unmute'
-            : locale === 'zh-CN'
-              ? '静音'
-              : 'Mute'
+          muted ? t('player.unmute', locale) : t('player.mute', locale)
         "
         @click="muted = !muted"
       >
@@ -327,6 +334,7 @@ function toggleFullscreen() {
           fill="#211927"
           stroke="#211927"
           stroke-width="1.5"
+          aria-hidden="true"
         >
           <path
             d="M11 5L6 9H2v6h4l5 4V5z"
@@ -344,6 +352,7 @@ function toggleFullscreen() {
           fill="#211927"
           stroke="#211927"
           stroke-width="1.5"
+          aria-hidden="true"
         >
           <path
             d="M11 5L6 9H2v6h4l5 4V5z"

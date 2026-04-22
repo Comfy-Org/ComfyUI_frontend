@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { useTemplateRefsList, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { lockScroll, unlockScroll } from '../../composables/useScrollLock'
+import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
@@ -40,7 +48,7 @@ function scrollToActiveThumbnail() {
 
 watch(activeIndex, scrollToActiveThumbnail)
 
-let pendingIndex = -1
+const pendingIndex = shallowRef(-1)
 
 const { start: startFadeIn, stop: stopFadeIn } = useTimeoutFn(
   () => {
@@ -52,7 +60,7 @@ const { start: startFadeIn, stop: stopFadeIn } = useTimeoutFn(
 
 const { start: startFadeOut, stop: stopFadeOut } = useTimeoutFn(
   () => {
-    activeIndex.value = pendingIndex
+    activeIndex.value = pendingIndex.value
     startFadeIn()
   },
   200,
@@ -63,7 +71,7 @@ function selectThumbnail(index: number) {
   if (index === activeIndex.value || transitioning.value) return
   stopFadeOut()
   stopFadeIn()
-  pendingIndex = index
+  pendingIndex.value = index
   transitioning.value = true
   startFadeOut()
 }
@@ -183,7 +191,9 @@ onUnmounted(() => {
       <!-- Mobile layout -->
       <div
         class="flex w-full flex-1 flex-col items-center justify-between pt-12 lg:hidden"
-        style="max-height: calc(100vh - 9.5rem)"
+        style="
+          max-height: calc(100vh - 9.5rem); /* nav 5rem + padding 4.5rem */
+        "
       >
         <!-- Image -->
         <div
@@ -248,6 +258,7 @@ onUnmounted(() => {
             v-for="(item, i) in items"
             :ref="thumbnailRefs.set"
             :key="i"
+            :aria-label="item.title"
             class="shrink-0 cursor-pointer overflow-hidden rounded-xl border-0 bg-transparent p-0 transition-all duration-200"
             :class="
               i === activeIndex

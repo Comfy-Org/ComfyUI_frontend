@@ -3,7 +3,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { lockScroll, unlockScroll } from '../../composables/useScrollLock'
+import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import BrandButton from './BrandButton.vue'
 import type { NavLink } from './NavDesktopLink.vue'
 
