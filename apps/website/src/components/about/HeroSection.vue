@@ -74,10 +74,7 @@ useHeroAnimation({
     </div>
 
     <!-- Video overlapping the hero graphic -->
-    <div
-      ref="videoRef"
-      class="-mt-16 px-4 pb-20 lg:-mt-[22vw] lg:px-20 lg:pb-40"
-    >
+    <div ref="videoRef" class="px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/about/co-founders.webm"
         poster="https://media.comfy.org/website/about/co-founders-poster.webp"

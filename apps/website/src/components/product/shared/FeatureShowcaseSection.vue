@@ -43,7 +43,7 @@ defineProps<{
         <div
           :class="
             cn(
-              'order-2 flex flex-col p-6 lg:w-1/2 lg:justify-between',
+              'order-2 flex flex-col gap-8 p-6 lg:w-1/2',
               i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
             )
           "
