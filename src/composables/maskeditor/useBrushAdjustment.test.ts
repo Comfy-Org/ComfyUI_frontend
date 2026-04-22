@@ -93,4 +93,15 @@ describe('handleBrushAdjustment', () => {
     await handleBrushAdjustment(makePointerEvent(100, 10))
     expect(store.brushSettings.hardness).toBe(0.5)
   })
+
+  it('suppresses size change when Y delta dominates (useDominantAxis=true)', async () => {
+    const store = useMaskEditorStore()
+    const { startBrushAdjustment, handleBrushAdjustment } = useBrushAdjustment({
+      useDominantAxis: true
+    })
+    await startBrushAdjustment(makePointerEvent(0, 0))
+    const sizeBefore = store.brushSettings.size
+    await handleBrushAdjustment(makePointerEvent(10, 100))
+    expect(store.brushSettings.size).toBe(sizeBefore)
+  })
 })
