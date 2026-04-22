@@ -60,6 +60,13 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
       download.savePath = data.savePath
       download.message = data.message
 
+      // The cancel flag is single-shot: consume it on the first matching
+      // ERROR event so later genuine ERRORs for the same URL aren't silently
+      // masked as CANCELLED.
+      if (userCancelled) {
+        userCancelledUrls.delete(data.url)
+      }
+
       // Report genuine failures to Sentry once per ERROR transition. User
       // cancels are already translated to CANCELLED above so they're skipped.
       if (
@@ -83,6 +90,11 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     filename: string
   }) => {
     userCancelledUrls.delete(url)
+    // Reset the prior terminal status so the next ERROR on this URL is
+    // detected as a fresh transition (otherwise retry-after-failure would
+    // see previousStatus === ERROR and never report to Sentry).
+    const existing = findByUrl(url)
+    if (existing) existing.status = DownloadStatus.PENDING
     return DownloadManager!.startDownload(url, savePath, filename)
   }
   const pause = (url: string) => DownloadManager!.pauseDownload(url)
