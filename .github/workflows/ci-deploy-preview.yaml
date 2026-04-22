@@ -29,7 +29,6 @@ jobs:
           chmod +x scripts/cicd/pr-preview-deploy-and-comment.sh
           ./scripts/cicd/pr-preview-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
             "starting"
 
   # Build frontend for all PRs and pushes
@@ -106,7 +105,6 @@ jobs:
         run: |
           ./scripts/cicd/pr-preview-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
             "completed"
 
   # Deploy to production URL on main branch push

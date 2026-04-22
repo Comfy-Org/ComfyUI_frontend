@@ -2,27 +2,20 @@
 set -e
 
 # Deploy frontend preview to Cloudflare Pages and comment on PR
-# Usage: ./pr-preview-deploy-and-comment.sh <pr_number> <branch_name> <status>
+# Usage: ./pr-preview-deploy-and-comment.sh <pr_number> <status>
 
 # Input validation
 # Validate PR number is numeric
 case "$1" in
-    ''|*[!0-9]*) 
+    ''|*[!0-9]*)
         echo "Error: PR_NUMBER must be numeric" >&2
         exit 1
         ;;
 esac
 PR_NUMBER="$1"
 
-# Sanitize and validate branch name (allow alphanumeric, dots, dashes, underscores, slashes)
-BRANCH_NAME=$(echo "$2" | sed 's/[^a-zA-Z0-9._/-]//g')
-if [ -z "$BRANCH_NAME" ]; then
-    echo "Error: Invalid or empty branch name" >&2
-    exit 1
-fi
-
 # Validate status parameter
-STATUS="${3:-completed}"
+STATUS="${2:-completed}"
 case "$STATUS" in
     starting|completed) ;;
     *) 
