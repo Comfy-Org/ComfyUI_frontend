@@ -140,7 +140,7 @@ test.describe('Publish dialog - Describe step', () => {
   test.fixme('clicking a tag suggestion adds it', async () => {
     await dialog.root.getByText('anime').click()
 
-    const activeTags = dialog.describeStep.locator('[role="list"]').first()
+    const activeTags = dialog.describeStep.getByRole('list').first()
     await expect(activeTags.getByText('anime')).toBeVisible()
   })
 })

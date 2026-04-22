@@ -55,7 +55,7 @@ export class PublishDialog extends BaseDialog {
   }
 
   get tagsInput(): Locator {
-    return this.describeStep.locator('[role="list"]').first()
+    return this.describeStep.getByRole('list').first()
   }
 
   tagSuggestion(name: string): Locator {
