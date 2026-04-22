@@ -304,13 +304,16 @@ function showColIndicator(rowIndex: number, colIndex: number): boolean {
   height: 48px;
 }
 
-/* Comfy brand blue (#1E40FF) for both drop-indicator types so
-   the "landing zone" reads consistently across row + column drops. */
+/* Both drop-indicator types (row + column) share the same accent so the
+   "landing zone" reads consistently. Color lives as a layout token
+   (see packages/design-system/src/css/layout.css) rather than inlined
+   hex, per the no-raw-hex anti-pattern in DESIGN.md. */
 .drop-indicator {
   list-style: none;
-  background-color: #1e40ff;
+  background-color: var(--color-layout-drop-indicator);
   border-radius: 1px;
-  box-shadow: 0 0 0 2px rgb(30 64 255 / 0.25);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--color-layout-drop-indicator) 25%, transparent);
   pointer-events: none;
 }
 

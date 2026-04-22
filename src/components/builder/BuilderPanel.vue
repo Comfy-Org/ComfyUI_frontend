@@ -92,10 +92,14 @@ const emptyCopy = computed(() => {
           :title="t('linearMode.builder.runDisabledHint')"
           aria-disabled="true"
         >
-          <div class="builder-panel-footer-row">
+          <!-- `inert` removes descendants from focus + event path. The
+               wrapper's pointer-events: none was visible-only — Button
+               inside RunCell and ScrubableNumberInput inside BatchCountCell
+               were still tab-reachable and keyboard-activatable without it. -->
+          <div class="builder-panel-footer-row" inert>
             <BatchCountCell />
           </div>
-          <div class="builder-panel-footer-row builder-panel-footer-run">
+          <div class="builder-panel-footer-row builder-panel-footer-run" inert>
             <RunCell />
           </div>
         </div>

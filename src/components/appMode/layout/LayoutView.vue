@@ -122,7 +122,7 @@ const inputEntries = computed<InputEntryWithMeta[]>(() => {
       const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
       return (
         isPromotedWidgetView(widget) &&
-        widget.sourceNodeId == storeNodeId &&
+        String(widget.sourceNodeId) === storeNodeId &&
         widget.sourceWidgetName === vueWidget.storeName
       )
     })
@@ -555,7 +555,17 @@ const cells = computed<LayoutCellPlacement[]>(() => {
 
   // History thumbs sit on row 1, right of the action cells. Keeps column 1
   // clear so the left-dock panel snaps flush against the SideToolbar.
-  for (let i = 0; i < historyThumbs.value.length; i++) {
+  //
+  // Capped at MAX_HISTORY_THUMBS so thumbs at positive `col + i` indices
+  // don't overflow into the right cluster's negative-indexed resolved
+  // positions on narrow viewports. The worst-case leftmost cluster cell
+  // (share when job-queue is active) resolves to `cols - 11`; a cap of 6
+  // is conservative for typical desktop viewports (≥ 24 tracks). A
+  // follow-up could make this responsive by exposing `cols` from
+  // LayoutGrid and computing maxThumbs = cols - col - reservedCluster.
+  const MAX_HISTORY_THUMBS = 6
+  const thumbCount = Math.min(historyThumbs.value.length, MAX_HISTORY_THUMBS)
+  for (let i = 0; i < thumbCount; i++) {
     out.push({
       id: historyThumbs.value[i].id,
       col: col + i,
