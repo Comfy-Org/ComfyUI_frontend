@@ -60,6 +60,12 @@ export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
 ): void {
+  // Defense-in-depth: even though every caller is expected to gate on
+  // isModelDownloadable() first, re-check here so a URL that somehow reaches
+  // this function (e.g. via a stale retry path or a future caller that forgets
+  // the guard) can't trigger a download against an unvetted source.
+  if (!isModelDownloadable(model)) return
+
   if (!isDesktop) {
     const link = document.createElement('a')
     link.href = model.url
