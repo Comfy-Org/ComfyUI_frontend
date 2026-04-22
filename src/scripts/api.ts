@@ -378,11 +378,19 @@ export class ComfyApi extends EventTarget {
     this.user = ''
 
     const remoteBackend = localStorage.getItem('comfyui-preview-backend-url')
+    let parsedRemote: URL | null = null
     if (remoteBackend) {
-      const url = new URL(remoteBackend)
-      this.remoteOrigin = url.origin
-      this.api_host = url.host
-      this.api_base = url.pathname.replace(/\/+$/, '')
+      try {
+        parsedRemote = new URL(remoteBackend)
+      } catch {
+        // Corrupt value would crash the app at startup; drop it and fall back.
+        localStorage.removeItem('comfyui-preview-backend-url')
+      }
+    }
+    if (parsedRemote) {
+      this.remoteOrigin = parsedRemote.origin
+      this.api_host = parsedRemote.host
+      this.api_base = parsedRemote.pathname.replace(/\/+$/, '')
     } else {
       this.api_host = location.host
       this.api_base = isCloud
