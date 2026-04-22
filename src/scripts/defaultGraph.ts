@@ -119,7 +119,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
         models: [
           {
             name: 'v1-5-pruned-emaonly-fp16.safetensors',
-            url: 'https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true',
+            url: 'https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors',
             directory: 'checkpoints'
           }
         ]
