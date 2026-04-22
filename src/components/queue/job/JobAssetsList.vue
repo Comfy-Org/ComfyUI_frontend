@@ -90,23 +90,14 @@
     </div>
   </div>
 
-  <Teleport to="body">
-    <div
-      v-if="activeDetails && popoverPosition"
-      class="job-details-popover fixed z-50"
-      :style="{
-        top: `${popoverPosition.top}px`,
-        left: `${popoverPosition.left}px`
-      }"
-      @mouseenter="onPopoverEnter"
-      @mouseleave="onPopoverLeave"
-    >
-      <JobDetailsPopover
-        :job-id="activeDetails.jobId"
-        :workflow-id="activeDetails.workflowId"
-      />
-    </div>
-  </Teleport>
+  <JobDetailsHoverPopover
+    :open="isDetailsOpen && !!activeDetails && !!activeRowElement"
+    :job-id="activeDetails?.jobId"
+    :workflow-id="activeDetails?.workflowId"
+    :reference-element="activeRowElement"
+    @content-enter="onPopoverEnter"
+    @content-leave="onPopoverLeave"
+  />
 </template>
 
 <script setup lang="ts">
@@ -114,13 +105,11 @@ import type { VirtualItem } from '@tanstack/vue-virtual'
 import type { CSSProperties } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useI18n } from 'vue-i18n'
-import { computed, nextTick, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
-import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
+import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
-import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -132,6 +121,8 @@ import type { VirtualJobRow } from './buildVirtualJobRows'
 const HEADER_ROW_HEIGHT = 20
 const GROUP_ROW_GAP = 16
 const JOB_ROW_HEIGHT = 48
+const DETAILS_SHOW_DELAY_MS = 200
+const DETAILS_HIDE_DELAY_MS = 150
 
 defineOptions({
   inheritAttrs: false
@@ -150,7 +141,11 @@ const { t } = useI18n()
 const scrollContainer = ref<HTMLElement | null>(null)
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
-const popoverPosition = ref<{ top: number; left: number } | null>(null)
+const activeDetails = ref<{ jobId: string; workflowId?: string } | null>(null)
+const isDetailsOpen = ref(false)
+const hideTimer = ref<number | null>(null)
+const hideTimerJobId = ref<string | null>(null)
+const showTimer = ref<number | null>(null)
 const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
 const virtualizer = useVirtualizer({
   get count(): number {
@@ -184,18 +179,6 @@ const virtualWrapperStyle = computed<CSSProperties>(() => ({
     height: `${virtualizer.value.getTotalSize()}px`
   })
 }))
-const {
-  activeDetails,
-  clearHoverTimers,
-  resetActiveDetails,
-  scheduleDetailsHide,
-  scheduleDetailsShow
-} = useJobDetailsHover<{ jobId: string; workflowId?: string }>({
-  getActiveId: (details) => details.jobId,
-  getDisplayedJobGroups: () => displayedJobGroups,
-  onReset: clearPopoverAnchor
-})
-
 function getVirtualRowStyle(virtualItem: VirtualItem): CSSProperties {
   return {
     position: 'absolute',
@@ -229,22 +212,93 @@ function onListScroll() {
 
 function clearPopoverAnchor() {
   activeRowElement.value = null
-  popoverPosition.value = null
 }
 
-function updatePopoverPosition() {
-  const rowElement = activeRowElement.value
-  if (!rowElement) return
+function clearHideTimer() {
+  if (hideTimer.value !== null) {
+    clearTimeout(hideTimer.value)
+    hideTimer.value = null
+  }
+  hideTimerJobId.value = null
+}
 
-  const rect = rowElement.getBoundingClientRect()
-  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
+function clearShowTimer() {
+  if (showTimer.value !== null) {
+    clearTimeout(showTimer.value)
+    showTimer.value = null
+  }
+}
+
+function clearHoverTimers() {
+  clearHideTimer()
+  clearShowTimer()
+}
+
+function resetActiveDetails() {
+  clearHoverTimers()
+  isDetailsOpen.value = false
+  activeDetails.value = null
+  clearPopoverAnchor()
+}
+
+function hasDisplayedJob(jobId: string) {
+  return displayedJobGroups.some((group) =>
+    group.items.some((item) => item.id === jobId)
+  )
+}
+
+function scheduleDetailsShow(
+  nextActive: { jobId: string; workflowId?: string },
+  onShow?: () => void
+) {
+  clearShowTimer()
+  showTimer.value = window.setTimeout(() => {
+    showTimer.value = null
+    if (!hasDisplayedJob(nextActive.jobId)) return
+
+    activeDetails.value = nextActive
+    isDetailsOpen.value = true
+    onShow?.()
+  }, DETAILS_SHOW_DELAY_MS)
+}
+
+function showDetailsNow(
+  nextActive: { jobId: string; workflowId?: string },
+  onShow?: () => void
+) {
+  clearHoverTimers()
+  if (!hasDisplayedJob(nextActive.jobId)) return
+
+  activeDetails.value = nextActive
+  isDetailsOpen.value = true
+  onShow?.()
+}
+
+function scheduleDetailsHide(jobId?: string) {
+  if (!jobId) return
+
+  clearShowTimer()
+  if (hideTimerJobId.value && hideTimerJobId.value !== jobId) {
+    return
+  }
+
+  clearHideTimer()
+  hideTimerJobId.value = jobId
+  hideTimer.value = window.setTimeout(() => {
+    const currentActive = activeDetails.value
+    if (currentActive?.jobId === jobId) {
+      isDetailsOpen.value = false
+    }
+    hideTimer.value = null
+    hideTimerJobId.value = null
+  }, DETAILS_HIDE_DELAY_MS)
 }
 
 function onJobLeave(jobId: string) {
   if (hoveredJobId.value === jobId) {
     hoveredJobId.value = null
   }
-  scheduleDetailsHide(jobId, clearPopoverAnchor)
+  scheduleDetailsHide(jobId)
 }
 
 function onJobEnter(job: JobListItem, event: MouseEvent) {
@@ -254,22 +308,24 @@ function onJobEnter(job: JobListItem, event: MouseEvent) {
   if (!(rowElement instanceof HTMLElement)) return
 
   activeRowElement.value = rowElement
-  if (activeDetails.value?.jobId === job.id) {
+  const nextActive = {
+    jobId: job.id,
+    workflowId: job.taskRef?.workflowId
+  }
+
+  if (isDetailsOpen.value && activeDetails.value?.jobId === job.id) {
     clearHoverTimers()
-    void nextTick(updatePopoverPosition)
     return
   }
 
-  scheduleDetailsShow(
-    {
-      jobId: job.id,
-      workflowId: job.taskRef?.workflowId
-    },
-    () => {
-      activeRowElement.value = rowElement
-      void nextTick(updatePopoverPosition)
-    }
-  )
+  const isSwitchingVisibleDetails = isDetailsOpen.value
+  const showDetails = isSwitchingVisibleDetails
+    ? showDetailsNow
+    : scheduleDetailsShow
+
+  showDetails(nextActive, () => {
+    activeRowElement.value = rowElement
+  })
 }
 
 function isCancelable(job: JobListItem) {
@@ -327,7 +383,7 @@ function onPopoverEnter() {
 }
 
 function onPopoverLeave() {
-  scheduleDetailsHide(activeDetails.value?.jobId, clearPopoverAnchor)
+  scheduleDetailsHide(activeDetails.value?.jobId)
 }
 
 function getJobIconClass(job: JobListItem): string | undefined {
@@ -337,4 +393,18 @@ function getJobIconClass(job: JobListItem): string | undefined {
   }
   return undefined
 }
+
+watch(
+  () => displayedJobGroups,
+  () => {
+    const currentActive = activeDetails.value
+    if (!currentActive) return
+
+    if (!hasDisplayedJob(currentActive.jobId)) {
+      resetActiveDetails()
+    }
+  }
+)
+
+onBeforeUnmount(resetActiveDetails)
 </script>
