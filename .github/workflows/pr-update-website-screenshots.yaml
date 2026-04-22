@@ -7,7 +7,7 @@ on:
     types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -48,11 +48,13 @@ jobs:
         run: pnpm --filter @comfyorg/website build
 
       - name: Update screenshots
+        id: update-screenshots
         run: pnpm --filter @comfyorg/website test:visual:update
         continue-on-error: true
 
       - name: Commit updated screenshots
         id: commit
+        if: steps.update-screenshots.outcome == 'success'
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'

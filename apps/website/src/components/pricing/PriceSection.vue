@@ -360,9 +360,7 @@ const activePlanIndex = ref(0)
           <PricingPlanFeatureList
             :features="plan.features"
             :feature-intro-key="plan.featureIntroKey"
-            :next-up-key="plan.nextUpKey"
             :and-more-key="plan.andMoreKey"
-            next-up-class="text-primary-comfy-canvas mt-4 text-sm"
             :locale
           />
         </div>

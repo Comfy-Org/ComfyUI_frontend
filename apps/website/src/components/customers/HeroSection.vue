@@ -45,9 +45,11 @@ useHeroAnimation({
       <div
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-24 lg:pl-12"
       >
-        <SectionLabel ref="labelRef">
-          {{ t('customers.hero.label', locale) }}
-        </SectionLabel>
+        <div ref="labelRef">
+          <SectionLabel>
+            {{ t('customers.hero.label', locale) }}
+          </SectionLabel>
+        </div>
         <h1
           ref="headingRef"
           class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
