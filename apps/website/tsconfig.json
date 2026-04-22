@@ -6,5 +6,6 @@
     }
   },
   "include": ["src/**/*", "e2e/**/*", "astro.config.ts"],
-  "exclude": ["src/**/*.stories.ts"]
+  "exclude": ["src/**/*.stories.ts"],
+  "references": [{ "path": "./tsconfig.stories.json" }]
 }

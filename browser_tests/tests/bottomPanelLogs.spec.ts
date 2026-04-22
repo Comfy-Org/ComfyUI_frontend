@@ -1,98 +1,151 @@
+import { mergeTests } from '@playwright/test'
+
 import {
-  comfyPageFixture as test,
-  comfyExpect as expect
+  comfyExpect as expect,
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import {
+  LogsTerminalHelper,
+  logsTerminalFixture
+} from '@e2e/fixtures/helpers/LogsTerminalHelper'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import {
+  getClipboardText,
+  interceptClipboardWrite
+} from '@e2e/helpers/clipboardSpy'
+
+const test = mergeTests(comfyPageFixture, logsTerminalFixture, webSocketFixture)
 
 test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
-  test('should open bottom panel via toggle button', async ({ comfyPage }) => {
-    const { bottomPanel } = comfyPage
+  test.describe('panel', () => {
+    test.beforeEach(async ({ logsTerminal }) => {
+      await logsTerminal.mockSubscribeLogs()
+      await logsTerminal.mockRawLogs([])
+    })
 
-    await expect(bottomPanel.root).toBeHidden()
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    test('opens to Logs tab via toggle button', async ({ comfyPage }) => {
+      await expect(comfyPage.bottomPanel.root).toBeHidden()
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.tab).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeVisible()
+    })
+
+    test('closes via toggle button', async ({ comfyPage }) => {
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.root).toBeVisible()
+
+      await comfyPage.bottomPanel.toggleButton.click()
+      await expect(comfyPage.bottomPanel.root).toBeHidden()
+    })
+
+    test('switches from shortcuts to Logs tab', async ({ comfyPage }) => {
+      await comfyPage.bottomPanel.keyboardShortcutsButton.click()
+      await expect(comfyPage.bottomPanel.shortcuts.essentialsTab).toBeVisible()
+
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.tab).toBeVisible()
+      await expect(comfyPage.bottomPanel.shortcuts.essentialsTab).toBeHidden()
+    })
   })
 
-  test('should show Logs tab when terminal panel opens', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
+  test.describe('terminal', () => {
+    test.beforeEach(async ({ logsTerminal }) => {
+      await logsTerminal.mockSubscribeLogs()
+      await logsTerminal.mockRawLogs([])
+    })
 
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    test('shows loading spinner while logs are loading', async ({
+      comfyPage,
+      logsTerminal
+    }) => {
+      const resolveRaw = await logsTerminal.mockRawLogsPending()
 
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    await expect(logsTab).toBeVisible()
-  })
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.loadingSpinner).toBeVisible()
 
-  test('should close bottom panel via toggle button', async ({ comfyPage }) => {
-    const { bottomPanel } = comfyPage
+      resolveRaw()
+      await expect(comfyPage.bottomPanel.logs.loadingSpinner).toBeHidden()
+    })
 
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    test('renders initial log entries from the raw-logs API', async ({
+      comfyPage,
+      logsTerminal
+    }) => {
+      const logLine = 'Hello from ComfyUI backend!'
+      await logsTerminal.mockRawLogs([logLine])
 
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeHidden()
-  })
+      await comfyPage.bottomPanel.toggleLogs()
 
-  test('should switch between shortcuts and terminal panels', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
+      await expect(comfyPage.bottomPanel.logs.xtermScreen).toBeVisible()
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        logLine
+      )
+    })
 
-    await bottomPanel.keyboardShortcutsButton.click()
-    await expect(bottomPanel.root).toBeVisible()
-    await expect(
-      comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
-    ).toBeVisible()
+    test('appends log entries received via WebSocket', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeVisible()
 
-    await bottomPanel.toggleButton.click()
+      const ws = await getWebSocket()
+      const firstLine = 'First live log line'
+      const secondLine = 'Second live log line'
 
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    await expect(logsTab).toBeVisible()
-    await expect(
-      comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
-    ).toBeHidden()
-  })
+      ws.send(LogsTerminalHelper.buildWsLogFrame([firstLine]))
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        firstLine
+      )
 
-  test('should persist Logs tab content in bottom panel', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
+      ws.send(LogsTerminalHelper.buildWsLogFrame([secondLine]))
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        firstLine
+      )
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        secondLine
+      )
+    })
 
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    test('copy button copies terminal contents to clipboard', async ({
+      comfyPage,
+      logsTerminal
+    }) => {
+      const logLine = 'Copy me to the clipboard'
+      await logsTerminal.mockRawLogs([logLine])
 
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    await expect(logsTab).toBeVisible()
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        logLine
+      )
 
-    const isAlreadyActive =
-      (await logsTab.getAttribute('aria-selected')) === 'true'
-    if (!isAlreadyActive) {
-      await logsTab.click()
-    }
+      await interceptClipboardWrite(comfyPage.page)
 
-    const xtermContainer = bottomPanel.root.locator('.xterm')
-    await expect(xtermContainer).toBeVisible()
-  })
+      await comfyPage.bottomPanel.logs.terminalRoot.hover()
+      await expect(comfyPage.bottomPanel.logs.copyButton).toBeVisible()
+      await comfyPage.bottomPanel.logs.copyButton.click()
 
-  test('should render xterm container in terminal panel', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
+      await expect
+        .poll(() => getClipboardText(comfyPage.page))
+        .toContain(logLine)
+    })
 
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    test('shows error message when raw-logs API fails', async ({
+      comfyPage,
+      logsTerminal
+    }) => {
+      await logsTerminal.mockRawLogsError()
 
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    await expect(logsTab).toBeVisible()
+      await comfyPage.bottomPanel.toggleLogs()
 
-    const isAlreadyActive =
-      (await logsTab.getAttribute('aria-selected')) === 'true'
-    if (!isAlreadyActive) {
-      await logsTab.click()
-    }
-
-    const xtermScreen = bottomPanel.root.locator('.xterm, .xterm-screen')
-    await expect(xtermScreen.first()).toBeVisible()
+      await expect(comfyPage.bottomPanel.logs.errorMessage).toBeVisible()
+      await expect(comfyPage.bottomPanel.logs.errorMessage).toContainText(
+        'Unable to load logs'
+      )
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeHidden()
+    })
   })
 })

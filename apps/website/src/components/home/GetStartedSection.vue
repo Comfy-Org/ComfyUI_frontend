@@ -19,7 +19,7 @@ const steps = [
       },
       {
         label: t('getStarted.step1.launchCloud', locale),
-        href: externalLinks.app
+        href: externalLinks.cloud
       }
     ]
   },

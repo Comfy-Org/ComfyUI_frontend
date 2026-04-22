@@ -14,7 +14,8 @@ const baseRoutes = {
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   videos: '/videos',
-  caseStudies: '/case-studies'
+  caseStudies: '/case-studies',
+  contact: '/contact'
 } as const
 
 type Routes = typeof baseRoutes
@@ -28,7 +29,7 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 }
 
 export const externalLinks = {
-  app: 'https://app.comfy.org',
+  cloud: 'https://cloud.comfy.org',
   workflows: 'https://comfy.org/workflows',
   blog: 'https://blog.comfy.org/',
   github: 'https://github.com/Comfy-Org/ComfyUI',

@@ -472,6 +472,137 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
+    "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "first_frame": {
+        "name": "primeiro_frame",
+        "tooltip": "Imagem do primeiro frame para o vídeo."
+      },
+      "last_frame": {
+        "name": "último_frame",
+        "tooltip": "Imagem do último frame para o vídeo."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deve adicionar uma marca d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Gere, edite ou estenda vídeos usando Seedance 2.0 com imagens, vídeos e áudios de referência. Suporta referência multimodal, edição de vídeo e extensão de vídeo.",
+    "display_name": "ByteDance Seedance 2.0 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deve adicionar uma marca d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Gere vídeo usando modelos Seedance 2.0 a partir de um prompt de texto.",
+    "display_name": "ByteDance Seedance 2.0 Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deve adicionar uma marca d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Gere vídeo usando um prompt e os quadros inicial e final.",
     "display_name": "ByteDance Primeiro-Último-Frame para Vídeo",
@@ -1358,6 +1489,36 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "Combine as cores de uma imagem com outra usando vários algoritmos.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Imagem(ns) de referência para combinar as cores. Se não fornecido, o processamento é ignorado."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Imagem(ns) para aplicar a transformação de cor."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: cada quadro é ajustado individualmente à image_ref. uniform: agrupa estatísticas de todos os quadros de origem como base, ajusta para image_ref. target_frame: usa um quadro escolhido como base para a transformação para image_ref, aplicado uniformemente a todos os quadros (preserva diferenças relativas)"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -5453,6 +5614,22 @@
       },
       "image": {
         "name": "imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Extrair String do JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -13755,6 +13932,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Puxa a saída denoised em direção ao latent de entrada. Quanto maior, maior a fidelidade ao input. 0 para desabilitar."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Limite de sigma abaixo do qual restore_cfg é desabilitado."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Controla a intensidade no final da amostragem (sigma baixo). Interpolado linearmente a partir do início."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Controla a intensidade no início da amostragem (sigma alto)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D_Conditioning",
     "inputs": {
@@ -14753,6 +14968,58 @@
       },
       "width": {
         "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloTextToMusic": {
+    "description": "Gere música a partir de um prompt de texto usando o modelo de IA do Sonilo. Deixe a duração em 0 para que o modelo infira a duração a partir do prompt.",
+    "display_name": "Sonilo Texto para Música",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duração alvo em segundos. Defina como 0 para que o modelo infira a duração a partir do prompt. Máximo: 6 minutos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto descrevendo a música a ser gerada."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para reprodutibilidade. Atualmente ignorado pelo serviço Sonilo, mas mantido para consistência do grafo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Gere música a partir de conteúdo de vídeo usando o modelo de IA do Sonilo. Analisa o vídeo e cria música correspondente.",
+    "display_name": "Sonilo Vídeo para Música",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto opcional para guiar a geração da música. Deixe em branco para melhor qualidade - o modelo irá analisar completamente o conteúdo do vídeo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para reprodutibilidade. Atualmente ignorado pelo serviço Sonilo, mas mantido para consistência do grafo."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vídeo de entrada para gerar música. Duração máxima: 6 minutos."
       }
     },
     "outputs": {
@@ -16025,6 +16292,10 @@
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use o prompt/modelo de sistema padrão se o modelo possuir um."
       }
     },
     "outputs": {
@@ -16076,6 +16347,10 @@
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use o prompt/modelo de sistema padrão se o modelo possuir um."
       }
     },
     "outputs": {
