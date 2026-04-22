@@ -46,9 +46,9 @@ const cards = excludeProduct
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section class="bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24">
     <!-- Header -->
-    <div class="flex flex-col items-center text-center">
+    <div class="flex flex-col items-center px-4 text-center">
       <SectionLabel v-if="labelKey">
         {{ t(labelKey, locale) }}
       </SectionLabel>
@@ -66,7 +66,7 @@ const cards = excludeProduct
     <div
       :class="
         cn(
-          'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-0 lg:p-2',
+          'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-4 lg:p-2',
           cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )
       "
