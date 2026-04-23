@@ -70,7 +70,7 @@ const translations = {
     'zh-CN': '广告 &\n创意工作室'
   },
   'useCase.gaming': {
-    en: 'Gaming Industry',
+    en: 'Gaming',
     'zh-CN': '电子游戏'
   },
   'useCase.ecommerce': {
@@ -201,12 +201,12 @@ const translations = {
     'zh-CN': '客户故事'
   },
   'caseStudy.heading': {
-    en: 'See Comfy\nin the real world',
-    'zh-CN': '看看 Comfy\n在真实世界中的应用'
+    en: 'See ComfyUI\nin the real world',
+    'zh-CN': '看看 ComfyUI\n在真实世界中的应用'
   },
   'caseStudy.subheading': {
-    en: 'Videos & case studies from teams building with Comfy',
-    'zh-CN': '来自使用 Comfy 构建的团队的视频和案例研究'
+    en: 'Videos & case studies from teams building with ComfyUI',
+    'zh-CN': '来自使用 ComfyUI 构建的团队的视频和案例研究'
   },
   'caseStudy.seeAll': {
     en: 'SEE ALL CASE STUDIES',
@@ -1074,7 +1074,7 @@ const translations = {
     'zh-CN': '包含免费版全部能力，另加：'
   },
   'pricing.plan.standard.feature1': {
-    en: '60-minute max runtime per workflow',
+    en: '30-minute max runtime per workflow',
     'zh-CN': '单个工作流最长运行 60 分钟'
   },
   'pricing.plan.standard.feature2': {
@@ -1108,10 +1108,6 @@ const translations = {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
   },
-  'pricing.plan.creator.feature2': {
-    en: 'Up to 5 seats per workspace (coming soon!)',
-    'zh-CN': '每个工作区最多 5 个席位（即将上线）'
-  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.summary': {
@@ -1135,10 +1131,6 @@ const translations = {
   'pricing.plan.pro.feature1': {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
-  },
-  'pricing.plan.pro.feature2': {
-    en: 'Up to 20 seats per workspace (coming soon!)',
-    'zh-CN': '每个工作区最多 20 个席位（即将上线）'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
