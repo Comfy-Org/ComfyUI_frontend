@@ -864,6 +864,9 @@ importers:
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../../packages/shared-frontend-utils
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../../packages/tailwind-utils
       '@primevue/core':
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.13(typescript@5.9.3))
