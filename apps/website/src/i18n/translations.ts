@@ -66,7 +66,7 @@ const translations = {
     'zh-CN': '广告 &\n创意工作室'
   },
   'useCase.gaming': {
-    en: 'Video Games',
+    en: 'Gaming Industry',
     'zh-CN': '电子游戏'
   },
   'useCase.ecommerce': {

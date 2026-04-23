@@ -6,7 +6,7 @@ import { t } from '../../i18n/translations'
 
 import { externalLinks } from '../../config/routes'
 import { useParallax } from '../../composables/useParallax'
-import { usePinScrub } from '../../composables/usePinScrub'
+import { usePinScrub, VH_PER_ITEM } from '../../composables/usePinScrub'
 import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -52,7 +52,7 @@ const rightImgRef = ref<HTMLElement>()
 
 const {
   activeIndex: activeCategory,
-  isActive: isPinned,
+  isEnabled,
   scrollToIndex
 } = usePinScrub(
   { section: sectionRef, content: contentRef, nav: navRef },
@@ -69,15 +69,34 @@ const uid = useId()
 const leftBlobId = `left-blob-${uid}`
 const rightBlobId = `right-blob-${uid}`
 
-const pinScrubEnd = `+=${categories.length * 100}%`
+function onNavKeydown(event: KeyboardEvent) {
+  const delta = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+  if (!delta) return
+
+  event.preventDefault()
+  const next = Math.min(
+    categories.length - 1,
+    Math.max(0, activeCategory.value + delta)
+  )
+  scrollToIndex(next)
+
+  const buttons =
+    navRef.value?.querySelectorAll<HTMLButtonElement>(':scope > button')
+  buttons?.[next]?.focus({ preventScroll: true })
+}
+
+const pinScrubEnd = `+=${categories.length * VH_PER_ITEM}%`
 useParallax([rightImgRef], {
   trigger: sectionRef,
+  fromY: -150,
+  y: 150,
   start: 'top top',
   end: pinScrubEnd
 })
 useParallax([leftImgRef], {
   trigger: sectionRef,
-  y: -60,
+  fromY: 150,
+  y: -150,
   start: 'top top',
   end: pinScrubEnd
 })
@@ -89,7 +108,7 @@ useParallax([leftImgRef], {
     :class="
       cn(
         'bg-primary-comfy-ink relative isolate px-8 py-20 lg:px-0 lg:py-24',
-        isPinned && 'overflow-x-clip lg:h-[calc(100vh+60px)]'
+        isEnabled && 'overflow-x-clip lg:h-[calc(100vh+60px)]'
       )
     "
   >
@@ -168,6 +187,7 @@ useParallax([leftImgRef], {
             ref="navRef"
             class="mt-16 flex w-full max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:max-w-none lg:gap-8"
             aria-label="Industry categories"
+            @keydown="onNavKeydown"
           >
             <button
               v-for="(category, index) in categories"
@@ -175,7 +195,7 @@ useParallax([leftImgRef], {
               type="button"
               :class="
                 cn(
-                  'lg:text-4.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
+                  'lg:text-4.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors outline-none',
                   index === activeCategory
                     ? 'text-primary-comfy-canvas'
                     : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
