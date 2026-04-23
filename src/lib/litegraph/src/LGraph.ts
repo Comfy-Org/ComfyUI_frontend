@@ -579,9 +579,7 @@ export class LGraph
       for (let i = 0; i < num; i++) {
         for (let j = 0; j < limit; ++j) {
           const node = nodes[j]
-          // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
-            // wrap node.onExecute();
+          if (node.mode == LGraphEventMode.ALWAYS) {
             node.doExecute?.()
           }
         }
