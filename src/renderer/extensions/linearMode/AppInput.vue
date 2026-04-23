@@ -4,9 +4,10 @@ import { computed } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useHideInputSelection } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const { id, name } = defineProps<{
+const { id, enable, name } = defineProps<{
   id: string
   enable: boolean
   name: string
@@ -14,6 +15,12 @@ const { id, name } = defineProps<{
 
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
+// Ancestors (InputCell in the App Mode / App Builder floating panel) can
+// opt out of the selection checkbox so the panel preview matches App Mode
+// runtime 1:1. Selection + deselection in that context runs through the
+// graph canvas or the ⋯ Remove menu on each cell's header.
+const hideInputSelection = useHideInputSelection()
+const showSelection = computed(() => enable && !hideInputSelection)
 
 function matchesThis([nodeId, widgetName]: LinearInput) {
   return id == nodeId && name === widgetName
@@ -25,7 +32,7 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="enable"
+    v-if="showSelection"
     class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent

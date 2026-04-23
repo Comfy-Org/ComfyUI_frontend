@@ -4,18 +4,24 @@
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
+    <!-- Graph canvas container stays mounted in builder mode (including
+         arrange) so LiteGraphCanvasSplitterOverlay's SideToolbar slot
+         keeps rendering the Comfy sidebar. In builder:arrange the
+         graph canvas itself is covered by BuilderBackdrop (z:50). -->
     <div
-      v-show="!linearMode"
+      v-show="!linearMode || isBuilderMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
     >
       <GraphCanvas @ready="onGraphReady" />
     </div>
-    <LinearView v-if="linearMode" />
+    <LinearView v-if="linearMode && !isBuilderMode" />
     <template v-if="isBuilderMode">
+      <BuilderBackdrop />
       <BuilderToolbar />
       <BuilderMenu />
+      <AppChrome variant="builder" />
       <BuilderPanel />
       <AppBuilder />
       <BuilderFooterToolbar />
@@ -94,7 +100,9 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import AppChrome from '@/components/appMode/layout/AppChrome.vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
+import BuilderBackdrop from '@/components/builder/BuilderBackdrop.vue'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderPanel from '@/components/builder/BuilderPanel.vue'

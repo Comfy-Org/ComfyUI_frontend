@@ -5,7 +5,10 @@ import { useEventListener } from '@vueuse/core'
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { PanelPreset } from '@/components/appMode/layout/panels/panelTypes'
+import type {
+  BlockRow,
+  PanelPreset
+} from '@/components/appMode/layout/panels/panelTypes'
 import type {
   InputWidgetConfig,
   LinearData,
@@ -14,7 +17,6 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -44,6 +46,11 @@ export const useAppModeStore = defineStore('appMode', () => {
   // only for now; persistence is Phase 4-B.
   const panelPreset = ref<PanelPreset>('right-dock')
   const panelCollapsed = ref(false)
+  // Block layout inside the panel, shared with the builder's arrange step
+  // for the same WYSIWYG reason — rearranging in either view mutates the
+  // same 2D grid. Reconciliation against selectedInputs lives in
+  // useAppPanelLayout so the store stays free of graph-resolution code.
+  const panelRows = ref<BlockRow[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
@@ -148,8 +155,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Prune stale references
     resetSelectedToWorkflow()
 
-    useSidebarTabStore().activeSidebarTabId = null
-
     setMode(
       mode.value === 'app' && hasOutputs.value
         ? 'builder:arrange'
@@ -193,6 +198,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     loadSelections,
     panelCollapsed,
     panelPreset,
+    panelRows,
     pruneLinearData,
     removeSelectedInput,
     resetSelectedToWorkflow,

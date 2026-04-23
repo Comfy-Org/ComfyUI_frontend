@@ -22,7 +22,7 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI && !isBuilderMode" #side-toolbar>
+    <template v-if="showUI" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="showUI" #side-bar-panel>
@@ -38,8 +38,8 @@
     <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
-    <template v-if="showUI" #right-side-panel>
-      <NodePropertiesPanel v-if="!isBuilderMode" />
+    <template v-if="showUI && !isBuilderMode" #right-side-panel>
+      <NodePropertiesPanel />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu

@@ -2,28 +2,29 @@
 /**
  * BuilderPanel — floating right-dock panel for the App Builder flow.
  *
- * Renders the same widget list App Mode shows so the builder reads as
- * WYSIWYG: what you see while picking/arranging inputs is what the end
- * user will see. AppModeWidgetList with `builder-mode` provides the
- * delete/rename popover and drag handles; DraggableList wraps it during
- * the arrange step so blocks can be reordered. Panel preset + drag
- * behavior come from FloatingPanel (shared with App Mode) and are
- * bound to `appModeStore.panelPreset` so moving the panel in either
- * view updates both.
+ * Renders the same PanelBlockList App Mode shows, via the same shared
+ * state in appModeStore, so the builder is WYSIWYG by construction:
+ * what you see while picking / arranging inputs is exactly what App
+ * Mode renders at runtime. InputCell's `builder` variant adds the ⋯
+ * Rename/Remove menu and inerts the widget body so preview inputs
+ * aren't typed into while arranging.
  *
+ * Panel preset, collapse state, and `panelRows` all live on
+ * appModeStore; moving or rearranging in either view updates both.
  * Graph-canvas click-to-select overlays (widget highlights + output
- * rings) live in AppBuilder.vue — this component owns the panel surface
- * only.
+ * rings) live in AppBuilder.vue — this component owns the panel
+ * surface only.
+ *
+ * Run + Number-of-runs live in BuilderChrome (upper-right cluster) to
+ * match App Mode's runtime chrome, not in this panel.
  */
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FloatingPanel from '@/components/appMode/layout/panels/FloatingPanel.vue'
-import BatchCountCell from '@/components/appMode/layout/cells/BatchCountCell.vue'
-import RunCell from '@/components/appMode/layout/cells/RunCell.vue'
-import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
-import DraggableList from '@/components/common/DraggableList.vue'
+import PanelBlockList from '@/components/appMode/layout/panels/PanelBlockList.vue'
+import { useAppPanelLayout } from '@/components/appMode/layout/panels/useAppPanelLayout'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -32,8 +33,9 @@ import { getPathDetails } from '@/utils/formatUtil'
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const workflowStore = useWorkflowStore()
-const { panelPreset, panelCollapsed } = storeToRefs(appModeStore)
-const { isSelectInputsMode, isSelectOutputsMode, isArrangeMode } = useAppMode()
+const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
+const { isSelectInputsMode, isSelectOutputsMode } = useAppMode()
+const { inputEntryMap, moveBlock } = useAppPanelLayout()
 
 // Match App Mode's panel title (the workflow filename) so builder + App
 // Mode read as the same surface across modes.
@@ -62,14 +64,13 @@ const emptyCopy = computed(() => {
       :title="panelTitle"
       movable
     >
-      <DraggableList
-        v-if="isArrangeMode && hasInputs"
-        v-model="appModeStore.selectedInputs"
-        class="overflow-x-clip"
-      >
-        <AppModeWidgetList builder-mode />
-      </DraggableList>
-      <AppModeWidgetList v-else-if="hasInputs" builder-mode />
+      <PanelBlockList
+        v-if="hasInputs"
+        :rows="panelRows"
+        :input-entry-map="inputEntryMap"
+        variant="builder"
+        @reorder="moveBlock"
+      />
 
       <!-- Empty-state picker target. Dashed affordance matches the original
            builder signal that this is a "drop zone" for widget picks from
@@ -80,30 +81,6 @@ const emptyCopy = computed(() => {
       >
         {{ emptyCopy }}
       </div>
-
-      <!-- Footer preview: Run + Number-of-runs rendered exactly as they
-           appear in App Mode so the builder is WYSIWYG. Disabled here
-           because the workflow isn't executable from the builder — the
-           `builder-panel-footer-disabled` wrapper greys them out and
-           blocks pointer events. Tooltip explains the state on hover. -->
-      <template #footer>
-        <div
-          class="builder-panel-footer-disabled"
-          :title="t('linearMode.builder.runDisabledHint')"
-          aria-disabled="true"
-        >
-          <!-- `inert` removes descendants from focus + event path. The
-               wrapper's pointer-events: none was visible-only — Button
-               inside RunCell and ScrubableNumberInput inside BatchCountCell
-               were still tab-reachable and keyboard-activatable without it. -->
-          <div class="builder-panel-footer-row" inert>
-            <BatchCountCell />
-          </div>
-          <div class="builder-panel-footer-row builder-panel-footer-run" inert>
-            <RunCell />
-          </div>
-        </div>
-      </template>
     </FloatingPanel>
   </div>
 </template>
@@ -128,35 +105,5 @@ const emptyCopy = computed(() => {
 .builder-panel-root :deep(.floating-panel),
 .builder-panel-root :deep(.panel-drag-preview) {
   pointer-events: auto;
-}
-
-/* Disabled footer preview — Run + BatchCount look exactly like App Mode
-   so the builder is WYSIWYG, but they're inert and dimmed to signal
-   "available after you open this in App Mode."
-   Interaction blocking lives on the inner rows, not the wrapper,
-   so the wrapper can still receive hover events — otherwise the
-   `title` tooltip and `cursor: not-allowed` would be unreachable. */
-.builder-panel-footer-disabled {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  opacity: 0.55;
-  user-select: none;
-  cursor: not-allowed;
-}
-
-.builder-panel-footer-row {
-  height: var(--spacing-layout-cell);
-  background-color: var(--color-secondary-background);
-  border-radius: var(--radius-layout-cell);
-  /* Swallow clicks on the cells inside without blocking hover on the
-     wrapper — keeps the disabled-state tooltip + cursor discoverable. */
-  pointer-events: none;
-}
-
-.builder-panel-footer-run {
-  /* Run cell carries the accent fill itself; clear the outer surface
-     so the green reads through without a second background layer. */
-  background-color: transparent;
 }
 </style>

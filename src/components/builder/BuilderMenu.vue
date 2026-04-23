@@ -4,9 +4,9 @@
       <button
         :class="
           cn(
-            'builder-menu-trigger absolute z-1000 inline-flex cursor-pointer items-center gap-2 border-none transition-colors',
-            'hover:bg-secondary-background-hover',
-            'data-[state=open]:bg-secondary-background-hover'
+            'builder-menu-trigger absolute z-1000 inline-flex cursor-pointer items-center gap-2 transition-colors',
+            'hover:bg-layout-cell-hover',
+            'data-[state=open]:bg-layout-cell-hover'
           )
         "
         :data-sidebar="sidebarLocation"
@@ -16,7 +16,7 @@
         <span class="text-base font-medium">
           {{ t('linearMode.appModeToolbar.appBuilder') }}
         </span>
-        <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
+        <i class="icon-[lucide--chevron-down] size-4 text-layout-mute" />
       </button>
     </template>
     <template #default="{ close }">
@@ -106,8 +106,8 @@ function onExitBuilder(close: () => void) {
 </script>
 
 <style scoped>
-/* Matches ModeToggleCell visual treatment in App Mode: flat cell fill,
-   4px radius, 48px tall. Sits just right of the SideToolbar using the
+/* Matches AppChrome cell treatment: cell fill, hairline border, 10px
+   radius, 48px tall. Sits just right of the SideToolbar using the
    same --sidebar-width the graph-mode chrome reacts to. */
 .builder-menu-trigger {
   top: calc(var(--workflow-tabs-height) + var(--spacing-layout-outer));
@@ -117,9 +117,10 @@ function onExitBuilder(close: () => void) {
   left: var(--spacing-layout-outer);
   height: var(--spacing-layout-cell);
   padding: 0 12px;
-  color: var(--color-base-foreground);
-  background-color: var(--color-secondary-background);
-  border-radius: var(--radius-layout-cell);
+  color: var(--color-layout-text);
+  background-color: var(--color-layout-cell);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 10px;
 }
 .builder-menu-trigger[data-sidebar='left'] {
   left: calc(var(--sidebar-width, 0px) + var(--spacing-layout-outer));

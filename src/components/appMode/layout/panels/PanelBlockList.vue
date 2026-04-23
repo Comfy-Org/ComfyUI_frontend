@@ -10,13 +10,16 @@
 import { useTemplateRef } from 'vue'
 
 import InputCell from '../cells/InputCell.vue'
-import type { InputCellEntry } from '../cells/InputCell.vue'
+import type { InputCellEntry, InputCellVariant } from '../cells/InputCell.vue'
 import type { BlockPos, BlockRow, DropTarget } from './panelTypes'
 import { useBlockDrag } from './useBlockDrag'
 
-defineProps<{
+const { variant = 'app-mode' } = defineProps<{
   rows: BlockRow[]
   inputEntryMap: Map<string, InputCellEntry>
+  /** Forwarded to InputCell — `builder` adds the ⋯ Rename/Remove menu
+   *  and makes the widget body inert. */
+  variant?: InputCellVariant
 }>()
 
 const emit = defineEmits<{
@@ -105,7 +108,10 @@ function showColIndicator(rowIndex: number, colIndex: number): boolean {
                 class="panel-block__input"
                 :data-multiline="block.isMultiline ? 'true' : 'false'"
               >
-                <InputCell :entry="inputEntryMap.get(block.entryKey)!" />
+                <InputCell
+                  :entry="inputEntryMap.get(block.entryKey)!"
+                  :variant
+                />
               </div>
             </div>
           </div>
