@@ -638,9 +638,7 @@ export class ComfyApi extends EventTarget {
                 let promptId: string | undefined
 
                 if (
-                  this.serverSupportsFeature(
-                    'supports_progress_text_metadata'
-                  )
+                  this.serverSupportsFeature('supports_progress_text_metadata')
                 ) {
                   const promptIdLength = rawView.getUint32(offset)
                   offset += 4
