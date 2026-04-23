@@ -14,8 +14,6 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 
 import OutputHistory from './OutputHistory.vue'
 
-// --- Hoisted mock state ---
-
 const mediaRef = ref<AssetItem[]>([])
 const hasMoreRef = ref(false)
 const loadMoreFn = vi.fn()
