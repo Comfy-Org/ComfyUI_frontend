@@ -210,6 +210,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
       : `${this.subgraphNode.subgraph.id}:${this.sourceNodeId}:${this.sourceWidgetName}`
   }
 
+  /**
+   * Restore a per-instance value during `configure` without triggering the
+   * value setter's sibling-fallback capture.
+   *
+   * Seeds `_instanceWidgetValues`, `promotedSourceWriteMeta`, and the
+   * shared widget-store state in lock-step so `getTrackedValue`'s
+   * direct-edit self-heal does not discard the restored value.
+   */
   restorePerInstanceValue(value: IBaseWidget['value']): void {
     const cloned = cloneWidgetValue(value)
     this.subgraphNode._instanceWidgetValues.set(this.instanceKey, cloned)
@@ -221,11 +229,15 @@ class PromotedWidgetView implements IPromotedWidgetView {
         writerInstanceId: String(this.subgraphNode.id)
       }
     )
-    // Align shared state with the restored value so getTrackedValue's
-    // direct-edit self-heal doesn't mistake the pre-existing inner value
-    // for a post-load edit and discard the per-instance state.
-    // Unlike the value setter, skip captureSiblingFallbackValues — each
-    // loaded instance brings its own saved value, no fallback needed.
+    /**
+     * Align shared state with the restored value so `getTrackedValue`'s
+     * direct-edit self-heal does not mistake the pre-existing inner value
+     * for a post-load edit and discard the per-instance state.
+     *
+     * Unlike the value setter, this skips `captureSiblingFallbackValues`
+     * — each loaded instance brings its own saved value, so no fallback
+     * needs to be captured.
+     */
     this._writeValueToSharedState(value)
   }
 

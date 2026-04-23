@@ -655,6 +655,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
+  /**
+   * Serialize promotion entries with their per-instance value inlined on
+   * each entry as an optional trailing `{value}` state object.
+   *
+   * Binding identity and value into the same record lets every downstream
+   * transformation — promotion-store reordering, null-entry filtering,
+   * clipboard-paste / subgraph-dedup / nested-pack ID remaps — carry them
+   * together without any extra bookkeeping.
+   *
+   * Non-serializable source widgets (where `sourceSerialize` is false)
+   * are written in the legacy 2- or 3-tuple form so `widgets_values` on
+   * the SubgraphNode remains a dead field, matching the pre-#10849
+   * invariant.
+   */
   private _serializeEntriesWithState(
     entries: PromotedWidgetSource[],
     viewByInstanceKey: Map<string, PromotedWidgetView>
@@ -1106,9 +1120,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._promotedViewManager.clear()
     this._invalidatePromotedViewsCache()
 
-    // Hydrate the store from serialized properties.proxyWidgets. Inline
-    // {value} state on each entry is paired with its resolved identity so
-    // legacy -1 entries and ancestor-normalized entries stay aligned.
+    /**
+     * Hydrate the promotion store from serialized `properties.proxyWidgets`.
+     * Inline `{value}` state on each entry is paired with its resolved
+     * identity in a single pass so legacy `-1` entries and ancestor-
+     * normalized entries stay aligned with their per-instance value.
+     */
     const raw = parseProxyWidgets(this.properties.proxyWidgets)
     const store = usePromotionStore()
     const pendingValues = new Map<string, unknown>()
@@ -1195,11 +1212,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.promote(this.rootGraph.id, this.id, source)
     }
 
-    // Hydrate per-instance values by resolved identity key. The pending
-    // map is built alongside entry resolution so legacy -1 and ancestor
-    // normalization paths are handled with the same logic as the promotion
-    // store, and reorder / filter / ID remap can't desync identity from
-    // value.
+    /**
+     * Hydrate per-instance values by resolved identity key. The pending
+     * map is built alongside entry resolution so legacy `-1` and ancestor
+     * normalization paths are handled with the same logic as the promotion
+     * store, and reorder / filter / ID-remap can't desync identity from
+     * value.
+     */
     if (pendingValues.size > 0) {
       for (const view of this._getPromotedViews()) {
         if (!view.sourceSerialize) continue
@@ -1675,9 +1694,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     const serialized = super.serialize()
-    // SubgraphNode.widgets_values is a dead field — per-instance values live
-    // inline in proxyWidgets entries. Delete any value the base-class
-    // serialize path may have written for defence in depth.
+    /**
+     * `SubgraphNode.widgets_values` is a dead field — per-instance values
+     * live inline on `proxyWidgets` entries. Delete any value the base-class
+     * serialize path may have written for defence in depth.
+     */
     delete serialized.widgets_values
 
     return serialized
