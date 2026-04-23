@@ -2,6 +2,7 @@ import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export interface CreateJobDetailFixtureOptions {
   id?: string
@@ -68,4 +69,4 @@ export const MINIMAL_WORKFLOW = {
   config: {},
   extra: {},
   version: 0.4
-} as const
+} satisfies ComfyWorkflowJSON
