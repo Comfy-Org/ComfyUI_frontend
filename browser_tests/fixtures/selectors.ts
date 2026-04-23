@@ -181,7 +181,13 @@ export const TestIds = {
     vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
-    subgraph: 'subgraph-breadcrumb'
+    subgraph: 'subgraph-breadcrumb',
+    back: 'subgraph-breadcrumb-back',
+    item: (key: string) => `subgraph-breadcrumb-item-${key}`,
+    blueprintTag: 'subgraph-breadcrumb-blueprint-tag',
+    missingNodesIcon: 'subgraph-breadcrumb-missing-nodes-icon',
+    renameInput: 'subgraph-breadcrumb-rename-input',
+    menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
   templates: {
     content: 'template-workflows-content',
@@ -200,6 +206,9 @@ export const TestIds = {
   },
   loading: {
     overlay: 'loading-overlay'
+  },
+  load3d: {
+    recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'

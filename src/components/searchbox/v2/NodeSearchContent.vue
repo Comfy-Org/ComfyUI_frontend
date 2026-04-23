@@ -100,7 +100,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { filters } = defineProps<{
   filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]

@@ -808,6 +808,7 @@
     "IMAGE": "影像",
     "IMAGECOMPARE": "圖像比較",
     "INT": "整數",
+    "INTERP_MODEL": "INTERP_MODEL",
     "LATENT": "latent (潛空間)",
     "LATENT_OPERATION": "latent 操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",

@@ -32,7 +32,7 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 

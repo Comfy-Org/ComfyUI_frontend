@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+---
+
+<BaseLayout
+  title="404 — Page Not Found — Comfy"
+  noindex>
+  <div
+    class="grid w-full grid-rows-1 place-items-center p-4 h-[calc(100dvh-12rem)]">
+    <div
+      class="relative flex size-full min-h-0 items-center justify-center overflow-hidden">
+      <svg
+        id="game"
+        class="block size-full"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid meet">
+        <use
+          class="pointer-events-none text-secondary-mauve"
+          href="/svg/404-title.svg#title404"
+        ></use>
+        <g id="board"></g>
+        <g
+          fill="currentColor"
+          class="text-secondary-mauve"
+          transform="matrix(0.9346 -0.02737 -0.00901 1.0422 -597.31 -135.88)">
+          <text
+            id="startCta"
+            x="300"
+            y="200"
+            font-family="'PP Formula', sans-serif"
+            font-size="32"
+            letter-spacing="0.15em"
+            text-anchor="end"
+            dominant-baseline="middle"
+            transform="rotate(-31 400 200)"
+            class="cursor-pointer uppercase"
+            >CLICK TO START</text
+          >
+          <text
+            id="scoreLine"
+            x="300"
+            y="232"
+            font-family="'PP Formula', sans-serif"
+            font-size="20"
+            letter-spacing="0.12em"
+            text-anchor="end"
+            dominant-baseline="middle"
+            transform="rotate(-31 400 200)"
+            display="none"
+            class="uppercase"
+          ></text>
+        </g>
+      </svg>
+
+      <div
+        class="absolute inset-0 z-2 hidden items-center justify-center rounded-lg bg-primary-comfy-ink/85"
+        id="pauseOverlay">
+        <div
+          class="rounded-lg border border-primary-comfy-plum bg-primary-comfy-ink px-12 py-8 text-center">
+          <h2 class="mb-2 text-xl tracking-widest text-primary-comfy-yellow">
+            PAUSED
+          </h2>
+          <p class="my-1 text-xs tracking-widest text-primary-comfy-canvas">
+            Press space to resume
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/snakeGame'
+  </script>
+</BaseLayout>

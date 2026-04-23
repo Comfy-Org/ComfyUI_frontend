@@ -7,7 +7,7 @@ import type { LinearInput } from '@/platform/workflow/management/stores/comfyWor
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useHideInputSelection } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { id, enable, name } = defineProps<{
   id: string

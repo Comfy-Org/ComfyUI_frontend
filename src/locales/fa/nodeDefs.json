@@ -483,9 +483,17 @@
         "name": "اولین فریم",
         "tooltip": "تصویر اولین فریم برای ویدیو."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "شناسه asset_id مربوط به Seedance برای استفاده به عنوان اولین فریم. با ورودی تصویر first_frame ناسازگار است."
+      },
       "last_frame": {
         "name": "آخرین فریم",
         "tooltip": "تصویر آخرین فریم برای ویدیو."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "شناسه asset_id مربوط به Seedance برای استفاده به عنوان آخرین فریم. با ورودی تصویر last_frame ناسازگار است."
       },
       "model": {
         "name": "مدل",
@@ -531,6 +539,9 @@
       "model": {
         "name": "مدل",
         "tooltip": "Seedance 2.0 برای بالاترین کیفیت؛ Seedance 2.0 Fast برای بهینه‌سازی سرعت."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "ایجاد یک دارایی تصویر شخصی Seedance 2.0. تصویر ورودی را بارگذاری کرده و آن را در گروه دارایی مشخص ثبت می‌کند. اگر group_id خالی باشد، فرآیند احراز هویت واقعی H5 اجرا می‌شود تا پیش از افزودن دارایی، یک گروه جدید ایجاد گردد.",
+    "display_name": "ایجاد دارایی تصویر ByteDance",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "استفاده مجدد از شناسه گروه دارایی Seedance موجود برای جلوگیری از احراز هویت انسانی تکراری برای یک فرد. اگر خالی باشد، احراز هویت واقعی در مرورگر اجرا شده و یک گروه جدید ایجاد می‌شود."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویری که به عنوان دارایی شخصی ثبت می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "ایجاد یک دارایی ویدیویی شخصی Seedance 2.0. ویدیوی ورودی را بارگذاری کرده و آن را در گروه دارایی مشخص ثبت می‌کند. اگر group_id خالی باشد، فرآیند احراز هویت واقعی H5 اجرا می‌شود تا پیش از افزودن دارایی، یک گروه جدید ایجاد گردد.",
+    "display_name": "ایجاد دارایی ویدیو ByteDance",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "استفاده مجدد از شناسه گروه دارایی Seedance موجود برای جلوگیری از احراز هویت انسانی تکراری برای یک فرد. اگر خالی باشد، احراز هویت واقعی در مرورگر اجرا شده و یک گروه جدید ایجاد می‌شود."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "ویدیویی که به عنوان دارایی شخصی ثبت می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -3683,6 +3742,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "میان‌یابی فریم",
+    "inputs": {
+      "images": {
+        "name": "تصاویر"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "ضریب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "بارگذاری مدل میان‌یابی فریم",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "یک مدل میان‌یابی فریم برای بارگذاری انتخاب کنید. مدل‌ها باید در پوشه 'frame_interpolation' قرار داشته باشند."
       }
     },
     "outputs": {
@@ -17506,6 +17598,10 @@
       "prompt": {
         "name": "پرامپت",
         "tooltip": "توضیح متنی ویدیو"
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی ویدیو. وضوح ۴K برای مدل‌های veo-3.1-lite و veo-3.0 در دسترس نیست."
       },
       "seed": {
         "name": "seed",

@@ -165,7 +165,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean

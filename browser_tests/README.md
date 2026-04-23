@@ -202,7 +202,7 @@ Most common testing needs are already addressed by these helpers, which will mak
    await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None')
 
    // Clean up uploaded files if needed
-   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`)
+   comfyPage.deleteFileAfterTest({ filename: 'image.png' })
    ```
 
 6. **Prefer functional assertions over screenshots**:
