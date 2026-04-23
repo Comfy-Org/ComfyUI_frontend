@@ -192,6 +192,14 @@ export class AssetsHelper {
     { path?: string; body?: Buffer; contentType?: string }
   >()
 
+  private static buildAssetFileKey(
+    filename: string,
+    type: 'input' | 'output',
+    subfolder: string
+  ): string {
+    return `${type}::${subfolder}::${filename}`
+  }
+
   constructor(private readonly page: Page) {}
 
   async mockOutputHistory(jobs: RawJobListItem[]): Promise<void> {
@@ -362,26 +370,52 @@ export class AssetsHelper {
   }
 
   /**
-   * Intercepts `GET /api/view?filename=...&type=input[&subfolder=...]`
-   * and serves a real file. Required by `extractWorkflowFromAsset` for
-   * input-asset path coverage; the filename key must match the query
-   * parameter the production `getAssetUrl()` builds.
+   * Intercepts `GET /api/view?filename=...&type=...[&subfolder=...]` and
+   * serves a real file. Matches on `filename` + `type` + `subfolder` to
+   * mirror `getAssetUrl()`; requests that don't match a registered entry
+   * fall through so unrelated preview/image loads keep working.
    */
   async mockInputAssetFile(
     filename: string,
-    file: { path?: string; body?: Buffer; contentType?: string }
+    file: {
+      path?: string
+      body?: Buffer
+      contentType?: string
+      type?: 'input' | 'output'
+      subfolder?: string
+    }
   ): Promise<void> {
-    this.inputAssetFiles.set(filename, file)
+    const type = file.type ?? 'input'
+    const subfolder = file.subfolder ?? ''
+    const key = AssetsHelper.buildAssetFileKey(filename, type, subfolder)
+    this.inputAssetFiles.set(key, {
+      path: file.path,
+      body: file.body,
+      contentType: file.contentType
+    })
 
     if (this.viewRouteHandler) return
 
     this.viewRouteHandler = async (route: Route) => {
       const url = new URL(route.request().url())
-      const requested = url.searchParams.get('filename')
-      const entry = requested ? this.inputAssetFiles.get(requested) : undefined
+      const requestedName = url.searchParams.get('filename')
+      const requestedType = url.searchParams.get('type') ?? 'output'
+      const requestedSubfolder = url.searchParams.get('subfolder') ?? ''
+
+      const entry =
+        requestedName &&
+        (requestedType === 'input' || requestedType === 'output')
+          ? this.inputAssetFiles.get(
+              AssetsHelper.buildAssetFileKey(
+                requestedName,
+                requestedType,
+                requestedSubfolder
+              )
+            )
+          : undefined
 
       if (!entry) {
-        await route.fulfill({ status: 404, body: '' })
+        await route.fallback()
         return
       }
 
