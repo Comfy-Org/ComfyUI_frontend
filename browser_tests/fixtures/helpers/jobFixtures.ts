@@ -12,12 +12,6 @@ export interface CreateJobDetailFixtureOptions {
 
 const DEFAULT_JOB_ID = 'job-detail-001'
 
-/**
- * Builds a `JobDetail` with `workflow` nested at
- * `workflow.extra_data.extra_pnginfo.workflow` — the shape parsed by
- * `extractWorkflow()` via `zWorkflowContainer`. Omit `workflow` to
- * simulate the "no workflow data" branch.
- */
 export function createJobDetailFixture({
   id = DEFAULT_JOB_ID,
   workflow,
