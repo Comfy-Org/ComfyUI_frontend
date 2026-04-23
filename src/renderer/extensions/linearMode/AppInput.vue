@@ -72,10 +72,10 @@ function togglePromotion() {
         class="group pointer-events-auto fixed flex cursor-pointer flex-row items-stretch"
         :style="{
           top: `${top}px`,
-          left: `calc(${left}px - ${1.5 * canvasScale}rem - var(--spacing-layout-gutter) * 4)`,
-          width: `calc(${width}px + ${1.5 * canvasScale}rem + var(--spacing-layout-gutter) * 4)`,
+          left: `calc(${left}px - ${1.5 * canvasScale}rem - var(--spacing-layout-gutter) * 4 * ${canvasScale})`,
+          width: `calc(${width}px + ${1.5 * canvasScale}rem + var(--spacing-layout-gutter) * 4 * ${canvasScale})`,
           height: `${height}px`,
-          gap: 'calc(var(--spacing-layout-gutter) * 2.5)',
+          gap: `calc(var(--spacing-layout-gutter) * 2.5 * ${canvasScale})`,
           zIndex: 5
         }"
         @pointerdown.capture.stop.prevent="togglePromotion"

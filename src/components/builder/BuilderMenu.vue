@@ -52,6 +52,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useBuilderSave } from './useBuilderSave'
+
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
@@ -60,6 +62,7 @@ const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
 const settingStore = useSettingStore()
+const { saveAs } = useBuilderSave()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
@@ -70,6 +73,12 @@ const menuItems = computed(() => [
     icon: 'icon-[lucide--save]',
     disabled: !hasOutputs.value,
     action: onSave
+  },
+  {
+    label: t('builderToolbar.saveAs'),
+    icon: 'icon-[lucide--copy]',
+    disabled: !hasOutputs.value,
+    action: onSaveAs
   },
   {
     label: t('builderMenu.enterAppMode'),
@@ -92,6 +101,11 @@ async function onSave(close: () => void) {
   } catch (error) {
     toastErrorHandler(error)
   }
+}
+
+function onSaveAs(close: () => void) {
+  saveAs()
+  close()
 }
 
 function onEnterAppMode(close: () => void) {
