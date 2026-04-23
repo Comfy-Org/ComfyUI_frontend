@@ -41,12 +41,12 @@ async function clickMinimapAt(
   relX: number,
   relY: number
 ) {
-  const box = await overlay.boundingBox()
-  expect(box, 'Minimap interaction overlay not found').toBeTruthy()
-  await page.mouse.click(
-    box!.x + box!.width * relX,
-    box!.y + box!.height * relY
+  const { clientX, clientY } = await clientPointOnMinimapOverlay(
+    overlay,
+    relX,
+    relY
   )
+  await page.mouse.click(clientX, clientY)
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
