@@ -19,8 +19,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
   test('Double-click on empty canvas opens search', async ({ comfyPage }) => {
     const { searchBoxV2 } = comfyPage
 
-    await comfyPage.page.mouse.dblclick(200, 200, { delay: 5 })
-    await expect(searchBoxV2.input).toBeVisible()
+    await searchBoxV2.openByDoubleClickCanvas()
     await expect(searchBoxV2.dialog).toBeVisible()
   })
 
@@ -31,13 +30,11 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
     await searchBoxV2.open()
-
     await searchBoxV2.input.fill('KSampler')
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
     await expect(searchBoxV2.input).toBeHidden()
-
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialCount)
@@ -87,7 +84,6 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.categoryButton('loaders').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
-
       await expect
         .poll(() => searchBoxV2.results.allTextContents())
         .not.toEqual(samplingResults)
@@ -100,23 +96,24 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      // Search first to get a result set below the 64-item cap
+      // Search first to keep the result set under the 64-item cap.
       await searchBoxV2.input.fill('Load')
-      const unfilteredCount = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const unfilteredCount = await searchBoxV2.results.count()
 
-      // Apply Input filter with MODEL type
-      await searchBoxV2.applyTypeFilter('Input', 'MODEL')
-      await expect(searchBoxV2.filterChips.first()).toBeVisible()
-      const filteredCount = await searchBoxV2.getResultCount()
-      expect(filteredCount).not.toBe(unfilteredCount)
+      await test.step('Apply Input/MODEL filter', async () => {
+        await searchBoxV2.applyTypeFilter('input', 'MODEL')
+        await expect(searchBoxV2.filterChips).toHaveCount(1)
+        await expect
+          .poll(() => searchBoxV2.results.count())
+          .not.toBe(unfilteredCount)
+      })
 
-      // Remove filter by clicking the chip delete button
-      await searchBoxV2.removeFilterChip()
-
-      // Filter chip should be removed and count restored
-      await expect(searchBoxV2.filterChips).toHaveCount(0)
-      const restoredCount = await searchBoxV2.getResultCount()
-      expect(restoredCount).toBe(unfilteredCount)
+      await test.step('Remove the filter chip', async () => {
+        await searchBoxV2.removeFilterChip()
+        await expect(searchBoxV2.filterChips).toHaveCount(0)
+        await expect(searchBoxV2.results).toHaveCount(unfilteredCount)
+      })
     })
   })
 
@@ -129,31 +126,48 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await comfyPage.canvasOps.disconnectEdge()
       await expect(searchBoxV2.input).toBeVisible()
 
-      // disconnectEdge pulls a CLIP link - should have a filter chip
+      // disconnectEdge pulls a CLIP link → expect a single CLIP filter chip.
       await expect(searchBoxV2.filterChips).toHaveCount(1)
       await expect(searchBoxV2.filterChips.first()).toContainText('CLIP')
     })
 
     test('Link release auto-connects added node', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
-      const nodeCountBefore = await comfyPage.nodeOps.getGraphNodesCount()
+      const NODE_TYPE = 'CLIPTextEncode'
+      const refsBefore = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
+      const idsBefore = new Set(refsBefore.map((n) => n.id))
       const linkCountBefore = await comfyPage.nodeOps.getLinkCount()
 
       await comfyPage.canvasOps.disconnectEdge()
       await expect(searchBoxV2.input).toBeVisible()
 
-      // Search for a node that accepts CLIP input and select it
       await searchBoxV2.input.fill('CLIP Text Encode')
       await expect(searchBoxV2.results.first()).toBeVisible()
       await comfyPage.page.keyboard.press('Enter')
       await expect(searchBoxV2.input).toBeHidden()
 
-      // A new node should have been added and auto-connected
-      const nodeCountAfter = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(nodeCountAfter).toBe(nodeCountBefore + 1)
+      // A new CLIPTextEncode node should have been added.
+      await expect
+        .poll(() =>
+          comfyPage.nodeOps
+            .getNodeRefsByType(NODE_TYPE)
+            .then((refs) => refs.length)
+        )
+        .toBe(refsBefore.length + 1)
 
-      const linkCountAfter = await comfyPage.nodeOps.getLinkCount()
-      expect(linkCountAfter).toBe(linkCountBefore)
+      // Net link count is unchanged: original release dropped a link, the
+      // selected node re-attached one.
+      await expect
+        .poll(() => comfyPage.nodeOps.getLinkCount())
+        .toBe(linkCountBefore)
+
+      // Verify the auto-connect: the newly-added node's CLIP input must be
+      // connected (proves the release wasn't just dropped).
+      const refsAfter = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
+      const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
+      if (!newNode) throw new Error('Expected a new CLIPTextEncode node')
+      const clipInput = await newNode.getInput(0)
+      await expect.poll(() => clipInput.getLinkCount()).toBe(1)
     })
   })
 
@@ -163,15 +177,15 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      // Search first so both counts use the search service path
       await searchBoxV2.input.fill('Load')
-      const unfilteredCount = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const unfilteredCount = await searchBoxV2.results.count()
 
-      await searchBoxV2.applyTypeFilter('Output', 'IMAGE')
+      await searchBoxV2.applyTypeFilter('output', 'IMAGE')
       await expect(searchBoxV2.filterChips).toHaveCount(1)
-      const filteredCount = await searchBoxV2.getResultCount()
-
-      expect(filteredCount).not.toBe(unfilteredCount)
+      await expect
+        .poll(() => searchBoxV2.results.count())
+        .not.toBe(unfilteredCount)
     })
 
     test('Multiple type filters (Input + Output) narrows results', async ({
@@ -181,15 +195,16 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.applyTypeFilter('Input', 'MODEL')
+      await searchBoxV2.applyTypeFilter('input', 'MODEL')
       await expect(searchBoxV2.filterChips).toHaveCount(1)
-      const singleFilterCount = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const singleFilterCount = await searchBoxV2.results.count()
 
-      await searchBoxV2.applyTypeFilter('Output', 'LATENT')
+      await searchBoxV2.applyTypeFilter('output', 'LATENT')
       await expect(searchBoxV2.filterChips).toHaveCount(2)
-      const dualFilterCount = await searchBoxV2.getResultCount()
-
-      expect(dualFilterCount).toBeLessThan(singleFilterCount)
+      await expect
+        .poll(() => searchBoxV2.results.count())
+        .toBeLessThan(singleFilterCount)
     })
 
     test('Root filter + search query narrows results', async ({
@@ -198,18 +213,15 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
-
-      // Search without root filter
       await searchBoxV2.input.fill('Sampler')
-      const unfilteredCount = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const unfilteredCount = await searchBoxV2.results.count()
 
-      // Apply Comfy root filter on top of search
-      await searchBoxV2.filterBarButton('Comfy').click()
-      const filteredCount = await searchBoxV2.getResultCount()
-
-      // Root filter should narrow or maintain the result set
-      expect(filteredCount).toBeLessThan(unfilteredCount)
-      expect(filteredCount).toBeGreaterThan(0)
+      await searchBoxV2.rootCategoryButton('comfy').click()
+      await expect
+        .poll(() => searchBoxV2.results.count())
+        .toBeLessThan(unfilteredCount)
+      await expect.poll(() => searchBoxV2.results.count()).toBeGreaterThan(0)
     })
 
     test('Root filter + category selection', async ({ comfyPage }) => {
@@ -217,15 +229,15 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      // Click "Comfy" root filter
-      await searchBoxV2.filterBarButton('Comfy').click()
-      const comfyCount = await searchBoxV2.getResultCount()
+      await searchBoxV2.rootCategoryButton('comfy').click()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const comfyCount = await searchBoxV2.results.count()
 
-      // Under root filter, categories are prefixed (e.g. comfy/sampling)
+      // Under root filter, categories are prefixed (e.g. comfy/sampling).
       await searchBoxV2.categoryButton('comfy/sampling').click()
-      const comfySamplingCount = await searchBoxV2.getResultCount()
-
-      expect(comfySamplingCount).toBeLessThan(comfyCount)
+      await expect
+        .poll(() => searchBoxV2.results.count())
+        .toBeLessThan(comfyCount)
     })
   })
 
@@ -235,17 +247,18 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      // Click a parent category to expand it
       const samplingBtn = searchBoxV2.categoryButton('sampling')
-      await samplingBtn.click()
-
-      // Look for subcategories (e.g. sampling/custom_sampling)
       const subcategory = searchBoxV2.categoryButton('sampling/custom_sampling')
-      await expect(subcategory).toBeVisible()
 
-      // Click sampling again to collapse
-      await samplingBtn.click()
-      await expect(subcategory).toBeHidden()
+      await test.step('Expanding sampling reveals its subcategories', async () => {
+        await samplingBtn.click()
+        await expect(subcategory).toBeVisible()
+      })
+
+      await test.step('Collapsing sampling hides its subcategories', async () => {
+        await samplingBtn.click()
+        await expect(subcategory).toBeHidden()
+      })
     })
 
     test('Subcategory narrows results to subset', async ({ comfyPage }) => {
@@ -253,34 +266,33 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      // Select parent category
       await searchBoxV2.categoryButton('sampling').click()
-      const parentCount = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const parentCount = await searchBoxV2.results.count()
 
-      // Select subcategory
       const subcategory = searchBoxV2.categoryButton('sampling/custom_sampling')
       await expect(subcategory).toBeVisible()
       await subcategory.click()
-      const childCount = await searchBoxV2.getResultCount()
 
-      expect(childCount).toBeLessThan(parentCount)
+      await expect
+        .poll(() => searchBoxV2.results.count())
+        .toBeLessThan(parentCount)
     })
 
     test('Most relevant resets category filter', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
-      const defaultCount = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const defaultCount = await searchBoxV2.results.count()
 
-      // Select a category
       await searchBoxV2.categoryButton('sampling').click()
-      const samplingCount = await searchBoxV2.getResultCount()
-      expect(samplingCount).not.toBe(defaultCount)
+      await expect
+        .poll(() => searchBoxV2.results.count())
+        .not.toBe(defaultCount)
 
-      // Click "Most relevant" to reset
       await searchBoxV2.categoryButton('most-relevant').click()
-      const resetCount = await searchBoxV2.getResultCount()
-      expect(resetCount).toBe(defaultCount)
+      await expect(searchBoxV2.results).toHaveCount(defaultCount)
     })
   })
 
@@ -290,41 +302,40 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       await searchBoxV2.open()
-
       await searchBoxV2.input.fill('KSampler')
       await expect(searchBoxV2.results.first()).toBeVisible()
 
       await searchBoxV2.results.first().click()
       await expect(searchBoxV2.input).toBeHidden()
-
-      const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(newCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
 
     test('Search narrows results progressively', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
+      const getCount = () => searchBoxV2.results.count()
 
       await searchBoxV2.open()
 
       await searchBoxV2.input.fill('S')
-      const count1 = await searchBoxV2.getResultCount()
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      const count1 = await getCount()
 
       await searchBoxV2.input.fill('Sa')
-      const count2 = await searchBoxV2.getResultCount()
+      await expect.poll(getCount).toBeLessThan(count1)
+      const count2 = await getCount()
 
       await searchBoxV2.input.fill('Sampler')
-      const count3 = await searchBoxV2.getResultCount()
-
-      expect(count2).toBeLessThan(count1)
-      expect(count3).toBeLessThan(count2)
+      await expect.poll(getCount).toBeLessThan(count2)
     })
 
     test('No results shown for nonsensical query', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
-
       await searchBoxV2.input.fill('zzzxxxyyy_nonexistent_node')
+
       await expect(searchBoxV2.noResults).toBeVisible()
       await expect(searchBoxV2.results).toHaveCount(0)
     })
@@ -335,9 +346,8 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
-
-      await searchBoxV2.applyTypeFilter('Input', 'MODEL')
-      await searchBoxV2.applyTypeFilter('Output', 'LATENT')
+      await searchBoxV2.applyTypeFilter('input', 'MODEL')
+      await searchBoxV2.applyTypeFilter('output', 'LATENT')
 
       await expect(searchBoxV2.filterChips).toHaveCount(2)
       await expect(searchBoxV2.filterChips.first()).toContainText('MODEL')
@@ -354,14 +364,11 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
-
       await searchBoxV2.input.fill('VAE Decode')
       await expect(searchBoxV2.results.first()).toBeVisible()
 
-      const firstResult = searchBoxV2.results.first()
-      const idBadge = firstResult.getByTestId('node-id-badge')
-      await expect(idBadge).toBeVisible()
-      await expect(idBadge).toContainText('VAEDecode')
+      await expect(searchBoxV2.nodeIdBadge.first()).toBeVisible()
+      await expect(searchBoxV2.nodeIdBadge.first()).toContainText('VAEDecode')
     })
   })
 })

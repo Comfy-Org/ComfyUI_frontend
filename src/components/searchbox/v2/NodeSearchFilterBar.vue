@@ -5,6 +5,7 @@
       v-for="btn in categoryButtons"
       :key="btn.id"
       type="button"
+      :data-testid="`search-category-${btn.id}`"
       :aria-pressed="activeCategory === btn.id"
       :class="chipClass(activeCategory === btn.id)"
       @click="emit('selectCategory', btn.id)"
@@ -24,7 +25,11 @@
       @clear="emit('clearFilterGroup', tf.chip.filter.id)"
       @escape-close="emit('focusSearch')"
     >
-      <button type="button" :class="chipClass(false, tf.values.length > 0)">
+      <button
+        type="button"
+        :data-testid="`search-filter-${tf.chip.key}`"
+        :class="chipClass(false, tf.values.length > 0)"
+      >
         <span v-if="tf.values.length > 0" class="flex items-center">
           <span
             v-for="val in tf.values.slice(0, MAX_VISIBLE_DOTS)"
