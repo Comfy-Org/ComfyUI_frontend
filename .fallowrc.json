@@ -23,7 +23,6 @@
     "**/*.generated.ts",
     "**/*.d.ts",
     "**/dist/**",
-    "**/build/**",
     "**/.nx/**",
     "**/node_modules/**",
     "**/coverage/**",

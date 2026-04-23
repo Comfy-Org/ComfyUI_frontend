@@ -73,6 +73,7 @@ Sentry.init({
   tracesSampleRate: isCloud || __SPOTLIGHT_ENABLED__ ? 1.0 : 0,
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
+  enableLogs: __SPOTLIGHT_ENABLED__,
   // Only set these for non-cloud builds
   ...(isCloud
     ? {
@@ -84,7 +85,15 @@ Sentry.init({
         ]
       }
     : __SPOTLIGHT_ENABLED__
-      ? { integrations: [Sentry.spotlightBrowserIntegration()] }
+      ? {
+          integrations: [
+            Sentry.spotlightBrowserIntegration(),
+            Sentry.browserTracingIntegration(),
+            Sentry.consoleLoggingIntegration({
+              levels: ['log', 'info', 'warn', 'error', 'debug']
+            })
+          ]
+        }
       : {
           integrations: [],
           autoSessionTracking: false,
