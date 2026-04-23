@@ -91,6 +91,15 @@
     @dispose="onLinkOverlayDispose"
   />
 
+  <!-- Builder select-mode scrim. Placed after both bitmap canvases so the
+       grid and link overlay both dim together. Vue nodes each have an
+       explicit inline z-index and paint above this auto-z-index scrim,
+       so node bodies and their selection rings stay bright. -->
+  <div
+    v-if="isSelectMode"
+    class="pointer-events-none absolute inset-0 bg-black/65"
+  />
+
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
@@ -207,7 +216,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
-const { isBuilderMode } = useAppMode()
+const { isBuilderMode, isSelectMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const { linearMode } = storeToRefs(canvasStore)

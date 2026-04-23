@@ -153,13 +153,47 @@ const renderedOutputs = computed(() => {
     )
     .map(nodeToDisplayTuple)
 })
-const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
-  () =>
-    appModeStore.selectedInputs.map(([nodeId, widgetName]) => [
-      `${nodeId}: ${widgetName}`,
-      getBounding(nodeId, widgetName)
-    ])
-)
+
+// All selectable input-widget candidates on the graph. Renders both
+// unselected (faint ring) and selected (filled + thick ring) so the user
+// can see what's clickable the moment they enter builder:inputs — the
+// previous implementation only drew already-selected rows, which left
+// discoverability to luck.
+const renderedInputCandidates = computed(() => {
+  if (!isSelectInputsMode.value) return []
+  void appModeStore.selectedInputs.length
+  if (settingStore.get('Comfy.VueNodes.Enabled')) return []
+  const g = canvas.graph
+  if (!g) return []
+
+  const out: { key: string; style: BoundStyle; isSelected: boolean }[] = []
+  for (const node of g.nodes) {
+    if (node.mode !== LGraphEventMode.ALWAYS) continue
+    if (!nodeTypeValidForApp(node.type)) continue
+    if (node.has_errors) continue
+    if (node.flags?.collapsed) continue
+    if (!node.widgets) continue
+
+    for (const widget of node.widgets) {
+      if (widget.options?.canvasOnly) continue
+      const style = getBounding(node.id, widget.name)
+      if (!style) continue
+
+      const storeId = isPromotedWidgetView(widget)
+        ? widget.sourceNodeId
+        : node.id
+      const storeName = isPromotedWidgetView(widget)
+        ? widget.sourceWidgetName
+        : widget.name
+      const isSelected = appModeStore.selectedInputs.some(
+        ([nid, wn]) => storeId == nid && storeName === wn
+      )
+
+      out.push({ key: `${node.id}:${widget.name}`, style, isSelected })
+    }
+  }
+  return out
+})
 </script>
 
 <template>
@@ -170,7 +204,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     <div
       :class="
         cn(
-          'pointer-events-auto absolute size-full',
+          'pointer-events-auto absolute size-full bg-black/40',
           hoveringSelectable ? 'cursor-pointer' : 'cursor-grab'
         )
       "
@@ -182,10 +216,16 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       <TransformPane :canvas="canvasStore.getCanvas()">
         <template v-if="isSelectInputsMode">
           <div
-            v-for="[key, style] in renderedInputs"
-            :key
-            :style="toValue(style)"
-            class="fixed rounded-lg bg-primary-background/30"
+            v-for="candidate in renderedInputCandidates"
+            :key="candidate.key"
+            :style="candidate.style"
+            :class="
+              cn(
+                'fixed rounded-lg ring-2 ring-primary-background/60',
+                candidate.isSelected &&
+                  'bg-warning-background/15 ring-3 ring-warning-background'
+              )
+            "
           />
         </template>
         <template v-else>
