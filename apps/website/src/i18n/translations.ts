@@ -1080,7 +1080,7 @@ const translations = {
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.summary': {
-    en: 'Professionals and small teams building fine-tuned, repeatable workflows',
+    en: 'Small teams building fine-tuned, repeatable workflows',
     'zh-CN': '面向专业人士与小团队，构建可复用、精细调优的工作流'
   },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },

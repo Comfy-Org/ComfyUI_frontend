@@ -378,11 +378,11 @@ const activePlanIndex = ref(0)
 
     <!-- Enterprise section (desktop only, mobile handled in plan loop) -->
     <div
-      class="bg-transparency-white-t4 rounded-5xl mt-8 hidden flex-col p-2 lg:mt-8 lg:flex lg:flex-row"
+      class="bg-transparency-white-t4 rounded-5xl mt-8 hidden w-full flex-col p-2 lg:mt-8 lg:flex lg:flex-row"
     >
       <!-- Left side -->
       <div
-        class="bg-primary-comfy-ink rounded-4.5xl flex flex-col items-start justify-between p-8 lg:w-1/2"
+        class="bg-primary-comfy-ink rounded-4.5xl flex w-full flex-col items-start justify-between gap-8 p-8"
       >
         <div>
           <span
@@ -402,19 +402,6 @@ const activePlanIndex = ref(0)
         <BrandButton :href="enterprisePlan.ctaHref" variant="outline" size="lg">
           {{ t(enterprisePlan.ctaKey, locale) }}
         </BrandButton>
-      </div>
-
-      <!-- Right side -->
-      <div class="bg-primary-comfy-ink rounded-4xl p-8 lg:w-1/2">
-        <PricingPlanFeatureList
-          :features="enterprisePlan.features"
-          :feature-intro-key="enterprisePlan.featureIntroKey"
-          :and-more-key="enterprisePlan.andMoreKey"
-          and-more-class="text-primary-comfy-canvas/70 mt-4 text-sm"
-          list-gap="space-y-3"
-          intro-margin="mb-4"
-          :locale
-        />
       </div>
     </div>
 
