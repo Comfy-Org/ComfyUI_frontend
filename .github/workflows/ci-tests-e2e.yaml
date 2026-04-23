@@ -42,7 +42,7 @@ jobs:
 
   setup:
     needs: changes
-    if: needs.changes.outputs.should_run == 'true'
+    if: ${{ needs.changes.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -229,7 +229,12 @@ jobs:
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.should_run == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        needs.changes.outputs.should_run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
     steps:
@@ -250,7 +255,13 @@ jobs:
   deploy-and-comment:
     needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: always() && needs.changes.outputs.should_run == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should_run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
       contents: read
