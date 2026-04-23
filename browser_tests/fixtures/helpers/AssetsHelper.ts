@@ -284,7 +284,7 @@ export class AssetsHelper {
       }
       const url = new URL(route.request().url())
       const requestedName = url.searchParams.get('filename')
-      const requestedType = url.searchParams.get('type') ?? 'output'
+      const requestedType = url.searchParams.get('type') ?? 'input'
       const requestedSubfolder = url.searchParams.get('subfolder') ?? ''
 
       const entry =
