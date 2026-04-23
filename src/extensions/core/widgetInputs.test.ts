@@ -19,54 +19,41 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/widgets', () => ({
-  ComfyWidgets: {
-    INT: vi.fn(() => ({
-      widget: {
+vi.mock('@/scripts/widgets', () => {
+  function createWidgetFactory(type: string, value: unknown, extra = {}) {
+    return vi.fn((node: { widgets?: unknown[] }) => {
+      const widget = {
         name: 'value',
-        type: 'number',
-        value: 0,
+        type,
+        value,
         options: {},
-        callback: vi.fn()
+        callback: vi.fn(),
+        y: 0,
+        ...extra
       }
-    })),
-    FLOAT: vi.fn(() => ({
-      widget: {
-        name: 'value',
-        type: 'number',
-        value: 0,
-        options: {},
-        callback: vi.fn()
-      }
-    })),
-    COMBO: vi.fn(() => ({
-      widget: {
-        name: 'value',
-        type: 'combo',
-        value: '',
-        options: { values: [] },
-        callback: vi.fn()
-      }
-    })),
-    STRING: vi.fn(() => ({
-      widget: {
-        name: 'value',
-        type: 'string',
-        value: '',
-        options: {},
-        callback: vi.fn()
-      }
-    }))
-  },
-  addValueControlWidgets: vi.fn(),
-  isValidWidgetType: vi.fn(
-    (type: string) =>
-      type === 'INT' ||
-      type === 'FLOAT' ||
-      type === 'COMBO' ||
-      type === 'STRING'
-  )
-}))
+      if (!node.widgets) node.widgets = []
+      node.widgets.push(widget)
+      return { widget }
+    })
+  }
+
+  return {
+    ComfyWidgets: {
+      INT: createWidgetFactory('number', 0),
+      FLOAT: createWidgetFactory('number', 0),
+      COMBO: createWidgetFactory('combo', '', { options: { values: [] } }),
+      STRING: createWidgetFactory('string', '')
+    },
+    addValueControlWidgets: vi.fn(),
+    isValidWidgetType: vi.fn(
+      (type: string) =>
+        type === 'INT' ||
+        type === 'FLOAT' ||
+        type === 'COMBO' ||
+        type === 'STRING'
+    )
+  }
+})
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
@@ -510,9 +497,8 @@ describe('PrimitiveNode', () => {
 
       node.onAfterGraphConfigured()
 
-      if (node.widgets?.length) {
-        expect(node.widgets[0].value).toBe('restored_value')
-      }
+      expect(node.widgets).toHaveLength(1)
+      expect(node.widgets[0].value).toBe('restored_value')
     })
 
     it('creates fake widget when input has no widget but type is in ComfyWidgets', () => {
@@ -646,7 +632,7 @@ describe('PrimitiveNode', () => {
       node.recreateWidget()
 
       expect(node.widgets[0].value).toBe(123)
-      expect(node.widgets[0].name).toBe('seed')
+      expect(node.widgets[0].name).toBe('value')
     })
   })
 })
