@@ -3,8 +3,11 @@
     class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing-layout-outer))] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
+    <!-- Bar height is 2 cells + 1 gutter (104px), same formula everything
+         else in the chrome uses — puts the stepper on the same rhythm as
+         FloatingPanel (8 cells + 7 gutters) and AppChrome cells (48px). -->
     <div
-      class="builder-toolbar__bar panel-chrome inline-flex items-center gap-layout-gutter p-layout-gutter"
+      class="panel-chrome inline-flex h-[calc(2*var(--spacing-layout-cell)+var(--spacing-layout-gutter))] items-center gap-layout-gutter p-layout-gutter"
     >
       <template v-for="(step, index) in steps" :key="step.id">
         <button
@@ -73,14 +76,3 @@ const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
 
 const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
 </script>
-
-<style scoped>
-/* Bar height is 2 cells + 1 gutter (104px), same formula everything
-   else in the chrome uses. Puts the stepper on the same rhythm as the
-   FloatingPanel dock width (8 cells + 7 gutters) and the AppChrome
-   cells (48px tall) — vertical alignment composes from the same
-   tokens. */
-.builder-toolbar__bar {
-  height: calc(2 * var(--spacing-layout-cell) + var(--spacing-layout-gutter));
-}
-</style>

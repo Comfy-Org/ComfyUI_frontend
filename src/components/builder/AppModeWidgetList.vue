@@ -89,7 +89,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
       const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
       return (
         isPromotedWidgetView(widget) &&
-        widget.sourceNodeId == storeNodeId &&
+        String(widget.sourceNodeId) === storeNodeId &&
         widget.sourceWidgetName === vueWidget.storeName
       )
     })

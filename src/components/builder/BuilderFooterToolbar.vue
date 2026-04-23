@@ -12,7 +12,7 @@
     <!-- Main toolbar -->
     <nav
       data-testid="builder-footer-nav"
-      class="builder-footer__bar panel-chrome flex items-center gap-layout-gutter px-layout-gutter"
+      class="panel-chrome flex h-layout-cell items-center gap-layout-gutter px-layout-gutter"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
         {{ t('builderMenu.exitAppBuilder') }}
@@ -159,12 +159,3 @@ function onSetDefaultView(openAsApp: boolean) {
   setWorkflowDefaultView(workflow, openAsApp)
 }
 </script>
-
-<style scoped>
-/* Bar height is 1 grid cell — same as the feedback cell and every
-   other chrome cell. Horizontal padding only (via px-layout-gutter
-   in the class list) so vertical size stays locked to the grid. */
-.builder-footer__bar {
-  height: var(--spacing-layout-cell);
-}
-</style>

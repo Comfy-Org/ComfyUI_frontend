@@ -40,8 +40,14 @@ function computeDropTarget(
   pointerX: number,
   pointerY: number
 ): DropTarget | null {
+  // Filter out the block currently in flight — PanelBlockList tags it
+  // with `data-dragging="true"` so the dropTarget math snaps to siblings
+  // instead of to the block's own preview position (which would always
+  // read as the nearest and trap the target).
   const blocks = Array.from(
-    container.querySelectorAll<HTMLElement>('[data-block-row][data-block-col]')
+    container.querySelectorAll<HTMLElement>(
+      '[data-block-row][data-block-col]:not([data-dragging])'
+    )
   )
   if (blocks.length === 0) return null
 

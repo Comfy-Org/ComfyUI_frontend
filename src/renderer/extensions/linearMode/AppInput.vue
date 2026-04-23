@@ -46,7 +46,9 @@ const { pause, resume } = useRafFn(tick, { immediate: false })
 watch(showSelection, (show) => (show ? resume() : pause()), { immediate: true })
 
 function matchesThis([nodeId, widgetName]: LinearInput) {
-  return id == nodeId && name === widgetName
+  // nodeId is NodeId (string | number) across the graph/store boundary;
+  // normalize to string on both sides for a strict === comparison.
+  return id === String(nodeId) && name === widgetName
 }
 function togglePromotion() {
   if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)

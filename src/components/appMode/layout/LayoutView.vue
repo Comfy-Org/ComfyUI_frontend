@@ -132,10 +132,4 @@ const panelSide = computed(() =>
   z-index: 0;
   overflow: hidden;
 }
-
-/* Lift AppChrome's grid above the background. AppChrome owns its own
-   pointer-events routing; this just sets stacking order. */
-.layout-view :deep(.app-chrome) {
-  z-index: 1;
-}
 </style>

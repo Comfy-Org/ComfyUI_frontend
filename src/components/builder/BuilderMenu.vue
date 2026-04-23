@@ -1,12 +1,21 @@
 <template>
   <Popover :show-arrow="false" class="min-w-56 p-3">
     <template #button>
+      <!-- Matches AppChrome cell treatment: layout-cell fill, hairline
+           border, 10px radius, 48px tall. Sits just right of the
+           SideToolbar using the same --sidebar-width the graph-mode
+           chrome reacts to: default assumes sidebar-on-right (trigger
+           flush with the left viewport edge), sidebar-on-left pushes it
+           right past the sidebar column via the data-sidebar variant. -->
       <button
         :class="
           cn(
-            'builder-menu-trigger absolute z-1000 inline-flex cursor-pointer items-center gap-2 transition-colors',
+            'absolute top-[calc(var(--workflow-tabs-height)+var(--spacing-layout-outer))] left-layout-outer z-1000',
+            'inline-flex h-layout-cell cursor-pointer items-center gap-2 px-3 transition-colors',
+            'rounded-[10px] border border-white/8 bg-layout-cell text-layout-text',
             'hover:bg-layout-cell-hover',
-            'data-[state=open]:bg-layout-cell-hover'
+            'data-[state=open]:bg-layout-cell-hover',
+            'data-[sidebar=left]:left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))]'
           )
         "
         :data-sidebar="sidebarLocation"
@@ -118,25 +127,3 @@ function onExitBuilder(close: () => void) {
   close()
 }
 </script>
-
-<style scoped>
-/* Matches AppChrome cell treatment: cell fill, hairline border, 10px
-   radius, 48px tall. Sits just right of the SideToolbar using the
-   same --sidebar-width the graph-mode chrome reacts to. */
-.builder-menu-trigger {
-  top: calc(var(--workflow-tabs-height) + var(--spacing-layout-outer));
-  /* Default position assumes sidebar-on-right → trigger flush with the
-     left viewport edge (+ outer padding). Sidebar-on-left pushes it
-     right by --sidebar-width so it clears the sidebar column. */
-  left: var(--spacing-layout-outer);
-  height: var(--spacing-layout-cell);
-  padding: 0 12px;
-  color: var(--color-layout-text);
-  background-color: var(--color-layout-cell);
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 10px;
-}
-.builder-menu-trigger[data-sidebar='left'] {
-  left: calc(var(--sidebar-width, 0px) + var(--spacing-layout-outer));
-}
-</style>

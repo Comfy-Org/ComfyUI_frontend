@@ -57,7 +57,16 @@ const emptyCopy = computed(() => {
 </script>
 
 <template>
-  <div class="builder-panel-root">
+  <!-- Full-viewport positioned ancestor so FloatingPanel's preset-based
+       absolute positioning resolves inside the builder just like it does
+       inside .layout-view. The root is pointer-events-none so clicks on
+       empty chrome areas fall through to the graph canvas; FloatingPanel
+       opts back into pointer-events-auto in its own root class list so
+       the panel itself still captures input. Top offset clears the
+       workflow tabs. -->
+  <div
+    class="pointer-events-none fixed inset-x-0 top-(--workflow-tabs-height) bottom-0 z-100"
+  >
     <FloatingPanel
       v-model:preset="panelPreset"
       v-model:collapsed="panelCollapsed"
@@ -84,26 +93,3 @@ const emptyCopy = computed(() => {
     </FloatingPanel>
   </div>
 </template>
-
-<style scoped>
-/* Full-viewport positioned ancestor so FloatingPanel's preset-based
-   absolute positioning resolves inside the builder just like it does
-   inside .layout-view. Top offset clears the workflow tabs. */
-.builder-panel-root {
-  position: fixed;
-  top: var(--workflow-tabs-height);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 100;
-}
-
-/* Re-enable pointer events on the panel + its drag preview; the outer
-   root is non-interactive so graph-canvas clicks pass through empty
-   areas. */
-.builder-panel-root :deep(.floating-panel),
-.builder-panel-root :deep(.panel-drag-preview) {
-  pointer-events: auto;
-}
-</style>

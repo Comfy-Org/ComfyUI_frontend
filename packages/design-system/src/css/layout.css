@@ -63,12 +63,6 @@
   --color-layout-cell-hover: var(--p-surface-700);
   --color-layout-text: var(--p-text-color);
   --color-layout-mute: var(--p-text-muted-color);
-
-  /* Drop-indicator accent for in-panel reorder. Comfy brand blue.
-     Lives as a named token so consumers reference it instead of
-     hardcoding the hex, keeping the color overridable per future
-     theme. */
-  --color-layout-drop-indicator: #1e40ff;
 }
 
 /*

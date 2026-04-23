@@ -19,45 +19,30 @@ const { isArrangeMode } = useAppMode()
 </script>
 
 <template>
-  <div v-if="isArrangeMode" class="builder-backdrop">
+  <!-- Same dot-grid + canvas-color treatment LayoutView uses so Preview
+       reads as App Mode. Sits between the graph canvas (below) and the
+       chrome / panel layers (above): z-50 covers the canvas but sits
+       under AppChrome (z-1/90), FloatingPanel (z-100), BuilderToolbar
+       and BuilderFooterToolbar. Sidebar-width offset keeps the Comfy
+       sidebar icon strip visible during arrange. Pointer-events-none
+       on the root lets chrome / graph clicks fall through empty space;
+       see the :deep() exception below for the descendant override. -->
+  <div
+    v-if="isArrangeMode"
+    class="builder-backdrop pointer-events-none fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-50 overflow-hidden bg-layout-canvas bg-[radial-gradient(circle,var(--color-layout-grid-dot)_1px,transparent_1.5px)] bg-size-[var(--spacing-layout-dot)_var(--spacing-layout-dot)] bg-position-[0_0]"
+  >
     <LinearPreview hide-chrome />
   </div>
 </template>
 
+<!-- Exception (docs/guidance/vue-components.md §Styling): :deep(*) is
+     the only practical way to re-enable pointer events on the slotted
+     <LinearPreview> subtree. The root is pointer-events-none so graph/
+     chrome clicks fall through empty builder-backdrop space; slotted
+     content needs pointer-events-auto so LinearArrange's clickable
+     zones still register. We don't own LinearPreview's render tree, so
+     we can't push the rule into that component's template. -->
 <style scoped>
-/* Same background treatment as LayoutView's .layout-view so the Preview
-   reads as App Mode. Sits between the graph canvas (below) and the
-   chrome / panel layers (above). z-index chosen to cover the canvas
-   but sit under AppChrome (90), FloatingPanel (100), BuilderToolbar,
-   and BuilderFooterToolbar. */
-.builder-backdrop {
-  position: fixed;
-  top: var(--workflow-tabs-height);
-  /* Offset past the sidebar icon strip so the Comfy sidebar stays
-     visible and interactive during arrange. The expanded sidebar panel
-     (if a tab is active) will sit under this backdrop — acceptable
-     during arrange since focus is on the layout preview, not
-     sidebar contents. */
-  left: var(--sidebar-width, 0);
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-  background-color: var(--color-layout-canvas);
-  background-image: radial-gradient(
-    circle,
-    var(--color-layout-grid-dot) 1px,
-    transparent 1.5px
-  );
-  background-size: var(--spacing-layout-dot) var(--spacing-layout-dot);
-  background-position: 0 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-/* Re-enable pointer events on LinearPreview so its own interactions
-   (if any — LinearArrange has clickable zones) still register.
-   Descendants opt in; the root stays passthrough so chrome clicks
-   aren't swallowed. */
 .builder-backdrop :deep(*) {
   pointer-events: auto;
 }

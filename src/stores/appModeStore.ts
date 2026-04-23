@@ -193,7 +193,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       ? widget.sourceWidgetName
       : widget.name
     const index = selectedInputs.value.findIndex(
-      ([id, name]) => storeId == id && storeName === name
+      ([id, name]) => String(storeId) === String(id) && storeName === name
     )
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
@@ -204,7 +204,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     config: InputWidgetConfig
   ) {
     const entry = selectedInputs.value.find(
-      ([id, name]) => nodeId == id && widgetName === name
+      ([id, name]) => String(nodeId) === String(id) && widgetName === name
     )
     if (!entry) return
     entry[2] = { ...entry[2], ...config }

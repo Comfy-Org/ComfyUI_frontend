@@ -21,9 +21,8 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
-async function handleClick(e: Event) {
-  const priority = 'shiftKey' in e && (e as KeyboardEvent | MouseEvent).shiftKey
-  const commandId = priority ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
+async function handleClick(e: MouseEvent | KeyboardEvent) {
+  const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
   try {
     await commandStore.execute(commandId, {
       metadata: {

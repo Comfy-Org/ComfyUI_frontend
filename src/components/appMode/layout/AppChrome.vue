@@ -26,6 +26,7 @@
  * builder). Adding a new chrome cell in App Mode automatically surfaces
  * in the builder too; keep them in sync by construction.
  */
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -335,20 +336,62 @@ function cellTitle(cell: ChromeCell): string | undefined {
   if (cell.kind === 'action-info') return infoTitle.value
   return undefined
 }
+
+// Placeholder go/stop fill colors for the run cluster (RunCell,
+// InterruptCell, ProgressCell). Set on the chrome root so descendants
+// read them via `var(--app-mode-*)`. Kept local here so the rest of
+// the app's design-system tokens stay untouched — pending a
+// product/design decision on whether "go green" + "stop red" get
+// promoted to proper semantic tokens (--color-success-*, etc.). When
+// that lands, swap the four call sites to the real tokens and delete
+// this block.
+const goStopVars = {
+  '--app-mode-go-bg': '#16a34a', // tw green-600
+  '--app-mode-go-bg-hover': '#22c55e', // tw green-500
+  '--app-mode-go-border': '#166534', // tw green-800
+  '--app-mode-stop-bg': '#ef4444', // tw red-500
+  '--app-mode-stop-bg-hover': '#f87171', // tw red-400
+  '--app-mode-stop-border': '#b91c1c' // tw red-700
+} as const
+
+// Run + Interrupt cells host full-bleed colored buttons directly —
+// they don't want the cell's hairline border or layout-cell fill so
+// the accent paint reaches the cell edges cleanly.
+function cellClass(cell: ChromeCell): string {
+  const bare = cell.kind === 'system-run' || cell.kind === 'system-interrupt'
+  return cn(
+    'pointer-events-auto flex h-full overflow-hidden',
+    !bare && 'rounded-[10px] border border-white/8 bg-layout-cell',
+    cell.disabled && 'cursor-not-allowed select-none'
+  )
+}
 </script>
 
 <template>
-  <!-- Positioning host. absolute inset: 0 fills a positioned ancestor
-       (LayoutView's .layout-view). In builder mode there's no such
-       ancestor, so the variant-specific rules below switch to fixed
-       positioning below the workflow tabs. -->
-  <div class="app-chrome" :data-variant="variant">
-    <div class="app-chrome__zone app-chrome__zone--top-left">
+  <!-- Positioning host. `app-mode` variant anchors absolute-inset to its
+       positioned LayoutView ancestor. `builder` variant has no such
+       ancestor, so it bolts to the viewport (fixed) below the workflow
+       tabs, under FloatingPanel (z-100) and any drag preview. Classname
+       `app-chrome` is kept as an external CSS hook (LayoutView reads
+       it via :deep()). -->
+  <div
+    :class="
+      cn(
+        'app-chrome pointer-events-none absolute inset-0 z-1',
+        variant === 'builder' &&
+          'fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-90 cursor-not-allowed'
+      )
+    "
+    :data-variant="variant"
+    :style="goStopVars"
+  >
+    <div
+      class="pointer-events-none absolute top-(--spacing-layout-outer) left-(--spacing-layout-outer) flex h-layout-cell flex-row gap-layout-gutter"
+    >
       <div
         v-for="cell in topLeftCells"
         :key="cell.id"
-        class="app-chrome__cell"
-        :class="{ 'app-chrome__cell--disabled': cell.disabled }"
+        :class="cellClass(cell)"
         :inert="cell.disabled || undefined"
         :title="cellTitle(cell)"
         :style="{ width: cellWidth(cell.span) }"
@@ -404,12 +447,13 @@ function cellTitle(cell: ChromeCell): string | undefined {
       </div>
     </div>
 
-    <div class="app-chrome__zone app-chrome__zone--top-right">
+    <div
+      class="pointer-events-none absolute top-(--spacing-layout-outer) right-(--spacing-layout-outer) flex h-layout-cell flex-row gap-layout-gutter"
+    >
       <div
         v-for="cell in topRightCells"
         :key="cell.id"
-        class="app-chrome__cell"
-        :class="{ 'app-chrome__cell--disabled': cell.disabled }"
+        :class="cellClass(cell)"
         :inert="cell.disabled || undefined"
         :title="cellTitle(cell)"
         :style="{ width: cellWidth(cell.span) }"
@@ -431,12 +475,13 @@ function cellTitle(cell: ChromeCell): string | undefined {
       </div>
     </div>
 
-    <div class="app-chrome__zone app-chrome__zone--bottom-left">
+    <div
+      class="pointer-events-none absolute bottom-(--spacing-layout-outer) left-(--spacing-layout-outer) flex h-layout-cell flex-row gap-layout-gutter"
+    >
       <div
         v-for="cell in bottomLeftCells"
         :key="cell.id"
-        class="app-chrome__cell"
-        :class="{ 'app-chrome__cell--disabled': cell.disabled }"
+        :class="cellClass(cell)"
         :inert="cell.disabled || undefined"
         :title="cellTitle(cell)"
         :style="{ width: cellWidth(cell.span) }"
@@ -447,99 +492,3 @@ function cellTitle(cell: ChromeCell): string | undefined {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Positioning host. `app-mode` variant anchors to its positioned
-   LayoutView ancestor via absolute inset. `builder` variant has no
-   such ancestor so it bolts to the viewport below the workflow tabs,
-   under the FloatingPanel (z-index 100) and any drag preview. */
-.app-chrome {
-  /* Temporary go/stop fill colors for the run cluster (RunCell,
-     InterruptCell, ProgressCell). Defined locally so the rest of the
-     app's design-system tokens stay untouched — this is *placeholder
-     work* pending a product/design decision on whether "go green" +
-     "stop red" get promoted to proper semantic tokens (e.g.
-     --color-success-*, --color-danger-*). When that lands, swap the
-     four call sites to the real tokens and delete this block. */
-  --app-mode-go-bg: #16a34a; /* tw green-600 */
-  --app-mode-go-bg-hover: #22c55e; /* tw green-500 */
-  --app-mode-go-border: #166534; /* tw green-800 */
-  --app-mode-stop-bg: #ef4444; /* tw red-500 */
-  --app-mode-stop-bg-hover: #f87171; /* tw red-400 */
-  --app-mode-stop-border: #b91c1c; /* tw red-700 */
-
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.app-chrome[data-variant='builder'] {
-  position: fixed;
-  top: var(--workflow-tabs-height);
-  /* Offset past the Comfy sidebar icon strip so top-left zone aligns
-     with BuilderMenu's left edge (which also clears the sidebar via
-     --sidebar-width). */
-  left: var(--sidebar-width, 0);
-  right: 0;
-  bottom: 0;
-  z-index: 90;
-  cursor: not-allowed;
-}
-
-/* Zones: flex rows pinned to a corner, fixed gutter. Each zone is a
-   clean container so cells within it compose with pixel-perfect math
-   — no distributed-gap side effects. */
-.app-chrome__zone {
-  position: absolute;
-  display: flex;
-  flex-direction: row;
-  gap: var(--spacing-layout-gutter);
-  height: var(--spacing-layout-cell);
-  pointer-events: none;
-}
-
-.app-chrome__zone--top-left {
-  top: var(--spacing-layout-outer);
-  left: var(--spacing-layout-outer);
-}
-
-.app-chrome__zone--top-right {
-  top: var(--spacing-layout-outer);
-  right: var(--spacing-layout-outer);
-}
-
-.app-chrome__zone--bottom-left {
-  bottom: var(--spacing-layout-outer);
-  left: var(--spacing-layout-outer);
-}
-
-/* Cell chrome: hairline border + radius so every cell reads as part of
-   the FloatingPanel family. Height fills the zone (single row). */
-.app-chrome__cell {
-  box-sizing: border-box;
-  display: flex;
-  height: 100%;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 10px;
-  background-color: var(--color-layout-cell);
-  overflow: hidden;
-  pointer-events: auto;
-}
-
-/* Run + Interrupt cells host full-bleed colored buttons directly —
-   drop the chrome surface so only the button paints and the cell
-   radius matches the button. */
-.app-chrome__cell[data-cell-kind='system-run'],
-.app-chrome__cell[data-cell-kind='system-interrupt'] {
-  border: none;
-  background-color: transparent;
-}
-
-/* Disabled signal for variant="builder". Functionally disabled via
-   the `inert` attribute on the element; visually the cell stays full
-   opacity so the accent Run fill doesn't go washed-out. Hover cursor +
-   title tooltip still communicate "can't act here". */
-.app-chrome__cell--disabled {
-  user-select: none;
-  cursor: not-allowed;
-}
-</style>

@@ -72,12 +72,16 @@ export function useAppPanelLayout() {
       matchingWidget.slotMetadata = undefined
       matchingWidget.nodeId = String(node.id)
 
-      const opts = widget.options
+      // widget.options is a generic TOptions at the IBaseWidget boundary,
+      // so narrow via an in-check before reading `multiline`. After the
+      // narrow TS knows `opts.multiline` is `unknown`, which Boolean()
+      // consumes without a further cast.
+      const opts: unknown = widget.options
       const isMultiline =
         (typeof opts === 'object' &&
           opts !== null &&
           'multiline' in opts &&
-          Boolean((opts as { multiline?: unknown }).multiline)) ||
+          Boolean(opts.multiline)) ||
         String(widget.type).toLowerCase() === 'customtext'
 
       return [
@@ -160,64 +164,7 @@ export function useAppPanelLayout() {
   })
 
   function moveBlock(from: BlockPos, target: DropTarget) {
-    const rows: BlockRow[] = appModeStore.panelRows.map((r) => r.slice())
-    if (!rows[from.row] || rows[from.row][from.col] === undefined) return
-    const moved = rows[from.row][from.col]
-
-    // --- Noop detection on pre-removal grid ----------------------------
-    const sourceRowLen = rows[from.row].length
-    const isSoloRow = sourceRowLen === 1
-
-    if (
-      (target.kind === 'columnBefore' &&
-        target.rowIndex === from.row &&
-        target.colIndex === from.col) ||
-      (target.kind === 'columnAfter' &&
-        target.rowIndex === from.row &&
-        target.colIndex === from.col)
-    ) {
-      return
-    }
-    if (
-      isSoloRow &&
-      (target.kind === 'newRowBefore' || target.kind === 'newRowAfter') &&
-      target.rowIndex === from.row
-    ) {
-      return
-    }
-
-    // --- Remove from source --------------------------------------------
-    rows[from.row].splice(from.col, 1)
-    const sourceRowRemoved = rows[from.row].length === 0
-    if (sourceRowRemoved) rows.splice(from.row, 1)
-
-    // --- Insert at destination -----------------------------------------
-    const shiftForRemovedRow = (idx: number) =>
-      sourceRowRemoved && from.row < idx ? idx - 1 : idx
-
-    if (target.kind === 'newRowBefore' || target.kind === 'newRowAfter') {
-      const base =
-        target.kind === 'newRowAfter' ? target.rowIndex + 1 : target.rowIndex
-      const destRow = shiftForRemovedRow(base)
-      rows.splice(destRow, 0, [moved])
-    } else {
-      const destRow = shiftForRemovedRow(target.rowIndex)
-      const row = rows[destRow]
-      if (!row) return
-      let destCol = target.colIndex
-      if (
-        !sourceRowRemoved &&
-        from.row === target.rowIndex &&
-        from.col < destCol
-      ) {
-        destCol -= 1
-      }
-      if (target.kind === 'columnAfter') destCol += 1
-      destCol = Math.max(0, Math.min(row.length, destCol))
-      row.splice(destCol, 0, moved)
-    }
-
-    appModeStore.panelRows = rows
+    appModeStore.panelRows = applyMove(appModeStore.panelRows, from, target)
   }
 
   return {
@@ -225,4 +172,78 @@ export function useAppPanelLayout() {
     inputEntryMap,
     moveBlock
   }
+}
+
+/**
+ * Pure reorder: return what `panelRows` would be after moving the block
+ * at `from` to `target`, without mutating inputs or writing to the
+ * store. Returns the original `rows` reference when the move is a noop
+ * (column-at-self-position or solo-row-to-own-row-boundary) so callers
+ * can identity-check for bail-outs.
+ *
+ * Shared between `moveBlock` (commit path) and `PanelBlockList`'s drag
+ * preview — reproduces the same math so the live preview users see
+ * during drag matches exactly what will land on release.
+ */
+export function applyMove(
+  rows: BlockRow[],
+  from: BlockPos,
+  target: DropTarget
+): BlockRow[] {
+  if (!rows[from.row] || rows[from.row][from.col] === undefined) return rows
+  const moved = rows[from.row][from.col]
+
+  // --- Noop detection on pre-removal grid ------------------------------
+  const isSoloRow = rows[from.row].length === 1
+
+  if (
+    (target.kind === 'columnBefore' || target.kind === 'columnAfter') &&
+    target.rowIndex === from.row &&
+    target.colIndex === from.col
+  ) {
+    return rows
+  }
+  if (
+    isSoloRow &&
+    (target.kind === 'newRowBefore' || target.kind === 'newRowAfter') &&
+    target.rowIndex === from.row
+  ) {
+    return rows
+  }
+
+  // Clone rows (shallow) so the input stays untouched.
+  const result: BlockRow[] = rows.map((r) => r.slice())
+
+  // --- Remove from source ----------------------------------------------
+  result[from.row].splice(from.col, 1)
+  const sourceRowRemoved = result[from.row].length === 0
+  if (sourceRowRemoved) result.splice(from.row, 1)
+
+  // --- Insert at destination -------------------------------------------
+  const shiftForRemovedRow = (idx: number) =>
+    sourceRowRemoved && from.row < idx ? idx - 1 : idx
+
+  if (target.kind === 'newRowBefore' || target.kind === 'newRowAfter') {
+    const base =
+      target.kind === 'newRowAfter' ? target.rowIndex + 1 : target.rowIndex
+    const destRow = shiftForRemovedRow(base)
+    result.splice(destRow, 0, [moved])
+  } else {
+    const destRow = shiftForRemovedRow(target.rowIndex)
+    const row = result[destRow]
+    if (!row) return rows
+    let destCol = target.colIndex
+    if (
+      !sourceRowRemoved &&
+      from.row === target.rowIndex &&
+      from.col < destCol
+    ) {
+      destCol -= 1
+    }
+    if (target.kind === 'columnAfter') destCol += 1
+    destCol = Math.max(0, Math.min(row.length, destCol))
+    row.splice(destCol, 0, moved)
+  }
+
+  return result
 }

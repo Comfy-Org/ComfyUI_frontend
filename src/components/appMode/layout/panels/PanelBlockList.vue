@@ -7,14 +7,16 @@
  * reorder via useBlockDrag. Drop indicators: horizontal line between
  * rows, vertical line between columns.
  */
-import { useTemplateRef } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, useTemplateRef } from 'vue'
 
 import InputCell from '../cells/InputCell.vue'
 import type { InputCellEntry, InputCellVariant } from '../cells/InputCell.vue'
 import type { BlockPos, BlockRow, DropTarget } from './panelTypes'
+import { applyMove } from './useAppPanelLayout'
 import { useBlockDrag } from './useBlockDrag'
 
-const { variant = 'app-mode' } = defineProps<{
+const { rows, variant = 'app-mode' } = defineProps<{
   rows: BlockRow[]
   inputEntryMap: Map<string, InputCellEntry>
   /** Forwarded to InputCell — `builder` adds the ⋯ Rename/Remove menu
@@ -33,207 +35,139 @@ const { draggingPos, dropTarget, startDrag } = useBlockDrag({
   onCommit: (from, target) => emit('reorder', from, target)
 })
 
-function isDragging(row: number, col: number) {
-  return draggingPos.value?.row === row && draggingPos.value.col === col
-}
+// id of the block in flight — used to flag it in the displayed rows
+// and apply the dashed-outline preview styling.
+const draggingBlockId = computed<string | null>(() => {
+  const pos = draggingPos.value
+  if (!pos) return null
+  return rows[pos.row]?.[pos.col]?.id ?? null
+})
 
-// --- Drop indicator predicates ------------------------------------------
-// Rendering the indicator inline (as a sibling in the flex flow) keeps
-// the layout math simple — no absolute positioning gymnastics.
-//
-// Plain functions, not computed(): the template re-reads these every
-// render anyway, and returning a fresh ComputedRefImpl per call would
-// allocate N × M wrappers per pointermove during a drag.
-function showRowIndicator(rowIndex: number): boolean {
+// Rows rendered during drag: if there's an active drag target, show
+// the layout exactly as it would look after the drop (via `applyMove`,
+// the same math the commit uses). Otherwise render the stored rows
+// unchanged. Drop-target math in useBlockDrag reads the DOM's
+// data-block-row/col, which we keep in ORIGINAL coordinates below.
+const displayRows = computed<BlockRow[]>(() => {
+  const pos = draggingPos.value
   const target = dropTarget.value
-  if (!target) return false
-  if (target.kind === 'newRowBefore') return target.rowIndex === rowIndex
-  if (target.kind === 'newRowAfter') return target.rowIndex === rowIndex - 1
-  return false
-}
+  if (!pos || !target) return rows
+  return applyMove(rows, pos, target)
+})
 
-function showColIndicator(rowIndex: number, colIndex: number): boolean {
-  const target = dropTarget.value
-  if (!target) return false
-  if (target.rowIndex !== rowIndex) return false
-  if (target.kind === 'columnBefore') return target.colIndex === colIndex
-  if (target.kind === 'columnAfter') return target.colIndex === colIndex - 1
-  return false
-}
+// Map of block id → original (row, col) in `rows`. Lets each block's
+// data-block-row/col attribute reflect its pre-drag position even
+// when the block has been visually relocated by the preview layout —
+// so `useBlockDrag` returns drop targets in the coordinate space
+// `applyMove` and the commit path expect.
+const originalById = computed(() => {
+  const map = new Map<string, BlockPos>()
+  rows.forEach((row, ri) =>
+    row.forEach((b, ci) => map.set(b.id, { row: ri, col: ci }))
+  )
+  return map
+})
 </script>
 
 <template>
-  <ul ref="listEl" class="panel-block-list" role="list">
-    <template
-      v-for="(row, rowIdx) in rows"
+  <!--
+    During drag, `displayRows` shows the layout exactly as it would
+    look after the drop (via `applyMove`). The block in flight lands
+    at its proposed new position with a dashed orange outline framing
+    the space it will occupy — no separate line indicator, so the user
+    sees the real geometry instead of inferring it from a hairline.
+    10px list gap matches InputCell's header→body gap so the vertical
+    rhythm stays uniform across panel and cell.
+  -->
+  <ul
+    ref="listEl"
+    class="m-0 flex list-none flex-col gap-[10px] p-0"
+    role="list"
+  >
+    <!-- 16px row gap matches the grip width — the grip fills the gap
+         exactly, with 4px dots centered so there's 6px clear per side. -->
+    <li
+      v-for="(row, rowIdx) in displayRows"
       :key="`row-${rowIdx}-${row[0]?.id}`"
+      class="flex min-w-0 flex-row items-stretch gap-4"
     >
-      <!-- Horizontal drop indicator (between-row). -->
-      <li
-        v-show="showRowIndicator(rowIdx)"
-        class="drop-indicator drop-indicator--row"
-        aria-hidden="true"
-      />
-      <li class="panel-block-row" :data-block-row="rowIdx">
-        <template v-for="(block, colIdx) in row" :key="block.id">
-          <!-- Vertical drop indicator (between-column). -->
+      <div
+        v-for="block in row"
+        :key="block.id"
+        :class="
+          cn(
+            'group duration-layout relative block min-w-0 flex-1 rounded-layout-cell bg-transparent transition-opacity ease-layout',
+            block.id === draggingBlockId &&
+              'outline-2 outline-offset-2 outline-warning-background outline-dashed'
+          )
+        "
+        :data-block-row="originalById.get(block.id)?.row"
+        :data-block-col="originalById.get(block.id)?.col"
+        :data-block-kind="block.kind"
+        :data-dragging="block.id === draggingBlockId ? 'true' : undefined"
+      >
+        <!-- Grip is a pointer-only affordance — hidden from the tab
+             order and screen readers until keyboard reorder
+             (Enter/Space to grab, arrow keys to move, Enter to drop)
+             lands as a follow-up. Was a focusable <button>, but
+             tabbing to it did nothing, which is the focusable-but-
+             inert antipattern. Absolutely positioned into the panel
+             body's 16px left padding — grip's right edge touches the
+             block's left edge so content gets full width and the
+             panel reads with symmetric 16px margins. -->
+        <span
+          :class="
+            cn(
+              'duration-layout absolute inset-y-0 -left-4 flex w-4 cursor-grab touch-none items-center justify-center bg-transparent p-0 opacity-0 transition-opacity ease-layout group-hover:opacity-70 active:cursor-grabbing',
+              block.id === draggingBlockId && 'opacity-70'
+            )
+          "
+          aria-hidden="true"
+          @pointerdown="
+            startDrag(originalById.get(block.id) ?? { row: 0, col: 0 }, $event)
+          "
+        >
           <span
-            v-show="showColIndicator(rowIdx, colIdx)"
-            class="drop-indicator drop-indicator--col"
+            class="h-full w-1 bg-[radial-gradient(circle,var(--color-layout-mute)_1px,transparent_1.2px)] bg-size-[4px_4px] bg-repeat-y"
             aria-hidden="true"
           />
+        </span>
+        <div class="w-full min-w-0 overflow-hidden">
           <div
-            class="panel-block"
-            :class="{ 'panel-block--dragging': isDragging(rowIdx, colIdx) }"
-            :data-block-row="rowIdx"
-            :data-block-col="colIdx"
-            :data-block-kind="block.kind"
+            v-if="inputEntryMap.get(block.entryKey)"
+            class="panel-block__input"
+            :data-multiline="block.isMultiline ? 'true' : 'false'"
           >
-            <!-- Grip is a pointer-only affordance — hidden from the tab
-                 order and screen readers until keyboard reorder
-                 (Enter/Space to grab, arrow keys to move, Enter to drop)
-                 lands as a follow-up. Was a focusable <button>, but tabbing
-                 to it did nothing, which is the focusable-but-inert
-                 antipattern. -->
-            <span
-              class="panel-block__grip"
-              aria-hidden="true"
-              @pointerdown="startDrag({ row: rowIdx, col: colIdx }, $event)"
-            >
-              <span class="panel-block__grip-dots" aria-hidden="true" />
-            </span>
-            <div class="panel-block__content">
-              <div
-                v-if="inputEntryMap.get(block.entryKey)"
-                class="panel-block__input"
-                :data-multiline="block.isMultiline ? 'true' : 'false'"
-              >
-                <InputCell
-                  :entry="inputEntryMap.get(block.entryKey)!"
-                  :variant
-                />
-              </div>
-            </div>
+            <InputCell :entry="inputEntryMap.get(block.entryKey)!" :variant />
           </div>
-        </template>
-        <!-- Trailing column drop indicator (after last col in this row). -->
-        <span
-          v-show="showColIndicator(rowIdx, row.length)"
-          class="drop-indicator drop-indicator--col"
-          aria-hidden="true"
-        />
-      </li>
-    </template>
-    <!-- Trailing row drop indicator (after the last row). -->
-    <li
-      v-show="showRowIndicator(rows.length)"
-      class="drop-indicator drop-indicator--row"
-      aria-hidden="true"
-    />
+        </div>
+      </div>
+    </li>
   </ul>
 </template>
 
+<!--
+  Exception (docs/guidance/vue-components.md §Styling): the rules
+  below reach into NodeWidgets' internal grid + textarea via :deep()
+  to adapt them for the panel surface. NodeWidgets is first-party but
+  this component doesn't render its DOM directly — adapting it from
+  the outside is the only option without touching unrelated files.
+  The `!important` flags override NodeWidgets' own utility-class
+  rules; they can't be won via selector specificity alone from this
+  scope. Keep this block small and documented; prefer landing a
+  props-based hook on NodeWidgets if more overrides accumulate.
+-->
 <style scoped>
-.panel-block-list {
-  display: flex;
-  flex-direction: column;
-  /* 10px matches the InputCell header→body gap so the rhythm is
-     uniform: the space between one widget's input and the next
-     widget's label equals the space between a label and its input. */
-  gap: 10px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.panel-block-row {
-  display: flex;
-  flex-direction: row;
-  /* 16px matches the grip width — the grip fills the gap exactly,
-     with the 4px dots centered so there's 6px clear on each side. */
-  gap: 16px;
-  align-items: stretch;
-  min-width: 0;
-}
-
-.panel-block {
-  position: relative;
-  display: block;
-  flex: 1 1 0;
-  min-width: 0;
-  border-radius: var(--radius-layout-cell);
-  background-color: transparent;
-  transition: opacity var(--duration-layout) var(--ease-layout);
-}
-
-.panel-block--dragging {
-  opacity: 0.35;
-}
-
-/* Grip is absolutely positioned into the panel body's left padding
-   (panel body padding is 16px; grip width is 16px → grip's right edge
-   touches the block's left edge). Out of flow → block content gets
-   full width and the panel reads with symmetric 16px outer margins. */
-.panel-block__grip {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-  cursor: grab;
-  opacity: 0;
-  transition: opacity var(--duration-layout) var(--ease-layout);
-  touch-action: none;
-}
-.panel-block:hover .panel-block__grip,
-.panel-block--dragging .panel-block__grip {
-  opacity: 0.7;
-}
-.panel-block__grip:active {
-  cursor: grabbing;
-}
-
-.panel-block__grip-dots {
-  width: 4px;
-  height: 100%;
-  background-image: radial-gradient(
-    circle,
-    var(--color-layout-mute) 1px,
-    transparent 1.2px
-  );
-  background-size: 4px 4px;
-  background-repeat: repeat-y;
-}
-
-.panel-block__content {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.panel-block__input {
-  /* Content-driven height for all input blocks so vertical spacing
-     between blocks stays consistent (the 8px gap from panel-block-list
-     is the only space between them). */
-}
-
-/* Center number values inside ScrubableNumberInput (the −/+ widgets)
-   so they match the "Number of runs" BatchCountCell treatment. */
+/* Center number values inside ScrubableNumberInput to match the
+   BatchCountCell treatment. */
 .panel-block__input :deep(input:not(textarea)) {
   text-align: center;
 }
 
 /* NodeWidgets is a 3-column grid (slot-dot | label | widget) with
-   pr-3. In the panel, the slot-dot is empty and the label is hidden
-   (HideLayoutFieldKey). Collapse to single-column so widgets align
-   flush with the block label above them. */
+   pr-3. In the panel the slot-dot is empty and the label is hidden
+   via HideLayoutFieldKey — collapse to a single column so widgets
+   align flush with the block label above. */
 .panel-block__input :deep([data-testid='node-widgets']) {
   grid-template-columns: 1fr !important;
   padding: 0 !important;
@@ -242,59 +176,18 @@ function showColIndicator(rowIndex: number, colIndex: number): boolean {
 .panel-block__input :deep([data-testid='node-widget']) {
   grid-template-columns: 1fr !important;
 }
-/* Hide the empty slot-dot column. */
 .panel-block__input :deep([data-testid='node-widget'] > div:first-child) {
   display: none !important;
 }
 
-/* All input blocks use content-driven height. Unset InputCell's
-   overflow: hidden + flex: 1 on the body so cells don't clip or
-   stretch their content. */
-.panel-block__input :deep(.input-cell) {
-  height: auto;
-}
-.panel-block__input :deep(.input-cell__body) {
-  flex: 0 0 auto;
-  overflow: visible;
-  min-height: 0;
-}
-
-/* Multiline textareas use field-sizing:content to grow with their
-   value until a cap; scrollbar kicks in only when truly needed. */
+/* Multiline textareas grow with content via field-sizing:content
+   (Chrome 123+, Safari 17+), capped at 50vh so a long prompt can't
+   push the Run button off-screen. */
 .panel-block__input[data-multiline='true'] :deep(textarea) {
-  /* field-sizing: content auto-sizes to rows of content (Chrome 123+,
-     Safari 17+). max-height caps growth so a huge prompt can't push
-     the Run button off-screen. */
   field-sizing: content;
   height: auto !important;
   min-height: 2.5em !important;
   max-height: 50vh !important;
   resize: none !important;
-}
-
-/* Both drop-indicator types (row + column) share the same accent so the
-   "landing zone" reads consistently. Color lives as a layout token
-   (see packages/design-system/src/css/layout.css) rather than inlined
-   hex, per the no-raw-hex anti-pattern in DESIGN.md. */
-.drop-indicator {
-  list-style: none;
-  background-color: var(--color-layout-drop-indicator);
-  border-radius: 1px;
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--color-layout-drop-indicator) 25%, transparent);
-  pointer-events: none;
-}
-
-.drop-indicator--row {
-  height: 3px;
-  margin: 0;
-  width: 100%;
-}
-
-.drop-indicator--col {
-  display: inline-block;
-  width: 3px;
-  align-self: stretch;
-  flex-shrink: 0;
 }
 </style>
