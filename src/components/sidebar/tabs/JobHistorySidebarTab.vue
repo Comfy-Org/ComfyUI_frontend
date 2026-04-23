@@ -220,14 +220,12 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
 })
 
 const onMenuItem = (item: JobListItem, event: Event) => {
-  trackFeatureUsed()
   currentMenuItem.value = item
   jobContextMenuRef.value?.open(event)
 }
 
 const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
   if (entry.kind === 'divider') return
-  trackFeatureUsed()
   if (entry.onClick) await entry.onClick()
   jobContextMenuRef.value?.hide()
 })
