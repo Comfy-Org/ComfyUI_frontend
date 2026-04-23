@@ -1,6 +1,6 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-type PromotedWidgetEntry = [string, string]
+export type PromotedWidgetEntry = [string, string]
 
 function isPromotedWidgetEntry(entry: unknown): entry is PromotedWidgetEntry {
   return (
