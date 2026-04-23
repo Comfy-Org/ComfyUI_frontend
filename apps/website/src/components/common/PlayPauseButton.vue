@@ -5,8 +5,6 @@ const { playing = false, size = 'md' } = defineProps<{
   playing?: boolean
   size?: 'sm' | 'md'
 }>()
-
-defineEmits<{ toggle: [] }>()
 </script>
 
 <template>
@@ -18,7 +16,6 @@ defineEmits<{ toggle: [] }>()
         size === 'sm' ? 'size-8 lg:size-10' : 'size-12'
       )
     "
-    @click="$emit('toggle')"
   >
     <svg
       v-if="playing"
