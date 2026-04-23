@@ -78,7 +78,9 @@ unsubscribedTest.describe(
         await comfyPage.page
           .getByTestId(TestIds.user.currentUserIndicator)
           .click()
-        const popover = comfyPage.page.locator('.current-user-popover')
+        const popover = comfyPage.page.getByTestId(
+          TestIds.user.currentUserPopover
+        )
         await expect(
           popover.getByRole('button', { name: /subscribe/i })
         ).toBeVisible()
@@ -91,7 +93,9 @@ unsubscribedTest.describe(
         await comfyPage.page
           .getByTestId(TestIds.user.currentUserIndicator)
           .click()
-        const popover = comfyPage.page.locator('.current-user-popover')
+        const popover = comfyPage.page.getByTestId(
+          TestIds.user.currentUserPopover
+        )
         await popover
           .getByRole('button', { name: /subscribe/i })
           .first()
@@ -130,7 +134,9 @@ unsubscribedTest.describe(
         await comfyPage.page
           .getByTestId(TestIds.user.currentUserIndicator)
           .click()
-        const popover = comfyPage.page.locator('.current-user-popover')
+        const popover = comfyPage.page.getByTestId(
+          TestIds.user.currentUserPopover
+        )
         await popover
           .getByRole('button', { name: /subscribe/i })
           .first()
