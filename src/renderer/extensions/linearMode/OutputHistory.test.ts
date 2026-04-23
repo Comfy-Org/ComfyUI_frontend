@@ -40,8 +40,6 @@ const selectAsLatestFn = vi.fn((id: string | null) => {
   selectedIdRef.value = id
 })
 
-// --- Mocks ---
-
 vi.mock('@/lib/litegraph/src/CanvasPointer', () => ({
   CanvasPointer: class {
     isTrackpadGesture() {
