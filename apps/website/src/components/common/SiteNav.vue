@@ -204,13 +204,12 @@ onMounted(() => {
       />
     </div>
 
-    <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
-
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
       class="hidden shrink-0 items-center gap-2 lg:flex"
     >
+      <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
       <BrandButton
         v-for="cta in ctaButtons"
         :key="cta.href"

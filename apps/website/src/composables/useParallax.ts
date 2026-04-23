@@ -4,7 +4,9 @@ import { gsap } from '../scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
 
 interface ParallaxOptions {
-  /** Vertical offset in pixels (default: 200) */
+  /** Starting vertical offset in pixels (default: 0) */
+  fromY?: number
+  /** Ending vertical offset in pixels (default: 200) */
   y?: number
   trigger?: Ref<HTMLElement | undefined>
   /** ScrollTrigger start value (default: 'top bottom') */
@@ -17,7 +19,7 @@ export function useParallax(
   elements: Ref<HTMLElement | undefined>[],
   options: ParallaxOptions = {}
 ) {
-  const { y = 200 } = options
+  const { fromY = 0, y = 200 } = options
   let ctx: gsap.Context | undefined
 
   onMounted(() => {
@@ -27,19 +29,16 @@ export function useParallax(
       .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)
     if (!els.length || prefersReducedMotion()) return
 
+    const scrollTrigger = {
+      trigger: trigger ?? els[0],
+      start: options.start ?? 'top bottom',
+      end: options.end ?? 'bottom top',
+      scrub: 1
+    }
+
     ctx = gsap.context(() => {
       els.forEach((el) => {
-        gsap.to(el, {
-          y,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: trigger ?? el,
-            start: options.start ?? 'top bottom',
-            end: options.end ?? 'bottom top',
-            scrub: 1,
-            invalidateOnRefresh: true
-          }
-        })
+        gsap.fromTo(el, { y: fromY }, { y, ease: 'none', scrollTrigger })
       })
     })
   })

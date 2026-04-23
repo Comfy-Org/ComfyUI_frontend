@@ -122,17 +122,6 @@ test.describe('About', { tag: '@visual' }, () => {
   }
 })
 
-const OVERFLOW_SKIP = new Set([
-  '/ 3-lg',
-  '/ 4-xl',
-  '/cloud 2-md',
-  '/cloud 3-lg',
-  '/cloud 4-xl',
-  '/download 2-md',
-  '/download 3-lg',
-  '/download 4-xl'
-])
-
 test.describe('Overflow guards', { tag: '@visual' }, () => {
   const pages = [
     '/',
@@ -146,10 +135,7 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   ]
   for (const url of pages) {
     for (const vp of VIEWPORTS) {
-      const key = `${url} ${vp.name}`
-
       test(`${url} ${vp.name} no overflow`, async ({ page }) => {
-        test.skip(OVERFLOW_SKIP.has(key), 'Known overflow bug at this viewport')
         await page.setViewportSize({ width: vp.width, height: vp.height })
         await page.goto(url)
         await assertNoOverflow(page)
