@@ -644,7 +644,9 @@ describe('PrimitiveNode', () => {
       node.widgets = [makeWidget({ value: 123 })]
 
       node.recreateWidget()
-      // The widget values are preserved during recreation
+
+      expect(node.widgets[0].value).toBe(123)
+      expect(node.widgets[0].name).toBe('seed')
     })
   })
 })
