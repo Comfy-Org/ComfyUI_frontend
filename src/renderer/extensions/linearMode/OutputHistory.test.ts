@@ -59,7 +59,7 @@ vi.mock('@/renderer/extensions/linearMode/useOutputHistory', () => ({
       error: ref(null),
       fetchMediaList: vi.fn(),
       refresh: vi.fn()
-    } satisfies Partial<IAssetsProvider> as unknown as IAssetsProvider,
+    } satisfies IAssetsProvider,
     allOutputs: allOutputsFn,
     selectFirstHistory: selectFirstHistoryFn,
     mayBeActiveWorkflowPending:
