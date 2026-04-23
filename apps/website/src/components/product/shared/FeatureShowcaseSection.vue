@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import BrandButton from '../../common/BrandButton.vue'
+import GlassCard from '../../common/GlassCard.vue'
+import SectionHeader from '../../common/SectionHeader.vue'
+
 interface Feature {
   title: string
   description: string
   description2?: string
   ctaText?: string
   ctaHref?: string
+  image: string
 }
 
 defineProps<{
@@ -18,30 +23,27 @@ defineProps<{
 
 <template>
   <section class="px-4 py-24 lg:px-20">
-    <!-- Section header -->
-    <div class="mx-auto max-w-3xl text-center">
-      <h2
-        class="text-primary-comfy-canvas text-3xl font-light lg:text-5xl/tight"
-      >
-        {{ heading }}
-      </h2>
-      <p class="mt-4 text-sm text-smoke-700 lg:text-base">
-        {{ subtitle }}
-      </p>
-    </div>
+    <SectionHeader>
+      {{ heading }}
+      <template #subtitle>
+        <p class="mt-4 text-sm text-smoke-700 lg:text-base">
+          {{ subtitle }}
+        </p>
+      </template>
+    </SectionHeader>
 
     <!-- Features -->
     <div class="mt-24 flex flex-col gap-4 lg:gap-8">
-      <div
+      <GlassCard
         v-for="(feature, i) in features"
         :key="i"
-        class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-8 p-2 lg:flex-row lg:items-stretch lg:gap-12"
+        class="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:gap-12"
       >
         <!-- Text -->
         <div
           :class="
             cn(
-              'order-2 flex flex-col p-6 lg:w-1/2 lg:justify-between',
+              'order-2 flex flex-col gap-8 p-6 lg:w-1/2',
               i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
             )
           "
@@ -59,13 +61,15 @@ defineProps<{
             >
               {{ feature.description2 }}
             </p>
-            <a
+            <BrandButton
               v-if="feature.ctaText && feature.ctaHref"
               :href="feature.ctaHref"
-              class="bg-primary-comfy-yellow text-primary-comfy-ink mt-6 inline-block rounded-full px-6 py-3 text-xs font-bold tracking-wider transition-opacity hover:opacity-90"
+              variant="solid"
+              size="xs"
+              class="mt-6"
             >
               {{ feature.ctaText }}
-            </a>
+            </BrandButton>
           </div>
         </div>
 
@@ -75,13 +79,13 @@ defineProps<{
             cn('order-1 lg:w-1/2', i % 2 === 0 ? 'lg:order-2' : 'lg:order-1')
           "
         >
-          <div
-            class="aspect-4/3 w-full rounded-4xl bg-smoke-200"
-            role="img"
-            :aria-label="feature.title"
+          <img
+            :src="feature.image"
+            :alt="feature.title"
+            class="aspect-4/3 w-full rounded-4xl object-cover"
           />
         </div>
-      </div>
+      </GlassCard>
     </div>
   </section>
 </template>
