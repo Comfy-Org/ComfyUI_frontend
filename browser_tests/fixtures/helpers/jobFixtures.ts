@@ -6,7 +6,7 @@ import type {
 export interface CreateJobDetailFixtureOptions {
   id?: string
   workflow?: unknown
-  overrides?: Partial<JobDetail>
+  overrides?: Omit<Partial<JobDetail>, 'id'>
   jobOverrides?: Omit<Partial<RawJobListItem>, 'id'>
 }
 
