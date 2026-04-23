@@ -579,7 +579,7 @@ export class LGraph
       for (let i = 0; i < num; i++) {
         for (let j = 0; j < limit; ++j) {
           const node = nodes[j]
-          if (node.mode == LGraphEventMode.ALWAYS) {
+          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
             node.doExecute?.()
           }
         }
@@ -595,8 +595,8 @@ export class LGraph
         for (let i = 0; i < num; i++) {
           for (let j = 0; j < limit; ++j) {
             const node = nodes[j]
-            if (node.mode == LGraphEventMode.ALWAYS) {
-              node.onExecute?.()
+            if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
+              node.doExecute?.()
             }
           }
 
