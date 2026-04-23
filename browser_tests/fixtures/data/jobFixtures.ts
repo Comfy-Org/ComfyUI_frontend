@@ -8,7 +8,7 @@ export interface CreateJobDetailFixtureOptions {
   id?: string
   workflow?: unknown
   overrides?: Partial<JobDetail>
-  jobOverrides?: Partial<RawJobListItem>
+  jobOverrides?: Omit<Partial<RawJobListItem>, 'id'>
 }
 
 const DEFAULT_JOB_ID = 'job-detail-001'
