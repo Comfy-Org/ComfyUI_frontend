@@ -39,6 +39,7 @@
         >
           <InputSlot
             v-if="widget.slotMetadata"
+            :key="`widget-slot-${widget.name}-${widget.slotMetadata.index}`"
             :slot-data="{
               name: widget.name,
               type: widget.slotMetadata.type,

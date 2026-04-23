@@ -808,6 +808,7 @@
     "IMAGE": "图像",
     "IMAGECOMPARE": "图像对比",
     "INT": "整数",
+    "INTERP_MODEL": "插值模型",
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
