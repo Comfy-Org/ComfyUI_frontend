@@ -9,7 +9,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import type { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -107,6 +107,7 @@ describe('appModeStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
+    ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)
     mockSettings.reset()
     vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
@@ -321,6 +322,90 @@ describe('appModeStore', () => {
 
       expect(store.selectedOutputs).toEqual([])
       expect(store.hasOutputs).toBe(false)
+    })
+  })
+
+  describe('pruneLinearData during graph loading', () => {
+    it('preserves all entries when ChangeTracker.isLoadingGraph is true', () => {
+      ChangeTracker.isLoadingGraph = true
+
+      store.loadSelections({
+        inputs: [
+          [1, 'seed'],
+          [999, 'steps']
+        ],
+        outputs: [1, 999]
+      })
+
+      expect(store.selectedInputs).toEqual([
+        [1, 'seed'],
+        [999, 'steps']
+      ])
+      expect(store.selectedOutputs).toEqual([1, 999])
+    })
+
+    it('prunes entries for deleted nodes when not loading', () => {
+      const node1 = { id: 1 }
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      )
+
+      store.loadSelections({
+        inputs: [
+          [1, 'seed'],
+          [999, 'steps']
+        ],
+        outputs: [1, 999]
+      })
+
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
+      expect(store.selectedOutputs).toEqual([1])
+    })
+  })
+
+  describe('resetSelectedToWorkflow fallback', () => {
+    it('falls back to initialState when activeState has no linearData', () => {
+      const node1 = { id: 1 }
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      )
+      const workflow = createBuilderWorkflow('app')
+      workflow.changeTracker.activeState.extra = {}
+      workflow.changeTracker.initialState = fromAny({
+        ...workflow.changeTracker.activeState,
+        extra: {
+          linearData: { inputs: [[1, 'seed']], outputs: [1] }
+        }
+      })
+      workflowStore.activeWorkflow = workflow
+
+      store.resetSelectedToWorkflow()
+
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
+      expect(store.selectedOutputs).toEqual([1])
+    })
+
+    it('prefers activeState linearData when available', () => {
+      const node1 = { id: 1 }
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      )
+      const workflow = createBuilderWorkflow('app')
+      workflow.changeTracker.activeState.extra = {
+        linearData: { inputs: [[1, 'steps']], outputs: [1] }
+      }
+      workflow.changeTracker.initialState = fromAny({
+        ...workflow.changeTracker.activeState,
+        extra: {
+          linearData: { inputs: [[1, 'seed']], outputs: [1] }
+        }
+      })
+      workflowStore.activeWorkflow = workflow
+
+      store.resetSelectedToWorkflow()
+
+      expect(store.selectedInputs).toEqual([[1, 'steps']])
+      expect(store.selectedOutputs).toEqual([1])
     })
   })
 
