@@ -1083,7 +1083,7 @@ const translations = {
   },
   'pricing.plan.standard.feature1': {
     en: '30-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 60 分钟'
+    'zh-CN': '单个工作流最长运行 30 分钟'
   },
   'pricing.plan.standard.feature2': {
     en: 'Add more credits anytime',

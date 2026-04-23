@@ -62,12 +62,15 @@ function requireElement<T extends Element>(
 const isSVGSVG = (el: Element): el is SVGSVGElement =>
   el instanceof SVGSVGElement
 const isSVGG = (el: Element): el is SVGGElement => el instanceof SVGGElement
-const isSVGText = (el: Element): el is SVGTextElement =>
-  el instanceof SVGTextElement
-const isHTMLDiv = (el: Element): el is HTMLDivElement =>
-  el instanceof HTMLDivElement
-const isHTMLSpan = (el: Element): el is HTMLSpanElement =>
-  el instanceof HTMLSpanElement
+function isSVGText(el: Element): el is SVGTextElement {
+  return el instanceof SVGTextElement
+}
+function isHTMLDiv(el: Element): el is HTMLDivElement {
+  return el instanceof HTMLDivElement
+}
+function isHTMLSpan(el: Element): el is HTMLSpanElement {
+  return el instanceof HTMLSpanElement
+}
 
 function setOverlayVisible(el: HTMLElement, visible: boolean) {
   el.classList.toggle('hidden', !visible)
