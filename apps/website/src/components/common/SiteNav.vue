@@ -12,11 +12,15 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
 import BrandButton from './BrandButton.vue'
+import GitHubStarBadge from './GitHubStarBadge.vue'
 import MobileMenu from './MobileMenu.vue'
 import NavDesktopLink from './NavDesktopLink.vue'
 import type { NavLink } from './NavDesktopLink.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', githubStars = '' } = defineProps<{
+  locale?: Locale
+  githubStars?: string
+}>()
 const routes = getRoutes(locale)
 
 const navLinks: NavLink[] = [
@@ -220,6 +224,8 @@ onMounted(() => {
         >{{ cta.core }}
       </BrandButton>
     </div>
+
+    <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
 
     <!-- Mobile hamburger -->
     <button

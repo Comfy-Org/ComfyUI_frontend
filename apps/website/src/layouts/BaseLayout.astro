@@ -5,6 +5,7 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import SiteNav from '../components/common/SiteNav.vue'
+import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
 interface Props {
   title: string
@@ -25,6 +26,9 @@ const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
 const rawLocale = Astro.currentLocale ?? 'en'
 const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
@@ -118,7 +122,7 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <SiteNav locale={locale} client:load />
+    <SiteNav locale={locale} github-stars={githubStars} client:load />
     <main class="mt-20 lg:mt-32">
       <slot />
     </main>
