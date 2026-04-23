@@ -46,8 +46,7 @@ runs:
             {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100
+              issue_number: prNumber
             }
           )
 

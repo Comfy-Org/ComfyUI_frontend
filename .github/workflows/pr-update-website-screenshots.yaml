@@ -17,6 +17,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.1-noble
     timeout-minutes: 15
     # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
+    # ⚠️ This condition is duplicated on `post-starting-comment` — keep them in sync.
     if: >
       ( github.event_name == 'pull_request' &&
         github.event.label.name == 'Update Website Screenshots' ) ||
@@ -133,7 +134,8 @@ jobs:
             }
 
   post-starting-comment:
-    # Runs in parallel with update-screenshots to show "in progress" immediately
+    # Runs in parallel with update-screenshots to show "in progress" immediately.
+    # ⚠️ This condition is duplicated from `update-screenshots` — keep them in sync.
     if: >
       ( github.event_name == 'pull_request' &&
         github.event.label.name == 'Update Website Screenshots' ) ||

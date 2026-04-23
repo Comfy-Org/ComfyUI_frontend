@@ -153,6 +153,8 @@ jobs:
             await core.summary.addRaw(lines.join('\n')).write()
 
   post-starting-comment:
+    # Safe to comment from pull_request trigger: fork PRs are excluded by the guard below.
+    # This avoids a ci-*/pr-* workflow_run split for a comment that must appear immediately.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     permissions:
