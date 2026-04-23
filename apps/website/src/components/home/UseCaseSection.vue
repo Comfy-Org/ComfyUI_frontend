@@ -145,9 +145,9 @@ useParallax([leftImgRef], {
       class="relative mx-auto grid w-full grid-cols-[minmax(0,5rem)_minmax(18ch,1fr)_minmax(0,5rem)] grid-rows-[auto_minmax(0,1fr)_auto] lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(24rem,42rem)_minmax(0,1fr)] lg:gap-x-0"
     >
       <!-- Label row -->
-      <div class="relative z-20 col-span-full py-4">
+      <div class="relative z-20 col-span-full flex justify-center py-4">
         <p
-          class="text-primary-comfy-yellow from-primary-comfy-ink to-primary-comfy-ink/10 bg-linear-to-b text-center text-sm font-bold tracking-widest uppercase lg:text-base"
+          class="text-primary-comfy-yellow from-primary-comfy-ink to-primary-comfy-ink/10 shrink grow-0 bg-linear-to-b text-center text-sm font-bold tracking-widest uppercase lg:text-base"
         >
           {{ t('useCase.label', locale) }}
         </p>
