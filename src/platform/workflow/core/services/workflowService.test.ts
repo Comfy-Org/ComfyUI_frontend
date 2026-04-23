@@ -1222,4 +1222,72 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
   })
+
+  describe('closeWorkflow', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+    })
+
+    function createAndRegister(
+      path: string,
+      index: number
+    ): LoadedComfyWorkflow {
+      const workflow = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 100
+      })
+      workflow.changeTracker = createMockChangeTracker()
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      workflowStore.attachWorkflow(workflow, index)
+      return workflow as LoadedComfyWorkflow
+    }
+
+    it('does not close tab when switching to replacement fails', async () => {
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      vi.mocked(app.loadGraphData).mockRejectedValue(
+        new Error('configure failed')
+      )
+
+      const result = await service.closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.isOpen(active)).toBe(true)
+    })
+
+    it('falls back to default workflow when replacement throws', async () => {
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      let callCount = 0
+      vi.mocked(app.loadGraphData).mockImplementation(async () => {
+        callCount++
+        if (callCount === 1) {
+          throw new Error('replacement failed')
+        }
+        workflowStore.activeWorkflow = createAndRegister(
+          'workflows/Unsaved Workflow.json',
+          2
+        )
+      })
+
+      const result = await service.closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+
+      expect(result).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+    })
+  })
 })
