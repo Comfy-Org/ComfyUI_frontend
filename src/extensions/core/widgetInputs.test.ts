@@ -96,6 +96,7 @@ vi.mock('@/renderer/utils/nodeTypeGuards', () => ({
   isPrimitiveNode: vi.fn(() => false)
 }))
 
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
@@ -110,6 +111,19 @@ import {
   mergeIfValid,
   setWidgetConfig
 } from './widgetInputs'
+
+function makeWidget(
+  overrides: Partial<IBaseWidget> = {}
+): IBaseWidget {
+  return {
+    name: 'value',
+    value: 0,
+    type: 'number',
+    options: {},
+    y: 0,
+    ...overrides
+  }
+}
 
 function createPrimitiveNode(): PrimitiveNode {
   return new PrimitiveNode('Primitive')
@@ -176,9 +190,7 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const targetNode = createTargetNode('seed', 42)
       setupGraphWithLink(node, targetNode)
-      node.widgets = [
-        { name: 'value', value: 99, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 99 })]
 
       node.applyToGraph()
 
@@ -191,12 +203,7 @@ describe('PrimitiveNode', () => {
       const targetNode = createTargetNode('text', 'original')
       setupGraphWithLink(node, targetNode)
       node.widgets = [
-        {
-          name: 'value',
-          value: 'hello {name}',
-          type: 'string',
-          options: {}
-        } as any
+        makeWidget({ value: 'hello {name}', type: 'string' })
       ]
       node.properties['Run widget replace on values'] = true
 
@@ -213,9 +220,7 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const targetNode = createTargetNode('seed', 0)
       setupGraphWithLink(node, targetNode)
-      node.widgets = [
-        { name: 'value', value: 77, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 77 })]
 
       const extraLink = { target_id: 2, target_slot: 0 } as any
       node.applyToGraph([extraLink])
@@ -233,9 +238,7 @@ describe('PrimitiveNode', () => {
         getNodeById: vi.fn(() => undefined)
       } as any
       node.outputs[0].links = [1]
-      node.widgets = [
-        { name: 'value', value: 99, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 99 })]
 
       node.applyToGraph()
 
@@ -252,9 +255,7 @@ describe('PrimitiveNode', () => {
         widgets: []
       })
       setupGraphWithLink(node, targetNode)
-      node.widgets = [
-        { name: 'value', value: 99, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 99 })]
 
       node.applyToGraph()
 
@@ -281,9 +282,7 @@ describe('PrimitiveNode', () => {
         widgets: [{ name: 'other_widget', value: 0 }]
       })
       setupGraphWithLink(node, targetNode)
-      node.widgets = [
-        { name: 'value', value: 99, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 99 })]
 
       node.applyToGraph()
 
@@ -299,13 +298,12 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const comboValues = ['a', 'b', 'c']
       node.widgets = [
-        {
-          name: 'value',
+        makeWidget({
           type: 'combo',
           value: 'a',
           options: { values: [] },
           callback: vi.fn()
-        } as any
+        })
       ]
       node.outputs[0].widget = {
         name: 'value',
@@ -643,9 +641,7 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const targetNode = createTargetNode('seed', 42)
       setupGraphWithLink(node, targetNode)
-      node.widgets = [
-        { name: 'value', value: 123, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 123 })]
 
       node.recreateWidget()
       // The widget values are preserved during recreation
