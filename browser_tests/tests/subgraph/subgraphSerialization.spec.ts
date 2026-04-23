@@ -355,11 +355,11 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.page.waitForFunction(() => !!window.app)
       await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
-      await expect(async () => {
-        const afterSnapshot =
-          await comfyPage.subgraph.getHostPromotedTupleSnapshot()
-        expect(afterSnapshot).toEqual(beforeSnapshot)
-      }).toPass({ timeout: 5_000 })
+      await expect
+        .poll(() => comfyPage.subgraph.getHostPromotedTupleSnapshot(), {
+          timeout: 5_000
+        })
+        .toEqual(beforeSnapshot)
     })
 
     test('All links reference valid nodes in their graph', async ({
@@ -436,13 +436,17 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       test('Loads without console warnings about failed widget resolution', async ({
         comfyPage
       }) => {
-        const { warnings } = SubgraphHelper.collectConsoleWarnings(
+        const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
           comfyPage.page
         )
 
-        await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
+        try {
+          await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
 
-        comfyExpect(warnings).toEqual([])
+          comfyExpect(warnings).toEqual([])
+        } finally {
+          dispose()
+        }
       })
 
       test('Legacy-prefixed promoted widget renders with the normalized label after load', async ({
