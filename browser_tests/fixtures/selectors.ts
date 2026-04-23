@@ -203,6 +203,9 @@ export const TestIds = {
   loading: {
     overlay: 'loading-overlay'
   },
+  load3d: {
+    recordingDuration: 'load3d-recording-duration'
+  },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
   },
