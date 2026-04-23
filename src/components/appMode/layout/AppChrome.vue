@@ -88,7 +88,7 @@ interface ChromeCell {
   disabled?: boolean
 }
 
-export type AppChromeVariant = 'app-mode' | 'builder'
+type AppChromeVariant = 'app-mode' | 'builder'
 
 const { variant = 'app-mode' } = defineProps<{
   variant?: AppChromeVariant

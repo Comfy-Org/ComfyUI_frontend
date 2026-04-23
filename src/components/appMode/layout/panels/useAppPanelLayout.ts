@@ -25,7 +25,7 @@ import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import type { InputCellEntry } from '../cells/InputCell.vue'
 import type { BlockConfig, BlockPos, BlockRow, DropTarget } from './panelTypes'
 
-export interface InputEntryWithMeta extends InputCellEntry {
+interface InputEntryWithMeta extends InputCellEntry {
   isMultiline: boolean
 }
 
