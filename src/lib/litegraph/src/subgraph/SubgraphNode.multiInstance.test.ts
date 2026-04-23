@@ -258,4 +258,46 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     const serialized = instance.serialize()
     expect(serialized.widgets_values).toBeUndefined()
   })
+
+  it('does not write widgets_values on SubgraphNode (fix for #10849 template corruption regression)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 42)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 801 })
+    instance.graph!.add(instance)
+
+    expect(instance.serialize().widgets_values).toBeUndefined()
+  })
+
+  it('ignores legacy positional widgets_values on load (fix for #10849 Z-Image-Turbo regression)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 42)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 802 })
+    instance.configure({
+      id: 802,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [999]
+    })
+
+    expect(instance.serialize().widgets_values).toBeUndefined()
+  })
 })
