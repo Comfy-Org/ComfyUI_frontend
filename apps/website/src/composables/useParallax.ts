@@ -22,7 +22,9 @@ export function useParallax(
 
   onMounted(() => {
     const trigger = options.trigger?.value
-    const els = elements.map((r) => r.value).filter(Boolean) as HTMLElement[]
+    const els = elements
+      .map((r) => r.value)
+      .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)
     if (!els.length || prefersReducedMotion()) return
 
     ctx = gsap.context(() => {
@@ -34,7 +36,8 @@ export function useParallax(
             trigger: trigger ?? el,
             start: options.start ?? 'top bottom',
             end: options.end ?? 'bottom top',
-            scrub: 1
+            scrub: 1,
+            invalidateOnRefresh: true
           }
         })
       })

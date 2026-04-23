@@ -122,7 +122,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
