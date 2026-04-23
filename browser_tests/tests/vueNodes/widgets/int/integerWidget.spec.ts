@@ -8,7 +8,6 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
-    await comfyPage.vueNodes.waitForNodes()
 
     const seedWidget = comfyPage.vueNodes
       .getWidgetByName('KSampler', 'seed')

@@ -9,7 +9,6 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
     comfyPage
   }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
     // Expect error state on missing unknown node
@@ -23,7 +22,6 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node causes execution error', async ({
     comfyPage
   }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
     await comfyPage.runButton.click()
 

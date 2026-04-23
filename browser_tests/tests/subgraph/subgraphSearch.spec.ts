@@ -15,8 +15,7 @@ async function exitSubgraphAndPublish(
   subgraphNode: Awaited<ReturnType<typeof createSubgraphAndNavigateInto>>,
   blueprintName: string
 ) {
-  await comfyPage.page.keyboard.press('Escape')
-  await comfyPage.nextFrame()
+  await comfyPage.keyboard.press('Escape')
 
   await subgraphNode.click('title')
   await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {

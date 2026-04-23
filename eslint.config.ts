@@ -232,13 +232,14 @@ export default defineConfig([
   },
   {
     files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Program',
-          message: '.spec.ts files are only allowed under browser_tests/tests/'
+          message:
+            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
         }
       ]
     }
@@ -283,7 +284,10 @@ export default defineConfig([
           message:
             'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
         }
-      ]
+      ],
+      // Tests routinely define stub and harness components side-by-side with the
+      // system under test, which is a distinct use case from production SFCs.
+      'vue/one-component-per-file': 'off'
     }
   },
   {

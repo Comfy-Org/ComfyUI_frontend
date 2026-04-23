@@ -35,6 +35,13 @@ export async function hasCanvasContent(canvas: Locator): Promise<boolean> {
 }
 
 export async function triggerSerialization(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const graph = window.graph as TestGraphAccess | undefined
+    const node = graph?._nodes_by_id?.['1']
+    const widget = node?.widgets?.find((w) => w.name === 'mask')
+    return typeof widget?.serializeValue === 'function'
+  })
+
   await page.evaluate(async () => {
     const graph = window.graph as TestGraphAccess | undefined
     if (!graph) {
@@ -50,9 +57,14 @@ export async function triggerSerialization(page: Page): Promise<void> {
       )
     }
 
-    const widget = node.widgets?.find((w) => w.name === 'mask')
-    if (!widget) {
+    const widgetIndex = node.widgets?.findIndex((w) => w.name === 'mask') ?? -1
+    if (widgetIndex === -1) {
       throw new Error('Widget "mask" not found on target node 1.')
+    }
+
+    const widget = node.widgets?.[widgetIndex]
+    if (!widget) {
+      throw new Error(`Widget index ${widgetIndex} not found on target node 1.`)
     }
 
     if (typeof widget.serializeValue !== 'function') {
@@ -61,6 +73,6 @@ export async function triggerSerialization(page: Page): Promise<void> {
       )
     }
 
-    await widget.serializeValue(node, 0)
+    await widget.serializeValue(node, widgetIndex)
   })
 }

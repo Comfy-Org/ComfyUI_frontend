@@ -833,8 +833,10 @@ export function useErrorGroups(
     missingNodeCache,
     groupedErrorMessages,
     missingPackGroups,
-    missingModelGroups: filteredMissingModelGroups,
-    missingMediaGroups: filteredMissingMediaGroups,
+    missingModelGroups,
+    missingMediaGroups,
+    filteredMissingModelGroups,
+    filteredMissingMediaGroups,
     swapNodeGroups
   }
 }

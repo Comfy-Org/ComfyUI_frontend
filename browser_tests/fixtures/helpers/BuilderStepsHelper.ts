@@ -13,18 +13,30 @@ export class BuilderStepsHelper {
     return this.comfyPage.page
   }
 
+  get inputsButton(): Locator {
+    return this.toolbar.getByRole('button', { name: 'Inputs' })
+  }
+
+  get outputsButton(): Locator {
+    return this.toolbar.getByRole('button', { name: 'Outputs' })
+  }
+
+  get previewButton(): Locator {
+    return this.toolbar.getByRole('button', { name: 'Preview' })
+  }
+
   async goToInputs() {
-    await this.toolbar.getByRole('button', { name: 'Inputs' }).click()
+    await this.inputsButton.click()
     await this.comfyPage.nextFrame()
   }
 
   async goToOutputs() {
-    await this.toolbar.getByRole('button', { name: 'Outputs' }).click()
+    await this.outputsButton.click()
     await this.comfyPage.nextFrame()
   }
 
   async goToPreview() {
-    await this.toolbar.getByRole('button', { name: 'Preview' }).click()
+    await this.previewButton.click()
     await this.comfyPage.nextFrame()
   }
 }

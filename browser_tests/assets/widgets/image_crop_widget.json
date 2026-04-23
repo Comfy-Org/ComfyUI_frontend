@@ -6,7 +6,7 @@
       "id": 1,
       "type": "ImageCropV2",
       "pos": [50, 50],
-      "size": [400, 500],
+      "size": [400, 550],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -27,14 +27,7 @@
       "properties": {
         "Node name for S&R": "ImageCropV2"
       },
-      "widgets_values": [
-        {
-          "x": 0,
-          "y": 0,
-          "width": 512,
-          "height": 512
-        }
-      ]
+      "widgets_values": [{ "x": 0, "y": 0, "width": 512, "height": 512 }]
     }
   ],
   "links": [],

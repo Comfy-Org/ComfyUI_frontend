@@ -1,5 +1,6 @@
 import type {
   ComfyWorkflowJSON,
+  ModelFile,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { flattenWorkflowNodes } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -19,6 +20,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode
@@ -28,6 +30,39 @@ import { resolveComboValues } from '@/utils/litegraphUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+/**
+ * Fills url/hash/directory onto a candidate from the node's embedded
+ * `properties.models` metadata when the names match. The full pipeline
+ * does this via enrichWithEmbeddedMetadata + graphData.models, but the
+ * realtime single-node scan (paste, un-bypass) otherwise loses these
+ * fields — making the Missing Model row's download/copy-url buttons
+ * disappear after a bypass/un-bypass cycle.
+ */
+function enrichCandidateFromNodeProperties(
+  candidate: MissingModelCandidate,
+  embeddedModels: readonly ModelFile[] | undefined
+): MissingModelCandidate {
+  if (!embeddedModels?.length) return candidate
+  // Require directory agreement when the candidate already has one —
+  // a single node can reference two models with the same name under
+  // different directories (e.g. a LoRA present in multiple folders);
+  // name-only matching would stamp the wrong url/hash onto the
+  // candidate. Mirrors the directory check in enrichWithEmbeddedMetadata.
+  const match = embeddedModels.find(
+    (m) =>
+      m.name === candidate.name &&
+      (!candidate.directory || candidate.directory === m.directory)
+  )
+  if (!match) return candidate
+  return {
+    ...candidate,
+    directory: candidate.directory ?? match.directory,
+    url: candidate.url ?? match.url,
+    hash: candidate.hash ?? match.hash,
+    hashType: candidate.hashType ?? match.hash_type
+  }
 }
 
 function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
@@ -107,6 +142,8 @@ export function scanNodeModelCandidates(
   if (!executionId) return []
 
   const candidates: MissingModelCandidate[] = []
+  const embeddedModels = (node as { properties?: { models?: ModelFile[] } })
+    .properties?.models
   for (const widget of node.widgets) {
     let candidate: MissingModelCandidate | null = null
 
@@ -122,7 +159,11 @@ export function scanNodeModelCandidates(
       )
     }
 
-    if (candidate) candidates.push(candidate)
+    if (candidate) {
+      candidates.push(
+        enrichCandidateFromNodeProperties(candidate, embeddedModels)
+      )
+    }
   }
 
   return candidates
@@ -231,9 +272,18 @@ export async function enrichWithEmbeddedMetadata(
   // model — not merely because any unrelated active node exists. A
   // reference is any widget value (or node.properties.models entry)
   // that matches the model name on an active node.
+  // Hoist the id→node map once; isModelReferencedByActiveNode would
+  // otherwise rebuild it on every unmatched entry.
+  const flattenedNodeById = new Map(allNodes.map((n) => [String(n.id), n]))
   const activeUnmatched = unmatched.filter(
     (m) =>
-      m.sourceNodeType !== '' || isModelReferencedByActiveNode(m.name, allNodes)
+      m.sourceNodeType !== '' ||
+      isModelReferencedByActiveNode(
+        m.name,
+        m.directory,
+        allNodes,
+        flattenedNodeById
+      )
   )
 
   const settled = await Promise.allSettled(
@@ -276,7 +326,9 @@ export async function enrichWithEmbeddedMetadata(
 
 function isModelReferencedByActiveNode(
   modelName: string,
-  allNodes: ReturnType<typeof flattenWorkflowNodes>
+  modelDirectory: string | undefined,
+  allNodes: ReturnType<typeof flattenWorkflowNodes>,
+  nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
 ): boolean {
   for (const node of allNodes) {
     if (
@@ -284,12 +336,30 @@ function isModelReferencedByActiveNode(
       node.mode === LGraphEventMode.BYPASS
     )
       continue
+    if (!isAncestorPathActiveInFlattened(String(node.id), nodeById)) continue
 
+    // Require directory agreement when both sides specify one, so a
+    // same-name entry under a different folder does not keep an
+    // unrelated workflow-level model alive as missing.
     const embeddedModels = (
-      node.properties as { models?: Array<{ name: string }> } | undefined
+      node.properties as
+        | { models?: Array<{ name: string; directory?: string }> }
+        | undefined
     )?.models
-    if (embeddedModels?.some((m) => m.name === modelName)) return true
+    if (
+      embeddedModels?.some(
+        (m) =>
+          m.name === modelName &&
+          (modelDirectory === undefined ||
+            m.directory === undefined ||
+            m.directory === modelDirectory)
+      )
+    ) {
+      return true
+    }
 
+    // widgets_values carries only the name, so directory cannot be
+    // checked here — fall back to filename matching.
     const values = node.widgets_values
     if (!values) continue
     const valueArray = Array.isArray(values) ? values : Object.values(values)
@@ -298,6 +368,22 @@ function isModelReferencedByActiveNode(
     }
   }
   return false
+}
+
+function isAncestorPathActiveInFlattened(
+  executionId: string,
+  nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
+): boolean {
+  for (const ancestorId of getParentExecutionIds(executionId)) {
+    const ancestor = nodeById.get(ancestorId)
+    if (!ancestor) continue
+    if (
+      ancestor.mode === LGraphEventMode.NEVER ||
+      ancestor.mode === LGraphEventMode.BYPASS
+    )
+      return false
+  }
+  return true
 }
 
 function collectEmbeddedModelsWithSource(

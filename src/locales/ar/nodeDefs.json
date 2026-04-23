@@ -472,6 +472,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
+    "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول للفيديو."
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "معرّف أصل Seedance لاستخدامه كالإطار الأول. لا يمكن استخدامه مع إدخال صورة الإطار الأول."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير للفيديو."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "معرّف أصل Seedance لاستخدامه كالإطار الأخير. لا يمكن استخدامه مع إدخال صورة الإطار الأخير."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "إنشاء أو تعديل أو تمديد فيديو باستخدام Seedance 2.0 مع صور أو فيديوهات أو صوتيات مرجعية. يدعم المراجع متعددة الوسائط، وتحرير الفيديو، وتمديد الفيديو.",
+    "display_name": "ByteDance Seedance 2.0 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_auto_downscale": {
+        "name": "التقليل التلقائي للحجم"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "إنشاء فيديو باستخدام نماذج Seedance 2.0 بناءً على موجه نصي.",
+    "display_name": "ByteDance Seedance 2.0 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "إنشاء أصل صورة شخصية في Seedance 2.0. يقوم برفع الصورة المدخلة وتسجيلها في مجموعة الأصول المحددة. إذا كان group_id فارغًا، سيتم تنفيذ عملية تحقق H5 لشخص حقيقي لإنشاء مجموعة جديدة قبل إضافة الأصل.",
+    "display_name": "إنشاء أصل صورة ByteDance",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "إعادة استخدام معرّف مجموعة أصول Seedance موجود لتخطي التحقق البشري المتكرر لنفس الشخص. اتركه فارغًا لتنفيذ التحقق البشري في المتصفح وإنشاء مجموعة جديدة."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "الصورة التي سيتم تسجيلها كأصل شخصي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "إنشاء أصل فيديو شخصي في Seedance 2.0. يقوم برفع الفيديو المدخل وتسجيله في مجموعة الأصول المحددة. إذا كان group_id فارغًا، سيتم تنفيذ عملية تحقق H5 لشخص حقيقي لإنشاء مجموعة جديدة قبل إضافة الأصل.",
+    "display_name": "إنشاء أصل فيديو ByteDance",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "إعادة استخدام معرّف مجموعة أصول Seedance موجود لتخطي التحقق البشري المتكرر لنفس الشخص. اتركه فارغًا لتنفيذ التحقق البشري في المتصفح وإنشاء مجموعة جديدة."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "الفيديو الذي سيتم تسجيله كأصل شخصي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام المطالبة النصية والإطار الأول والأخير.",
     "display_name": "تحويل الإطار الأول-الأخير من ByteDance إلى فيديو",
@@ -1358,6 +1548,36 @@
     "outputs": {
       "0": {
         "name": "قيمة RGB عددية",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "مطابقة ألوان صورة مع أخرى باستخدام خوارزميات متنوعة.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "الصورة أو الصور المرجعية لمطابقة الألوان معها. إذا لم يتم توفيرها، سيتم تخطي المعالجة."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "الصورة أو الصور التي سيتم تطبيق تحويل الألوان عليها."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: كل إطار يُطابق مع image_ref بشكل فردي. uniform: تجميع إحصائيات جميع الإطارات المصدرية كأساس، والمطابقة مع image_ref. target_frame: استخدام إطار محدد كأساس للتحويل إلى image_ref، ويُطبق بشكل موحد على جميع الإطارات (يحافظ على الفروقات النسبية)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -3530,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "استيفاء الإطارات",
+    "inputs": {
+      "images": {
+        "name": "الصور"
+      },
+      "interp_model": {
+        "name": "نموذج الاستيفاء"
+      },
+      "multiplier": {
+        "name": "المضاعف"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "تحميل نموذج استيفاء الإطارات",
+    "inputs": {
+      "model_name": {
+        "name": "اسم النموذج",
+        "tooltip": "اختر نموذج استيفاء الإطارات للتحميل. يجب وضع النماذج في مجلد 'frame_interpolation'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "يطبق تحجيمًا معتمدًا على الترددات على الإرشاد",
     "display_name": "FreSca",
@@ -5453,6 +5706,22 @@
       },
       "image": {
         "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "استخراج سلسلة من JSON",
+    "inputs": {
+      "json_string": {
+        "name": "سلسلة_json"
+      },
+      "key": {
+        "name": "مفتاح"
       }
     },
     "outputs": {
@@ -13755,6 +14024,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "يسحب المخرجات المنزوعة الضوضاء نحو الإدخال الكامن. قيمة أعلى = تطابق أقوى مع الإدخال. ۰ لتعطيل الميزة."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "عتبة سيغما التي دونها يتم تعطيل restore_cfg."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "التحكم في قوة التأثير في نهاية العينة (سيغما منخفضة). يتم الاستيفاء خطياً من البداية."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "التحكم في قوة التأثير في بداية العينة (سيغما عالية)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "تهيئة SV3D",
     "inputs": {
@@ -14753,6 +15060,58 @@
       },
       "width": {
         "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloTextToMusic": {
+    "description": "إنشاء موسيقى من وصف نصي باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. اترك المدة ۰ ليقوم النموذج بتحديدها تلقائياً من الوصف.",
+    "display_name": "تحويل النص إلى موسيقى بواسطة Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "duration": {
+        "name": "المدة",
+        "tooltip": "المدة المستهدفة بالثواني. ضع القيمة ۰ ليقوم النموذج بتحديد المدة تلقائياً من الوصف. الحد الأقصى: ٦ دقائق."
+      },
+      "prompt": {
+        "name": "الوصف",
+        "tooltip": "وصف نصي يصف الموسيقى المطلوب إنشاؤها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج. حالياً يتم تجاهلها من قبل خدمة Sonilo ولكنها موجودة للحفاظ على اتساق الرسم البياني."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "إنشاء موسيقى من محتوى الفيديو باستخدام نموذج الذكاء الاصطناعي الخاص بـ Sonilo. يقوم بتحليل الفيديو وإنشاء موسيقى متوافقة.",
+    "display_name": "تحويل الفيديو إلى موسيقى بواسطة Sonilo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "prompt": {
+        "name": "الوصف",
+        "tooltip": "وصف نصي اختياري لتوجيه إنشاء الموسيقى. اتركه فارغاً للحصول على أفضل جودة - سيقوم النموذج بتحليل محتوى الفيديو بالكامل."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج. حالياً يتم تجاهلها من قبل خدمة Sonilo ولكنها موجودة للحفاظ على اتساق الرسم البياني."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال لإنشاء الموسيقى منه. الحد الأقصى للمدة: ٦ دقائق."
       }
     },
     "outputs": {
@@ -16025,6 +16384,10 @@
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
+      },
+      "use_default_template": {
+        "name": "استخدام القالب الافتراضي",
+        "tooltip": "استخدم القالب/الوصف المدمج في النظام إذا كان النموذج يحتوي عليه."
       }
     },
     "outputs": {
@@ -16076,6 +16439,10 @@
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
+      },
+      "use_default_template": {
+        "name": "استخدام القالب الافتراضي",
+        "tooltip": "استخدم القالب/الوصف المدمج في النظام إذا كان النموذج يحتوي عليه."
       }
     },
     "outputs": {
@@ -17231,6 +17598,10 @@
       "prompt": {
         "name": "النص_الوصفي",
         "tooltip": "الوصف النصي للفيديو"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة إخراج الفيديو. دقة 4K غير متوفرة لنماذج veo-3.1-lite و veo-3.0."
       },
       "seed": {
         "name": "البذرة",

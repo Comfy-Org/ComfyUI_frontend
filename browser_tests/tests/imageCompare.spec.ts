@@ -3,11 +3,11 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/image_compare_widget')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   function createTestImageDataUrl(label: string, color: string): string {
@@ -47,8 +47,16 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     containerLocator: Locator,
     percentage: number
   ) {
+    await expect
+      .poll(async () => {
+        const b = await containerLocator.boundingBox()
+        return b !== null && b.width > 0 && b.height > 0
+      })
+      .toBe(true)
     const box = await containerLocator.boundingBox()
-    if (!box) throw new Error('Container not found')
+    if (!box || box.width <= 0 || box.height <= 0) {
+      throw new Error('Slider move target has no layout box')
+    }
     await page.mouse.move(
       box.x + box.width * (percentage / 100),
       box.y + box.height / 2
@@ -80,10 +88,6 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
   }
 
-  // ---------------------------------------------------------------------------
-  // Rendering
-  // ---------------------------------------------------------------------------
-
   test(
     'Shows empty state when no images are set',
     { tag: '@smoke' },
@@ -91,15 +95,33 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       const node = comfyPage.vueNodes.getNodeLocator('1')
       await expect(node).toBeVisible()
 
-      await expect(node).toContainText('No images to compare')
+      await expect(node.getByTestId(TestIds.imageCompare.empty)).toBeVisible()
       await expect(node.locator('img')).toHaveCount(0)
       await expect(node.getByRole('presentation')).toHaveCount(0)
     }
   )
 
-  // ---------------------------------------------------------------------------
-  // Slider defaults
-  // ---------------------------------------------------------------------------
+  test(
+    'Widget displays images and handle after value is set',
+    { tag: '@smoke' },
+    async ({ comfyPage }) => {
+      const beforeUrl = createTestImageDataUrl('Before', '#c00')
+      const afterUrl = createTestImageDataUrl('After', '#00c')
+      await setImageCompareValue(comfyPage, {
+        beforeImages: [beforeUrl],
+        afterImages: [afterUrl]
+      })
+
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      const beforeImg = node.locator('img[alt="Before image"]')
+      const afterImg = node.locator('img[alt="After image"]')
+      await expect(beforeImg).toBeVisible()
+      await expect(afterImg).toBeVisible()
+      await expect(node.getByRole('presentation')).toBeVisible()
+
+      await waitForImagesLoaded(node)
+    }
+  )
 
   test(
     'Slider defaults to 50% with both images set',
@@ -135,10 +157,6 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     }
   )
 
-  // ---------------------------------------------------------------------------
-  // Slider interaction
-  // ---------------------------------------------------------------------------
-
   test(
     'Mouse hover moves slider position',
     { tag: '@smoke' },
@@ -154,10 +172,12 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       const handle = node.getByRole('presentation')
       const beforeImg = node.locator('img[alt="Before image"]')
       const afterImg = node.locator('img[alt="After image"]')
+      const viewport = node.getByTestId(TestIds.imageCompare.viewport)
       await expect(afterImg).toBeVisible()
+      await expect(viewport).toBeVisible()
 
       // Left edge: sliderPosition ≈ 5 → clip-path inset right ≈ 95%
-      await moveToPercentage(comfyPage.page, afterImg, 5)
+      await moveToPercentage(comfyPage.page, viewport, 5)
       await expect
         .poll(() => getClipPathInsetRightPercent(beforeImg))
         .toBeGreaterThan(90)
@@ -168,7 +188,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
         .toBeLessThan(10)
 
       // Right edge: sliderPosition ≈ 95 → clip-path inset right ≈ 5%
-      await moveToPercentage(comfyPage.page, afterImg, 95)
+      await moveToPercentage(comfyPage.page, viewport, 95)
       await expect
         .poll(() => getClipPathInsetRightPercent(beforeImg))
         .toBeLessThan(10)
@@ -193,9 +213,11 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const handle = node.getByRole('presentation')
     const afterImg = node.locator('img[alt="After image"]')
+    const viewport = node.getByTestId(TestIds.imageCompare.viewport)
     await expect(afterImg).toBeVisible()
+    await expect(viewport).toBeVisible()
 
-    await moveToPercentage(comfyPage.page, afterImg, 30)
+    await moveToPercentage(comfyPage.page, viewport, 30)
     // Wait for Vue to commit the slider update
     await expect
       .poll(() =>
@@ -216,7 +238,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       .toBeCloseTo(positionWhileInside, 0)
   })
 
-  test('Slider clamps to 0% at left edge of container', async ({
+  test('Slider position clamps to 0-100% range at container edges', async ({
     comfyPage
   }) => {
     const beforeUrl = createTestImageDataUrl('Before', '#c00')
@@ -228,22 +250,36 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const handle = node.getByRole('presentation')
-    const afterImg = node.locator('img[alt="After image"]')
-    await expect(afterImg).toBeVisible()
+    const compareArea = node.getByTestId(TestIds.imageCompare.viewport)
+    await expect(compareArea).toBeVisible()
 
-    const box = await afterImg.boundingBox()
-    if (!box) throw new Error('Container not found')
+    await expect
+      .poll(async () => {
+        const b = await compareArea.boundingBox()
+        return b !== null && b.width > 0 && b.height > 0
+      })
+      .toBe(true)
 
-    // Move to the leftmost pixel (elementX = 0 → sliderPosition = 0)
+    const box = await compareArea.boundingBox()
+    if (!box || box.width <= 0 || box.height <= 0) {
+      throw new Error('Compare viewport layout not ready')
+    }
+
     await comfyPage.page.mouse.move(box.x, box.y + box.height / 2)
     await expect
       .poll(() => handle.evaluate((el) => (el as HTMLElement).style.left))
       .toBe('0%')
-  })
 
-  // ---------------------------------------------------------------------------
-  // Single image modes
-  // ---------------------------------------------------------------------------
+    await comfyPage.page.mouse.move(
+      box.x + box.width - 0.5,
+      box.y + box.height / 2
+    )
+    await expect
+      .poll(() =>
+        handle.evaluate((el) => parseFloat((el as HTMLElement).style.left))
+      )
+      .toBeCloseTo(100, 0)
+  })
 
   test('Only before image shows without slider when afterImages is empty', async ({
     comfyPage
@@ -273,10 +309,6 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     await expect(node.getByRole('presentation')).toBeHidden()
   })
 
-  // ---------------------------------------------------------------------------
-  // Batch navigation
-  // ---------------------------------------------------------------------------
-
   test(
     'Batch navigation appears when before side has multiple images',
     { tag: '@smoke' },
@@ -291,13 +323,21 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
-      const beforeBatch = node.getByTestId('before-batch')
+      const beforeBatch = node.getByTestId(TestIds.imageCompare.beforeBatch)
 
-      await expect(node.getByTestId('batch-nav')).toBeVisible()
-      await expect(beforeBatch.getByTestId('batch-counter')).toHaveText('1 / 3')
+      await expect(
+        node.getByTestId(TestIds.imageCompare.batchNav)
+      ).toBeVisible()
+      await expect(
+        beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
+      ).toHaveText('1 / 3')
       // after-batch renders only when afterBatchCount > 1
-      await expect(node.getByTestId('after-batch')).toBeHidden()
-      await expect(beforeBatch.getByTestId('batch-prev')).toBeDisabled()
+      await expect(
+        node.getByTestId(TestIds.imageCompare.afterBatch)
+      ).toBeHidden()
+      await expect(
+        beforeBatch.getByTestId(TestIds.imageCompare.batchPrev)
+      ).toBeDisabled()
     }
   )
 
@@ -311,7 +351,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(node.getByTestId('batch-nav')).toBeHidden()
+    await expect(node.getByTestId(TestIds.imageCompare.batchNav)).toBeHidden()
   })
 
   test(
@@ -327,10 +367,10 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
-      const beforeBatch = node.getByTestId('before-batch')
-      const counter = beforeBatch.getByTestId('batch-counter')
-      const nextBtn = beforeBatch.getByTestId('batch-next')
-      const prevBtn = beforeBatch.getByTestId('batch-prev')
+      const beforeBatch = node.getByTestId(TestIds.imageCompare.beforeBatch)
+      const counter = beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
+      const nextBtn = beforeBatch.getByTestId(TestIds.imageCompare.batchNext)
+      const prevBtn = beforeBatch.getByTestId(TestIds.imageCompare.batchPrev)
 
       await nextBtn.click()
       await expect(counter).toHaveText('2 / 3')
@@ -356,10 +396,10 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
-    const beforeBatch = node.getByTestId('before-batch')
-    const counter = beforeBatch.getByTestId('batch-counter')
-    const nextBtn = beforeBatch.getByTestId('batch-next')
-    const prevBtn = beforeBatch.getByTestId('batch-prev')
+    const beforeBatch = node.getByTestId(TestIds.imageCompare.beforeBatch)
+    const counter = beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
+    const nextBtn = beforeBatch.getByTestId(TestIds.imageCompare.batchNext)
+    const prevBtn = beforeBatch.getByTestId(TestIds.imageCompare.batchPrev)
 
     await nextBtn.click()
     await nextBtn.click()
@@ -385,14 +425,18 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
-    const beforeBatch = node.getByTestId('before-batch')
-    const afterBatch = node.getByTestId('after-batch')
+    const beforeBatch = node.getByTestId(TestIds.imageCompare.beforeBatch)
+    const afterBatch = node.getByTestId(TestIds.imageCompare.afterBatch)
 
-    await beforeBatch.getByTestId('batch-next').click()
-    await afterBatch.getByTestId('batch-next').click()
+    await beforeBatch.getByTestId(TestIds.imageCompare.batchNext).click()
+    await afterBatch.getByTestId(TestIds.imageCompare.batchNext).click()
 
-    await expect(beforeBatch.getByTestId('batch-counter')).toHaveText('2 / 3')
-    await expect(afterBatch.getByTestId('batch-counter')).toHaveText('2 / 2')
+    await expect(
+      beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
+    ).toHaveText('2 / 3')
+    await expect(
+      afterBatch.getByTestId(TestIds.imageCompare.batchCounter)
+    ).toHaveText('2 / 2')
     await expect(node.locator('img[alt="Before image"]')).toHaveAttribute(
       'src',
       url2
@@ -403,9 +447,28 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     )
   })
 
-  // ---------------------------------------------------------------------------
-  // Visual regression screenshots
-  // ---------------------------------------------------------------------------
+  test('ImageCompare node enforces minimum size', async ({ comfyPage }) => {
+    const minWidth = 400
+    const minHeight = 350
+    const size = await comfyPage.page.evaluate(() => {
+      const graphNode = window.app!.graph.getNodeById(1)
+      if (!graphNode?.size) return null
+      return { width: graphNode.size[0], height: graphNode.size[1] }
+    })
+    expect(
+      size,
+      'ImageCompare node id 1 must exist in loaded workflow graph'
+    ).not.toBeNull()
+    if (size === null) return
+    expect(
+      size.width,
+      'ImageCompare node minimum width'
+    ).toBeGreaterThanOrEqual(minWidth)
+    expect(
+      size.height,
+      'ImageCompare node minimum height'
+    ).toBeGreaterThanOrEqual(minHeight)
+  })
 
   for (const { pct, expectedClipMin, expectedClipMax } of [
     { pct: 25, expectedClipMin: 70, expectedClipMax: 80 },
@@ -424,9 +487,10 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
 
         const node = comfyPage.vueNodes.getNodeLocator('1')
         const beforeImg = node.locator('img[alt="Before image"]')
-        const afterImg = node.locator('img[alt="After image"]')
+        const viewport = node.getByTestId(TestIds.imageCompare.viewport)
         await waitForImagesLoaded(node)
-        await moveToPercentage(comfyPage.page, afterImg, pct)
+        await expect(viewport).toBeVisible()
+        await moveToPercentage(comfyPage.page, viewport, pct)
         await expect
           .poll(() => getClipPathInsetRightPercent(beforeImg))
           .toBeGreaterThan(expectedClipMin)
@@ -439,34 +503,56 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // Edge cases
-  // ---------------------------------------------------------------------------
-
-  test('Widget remains stable with broken image URLs', async ({
+  test('Widget handles image load failure gracefully', async ({
     comfyPage
   }) => {
-    await setImageCompareValue(comfyPage, {
-      beforeImages: ['https://example.invalid/broken.png'],
-      afterImages: ['https://example.invalid/broken2.png']
-    })
+    const brokenBefore = 'http://127.0.0.1:1/broken.png'
+    const brokenAfter = 'http://127.0.0.1:1/broken2.png'
 
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(node.locator('img')).toHaveCount(2)
-    await expect(node.getByRole('presentation')).toBeVisible()
+    const pageErrors: Error[] = []
+    const onPageError = (err: Error) => {
+      pageErrors.push(err)
+    }
+    comfyPage.page.on('pageerror', onPageError)
 
-    await expect
-      .poll(() =>
-        node.evaluate((el) => {
-          const imgs = el.querySelectorAll('img')
-          let errors = 0
-          imgs.forEach((img) => {
-            if (img.complete && img.naturalWidth === 0 && img.src) errors++
+    try {
+      await setImageCompareValue(comfyPage, {
+        beforeImages: [brokenBefore],
+        afterImages: [brokenAfter]
+      })
+
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      await expect.soft(node, 'ImageCompare node stays on canvas').toBeVisible()
+      await expect
+        .soft(node.locator('img'), 'Broken URLs still render img elements')
+        .toHaveCount(2)
+      await expect
+        .soft(
+          node.getByRole('presentation'),
+          'Compare slider remains for failed network loads'
+        )
+        .toBeVisible()
+
+      await expect
+        .poll(() =>
+          node.evaluate((el) => {
+            const imgs = el.querySelectorAll('img')
+            let errors = 0
+            imgs.forEach((img) => {
+              if (img.complete && img.naturalWidth === 0 && img.src) errors++
+            })
+            return errors
           })
-          return errors
-        })
-      )
-      .toBe(2)
+        )
+        .toBe(2)
+
+      expect(
+        pageErrors,
+        'Image load failures must not surface as uncaught page errors'
+      ).toHaveLength(0)
+    } finally {
+      comfyPage.page.off('pageerror', onPageError)
+    }
   })
 
   test('Rapid value updates show latest images and reset batch index', async ({
@@ -483,9 +569,14 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
-    await node.getByTestId('before-batch').getByTestId('batch-next').click()
+    await node
+      .getByTestId(TestIds.imageCompare.beforeBatch)
+      .getByTestId(TestIds.imageCompare.batchNext)
+      .click()
     await expect(
-      node.getByTestId('before-batch').getByTestId('batch-counter')
+      node
+        .getByTestId(TestIds.imageCompare.beforeBatch)
+        .getByTestId(TestIds.imageCompare.batchCounter)
     ).toHaveText('2 / 2')
 
     await setImageCompareValue(comfyPage, {
@@ -498,7 +589,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       green1Url
     )
     await expect(
-      node.getByTestId('before-batch').getByTestId('batch-counter')
+      node
+        .getByTestId(TestIds.imageCompare.beforeBatch)
+        .getByTestId(TestIds.imageCompare.batchCounter)
     ).toHaveText('1 / 2')
   })
 
@@ -541,7 +634,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     await expect(node.locator('img[alt="Custom after"]')).toBeVisible()
   })
 
-  test('Large batch sizes show correct counter', async ({ comfyPage }) => {
+  test('Large batch sizes show correct counter and end navigation state', async ({
+    comfyPage
+  }) => {
     const images = Array.from({ length: 20 }, (_, i) =>
       createTestImageDataUrl(String(i + 1), '#c00')
     )
@@ -551,11 +646,36 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
+    const beforeBatch = node.getByTestId(TestIds.imageCompare.beforeBatch)
+    const afterBatch = node.getByTestId(TestIds.imageCompare.afterBatch)
+
     await expect(
-      node.getByTestId('before-batch').getByTestId('batch-counter')
+      beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
     ).toHaveText('1 / 20')
     await expect(
-      node.getByTestId('after-batch').getByTestId('batch-counter')
+      afterBatch.getByTestId(TestIds.imageCompare.batchCounter)
     ).toHaveText('1 / 20')
+
+    const beforeNext = beforeBatch.getByTestId(TestIds.imageCompare.batchNext)
+    const afterNext = afterBatch.getByTestId(TestIds.imageCompare.batchNext)
+    for (let i = 0; i < 19; i++) {
+      await beforeNext.click()
+      await afterNext.click()
+    }
+
+    await expect(
+      beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
+    ).toHaveText('20 / 20')
+    await expect(
+      afterBatch.getByTestId(TestIds.imageCompare.batchCounter)
+    ).toHaveText('20 / 20')
+    await expect(
+      beforeBatch.getByTestId(TestIds.imageCompare.batchPrev)
+    ).toBeEnabled()
+    await expect(
+      afterBatch.getByTestId(TestIds.imageCompare.batchPrev)
+    ).toBeEnabled()
+    await expect(beforeNext).toBeDisabled()
+    await expect(afterNext).toBeDisabled()
   })
 })

@@ -1,16 +1,12 @@
 {
   "recommendations": [
     "antfu.vite",
-    "austenc.tailwind-docs",
     "bradlc.vscode-tailwindcss",
     "davidanson.vscode-markdownlint",
     "dbaeumer.vscode-eslint",
     "donjayamanne.githistory",
     "eamodio.gitlens",
-    "github.vscode-github-actions",
     "github.vscode-pull-request-github",
-    "hbenl.vscode-test-explorer",
-    "kisstkondoros.vscode-codemetrics",
     "lokalise.i18n-ally",
     "ms-playwright.playwright",
     "oxc.oxc-vscode",

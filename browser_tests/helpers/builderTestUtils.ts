@@ -122,21 +122,3 @@ export async function saveAndReopenInAppMode(
 
   await comfyPage.appMode.toggleAppMode()
 }
-
-/**
- * Enter builder, select the given widgets as inputs + SaveImage as output,
- * save as an app, and close the success dialog.
- *
- * Returns on the builder arrange/preview step.
- */
-export async function createAndSaveApp(
-  comfyPage: ComfyPage,
-  appName: string,
-  widgetNames: string[] = ['seed']
-): Promise<void> {
-  await setupBuilder(comfyPage, undefined, widgetNames)
-  await comfyPage.appMode.steps.goToPreview()
-  await builderSaveAs(comfyPage.appMode, appName)
-  await comfyPage.appMode.saveAs.closeButton.click()
-  await comfyPage.nextFrame()
-}

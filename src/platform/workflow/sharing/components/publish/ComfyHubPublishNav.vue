@@ -70,7 +70,7 @@ import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
 type ComfyHubPrimaryStep = Exclude<ComfyHubPublishStep, 'profileCreation'>

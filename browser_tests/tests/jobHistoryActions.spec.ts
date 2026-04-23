@@ -7,8 +7,6 @@ import {
 
 test.describe('Job History Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-
     // Expand the queue overlay so the JobHistoryActionsMenu is visible
     await comfyPage.page.getByTestId('queue-overlay-toggle').click()
   })

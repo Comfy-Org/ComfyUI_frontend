@@ -1,8 +1,7 @@
 /// <reference types="@webgpu/types" />
 import { ref, watch, nextTick, onUnmounted } from 'vue'
-import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
-import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
+import { parseToRgb } from '@/utils/colorUtil'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import {
   Tools,
@@ -17,6 +16,14 @@ import { tgpu } from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
+import {
+  resetDirtyRect,
+  updateDirtyRect,
+  premultiplyData,
+  drawRgbShape,
+  drawMaskShape
+} from './brushDrawingUtils'
+import type { DirtyRect } from './brushDrawingUtils'
 
 /**
  * Saves the brush settings to local storage with a debounce.
@@ -77,80 +84,6 @@ export function useBrushDrawing(initialSettings?: {
   // Flag to prevent redundant GPU updates
   const isSavingHistory = ref(false)
 
-  // Brush texture cache
-  const brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
-    maxSize: 20
-  })
-
-  /**
-   * Retrieves a cached brush texture or creates a new one if not found.
-   * @param radius - The radius of the brush.
-   * @param hardness - The hardness of the brush (0 to 1).
-   * @param color - The color of the brush.
-   * @param opacity - The opacity of the brush (0 to 1).
-   * @returns The canvas element containing the brush texture.
-   */
-  function getCachedBrushTexture(
-    radius: number,
-    hardness: number,
-    color: string,
-    opacity: number
-  ): HTMLCanvasElement {
-    const cacheKey = `${radius}_${hardness}_${color}_${opacity}`
-
-    if (brushTextureCache.has(cacheKey)) {
-      return brushTextureCache.get(cacheKey)!
-    }
-
-    // Use integer dimensions
-    const size = Math.ceil(radius * 2)
-    const tempCanvas = document.createElement('canvas')
-    const tempCtx = tempCanvas.getContext('2d')!
-    tempCanvas.width = size
-    tempCanvas.height = size
-
-    const centerX = size / 2
-    const centerY = size / 2
-    const hardRadius = radius * hardness
-
-    const imageData = tempCtx.createImageData(size, size)
-    const data = imageData.data
-    const { r, g, b } = parseToRgb(color)
-
-    const fadeRange = radius - hardRadius
-
-    for (let y = 0; y < size; y++) {
-      // Calculate distance from pixel center
-      const dy = y + 0.5 - centerY
-      for (let x = 0; x < size; x++) {
-        const dx = x + 0.5 - centerX
-        const index = (y * size + x) * 4
-
-        // Calculate Chebyshev distance
-        const distFromEdge = Math.max(Math.abs(dx), Math.abs(dy))
-
-        let pixelOpacity = 0
-        if (distFromEdge <= hardRadius) {
-          pixelOpacity = opacity
-        } else if (distFromEdge <= radius) {
-          const fadeProgress = (distFromEdge - hardRadius) / fadeRange
-          // Apply quadratic falloff
-          pixelOpacity = opacity * Math.pow(1 - fadeProgress, 2)
-        }
-
-        data[index] = r
-        data[index + 1] = g
-        data[index + 2] = b
-        data[index + 3] = pixelOpacity * 255
-      }
-    }
-
-    tempCtx.putImageData(imageData, 0, 0)
-    brushTextureCache.set(cacheKey, tempCanvas)
-
-    return tempCanvas
-  }
-
   const isDrawing = ref(false)
   const isDrawingLine = ref(false)
   const lineStartPoint = ref<Point | null>(null)
@@ -158,40 +91,7 @@ export function useBrushDrawing(initialSettings?: {
   const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
 
-  // Dirty rectangle tracking
-  const dirtyRect = ref({
-    minX: Infinity,
-    minY: Infinity,
-    maxX: -Infinity,
-    maxY: -Infinity
-  })
-
-  /**
-   * Resets the dirty rectangle to its initial infinite state.
-   */
-  function resetDirtyRect() {
-    dirtyRect.value = {
-      minX: Infinity,
-      minY: Infinity,
-      maxX: -Infinity,
-      maxY: -Infinity
-    }
-  }
-
-  /**
-   * Updates the dirty rectangle to include the specified area.
-   * @param x - The x-coordinate of the center.
-   * @param y - The y-coordinate of the center.
-   * @param radius - The radius of the area.
-   */
-  function updateDirtyRect(x: number, y: number, radius: number) {
-    // Add padding for anti-aliasing
-    const padding = 2
-    dirtyRect.value.minX = Math.min(dirtyRect.value.minX, x - radius - padding)
-    dirtyRect.value.minY = Math.min(dirtyRect.value.minY, y - radius - padding)
-    dirtyRect.value.maxX = Math.max(dirtyRect.value.maxX, x + radius + padding)
-    dirtyRect.value.maxY = Math.max(dirtyRect.value.maxY, y + radius + padding)
-  }
+  const dirtyRect = ref<DirtyRect>(resetDirtyRect())
 
   // Stroke processor instance
   let strokeProcessor: StrokeProcessor | null = null
@@ -411,19 +311,6 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   /**
-   * Premultiplies the alpha of an ImageData array in place.
-   * @param data - The Uint8ClampedArray to modify.
-   */
-  function premultiplyData(data: Uint8ClampedArray) {
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3] / 255
-      data[i] = Math.round(data[i] * a)
-      data[i + 1] = Math.round(data[i + 1] * a)
-      data[i + 2] = Math.round(data[i + 2] * a)
-    }
-  }
-
-  /**
    * Updates the GPU textures from the current canvas state.
    */
   async function updateGPUFromCanvas(): Promise<void> {
@@ -538,11 +425,6 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  /**
-   * Draws a shape on the appropriate canvas based on the current tool and layer.
-   * @param point - The center point of the shape.
-   * @param overrideOpacity - Optional opacity override.
-   */
   function drawShape(point: Point, overrideOpacity?: number) {
     const brush = store.brushSettings
     const mask_ctx = store.maskCtx
@@ -556,6 +438,12 @@ export function useBrushDrawing(initialSettings?: {
     const brushRadius = brush.size
     const hardness = brush.hardness
     const opacity = overrideOpacity ?? brush.opacity
+    const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
+    const effectiveHardness = getEffectiveHardness(
+      brushRadius,
+      hardness,
+      effectiveRadius
+    )
 
     const isErasing = mask_ctx.globalCompositeOperation === 'destination-out'
     const currentTool = store.currentTool
@@ -566,244 +454,34 @@ export function useBrushDrawing(initialSettings?: {
       currentTool &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
-      // Calculate effective size and hardness
-      const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
-      const effectiveHardness = getEffectiveHardness(
-        brushRadius,
-        hardness,
-        effectiveRadius
-      )
-
       drawRgbShape(
         rgb_ctx,
         point,
         brushType,
         effectiveRadius,
         effectiveHardness,
-        opacity
+        opacity,
+        store.rgbColor
       )
-      return
+    } else {
+      drawMaskShape(
+        mask_ctx,
+        point,
+        brushType,
+        effectiveRadius,
+        effectiveHardness,
+        opacity,
+        isErasing,
+        store.maskColor
+      )
     }
 
-    // Calculate effective size and hardness
-    const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
-    const effectiveHardness = getEffectiveHardness(
-      brushRadius,
-      hardness,
+    dirtyRect.value = updateDirtyRect(
+      dirtyRect.value,
+      point.x,
+      point.y,
       effectiveRadius
     )
-
-    drawMaskShape(
-      mask_ctx,
-      point,
-      brushType,
-      effectiveRadius,
-      effectiveHardness,
-      opacity,
-      isErasing
-    )
-
-    updateDirtyRect(point.x, point.y, effectiveRadius)
-  }
-
-  /**
-   * Draws a shape on the RGB canvas.
-   * @param ctx - The canvas rendering context.
-   * @param point - The center point.
-   * @param brushType - The type of brush (circle/rect).
-   * @param brushRadius - The radius of the brush.
-   * @param hardness - The hardness of the brush.
-   * @param opacity - The opacity of the brush.
-   */
-  function drawRgbShape(
-    ctx: CanvasRenderingContext2D,
-    point: Point,
-    brushType: BrushShape,
-    brushRadius: number,
-    hardness: number,
-    opacity: number
-  ): void {
-    const { x, y } = point
-    const rgbColor = store.rgbColor
-
-    if (brushType === BrushShape.Rect && hardness < 1) {
-      const rgbaColor = formatRgba(rgbColor, opacity)
-      const brushTexture = getCachedBrushTexture(
-        brushRadius,
-        hardness,
-        rgbaColor,
-        opacity
-      )
-      ctx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
-      updateDirtyRect(x, y, brushRadius)
-      return
-    }
-
-    if (hardness === 1) {
-      const rgbaColor = formatRgba(rgbColor, opacity)
-      ctx.fillStyle = rgbaColor
-      drawShapeOnContext(ctx, brushType, x, y, brushRadius)
-      updateDirtyRect(x, y, brushRadius)
-      return
-    }
-
-    const gradient = createBrushGradient(
-      ctx,
-      x,
-      y,
-      brushRadius,
-      hardness,
-      rgbColor,
-      opacity,
-      false
-    )
-    ctx.fillStyle = gradient
-    drawShapeOnContext(ctx, brushType, x, y, brushRadius)
-    updateDirtyRect(x, y, brushRadius)
-  }
-
-  /**
-   * Draws a shape on the Mask canvas.
-   * @param ctx - The canvas rendering context.
-   * @param point - The center point.
-   * @param brushType - The type of brush (circle/rect).
-   * @param brushRadius - The radius of the brush.
-   * @param hardness - The hardness of the brush.
-   * @param opacity - The opacity of the brush.
-   * @param isErasing - Whether the operation is erasing.
-   */
-  function drawMaskShape(
-    ctx: CanvasRenderingContext2D,
-    point: Point,
-    brushType: BrushShape,
-    brushRadius: number,
-    hardness: number,
-    opacity: number,
-    isErasing: boolean
-  ): void {
-    const { x, y } = point
-    const maskColor = store.maskColor
-
-    if (brushType === BrushShape.Rect && hardness < 1) {
-      const baseColor = isErasing
-        ? `rgba(255, 255, 255, ${opacity})`
-        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-
-      const brushTexture = getCachedBrushTexture(
-        brushRadius,
-        hardness,
-        baseColor,
-        opacity
-      )
-      ctx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
-      updateDirtyRect(x, y, brushRadius)
-      return
-    }
-
-    if (hardness === 1) {
-      ctx.fillStyle = isErasing
-        ? `rgba(255, 255, 255, ${opacity})`
-        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      drawShapeOnContext(ctx, brushType, x, y, brushRadius)
-      updateDirtyRect(x, y, brushRadius)
-      return
-    }
-
-    const maskColorHex = `rgb(${maskColor.r}, ${maskColor.g}, ${maskColor.b})`
-    const gradient = createBrushGradient(
-      ctx,
-      x,
-      y,
-      brushRadius,
-      hardness,
-      maskColorHex,
-      opacity,
-      isErasing
-    )
-    ctx.fillStyle = gradient
-    drawShapeOnContext(ctx, brushType, x, y, brushRadius)
-    updateDirtyRect(x, y, brushRadius)
-  }
-
-  /**
-   * Helper to draw the path of the shape on the context.
-   * @param ctx - The canvas rendering context.
-   * @param brushType - The type of brush.
-   * @param x - Center x.
-   * @param y - Center y.
-   * @param radius - Radius.
-   */
-  function drawShapeOnContext(
-    ctx: CanvasRenderingContext2D,
-    brushType: BrushShape,
-    x: number,
-    y: number,
-    radius: number
-  ): void {
-    ctx.beginPath()
-    if (brushType === BrushShape.Rect) {
-      ctx.rect(x - radius, y - radius, radius * 2, radius * 2)
-    } else {
-      ctx.arc(x, y, radius, 0, Math.PI * 2, false)
-    }
-    ctx.fill()
-  }
-
-  /**
-   * Formats a hex color and alpha into an rgba string.
-   * @param hex - The hex color string.
-   * @param alpha - The alpha value (0-1).
-   * @returns The rgba string.
-   */
-  function formatRgba(hex: string, alpha: number): string {
-    const { r, g, b } = hexToRgb(hex)
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`
-  }
-
-  /**
-   * Creates a radial gradient for soft brushes.
-   * @param ctx - The canvas context.
-   * @param x - Center x.
-   * @param y - Center y.
-   * @param radius - Radius.
-   * @param hardness - Hardness (0-1).
-   * @param color - Color string.
-   * @param opacity - Opacity (0-1).
-   * @param isErasing - Whether erasing.
-   * @returns The canvas gradient.
-   */
-  function createBrushGradient(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    radius: number,
-    hardness: number,
-    color: string,
-    opacity: number,
-    isErasing: boolean
-  ): CanvasGradient {
-    if (
-      !Number.isFinite(x) ||
-      !Number.isFinite(y) ||
-      !Number.isFinite(radius)
-    ) {
-      return ctx.createRadialGradient(0, 0, 0, 0, 0, 0)
-    }
-
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
-
-    if (isErasing) {
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-      gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity})`)
-      gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
-    } else {
-      const { r, g, b } = parseToRgb(color)
-      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`)
-      gradient.addColorStop(hardness, `rgba(${r}, ${g}, ${b}, ${opacity})`)
-      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
-    }
-
-    return gradient
   }
 
   /**
@@ -904,7 +582,7 @@ export function useBrushDrawing(initialSettings?: {
    */
   async function startDrawing(event: PointerEvent): Promise<void> {
     isDrawing.value = true
-    resetDirtyRect()
+    dirtyRect.value = resetDirtyRect()
 
     try {
       // Initialize stroke accumulator
@@ -1531,9 +1209,13 @@ export function useBrushDrawing(initialSettings?: {
       brushShape
     })
 
-    // Update Dirty Rect
     for (const p of strokePoints) {
-      updateDirtyRect(p.x, p.y, effectiveSize)
+      dirtyRect.value = updateDirtyRect(
+        dirtyRect.value,
+        p.x,
+        p.y,
+        effectiveSize
+      )
     }
 
     // 3. Blit to Preview with correct settings

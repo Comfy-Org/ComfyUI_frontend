@@ -1,2 +1,7 @@
 dist/
 .astro/
+test-results/
+playwright-report/
+
+# Platform-specific Playwright snapshots (CI runs Linux)
+*-win32.png
