@@ -113,6 +113,8 @@ function toggleBaseModelSelection(item: FilterOption) {
 
     <Button
       ref="sortTriggerRef"
+      :aria-label="t('assetBrowser.sortBy')"
+      :title="t('assetBrowser.sortBy')"
       variant="textonly"
       size="icon"
       :class="
@@ -312,6 +314,8 @@ function toggleBaseModelSelection(item: FilterOption) {
       "
     >
       <Button
+        :aria-label="t('assetBrowser.listView')"
+        :title="t('assetBrowser.listView')"
         variant="textonly"
         size="unset"
         :class="
@@ -325,6 +329,8 @@ function toggleBaseModelSelection(item: FilterOption) {
         <i class="icon-[lucide--list] size-4" />
       </Button>
       <Button
+        :aria-label="t('assetBrowser.gridView')"
+        :title="t('assetBrowser.gridView')"
         variant="textonly"
         size="unset"
         :class="
