@@ -94,7 +94,7 @@ describe('ComfyHubDescribeStep', () => {
     )
     await flushPromises()
 
-    const nameInput = screen.getByTestId('name-input')
+    const nameInput = screen.getByTestId('publish-name-input')
     const descInput = screen.getByTestId('description-input')
 
     await userEvent.clear(nameInput)
