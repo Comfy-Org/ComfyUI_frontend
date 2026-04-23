@@ -5,9 +5,11 @@
  * Dispatches the same commands LinearControls does: Comfy.QueuePromptFront
  * with shift held (priority queue), Comfy.QueuePrompt otherwise.
  *
- * Visual treatment comes from the shared Button primitive's `primary`
- * variant — App Mode no longer owns a bespoke accent color. If the
- * "Run = green" convention lands app-wide, it'll flip here for free.
+ * Styled as the "Go" half of the go/stop pair with InterruptCell:
+ * saturated green fill + darker border for depth. Paired with the
+ * tomato Stop button this gives the top-right cluster a bauhaus-
+ * primary semantic language (green = go, red = stop) that reads
+ * instantly without the user parsing the text.
  */
 import { useI18n } from 'vue-i18n'
 
@@ -37,9 +39,8 @@ async function handleClick(e: Event) {
 
 <template>
   <Button
-    variant="primary"
     size="unset"
-    class="size-full rounded-lg border border-cobalt-800 text-layout-xl"
+    class="size-full rounded-lg border border-green-800 bg-green-600 text-layout-xl text-white hover:bg-green-500"
     data-testid="layout-run-cell"
     @click="handleClick"
   >

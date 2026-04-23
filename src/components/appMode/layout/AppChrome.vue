@@ -33,9 +33,11 @@ import { useI18n } from 'vue-i18n'
 import BatchCountCell from './cells/BatchCountCell.vue'
 import FeedbackCell from './cells/FeedbackCell.vue'
 import IconCell from './cells/IconCell.vue'
+import InterruptCell from './cells/InterruptCell.vue'
 import JobQueueCell from './cells/JobQueueCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
 import OutputThumbCell from './cells/OutputThumbCell.vue'
+import ProgressCell from './cells/ProgressCell.vue'
 import RunCell from './cells/RunCell.vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -65,6 +67,8 @@ type ChromeCellKind =
   | 'system-feedback'
   | 'system-batch-count'
   | 'system-job-queue'
+  | 'system-interrupt'
+  | 'system-progress'
   | 'system-run'
   | 'action-rerun'
   | 'action-reuse-params'
@@ -241,6 +245,7 @@ const HIDE_IN_BUILDER = new Set<ChromeCellKind>([
 
 const DISABLE_IN_BUILDER = new Set<ChromeCellKind>([
   'system-batch-count',
+  'system-interrupt',
   'system-run'
 ])
 
@@ -287,6 +292,11 @@ const topLeftCells = computed<ChromeCell[]>(() => {
 
 const topRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
+  // Progress bar sits leftmost in the cluster so it stays out of the
+  // right-docked FloatingPanel's way and flanks Share / batch / run
+  // without bumping the cluster's right edge when it appears.
+  if (showJobQueue.value)
+    include(out, { id: 'system-progress', kind: 'system-progress', span: 4 })
   if (showShare.value)
     include(out, { id: 'share', kind: 'system-share', span: 2 })
   include(out, {
@@ -296,6 +306,12 @@ const topRightCells = computed<ChromeCell[]>(() => {
   })
   if (showJobQueue.value)
     include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
+  if (showJobQueue.value)
+    include(out, {
+      id: 'system-interrupt',
+      kind: 'system-interrupt',
+      span: 1
+    })
   include(out, { id: 'system-run', kind: 'system-run', span: 3 })
   return out
 })
@@ -406,6 +422,8 @@ function cellTitle(cell: ChromeCell): string | undefined {
         />
         <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
         <JobQueueCell v-else-if="cell.kind === 'system-job-queue'" />
+        <InterruptCell v-else-if="cell.kind === 'system-interrupt'" />
+        <ProgressCell v-else-if="cell.kind === 'system-progress'" />
         <RunCell v-else-if="cell.kind === 'system-run'" />
       </div>
     </div>
@@ -490,9 +508,11 @@ function cellTitle(cell: ChromeCell): string | undefined {
   pointer-events: auto;
 }
 
-/* Run cell hosts the accent button directly — drop the chrome surface
-   so only the button paints and the cell radius matches the button. */
-.app-chrome__cell[data-cell-kind='system-run'] {
+/* Run + Interrupt cells host full-bleed colored buttons directly —
+   drop the chrome surface so only the button paints and the cell
+   radius matches the button. */
+.app-chrome__cell[data-cell-kind='system-run'],
+.app-chrome__cell[data-cell-kind='system-interrupt'] {
   border: none;
   background-color: transparent;
 }
