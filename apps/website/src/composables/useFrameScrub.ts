@@ -1,12 +1,27 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
-import { gsap, ScrollTrigger } from '../scripts/gsapSetup'
+
+import { gsap } from '../scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
 
 interface FrameScrubOptions {
-  frameCount: number
-  frameSrc: (index: number) => string
+  urls: string[]
   scrollTrigger: (canvas: HTMLCanvasElement) => ScrollTrigger.Vars
+}
+
+function loadFrames(urls: string[]): Promise<HTMLImageElement[]> {
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = () => resolve(img)
+          img.onerror = () => reject(new Error(`Failed to load ${url}`))
+          img.src = url
+        })
+    )
+  )
 }
 
 export function useFrameScrub(
@@ -14,64 +29,44 @@ export function useFrameScrub(
   options: FrameScrubOptions
 ) {
   let ctx: gsap.Context | undefined
-  const images: HTMLImageElement[] = []
 
-  onMounted(() => {
-    if (!canvasRef.value || prefersReducedMotion()) return
-    const canvas: HTMLCanvasElement = canvasRef.value
+  onMounted(async () => {
+    const canvas = canvasRef.value
+    if (!canvas || prefersReducedMotion()) return
 
     const draw = canvas.getContext('2d')
     if (!draw) return
-    let loadedCount = 0
-    const resolvedTrigger = options.scrollTrigger(canvas)
 
-    function drawFrame(frame: number) {
-      const index = Math.round(frame)
-      const img = images[index]
+    const frames = await loadFrames(options.urls)
+    if (!frames.length) return
+
+    const { naturalWidth: w, naturalHeight: h } = frames[0]
+    canvas.width = w
+    canvas.height = h
+
+    function drawFrame(index: number) {
+      const img = frames[Math.round(index)]
       if (!img || !draw) return
-      canvas.width = img.width
-      canvas.height = img.height
+      draw.clearRect(0, 0, w, h)
       draw.drawImage(img, 0, 0)
     }
 
-    function onFrameReady() {
-      loadedCount++
-      if (loadedCount === options.frameCount) {
-        drawFrame(0)
-        initScrub()
-      }
-    }
+    drawFrame(0)
 
-    for (let i = 0; i < options.frameCount; i++) {
-      const img = new Image()
-      img.src = options.frameSrc(i)
-      img.onload = onFrameReady
-      img.onerror = onFrameReady
-      images.push(img)
-    }
-
-    function initScrub() {
-      ScrollTrigger.refresh()
-      const proxy = { frame: 0 }
-      ctx = gsap.context(() => {
-        gsap.to(proxy, {
-          frame: options.frameCount - 1,
-          ease: 'none',
-          scrollTrigger: resolvedTrigger,
-          onUpdate() {
-            drawFrame(proxy.frame)
-          }
-        })
+    const proxy = { frame: 0 }
+    ctx = gsap.context(() => {
+      gsap.to(proxy, {
+        frame: frames.length - 1,
+        ease: 'none',
+        scrollTrigger: options.scrollTrigger(canvas),
+        onUpdate() {
+          drawFrame(proxy.frame)
+        }
       })
-    }
+    })
   })
 
   onUnmounted(() => {
-    images.forEach((img) => {
-      img.onload = null
-      img.onerror = null
-    })
-    images.length = 0
     ctx?.revert()
   })
 }
