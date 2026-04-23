@@ -384,7 +384,12 @@
     "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
     "failed": "Failed",
     "failedToInstall": "Failed to Install",
+    "failedTabIndicatorTooltip": "{count} installation failed | {count} installations failed",
     "installError": "Install Error",
+    "installFailureToast": {
+      "summary": "Installation failed",
+      "detail": "{count} extension failed to install. Check the Failed tab for details. | {count} extensions failed to install. Check the Failed tab for details."
+    },
     "importFailedGenericError": "Package failed to import. Check the console for more details.",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
