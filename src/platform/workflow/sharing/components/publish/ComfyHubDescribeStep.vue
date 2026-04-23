@@ -8,6 +8,7 @@
         {{ $t('comfyHubPublish.workflowName') }}
       </span>
       <Input
+        data-testid="publish-name-input"
         :model-value="name"
         :placeholder="$t('comfyHubPublish.workflowNamePlaceholder')"
         @update:model-value="$emit('update:name', String($event))"
@@ -32,6 +33,7 @@
       </span>
       <TagsInput
         v-slot="{ isEmpty }"
+        data-testid="publish-tags-input"
         always-editing
         class="bg-secondary-background select-none"
         :model-value="tags"

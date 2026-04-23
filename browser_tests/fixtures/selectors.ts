@@ -208,7 +208,9 @@ export const TestIds = {
     footer: 'publish-footer',
     profilePrompt: 'publish-profile-prompt',
     nav: 'publish-nav',
-    gateFlow: 'publish-gate-flow'
+    gateFlow: 'publish-gate-flow',
+    nameInput: 'publish-name-input',
+    tagsInput: 'publish-tags-input'
   },
   loading: {
     overlay: 'loading-overlay'
