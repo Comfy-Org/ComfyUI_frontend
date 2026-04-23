@@ -158,7 +158,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       handleEvents('add')
     } catch (error) {
       console.error('Error initializing Load3d:', error)
-      useToastStore().addAlert(t('toastMessages.failedToInitializeLoad3d'))
+      useToastStore().addAlert(
+        t('toastMessages.failedToInitializeLoad3dViewer')
+      )
     }
   }
 

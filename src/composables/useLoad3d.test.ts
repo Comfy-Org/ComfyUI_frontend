@@ -326,7 +326,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
 
       expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToInitializeLoad3d'
+        'toastMessages.failedToInitializeLoad3dViewer'
       )
     })
 
