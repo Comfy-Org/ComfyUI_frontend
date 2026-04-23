@@ -909,7 +909,7 @@ describe('CanvasPathRenderer', () => {
   })
 
   describe('computeConnectionPoint', () => {
-    it('returns start at t=0 and end at t=1', () => {
+    it('computes arrow positions along the path', () => {
       const ctx = createMockCtx()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
@@ -921,11 +921,8 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'spline', connectionWidth: 3, showArrows: true }
       })
 
-      // When directions are 'none', control points are at start/end,
-      // so bezier degenerates to a line.
       renderer.drawLink(ctx, link, context)
 
-      // Arrows are drawn at 0.25 and 0.75, verifying computeConnectionPoint works
       expect(ctx.translate).toHaveBeenCalledTimes(2)
     })
   })
