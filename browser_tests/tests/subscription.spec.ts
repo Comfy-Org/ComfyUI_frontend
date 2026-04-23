@@ -12,7 +12,9 @@ import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelpe
 
 async function openUserPopover(page: Page): Promise<Locator> {
   await page.getByTestId(TestIds.user.currentUserIndicator).click()
-  return page.getByTestId(TestIds.user.currentUserPopover)
+  const popover = page.getByTestId(TestIds.user.currentUserPopover)
+  await expect(popover).toBeVisible()
+  return popover
 }
 
 async function clickPopoverSubscribe(page: Page): Promise<void> {
