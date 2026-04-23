@@ -20,6 +20,8 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
       - name: Checkout repository
@@ -37,24 +39,32 @@ jobs:
           path: temp/coverage-shards
           if_no_artifact_found: warn
 
+      - name: Detect shard coverage data
+        id: coverage-shards
+        run: |
+          if [ -d temp/coverage-shards ] && find temp/coverage-shards -name 'coverage.lcov' -type f | grep -q .; then
+            echo "has-coverage=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-coverage=false" >> "$GITHUB_OUTPUT"
+            echo "No E2E coverage shard artifacts found; treating this run as skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Install lcov
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: sudo apt-get install -y -qq lcov
 
       - name: Merge shard coverage into single LCOV
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           mkdir -p coverage/playwright
           LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
-          if [ -z "$LCOV_FILES" ]; then
-            echo "No coverage.lcov files found"
-            touch coverage/playwright/coverage.lcov
-            exit 0
-          fi
           ADD_ARGS=""
           for f in $LCOV_FILES; do ADD_ARGS="$ADD_ARGS -a $f"; done
           lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
           wc -l coverage/playwright/coverage.lcov
 
       - name: Validate merged coverage
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           SHARD_COUNT=$(find temp/coverage-shards -name 'coverage.lcov' -type f | wc -l | tr -d ' ')
           if [ "$SHARD_COUNT" -eq 0 ]; then
@@ -82,7 +92,7 @@ jobs:
           done
 
       - name: Upload merged coverage data
-        if: always()
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage
@@ -91,7 +101,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload E2E coverage to Codecov
-        if: always()
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         with:
           files: coverage/playwright/coverage.lcov
@@ -100,6 +110,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Generate HTML coverage report
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           if [ ! -s coverage/playwright/coverage.lcov ]; then
             echo "No coverage data; generating placeholder report."
@@ -114,6 +125,7 @@ jobs:
             --precision 1
 
       - name: Upload HTML report artifact
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage-html
@@ -122,7 +134,9 @@ jobs:
 
   deploy:
     needs: merge
-    if: github.event.workflow_run.head_branch == 'main'
+    if: >
+      github.event.workflow_run.head_branch == 'main' &&
+      needs.merge.outputs.has-coverage == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write
