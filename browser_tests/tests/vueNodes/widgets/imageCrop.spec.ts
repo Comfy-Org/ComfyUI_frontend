@@ -1118,7 +1118,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         if (!before) throw new Error('missing crop')
 
         // First increment button in BoundingBox order: X, Y, Width, Height
-        await node.getByTestId("increment").first().click()
+        await node.getByTestId('increment').first().click()
 
         await expect
           .poll(async () => (await getCropValue(comfyPage, 2))?.x, {
@@ -1142,7 +1142,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         if (!before) throw new Error('missing crop')
 
         // Width is the third increment button (X=0, Y=1, Width=2, Height=3)
-        await node.getByTestId("increment").nth(2).click()
+        await node.getByTestId('increment').nth(2).click()
 
         await expect
           .poll(async () => (await getCropValue(comfyPage, 2))?.width, {
