@@ -29,10 +29,7 @@ test('In App Mode, widget width updates with panel size', async ({
   })
 
   const getWidth = () =>
-    comfyPage.page.evaluate(() => {
-      console.log(graph!.getNodeById(5)!.widgets![3])
-      return graph!.getNodeById(5)!.widgets![3].width ?? 0
-    })
+    comfyPage.page.evaluate(() => graph!.getNodeById(5)!.widgets![3].width ?? 0)
   const initialWidth = await getWidth()
   expect(initialWidth).toBeGreaterThan(0)
 
