@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { gsap } from '../scripts/gsapSetup'
+import { scrollTo } from '../scripts/smoothScroll'
 import { prefersReducedMotion } from './useReducedMotion'
 
 interface PinScrubRefs {
@@ -37,6 +38,7 @@ function interpolateY(
 
 export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   const activeIndex = ref(0)
+  const isActive = ref(false)
   let ctx: gsap.Context | undefined
   let scrollTriggerInstance: ScrollTrigger | undefined
 
@@ -51,11 +53,7 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
     const scrollPos =
       scrollTriggerInstance.start +
       progress * (scrollTriggerInstance.end - scrollTriggerInstance.start)
-    gsap.to(window, {
-      scrollTo: { y: scrollPos, autoKill: false },
-      duration: 0.6,
-      ease: 'power2.inOut'
-    })
+    scrollTo(scrollPos, { duration: 0.6 })
   }
 
   onMounted(() => {
@@ -88,6 +86,7 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
     }
 
     cacheLayout()
+    isActive.value = true
 
     const proxy = { index: 0 }
     ctx = gsap.context(() => {
@@ -123,8 +122,9 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   })
 
   onUnmounted(() => {
+    isActive.value = false
     ctx?.revert()
   })
 
-  return { activeIndex, scrollToIndex }
+  return { activeIndex, isActive, scrollToIndex }
 }

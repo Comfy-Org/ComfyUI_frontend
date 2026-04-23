@@ -10,16 +10,19 @@ const features = [
   {
     title: t('api.automation.feature1.title', locale),
     description: t('api.automation.feature1.description', locale),
+    image: 'https://media.comfy.org/website/gallery/desert.webp',
     description2: t('api.automation.feature1.description2', locale)
   },
   {
     title: t('api.automation.feature2.title', locale),
     description: t('api.automation.feature2.description', locale),
+    image: 'https://media.comfy.org/website/enterprise/dark-fluid-texture.webp',
     description2: t('api.automation.feature2.description2', locale)
   },
   {
     title: t('api.automation.feature3.title', locale),
-    description: t('api.automation.feature3.description', locale)
+    description: t('api.automation.feature3.description', locale),
+    image: 'https://media.comfy.org/website/pricing/free.webp'
   }
 ]
 </script>

@@ -307,7 +307,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'

@@ -22,7 +22,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
 import TabInfo from './info/TabInfo.vue'
@@ -299,14 +299,16 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <button
+            <Button
               v-if="!isEditing"
+              variant="link"
+              size="unset"
               :aria-label="t('rightSidePanel.editTitle')"
-              class="relative top-[2px] ml-2 size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              class="relative top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
               <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
-            </button>
+            </Button>
           </template>
           <template v-else>
             {{ panelTitle }}
