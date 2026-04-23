@@ -204,6 +204,8 @@ onMounted(() => {
       />
     </div>
 
+    <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
+
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
@@ -224,8 +226,6 @@ onMounted(() => {
         >{{ cta.core }}
       </BrandButton>
     </div>
-
-    <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
 
     <!-- Mobile hamburger -->
     <button
