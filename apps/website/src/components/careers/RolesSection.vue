@@ -5,6 +5,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import CategoryNav from '../common/CategoryNav.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -139,11 +140,9 @@ const filteredDepartments = computed(() =>
             :key="dept.key"
             class="mb-12 last:mb-0"
           >
-            <h3
-              class="text-primary-comfy-yellow text-xs font-semibold tracking-widest"
-            >
+            <SectionLabel>
               {{ dept.name }}
-            </h3>
+            </SectionLabel>
 
             <a
               v-for="role in dept.roles"

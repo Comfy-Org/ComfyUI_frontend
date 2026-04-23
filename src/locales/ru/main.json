@@ -808,6 +808,7 @@
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
+    "INTERP_MODEL": "ИНТЕРП_МОДЕЛЬ",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",

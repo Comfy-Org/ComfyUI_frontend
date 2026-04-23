@@ -29,14 +29,14 @@ const {
 
 <template>
   <section
-    class="flex flex-col gap-4 px-4 py-24 md:flex-row md:gap-16 md:px-20 md:py-40"
+    class="flex flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
   >
     <!-- Left heading -->
     <div
-      class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 md:top-28 md:w-115 md:py-0"
+      class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 lg:top-28 lg:w-115 lg:py-0"
     >
       <h2
-        class="text-primary-comfy-canvas text-4xl/16 font-light whitespace-pre-line md:text-5xl/16"
+        class="text-primary-comfy-canvas text-4xl/16 font-light whitespace-pre-line lg:text-5xl/16"
       >
         {{ t(headingKey, locale)
         }}<span v-if="headingHighlightKey" :class="highlightClass">{{
@@ -56,9 +56,9 @@ const {
       <div
         v-for="reason in reasons"
         :key="reason.titleKey"
-        class="border-primary-comfy-canvas/20 flex flex-col gap-4 border-b py-10 first:pt-0 md:flex-row md:gap-12"
+        class="border-primary-comfy-canvas/20 flex flex-col gap-4 border-b py-10 first:pt-0 lg:flex-row lg:gap-12"
       >
-        <div class="shrink-0 md:w-52">
+        <div class="shrink-0 lg:w-52">
           <h3
             class="text-primary-comfy-canvas text-2xl font-light whitespace-pre-line"
           >

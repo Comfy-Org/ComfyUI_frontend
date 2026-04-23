@@ -296,7 +296,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
 import { toHexFromFormat } from '@/utils/colorUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{
   nodeId: string

@@ -5,17 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
     "test:e2e": "playwright test",
-    "test:e2e:local": "PLAYWRIGHT_LOCAL=1 playwright test"
+    "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
+    "test:visual": "playwright test --project visual",
+    "test:visual:update": "playwright test --project visual --update-snapshots"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
+    "@vueuse/core": "catalog:",
+    "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
     "vue": "catalog:"

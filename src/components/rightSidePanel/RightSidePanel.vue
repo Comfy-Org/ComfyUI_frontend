@@ -22,7 +22,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
 import TabInfo from './info/TabInfo.vue'

@@ -6,9 +6,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [vue(), sitemap()],
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    server: {
+      watch: {
+        ignored: ['**/playwright-report/**']
+      }
+    }
   },
   i18n: {
     locales: ['en', 'zh-CN'],
