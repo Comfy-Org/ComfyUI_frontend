@@ -372,13 +372,22 @@ import { useSubscriptionActions } from '@/platform/cloud/subscription/composable
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { getTierPrice } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useSubscriptionPanelWorkspaceViewModel } from './useSubscriptionPanelWorkspaceViewModel'
+import {
+  formatRefillsDate,
+  formatSubscriptionDate,
+  getNextMonthInvoice,
+  getPlanTotalCreditsValue,
+  getSubscriptionTierKey
+} from './subscriptionPanelWorkspace.logic'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
@@ -409,42 +418,136 @@ const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
 
 const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
 
-const {
-  isCancelled,
-  showSubscribePrompt,
-  isMemberView,
-  showZeroState,
-  handleSubscribeWorkspace,
-  handleUpgrade,
-  handleUpgradeToAddCredits,
-  formattedRenewalDate,
-  formattedEndDate,
-  subscriptionTierName,
-  planMenuItems,
-  tierPrice,
-  memberCount,
-  nextMonthInvoice,
-  creditsRemainingLabel,
-  includedCreditsDisplay,
-  tierBenefits
-} = useSubscriptionPanelWorkspaceViewModel({
-  isActiveSubscription,
-  isFreeTierPlan,
-  subscription,
-  isWorkspaceSubscribed,
-  isInPersonalWorkspace,
-  members,
-  permissions,
-  monthlyBonusCredits,
-  t,
-  n,
-  getMaxSeats,
-  showSubscriptionDialog,
-  showPricingTable,
-  showCancelSubscriptionDialog
+const isCancelled = computed(
+  () =>
+    !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
+)
+
+const showSubscribePrompt = computed(() => {
+  if (!permissions.value.canManageSubscription) return false
+  if (isCancelled.value) return false
+  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  return !isWorkspaceSubscribed.value
+})
+
+const isMemberView = computed(
+  () =>
+    !permissions.value.canManageSubscription &&
+    !isActiveSubscription.value &&
+    !isWorkspaceSubscribed.value
+)
+
+const showZeroState = computed(
+  () => showSubscribePrompt.value || isMemberView.value
+)
+
+function handleSubscribeWorkspace() {
+  showSubscriptionDialog()
+}
+
+function handleUpgrade() {
+  if (isFreeTierPlan.value) showPricingTable()
+  else showSubscriptionDialog()
+}
+
+function handleUpgradeToAddCredits() {
+  showPricingTable()
+}
+
+const subscriptionTier = computed(() => subscription.value?.tier ?? null)
+
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
+const tierKey = computed(() => getSubscriptionTierKey(subscriptionTier.value))
+
+const tierPrice = computed(() =>
+  getTierPrice(tierKey.value, isYearlySubscription.value)
+)
+
+const formattedRenewalDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.renewalDate)
+)
+
+const formattedEndDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.endDate)
+)
+
+const subscriptionTierName = computed(() => {
+  const tier = subscriptionTier.value
+  if (!tier) return ''
+  const baseName = t(`subscription.tiers.${tierKey.value}.name`)
+  return isYearlySubscription.value
+    ? t('subscription.tierNameYearly', { name: baseName })
+    : baseName
 })
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+const planMenuItems = computed(() => [
+  {
+    label: t('subscription.cancelSubscription'),
+    icon: 'pi pi-times',
+    command: () => {
+      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+    }
+  }
+])
+
+const memberCount = computed(() => members.value.length)
+
+const nextMonthInvoice = computed(() =>
+  getNextMonthInvoice(memberCount.value, tierPrice.value)
+)
+
+const refillsDate = computed(() =>
+  formatRefillsDate(subscription.value?.renewalDate)
+)
+
+const creditsRemainingLabel = computed(() =>
+  isYearlySubscription.value
+    ? t(
+        'subscription.creditsRemainingThisYear',
+        { date: refillsDate.value },
+        { escapeParameter: false }
+      )
+    : t(
+        'subscription.creditsRemainingThisMonth',
+        { date: refillsDate.value },
+        { escapeParameter: false }
+      )
+)
+
+const planTotalCredits = computed(() => {
+  const total = getPlanTotalCreditsValue(
+    tierKey.value,
+    isYearlySubscription.value
+  )
+  return total === null ? '—' : n(total)
+})
+
+const includedCreditsDisplay = computed(
+  () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
+)
+
+const tierBenefits = computed((): TierBenefit[] => {
+  const benefits: TierBenefit[] = []
+
+  if (!isInPersonalWorkspace.value) {
+    benefits.push({
+      key: 'members',
+      type: 'icon',
+      label: t('subscription.membersLabel', {
+        count: getMaxSeats(tierKey.value)
+      }),
+      icon: 'pi pi-user'
+    })
+  }
+
+  benefits.push(...getCommonTierBenefits(tierKey.value, t, n))
+  return benefits
+})
 
 const isResubscribing = ref(false)
 
@@ -471,9 +574,8 @@ async function handleResubscribe() {
   }
 }
 
-// Focus-based polling: refresh balance when user returns from Stripe checkout
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
-const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
 function handleWindowFocus() {
   const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
