@@ -1798,6 +1798,10 @@
     "gettingInfo": "정보 가져오는 중...",
     "importFailedGenericError": "패키지 가져오기에 실패했습니다. 자세한 내용은 콘솔을 확인하세요.",
     "inWorkflow": "워크플로 내",
+    "incompatibleVersion": {
+      "title": "ComfyUI-Manager 업그레이드 필요",
+      "message": "ComfyUI-Manager를 4.2.1 이상 버전으로 업그레이드해주세요.\n• 데스크톱: ComfyUI Desktop 앱을 업데이트하세요\n• 독립 실행형: pip install -U comfyui-manager 명령 실행 후 재시작하세요\n자세히 보기: https://github.com/Comfy-Org/ComfyUI-Manager"
+    },
     "infoPanelEmpty": "정보를 보려면 항목을 클릭하세요",
     "installAllMissingNodes": "모든 누락된 노드 설치",
     "installError": "설치 오류",
