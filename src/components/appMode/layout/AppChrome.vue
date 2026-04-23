@@ -131,8 +131,8 @@ const selectedHistory = computed<{
   const lastColon = afterPrefix.lastIndexOf(':')
   if (lastColon === -1) return null
   const assetId = afterPrefix.substring(0, lastColon)
-  const outputIndex = Number(afterPrefix.substring(lastColon + 1))
-  if (!assetId || Number.isNaN(outputIndex)) return null
+  const outputIndex = Number.parseInt(afterPrefix.substring(lastColon + 1), 10)
+  if (!assetId || !Number.isInteger(outputIndex) || outputIndex < 0) return null
   const asset = outputs.media.value.find((a) => a.id === assetId)
   if (!asset) return null
   const output = allOutputs(asset)[outputIndex]
@@ -199,8 +199,11 @@ watch(
       dimensions.value = { w: img.naturalWidth, h: img.naturalHeight }
     }
     img.onerror = () => {
-      if (selectedHistory.value?.output.url !== url) return
-      console.warn('[AppChrome] failed to load image for dimensions')
+      // Dimension-probe failures fall through to the non-dimensions
+      // filename label — no surface-level error is needed because the
+      // asset itself still renders via its main preview element. Silent
+      // by design so a flaky image URL doesn't spam toasts on every
+      // thumb switch.
     }
     img.src = url
   },

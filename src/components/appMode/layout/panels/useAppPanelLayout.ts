@@ -11,6 +11,7 @@
  * either place updates the other by construction.
  */
 import { useEventListener } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { computed, shallowRef, watchEffect } from 'vue'
 
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -71,10 +72,13 @@ export function useAppPanelLayout() {
       matchingWidget.slotMetadata = undefined
       matchingWidget.nodeId = String(node.id)
 
+      const opts = widget.options
       const isMultiline =
-        Boolean(
-          (widget.options as { multiline?: boolean } | undefined)?.multiline
-        ) || String(widget.type).toLowerCase() === 'customtext'
+        (typeof opts === 'object' &&
+          opts !== null &&
+          'multiline' in opts &&
+          Boolean((opts as { multiline?: unknown }).multiline)) ||
+        String(widget.type).toLowerCase() === 'customtext'
 
       return [
         {
@@ -145,7 +149,14 @@ export function useAppPanelLayout() {
       ])
     }
 
-    appModeStore.panelRows = preserved
+    // Structural-equality guard: `watchEffect` re-reads `panelRows`, so
+    // an unconditional assignment would create a new array reference on
+    // every tick (including after a moveBlock write) and retrigger the
+    // effect. isEqual short-circuits the common no-op case cheaply —
+    // panelRows stays small (one row per input).
+    if (!isEqual(preserved, appModeStore.panelRows)) {
+      appModeStore.panelRows = preserved
+    }
   })
 
   function moveBlock(from: BlockPos, target: DropTarget) {

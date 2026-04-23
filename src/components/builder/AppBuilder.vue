@@ -114,7 +114,9 @@ function handleClick(e: MouseEvent) {
     if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
+    const index = appModeStore.selectedOutputs.findIndex(
+      (id) => String(id) === String(node.id)
+    )
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
     else appModeStore.selectedOutputs.splice(index, 1)
     return
@@ -126,7 +128,8 @@ function handleClick(e: MouseEvent) {
     ? widget.sourceWidgetName
     : widget.name
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
+    ([nodeId, widgetName]) =>
+      String(storeId) === String(nodeId) && storeName === widgetName
   )
   if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
   else appModeStore.selectedInputs.splice(index, 1)
@@ -186,7 +189,7 @@ const renderedInputCandidates = computed(() => {
         ? widget.sourceWidgetName
         : widget.name
       const isSelected = appModeStore.selectedInputs.some(
-        ([nid, wn]) => storeId == nid && storeName === wn
+        ([nid, wn]) => String(storeId) === String(nid) && storeName === wn
       )
 
       out.push({ key: `${node.id}:${widget.name}`, style, isSelected })
@@ -245,7 +248,10 @@ const renderedInputCandidates = computed(() => {
                 v-if="isSelected"
                 class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
                 @click.stop="
-                  remove(appModeStore.selectedOutputs, (k) => k == key)
+                  remove(
+                    appModeStore.selectedOutputs,
+                    (k) => String(k) === String(key)
+                  )
                 "
                 @pointerdown.stop
               >

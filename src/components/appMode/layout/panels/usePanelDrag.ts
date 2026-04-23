@@ -20,7 +20,10 @@ import type { Ref } from 'vue'
 
 import type { PanelPreset } from './panelTypes'
 
-const PANEL_HALF_WIDTH = 210 // approx — drives preset-center math
+// Half of the dock panel's width (see --panel-dock-width: 440px in
+// FloatingPanel.vue). Drives preset-center anchor math; keep in sync
+// with the CSS variable.
+const PANEL_HALF_WIDTH = 220
 const DOCK_V_CENTER = 0.5 // fraction of viewport height
 const FLOAT_V_OFFSET = 200 // px from top/bottom for float corners
 /** Pointer must move at least this far (px) to count as a drag, not a click. */

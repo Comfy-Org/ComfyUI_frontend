@@ -84,9 +84,15 @@ const positionClass = computed(() => [
 function handleHeaderPointerDown(e: PointerEvent) {
   if (!movable) return
   // Ignore pointerdown on interactive header controls so clicking the
-  // collapse chevron / menu button doesn't start a drag.
-  const target = e.target as HTMLElement | null
-  if (target?.closest('.floating-panel__header-control')) return
+  // collapse chevron / menu button doesn't start a drag. `e.target` is
+  // typed EventTarget; narrow to Element before walking ancestors so
+  // Document / Window targets (rare but legal) don't crash .closest().
+  const target = e.target
+  if (
+    target instanceof Element &&
+    target.closest('.floating-panel__header-control')
+  )
+    return
   onHeaderPointerDown(e)
 }
 

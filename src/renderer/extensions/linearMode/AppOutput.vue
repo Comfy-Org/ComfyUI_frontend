@@ -23,7 +23,9 @@ const { top, left, width, height, update } = useElementBounding(wrapperRef)
 useRafFn(update, { immediate: true })
 
 function matchesThis(nodeId: NodeId) {
-  return id == nodeId
+  // NodeId = string | number; normalize both sides so string-from-store
+  // matches number-from-litegraph.
+  return id === String(nodeId)
 }
 function togglePromotion() {
   if (isPromoted.value) remove(appModeStore.selectedOutputs, matchesThis)
