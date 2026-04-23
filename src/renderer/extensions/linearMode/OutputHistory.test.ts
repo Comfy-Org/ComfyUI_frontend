@@ -248,7 +248,7 @@ describe('OutputHistory', () => {
       ).toBe(true)
     })
 
-    it('renders history item for image in-progress items', async () => {
+    it('renders history item for image in-progress items with output prop', async () => {
       const output = makeResult('out.png')
       activeWorkflowInProgressItemsRef.value = [
         makeInProgressItem('ip1', 'image', { output })
@@ -257,12 +257,14 @@ describe('OutputHistory', () => {
       const wrapper = mountComponent()
       await nextTick()
 
-      expect(
-        wrapper.findComponent({ name: 'OutputHistoryItem' }).exists()
-      ).toBe(true)
+      const historyItem = wrapper.findComponent({
+        name: 'OutputHistoryItem'
+      })
+      expect(historyItem.exists()).toBe(true)
+      expect(historyItem.props('output')).toEqual(output)
     })
 
-    it('renders divider between active content and history', async () => {
+    it('renders both active and history content when both exist', async () => {
       activeWorkflowInProgressItemsRef.value = [
         makeInProgressItem('ip1', 'skeleton')
       ]
@@ -272,7 +274,12 @@ describe('OutputHistory', () => {
       const wrapper = mountComponent()
       await nextTick()
 
-      expect(wrapper.find('.border-l').exists()).toBe(true)
+      expect(
+        wrapper.findComponent({ name: 'OutputPreviewItem' }).exists()
+      ).toBe(true)
+      expect(
+        wrapper.findComponent({ name: 'OutputHistoryItem' }).exists()
+      ).toBe(true)
     })
   })
 
