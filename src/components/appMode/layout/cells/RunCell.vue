@@ -40,7 +40,7 @@ async function handleClick(e: Event) {
 <template>
   <Button
     size="unset"
-    class="size-full rounded-lg border border-green-800 bg-green-600 text-layout-xl text-white hover:bg-green-500"
+    class="size-full rounded-lg border border-(--app-mode-go-border) bg-(--app-mode-go-bg) text-layout-xl text-white hover:bg-(--app-mode-go-bg-hover)"
     data-testid="layout-run-cell"
     @click="handleClick"
   >

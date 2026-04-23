@@ -451,6 +451,20 @@ function cellTitle(cell: ChromeCell): string | undefined {
    such ancestor so it bolts to the viewport below the workflow tabs,
    under the FloatingPanel (z-index 100) and any drag preview. */
 .app-chrome {
+  /* Temporary go/stop fill colors for the run cluster (RunCell,
+     InterruptCell, ProgressCell). Defined locally so the rest of the
+     app's design-system tokens stay untouched — this is *placeholder
+     work* pending a product/design decision on whether "go green" +
+     "stop red" get promoted to proper semantic tokens (e.g.
+     --color-success-*, --color-danger-*). When that lands, swap the
+     four call sites to the real tokens and delete this block. */
+  --app-mode-go-bg: #16a34a; /* tw green-600 */
+  --app-mode-go-bg-hover: #22c55e; /* tw green-500 */
+  --app-mode-go-border: #166534; /* tw green-800 */
+  --app-mode-stop-bg: #ef4444; /* tw red-500 */
+  --app-mode-stop-bg-hover: #f87171; /* tw red-400 */
+  --app-mode-stop-border: #b91c1c; /* tw red-700 */
+
   position: absolute;
   inset: 0;
   pointer-events: none;

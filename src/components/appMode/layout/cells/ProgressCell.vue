@@ -45,7 +45,7 @@ const progressPercent = computed(() => {
       aria-valuemax="100"
     >
       <div
-        class="absolute inset-y-0 left-0 bg-green-500 transition-[width] duration-300 ease-out"
+        class="absolute inset-y-0 left-0 bg-(--app-mode-go-bg-hover) transition-[width] duration-300 ease-out"
         :style="{ width: `${progressPercent}%` }"
       />
     </div>
