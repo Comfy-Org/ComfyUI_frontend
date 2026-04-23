@@ -9,9 +9,7 @@ export class BuilderFooterHelper {
   public readonly nextButton: Locator
   public readonly backButton: Locator
   public readonly saveButton: Locator
-  public readonly saveGroup: Locator
   public readonly saveAsButton: Locator
-  public readonly saveAsChevron: Locator
   public readonly opensAsPopover: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
@@ -20,9 +18,7 @@ export class BuilderFooterHelper {
     this.nextButton = this.buttonByName('Next')
     this.backButton = this.buttonByName('Back')
     this.saveButton = this.page.getByTestId(TestIds.builder.saveButton)
-    this.saveGroup = this.page.getByTestId(TestIds.builder.saveGroup)
     this.saveAsButton = this.page.getByTestId(TestIds.builder.saveAsButton)
-    this.saveAsChevron = this.page.getByTestId(TestIds.builder.saveAsChevron)
     this.opensAsPopover = this.page.getByTestId(TestIds.builder.opensAs)
   }
 
@@ -46,12 +42,6 @@ export class BuilderFooterHelper {
 
   async exitBuilder() {
     await this.exitButton.click()
-    await this.comfyPage.nextFrame()
-  }
-
-  async openSaveAsFromChevron() {
-    await this.saveAsChevron.click()
-    await this.page.getByRole('menuitem', { name: 'Save as' }).click()
     await this.comfyPage.nextFrame()
   }
 }

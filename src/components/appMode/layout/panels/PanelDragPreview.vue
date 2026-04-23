@@ -38,9 +38,15 @@ const heightStyle = computed(() =>
 .panel-drag-preview {
   position: absolute;
   width: var(--panel-dock-width, 440px);
-  /* Comfy brand blue — vivid to match the logo. */
-  background-color: rgb(30 64 255 / 0.3);
-  border: 2px solid #1e40ff;
+  /* Brand-blue tint — routes through the design-system primary token so
+     the drop indicator follows theme changes instead of shipping a
+     hardcoded hex. `color-mix` bakes in 30% alpha for the tint fill. */
+  background-color: color-mix(
+    in srgb,
+    var(--color-primary-background) 30%,
+    transparent
+  );
+  border: 2px solid var(--color-primary-background);
   border-radius: 10px;
   pointer-events: none;
   z-index: 20;

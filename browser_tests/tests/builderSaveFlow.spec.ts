@@ -12,15 +12,18 @@ import {
 import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
 /**
- * After a first save, open save-as again from the chevron,
- * fill name + view type, and save.
+ * After a first save, reopen the save-as dialog via the top-left
+ * builder menu ("App builder" → "Save as"), fill name + view type,
+ * and save. Replaces the retired footer chevron affordance.
  */
 async function reSaveAs(
   appMode: AppModeHelper,
   workflowName: string,
   viewType: 'App' | 'Node graph'
 ) {
-  await appMode.footer.openSaveAsFromChevron()
+  const page = appMode.footer.nav.page()
+  await page.getByRole('button', { name: 'App builder' }).click()
+  await page.getByRole('button', { name: 'Save as' }).click()
   await expect(appMode.saveAs.nameInput).toBeVisible()
   await appMode.saveAs.fillAndSave(workflowName, viewType)
 }
@@ -144,57 +147,22 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await expect(footer.saveButton).toBeDisabled()
   })
 
-  test('Split button chevron opens save-as for saved workflow', async ({
+  test('Save As menu item opens save-as dialog for saved workflow', async ({
     comfyPage
   }) => {
-    const { footer, saveAs } = comfyPage.appMode
+    // The footer's Save/Save-As split button was simplified to a single
+    // Save pill; "Save As" now lives in the top-left builder menu.
+    const { saveAs } = comfyPage.appMode
     await setupBuilder(comfyPage)
 
-    await builderSaveAs(comfyPage.appMode, `${Date.now()} split-btn`, 'App')
+    await builderSaveAs(comfyPage.appMode, `${Date.now()} menu-save-as`, 'App')
     await dismissSuccessDialog(saveAs)
 
-    await footer.openSaveAsFromChevron()
+    await comfyPage.page.getByRole('button', { name: 'App builder' }).click()
+    await comfyPage.page.getByRole('button', { name: 'Save as' }).click()
 
     await expect(saveAs.title).toBeVisible()
     await expect(saveAs.nameInput).toBeVisible()
-  })
-
-  test('Save button width is consistent across all states', async ({
-    comfyPage
-  }) => {
-    const { appMode } = comfyPage
-    await comfyPage.workflow.loadWorkflow('default')
-    await fitToViewInstant(comfyPage)
-    await appMode.enterBuilder()
-
-    // State 1: Disabled "Save as" (no outputs selected)
-    await expect(appMode.footer.saveAsButton).toBeVisible()
-    const disabledBox = await appMode.footer.saveAsButton.boundingBox()
-    if (!disabledBox)
-      throw new Error('saveAsButton boundingBox returned null while visible')
-    const disabledWidth = disabledBox.width
-
-    // Select I/O to enable the button
-    await appMode.steps.goToInputs()
-    await appMode.select.selectInputWidget('KSampler', 'seed')
-    await appMode.steps.goToOutputs()
-    await appMode.select.selectOutputNode('Save Image')
-
-    // State 2: Enabled "Save as" (unsaved, has outputs)
-    await expect
-      .poll(
-        async () => (await appMode.footer.saveAsButton.boundingBox())?.width
-      )
-      .toBe(disabledWidth)
-
-    // Save the workflow to transition to the Save + chevron state
-    await builderSaveAs(appMode, `${Date.now()} width-test`, 'App')
-    await dismissSuccessDialog(appMode.saveAs)
-
-    // State 3: Save + chevron button group (saved workflow)
-    await expect
-      .poll(async () => (await appMode.footer.saveGroup.boundingBox())?.width)
-      .toBe(disabledWidth)
   })
 
   test('Connect output popover appears when no outputs selected', async ({

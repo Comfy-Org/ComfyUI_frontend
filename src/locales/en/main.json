@@ -3314,6 +3314,7 @@
     "dragAndDropImage": "Click to browse or drag an image",
     "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
+    "runProgress": "Run progress",
     "stop": "Stop",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",

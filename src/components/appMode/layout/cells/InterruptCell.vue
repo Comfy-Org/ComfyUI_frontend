@@ -33,7 +33,7 @@ async function handleClick() {
     size="unset"
     :aria-label="t('linearMode.stop')"
     :title="t('linearMode.stop')"
-    class="size-full rounded-lg border border-(--app-mode-stop-border) bg-(--app-mode-stop-bg) text-white hover:bg-(--app-mode-stop-bg-hover)"
+    class="size-full rounded-lg border border-(--app-mode-stop-border) bg-(--app-mode-stop-bg) text-white hover:bg-(--app-mode-stop-bg-hover) focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1"
     data-testid="layout-interrupt-cell"
     @click="handleClick"
   >

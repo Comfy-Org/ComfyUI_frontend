@@ -17,9 +17,11 @@
  *   ( completed + executingNodeProgress ) / totalNodes
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useExecutionStore } from '@/stores/executionStore'
 
+const { t } = useI18n()
 const executionStore = useExecutionStore()
 
 const progressPercent = computed(() => {
@@ -40,6 +42,7 @@ const progressPercent = computed(() => {
     <div
       class="relative size-full overflow-hidden rounded-md border border-gray-400 bg-black/40"
       role="progressbar"
+      :aria-label="t('linearMode.runProgress')"
       :aria-valuenow="progressPercent"
       aria-valuemin="0"
       aria-valuemax="100"
