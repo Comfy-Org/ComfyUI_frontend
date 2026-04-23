@@ -139,6 +139,7 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
       }
 
       await nodeTemplates.openManageDialog()
+      await expect(manageDialog.rowByName(name)).toHaveCount(0)
 
       // Arm the store-request wait BEFORE triggering the upload so we can
       // safely re-open the dialog only after the imported template has been
