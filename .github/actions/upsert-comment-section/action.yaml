@@ -45,11 +45,10 @@ runs:
           // Escape special regex characters in delimiter strings
           const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-          const { data: comments } = await github.rest.issues.listComments({
-            ...context.repo,
-            issue_number: prNumber,
-            per_page: 100
-          })
+          const comments = await github.paginate(
+            github.rest.issues.listComments,
+            { ...context.repo, issue_number: prNumber }
+          )
 
           const existing = comments.find(
             (c) =>
