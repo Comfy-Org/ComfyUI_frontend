@@ -13,6 +13,7 @@ export const nodeTemplatesFixture = comfyPageFixture.extend<{
     )
     const helper = new NodeTemplatesHelper(comfyPage, userData)
     await helper.reset()
+    await comfyPage.workflow.reloadAndWaitForApp()
     await use(helper)
   }
 })
