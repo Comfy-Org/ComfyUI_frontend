@@ -27,9 +27,9 @@ export class PublishDialog extends BaseDialog {
     this.finishStep = this.root.getByTestId(TestIds.publish.finishStep)
     this.profilePrompt = this.root.getByTestId(TestIds.publish.profilePrompt)
     this.gateFlow = this.root.getByTestId(TestIds.publish.gateFlow)
-    this.nameInput = this.describeStep.getByRole('textbox').first()
+    this.nameInput = this.root.getByTestId(TestIds.publish.nameInput)
     this.descriptionTextarea = this.describeStep.locator('textarea')
-    this.tagsInput = this.describeStep.getByRole('list').first()
+    this.tagsInput = this.root.getByTestId(TestIds.publish.tagsInput)
     this.backButton = this.footer.getByRole('button', { name: 'Back' })
     this.nextButton = this.footer.getByRole('button', { name: 'Next' })
     this.publishButton = this.footer.getByRole('button', {

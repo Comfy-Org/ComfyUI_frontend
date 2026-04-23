@@ -9,6 +9,9 @@ import type {
   WorkflowPublishInfo
 } from '@comfyorg/ingest-types'
 
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
+
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 
 const DEFAULT_PROFILE: HubProfile = {
@@ -212,3 +215,17 @@ export class PublishApiHelper {
     )
   }
 }
+
+export const publishFixture = comfyPageFixture.extend<{
+  publishApi: PublishApiHelper
+  publishDialog: PublishDialog
+}>({
+  publishApi: async ({ comfyPage }, use) => {
+    const helper = new PublishApiHelper(comfyPage.page)
+    await use(helper)
+    await helper.cleanup()
+  },
+  publishDialog: async ({ comfyPage }, use) => {
+    await use(new PublishDialog(comfyPage.page))
+  }
+})
