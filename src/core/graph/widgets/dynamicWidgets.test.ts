@@ -182,6 +182,40 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
+  test('Multi-group autogrow shifts second group indices on first group growth', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+
+    const imageSpec = { required: { image: ['IMAGE', {}] } }
+    const videoSpec = { required: { video: ['VIDEO', {}] } }
+    addAutogrow(node, { min: 1, input: imageSpec, prefix: 'img' })
+    addAutogrow(node, { min: 1, input: videoSpec, prefix: 'vid' })
+
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0.img0',
+      '0.img1',
+      '2.vid0',
+      '2.vid1'
+    ])
+
+    connectInput(node, 1, graph)
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0.img0',
+      '0.img1',
+      '0.img2',
+      '2.vid0',
+      '2.vid1'
+    ])
+
+    const vid0Index = node.inputs.findIndex((i) => i.name === '2.vid0')
+    expect(vid0Index).toBe(3)
+
+    connectInput(node, vid0Index, graph)
+    const vid0Link = node.inputs[vid0Index].link
+    expect(vid0Link).not.toBeNull()
+    expect(graph.links[vid0Link!].target_slot).toBe(vid0Index)
+  })
   test('Can deserialize a complex node', async () => {
     const graph = new LGraph()
     const node = testNode()
