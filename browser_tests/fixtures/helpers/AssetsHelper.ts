@@ -1,10 +1,15 @@
 import type { Page, Route } from '@playwright/test'
 import type { JobsListResponse } from '@comfyorg/ingest-types'
 
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
+const jobDetailRoutePattern = /\/api\/jobs\/([^/?#]+)(?:\?.*)?$/
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
+const viewRoutePattern = /\/api\/view(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
 /** Factory to create a mock completed job with preview output. */
@@ -88,12 +93,19 @@ function getExecutionDuration(job: RawJobListItem): number {
 
 export class AssetsHelper {
   private jobsRouteHandler: ((route: Route) => Promise<void>) | null = null
+  private jobDetailRouteHandler: ((route: Route) => Promise<void>) | null = null
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
     null
+  private viewRouteHandler: ((route: Route) => Promise<void>) | null = null
   private deleteHistoryRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private generatedJobs: RawJobListItem[] = []
   private importedFiles: string[] = []
+  private readonly jobDetails = new Map<string, JobDetail>()
+  private readonly inputAssetFiles = new Map<
+    string,
+    { path?: string; body?: Buffer; contentType?: string }
+  >()
 
   constructor(private readonly page: Page) {}
 
@@ -188,6 +200,70 @@ export class AssetsHelper {
     await this.page.route(inputFilesRoutePattern, this.inputFilesRouteHandler)
   }
 
+  async mockJobDetail(jobId: string, jobDetail: JobDetail): Promise<void> {
+    this.jobDetails.set(jobId, jobDetail)
+
+    if (this.jobDetailRouteHandler) return
+
+    this.jobDetailRouteHandler = async (route: Route) => {
+      const url = new URL(route.request().url())
+      const match = jobDetailRoutePattern.exec(url.pathname)
+      const id = match ? decodeURIComponent(match[1]) : null
+      const detail = id ? this.jobDetails.get(id) : undefined
+
+      if (!detail) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Job not found' })
+        })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detail)
+      })
+    }
+
+    await this.page.route(jobDetailRoutePattern, this.jobDetailRouteHandler)
+  }
+
+  /**
+   * Intercepts `GET /api/view?filename=...&type=input[&subfolder=...]`
+   * and serves a real file. Required by `extractWorkflowFromAsset` for
+   * input-asset path coverage; the filename key must match the query
+   * parameter the production `getAssetUrl()` builds.
+   */
+  async mockInputAssetFile(
+    filename: string,
+    file: { path?: string; body?: Buffer; contentType?: string }
+  ): Promise<void> {
+    this.inputAssetFiles.set(filename, file)
+
+    if (this.viewRouteHandler) return
+
+    this.viewRouteHandler = async (route: Route) => {
+      const url = new URL(route.request().url())
+      const requested = url.searchParams.get('filename')
+      const entry = requested ? this.inputAssetFiles.get(requested) : undefined
+
+      if (!entry) {
+        await route.fulfill({ status: 404, body: '' })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        ...(entry.contentType && { contentType: entry.contentType }),
+        ...(entry.path ? { path: entry.path } : { body: entry.body ?? '' })
+      })
+    }
+
+    await this.page.route(viewRoutePattern, this.viewRouteHandler)
+  }
+
   /**
    * Mock the POST /api/history endpoint used for deleting history items.
    * On receiving a `{ delete: [id] }` payload, removes matching jobs from
@@ -226,10 +302,17 @@ export class AssetsHelper {
   async clearMocks(): Promise<void> {
     this.generatedJobs = []
     this.importedFiles = []
+    this.jobDetails.clear()
+    this.inputAssetFiles.clear()
 
     if (this.jobsRouteHandler) {
       await this.page.unroute(jobsListRoutePattern, this.jobsRouteHandler)
       this.jobsRouteHandler = null
+    }
+
+    if (this.jobDetailRouteHandler) {
+      await this.page.unroute(jobDetailRoutePattern, this.jobDetailRouteHandler)
+      this.jobDetailRouteHandler = null
     }
 
     if (this.inputFilesRouteHandler) {
@@ -238,6 +321,11 @@ export class AssetsHelper {
         this.inputFilesRouteHandler
       )
       this.inputFilesRouteHandler = null
+    }
+
+    if (this.viewRouteHandler) {
+      await this.page.unroute(viewRoutePattern, this.viewRouteHandler)
+      this.viewRouteHandler = null
     }
 
     if (this.deleteHistoryRouteHandler) {
