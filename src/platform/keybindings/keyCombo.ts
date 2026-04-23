@@ -18,7 +18,7 @@ export class KeyComboImpl implements KeyCombo {
 
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
-      key: event.key,
+      key: resolveKeyFromEvent(event),
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
@@ -87,6 +87,44 @@ export class KeyComboImpl implements KeyCombo {
     sequences.push(this.key)
     return sequences
   }
+}
+
+const CODE_TO_KEY: Record<string, string> = {
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  Backslash: '\\',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Semicolon: ';',
+  Quote: "'",
+  Backquote: '`',
+  Minus: '-',
+  Equal: '='
+}
+
+/**
+ * Always resolve the physical key from event.code when available.
+ *
+ * Like VS Code's FallbackKeyboardMapper, keybindings are bound to physical
+ * key positions (US layout), not the characters they produce. This ensures
+ * shortcuts work on any keyboard layout:
+ * - Non-Latin layouts (Russian, Arabic): physical 'R' fires 'к'/'ق' in
+ *   event.key, but event.code is always 'KeyR' → resolved to 'r'
+ * - macOS Alt produces special chars (Alt+M → µ): resolved from code
+ * - US International Ctrl+Alt combos produce accented chars (Ctrl+Alt+A → á)
+ *
+ * Keys not in the mapping (Enter, Escape, F-keys, arrows, numpad) fall
+ * through to event.key, which is locale-independent for these keys.
+ */
+function resolveKeyFromEvent(event: KeyboardEvent): string {
+  if (event.code) {
+    const { code } = event
+    if (code.startsWith('Key')) return code.slice(3).toLowerCase()
+    if (code.startsWith('Digit')) return code.slice(5)
+    if (code in CODE_TO_KEY) return CODE_TO_KEY[code]
+  }
+  return event.key
 }
 
 function toNormalizedString(combo: KeyComboImpl): string {
