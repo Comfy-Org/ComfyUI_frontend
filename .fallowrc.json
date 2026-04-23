@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/main.ts",
+    "scripts/**/*.{ts,mts,js}",
+    "build/**/*.{ts,mts,js}",
+    "vite.config.mts",
+    "vite.electron.config.mts",
+    "vite.types.config.mts",
+    "vitest.setup.ts",
+    "playwright.config.ts",
+    "playwright.i18n.config.ts",
+    "eslint.config.ts",
+    "knip.config.ts",
+    "lint-staged.config.ts",
+    "apps/*/src/main.ts",
+    "packages/*/src/index.ts",
+    "browser_tests/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/**/*.stories.ts"
+  ],
+  "ignorePatterns": [
+    "**/*.generated.ts",
+    "**/*.d.ts",
+    "**/dist/**",
+    "**/build/**",
+    "**/.nx/**",
+    "**/node_modules/**",
+    "**/coverage/**",
+    "src/lib/litegraph/**",
+    "src/locales/**",
+    "public/**",
+    "temp/**"
+  ],
+  "rules": {
+    "unused-files": "warn",
+    "unused-exports": "warn",
+    "unused-types": "warn",
+    "unused-dependencies": "warn",
+    "unused-enum-members": "warn",
+    "unused-class-members": "warn",
+    "circular-dependencies": "warn",
+    "boundary-violations": "warn",
+    "unresolved-imports": "warn",
+    "unlisted-dependencies": "warn",
+    "duplicate-exports": "warn",
+    "stale-suppressions": "warn"
+  },
+  "health": {
+    "maxCyclomatic": 20,
+    "maxCognitive": 15
+  }
+}

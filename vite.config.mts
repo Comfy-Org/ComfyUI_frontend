@@ -622,6 +622,12 @@ export default defineConfig({
       !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
+    // Spotlight is the local Sentry dev overlay (https://spotlightjs.com).
+    // Enabled only for dev, non-cloud builds, and only when the developer
+    // opts in via SPOTLIGHT=true so Sentry stays silent by default.
+    __SPOTLIGHT_ENABLED__: JSON.stringify(
+      IS_DEV && DISTRIBUTION !== 'cloud' && process.env.SPOTLIGHT === 'true'
+    ),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',

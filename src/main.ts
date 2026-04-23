@@ -56,13 +56,21 @@ const sentryDsn = isCloud
   ? configValueOrDefault(remoteConfig.value, 'sentry_dsn', __SENTRY_DSN__)
   : __SENTRY_DSN__
 
+// Spotlight (https://spotlightjs.com) is the local Sentry dev overlay. When
+// opted-in via SPOTLIGHT=true in dev, initialize Sentry so events forward to
+// the local sidecar; production wiring is unchanged.
 Sentry.init({
   app,
-  dsn: sentryDsn,
-  enabled: __SENTRY_ENABLED__,
+  // Spotlight requires a DSN to initialize; a local placeholder is fine because
+  // events are redirected to the sidecar and never leave the machine.
+  dsn:
+    __SPOTLIGHT_ENABLED__ && !sentryDsn
+      ? 'https://spotlight@local/0'
+      : sentryDsn,
+  enabled: __SENTRY_ENABLED__ || __SPOTLIGHT_ENABLED__,
   release: __COMFYUI_FRONTEND_VERSION__,
   normalizeDepth: 8,
-  tracesSampleRate: isCloud ? 1.0 : 0,
+  tracesSampleRate: isCloud || __SPOTLIGHT_ENABLED__ ? 1.0 : 0,
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
   // Only set these for non-cloud builds
@@ -75,11 +83,13 @@ Sentry.init({
           Sentry.browserApiErrorsIntegration({ eventTarget: false })
         ]
       }
-    : {
-        integrations: [],
-        autoSessionTracking: false,
-        defaultIntegrations: false
-      })
+    : __SPOTLIGHT_ENABLED__
+      ? { integrations: [Sentry.spotlightBrowserIntegration()] }
+      : {
+          integrations: [],
+          autoSessionTracking: false,
+          defaultIntegrations: false
+        })
 })
 app.directive('tooltip', Tooltip)
 app
