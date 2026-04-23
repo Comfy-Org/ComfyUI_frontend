@@ -117,6 +117,29 @@ describe('NodeSearchListItem', () => {
       })
       expect(screen.queryByTestId('comfy-logo')).not.toBeInTheDocument()
     })
+
+    it('renders essentials badge for essentials node when showSourceBadge is true', () => {
+      renderItem({
+        nodeDef: createMockNodeDef({
+          python_module: 'custom_nodes.my_essentials',
+          essentials_category: 'essentials'
+        }),
+        showDescription: true,
+        showSourceBadge: true
+      })
+      expect(screen.getByText('my_essentials')).toBeInTheDocument()
+    })
+
+    it('renders blueprint badge for blueprint node when showSourceBadge is true', () => {
+      renderItem({
+        nodeDef: createMockNodeDef({
+          python_module: 'blueprint.my_blueprint'
+        }),
+        showDescription: true,
+        showSourceBadge: true
+      })
+      expect(screen.getByText('Blueprint')).toBeInTheDocument()
+    })
   })
 
   describe('API node provider badge', () => {

@@ -74,12 +74,12 @@ export function highlightQuery(
     text = DOMPurify.sanitize(text)
   }
 
-  // Escape special regex characters, then join with optional
-  // whitespace so cross-word matches (e.g. "geto" → "imaGE TO") are
-  // highlighted correctly.
+  // Escape special regex characters, then join with an optional single
+  // space so cross-word matches (e.g. "geto" → "imaGE TO") are
+  // highlighted without spanning tabs, newlines, or multi-space gaps.
   const pattern = Array.from(query)
     .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('\\s*')
+    .join('[ ]?')
 
   const regex = new RegExp(`(${pattern})`, 'gi')
   return text.replace(regex, '<span class="highlight">$1</span>')

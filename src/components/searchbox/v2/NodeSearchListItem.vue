@@ -33,7 +33,10 @@
               <ComfyLogo :size="10" mode="fill" color="currentColor" />
             </span>
             <span
-              v-else-if="showSourceBadge && isCustom"
+              v-else-if="
+                showSourceBadge &&
+                nodeDef.nodeSource.type !== NodeSourceType.Unknown
+              "
               :class="badgePillClass"
             >
               <span class="truncate text-2xs">
@@ -125,11 +128,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import {
-  CORE_NODE_MODULES,
-  isCustomNode as isCustomNodeDef,
-  NodeSourceType
-} from '@/types/nodeSource'
+import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -172,5 +171,4 @@ const providerName = computed(() => getProviderName(nodeDef.category))
 const isCore = computed(() =>
   CORE_NODE_MODULES.includes(nodeDef.python_module.split('.')[0])
 )
-const isCustom = computed(() => isCustomNodeDef(nodeDef))
 </script>
