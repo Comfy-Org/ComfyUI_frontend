@@ -90,9 +90,9 @@ const panelSide = computed(() =>
   position: absolute;
   inset: 0;
   background-color: var(--color-layout-canvas);
-  /* Form-builder dot grid — decorative. Not aligned with LayoutGrid
-     cell positions (the grid's gaps expand to absorb viewport slack,
-     so cell corners drift relative to any fixed-pitch pattern). */
+  /* Form-builder dot grid — decorative. Not aligned with chrome-cell
+     positions (the dot pitch is a fixed 24px while chrome cells sit
+     at 48px cells + 8px gutters). */
   background-image: radial-gradient(
     circle,
     var(--color-layout-grid-dot) 1px,
@@ -115,13 +115,13 @@ const panelSide = computed(() =>
      unset. */
   --welcome-panel-offset-left: 0;
   --welcome-panel-offset-right: calc(
-    var(--panel-dock-width, 420px) + var(--spacing-layout-outer, 16px)
+    var(--panel-dock-width, 440px) + var(--spacing-layout-outer, 8px)
   );
 }
 
 .layout-view[data-panel-side='left'] {
   --welcome-panel-offset-left: calc(
-    var(--panel-dock-width, 420px) + var(--spacing-layout-outer, 16px)
+    var(--panel-dock-width, 440px) + var(--spacing-layout-outer, 8px)
   );
   --welcome-panel-offset-right: 0;
 }

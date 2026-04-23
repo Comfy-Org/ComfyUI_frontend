@@ -37,7 +37,7 @@ const heightStyle = computed(() =>
 <style scoped>
 .panel-drag-preview {
   position: absolute;
-  width: var(--panel-dock-width, 420px);
+  width: var(--panel-dock-width, 440px);
   /* Comfy brand blue — vivid to match the logo. */
   background-color: rgb(30 64 255 / 0.3);
   border: 2px solid #1e40ff;

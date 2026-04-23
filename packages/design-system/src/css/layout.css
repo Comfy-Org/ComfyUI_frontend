@@ -29,7 +29,9 @@
   /* --- Grid dimensions (generates w-/h-/p-/m-/gap-* etc.) ------------- */
   --spacing-layout-cell: 48px; /* 1×1 cell side length */
   --spacing-layout-gutter: 8px; /* minimum gap between cells */
-  --spacing-layout-outer: 16px; /* margin from viewport edge */
+  --spacing-layout-outer: 8px; /* margin from viewport edge — matches
+                                  --spacing-layout-gutter so edge-to-cell
+                                  reads identical to cell-to-cell */
   --spacing-layout-dot: 24px; /* pitch of the canvas dot grid */
 
   /* --- Radii (generates rounded-*) ----------------------------------- */
@@ -76,6 +78,16 @@
  * and inherits the active theme.
  */
 :root {
+  /* Docked panel width, derived from the grid math so the panel snaps
+     to an integer cell span. 8 cells wide + 7 gutters between them —
+     matches the 8-cell Run + Number-of-runs cluster (BatchCount 5 span
+     + 1 gap + Run 3 span) in AppChrome, so the cluster's left edge
+     lines up with the panel's left edge. Change the cell or gutter
+     token and the panel width tracks automatically. */
+  --panel-dock-width: calc(
+    8 * var(--spacing-layout-cell) + 7 * var(--spacing-layout-gutter)
+  );
+
   /* Halfway between cell-fill and canvas. Used by FloatingPanel's
      header so the drag-grip region reads distinct from the body. */
   --color-layout-header-fill: color-mix(

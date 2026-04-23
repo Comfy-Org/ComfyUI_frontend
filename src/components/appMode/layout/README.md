@@ -12,16 +12,16 @@ The type scale is deliberately tight: **4 sizes only** (`layout-md` / `layout-lg
 
 ## Structure
 
-- `LayoutGrid.vue` — grid primitive. Measures its container and computes explicit track counts at `cellSize` with `minGap` floor; slack is absorbed into `column-gap` / `row-gap` so the outer margin stays uniform on every edge. Serves as the **snap target** for floating panels.
-- `LayoutView.vue` — runtime view. Mounts `LinearPreview` as the full-viewport background layer, the grid above it, and one or more floating panels on top.
-- `cells/` — individual cell components. Each cell fills its assigned grid area and renders one coherent piece of UI.
-- `panels/` — floating-panel shell + snap-drag + Notion-style block list.
+- `AppChrome.vue` — shared chrome rail (mode toggle, run cluster, share, action cells, history thumbs, feedback). Three fixed-gutter flex zones pinned to the top-left, top-right, and bottom-left corners. Each cell's width composes from the same tokens `FloatingPanel` uses (`span × cell + (span−1) × gutter`), so chrome + panel snap to identical pixel positions at every viewport. Consumed by both App Mode runtime and App Builder via a `variant` prop.
+- `LayoutView.vue` — App Mode runtime view. Mounts `LinearPreview` as the full-viewport background layer, `AppChrome` above it, and one or more floating panels on top.
+- `cells/` — individual cell components. Each fills its assigned chrome cell and renders one coherent piece of UI.
+- `panels/` — floating-panel shell + snap-drag + Notion-style block list. `--panel-dock-width` is derived from the same cell + gutter tokens the chrome uses.
 - Tokens are loaded globally via `@comfyorg/design-system/css/style.css` (imported once at the app entry), so no per-view CSS import is needed.
 
 ## Cell conventions
 
-- Cell roots fill their grid area: `size-full` (or absolute fill if the cell is a positioning context).
-- Visible cell background is applied by `LayoutGrid` via the `.layout-cell:has(> *)` selector — individual cells don't set their own outer background.
+- Cell roots fill their assigned box: `size-full` (or absolute fill if the cell is a positioning context).
+- Visible cell background + hairline border + radius are applied by `AppChrome` on the `.app-chrome__cell` wrapper — individual cell components don't set their own outer background.
 - Text at `text-layout-md` unless there's a concrete reason otherwise.
 - Padding uses the token-implied rhythm (multiples of `gap-layout-gutter`).
 - No decorative chrome: no shadows, no gradients, no rounded corners larger than `rounded-layout-cell`. Accent / primary color is owned by the shared `Button` primitive, not cells.

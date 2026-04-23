@@ -65,7 +65,7 @@ async function runFromPill(e: MouseEvent) {
       ]"
       :style="{
         paddingTop:
-          'calc(var(--spacing-layout-outer, 16px) + var(--spacing-layout-cell, 48px) + var(--spacing-layout-gutter, 8px))'
+          'calc(var(--spacing-layout-outer, 8px) + var(--spacing-layout-cell, 48px) + var(--spacing-layout-gutter, 8px))'
       }"
     >
       <div class="flex flex-col gap-2">

@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
+    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing-layout-outer))] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
     <div class="panel-chrome inline-flex items-center gap-1 p-2">

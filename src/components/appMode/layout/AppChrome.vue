@@ -1,22 +1,35 @@
 <script setup lang="ts">
 /**
- * AppChrome — the grid-anchored chrome (mode toggle, feedback, run cluster,
- * share, action cells, history thumbs) shared by App Mode and App Builder.
+ * AppChrome — the chrome rail (mode toggle, feedback, run cluster, share,
+ * action cells, history thumbs) shared by App Mode and App Builder.
  *
- * Single source of truth: both variants emit the same cells from the
- * same logic. Variant-specific differences are declarative — the
- * `HIDE_IN_BUILDER` set drops contextually-wrong cells (mode-toggle,
- * builder icon) and `DISABLE_IN_BUILDER` tags cells that render but
- * are inert (Run, BatchCount — you can't execute a workflow from the
- * builder). Adding a new chrome cell for App Mode automatically
- * surfaces in the builder too; keep them in sync by construction.
+ * Architecture: three flex zones pinned to the viewport corners. Each
+ * zone lays its cells out with fixed gutters using the layout tokens —
+ * `calc(span * --spacing-layout-cell + (span - 1) * --spacing-layout-gutter)`
+ * for width, so every cell aligns to the same grid math FloatingPanel
+ * uses (`--panel-dock-width` is composed from the same tokens). No
+ * distributed-gap CSS Grid — a cell in any zone and the dock panel snap
+ * to identical pixel positions at every viewport.
+ *
+ * Zones:
+ * - `top-left`  — mode toggle, builder icon, optional action cells,
+ *                 optional history thumbs. Pinned to top-left outer margin.
+ * - `top-right` — share, batch count, job queue, run cluster. Right edge
+ *                 is flush with the dock panel's right edge, so the
+ *                 cluster's left edge lines up with the panel's left.
+ * - `bottom-left` — feedback.
+ *
+ * Variant behavior: both variants emit the same cell logic. The
+ * `HIDE_IN_BUILDER` set drops contextually-wrong cells (mode toggle,
+ * builder icon) and `DISABLE_IN_BUILDER` tags cells that render but are
+ * inert (Run, BatchCount — you can't execute a workflow from the
+ * builder). Adding a new chrome cell in App Mode automatically surfaces
+ * in the builder too; keep them in sync by construction.
  */
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LayoutGrid from './LayoutGrid.vue'
-import type { LayoutCellPlacement } from './LayoutGrid.vue'
 import BatchCountCell from './cells/BatchCountCell.vue'
 import FeedbackCell from './cells/FeedbackCell.vue'
 import IconCell from './cells/IconCell.vue'
@@ -59,8 +72,12 @@ type ChromeCellKind =
   | 'action-info'
   | 'output-thumb'
 
-interface ChromeCell extends LayoutCellPlacement {
+interface ChromeCell {
+  id: string
   kind: ChromeCellKind
+  /** Cell count this item spans horizontally. Width =
+   *  span × cell + (span - 1) × gutter. */
+  span: number
   /** Visual inert state — used by the builder variant to tag cells that
    *  render identically to App Mode but can't be interacted with. */
   disabled?: boolean
@@ -217,144 +234,88 @@ const historyThumbMap = computed(
 )
 
 // --- Variant-specific overrides -----------------------------------------
-// Kinds the builder should never render — mode-toggle conflicts with
-// BuilderFooterToolbar's exit affordance; the builder-enter icon is
-// redundant when we're already in the builder.
 const HIDE_IN_BUILDER = new Set<ChromeCellKind>([
   'system-mode-toggle',
   'system-builder'
 ])
 
-// Kinds the builder renders visually but keeps inert — they exist so
-// the preview matches App Mode runtime, not so the user can trigger
-// them from the builder.
 const DISABLE_IN_BUILDER = new Set<ChromeCellKind>([
   'system-batch-count',
   'system-run'
 ])
 
-// --- Cell placements ----------------------------------------------------
-// One array, built once, filtered by variant. Changes here automatically
-// land in both App Mode and the builder.
-const cells = computed<ChromeCell[]>(() => {
+function include(out: ChromeCell[], cell: ChromeCell) {
+  if (variant === 'builder' && HIDE_IN_BUILDER.has(cell.kind)) return
+  if (variant === 'builder' && DISABLE_IN_BUILDER.has(cell.kind)) {
+    out.push({ ...cell, disabled: true })
+    return
+  }
+  out.push(cell)
+}
+
+// --- Zone cell lists ----------------------------------------------------
+// Cap so a history-heavy workflow doesn't push thumbs past the top-right
+// cluster on narrow viewports. Conservative for typical desktop widths.
+const MAX_HISTORY_THUMBS = 6
+
+const topLeftCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
-  const include = (cell: ChromeCell) => {
-    if (variant === 'builder' && HIDE_IN_BUILDER.has(cell.kind)) return
-    if (variant === 'builder' && DISABLE_IN_BUILDER.has(cell.kind)) {
-      out.push({ ...cell, disabled: true })
-      return
-    }
-    out.push(cell)
-  }
-
-  // Row 1, left side (left-to-right): mode toggle, then optional builder.
-  // Toggle anchors at col 1 so it doesn't shift when builder visibility
-  // changes. Share sits in the right-side group, mirroring the graph-view
-  // top-right composition.
-  include({
-    id: 'mode-toggle',
-    col: 1,
-    row: 1,
-    colSpan: 2,
-    kind: 'system-mode-toggle'
-  })
-  let col = 3
+  include(out, { id: 'mode-toggle', kind: 'system-mode-toggle', span: 2 })
   if (enableAppBuilder.value) {
-    include({ id: 'builder', col: col++, row: 1, kind: 'system-builder' })
+    include(out, { id: 'builder', kind: 'system-builder', span: 1 })
   }
-
-  // Action cells (right of the builder icon), only when a history item
-  // is selected. Mirrors LinearPreview's top bar.
   if (hasSelection.value) {
-    include({ id: 'action-rerun', col: col++, row: 1, kind: 'action-rerun' })
-    include({
+    include(out, { id: 'action-rerun', kind: 'action-rerun', span: 1 })
+    include(out, {
       id: 'action-reuse-params',
-      col: col++,
-      row: 1,
-      kind: 'action-reuse-params'
+      kind: 'action-reuse-params',
+      span: 1
     })
-    include({
-      id: 'action-download',
-      col: col++,
-      row: 1,
-      kind: 'action-download'
-    })
-    include({
-      id: 'action-info',
-      col,
-      row: 1,
-      colSpan: 3,
-      kind: 'action-info'
-    })
-    col += 3
+    include(out, { id: 'action-download', kind: 'action-download', span: 1 })
+    include(out, { id: 'action-info', kind: 'action-info', span: 3 })
   }
-
-  include({
-    id: 'feedback',
-    col: 1,
-    row: -2,
-    colSpan: 4,
-    kind: 'system-feedback'
-  })
-
-  // Row 1, right side (right-to-left): Run → BatchCount → JobQueue
-  // (when active) → Share. Negative col + span anchors to the right
-  // edge via CSS Grid's end-aligned line numbers (line -1 = N+1).
-  include({
-    id: 'system-run',
-    col: -4,
-    colSpan: 3,
-    row: 1,
-    kind: 'system-run'
-  })
-  if (showJobQueue.value) {
-    include({
-      id: 'system-job-queue',
-      col: -6,
-      colSpan: 2,
-      row: 1,
-      kind: 'system-job-queue'
-    })
-  }
-  const batchShift = showJobQueue.value ? -2 : 0
-  include({
-    id: 'system-batch-count',
-    col: -9 + batchShift,
-    colSpan: 5,
-    row: 1,
-    kind: 'system-batch-count'
-  })
-  if (showShare.value) {
-    include({
-      id: 'share',
-      col: -11 + batchShift,
-      colSpan: 2,
-      row: 1,
-      kind: 'system-share'
-    })
-  }
-
-  // History thumbs on row 1, right of the action cells. Capped so positive
-  // indices don't overflow into the right cluster's negative-indexed
-  // resolved positions on narrow viewports.
-  const MAX_HISTORY_THUMBS = 6
   const thumbCount = Math.min(historyThumbs.value.length, MAX_HISTORY_THUMBS)
   for (let i = 0; i < thumbCount; i++) {
-    include({
+    include(out, {
       id: historyThumbs.value[i].id,
-      col: col + i,
-      row: 1,
-      kind: 'output-thumb'
+      kind: 'output-thumb',
+      span: 1
     })
   }
-
   return out
 })
 
-// Fast lookup for the template to tag a given cell's slot as disabled.
-const disabledIds = computed(
-  () => new Set(cells.value.filter((c) => c.disabled).map((c) => c.id))
-)
+const topRightCells = computed<ChromeCell[]>(() => {
+  const out: ChromeCell[] = []
+  if (showShare.value)
+    include(out, { id: 'share', kind: 'system-share', span: 2 })
+  include(out, {
+    id: 'system-batch-count',
+    kind: 'system-batch-count',
+    span: 5
+  })
+  if (showJobQueue.value)
+    include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
+  include(out, { id: 'system-run', kind: 'system-run', span: 3 })
+  return out
+})
+
+const bottomLeftCells = computed<ChromeCell[]>(() => {
+  const out: ChromeCell[] = []
+  include(out, { id: 'feedback', kind: 'system-feedback', span: 4 })
+  return out
+})
+
+// --- Helpers ------------------------------------------------------------
+function cellWidth(span: number): string {
+  return `calc(${span} * var(--spacing-layout-cell) + ${span - 1} * var(--spacing-layout-gutter))`
+}
+
+function cellTitle(cell: ChromeCell): string | undefined {
+  if (cell.disabled) return t('linearMode.builder.runDisabledHint')
+  if (cell.kind === 'action-info') return infoTitle.value
+  return undefined
+}
 </script>
 
 <template>
@@ -363,84 +324,106 @@ const disabledIds = computed(
        ancestor, so the variant-specific rules below switch to fixed
        positioning below the workflow tabs. -->
   <div class="app-chrome" :data-variant="variant">
-    <LayoutGrid :cells="cells">
-      <template v-for="cell in cells" :key="cell.id" #[cell.id]>
-        <!-- `inert` removes disabled cells from focus/event path so their
-             content looks like App Mode but can't be tab-targeted or clicked.
-             Opacity + cursor come from CSS below. -->
+    <div class="app-chrome__zone app-chrome__zone--top-left">
+      <div
+        v-for="cell in topLeftCells"
+        :key="cell.id"
+        class="app-chrome__cell"
+        :class="{ 'app-chrome__cell--disabled': cell.disabled }"
+        :inert="cell.disabled || undefined"
+        :title="cellTitle(cell)"
+        :style="{ width: cellWidth(cell.span) }"
+        :data-cell-kind="cell.kind"
+      >
+        <IconCell
+          v-if="cell.kind === 'system-builder'"
+          icon="icon-[lucide--hammer]"
+          :label="t('linearMode.appModeToolbar.appBuilder')"
+          :disabled="!hasNodes"
+          :on-activate="enterBuilder"
+        />
+        <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
+        <IconCell
+          v-else-if="cell.kind === 'action-rerun'"
+          icon="icon-[lucide--refresh-cw]"
+          :label="t('linearMode.rerun')"
+          :on-activate="actionRerun"
+        />
+        <IconCell
+          v-else-if="cell.kind === 'action-reuse-params'"
+          icon="icon-[lucide--list-restart]"
+          :label="t('linearMode.reuseParameters')"
+          :on-activate="actionReuseParams"
+        />
+        <IconCell
+          v-else-if="cell.kind === 'action-download'"
+          icon="icon-[lucide--download]"
+          :label="t('g.download')"
+          :on-activate="actionDownload"
+        />
         <div
-          class="app-chrome__cell"
-          :class="{ 'app-chrome__cell--disabled': disabledIds.has(cell.id) }"
-          :inert="disabledIds.has(cell.id) || undefined"
-          :title="
-            disabledIds.has(cell.id)
-              ? t('linearMode.builder.runDisabledHint')
-              : undefined
-          "
+          v-else-if="cell.kind === 'action-info'"
+          class="duration-layout flex size-full cursor-default items-center gap-2 rounded-layout-cell bg-layout-cell px-3 font-inter text-layout-md text-layout-text transition-colors ease-layout hover:bg-layout-cell-hover"
         >
-          <IconCell
-            v-if="cell.kind === 'system-builder'"
-            icon="icon-[lucide--hammer]"
-            :label="t('linearMode.appModeToolbar.appBuilder')"
-            :disabled="!hasNodes"
-            :on-activate="enterBuilder"
-          />
-          <IconCell
-            v-else-if="cell.kind === 'system-share'"
-            icon="icon-[lucide--send]"
-            :label="t('actionbar.share')"
-            inline-label
-            :on-activate="openShare"
-            @pointerenter="prefetchShareDialog"
-          />
-          <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
-          <IconCell
-            v-else-if="cell.kind === 'action-rerun'"
-            icon="icon-[lucide--refresh-cw]"
-            :label="t('linearMode.rerun')"
-            :on-activate="actionRerun"
-          />
-          <IconCell
-            v-else-if="cell.kind === 'action-reuse-params'"
-            icon="icon-[lucide--list-restart]"
-            :label="t('linearMode.reuseParameters')"
-            :on-activate="actionReuseParams"
-          />
-          <IconCell
-            v-else-if="cell.kind === 'action-download'"
-            icon="icon-[lucide--download]"
-            :label="t('g.download')"
-            :on-activate="actionDownload"
-          />
-          <div
-            v-else-if="cell.kind === 'action-info'"
-            class="duration-layout flex size-full cursor-default items-center gap-2 rounded-layout-cell bg-layout-cell px-3 font-inter text-layout-md text-layout-text transition-colors ease-layout hover:bg-layout-cell-hover"
-            :title="infoTitle"
+          <i class="icon-[lucide--file] size-5 shrink-0" aria-hidden="true" />
+          <span
+            v-if="infoDims"
+            class="shrink-0 text-layout-text tabular-nums"
+            >{{ infoDims }}</span
           >
-            <i class="icon-[lucide--file] size-5 shrink-0" aria-hidden="true" />
-            <span
-              v-if="infoDims"
-              class="shrink-0 text-layout-text tabular-nums"
-              >{{ infoDims }}</span
-            >
-            <span class="min-w-0 truncate tracking-[0.02em] tabular-nums">{{
-              infoLabel
-            }}</span>
-          </div>
-          <FeedbackCell v-else-if="cell.kind === 'system-feedback'" />
-          <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
-          <JobQueueCell v-else-if="cell.kind === 'system-job-queue'" />
-          <RunCell v-else-if="cell.kind === 'system-run'" />
-          <OutputThumbCell
-            v-else-if="
-              cell.kind === 'output-thumb' && historyThumbMap.get(cell.id)
-            "
-            :asset="historyThumbMap.get(cell.id)!.asset"
-            :output="historyThumbMap.get(cell.id)!.output"
-          />
+          <span class="min-w-0 truncate tracking-[0.02em] tabular-nums">{{
+            infoLabel
+          }}</span>
         </div>
-      </template>
-    </LayoutGrid>
+        <OutputThumbCell
+          v-else-if="
+            cell.kind === 'output-thumb' && historyThumbMap.get(cell.id)
+          "
+          :asset="historyThumbMap.get(cell.id)!.asset"
+          :output="historyThumbMap.get(cell.id)!.output"
+        />
+      </div>
+    </div>
+
+    <div class="app-chrome__zone app-chrome__zone--top-right">
+      <div
+        v-for="cell in topRightCells"
+        :key="cell.id"
+        class="app-chrome__cell"
+        :class="{ 'app-chrome__cell--disabled': cell.disabled }"
+        :inert="cell.disabled || undefined"
+        :title="cellTitle(cell)"
+        :style="{ width: cellWidth(cell.span) }"
+        :data-cell-kind="cell.kind"
+      >
+        <IconCell
+          v-if="cell.kind === 'system-share'"
+          icon="icon-[lucide--send]"
+          :label="t('actionbar.share')"
+          inline-label
+          :on-activate="openShare"
+          @pointerenter="prefetchShareDialog"
+        />
+        <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
+        <JobQueueCell v-else-if="cell.kind === 'system-job-queue'" />
+        <RunCell v-else-if="cell.kind === 'system-run'" />
+      </div>
+    </div>
+
+    <div class="app-chrome__zone app-chrome__zone--bottom-left">
+      <div
+        v-for="cell in bottomLeftCells"
+        :key="cell.id"
+        class="app-chrome__cell"
+        :class="{ 'app-chrome__cell--disabled': cell.disabled }"
+        :inert="cell.disabled || undefined"
+        :title="cellTitle(cell)"
+        :style="{ width: cellWidth(cell.span) }"
+        :data-cell-kind="cell.kind"
+      >
+        <FeedbackCell v-if="cell.kind === 'system-feedback'" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -457,69 +440,65 @@ const disabledIds = computed(
 .app-chrome[data-variant='builder'] {
   position: fixed;
   top: var(--workflow-tabs-height);
-  left: 0;
+  /* Offset past the Comfy sidebar icon strip so top-left zone aligns
+     with BuilderMenu's left edge (which also clears the sidebar via
+     --sidebar-width). */
+  left: var(--sidebar-width, 0);
   right: 0;
   bottom: 0;
   z-index: 90;
   cursor: not-allowed;
 }
 
-/* Grid is a transparent overlay; empty areas pass pointer events through
-   to whatever's behind (LinearPreview for App Mode, the graph canvas
-   for the builder). */
-.app-chrome :deep(.layout-grid) {
-  background-color: transparent;
+/* Zones: flex rows pinned to a corner, fixed gutter. Each zone is a
+   clean container so cells within it compose with pixel-perfect math
+   — no distributed-gap side effects. */
+.app-chrome__zone {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-layout-gutter);
+  height: var(--spacing-layout-cell);
   pointer-events: none;
 }
-.app-chrome :deep(.layout-grid) > * {
-  pointer-events: auto;
+
+.app-chrome__zone--top-left {
+  top: var(--spacing-layout-outer);
+  left: var(--spacing-layout-outer);
+}
+
+.app-chrome__zone--top-right {
+  top: var(--spacing-layout-outer);
+  right: var(--spacing-layout-outer);
+}
+
+.app-chrome__zone--bottom-left {
+  bottom: var(--spacing-layout-outer);
+  left: var(--spacing-layout-outer);
 }
 
 /* Cell chrome: hairline border + radius so every cell reads as part of
-   the FloatingPanel family. Applied via the data-cell-kind attribute so
-   only real (non-ghost) cells pick it up. */
-.app-chrome :deep(.layout-cell[data-cell-kind='system-mode-toggle']),
-.app-chrome :deep(.layout-cell[data-cell-kind='system-builder']),
-.app-chrome :deep(.layout-cell[data-cell-kind='system-share']),
-.app-chrome :deep(.layout-cell[data-cell-kind='system-feedback']),
-.app-chrome :deep(.layout-cell[data-cell-kind='system-batch-count']),
-.app-chrome :deep(.layout-cell[data-cell-kind='system-job-queue']),
-.app-chrome :deep(.layout-cell[data-cell-kind='system-run']),
-.app-chrome :deep(.layout-cell[data-cell-kind='action-rerun']),
-.app-chrome :deep(.layout-cell[data-cell-kind='action-reuse-params']),
-.app-chrome :deep(.layout-cell[data-cell-kind='action-download']),
-.app-chrome :deep(.layout-cell[data-cell-kind='action-info']),
-.app-chrome :deep(.layout-cell[data-cell-kind='output-thumb']) {
+   the FloatingPanel family. Height fills the zone (single row). */
+.app-chrome__cell {
   box-sizing: border-box;
+  display: flex;
+  height: 100%;
   border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 10px;
+  background-color: var(--color-layout-cell);
   overflow: hidden;
+  pointer-events: auto;
 }
 
-/* Run cell hosts the accent button directly — drop the chrome fill so
-   only the button paints and the cell radius matches the button. */
-.app-chrome :deep(.layout-cell[data-cell-kind='system-run']) {
+/* Run cell hosts the accent button directly — drop the chrome surface
+   so only the button paints and the cell radius matches the button. */
+.app-chrome__cell[data-cell-kind='system-run'] {
   border: none;
   background-color: transparent;
 }
 
-/* Cells get a wrapper div (.app-chrome__cell) so we can stamp inert on
-   disabled ones without losing sizing. Normally `display: contents` keeps
-   the wrapper out of layout so cell backgrounds/borders apply exactly
-   as before. Disabled variant becomes a real flex box so opacity (which
-   needs a generated stacking context) can render. */
-.app-chrome__cell {
-  display: contents;
-}
-
-/* Disabled signal for variant="builder". The real box is required so
-   opacity + title tooltip have a surface to attach to. Fills the cell. */
+/* Disabled signal for variant="builder" — dim + no-select + no-click. */
 .app-chrome__cell--disabled {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
   opacity: 0.55;
   user-select: none;
   cursor: not-allowed;

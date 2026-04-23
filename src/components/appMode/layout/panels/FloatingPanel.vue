@@ -189,7 +189,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   position: absolute;
   display: flex;
   flex-direction: column;
-  width: var(--panel-dock-width, 420px);
+  width: var(--panel-dock-width, 440px);
   max-width: calc(100vw - var(--spacing-layout-outer) * 2);
   background-color: var(--color-layout-cell);
   border: 1px solid rgb(255 255 255 / 0.08);

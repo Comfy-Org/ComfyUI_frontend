@@ -143,6 +143,26 @@ export const useAppModeStore = defineStore('appMode', () => {
     autoEnableVueNodes(inSelect)
   })
 
+  // Hide litegraph's canvas info overlay (T:/I:/N:/V:/FPS + "Comfy Cloud"
+  // info_text, all rendered as canvas text at the bottom-left) while in
+  // builder mode — it collides with FeedbackCell and is debug noise for
+  // authors building the App surface. Save the pre-builder value so
+  // exiting restores whatever the user had.
+  let preBuilderShowInfo: boolean | undefined
+  watch(isBuilderMode, (inBuilder) => {
+    const canvas = getCanvas()
+    if (!canvas) return
+    if (inBuilder) {
+      if (preBuilderShowInfo === undefined) {
+        preBuilderShowInfo = canvas.show_info
+      }
+      canvas.show_info = false
+    } else if (preBuilderShowInfo !== undefined) {
+      canvas.show_info = preBuilderShowInfo
+      preBuilderShowInfo = undefined
+    }
+  })
+
   function enterBuilder() {
     if (!hasNodes.value) {
       emptyWorkflowDialog.show({
