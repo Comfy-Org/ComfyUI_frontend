@@ -186,7 +186,7 @@ useParallax([leftImgRef], {
           <nav
             ref="navRef"
             class="mt-16 flex w-full max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:max-w-none lg:gap-8"
-            aria-label="Industry categories"
+            :aria-label="t('useCase.navLabel', locale)"
             @keydown="onNavKeydown"
           >
             <button

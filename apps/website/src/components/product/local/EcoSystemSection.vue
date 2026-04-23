@@ -47,6 +47,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           loop
           muted
           playsinline
+          aria-hidden="true"
           class="size-full object-cover"
         />
       </div>
