@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       should_run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.e2e }}
     steps:
@@ -246,11 +247,12 @@ jobs:
       - name: Post starting comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
           ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
+            "$BRANCH_NAME" \
             "starting"
 
   # Deploy and comment for non-forked PRs only
@@ -283,9 +285,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
+            "$BRANCH_NAME" \
             "completed"
   #### END Deployment and commenting (non-forked PRs only)

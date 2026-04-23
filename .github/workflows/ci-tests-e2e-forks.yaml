@@ -20,6 +20,7 @@ jobs:
       github.event.workflow_run.repository != null &&
       github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name
     permissions:
+      contents: read
       pull-requests: write
       actions: read
     steps:
@@ -38,8 +39,40 @@ jobs:
         id: pr
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
+      - name: Check for e2e-relevant changes
+        if: steps.pr.outputs.skip != 'true'
+        id: e2e-changes
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pull_number = Number('${{ steps.pr.outputs.number }}');
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number,
+              per_page: 100,
+            });
+
+            const isIgnored = (filename) =>
+              filename.startsWith('apps/') ||
+              filename.startsWith('docs/') ||
+              filename.startsWith('.storybook/') ||
+              filename.endsWith('.md');
+
+            const shouldRun = files.some((file) => !isIgnored(file.filename));
+            core.setOutput('should-run', String(shouldRun));
+
+            if (!shouldRun) {
+              core.notice(
+                'No E2E-relevant files changed; skipping forked PR report deployment.'
+              );
+            }
+
       - name: Handle Test Start
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'requested'
+        if: >
+          steps.pr.outputs.skip != 'true' &&
+          steps.e2e-changes.outputs.should-run == 'true' &&
+          github.event.action == 'requested'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -50,7 +83,10 @@ jobs:
             "starting"
 
       - name: Download and Deploy Reports
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
+        if: >
+          steps.pr.outputs.skip != 'true' &&
+          steps.e2e-changes.outputs.should-run == 'true' &&
+          github.event.action == 'completed'
         uses: actions/download-artifact@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +95,10 @@ jobs:
           path: reports
 
       - name: Handle Test Completion
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
+        if: >
+          steps.pr.outputs.skip != 'true' &&
+          steps.e2e-changes.outputs.should-run == 'true' &&
+          github.event.action == 'completed'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
