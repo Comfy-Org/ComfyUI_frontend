@@ -1,6 +1,7 @@
 <template>
   <Button
     v-if="!isLoggedIn"
+    data-testid="login-button"
     variant="textonly"
     size="icon"
     :class="cn('group rounded-full p-0 text-base-foreground', className)"
