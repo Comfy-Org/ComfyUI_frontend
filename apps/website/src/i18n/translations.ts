@@ -120,9 +120,17 @@ const translations = {
     en: 'Load a workflow',
     'zh-CN': '加载工作流'
   },
-  'getStarted.step2.description': {
-    en: 'Start from a community template or build your own.',
-    'zh-CN': '从社区模板开始，或自行构建。'
+  'getStarted.step2.descriptionPrefix': {
+    en: 'Start from ',
+    'zh-CN': '从'
+  },
+  'getStarted.step2.descriptionLink': {
+    en: 'a community template',
+    'zh-CN': '社区模板'
+  },
+  'getStarted.step2.descriptionSuffix': {
+    en: ' or build your own.',
+    'zh-CN': '开始，或自行构建。'
   },
   'getStarted.step3.title': {
     en: 'Generate & Iterate',
