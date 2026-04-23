@@ -14,30 +14,35 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const categories = [
   {
     label: t('useCase.vfx', locale),
-    leftImg: '/images/homepage/use-case-left-1.webp',
-    rightImg: '/images/homepage/use-case-right-1.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left1.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right1.webp'
   },
   {
     label: t('useCase.advertising', locale),
-    leftImg: '/images/homepage/use-case-left-2.webp',
-    rightImg: '/images/homepage/use-case-right-2.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left2.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right2.webm'
   },
   {
     label: t('useCase.gaming', locale),
-    leftImg: '/images/homepage/use-case-left-3.webp',
-    rightImg: '/images/homepage/use-case-right-3.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left3.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right3.webp'
   },
   {
     label: t('useCase.ecommerce', locale),
-    leftImg: '/images/homepage/use-case-left-4.webp',
-    rightImg: '/images/homepage/use-case-right-4.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left4.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right4.webm',
+    rightObjectPosition: 'top'
   },
   {
     label: t('useCase.more', locale),
-    leftImg: '/images/homepage/use-case-left-5.webp',
-    rightImg: '/images/homepage/use-case-right-5.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left5.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right5.webm'
   }
 ]
+
+function isVideo(src: string): boolean {
+  return src.endsWith('.webm')
+}
 
 const sectionRef = ref<HTMLElement>()
 const contentRef = ref<HTMLElement>()
@@ -45,13 +50,20 @@ const navRef = ref<HTMLElement>()
 const leftImgRef = ref<HTMLElement>()
 const rightImgRef = ref<HTMLElement>()
 
-const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
+const {
+  activeIndex: activeCategory,
+  isActive: isPinned,
+  scrollToIndex
+} = usePinScrub(
   { section: sectionRef, content: contentRef, nav: navRef },
   { itemCount: categories.length }
 )
 
-const activeLeft = computed(() => categories[activeCategory.value].leftImg)
-const activeRight = computed(() => categories[activeCategory.value].rightImg)
+const activeLeft = computed(() => categories[activeCategory.value].leftSrc)
+const activeRight = computed(() => categories[activeCategory.value].rightSrc)
+const activeRightObjectPosition = computed(
+  () => categories[activeCategory.value].rightObjectPosition
+)
 
 const uid = useId()
 const leftBlobId = `left-blob-${uid}`
@@ -74,7 +86,12 @@ useParallax([leftImgRef], {
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative isolate overflow-hidden px-8 py-20 lg:h-[calc(100vh+60px)] lg:px-0 lg:py-24"
+    :class="
+      cn(
+        'bg-primary-comfy-ink relative isolate px-8 py-20 lg:px-0 lg:py-24',
+        isPinned && 'overflow-x-clip lg:h-[calc(100vh+60px)]'
+      )
+    "
   >
     <!-- Clip-path definitions for shaped images -->
     <svg class="absolute size-0" width="0" height="0" aria-hidden="true">
@@ -117,8 +134,20 @@ useParallax([leftImgRef], {
             :style="`clip-path: url(#${leftBlobId})`"
           >
             <Transition name="crossfade">
+              <video
+                v-if="isVideo(activeLeft)"
+                :key="`video-${activeLeft}`"
+                :src="activeLeft"
+                autoplay
+                muted
+                loop
+                playsinline
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+              />
               <img
-                :key="activeLeft"
+                v-else
+                :key="`img-${activeLeft}`"
                 :src="activeLeft"
                 alt=""
                 aria-hidden="true"
@@ -167,10 +196,11 @@ useParallax([leftImgRef], {
 
           <BrandButton
             :href="externalLinks.workflows"
-            :label="t('useCase.cta', locale)"
             variant="outline"
-            class-name="mt-8 text-sm"
-          />
+            class="mt-8"
+          >
+            {{ t('useCase.cta', locale) }}
+          </BrandButton>
         </div>
       </div>
 
@@ -185,12 +215,34 @@ useParallax([leftImgRef], {
             :style="`clip-path: url(#${rightBlobId})`"
           >
             <Transition name="crossfade">
+              <video
+                v-if="isVideo(activeRight)"
+                :key="`video-${activeRight}`"
+                :src="activeRight"
+                autoplay
+                muted
+                loop
+                playsinline
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+                :style="
+                  activeRightObjectPosition
+                    ? `object-position: ${activeRightObjectPosition}`
+                    : undefined
+                "
+              />
               <img
-                :key="activeRight"
+                v-else
+                :key="`img-${activeRight}`"
                 :src="activeRight"
                 alt=""
                 aria-hidden="true"
                 class="absolute inset-0 size-full object-cover"
+                :style="
+                  activeRightObjectPosition
+                    ? `object-position: ${activeRightObjectPosition}`
+                    : undefined
+                "
               />
             </Transition>
           </div>

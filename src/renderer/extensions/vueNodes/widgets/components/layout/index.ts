@@ -1,4 +1,4 @@
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 export const WidgetInputBaseClass = cn([
   // Background

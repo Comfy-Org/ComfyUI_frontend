@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 /* eslint-disable vue/no-unused-emit-declarations */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { defineComponent } from 'vue'

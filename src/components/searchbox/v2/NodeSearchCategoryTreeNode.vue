@@ -78,9 +78,11 @@ export const CATEGORY_UNSELECTED_CLASS =
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
+
 import { RovingFocusItem } from 'reka-ui'
+
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   node,

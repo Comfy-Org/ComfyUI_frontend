@@ -61,7 +61,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { BLUEPRINT_CATEGORY } from '@/types/nodeSource'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   filters = [],

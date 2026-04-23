@@ -67,6 +67,7 @@
   "ignoreFiles": [
     "node_modules/**",
     "dist/**",
+    "**/dist/**",
     "playwright-report/**",
     "public/**",
     "src/lib/litegraph/**"
