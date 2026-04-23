@@ -32,14 +32,17 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
+import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 import PanelDragPreview from './PanelDragPreview.vue'
 import type { PanelPreset } from './panelTypes'
 import { usePanelDrag } from './usePanelDrag'
+import { usePanelResize } from './usePanelResize'
 
 const {
   title,
@@ -71,32 +74,70 @@ const { isDragging, snapTarget, onHeaderPointerDown } = usePanelDrag({
 })
 
 // Measure the live panel so the drag preview matches its content-fit
-// height. Only consumed while dragging; rounded to int to avoid
-// subpixel jitter in the blue rectangle.
+// height + current width. Only consumed while dragging; rounded to
+// int to avoid subpixel jitter in the blue rectangle.
 const panelRef = useTemplateRef<HTMLElement>('panelRef')
-const { height: panelHeight } = useElementSize(panelRef)
+const { width: panelWidth, height: panelHeight } = useElementSize(panelRef)
 const previewHeight = computed(() => Math.round(panelHeight.value))
+const previewWidth = computed(() => Math.round(panelWidth.value))
+
+// Panel width is in grid cells, stored at the app-mode level so it
+// survives preset swaps and mode transitions. Only the dock presets
+// use this; float presets stay at the default 8-cell width.
+const appModeStore = useAppModeStore()
+const { panelWidthCells } = storeToRefs(appModeStore)
+
+const isDockPreset = computed(
+  () => preset.value === 'right-dock' || preset.value === 'left-dock'
+)
+
+// Compute the panel's own width in px from cell count. Overrides the
+// global --panel-dock-width token on this instance only so sibling
+// chrome that reads the token (AppChrome cell alignment) isn't
+// affected by the user's resize.
+const widthStyle = computed(() => {
+  if (!isDockPreset.value) return undefined
+  return {
+    width: `calc(${panelWidthCells.value} * var(--spacing-layout-cell) + ${panelWidthCells.value - 1} * var(--spacing-layout-gutter))`
+  }
+})
+
+// Resize drag: active only when the panel is docked. The handle is an
+// invisible hit-strip on the panel's inner edge so the affordance
+// doesn't clutter the chrome — the cursor change on hover is the
+// signal. Drag direction is determined by which side is inner.
+const { startResize } = usePanelResize({
+  side: computed(() => (preset.value === 'right-dock' ? 'right' : 'left')),
+  widthCells: panelWidthCells
+})
 
 // Preset positions — each preset pins one anchor edge (top/left or
 // bottom/right). Dock presets use a fixed `height` so the panel
 // stretches to fill the vertical slot (small content leaves dead
 // space at the bottom rather than the panel shrinking). Float
-// presets use `max-height` so they remain content-driven. Kept in a
-// map rather than inline cn() so each preset's geometry reads as one
-// block. Mirrors PanelDragPreview exactly — keep them in sync.
+// presets use `max-height` so they remain content-driven.
+//
+// Left-anchored presets offset by `--sidebar-width` so the panel
+// clears the Comfy icon strip when the sidebar is on the left;
+// falls back to 0px when the sidebar is on the right / hidden. Same
+// pattern as BuilderMenu + BuilderBackdrop.
+//
+// Kept in a map rather than inline cn() so each preset's geometry
+// reads as one block. Mirrors PanelDragPreview exactly — keep them
+// in sync.
 const PRESET_CLASSES: Record<PanelPreset, string> = {
   'right-dock':
     'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)-var(--spacing-layout-gutter))]',
   'left-dock':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-(--spacing-layout-outer) h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
+    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
   'float-tr':
     'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
   'float-br':
     'bottom-(--spacing-layout-outer) right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
   'float-tl':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
+    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
   'float-bl':
-    'bottom-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
+    'bottom-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
 }
 
 // Build the full class list for the floating-panel section. Classname
@@ -109,7 +150,11 @@ const sectionClass = computed(() =>
     // parent surface (LayoutView / BuilderPanel root) is pointer-events-
     // none to let canvas clicks fall through empty chrome space.
     'floating-panel pointer-events-auto absolute z-10 flex flex-col overflow-hidden',
-    'w-(--panel-dock-width,440px) max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
+    // Width: dock presets pull from the reactive panelWidthCells state
+    // (applied via :style below) so the user can drag-resize; float
+    // presets fall back to the default --panel-dock-width token.
+    !isDockPreset.value && 'w-(--panel-dock-width,440px)',
+    'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
     'rounded-[10px] border border-white/8 bg-layout-cell backdrop-blur-sm',
     'shadow-[0_2px_4px_rgb(0_0_0/0.4),0_16px_48px_rgb(0_0_0/0.45)]',
     'duration-layout ease-layout',
@@ -117,8 +162,14 @@ const sectionClass = computed(() =>
     // only opacity tweens (position is driven by pointer, not CSS) so
     // the multi-property transition below would cause a trailing easing
     // pop when the commit lands.
+    //
+    // Fade the live panel heavily while dragging so the PanelDragPreview
+    // (which may land at the same preset the panel is already docked
+    // at — e.g., mousing around the right half while docked-right)
+    // reads as the dominant blue outline rather than being masked by
+    // the live panel's own contents.
     movable && isDragging.value
-      ? 'opacity-[0.55] transition-opacity'
+      ? 'opacity-[0.15] transition-opacity'
       : 'transition-[top,bottom,left,right,max-height,height,opacity]',
     PRESET_CLASSES[preset.value],
     // Collapsed state: release size constraints (height, max-height) but
@@ -162,6 +213,8 @@ const menuEntries = computed<MenuItem[]>(() => [
     command: () => {
       preset.value = defaultPreset
       collapsed.value = false
+      // Reset drag-resized width back to the default 8-cell dock.
+      panelWidthCells.value = 8
       emit('reset-layout')
     }
   }
@@ -169,7 +222,23 @@ const menuEntries = computed<MenuItem[]>(() => [
 </script>
 
 <template>
-  <section ref="panelRef" :class="sectionClass">
+  <section ref="panelRef" :class="sectionClass" :style="widthStyle">
+    <!-- Invisible resize hit-strip pinned to the panel's inner edge —
+         left edge for right-dock, right edge for left-dock. 6px wide
+         so it's easy to grab without cluttering the chrome with a
+         visible handle; the ew-resize cursor on hover is the only
+         affordance. Dock presets only — float panels stay at default
+         width. -->
+    <div
+      v-if="isDockPreset"
+      :class="
+        cn(
+          'absolute inset-y-0 z-20 w-[6px] cursor-ew-resize',
+          preset === 'right-dock' ? 'left-0' : 'right-0'
+        )
+      "
+      @pointerdown="startResize"
+    />
     <!-- Vizcom-style header strip: also the drag grip when `movable`.
          Distinct header-fill so the grabbable region reads at a glance
          without a hard divider. Grab cursor switches to grabbing while
@@ -248,5 +317,6 @@ const menuEntries = computed<MenuItem[]>(() => [
     v-if="movable && isDragging"
     :preset="snapTarget"
     :panel-height="previewHeight"
+    :panel-width="previewWidth"
   />
 </template>

@@ -16,6 +16,7 @@ import type { PanelPreset } from './panelTypes'
 const props = defineProps<{
   preset: PanelPreset
   panelHeight?: number
+  panelWidth?: number
 }>()
 
 // Mirror FloatingPanel's preset positions. Dock presets use a fixed
@@ -29,21 +30,27 @@ const PRESET_CLASSES: Record<PanelPreset, string> = {
   'right-dock':
     'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)-var(--spacing-layout-gutter))]',
   'left-dock':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-(--spacing-layout-outer) h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
+    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
   'float-tr':
     'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
   'float-br':
     'bottom-(--spacing-layout-outer) right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
   'float-tl':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
+    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
   'float-bl':
-    'bottom-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
+    'bottom-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
 }
 
 const presetClass = computed(() => PRESET_CLASSES[props.preset])
-const heightStyle = computed(() =>
-  props.panelHeight != null ? { height: `${props.panelHeight}px` } : undefined
-)
+// Match the live panel's rendered dimensions so the preview lands the
+// same size the panel will — important when the user has drag-resized
+// the dock wider than the default.
+const sizeStyle = computed(() => {
+  const style: Record<string, string> = {}
+  if (props.panelHeight != null) style.height = `${props.panelHeight}px`
+  if (props.panelWidth != null) style.width = `${props.panelWidth}px`
+  return Object.keys(style).length > 0 ? style : undefined
+})
 </script>
 
 <template>
@@ -55,7 +62,7 @@ const heightStyle = computed(() =>
       'duration-layout pointer-events-none absolute z-20 w-(--panel-dock-width,440px) rounded-[10px] border-2 border-primary-background bg-primary-background/30 transition-[top,bottom,left,right,max-height] ease-layout',
       presetClass
     ]"
-    :style="heightStyle"
+    :style="sizeStyle"
     aria-hidden="true"
     data-testid="panel-drag-preview"
   />

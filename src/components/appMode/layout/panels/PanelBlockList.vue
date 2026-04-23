@@ -86,6 +86,8 @@ const originalById = computed(() => {
   >
     <!-- 16px row gap matches the grip width — the grip fills the gap
          exactly, with 4px dots centered so there's 6px clear per side. -->
+    <!-- 16px row gap matches the grip width — the grip fills the gap
+         exactly, with 4px dots centered so there's 6px clear per side. -->
     <li
       v-for="(row, rowIdx) in displayRows"
       :key="`row-${rowIdx}-${row[0]?.id}`"
@@ -182,7 +184,9 @@ const originalById = computed(() => {
 
 /* Multiline textareas grow with content via field-sizing:content
    (Chrome 123+, Safari 17+), capped at 50vh so a long prompt can't
-   push the Run button off-screen. */
+   push the Run button off-screen. Side-by-side textareas with
+   different content lengths don't align to a shared height today;
+   tracked as a known issue for a follow-up pass. */
 .panel-block__input[data-multiline='true'] :deep(textarea) {
   field-sizing: content;
   height: auto !important;

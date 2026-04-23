@@ -46,6 +46,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   // only for now; persistence is Phase 4-B.
   const panelPreset = ref<PanelPreset>('right-dock')
   const panelCollapsed = ref(false)
+  // Width of the dock panel in grid cells (8 = default 440px). Bumping
+  // this grows the panel by one cell + gutter per step (56px). Float
+  // presets ignore this; they stay at the default 8-cell width.
+  const panelWidthCells = ref(8)
   // Block layout inside the panel, shared with the builder's arrange step
   // for the same WYSIWYG reason — rearranging in either view mutates the
   // same 2D grid. Reconciliation against selectedInputs lives in
@@ -219,6 +223,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     panelCollapsed,
     panelPreset,
     panelRows,
+    panelWidthCells,
     pruneLinearData,
     removeSelectedInput,
     resetSelectedToWorkflow,

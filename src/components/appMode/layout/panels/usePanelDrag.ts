@@ -35,9 +35,24 @@ interface PresetAnchor {
   y: number
 }
 
+// Left-anchored presets clear the Comfy sidebar via `--sidebar-width`
+// (see FloatingPanel's PRESET_CLASSES). Mirror that in the snap-target
+// math so hovering near the panel's future landing point actually
+// snaps there — otherwise the anchor sits 25–50px left of where the
+// panel ends up, and a user who hovers over the icon strip "just
+// right" misses the target.
+function readSidebarWidth(): number {
+  if (typeof document === 'undefined') return 0
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue('--sidebar-width')
+    .trim()
+  const n = parseFloat(raw)
+  return Number.isFinite(n) ? n : 0
+}
+
 function presetAnchors(vw: number, vh: number): PresetAnchor[] {
   const rightX = vw - PANEL_HALF_WIDTH
-  const leftX = PANEL_HALF_WIDTH
+  const leftX = readSidebarWidth() + PANEL_HALF_WIDTH
   return [
     { preset: 'right-dock', x: rightX, y: vh * DOCK_V_CENTER },
     { preset: 'left-dock', x: leftX, y: vh * DOCK_V_CENTER },
