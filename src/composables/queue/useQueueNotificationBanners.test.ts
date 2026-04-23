@@ -17,7 +17,7 @@ type MockTask = {
   executionEndTimestamp?: number
   previewOutput?: {
     isImage: boolean
-    urlWithTimestamp: string
+    url: string
   }
 }
 
@@ -94,7 +94,7 @@ describe(useQueueNotificationBanners, () => {
     if (previewUrl) {
       task.previewOutput = {
         isImage,
-        urlWithTimestamp: previewUrl
+        url: previewUrl
       }
     }
 

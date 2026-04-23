@@ -395,11 +395,6 @@ export class ComfyApp {
     else return ''
   }
 
-  getRandParam() {
-    if (isCloud) return ''
-    return '&rand=' + Math.random()
-  }
-
   static onClipspaceEditorSave() {
     if (ComfyApp.clipspace_return_node) {
       ComfyApp.pasteFromClipspace(ComfyApp.clipspace_return_node)
