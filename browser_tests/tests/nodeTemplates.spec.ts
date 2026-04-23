@@ -68,12 +68,16 @@ function defineNodeTemplatesTests(mode: NodeMode) {
       const row = manageDialog.rowByName(name)
       await expect(row).toHaveCount(1)
 
-      const storeRequest = comfyPage.page.waitForRequest((req) =>
-        isStoreTemplatesRequest(req.url(), req.method())
+      const storeResponse = comfyPage.page.waitForResponse((res) =>
+        isStoreTemplatesRequest(res.url(), res.request().method())
       )
       await row.getByRole('button', { name: 'Delete' }).click()
-      const body = (await storeRequest).postData() ?? ''
-      const stored = JSON.parse(body) as { name: string; data: string }[]
+      const response = await storeResponse
+      expect(response.ok()).toBe(true)
+      const stored = JSON.parse(response.request().postData() ?? '') as {
+        name: string
+        data: string
+      }[]
       expect(stored.map((t) => t.name)).not.toContain(name)
 
       await expect(row).toHaveCount(0)
@@ -141,18 +145,15 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
       await nodeTemplates.openManageDialog()
       await expect(manageDialog.rowByName(name)).toHaveCount(0)
 
-      // Arm the store-request wait BEFORE triggering the upload so we can
-      // safely re-open the dialog only after the imported template has been
-      // pushed to in-memory state AND persisted server-side.
-      const storeRequest = comfyPage.page.waitForRequest((req) =>
-        isStoreTemplatesRequest(req.url(), req.method())
+      const storeResponse = comfyPage.page.waitForResponse((res) =>
+        isStoreTemplatesRequest(res.url(), res.request().method())
       )
       await manageDialog.importInput.setInputFiles({
         name: 'templates.json',
         mimeType: 'application/json',
         buffer: Buffer.from(JSON.stringify(payload))
       })
-      await storeRequest
+      expect((await storeResponse).ok()).toBe(true)
       await manageDialog.waitForHidden()
 
       await nodeTemplates.openManageDialog()
