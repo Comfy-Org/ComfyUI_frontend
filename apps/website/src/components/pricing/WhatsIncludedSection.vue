@@ -42,7 +42,7 @@ const features: IncludedFeature[] = [
   {
     title: 'Custom nodes support',
     description:
-      'Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. <a href="https://docs.comfy.org" class="text-primary-comfy-yellow underline">Check out which nodes we support currently.</a> We\'re expanding support regularly based on demand and compatibility. <a href="https://docs.comfy.org" class="text-primary-comfy-yellow underline">See which nodes we\'re working on adding.</a>'
+      "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility."
   },
   {
     title: 'Partner Nodes',
