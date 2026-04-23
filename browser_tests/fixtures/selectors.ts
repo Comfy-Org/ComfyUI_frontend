@@ -76,6 +76,9 @@ export const TestIds = {
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
   },
+  nodeTemplates: {
+    manageDialog: 'manage-node-templates-dialog'
+  },
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
