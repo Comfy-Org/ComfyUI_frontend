@@ -33,6 +33,7 @@ jobs:
       report-url: ${{ steps.deploy.outputs.url }}
       screenshot-failures: ${{ steps.failures.outputs.screenshot }}
       other-failures: ${{ steps.failures.outputs.other }}
+      # Evaluated at job level (not from a step) — static expression.
       is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     steps:
       - uses: actions/checkout@v6
@@ -118,12 +119,17 @@ jobs:
       - name: Write job summary
         if: always() && !cancelled()
         uses: actions/github-script@v8
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          REPORT_URL: ${{ steps.deploy.outputs.url }}
+          SCREENSHOT_FAILURES: ${{ steps.failures.outputs.screenshot }}
+          OTHER_FAILURES: ${{ steps.failures.outputs.other }}
         with:
           script: |
-            const passed = '${{ steps.tests.outcome }}' === 'success'
-            const reportUrl = '${{ steps.deploy.outputs.url }}'
-            const screenshotFailures = parseInt('${{ steps.failures.outputs.screenshot }}') || 0
-            const otherFailures = parseInt('${{ steps.failures.outputs.other }}') || 0
+            const passed = process.env.TEST_OUTCOME === 'success'
+            const reportUrl = process.env.REPORT_URL
+            const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
+            const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
 
             const lines = ['## 🌐 Website E2E', '']
 
@@ -191,15 +197,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Build section content
+      - name: Build e2e section content
         id: content
         uses: actions/github-script@v8
+        env:
+          TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
+          REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
+          SCREENSHOT_FAILURES: ${{ needs.website-e2e.outputs.screenshot-failures }}
+          OTHER_FAILURES: ${{ needs.website-e2e.outputs.other-failures }}
         with:
           script: |
-            const passed = '${{ needs.website-e2e.outputs.test-outcome }}' === 'success'
-            const reportUrl = '${{ needs.website-e2e.outputs.report-url }}'
-            const screenshotFailures = parseInt('${{ needs.website-e2e.outputs.screenshot-failures }}') || 0
-            const otherFailures = parseInt('${{ needs.website-e2e.outputs.other-failures }}') || 0
+            const passed = process.env.TEST_OUTCOME === 'success'
+            const reportUrl = process.env.REPORT_URL
+            const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
+            const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
 
             const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
 

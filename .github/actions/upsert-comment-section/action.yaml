@@ -1,18 +1,21 @@
 name: Upsert Comment Section
-description: Manage a consolidated PR comment with independently-updatable sections
+description: >
+  Manage a consolidated PR comment with independently-updatable sections.
+  All website CI workflows share the marker <!-- WEBSITE_CI_REPORT -->.
+  Valid section names: "e2e", "preview", "screenshot-update".
 
 inputs:
   pr-number:
     description: PR number to comment on
     required: true
   section-name:
-    description: Unique section identifier (e.g., "preview", "e2e")
+    description: 'Section identifier: "e2e", "preview", or "screenshot-update"'
     required: true
   section-content:
     description: Markdown content for this section
     required: true
   comment-marker:
-    description: Top-level HTML comment marker for finding the consolidated comment
+    description: Top-level HTML comment marker (must be <!-- WEBSITE_CI_REPORT --> for all callers)
     required: true
   token:
     description: GitHub token with pull-requests write permission
@@ -39,16 +42,14 @@ runs:
           const sectionEnd = `<!-- section:${sectionName}:end -->`
           const sectionBlock = `${sectionStart}\n${sectionContent}\n${sectionEnd}`
 
+          // Escape special regex characters in delimiter strings
           const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-          const comments = await github.paginate(
-            github.rest.issues.listComments,
-            {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            }
-          )
+          const { data: comments } = await github.rest.issues.listComments({
+            ...context.repo,
+            issue_number: prNumber,
+            per_page: 100
+          })
 
           const existing = comments.find(
             (c) =>
@@ -64,15 +65,16 @@ runs:
             })
           }
 
+          const body = existing.body ?? ''
           const sectionRegex = new RegExp(
             `${escapeRegex(sectionStart)}[\\s\\S]*?${escapeRegex(sectionEnd)}`
           )
-          const body = sectionRegex.test(existing.body)
-            ? existing.body.replace(sectionRegex, sectionBlock)
-            : existing.body.trimEnd() + '\n\n' + sectionBlock
+          const updated = sectionRegex.test(body)
+            ? body.replace(sectionRegex, sectionBlock)
+            : body.trimEnd() + '\n\n' + sectionBlock
 
           return github.rest.issues.updateComment({
             ...context.repo,
             comment_id: existing.id,
-            body
+            body: updated
           })
