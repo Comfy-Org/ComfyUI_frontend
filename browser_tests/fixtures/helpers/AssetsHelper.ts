@@ -15,6 +15,7 @@ const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
 const assetExportRoutePattern = '**/api/assets/export'
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
+const viewRoutePattern = /\/api\/view(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
 /**
@@ -174,6 +175,7 @@ export class AssetsHelper {
     null
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
     null
+  private viewRouteHandler: ((route: Route) => Promise<void>) | null = null
   private deleteHistoryRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private generatedJobs: RawJobListItem[] = []
@@ -184,6 +186,10 @@ export class AssetsHelper {
   private readonly jobDetailRouteHandlers = new Map<
     string,
     (route: Route) => Promise<void>
+  >()
+  private readonly inputAssetFiles = new Map<
+    string,
+    { path?: string; body?: Buffer; contentType?: string }
   >()
 
   constructor(private readonly page: Page) {}
@@ -356,6 +362,40 @@ export class AssetsHelper {
   }
 
   /**
+   * Intercepts `GET /api/view?filename=...&type=input[&subfolder=...]`
+   * and serves a real file. Required by `extractWorkflowFromAsset` for
+   * input-asset path coverage; the filename key must match the query
+   * parameter the production `getAssetUrl()` builds.
+   */
+  async mockInputAssetFile(
+    filename: string,
+    file: { path?: string; body?: Buffer; contentType?: string }
+  ): Promise<void> {
+    this.inputAssetFiles.set(filename, file)
+
+    if (this.viewRouteHandler) return
+
+    this.viewRouteHandler = async (route: Route) => {
+      const url = new URL(route.request().url())
+      const requested = url.searchParams.get('filename')
+      const entry = requested ? this.inputAssetFiles.get(requested) : undefined
+
+      if (!entry) {
+        await route.fulfill({ status: 404, body: '' })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        ...(entry.contentType && { contentType: entry.contentType }),
+        ...(entry.path ? { path: entry.path } : { body: entry.body ?? '' })
+      })
+    }
+
+    await this.page.route(viewRoutePattern, this.viewRouteHandler)
+  }
+
+  /**
    * Mock the POST /api/history endpoint used for deleting history items.
    * On receiving a `{ delete: [id] }` payload, removes matching jobs from
    * the in-memory mock state so subsequent /api/jobs fetches reflect the
@@ -396,6 +436,7 @@ export class AssetsHelper {
     this.assetExportRequests = []
     this.assetExportResponse = null
     this.importedFiles = []
+    this.inputAssetFiles.clear()
 
     if (this.jobsRouteHandler) {
       await this.page.unroute(jobsListRoutePattern, this.jobsRouteHandler)
@@ -424,6 +465,11 @@ export class AssetsHelper {
         this.inputFilesRouteHandler
       )
       this.inputFilesRouteHandler = null
+    }
+
+    if (this.viewRouteHandler) {
+      await this.page.unroute(viewRoutePattern, this.viewRouteHandler)
+      this.viewRouteHandler = null
     }
 
     if (this.deleteHistoryRouteHandler) {
