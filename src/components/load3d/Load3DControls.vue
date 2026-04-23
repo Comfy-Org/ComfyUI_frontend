@@ -123,7 +123,7 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   isSplatModel = false,

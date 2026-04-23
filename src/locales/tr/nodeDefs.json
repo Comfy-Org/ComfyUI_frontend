@@ -483,9 +483,17 @@
         "name": "first_frame",
         "tooltip": "Video için ilk kare görseli."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "İlk kare olarak kullanılacak Seedance asset_id. first_frame görsel girişiyle karşılıklı olarak dışlayıcıdır."
+      },
       "last_frame": {
         "name": "last_frame",
         "tooltip": "Video için son kare görseli."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "Son kare olarak kullanılacak Seedance asset_id. last_frame görsel girişiyle karşılıklı olarak dışlayıcıdır."
       },
       "model": {
         "name": "model",
@@ -531,6 +539,9 @@
       "model": {
         "name": "model",
         "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_auto_downscale": {
+        "name": "otomatik_küçültme"
       },
       "model_duration": {
         "name": "süre"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Seedance 2.0 kişisel görsel varlığı oluşturur. Girdi görselini yükler ve belirtilen varlık grubuna kaydeder. group_id boşsa, yeni bir grup oluşturmak için gerçek kişi H5 doğrulama akışını başlatır ve ardından varlığı ekler.",
+    "display_name": "ByteDance Görsel Varlık Oluştur",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Aynı kişi için tekrar eden insan doğrulamasını atlamak için mevcut bir Seedance varlık grup kimliğini kullanın. Boş bırakılırsa, tarayıcıda gerçek kişi doğrulaması yapılır ve yeni bir grup oluşturulur."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Kişisel varlık olarak kaydedilecek görsel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Seedance 2.0 kişisel video varlığı oluşturur. Girdi videosunu yükler ve belirtilen varlık grubuna kaydeder. group_id boşsa, yeni bir grup oluşturmak için gerçek kişi H5 doğrulama akışını başlatır ve ardından varlığı ekler.",
+    "display_name": "ByteDance Video Varlık Oluştur",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Aynı kişi için tekrar eden insan doğrulamasını atlamak için mevcut bir Seedance varlık grup kimliğini kullanın. Boş bırakılırsa, tarayıcıda gerçek kişi doğrulaması yapılır ve yeni bir grup oluşturulur."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Kişisel varlık olarak kaydedilecek video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -3683,6 +3742,39 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Gürültüyü oluşturmak için kullanılan rastgele tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Kare Enterpolasyonu",
+    "inputs": {
+      "images": {
+        "name": "görseller"
+      },
+      "interp_model": {
+        "name": "enterpolasyon_modeli"
+      },
+      "multiplier": {
+        "name": "çarpan"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Kare Enterpolasyon Modeli Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_adı",
+        "tooltip": "'frame_interpolation' klasörüne yerleştirilmiş bir kare enterpolasyon modeli seçin."
       }
     },
     "outputs": {
@@ -17506,6 +17598,10 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Videonun metin açıklaması"
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite ve veo-3.0 modelleri için mevcut değildir."
       },
       "seed": {
         "name": "tohum",

@@ -483,9 +483,17 @@
         "name": "primeiro_frame",
         "tooltip": "Imagem do primeiro frame para o vídeo."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "asset_id do Seedance a ser usado como o primeiro quadro. Mutuamente exclusivo com a entrada de imagem first_frame."
+      },
       "last_frame": {
         "name": "último_frame",
         "tooltip": "Imagem do último frame para o vídeo."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "asset_id do Seedance a ser usado como o último quadro. Mutuamente exclusivo com a entrada de imagem last_frame."
       },
       "model": {
         "name": "modelo",
@@ -531,6 +539,9 @@
       "model": {
         "name": "modelo",
         "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_duration": {
         "name": "duração"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Crie um ativo de imagem pessoal Seedance 2.0. Faz upload da imagem de entrada e a registra no grupo de ativos informado. Se o group_id estiver vazio, executa um fluxo de autenticação H5 de pessoa real para criar um novo grupo antes de adicionar o ativo.",
+    "display_name": "ByteDance Criar Ativo de Imagem",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutilize um ID de grupo de ativos Seedance existente para evitar repetidas verificações humanas para a mesma pessoa. Deixe em branco para executar a autenticação de pessoa real no navegador e criar um novo grupo."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Imagem para registrar como ativo pessoal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Crie um ativo de vídeo pessoal Seedance 2.0. Faz upload do vídeo de entrada e o registra no grupo de ativos informado. Se o group_id estiver vazio, executa um fluxo de autenticação H5 de pessoa real para criar um novo grupo antes de adicionar o ativo.",
+    "display_name": "ByteDance Criar Ativo de Vídeo",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutilize um ID de grupo de ativos Seedance existente para evitar repetidas verificações humanas para a mesma pessoa. Deixe em branco para executar a autenticação de pessoa real no navegador e criar um novo grupo."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vídeo para registrar como ativo pessoal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -3683,6 +3742,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "A seed aleatória usada para criar o ruído."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Interpolação de Quadros",
+    "inputs": {
+      "images": {
+        "name": "imagens"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "multiplicador"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Carregar Modelo de Interpolação de Quadros",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Selecione um modelo de interpolação de quadros para carregar. Os modelos devem ser colocados na pasta 'frame_interpolation'."
       }
     },
     "outputs": {
@@ -17506,6 +17598,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do vídeo"
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução do vídeo de saída. 4K não está disponível para os modelos veo-3.1-lite e veo-3.0."
       },
       "seed": {
         "name": "seed",

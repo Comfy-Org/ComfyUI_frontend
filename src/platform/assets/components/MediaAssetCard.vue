@@ -150,7 +150,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'

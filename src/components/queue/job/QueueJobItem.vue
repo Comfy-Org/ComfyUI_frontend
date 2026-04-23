@@ -198,7 +198,7 @@ import { useProgressBarBackground } from '@/composables/useProgressBarBackground
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   jobId,

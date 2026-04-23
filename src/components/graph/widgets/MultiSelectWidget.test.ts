@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'

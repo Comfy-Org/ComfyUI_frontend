@@ -9,7 +9,7 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import FormSearchInput from '../FormSearchInput.vue'
 import type { LayoutMode, SortOption } from './types'
