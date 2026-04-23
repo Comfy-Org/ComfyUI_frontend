@@ -154,12 +154,17 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
+  public readonly root: Locator
+  public readonly activeWorkflowLabel: Locator
+  public readonly searchInput: Locator
+
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
-  }
-
-  get root() {
-    return this.page.getByTestId(TestIds.sidebar.workflows)
+    this.root = page.getByTestId(TestIds.sidebar.workflows)
+    this.activeWorkflowLabel = this.root.locator(
+      '.comfyui-workflows-open .p-tree-node-selected .node-label'
+    )
+    this.searchInput = this.root.getByRole('combobox').first()
   }
 
   async getOpenedWorkflowNames() {
