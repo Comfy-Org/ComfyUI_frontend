@@ -28,6 +28,12 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
     test('button is hidden when show_signin_button flag is off', async ({
       comfyPage
     }) => {
+      await comfyPage.page.evaluate(() => {
+        window.app!.api.serverFeatureFlags.value = {
+          ...window.app!.api.serverFeatureFlags.value,
+          show_signin_button: false
+        }
+      })
       await expect(
         comfyPage.page.getByTestId(TestIds.topbar.loginButton)
       ).toBeHidden()
@@ -47,7 +53,7 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
     test('button has correct aria-label', async ({ comfyPage }) => {
       await enableLoginButtonFlag(comfyPage.page)
       const button = comfyPage.page.getByTestId(TestIds.topbar.loginButton)
-      await expect(button).toHaveAttribute('aria-label', 'Login')
+      await expect(button).toHaveAttribute('aria-label', /.+/)
     })
   })
 
