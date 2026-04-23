@@ -532,6 +532,9 @@
         "name": "模型",
         "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
       },
+      "model_auto_downscale": {
+        "name": "自動縮小"
+      },
       "model_duration": {
         "name": "時長"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "影格插值",
+    "inputs": {
+      "images": {
+        "name": "影像"
+      },
+      "interp_model": {
+        "name": "插值模型"
+      },
+      "multiplier": {
+        "name": "倍數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "載入影格插值模型",
+    "inputs": {
+      "model_name": {
+        "name": "模型名稱",
+        "tooltip": "選擇要載入的影格插值模型。模型必須放在「frame_interpolation」資料夾中。"
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "提示詞",
         "tooltip": "影片的文字描述"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出影片解析度。veo-3.1-lite 與 veo-3.0 模型不支援 4K。"
       },
       "seed": {
         "name": "種子值",

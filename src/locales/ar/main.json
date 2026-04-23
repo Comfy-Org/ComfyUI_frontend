@@ -808,6 +808,7 @@
     "IMAGE": "صورة",
     "IMAGECOMPARE": "مقارنة الصور",
     "INT": "عدد صحيح",
+    "INTERP_MODEL": "نموذج التفسير",
     "LATENT": "كامِن",
     "LATENT_OPERATION": "عملية كامنة",
     "LATENT_UPSCALE_MODEL": "نموذج تكبير latent",

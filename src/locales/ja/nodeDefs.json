@@ -532,6 +532,9 @@
         "name": "モデル",
         "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
       },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
+      },
       "model_duration": {
         "name": "継続時間"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノイズ生成に使用されるランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "フレーム補間",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "interp_model": {
+        "name": "補間モデル"
+      },
+      "multiplier": {
+        "name": "倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "フレーム補間モデルを読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "モデル名",
+        "tooltip": "読み込むフレーム補間モデルを選択してください。モデルは「frame_interpolation」フォルダに配置する必要があります。"
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "ビデオのテキスト説明"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力動画の解像度。4Kはveo-3.1-liteおよびveo-3.0モデルでは利用できません。"
       },
       "seed": {
         "name": "シード",

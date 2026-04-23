@@ -532,6 +532,9 @@
         "name": "model",
         "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
       },
+      "model_auto_downscale": {
+        "name": "otomatik_küçültme"
+      },
       "model_duration": {
         "name": "süre"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Gürültüyü oluşturmak için kullanılan rastgele tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Kare Enterpolasyonu",
+    "inputs": {
+      "images": {
+        "name": "görseller"
+      },
+      "interp_model": {
+        "name": "enterpolasyon_modeli"
+      },
+      "multiplier": {
+        "name": "çarpan"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Kare Enterpolasyon Modeli Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_adı",
+        "tooltip": "'frame_interpolation' klasörüne yerleştirilmiş bir kare enterpolasyon modeli seçin."
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Videonun metin açıklaması"
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite ve veo-3.0 modelleri için mevcut değildir."
       },
       "seed": {
         "name": "tohum",

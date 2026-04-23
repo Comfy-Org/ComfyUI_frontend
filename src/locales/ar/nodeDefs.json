@@ -532,6 +532,9 @@
         "name": "النموذج",
         "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
       },
+      "model_auto_downscale": {
+        "name": "التقليل التلقائي للحجم"
+      },
       "model_duration": {
         "name": "المدة"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضجيج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "استيفاء الإطارات",
+    "inputs": {
+      "images": {
+        "name": "الصور"
+      },
+      "interp_model": {
+        "name": "نموذج الاستيفاء"
+      },
+      "multiplier": {
+        "name": "المضاعف"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "تحميل نموذج استيفاء الإطارات",
+    "inputs": {
+      "model_name": {
+        "name": "اسم النموذج",
+        "tooltip": "اختر نموذج استيفاء الإطارات للتحميل. يجب وضع النماذج في مجلد 'frame_interpolation'."
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "النص_الوصفي",
         "tooltip": "الوصف النصي للفيديو"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة إخراج الفيديو. دقة 4K غير متوفرة لنماذج veo-3.1-lite و veo-3.0."
       },
       "seed": {
         "name": "البذرة",

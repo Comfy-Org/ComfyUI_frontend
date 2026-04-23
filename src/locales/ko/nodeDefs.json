@@ -532,6 +532,9 @@
         "name": "model",
         "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
       },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
       "model_duration": {
         "name": "duration"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "시드",
         "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "프레임 보간",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "배수"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "프레임 보간 모델 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "불러올 프레임 보간 모델을 선택하세요. 모델은 반드시 'frame_interpolation' 폴더에 위치해야 합니다."
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "비디오의 텍스트 설명"
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 비디오 해상도입니다. 4K는 veo-3.1-lite 및 veo-3.0 모델에서 지원되지 않습니다."
       },
       "seed": {
         "name": "시드",

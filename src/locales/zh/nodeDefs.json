@@ -532,6 +532,9 @@
         "name": "模型",
         "tooltip": "Seedance 2.0 提供最高质量；Seedance 2.0 Fast 优化速度。"
       },
+      "model_auto_downscale": {
+        "name": "自动降采样"
+      },
       "model_duration": {
         "name": "时长"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "种子",
         "tooltip": "用于生成噪声的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "帧插值",
+    "inputs": {
+      "images": {
+        "name": "图像"
+      },
+      "interp_model": {
+        "name": "插值模型"
+      },
+      "multiplier": {
+        "name": "倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "加载帧插值模型",
+    "inputs": {
+      "model_name": {
+        "name": "模型名称",
+        "tooltip": "选择要加载的帧插值模型。模型文件需放置在 'frame_interpolation' 文件夹中。"
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "提示词",
         "tooltip": "视频的文本描述"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "输出视频分辨率。veo-3.1-lite 和 veo-3.0 模型不支持 4K。"
       },
       "seed": {
         "name": "随机种",

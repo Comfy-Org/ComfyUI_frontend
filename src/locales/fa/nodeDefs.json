@@ -532,6 +532,9 @@
         "name": "مدل",
         "tooltip": "Seedance 2.0 برای بالاترین کیفیت؛ Seedance 2.0 Fast برای بهینه‌سازی سرعت."
       },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
       "model_duration": {
         "name": "مدت زمان"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "میان‌یابی فریم",
+    "inputs": {
+      "images": {
+        "name": "تصاویر"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "ضریب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "بارگذاری مدل میان‌یابی فریم",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "یک مدل میان‌یابی فریم برای بارگذاری انتخاب کنید. مدل‌ها باید در پوشه 'frame_interpolation' قرار داشته باشند."
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "پرامپت",
         "tooltip": "توضیح متنی ویدیو"
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی ویدیو. وضوح ۴K برای مدل‌های veo-3.1-lite و veo-3.0 در دسترس نیست."
       },
       "seed": {
         "name": "seed",

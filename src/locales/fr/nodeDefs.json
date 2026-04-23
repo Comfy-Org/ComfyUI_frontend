@@ -532,6 +532,9 @@
         "name": "modèle",
         "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
       },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
       "model_duration": {
         "name": "durée"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Interpolation d’images",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "multiplicateur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Charger un modèle d’interpolation d’images",
+    "inputs": {
+      "model_name": {
+        "name": "nom_du_modèle",
+        "tooltip": "Sélectionnez un modèle d’interpolation d’images à charger. Les modèles doivent être placés dans le dossier 'frame_interpolation'."
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Description textuelle de la vidéo"
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution vidéo de sortie. La 4K n’est pas disponible pour les modèles veo-3.1-lite et veo-3.0."
       },
       "seed": {
         "name": "graine",

@@ -532,6 +532,9 @@
         "name": "модель",
         "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
       },
+      "model_auto_downscale": {
+        "name": "автоматическое уменьшение масштаба"
+      },
       "model_duration": {
         "name": "длительность"
       },
@@ -3683,6 +3686,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "Случайное зерно, используемое для создания шума."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Интерполяция кадров",
+    "inputs": {
+      "images": {
+        "name": "изображения"
+      },
+      "interp_model": {
+        "name": "модель интерполяции"
+      },
+      "multiplier": {
+        "name": "множитель"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Загрузка модели интерполяции кадров",
+    "inputs": {
+      "model_name": {
+        "name": "название модели",
+        "tooltip": "Выберите модель интерполяции кадров для загрузки. Модели должны быть размещены в папке 'frame_interpolation'."
       }
     },
     "outputs": {
@@ -17506,6 +17542,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Текстовое описание видео"
+      },
+      "resolution": {
+        "name": "разрешение",
+        "tooltip": "Разрешение выходного видео. 4K недоступно для моделей veo-3.1-lite и veo-3.0."
       },
       "seed": {
         "name": "seed",

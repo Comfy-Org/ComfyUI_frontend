@@ -808,6 +808,7 @@
     "IMAGE": "تصویر",
     "IMAGECOMPARE": "مقایسه تصویر",
     "INT": "عدد صحیح",
+    "INTERP_MODEL": "مدل INTERP",
     "LATENT": "latent",
     "LATENT_OPERATION": "عملیات latent",
     "LATENT_UPSCALE_MODEL": "مدل بزرگ‌نمایی latent",

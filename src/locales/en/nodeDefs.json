@@ -540,6 +540,9 @@
       "control_after_generate": {
         "name": "control after generate"
       },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
       "model_duration": {
         "name": "duration"
       },
@@ -3683,6 +3686,39 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Frame Interpolate",
+    "inputs": {
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "images": {
+        "name": "images"
+      },
+      "multiplier": {
+        "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Load Frame Interpolation Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Select a frame interpolation model to load. Models must be placed in the 'frame_interpolation' folder."
       }
     },
     "outputs": {
@@ -11583,7 +11619,7 @@
     }
   },
   "OpenAIGPTImage1": {
-    "display_name": "OpenAI GPT Image 1.5",
+    "display_name": "OpenAI GPT Image 2",
     "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
@@ -17479,13 +17515,17 @@
         "name": "aspect_ratio",
         "tooltip": "Aspect ratio of the output video"
       },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output video resolution. 4K is not available for veo-3.1-lite and veo-3.0 models."
+      },
       "negative_prompt": {
         "name": "negative_prompt",
         "tooltip": "Negative text prompt to guide what to avoid in the video"
       },
       "duration_seconds": {
         "name": "duration_seconds",
-        "tooltip": "Duration of the output video in seconds (Veo 3 only supports 8 seconds)"
+        "tooltip": "Duration of the output video in seconds"
       },
       "enhance_prompt": {
         "name": "enhance_prompt",
