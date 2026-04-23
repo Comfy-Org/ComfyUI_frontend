@@ -104,12 +104,6 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
             end: `+=${options.itemCount * vhPerItem}%`,
             pin: true,
             scrub: true,
-            snap: {
-              snapTo: 1 / (options.itemCount - 1),
-              duration: { min: 0.2, max: 0.6 },
-              delay: 0.1,
-              ease: 'power1.inOut'
-            },
             onRefresh: cacheLayout,
             onUpdate(self) {
               const index = self.progress * (options.itemCount - 1)
