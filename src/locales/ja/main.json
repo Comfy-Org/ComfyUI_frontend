@@ -808,6 +808,7 @@
     "IMAGE": "画像",
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
+    "INTERP_MODEL": "補間モデル",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",

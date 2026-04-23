@@ -808,6 +808,7 @@
     "IMAGE": "이미지",
     "IMAGECOMPARE": "이미지 비교",
     "INT": "정수",
+    "INTERP_MODEL": "INTERP_MODEL",
     "LATENT": "잠재 데이터",
     "LATENT_OPERATION": "잠재 연산",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
