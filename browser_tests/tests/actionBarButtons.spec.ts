@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -6,6 +7,32 @@ import { TestIds } from '@e2e/fixtures/selectors'
 const ICON_CLASS = 'icon-[lucide--star]'
 const BUTTON_LABEL = 'Test Action'
 const BUTTON_TOOLTIP = 'Test action tooltip'
+
+async function registerTestButton(
+  page: Page,
+  opts: {
+    name?: string
+    icon?: string
+    label?: string
+    tooltip?: string
+    onClick?: () => void
+  } = {}
+): Promise<void> {
+  await page.evaluate(
+    ({ name, icon, label, tooltip }) => {
+      window.app!.registerExtension({
+        name,
+        actionBarButtons: [{ icon, label, tooltip, onClick: () => {} }]
+      })
+    },
+    {
+      name: opts.name ?? 'TestActionBarButton',
+      icon: opts.icon ?? ICON_CLASS,
+      label: opts.label ?? BUTTON_LABEL,
+      tooltip: opts.tooltip ?? BUTTON_TOOLTIP
+    }
+  )
+}
 
 test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -16,10 +43,9 @@ test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
     test('container is hidden when no extension registers buttons', async ({
       comfyPage
     }) => {
-      const container = comfyPage.page.getByTestId(
-        TestIds.topbar.actionBarButtons
-      )
-      await expect(container).toBeHidden()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.topbar.actionBarButtons)
+      ).toBeHidden()
     })
   })
 
@@ -27,16 +53,7 @@ test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
     test('registered button is visible with correct label', async ({
       comfyPage
     }) => {
-      await comfyPage.page.evaluate(
-        ({ icon, label, tooltip }) => {
-          window.app!.registerExtension({
-            name: 'TestActionBarButton',
-            actionBarButtons: [{ icon, label, tooltip, onClick: () => {} }]
-          })
-        },
-        { icon: ICON_CLASS, label: BUTTON_LABEL, tooltip: BUTTON_TOOLTIP }
-      )
-
+      await registerTestButton(comfyPage.page)
       const container = comfyPage.page.getByTestId(
         TestIds.topbar.actionBarButtons
       )
@@ -48,23 +65,12 @@ test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
     })
 
     test('button icon is rendered', async ({ comfyPage }) => {
-      await comfyPage.page.evaluate(
-        ({ icon, label, tooltip }) => {
-          window.app!.registerExtension({
-            name: 'TestActionBarButton',
-            actionBarButtons: [{ icon, label, tooltip, onClick: () => {} }]
-          })
-        },
-        { icon: ICON_CLASS, label: BUTTON_LABEL, tooltip: BUTTON_TOOLTIP }
-      )
-
-      const container = comfyPage.page.getByTestId(
-        TestIds.topbar.actionBarButtons
-      )
-      const icon = container
+      await registerTestButton(comfyPage.page)
+      const icon = comfyPage.page
+        .getByTestId(TestIds.topbar.actionBarButtons)
         .getByRole('button', { name: BUTTON_TOOLTIP })
         .locator('i')
-      await expect(icon).toHaveClass(new RegExp(ICON_CLASS))
+      await expect(icon).toHaveClass(ICON_CLASS)
     })
 
     test('multiple registered buttons all appear', async ({ comfyPage }) => {
@@ -147,16 +153,7 @@ test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
 
   test.describe('Mobile layout', { tag: ['@mobile'] }, () => {
     test('button label is hidden on mobile viewport', async ({ comfyPage }) => {
-      await comfyPage.page.evaluate(
-        ({ icon, label, tooltip }) => {
-          window.app!.registerExtension({
-            name: 'TestActionBarButton',
-            actionBarButtons: [{ icon, label, tooltip, onClick: () => {} }]
-          })
-        },
-        { icon: ICON_CLASS, label: BUTTON_LABEL, tooltip: BUTTON_TOOLTIP }
-      )
-
+      await registerTestButton(comfyPage.page)
       const container = comfyPage.page.getByTestId(
         TestIds.topbar.actionBarButtons
       )
