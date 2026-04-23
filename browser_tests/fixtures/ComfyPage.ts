@@ -425,6 +425,28 @@ export class ComfyPage {
   }
 }
 
+class ComfyFiles {
+  protected teardownCallbacks: (() => Promise<unknown>)[] = []
+
+  constructor(protected readonly comfyPage: ComfyPage) {}
+
+  async teardown() {
+    await Promise.all(this.teardownCallbacks.map((cb) => cb()))
+  }
+
+  deleteAfterTest(file: {
+    filename: string
+    subfolder?: string
+    type?: string
+  }) {
+    this.teardownCallbacks.push(() =>
+      this.comfyPage.request.delete(
+        `${this.comfyPage.url}/api/devtools/view?${new URLSearchParams(file)}`
+      )
+    )
+  }
+}
+
 export const testComfySnapToGridGridSize = 50
 
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
@@ -432,6 +454,7 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
+  comfyFiles: ComfyFiles
 }>({
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -509,6 +532,11 @@ export const comfyPageFixture = base.extend<{
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
     await use(comfyMouse)
+  },
+  comfyFiles: async ({ comfyPage }, use) => {
+    const comfyFiles = new ComfyFiles(comfyPage)
+    await use(comfyFiles)
+    await comfyFiles.teardown()
   }
 })
 
