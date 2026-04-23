@@ -385,6 +385,14 @@ export class AssetsHelper {
       subfolder?: string
     }
   ): Promise<void> {
+    const hasPath = typeof file.path === 'string'
+    const hasBody = file.body !== undefined
+    if (hasPath === hasBody) {
+      throw new Error(
+        'mockInputAssetFile expects exactly one of "path" or "body"'
+      )
+    }
+
     const type = file.type ?? 'input'
     const subfolder = file.subfolder ?? ''
     const key = AssetsHelper.buildAssetFileKey(filename, type, subfolder)
@@ -397,6 +405,10 @@ export class AssetsHelper {
     if (this.viewRouteHandler) return
 
     this.viewRouteHandler = async (route: Route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback()
+        return
+      }
       const url = new URL(route.request().url())
       const requestedName = url.searchParams.get('filename')
       const requestedType = url.searchParams.get('type') ?? 'output'
