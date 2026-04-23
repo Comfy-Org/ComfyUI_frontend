@@ -483,9 +483,17 @@
         "name": "首帧图像",
         "tooltip": "视频的首帧图像。"
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "用于第一帧的 Seedance asset_id。与 first_frame 图像输入互斥。"
+      },
       "last_frame": {
         "name": "末帧图像",
         "tooltip": "视频的末帧图像。"
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "用于最后一帧的 Seedance asset_id。与 last_frame 图像输入互斥。"
       },
       "model": {
         "name": "模型",
@@ -602,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "创建一个 Seedance 2.0 个人图像资产。上传输入图像并将其注册到指定资产组。如果 group_id 为空，则会运行真人 H5 认证流程，在添加资产前创建新分组。",
+    "display_name": "ByteDance 创建图像资产",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "复用已有的 Seedance 资产组 ID，可跳过同一人的重复人脸验证。留空将在浏览器中进行真人认证并创建新分组。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要注册为个人资产的图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "创建一个 Seedance 2.0 个人视频资产。上传输入视频并将其注册到指定资产组。如果 group_id 为空，则会运行真人 H5 认证流程，在添加资产前创建新分组。",
+    "display_name": "ByteDance 创建视频资产",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "复用已有的 Seedance 资产组 ID，可跳过同一人的重复人脸验证。留空将在浏览器中进行真人认证并创建新分组。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要注册为个人资产的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }

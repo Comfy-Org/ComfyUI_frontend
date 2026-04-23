@@ -483,9 +483,17 @@
         "name": "最初のフレーム",
         "tooltip": "動画の最初のフレーム画像です。"
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "最初のフレームとして使用するSeedanceのasset_id。他のfirst_frame画像入力とは排他的です。"
+      },
       "last_frame": {
         "name": "最後のフレーム",
         "tooltip": "動画の最後のフレーム画像です。"
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "最後のフレームとして使用するSeedanceのasset_id。他のlast_frame画像入力とは排他的です。"
       },
       "model": {
         "name": "モデル",
@@ -602,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Seedance 2.0の個人画像アセットを作成します。入力画像をアップロードし、指定したアセットグループに登録します。group_idが空の場合、実在認証フロー（H5）を実行して新しいグループを作成し、アセットを追加します。",
+    "display_name": "ByteDance 画像アセット作成",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "既存のSeedanceアセットグループIDを再利用して、同一人物の繰り返し認証を省略します。空欄の場合はブラウザで実在認証を実行し、新しいグループを作成します。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "個人アセットとして登録する画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Seedance 2.0の個人動画アセットを作成します。入力動画をアップロードし、指定したアセットグループに登録します。group_idが空の場合、実在認証フロー（H5）を実行して新しいグループを作成し、アセットを追加します。",
+    "display_name": "ByteDance 動画アセット作成",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "既存のSeedanceアセットグループIDを再利用して、同一人物の繰り返し認証を省略します。空欄の場合はブラウザで実在認証を実行し、新しいグループを作成します。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "個人アセットとして登録する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }

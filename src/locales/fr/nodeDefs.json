@@ -483,9 +483,17 @@
         "name": "première image",
         "tooltip": "Image de la première image pour la vidéo."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "ID d’actif Seedance à utiliser comme première image. Mutuellement exclusif avec l’entrée image first_frame."
+      },
       "last_frame": {
         "name": "dernière image",
         "tooltip": "Image de la dernière image pour la vidéo."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "ID d’actif Seedance à utiliser comme dernière image. Mutuellement exclusif avec l’entrée image last_frame."
       },
       "model": {
         "name": "modèle",
@@ -602,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Créez un actif image personnel Seedance 2.0. Télécharge l’image d’entrée et l’enregistre dans le groupe d’actifs indiqué. Si group_id est vide, lance une authentification H5 de personne réelle pour créer un nouveau groupe avant d’ajouter l’actif.",
+    "display_name": "ByteDance Créer un Actif Image",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Réutilisez un ID de groupe d’actifs Seedance existant pour éviter la vérification humaine répétée pour la même personne. Laissez vide pour lancer l’authentification de personne réelle dans le navigateur et créer un nouveau groupe."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image à enregistrer comme actif personnel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Créez un actif vidéo personnel Seedance 2.0. Télécharge la vidéo d’entrée et l’enregistre dans le groupe d’actifs indiqué. Si group_id est vide, lance une authentification H5 de personne réelle pour créer un nouveau groupe avant d’ajouter l’actif.",
+    "display_name": "ByteDance Créer un Actif Vidéo",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Réutilisez un ID de groupe d’actifs Seedance existant pour éviter la vérification humaine répétée pour la même personne. Laissez vide pour lancer l’authentification de personne réelle dans le navigateur et créer un nouveau groupe."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vidéo à enregistrer comme actif personnel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }

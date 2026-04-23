@@ -480,10 +480,6 @@
         "name": "model",
         "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
       },
-      "first_frame": {
-        "name": "first_frame",
-        "tooltip": "First frame image for the video."
-      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
@@ -492,9 +488,21 @@
         "name": "watermark",
         "tooltip": "Whether to add a watermark to the video."
       },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image for the video."
+      },
       "last_frame": {
         "name": "last_frame",
         "tooltip": "Last frame image for the video."
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "Seedance asset_id to use as the first frame. Mutually exclusive with the first_frame image input."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "Seedance asset_id to use as the last frame. Mutually exclusive with the last_frame image input."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -602,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "display_name": "ByteDance Create Image Asset",
+    "description": "Create a Seedance 2.0 personal image asset. Uploads the input image and registers it in the given asset group. If group_id is empty, runs a real-person H5 authentication flow to create a new group before adding the asset.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image to register as a personal asset."
+      },
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reuse an existing Seedance asset group ID to skip repeated human verification for the same person. Leave empty to run real-person authentication in the browser and create a new group."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "display_name": "ByteDance Create Video Asset",
+    "description": "Create a Seedance 2.0 personal video asset. Uploads the input video and registers it in the given asset group. If group_id is empty, runs a real-person H5 authentication flow to create a new group before adding the asset.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Video to register as a personal asset."
+      },
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reuse an existing Seedance asset group ID to skip repeated human verification for the same person. Leave empty to run real-person authentication in the browser and create a new group."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }

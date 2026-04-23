@@ -483,9 +483,17 @@
         "name": "首幀圖像",
         "tooltip": "影片的首幀圖像。"
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "作為第一幀使用的 Seedance asset_id。與 first_frame 圖像輸入互斥。"
+      },
       "last_frame": {
         "name": "末幀圖像",
         "tooltip": "影片的末幀圖像。"
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "作為最後一幀使用的 Seedance asset_id。與 last_frame 圖像輸入互斥。"
       },
       "model": {
         "name": "模型",
@@ -602,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "建立一個 Seedance 2.0 個人圖像資產。上傳輸入圖像並將其註冊到指定的資產群組。如果 group_id 為空，將執行真人 H5 認證流程以建立新群組後再新增資產。",
+    "display_name": "ByteDance 建立圖像資產",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "重複使用現有的 Seedance 資產群組 ID，可跳過同一人的重複人臉驗證。留空則會在瀏覽器中執行真人認證並建立新群組。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要註冊為個人資產的圖像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "建立一個 Seedance 2.0 個人影片資產。上傳輸入影片並將其註冊到指定的資產群組。如果 group_id 為空，將執行真人 H5 認證流程以建立新群組後再新增資產。",
+    "display_name": "ByteDance 建立影片資產",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "重複使用現有的 Seedance 資產群組 ID，可跳過同一人的重複人臉驗證。留空則會在瀏覽器中執行真人認證並建立新群組。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要註冊為個人資產的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
