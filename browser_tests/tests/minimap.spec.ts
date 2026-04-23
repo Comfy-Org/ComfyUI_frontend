@@ -35,13 +35,6 @@ function getMinimapLocators(comfyPage: ComfyPage) {
   }
 }
 
-function getCanvasOffset(page: Page): Promise<[number, number]> {
-  return page.evaluate(() => {
-    const ds = window.app!.canvas.ds
-    return [ds.offset[0], ds.offset[1]] as [number, number]
-  })
-}
-
 async function clickMinimapAt(
   overlay: Locator,
   page: Page,
@@ -203,7 +196,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const { container } = getMinimapLocators(comfyPage)
     await expect(container).toBeVisible()
 
-    const offsetBefore = await getCanvasOffset(comfyPage.page)
+    const offsetBefore = await readMainCanvasOffset(comfyPage.page)
 
     const minimapBox = await container.boundingBox()
     expect(minimapBox).toBeTruthy()
@@ -217,7 +210,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.nextFrame()
 
     await expect
-      .poll(() => getCanvasOffset(comfyPage.page))
+      .poll(() => readMainCanvasOffset(comfyPage.page))
       .not.toEqual(offsetBefore)
   })
 
