@@ -4,6 +4,7 @@ import {
   CREDITS_PER_USD,
   COMFY_CREDIT_RATE_CENTS,
   centsToCredits,
+  clampUsd,
   creditsToCents,
   creditsToUsd,
   formatCredits,
@@ -42,5 +43,30 @@ describe('comfyCredits helpers', () => {
     expect(formatCreditsFromCents({ cents: 100, locale })).toBe('211.00')
     expect(formatCreditsFromUsd({ usd: 1, locale })).toBe('211.00')
     expect(formatUsd({ value: 4.2, locale })).toBe('4.20')
+  })
+
+  test('clamps minimumFractionDigits when maximumFractionDigits is lower than default', () => {
+    expect(
+      formatCredits({
+        value: 1.5,
+        locale: 'en-US',
+        numberOptions: { maximumFractionDigits: 0 }
+      })
+    ).toBe('2')
+
+    expect(
+      formatUsd({
+        value: 3.456,
+        locale: 'en-US',
+        numberOptions: { maximumFractionDigits: 1 }
+      })
+    ).toBe('3.5')
+  })
+
+  test('clampUsd clamps values to the allowed purchase range', () => {
+    expect(clampUsd(50)).toBe(50)
+    expect(clampUsd(0.5)).toBe(1)
+    expect(clampUsd(2000)).toBe(1000)
+    expect(clampUsd(NaN)).toBe(0)
   })
 })
