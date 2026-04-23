@@ -7,7 +7,21 @@ import {
   withFreeTier,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import type { Locator, Page } from '@playwright/test'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
+
+async function openUserPopover(page: Page): Promise<Locator> {
+  await page.getByTestId(TestIds.user.currentUserIndicator).click()
+  return page.getByTestId(TestIds.user.currentUserPopover)
+}
+
+async function clickPopoverSubscribe(page: Page): Promise<void> {
+  const popover = await openUserPopover(page)
+  await popover
+    .getByRole('button', { name: /subscribe/i })
+    .first()
+    .click()
+}
 
 // Installs subscription mocks BEFORE comfyPage's first navigation via an
 // auto-fixture that depends on `page` (resolved before `comfyPage`).
@@ -75,12 +89,7 @@ unsubscribedTest.describe(
     unsubscribedTest(
       'User popover shows subscribe when unsubscribed',
       async ({ comfyPage }) => {
-        await comfyPage.page
-          .getByTestId(TestIds.user.currentUserIndicator)
-          .click()
-        const popover = comfyPage.page.getByTestId(
-          TestIds.user.currentUserPopover
-        )
+        const popover = await openUserPopover(comfyPage.page)
         await expect(
           popover.getByRole('button', { name: /subscribe/i })
         ).toBeVisible()
@@ -90,16 +99,7 @@ unsubscribedTest.describe(
     unsubscribedTest(
       'User popover subscribe click opens dialog',
       async ({ comfyPage }) => {
-        await comfyPage.page
-          .getByTestId(TestIds.user.currentUserIndicator)
-          .click()
-        const popover = comfyPage.page.getByTestId(
-          TestIds.user.currentUserPopover
-        )
-        await popover
-          .getByRole('button', { name: /subscribe/i })
-          .first()
-          .click()
+        await clickPopoverSubscribe(comfyPage.page)
         await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
       }
     )
@@ -130,17 +130,7 @@ unsubscribedTest.describe(
     unsubscribedTest(
       'Cleanup prevents stale subscription state after dialog close',
       async ({ comfyPage, subscriptionHelper }) => {
-        // Open popover → click subscribe → dialog opens, isAwaitingStripeSubscription = true
-        await comfyPage.page
-          .getByTestId(TestIds.user.currentUserIndicator)
-          .click()
-        const popover = comfyPage.page.getByTestId(
-          TestIds.user.currentUserPopover
-        )
-        await popover
-          .getByRole('button', { name: /subscribe/i })
-          .first()
-          .click()
+        await clickPopoverSubscribe(comfyPage.page)
         const dialog = comfyPage.page.getByRole('dialog')
         await expect(dialog).toBeVisible()
 
