@@ -258,6 +258,84 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       })
     })
 
+    test('live-updates the preview when size_mode is toggled', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+
+      // Default 512x512 falls out of `getResolution`'s DEFAULT_SIZE when no
+      // upstream image is connected and size_mode is `from_input`.
+      const DEFAULT = { width: 512, height: 512 }
+      const CUSTOM = { width: 64, height: 64 }
+
+      await test.step('initial from_input render uses default size', async () => {
+        await glsl.simulateExecutionOutput(ws)
+        await expect.poll(() => glsl.getPreviewNaturalSize()).toEqual(DEFAULT)
+      })
+
+      await test.step('switching to custom re-renders at the custom size', async () => {
+        await glsl.selectSizeMode('custom')
+        await expect(glsl.widthInput).toBeVisible()
+        await glsl.widthInput.fill(String(CUSTOM.width))
+        await glsl.widthInput.blur()
+        await glsl.heightInput.fill(String(CUSTOM.height))
+        await glsl.heightInput.blur()
+
+        await expect.poll(() => glsl.getPreviewNaturalSize()).toEqual(CUSTOM)
+      })
+
+      await test.step('switching back to from_input restores the default size', async () => {
+        await glsl.selectSizeMode('from_input')
+        await expect.poll(() => glsl.getPreviewNaturalSize()).toEqual(DEFAULT)
+      })
+    })
+
+    test('live-updates the preview when width or height widget changes', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+
+      await test.step('render initial 16x32 preview in custom mode', async () => {
+        await glsl.selectSizeMode('custom')
+        await expect(glsl.widthInput).toBeVisible()
+        await glsl.widthInput.fill('16')
+        await glsl.widthInput.blur()
+        await glsl.heightInput.fill('32')
+        await glsl.heightInput.blur()
+
+        await glsl.simulateExecutionOutput(ws)
+        await expect
+          .poll(() => glsl.getPreviewNaturalSize())
+          .toEqual({ width: 16, height: 32 })
+      })
+
+      await test.step('editing width widget re-renders at the new resolution', async () => {
+        const beforeSrc = await glsl.getPreviewSrc()
+        await glsl.widthInput.fill('48')
+        await glsl.widthInput.press('Enter')
+
+        await expect.poll(() => glsl.getPreviewSrc()).not.toBe(beforeSrc)
+        await expect
+          .poll(() => glsl.getPreviewNaturalSize())
+          .toEqual({ width: 48, height: 32 })
+      })
+
+      await test.step('editing height widget re-renders at the new resolution', async () => {
+        const beforeSrc = await glsl.getPreviewSrc()
+        await glsl.heightInput.fill('64')
+        await glsl.heightInput.press('Enter')
+
+        await expect.poll(() => glsl.getPreviewSrc()).not.toBe(beforeSrc)
+        await expect
+          .poll(() => glsl.getPreviewNaturalSize())
+          .toEqual({ width: 48, height: 64 })
+      })
+    })
+
     test('logs a compile failure then recovers when shader becomes valid again', async ({
       comfyPage,
       getWebSocket

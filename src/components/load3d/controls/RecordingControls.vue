@@ -63,6 +63,7 @@
       <div
         v-if="recordingDuration && recordingDuration > 0 && !isRecording"
         class="mt-1 text-center text-xs text-base-foreground"
+        data-testid="load3d-recording-duration"
       >
         {{ formatDuration(recordingDuration) }}
       </div>
