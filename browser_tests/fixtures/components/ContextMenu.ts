@@ -20,8 +20,16 @@ export class ContextMenu {
     await this.page.getByRole('menuitem', { name, exact: true }).click()
   }
 
+  /**
+   * Click a litegraph menu entry. Selects the most recently opened matching
+   * entry so nested submenu items can be reached without being shadowed by
+   * the parent menu still visible behind them.
+   */
   async clickLitegraphMenuItem(name: string): Promise<void> {
-    await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
+    await this.page
+      .locator('.litemenu-entry:visible', { hasText: name })
+      .last()
+      .click()
   }
 
   async isVisible(): Promise<boolean> {
