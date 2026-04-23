@@ -47,8 +47,10 @@ describe('SubgraphNode multi-instance widget isolation', () => {
 
     const instance1 = createTestSubgraphNode(subgraph, { id: 201 })
     const instance2 = createTestSubgraphNode(subgraph, { id: 202 })
+    const innerNodeId = String(node.id)
 
-    // Simulate what LGraph.configure does: call configure with different widgets_values
+    // Per-instance values are inlined as the optional {value} state on
+    // each proxyWidgets entry so identity and value cannot desync.
     instance1.configure({
       id: 201,
       type: subgraph.id,
@@ -59,8 +61,9 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 0,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
-      widgets_values: [10]
+      properties: {
+        proxyWidgets: [[innerNodeId, 'widget', null, { value: 10 }]]
+      }
     })
 
     instance2.configure({
@@ -73,8 +76,9 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 1,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
-      widgets_values: [20]
+      properties: {
+        proxyWidgets: [[innerNodeId, 'widget', null, { value: 20 }]]
+      }
     })
 
     const widgets1 = instance1.widgets!
@@ -86,8 +90,17 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(widgets2[0].value).toBe(20)
     expect(widgets1[0].serializeValue!(instance1, 0)).toBe(10)
     expect(widgets2[0].serializeValue!(instance2, 0)).toBe(20)
-    expect(instance1.serialize().widgets_values).toEqual([10])
-    expect(instance2.serialize().widgets_values).toEqual([20])
+
+    const serialized1 = instance1.serialize()
+    const serialized2 = instance2.serialize()
+    expect(serialized1.widgets_values).toBeUndefined()
+    expect(serialized2.widgets_values).toBeUndefined()
+    expect(serialized1.properties?.proxyWidgets).toEqual([
+      [innerNodeId, 'widget', null, { value: 10 }]
+    ])
+    expect(serialized2.properties?.proxyWidgets).toEqual([
+      [innerNodeId, 'widget', null, { value: 20 }]
+    ])
   })
 
   it('round-trips per-instance widget values through serialize and configure', () => {
@@ -100,6 +113,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     subgraph.inputNode.slots[0].connect(node.inputs[0], node)
 
     const originalInstance = createTestSubgraphNode(subgraph, { id: 301 })
+    const innerNodeId = String(node.id)
     originalInstance.configure({
       id: 301,
       type: subgraph.id,
@@ -110,8 +124,9 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 0,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
-      widgets_values: [33]
+      properties: {
+        proxyWidgets: [[innerNodeId, 'widget', null, { value: 33 }]]
+      }
     })
 
     const serialized = originalInstance.serialize()
@@ -166,6 +181,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     subgraph.inputNode.slots[0].connect(node.inputs[0], node)
 
     const originalInstance = createTestSubgraphNode(subgraph, { id: 601 })
+    const innerNodeId = String(node.id)
     originalInstance.configure({
       id: 601,
       type: subgraph.id,
@@ -176,8 +192,9 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 0,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
-      widgets_values: [33]
+      properties: {
+        proxyWidgets: [[innerNodeId, 'widget', null, { value: 33 }]]
+      }
     })
 
     const serialized = originalInstance.serialize()

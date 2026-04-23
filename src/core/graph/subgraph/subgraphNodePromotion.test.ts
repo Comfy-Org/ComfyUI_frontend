@@ -253,7 +253,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets).toHaveLength(0)
   })
 
-  test('serialize stores widgets_values for promoted views', () => {
+  test('serialize inlines promoted widget values into proxyWidgets entries', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -265,7 +265,10 @@ describe('Subgraph proxyWidgets', () => {
 
     const serialized = subgraphNode.serialize()
 
-    expect(serialized.widgets_values).toEqual(['value'])
+    expect(serialized.widgets_values).toBeUndefined()
+    expect(serialized.properties?.proxyWidgets).toStrictEqual([
+      [innerIds[0], 'stringWidget', null, { value: 'value' }]
+    ])
   })
 
   test('serialize preserves proxyWidgets in properties', () => {
@@ -284,8 +287,8 @@ describe('Subgraph proxyWidgets', () => {
     const serialized = subgraphNode.serialize()
 
     expect(serialized.properties?.proxyWidgets).toStrictEqual([
-      [innerIds[0], 'widgetA'],
-      [innerIds[0], 'widgetB']
+      [innerIds[0], 'widgetA', null, { value: 'a' }],
+      [innerIds[0], 'widgetB', null, { value: 'b' }]
     ])
   })
 

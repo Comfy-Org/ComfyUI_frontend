@@ -198,7 +198,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.resolveDeepest()?.widget.linkedWidgets
   }
 
-  private get _instanceKey(): string {
+  get instanceKey(): string {
     return this.disambiguatingSourceNodeId
       ? `${this.sourceNodeId}:${this.sourceWidgetName}:${this.disambiguatingSourceNodeId}`
       : `${this.sourceNodeId}:${this.sourceWidgetName}`
@@ -208,6 +208,70 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.disambiguatingSourceNodeId
       ? `${this.subgraphNode.subgraph.id}:${this.sourceNodeId}:${this.sourceWidgetName}:${this.disambiguatingSourceNodeId}`
       : `${this.subgraphNode.subgraph.id}:${this.sourceNodeId}:${this.sourceWidgetName}`
+  }
+
+  restorePerInstanceValue(value: IBaseWidget['value']): void {
+    const cloned = cloneWidgetValue(value)
+    this.subgraphNode._instanceWidgetValues.set(this.instanceKey, cloned)
+    setPromotedSourceWriteMeta(
+      this.subgraphNode.rootGraph,
+      this._sharedSourceKey,
+      {
+        value: cloneWidgetValue(value),
+        writerInstanceId: String(this.subgraphNode.id)
+      }
+    )
+    // Align shared state with the restored value so getTrackedValue's
+    // direct-edit self-heal doesn't mistake the pre-existing inner value
+    // for a post-load edit and discard the per-instance state.
+    // Unlike the value setter, skip captureSiblingFallbackValues — each
+    // loaded instance brings its own saved value, no fallback needed.
+    this._writeValueToSharedState(value)
+  }
+
+  private _writeValueToSharedState(value: IBaseWidget['value']): void {
+    const linkedWidgets = this.getLinkedInputWidgets()
+    if (linkedWidgets.length > 0) {
+      const widgetStore = useWidgetValueStore()
+      let didUpdateState = false
+      for (const linkedWidget of linkedWidgets) {
+        const state = widgetStore.getWidget(
+          this.graphId,
+          linkedWidget.nodeId,
+          linkedWidget.widgetName
+        )
+        if (state) {
+          state.value = value
+          didUpdateState = true
+        }
+      }
+
+      const resolved = this.resolveDeepest()
+      if (resolved) {
+        const resolvedState = widgetStore.getWidget(
+          this.graphId,
+          stripGraphPrefix(String(resolved.node.id)),
+          resolved.widget.name
+        )
+        if (resolvedState) {
+          resolvedState.value = value
+          didUpdateState = true
+        }
+      }
+
+      if (didUpdateState) return
+    }
+
+    const state = this.getWidgetState()
+    if (state) {
+      state.value = value
+      return
+    }
+
+    const resolved = this.resolveAtHost()
+    if (resolved && isWidgetValue(value)) {
+      resolved.widget.value = value
+    }
   }
 
   get value(): IBaseWidget['value'] {
@@ -232,7 +296,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     // Keep per-instance map in sync for execution (graphToPrompt)
     this.subgraphNode._instanceWidgetValues.set(
-      this._instanceKey,
+      this.instanceKey,
       cloneWidgetValue(value)
     )
     setPromotedSourceWriteMeta(
@@ -475,7 +539,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   private getTrackedValue(): IBaseWidget['value'] {
     const instanceValue = this.subgraphNode._instanceWidgetValues.get(
-      this._instanceKey
+      this.instanceKey
     )
     const sharedValue = this.getSharedValue()
 
@@ -491,7 +555,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       !isEqual(sharedValue, sourceWriteMeta.value)
     ) {
       this.subgraphNode._instanceWidgetValues.set(
-        this._instanceKey,
+        this.instanceKey,
         cloneWidgetValue(sharedValue)
       )
       return sharedValue
@@ -578,7 +642,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     for (const node of rootGraph.nodes) {
       if (node === this.subgraphNode || !node.isSubgraphNode()) continue
       if (node.subgraph.id !== this.subgraphNode.subgraph.id) continue
-      if (node._instanceWidgetValues.has(this._instanceKey)) continue
+      if (node._instanceWidgetValues.has(this.instanceKey)) continue
 
       const siblingView = node.widgets.find(
         (widget): widget is IPromotedWidgetView =>
@@ -590,7 +654,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       if (!siblingView) continue
 
       node._instanceWidgetValues.set(
-        this._instanceKey,
+        this.instanceKey,
         cloneWidgetValue(siblingView.value)
       )
     }

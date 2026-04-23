@@ -3,7 +3,14 @@ import { fromZodError } from 'zod-validation-error'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
+const proxyWidgetStateSchema = z.object({ value: z.unknown() })
 const proxyWidgetTupleSchema = z.union([
+  z.tuple([
+    z.string(),
+    z.string(),
+    z.union([z.string(), z.null()]),
+    proxyWidgetStateSchema
+  ]),
   z.tuple([z.string(), z.string(), z.string()]),
   z.tuple([z.string(), z.string()])
 ])

@@ -1654,7 +1654,7 @@ describe('SubgraphNode.widgets getter', () => {
 
     const clonedSerialized = clonedNode.serialize()
     expect(clonedSerialized.properties?.proxyWidgets).toStrictEqual([
-      [String(innerNode.id), 'widgetA']
+      [String(innerNode.id), 'widgetA', null, { value: 'a' }]
     ])
 
     const hydratedClone = createTestSubgraphNode(subgraphNode.subgraph, {
