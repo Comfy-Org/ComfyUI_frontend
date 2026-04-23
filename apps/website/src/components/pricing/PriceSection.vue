@@ -103,7 +103,7 @@ const plans: PricingPlan[] = [
     labelKey: 'pricing.enterprise.label',
     summaryKey: 'pricing.enterprise.description',
     ctaKey: 'pricing.enterprise.cta',
-    ctaHref: getRoutes(locale).contact,
+    ctaHref: getRoutes(locale).cloudEnterprise,
     featureIntroKey: 'pricing.enterprise.featureIntro',
     features: [
       { text: 'pricing.enterprise.feature1' },

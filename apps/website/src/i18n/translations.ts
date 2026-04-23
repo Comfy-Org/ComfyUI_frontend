@@ -1146,7 +1146,7 @@ const translations = {
     en: 'For teams running Comfy in production, and at scale.',
     'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
   },
-  'pricing.enterprise.cta': { en: 'CONTACT US', 'zh-CN': '联系我们' },
+  'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '联系我们' },
   'pricing.enterprise.featureIntro': {
     en: 'Everything in Pro, plus:',
     'zh-CN': '包含专业版全部能力，另加：'
