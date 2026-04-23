@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref, useId } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, ref, useId, watch } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -58,6 +59,7 @@ const rightImgRef = ref<HTMLElement>()
 const {
   activeIndex: activeCategory,
   isEnabled,
+  isPinned,
   scrollToIndex
 } = usePinScrub(
   { section: sectionRef, content: contentRef, nav: navRef },
@@ -74,20 +76,34 @@ const uid = useId()
 const leftBlobId = `left-blob-${uid}`
 const rightBlobId = `right-blob-${uid}`
 
+function navButtons() {
+  return navRef.value?.querySelectorAll<HTMLButtonElement>(':scope > button')
+}
+
+whenever(isPinned, () => {
+  navButtons()?.[activeCategory.value]?.focus({ preventScroll: true })
+})
+
+watch(activeCategory, (index) => {
+  if (!isPinned.value) return
+  navButtons()?.[index]?.focus({ preventScroll: true })
+})
+
 function onNavKeydown(event: KeyboardEvent) {
   const delta = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
   if (!delta) return
 
   event.preventDefault()
-  const next = Math.min(
-    categories.length - 1,
-    Math.max(0, activeCategory.value + delta)
-  )
-  scrollToIndex(next)
+  const current = activeCategory.value
+  const next = current + delta
 
-  const buttons =
-    navRef.value?.querySelectorAll<HTMLButtonElement>(':scope > button')
-  buttons?.[next]?.focus({ preventScroll: true })
+  if (next < 0 || next >= categories.length) {
+    navButtons()?.[current]?.blur()
+    return
+  }
+
+  scrollToIndex(next)
+  navButtons()?.[next]?.focus({ preventScroll: true })
 }
 
 function travelRange(el: HTMLElement) {

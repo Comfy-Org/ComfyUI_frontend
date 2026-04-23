@@ -43,6 +43,7 @@ function interpolateY(
 export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   const activeIndex = ref(0)
   const isEnabled = ref(false)
+  const isPinned = ref(false)
   let ctx: gsap.Context | undefined
   let scrollTriggerInstance: ScrollTrigger | undefined
 
@@ -104,6 +105,9 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
             end: `+=${options.itemCount * vhPerItem}%`,
             pin: true,
             scrub: true,
+            onToggle(self) {
+              isPinned.value = self.isActive
+            },
             onRefresh: cacheLayout,
             onUpdate(self) {
               const index = self.progress * (options.itemCount - 1)
@@ -132,5 +136,5 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
     ctx?.revert()
   })
 
-  return { activeIndex, isEnabled, scrollToIndex }
+  return { activeIndex, isEnabled, isPinned, scrollToIndex }
 }
