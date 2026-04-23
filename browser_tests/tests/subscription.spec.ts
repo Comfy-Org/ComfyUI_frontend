@@ -134,12 +134,9 @@ unsubscribedTest.describe(
         const dialog = comfyPage.page.getByRole('dialog')
         await expect(dialog).toBeVisible()
 
-        // Close dialog → SubscribeButton unmounts → onBeforeUnmount resets ref
         await dialog.getByRole('button', { name: /close/i }).first().click()
         await expect(dialog).toBeHidden()
 
-        // Now change subscription state — the unmounted SubscribeButton's watcher
-        // should not fire because isAwaitingStripeSubscription was reset.
         await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
         subscriptionHelper.setStatus({
           is_active: true,
@@ -148,7 +145,6 @@ unsubscribedTest.describe(
         })
         await subscriptionHelper.triggerSubscriptionRefetch()
 
-        // No dialog should reappear from the stale SubscribeButton state
         await expect(dialog).toBeHidden()
       }
     )
