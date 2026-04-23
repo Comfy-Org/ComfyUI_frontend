@@ -497,9 +497,11 @@ function cellTitle(cell: ChromeCell): string | undefined {
   background-color: transparent;
 }
 
-/* Disabled signal for variant="builder" — dim + no-select + no-click. */
+/* Disabled signal for variant="builder". Functionally disabled via
+   the `inert` attribute on the element; visually the cell stays full
+   opacity so the accent Run fill doesn't go washed-out. Hover cursor +
+   title tooltip still communicate "can't act here". */
 .app-chrome__cell--disabled {
-  opacity: 0.55;
   user-select: none;
   cursor: not-allowed;
 }

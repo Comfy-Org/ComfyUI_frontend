@@ -12,7 +12,7 @@
     <!-- Main toolbar -->
     <nav
       data-testid="builder-footer-nav"
-      class="panel-chrome flex items-center gap-2 p-2"
+      class="builder-footer__bar panel-chrome flex items-center gap-layout-gutter px-layout-gutter"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
         {{ t('builderMenu.exitAppBuilder') }}
@@ -170,7 +170,7 @@ const isSaved = computed(
 )
 
 const activeSaveClasses =
-  'bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/80'
+  'bg-primary-background text-white border border-cobalt-800 hover:bg-primary-background-hover'
 const disabledSaveClasses =
   'bg-secondary-background text-muted-foreground/50 disabled:opacity-100'
 
@@ -211,3 +211,12 @@ function onSetDefaultView(openAsApp: boolean) {
   setWorkflowDefaultView(workflow, openAsApp)
 }
 </script>
+
+<style scoped>
+/* Bar height is 1 grid cell — same as the feedback cell and every
+   other chrome cell. Horizontal padding only (via px-layout-gutter
+   in the class list) so vertical size stays locked to the grid. */
+.builder-footer__bar {
+  height: var(--spacing-layout-cell);
+}
+</style>

@@ -39,7 +39,7 @@ async function handleClick(e: Event) {
   <Button
     variant="primary"
     size="unset"
-    class="size-full rounded-lg text-layout-xl"
+    class="size-full rounded-lg border border-cobalt-800 text-layout-xl"
     data-testid="layout-run-cell"
     @click="handleClick"
   >

@@ -3,21 +3,23 @@
     class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing-layout-outer))] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
-    <div class="panel-chrome inline-flex items-center gap-1 p-2">
+    <div
+      class="builder-toolbar__bar panel-chrome inline-flex items-center gap-layout-gutter p-layout-gutter"
+    >
       <template v-for="(step, index) in steps" :key="step.id">
         <button
           :class="
             cn(
               stepClasses,
               activeStep === step.id
-                ? 'bg-interface-builder-mode-background'
+                ? 'bg-warning-background/15 ring-2 ring-warning-background ring-inset'
                 : 'bg-transparent hover:bg-secondary-background'
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
           @click="navigateToStep(step.id)"
         >
-          <StepBadge :step :index :model-value="activeStep" />
+          <StepBadge :index />
           <StepLabel :step />
         </button>
 
@@ -45,29 +47,40 @@ import { useBuilderSteps } from './useBuilderSteps'
 const { t } = useI18n()
 const { activeStep, navigateToStep } = useBuilderSteps()
 
+// h-full makes the button span the bar's inner content height, which is
+// 2 cells + 1 gutter − 2 gutter padding = 2 cells − 1 gutter = 88px.
+// Content (badge + label) vertically centers inside that.
 const stepClasses =
-  'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
+  'inline-flex h-full min-h-8 cursor-pointer items-center gap-4 rounded-lg px-4 transition-colors border-none'
 
 const selectInputsStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:inputs',
   title: t('builderToolbar.inputs'),
-  subtitle: t('builderToolbar.inputsDescription'),
-  icon: 'icon-[lucide--mouse-pointer-click]'
+  subtitle: t('builderToolbar.inputsDescription')
 }
 
 const selectOutputsStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:outputs',
   title: t('builderToolbar.outputs'),
-  subtitle: t('builderToolbar.outputsDescription'),
-  icon: 'icon-[lucide--mouse-pointer-click]'
+  subtitle: t('builderToolbar.outputsDescription')
 }
 
 const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:arrange',
   title: t('builderToolbar.arrange'),
-  subtitle: t('builderToolbar.arrangeDescription'),
-  icon: 'icon-[lucide--layout-panel-left]'
+  subtitle: t('builderToolbar.arrangeDescription')
 }
 
 const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
 </script>
+
+<style scoped>
+/* Bar height is 2 cells + 1 gutter (104px), same formula everything
+   else in the chrome uses. Puts the stepper on the same rhythm as the
+   FloatingPanel dock width (8 cells + 7 gutters) and the AppChrome
+   cells (48px tall) — vertical alignment composes from the same
+   tokens. */
+.builder-toolbar__bar {
+  height: calc(2 * var(--spacing-layout-cell) + var(--spacing-layout-gutter));
+}
+</style>
