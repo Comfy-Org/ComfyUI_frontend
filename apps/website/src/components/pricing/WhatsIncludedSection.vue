@@ -1,67 +1,59 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 interface IncludedFeature {
-  title: string
-  description: string
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
   isComingSoon?: boolean
 }
 
 const features: IncludedFeature[] = [
   {
-    title: 'Machine Setup',
-    description: 'Comfy Cloud runs on Blackwell RTX 6000 Pro – 96GB VRAM'
+    titleKey: 'pricing.included.feature1.title',
+    descriptionKey: 'pricing.included.feature1.description'
   },
   {
-    title: 'Time limit per job',
-    description:
-      'Each workflow run has a maximum duration of 30 minutes. On the Pro plan, the time limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.'
+    titleKey: 'pricing.included.feature2.title',
+    descriptionKey: 'pricing.included.feature2.description'
   },
   {
-    title: 'Usage',
-    description:
-      "You're only charged for <strong>active GPU</strong> time while a workflow is running. Idle time (e.g. time spent building workflows) does not consume GPU hours."
+    titleKey: 'pricing.included.feature3.title',
+    descriptionKey: 'pricing.included.feature3.description'
   },
   {
-    title: 'Credit balance',
-    description:
-      'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.'
+    titleKey: 'pricing.included.feature4.title',
+    descriptionKey: 'pricing.included.feature4.description'
   },
   {
-    title: 'Add more credits anytime',
-    description:
-      'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.'
+    titleKey: 'pricing.included.feature5.title',
+    descriptionKey: 'pricing.included.feature5.description'
   },
   {
-    title: 'Pre-installed models',
-    description: 'Access a library of 900+ pre-installed models.'
+    titleKey: 'pricing.included.feature6.title',
+    descriptionKey: 'pricing.included.feature6.description'
   },
   {
-    title: 'Custom nodes support',
-    description:
-      "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility."
+    titleKey: 'pricing.included.feature7.title',
+    descriptionKey: 'pricing.included.feature7.description'
   },
   {
-    title: 'Partner Nodes',
-    description:
-      'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.'
+    titleKey: 'pricing.included.feature8.title',
+    descriptionKey: 'pricing.included.feature8.description'
   },
   {
-    title: 'Job queue',
-    description: 'Queue up to 100 workflows at once.'
+    titleKey: 'pricing.included.feature9.title',
+    descriptionKey: 'pricing.included.feature9.description'
   },
   {
-    title: 'Custom LoRA importing',
-    description:
-      'For those on the Creator or Pro plans, you can bring in your own models & LoRAs from CivitAI or Huggingface to perfect your own style.'
+    titleKey: 'pricing.included.feature10.title',
+    descriptionKey: 'pricing.included.feature10.description'
   },
   {
-    title: 'Parallel job execution',
-    description:
-      'Run multiple workflows in parallel to speed up your pipeline.',
+    titleKey: 'pricing.included.feature11.title',
+    descriptionKey: 'pricing.included.feature11.description',
     isComingSoon: true
   }
 ]
@@ -85,7 +77,7 @@ const features: IncludedFeature[] = [
       <div>
         <div
           v-for="(feature, index) in features"
-          :key="feature.title"
+          :key="feature.titleKey"
           :class="
             index < features.length - 1
               ? 'border-primary-comfy-canvas/15 border-b border-solid'
@@ -111,13 +103,13 @@ const features: IncludedFeature[] = [
             />
             <div>
               <p class="text-primary-comfy-canvas text-sm font-medium">
-                {{ feature.title }}
+                {{ t(feature.titleKey, locale) }}
               </p>
               <span
                 v-if="feature.isComingSoon"
                 class="text-primary-comfy-yellow mt-1 inline-block text-xs"
               >
-                coming soon
+                {{ t('pricing.included.comingSoon', locale) }}
               </span>
             </div>
           </div>
@@ -125,7 +117,7 @@ const features: IncludedFeature[] = [
           <!-- Description -->
           <p
             class="text-primary-comfy-canvas/55 mt-3 text-sm/relaxed lg:mt-0"
-            v-html="feature.description"
+            v-html="t(feature.descriptionKey, locale)"
           />
         </div>
       </div>
