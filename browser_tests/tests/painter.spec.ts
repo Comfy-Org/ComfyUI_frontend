@@ -16,7 +16,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
     await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
   })
 
-  test.describe('Widget rendering', () => {
+  test.describe('Widget rendering', { tag: ['@widget'] }, () => {
     test('Node enforces minimum size', async ({ comfyPage }) => {
       const size = await comfyPage.page.evaluate(() => {
         const graph = window.graph as TestGraphAccess | undefined
