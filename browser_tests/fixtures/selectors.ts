@@ -115,6 +115,13 @@ export const TestIds = {
   menu: {
     moreMenuContent: 'more-menu-content'
   },
+  helpCenter: {
+    button: 'help-center-button',
+    popup: 'help-center-popup',
+    backdrop: 'help-center-backdrop',
+    menuItem: (key: string) => `help-menu-item-${key}`,
+    releaseItem: (version: string) => `help-release-item-${version}`
+  },
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
@@ -195,6 +202,9 @@ export const TestIds = {
   },
   loading: {
     overlay: 'loading-overlay'
+  },
+  load3d: {
+    recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
