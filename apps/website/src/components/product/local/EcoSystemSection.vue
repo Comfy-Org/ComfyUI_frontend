@@ -40,17 +40,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         </div>
       </div>
 
-      <!-- TODO: Replace with final ecosystem illustration -->
-      <div
-        class="rounded-4.5xl aspect-4/3 w-full flex-1 overflow-hidden bg-linear-to-b from-emerald-300 to-amber-200"
-      >
-        <div class="flex h-full items-center justify-center">
-          <span
-            class="bg-primary-comfy-ink text-primary-comfy-yellow rounded-full px-4 py-2 text-sm font-bold"
-          >
-            4x
-          </span>
-        </div>
+      <div class="rounded-4.5xl w-full flex-1 overflow-hidden">
+        <video
+          src="https://media.comfy.org/website/local/racer.webm"
+          autoplay
+          loop
+          muted
+          playsinline
+          class="size-full object-cover"
+        />
       </div>
     </div>
   </section>
