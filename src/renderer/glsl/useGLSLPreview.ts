@@ -282,7 +282,7 @@ function createInnerPreview(
     }
   }
 
-  function getCustomResolution(): [number, number] | null {
+  const customResolution = computed((): [number, number] | null => {
     const gId = graphId.value
     if (!gId) return null
 
@@ -314,10 +314,10 @@ function createInnerPreview(
       normalizeDimension(widthWidget.value),
       normalizeDimension(heightWidget.value)
     )
-  }
+  })
 
   function getResolution(): [number, number] {
-    const custom = getCustomResolution()
+    const custom = customResolution.value
     if (custom) return custom
 
     const node = nodeRef.value
@@ -481,7 +481,8 @@ function createInnerPreview(
         floatValues.value,
         intValues.value,
         boolValues.value,
-        curveValues.value
+        curveValues.value,
+        customResolution.value
       ] as const,
     () => {
       if (shouldRender.value) debouncedRender()
