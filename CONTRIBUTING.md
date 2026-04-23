@@ -118,6 +118,30 @@ navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to
 > ⚠️ IMPORTANT:
 > The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds. And See [Extension Overview](docs/extensions/README.md) for extensions overview.
 
+### Local Sentry events with Spotlight (optional)
+
+[Spotlight](https://spotlightjs.com) is the local Sentry dev overlay. It shows errors, traces, and logs from your running dev server in a browser UI, without needing a Sentry account.
+
+To enable it:
+
+1. In one terminal, run the Spotlight sidecar:
+
+   ```bash
+   pnpx @spotlightjs/spotlight
+   ```
+
+   This starts Spotlight on `http://localhost:8969`.
+
+2. In another terminal, start the dev server with Spotlight enabled:
+
+   ```bash
+   SPOTLIGHT=true pnpm dev
+   ```
+
+3. Open `http://localhost:8969` to inspect events captured from your dev session.
+
+Spotlight is opt-in — Sentry stays silent in dev by default. Production behavior is unchanged.
+
 ## Troubleshooting
 
 If you run into issues during development (e.g. `pnpm dev` hanging, TypeScript errors after pulling, lock file conflicts), see [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common fixes.

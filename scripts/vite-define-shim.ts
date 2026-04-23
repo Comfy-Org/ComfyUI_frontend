@@ -8,6 +8,7 @@ declare global {
   const __COMFYUI_FRONTEND_VERSION__: string
   const __SENTRY_ENABLED__: boolean
   const __SENTRY_DSN__: string
+  const __SPOTLIGHT_ENABLED__: boolean
   const __ALGOLIA_APP_ID__: string
   const __ALGOLIA_API_KEY__: string
   const __USE_PROD_CONFIG__: boolean
@@ -19,6 +20,7 @@ type GlobalWithDefines = typeof globalThis & {
   __COMFYUI_FRONTEND_VERSION__: string
   __SENTRY_ENABLED__: boolean
   __SENTRY_DSN__: string
+  __SPOTLIGHT_ENABLED__: boolean
   __ALGOLIA_APP_ID__: string
   __ALGOLIA_API_KEY__: string
   __USE_PROD_CONFIG__: boolean
@@ -34,6 +36,7 @@ globalWithDefines.__COMFYUI_FRONTEND_VERSION__ =
   process.env.npm_package_version || '1.0.0'
 globalWithDefines.__SENTRY_ENABLED__ = false
 globalWithDefines.__SENTRY_DSN__ = ''
+globalWithDefines.__SPOTLIGHT_ENABLED__ = false
 globalWithDefines.__ALGOLIA_APP_ID__ = ''
 globalWithDefines.__ALGOLIA_API_KEY__ = ''
 globalWithDefines.__USE_PROD_CONFIG__ = false
