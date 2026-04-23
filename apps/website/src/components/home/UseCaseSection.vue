@@ -91,6 +91,8 @@ function onNavKeydown(event: KeyboardEvent) {
 }
 
 function travelRange(el: HTMLElement) {
+  if (window.matchMedia('(min-width: 1024px)').matches) return 150
+
   const rail = el.parentElement?.parentElement
   if (!rail) return 0
   const pb = parseFloat(getComputedStyle(rail).paddingBottom)
@@ -119,7 +121,7 @@ useParallax([leftImgRef], {
     ref="sectionRef"
     :class="
       cn(
-        'bg-primary-comfy-ink relative isolate overflow-x-clip py-20 lg:py-24',
+        'bg-primary-comfy-ink relative isolate overflow-x-clip pt-20 lg:py-24',
         isEnabled && 'lg:h-[calc(100vh+60px)]'
       )
     "
@@ -140,7 +142,7 @@ useParallax([leftImgRef], {
     </svg>
 
     <div
-      class="relative mx-auto grid w-full grid-cols-[4rem_minmax(0,1fr)_4rem] grid-rows-[auto_minmax(0,1fr)] lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(24rem,42rem)_minmax(0,1fr)] lg:gap-x-0"
+      class="relative mx-auto grid w-full grid-cols-[minmax(0,5rem)_minmax(18ch,1fr)_minmax(0,5rem)] grid-rows-[auto_minmax(0,1fr)_auto] lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(24rem,42rem)_minmax(0,1fr)] lg:gap-x-0"
     >
       <!-- Label row -->
       <div class="relative z-20 col-span-full py-4">
@@ -188,18 +190,6 @@ useParallax([leftImgRef], {
               {{ category.label }}
             </button>
           </nav>
-
-          <p class="text-primary-warm-gray mt-8 max-w-md text-center text-base">
-            {{ t('useCase.body', locale) }}
-          </p>
-
-          <BrandButton
-            :href="externalLinks.workflows"
-            variant="outline"
-            class="mt-8"
-          >
-            {{ t('useCase.cta', locale) }}
-          </BrandButton>
         </div>
       </div>
 
@@ -213,6 +203,15 @@ useParallax([leftImgRef], {
           />
         </div>
       </BlobRail>
+      <div class="col-span-full mt-8 flex flex-col items-center gap-8 px-4">
+        <p class="text-primary-warm-gray max-w-md text-center text-base">
+          {{ t('useCase.body', locale) }}
+        </p>
+
+        <BrandButton :href="externalLinks.workflows" variant="outline">
+          {{ t('useCase.cta', locale) }}
+        </BrandButton>
+      </div>
     </div>
   </section>
 </template>

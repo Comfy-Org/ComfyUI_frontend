@@ -8,7 +8,7 @@ const { side } = defineProps<{
 
 <template>
   <div
-    class="pointer-events-none flex min-h-0 items-center overflow-clip pb-40 lg:overflow-x-visible lg:overflow-y-clip lg:pb-0"
+    class="pointer-events-none flex min-h-0 items-center overflow-clip lg:overflow-visible"
   >
     <div
       :class="
