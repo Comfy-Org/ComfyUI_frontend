@@ -21,7 +21,7 @@ describe('RoleBadge', () => {
     expect(screen.getByText('OWNER')).toBeInTheDocument()
   })
 
-  it('passes through additional classes via attrs', () => {
+  it('merges caller-provided classes onto root element', () => {
     const { container } = render(RoleBadge, {
       props: { label: 'PRO' },
       attrs: { class: 'shrink-0' }
