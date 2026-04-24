@@ -201,6 +201,7 @@ function toggleFullscreen() {
       playsinline
       :autoplay
       muted
+      @click="playing = !playing"
     >
       <track
         v-for="track in tracks"
@@ -221,13 +222,14 @@ function toggleFullscreen() {
           playing && !hovering && 'pointer-events-none opacity-0'
         )
       "
+      @click="playing = !playing"
     >
       <PlayPauseButton
         :playing
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
-        @toggle="playing = !playing"
+        @click.stop="playing = !playing"
       />
     </div>
 
@@ -248,7 +250,7 @@ function toggleFullscreen() {
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
-        @toggle="playing = !playing"
+        @click="playing = !playing"
       />
 
       <!-- Progress scrubber -->
