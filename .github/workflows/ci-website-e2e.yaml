@@ -17,7 +17,7 @@ on:
       - 'pnpm-lock.yaml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
