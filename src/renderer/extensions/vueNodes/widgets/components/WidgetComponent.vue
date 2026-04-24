@@ -30,8 +30,8 @@ const componentWidget = computed<ComponentWidget<object | string> | undefined>(
 
 <template>
   <component
-    v-if="componentWidget"
     :is="componentWidget.component"
+    v-if="componentWidget"
     v-model="modelValue"
     :widget="componentWidget"
     v-bind="componentWidget.props"
