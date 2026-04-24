@@ -1505,6 +1505,10 @@ const translations = {
 
   // CareersRolesSection
   'careers.roles.heading': { en: 'Roles', 'zh-CN': '职位' },
+  'careers.roles.empty': {
+    en: 'No open roles right now. Check back soon.',
+    'zh-CN': '目前暂无开放职位，请稍后再来查看。'
+  },
 
   // CareersFAQSection
   'careers.faq.heading': { en: 'Q&A', 'zh-CN': 'Q&A' },

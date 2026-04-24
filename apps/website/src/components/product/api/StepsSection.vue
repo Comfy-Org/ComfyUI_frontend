@@ -61,7 +61,7 @@ const steps = [
         class="mt-12 flex flex-col items-center gap-4 lg:flex-row lg:justify-center"
       >
         <BrandButton
-          :href="externalLinks.cloud"
+          :href="externalLinks.apiKeys"
           variant="solid"
           size="lg"
           class="w-full text-center lg:w-auto lg:min-w-48"
@@ -69,7 +69,7 @@ const steps = [
           {{ t('api.hero.getApiKeys', locale) }}
         </BrandButton>
         <BrandButton
-          :href="externalLinks.docs"
+          :href="externalLinks.docsApi"
           variant="outline"
           size="lg"
           class="w-full text-center lg:w-auto lg:min-w-48"

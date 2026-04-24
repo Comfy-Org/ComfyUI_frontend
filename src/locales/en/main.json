@@ -2734,6 +2734,7 @@
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
+    "blueprint": "Blueprint",
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",

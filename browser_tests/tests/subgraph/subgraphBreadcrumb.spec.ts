@@ -251,7 +251,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await comfyPage.workflow.loadWorkflow(NESTED_WORKFLOW)
     await enterNestedSubgraphs(comfyPage)
 
-    await expect(subgraphBreadcrumb.panel.rootItem()).toBeAttached()
+    await expect(subgraphBreadcrumb.panel.rootItem).toBeAttached()
     await expect(
       subgraphBreadcrumb.panel.subgraphItem(SUBGRAPH_2_ID)
     ).toContainText(SUBGRAPH_2_NAME)
@@ -265,12 +265,65 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     )
   })
 
+  test(
+    'shows Blueprint tag only when editing a published blueprint',
+    {
+      tag: ['@vue-nodes']
+    },
+    async ({ comfyPage, subgraphBreadcrumb }) => {
+      const { panel } = subgraphBreadcrumb
+      const blueprintName = `bp-breadcrumb-tag-${Date.now()}`
+
+      await test.step('Tag is not shown on a normal workflow', async () => {
+        await expect(panel.blueprintTag).toHaveCount(0)
+      })
+
+      await test.step('Convert to Subgraph', async () => {
+        const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        await comfyPage.contextMenu.openForVueNode(ksampler.header)
+        await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
+      })
+
+      const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
+      const subgraphNode =
+        await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+
+      await test.step('Unpublished subgraph does not show the blueprint tag', async () => {
+        await subgraphNode.centerOnNode()
+        await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+        await expect(panel.blueprintTag).toHaveCount(0)
+        await comfyPage.subgraph.exitViaBreadcrumb()
+      })
+
+      await test.step('Publish the subgraph as a blueprint', async () => {
+        await subgraphNode.click('title')
+        await comfyPage.subgraph.publishSubgraph(blueprintName)
+      })
+
+      await test.step('Open the blueprint from the node library', async () => {
+        const tab = comfyPage.menu.nodeLibraryTabV2
+        await tab.open()
+        await tab.getFolder('My Blueprints').click()
+        await tab.getFolder('User').click()
+
+        const blueprintNode = tab.getNode(blueprintName)
+        await expect(blueprintNode).toBeVisible()
+        await blueprintNode.getByRole('button', { name: 'Edit' }).click()
+      })
+
+      await test.step('Blueprint tag renders on the root breadcrumb', async () => {
+        await expect(panel.rootBlueprintTag).toBeVisible()
+      })
+    }
+  )
+
   test('collapses when overflowing and expands when there is room', async ({
     comfyPage,
     subgraphBreadcrumb
   }) => {
     const { panel } = subgraphBreadcrumb
-    const rootItem = panel.rootItem()
+    const rootItem = panel.rootItem
     const subgraph2Item = panel.subgraphItem(SUBGRAPH_2_ID)
     const subgraph3Item = panel.subgraphItem(SUBGRAPH_3_ID)
     const originalViewport = comfyPage.page.viewportSize()
