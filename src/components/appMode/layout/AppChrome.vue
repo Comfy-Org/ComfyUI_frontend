@@ -76,6 +76,10 @@ type ChromeCellKind =
   | 'action-download'
   | 'action-info'
   | 'output-thumb'
+  | 'nav-zoom-in'
+  | 'nav-zoom-out'
+  | 'nav-zoom-percent'
+  | 'nav-zoom-fit'
 
 interface ChromeCell {
   id: string
@@ -97,8 +101,10 @@ const { variant = 'app-mode' } = defineProps<{
 const { t } = useI18n()
 const { enableAppBuilder } = useAppMode()
 const appModeStore = useAppModeStore()
-const { enterBuilder } = appModeStore
-const { hasNodes } = storeToRefs(appModeStore)
+const { enterBuilder, zoomIn, zoomOut, resetView } = appModeStore
+const { hasNodes, viewportScale } = storeToRefs(appModeStore)
+
+const zoomPercent = computed(() => `${Math.round(viewportScale.value * 100)}%`)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
@@ -285,7 +291,7 @@ const topLeftCells = computed<ChromeCell[]>(() => {
       span: 1
     })
     include(out, { id: 'action-download', kind: 'action-download', span: 1 })
-    include(out, { id: 'action-info', kind: 'action-info', span: 3 })
+    include(out, { id: 'action-info', kind: 'action-info', span: 4 })
   }
   const thumbCount = Math.min(historyThumbs.value.length, MAX_HISTORY_THUMBS)
   for (let i = 0; i < thumbCount; i++) {
@@ -327,6 +333,18 @@ const topRightCells = computed<ChromeCell[]>(() => {
 const bottomLeftCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
   include(out, { id: 'feedback', kind: 'system-feedback', span: 4 })
+  return out
+})
+
+// Bottom-right nav cluster — always present. The viewport transform
+// scales the whole workspace (dot grid + welcome + image), so the
+// cluster stays useful even before any generation exists.
+const bottomRightCells = computed<ChromeCell[]>(() => {
+  const out: ChromeCell[] = []
+  include(out, { id: 'nav-zoom-out', kind: 'nav-zoom-out', span: 1 })
+  include(out, { id: 'nav-zoom-percent', kind: 'nav-zoom-percent', span: 2 })
+  include(out, { id: 'nav-zoom-in', kind: 'nav-zoom-in', span: 1 })
+  include(out, { id: 'nav-zoom-fit', kind: 'nav-zoom-fit', span: 1 })
   return out
 })
 
@@ -440,21 +458,33 @@ function cellClass(cell: ChromeCell): string {
         <div
           v-else-if="cell.kind === 'action-info'"
           :class="[
-            'duration-layout flex size-full cursor-default items-center gap-2',
+            'duration-layout flex size-full cursor-default items-center justify-between',
             'rounded-layout-cell bg-layout-cell px-3',
             'font-inter text-layout-md text-layout-text',
             'transition-colors ease-layout hover:bg-layout-cell-hover'
           ]"
         >
+          <!-- justify-between distributes the icon / bullet / dims /
+               bullet / ext row evenly across the cell width; bullets
+               read as separators rather than padding, and the row
+               collapses gracefully if either dims or ext is empty. -->
           <i class="icon-[lucide--file] size-5 shrink-0" aria-hidden="true" />
+          <span v-if="infoDims" class="shrink-0 opacity-50" aria-hidden="true"
+            >•</span
+          >
           <span
             v-if="infoDims"
             class="shrink-0 text-layout-text tabular-nums"
             >{{ infoDims }}</span
           >
-          <span class="min-w-0 truncate tracking-[0.02em] tabular-nums">{{
-            infoLabel
-          }}</span>
+          <span v-if="infoLabel" class="shrink-0 opacity-50" aria-hidden="true"
+            >•</span
+          >
+          <span
+            v-if="infoLabel"
+            class="shrink-0 tracking-[0.02em] tabular-nums"
+            >{{ infoLabel }}</span
+          >
         </div>
         <OutputThumbCell
           v-else-if="
@@ -513,6 +543,52 @@ function cellClass(cell: ChromeCell): string {
         :data-cell-kind="cell.kind"
       >
         <FeedbackCell v-if="cell.kind === 'system-feedback'" />
+      </div>
+    </div>
+
+    <div
+      :class="[
+        ZONE_BASE,
+        'right-(--spacing-layout-outer) bottom-(--spacing-layout-outer)'
+      ]"
+    >
+      <div
+        v-for="cell in bottomRightCells"
+        :key="cell.id"
+        :class="cellClass(cell)"
+        :inert="cell.disabled || undefined"
+        :title="cellTitle(cell)"
+        :style="{ width: cellWidth(cell.span) }"
+        :data-cell-kind="cell.kind"
+      >
+        <IconCell
+          v-if="cell.kind === 'nav-zoom-out'"
+          icon="icon-[lucide--zoom-out]"
+          :label="t('linearMode.zoomOut')"
+          :on-activate="zoomOut"
+        />
+        <div
+          v-else-if="cell.kind === 'nav-zoom-percent'"
+          :class="[
+            'flex size-full items-center justify-center',
+            'font-inter text-layout-md text-layout-text tabular-nums',
+            'cursor-default select-none'
+          ]"
+        >
+          {{ zoomPercent }}
+        </div>
+        <IconCell
+          v-else-if="cell.kind === 'nav-zoom-in'"
+          icon="icon-[lucide--zoom-in]"
+          :label="t('linearMode.zoomIn')"
+          :on-activate="zoomIn"
+        />
+        <IconCell
+          v-else-if="cell.kind === 'nav-zoom-fit'"
+          icon="icon-[lucide--maximize]"
+          :label="t('linearMode.resetView')"
+          :on-activate="resetView"
+        />
       </div>
     </div>
   </div>

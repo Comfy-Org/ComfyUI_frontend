@@ -60,12 +60,12 @@ async function runFromPill(e: MouseEvent) {
       :class="[
         'flex h-full max-w-2xl flex-col justify-start gap-6 pb-6',
         panelSide === 'left'
-          ? 'ml-auto items-end pr-layout-outer pl-6 text-right'
-          : 'items-start pr-6 pl-layout-outer text-left'
+          ? 'ml-auto items-end pr-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] pl-6 text-right'
+          : 'items-start pr-6 pl-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] text-left'
       ]"
       :style="{
         paddingTop:
-          'calc(var(--spacing-layout-outer, 8px) + var(--spacing-layout-cell, 48px) + var(--spacing-layout-gutter, 8px))'
+          'calc(var(--spacing-layout-outer, 8px) + var(--spacing-layout-cell, 48px) * 2 + var(--spacing-layout-gutter, 8px) * 2)'
       }"
     >
       <div class="flex flex-col gap-2">
@@ -87,10 +87,24 @@ async function runFromPill(e: MouseEvent) {
         <p class="mt-0 text-base-foreground">
           <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
             <template #runButton>
+              <!--
+                Go-green hexes mirror the RunCell treatment in
+                AppChrome. They're tw green-600/500/800 literals
+                because the same "placeholder pending design tokens"
+                comment in AppChrome.vue's `goStopVars` applies here
+                — when those get promoted to proper semantic tokens
+                (`--color-success-*`), update both call sites.
+                The `!` suffixes override the PrimeVue `primary`
+                variant's blue background at the utility level.
+              -->
               <Button
                 variant="primary"
                 size="unset"
-                class="mx-1 translate-y-px transform px-4 py-1.5 text-xl"
+                :class="[
+                  'mx-1 translate-y-px transform px-4 py-1.5 text-xl',
+                  'border-[#166534]! bg-[#16a34a]! hover:bg-[#22c55e]!',
+                  'text-white!'
+                ]"
                 @click="runFromPill"
               >
                 <i class="icon-[lucide--play] size-5" />

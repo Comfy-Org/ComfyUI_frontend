@@ -46,6 +46,80 @@ export const useAppModeStore = defineStore('appMode', () => {
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
 
+  // Viewport pan/zoom — the output workspace's scale + offset. Single
+  // source of truth so the nav cluster in AppChrome and the wheel/drag
+  // handlers on the workspace wrapper mutate the same state, and the
+  // transform on the media preview reads back out of it. Applied as a
+  // CSS `transform: translate(offset) scale(scale)` on the element that
+  // hosts the preview; math below keeps "zoom around cursor" coherent.
+  const viewportScale = ref(1)
+  const viewportOffsetX = ref(0)
+  const viewportOffsetY = ref(0)
+  // Clamp range — zoom-out past 0.1x makes the image a dot; past 8x the
+  // pixels get blocky and pan math becomes unwieldy. These bounds cover
+  // every realistic inspection use case.
+  const MIN_SCALE = 0.1
+  const MAX_SCALE = 8
+
+  function clampScale(s: number): number {
+    return Math.max(MIN_SCALE, Math.min(MAX_SCALE, s))
+  }
+
+  // Zoom around a focal point (cursor position) so the pixel under the
+  // cursor stays under the cursor after the scale change. `rect` is the
+  // bounding box of the element the client coords were measured against.
+  function zoomAt(
+    clientX: number,
+    clientY: number,
+    deltaY: number,
+    rect: { left: number; top: number; width: number; height: number }
+  ) {
+    const prevScale = viewportScale.value
+    // 1.1 ** (delta / -30) matches ZoomPane's original responsiveness so
+    // wheel feel doesn't change between the old in-pane zoom and the new
+    // workspace-wide zoom.
+    const nextScale = clampScale(prevScale * 1.1 ** (deltaY / -30))
+    if (nextScale === prevScale) return
+    const cx = clientX - rect.left - rect.width / 2
+    const cy = clientY - rect.top - rect.height / 2
+    const ratio = nextScale / prevScale
+    viewportOffsetX.value = viewportOffsetX.value * ratio - cx * (ratio - 1)
+    viewportOffsetY.value = viewportOffsetY.value * ratio - cy * (ratio - 1)
+    viewportScale.value = nextScale
+  }
+
+  function panBy(dx: number, dy: number) {
+    viewportOffsetX.value += dx
+    viewportOffsetY.value += dy
+  }
+
+  // Step zoom (nav-cluster buttons) — anchors at workspace center, which
+  // is the natural focal point when there's no cursor position driving
+  // the change.
+  function zoomStep(factor: number) {
+    const prevScale = viewportScale.value
+    const nextScale = clampScale(prevScale * factor)
+    if (nextScale === prevScale) return
+    const ratio = nextScale / prevScale
+    viewportOffsetX.value = viewportOffsetX.value * ratio
+    viewportOffsetY.value = viewportOffsetY.value * ratio
+    viewportScale.value = nextScale
+  }
+
+  function zoomIn() {
+    zoomStep(1.2)
+  }
+
+  function zoomOut() {
+    zoomStep(1 / 1.2)
+  }
+
+  function resetView() {
+    viewportScale.value = 1
+    viewportOffsetX.value = 0
+    viewportOffsetY.value = 0
+  }
+
   // Shared panel position + collapse state — single source of truth for
   // the floating inputs panel across App Mode (runtime) and App Builder
   // (edit). Moving or collapsing the panel in either view updates both,
@@ -231,12 +305,20 @@ export const useAppModeStore = defineStore('appMode', () => {
     panelPreset,
     panelRows,
     panelWidthCells,
+    panBy,
     pruneLinearData,
     removeSelectedInput,
     resetSelectedToWorkflow,
+    resetView,
     selectedInputs,
     selectedOutputs,
+    showVueNodeSwitchPopup,
     updateInputConfig,
-    showVueNodeSwitchPopup
+    viewportOffsetX,
+    viewportOffsetY,
+    viewportScale,
+    zoomAt,
+    zoomIn,
+    zoomOut
   }
 })

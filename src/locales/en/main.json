@@ -3339,6 +3339,9 @@
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "outputThumbAlt": "Output thumbnail",
     "blockDragReorderAria": "Drag to reorder {kind} block",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetView": "Reset view",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
