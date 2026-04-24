@@ -2,87 +2,21 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  createApiNode,
+  createPlainNode,
+  flushPricingEval,
+  makeGraph,
+  priceBadge,
+  resetNodeIds
+} from '@/composables/node/__tests__/pricingTestHelpers'
+import {
   formatAggregateTotal,
   useGraphCostAggregator
 } from '@/composables/node/useGraphCostAggregator'
-import {
-  __testAwaitPendingEvaluations,
-  useNodePricing
-} from '@/composables/node/useNodePricing'
+import { useNodePricing } from '@/composables/node/useNodePricing'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { PriceBadge } from '@/schemas/nodeDefSchema'
-import {
-  createMockLGraphNode,
-  createMockSubgraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
-
-// -----------------------------------------------------------------------------
-// Helpers — local mirror of the price-badge node factory used by the
-// useNodePricing sibling test. Keeping it colocated keeps the test
-// dependency surface small.
-// -----------------------------------------------------------------------------
-
-const priceBadge = (
-  expr: string,
-  widgets: Array<{ name: string; type: string }> = [],
-  inputs: string[] = [],
-  inputGroups: string[] = []
-): PriceBadge => ({
-  engine: 'jsonata',
-  expr,
-  depends_on: { widgets, inputs, input_groups: inputGroups }
-})
-
-type WidgetInit = { name: string; value: unknown }
-
-// Module-level counter for deterministic node IDs across the suite. Using
-// Math.random introduced non-determinism and could collide in theory; a
-// monotonic counter is simpler to debug and snapshot-stable.
-let nextNodeId = 1
-
-function createApiNode(
-  typeName: string,
-  badge: PriceBadge | null,
-  widgets: WidgetInit[] = []
-): LGraphNode {
-  const mockWidgets = widgets.map(({ name, value }) => ({
-    name,
-    value,
-    type: 'combo'
-  }))
-  const base = createMockLGraphNode({ id: nextNodeId++ })
-  const nodeData: Record<string, unknown> = {
-    name: typeName,
-    api_node: true
-  }
-  if (badge) nodeData.price_badge = badge
-  return Object.assign(base, {
-    widgets: mockWidgets,
-    inputs: [],
-    constructor: { nodeData }
-  })
-}
-
-function createPlainNode(typeName: string): LGraphNode {
-  const base = createMockLGraphNode({ id: nextNodeId++ })
-  return Object.assign(base, {
-    widgets: [],
-    inputs: [],
-    constructor: {
-      nodeData: { name: typeName, api_node: false }
-    }
-  })
-}
-
-const makeGraph = (nodes: LGraphNode[]): LGraph =>
-  ({ nodes }) as unknown as LGraph
-
-// Deterministic wait: drain every in-flight pricing evaluation from the
-// scheduler's tracking set. Replaces an earlier `setTimeout(r, 50)` that
-// was both flaky (CI workers can take longer) and a waste when evals
-// resolved faster than that.
-const flushPricingEval = () => __testAwaitPendingEvaluations()
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockSubgraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Shape-preserving stub for vue-i18n `t`. Substitutes {value} tokens so
 // tests can still assert the numeric payload without loading the full
@@ -103,6 +37,7 @@ describe('useGraphCostAggregator', () => {
     // The aggregator reads workflowStore.activeWorkflow as an invalidation
     // signal; stores require a Pinia instance to resolve.
     setActivePinia(createPinia())
+    resetNodeIds()
   })
 
   it('returns null for an empty graph', () => {
