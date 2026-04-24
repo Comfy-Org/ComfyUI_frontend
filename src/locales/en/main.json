@@ -1911,7 +1911,8 @@
   "apiNodesCostBreakdown": {
     "title": "API Node(s)",
     "costPerRun": "Cost per run",
-    "totalCost": "Total Cost"
+    "totalCost": "Total Cost",
+    "creditsValue": "{value} credits"
   },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",
