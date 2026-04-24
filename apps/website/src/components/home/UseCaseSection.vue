@@ -184,7 +184,7 @@ useParallax([leftImgRef], {
         >
           <nav
             ref="navRef"
-            class="mt-16 flex w-full max-w-5/6 flex-1 flex-col items-center justify-evenly gap-12 lg:mt-20 lg:max-w-none lg:gap-8"
+            class="mt-16 flex w-full max-w-5/6 flex-1 flex-col items-center justify-evenly gap-12 lg:mt-[clamp(0.5rem,3vh,5rem)] lg:max-w-none lg:gap-[clamp(0.25rem,1vh,2rem)]"
             :aria-label="t('useCase.navLabel', locale)"
             @keydown="onNavKeydown"
           >
@@ -194,7 +194,7 @@ useParallax([leftImgRef], {
               type="button"
               :class="
                 cn(
-                  'cursor-pointer text-center text-2xl font-light whitespace-pre-line transition-colors outline-none lg:text-5xl',
+                  'cursor-pointer text-center text-2xl font-light whitespace-pre-line transition-colors outline-none lg:text-[clamp(1rem,5vh,3rem)]',
                   index === activeCategory
                     ? 'text-primary-comfy-canvas'
                     : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
@@ -219,7 +219,9 @@ useParallax([leftImgRef], {
           />
         </div>
       </BlobRail>
-      <div class="col-span-full mt-8 flex flex-col items-center gap-8 px-4">
+      <div
+        class="col-span-full mt-8 flex flex-col items-center gap-8 px-4 lg:mt-[clamp(0.25rem,1vh,2rem)] lg:gap-[clamp(0.25rem,1vh,2rem)]"
+      >
         <p class="text-primary-warm-gray max-w-md text-center text-base">
           {{ t('useCase.body', locale) }}
         </p>

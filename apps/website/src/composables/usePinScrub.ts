@@ -82,6 +82,14 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
       const sectionStyle = getComputedStyle(section)
       contentH = content.scrollHeight
       vpH = window.innerHeight - parseFloat(sectionStyle.paddingTop)
+
+      // Ensure the section is tall enough for its content so nothing clips
+      const naturalH = section.scrollHeight
+      const viewportH = window.innerHeight + 60
+      if (naturalH > viewportH) {
+        section.style.height = `${naturalH}px`
+      }
+
       buttonCenters = Array.from(nav.querySelectorAll(':scope > *')).map(
         (btn) => {
           const btnRect = btn.getBoundingClientRect()
