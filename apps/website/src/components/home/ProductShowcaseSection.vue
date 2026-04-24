@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useTemplateRefsList } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
+import { ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -37,6 +37,12 @@ const badgeSegments = [
 
 const activeIndex = ref(0)
 const videoRefs = useTemplateRefsList<HTMLVideoElement>()
+const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
+const isVisible = ref(false)
+
+useIntersectionObserver(sectionRef, ([entry]) => {
+  isVisible.value = entry?.isIntersecting ?? false
+})
 
 watch(activeIndex, (current, previous) => {
   videoRefs.value[previous]?.pause()
@@ -49,7 +55,7 @@ watch(activeIndex, (current, previous) => {
 </script>
 
 <template>
-  <section class="px-4 py-20 lg:px-20 lg:py-24">
+  <section ref="sectionRef" class="px-4 py-20 lg:px-20 lg:py-24">
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
@@ -66,23 +72,13 @@ watch(activeIndex, (current, previous) => {
       <!-- Video area (desktop only) -->
       <div class="hidden flex-1 lg:flex">
         <div
-          class="rounded-5xl relative flex w-full items-center justify-center overflow-hidden p-0.5 [clip-path:inset(0_round_var(--radius-5xl))]"
+          :class="
+            cn(
+              'rounded-5xl relative flex w-full items-center justify-center overflow-hidden p-0.5',
+              isVisible && 'animate-border-spin'
+            )
+          "
         >
-          <div
-            class="animate-border-spin absolute top-1/2 left-1/2 aspect-square min-h-full min-w-full -translate-1/2 scale-150"
-            style="
-              background: conic-gradient(
-                from 0deg,
-                color-mix(
-                    in srgb,
-                    var(--color-primary-comfy-yellow) 4%,
-                    transparent
-                  )
-                  0%,
-                var(--color-primary-comfy-yellow) 100%
-              );
-            "
-          />
           <div
             class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
           >
@@ -92,12 +88,13 @@ watch(activeIndex, (current, previous) => {
               :key="feature.title"
               :src="feature.video"
               :autoplay="i === 0"
+              :preload="i === 0 ? 'metadata' : 'none'"
               loop
               muted
               playsinline
               :class="
                 cn(
-                  'absolute inset-0 size-full object-cover transition-opacity duration-300',
+                  'absolute inset-0 size-full object-cover transition-opacity duration-300 will-change-[opacity]',
                   activeIndex === i ? 'opacity-100' : 'opacity-0'
                 )
               "
@@ -112,21 +109,24 @@ watch(activeIndex, (current, previous) => {
           <!-- Video area (mobile, rendered before active item) -->
           <div
             v-if="activeIndex === i"
-            :class="
-              cn(
-                'aspect-video overflow-hidden rounded-4xl lg:hidden',
-                i !== 0 && 'mt-4'
-              )
-            "
+            :class="cn('aspect-video lg:hidden', i !== 0 && 'mt-4')"
           >
-            <video
-              :src="feature.video"
-              autoplay
-              loop
-              muted
-              playsinline
-              class="size-full object-cover"
-            />
+            <div
+              class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
+            >
+              <div
+                class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
+              >
+                <video
+                  :src="feature.video"
+                  autoplay
+                  loop
+                  muted
+                  playsinline
+                  class="size-full object-cover"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Connector (mobile) -->
