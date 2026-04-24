@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 감지",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "분할할 바운딩 박스"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "CLIPTextEncode의 텍스트 컨디셔닝"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "객체별 mask를 개별적으로 출력 (합집합이 아닌)"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negative_coords",
+        "tooltip": "음성 포인트 프롬프트(JSON 형식: [{\"x\": int, \"y\": int}, ...], 픽셀 좌표)"
+      },
+      "positive_coords": {
+        "name": "positive_coords",
+        "tooltip": "양성 포인트 프롬프트(JSON 형식: [{\"x\": int, \"y\": int}, ...], 픽셀 좌표)"
+      },
+      "refine_iterations": {
+        "name": "refine_iterations",
+        "tooltip": "SAM 디코더 정제 반복 횟수 (0=원시 감지자 mask 사용)"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 트랙 미리보기",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 트랙 → mask",
+    "inputs": {
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "포함할 객체 인덱스(쉼표로 구분, 예: '0,2,3'). 비워두면 모든 객체."
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 비디오 트랙",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "추적 중 새 객체 감지를 위한 텍스트 컨디셔닝"
+      },
+      "detect_interval": {
+        "name": "detect_interval",
+        "tooltip": "N 프레임마다 감지 실행 (1=매 프레임). 값이 높을수록 연산 절약."
+      },
+      "detection_threshold": {
+        "name": "detection_threshold",
+        "tooltip": "텍스트 프롬프트 감지 점수 임계값"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "비디오 프레임(배치된 이미지)"
+      },
+      "initial_mask": {
+        "name": "initial_mask",
+        "tooltip": "첫 프레임에서 추적할 mask(객체별 1개씩)"
+      },
+      "max_objects": {
+        "name": "max_objects",
+        "tooltip": "최대 추적 객체 수 (0=무제한). 초기 mask도 포함."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {

@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 检测",
+    "inputs": {
+      "bboxes": {
+        "name": "边界框",
+        "tooltip": "要分割的边界框"
+      },
+      "conditioning": {
+        "name": "条件",
+        "tooltip": "来自 CLIPTextEncode 的文本条件"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "individual_masks": {
+        "name": "单独 mask",
+        "tooltip": "输出每个对象的 mask，而不是合并"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "负向坐标",
+        "tooltip": "负向点提示，JSON 格式 [{\"x\": int, \"y\": int}, ...]（像素坐标）"
+      },
+      "positive_coords": {
+        "name": "正向坐标",
+        "tooltip": "正向点提示，JSON 格式 [{\"x\": int, \"y\": int}, ...]（像素坐标）"
+      },
+      "refine_iterations": {
+        "name": "细化迭代次数",
+        "tooltip": "SAM 解码器细化次数（0=使用原始检测器 mask）"
+      },
+      "threshold": {
+        "name": "阈值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "边界框",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 跟踪预览",
+    "inputs": {
+      "fps": {
+        "name": "帧率"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "opacity": {
+        "name": "不透明度"
+      },
+      "track_data": {
+        "name": "跟踪数据"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 跟踪转 mask",
+    "inputs": {
+      "object_indices": {
+        "name": "对象索引",
+        "tooltip": "要包含的对象索引（用逗号分隔，例如 '0,2,3'）。为空表示所有对象。"
+      },
+      "track_data": {
+        "name": "跟踪数据"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 视频跟踪",
+    "inputs": {
+      "conditioning": {
+        "name": "条件",
+        "tooltip": "跟踪过程中检测新对象的文本条件"
+      },
+      "detect_interval": {
+        "name": "检测间隔",
+        "tooltip": "每 N 帧运行一次检测（1=每帧）。数值越大越省算力。"
+      },
+      "detection_threshold": {
+        "name": "检测阈值",
+        "tooltip": "文本提示检测的分数阈值"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "视频帧，批量图像"
+      },
+      "initial_mask": {
+        "name": "初始 mask",
+        "tooltip": "第一帧要跟踪的 mask（每个对象一个）"
+      },
+      "max_objects": {
+        "name": "最大对象数",
+        "tooltip": "最大跟踪对象数（0=无限制）。初始 mask 计入此限制。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "跟踪数据",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
