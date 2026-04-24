@@ -20,6 +20,12 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+export function normalizeLinearData(
+  data: Partial<LinearData> | undefined
+): LinearData {
+  return { inputs: data?.inputs ?? [], outputs: data?.outputs ?? [] }
+}
+
 export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
 }
@@ -46,22 +52,16 @@ export const useAppModeStore = defineStore('appMode', () => {
   // Prune entries referencing nodes deleted in workflow mode.
   // Only check node existence, not widgets — dynamic widgets can
   // hide/show other widgets so a missing widget does not mean stale data.
-  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
-    const rawInputs = data?.inputs ?? []
-    const rawOutputs = data?.outputs ?? []
-
+  function pruneLinearData(data: LinearData): LinearData {
+    if (!app.rootGraph) return data
     return {
-      inputs: app.rootGraph
-        ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
-        : rawInputs,
-      outputs: app.rootGraph
-        ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
-        : rawOutputs
+      inputs: data.inputs.filter(([nodeId]) => resolveNode(nodeId)),
+      outputs: data.outputs.filter((nodeId) => resolveNode(nodeId))
     }
   }
 
   function loadSelections(data: Partial<LinearData> | undefined) {
-    const { inputs, outputs } = pruneLinearData(data)
+    const { inputs, outputs } = pruneLinearData(normalizeLinearData(data))
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
   }

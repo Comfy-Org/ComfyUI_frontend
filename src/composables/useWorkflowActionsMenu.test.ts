@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 
@@ -43,15 +44,10 @@ const mockMenuItemStore = vi.hoisted(() => ({
 const mockAppModeStore = vi.hoisted(() => ({
   enterBuilder: vi.fn(),
   pruneLinearData: vi.fn(
-    (
-      data?: Partial<{
-        inputs: [number | string, string][]
-        outputs: (number | string)[]
-      }>
-    ) => ({
-      inputs: data?.inputs ?? [],
-      outputs: data?.outputs ?? []
-    })
+    (data: {
+      inputs: [number | string, string][]
+      outputs: (number | string)[]
+    }) => data
   ),
   selectedInputs: [] as [number | string, string][],
   selectedOutputs: [] as (number | string)[]
@@ -83,6 +79,10 @@ vi.mock('@/stores/menuItemStore', () => ({
 }))
 
 vi.mock('@/stores/appModeStore', () => ({
+  normalizeLinearData: vi.fn((data?: Partial<LinearData>) => ({
+    inputs: data?.inputs ?? [],
+    outputs: data?.outputs ?? []
+  })),
   useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
 

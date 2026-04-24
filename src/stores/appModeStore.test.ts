@@ -66,7 +66,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettings
 }))
 
-import { useAppModeStore } from './appModeStore'
+import { normalizeLinearData, useAppModeStore } from './appModeStore'
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -99,6 +99,31 @@ function createBuilderWorkflowWithOutputs(
   }
   return workflow
 }
+
+describe('normalizeLinearData', () => {
+  it('returns empty arrays for undefined input', () => {
+    expect(normalizeLinearData(undefined)).toEqual({ inputs: [], outputs: [] })
+  })
+
+  it('fills missing inputs with empty array', () => {
+    expect(normalizeLinearData({ outputs: [1] })).toEqual({
+      inputs: [],
+      outputs: [1]
+    })
+  })
+
+  it('fills missing outputs with empty array', () => {
+    expect(normalizeLinearData({ inputs: [[1, 'prompt']] })).toEqual({
+      inputs: [[1, 'prompt']],
+      outputs: []
+    })
+  })
+
+  it('passes through complete data unchanged', () => {
+    const data = { inputs: [[1, 'prompt']] as [number, string][], outputs: [2] }
+    expect(normalizeLinearData(data)).toEqual(data)
+  })
+})
 
 describe('appModeStore', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
