@@ -28,7 +28,7 @@ interface CapturedMessages {
 declare global {
   interface Window {
     app?: ComfyApp
-    graph?: LGraph & TestGraphAccess
+    graph?: LGraph
     LiteGraph?: LiteGraphGlobal
     LGraphBadge?: typeof LGraphBadge
 
@@ -50,7 +50,7 @@ declare global {
   }
 
   const app: ComfyApp | undefined
-  const graph: (LGraph & TestGraphAccess) | undefined
+  const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
   const LGraphBadge: typeof LGraphBadge | undefined
 }

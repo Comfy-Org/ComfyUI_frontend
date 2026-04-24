@@ -4,6 +4,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { TestGraphAccess } from '@e2e/types/globals'
 
 // Repro lifted from #bug-dump (Jedrzej Kosinski, 2026-04-21): `multi_select`
 // combo widgets declared with `ComfyUI_devtools`'s `DevToolsMultiSelectNode`
@@ -85,7 +86,15 @@ test.describe(
       // In the broken state the value is either untouched (empty array / no
       // widget) or collapses to a single string under single-select semantics.
       const widgetValue = await comfyPage.page.evaluate(() => {
-        if (!window.graph) return null
+        function hasTestGraphAccess(graph: unknown): graph is TestGraphAccess {
+          return (
+            typeof graph === 'object' &&
+            graph !== null &&
+            '_nodes_by_id' in graph
+          )
+        }
+
+        if (!hasTestGraphAccess(window.graph)) return null
         const multiSelectNode = Object.values(window.graph._nodes_by_id).find(
           (n) => n.type === 'DevToolsMultiSelectNode'
         )
