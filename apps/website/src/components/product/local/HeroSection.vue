@@ -164,11 +164,11 @@ onUnmounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(8vw,10rem)]"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div
-      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-x-[10%] lg:translate-y-[80px] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="aspect-550/800 w-4/5 max-w-md scale-150 self-center overflow-visible md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
@@ -187,7 +187,7 @@ onUnmounted(() => {
           rx="65.5036"
           transform="matrix(-0.866025 -0.5 0 -1 620.969 1058.01)"
           fill="#211927"
-          stroke="#7E7C78"
+          stroke="#4D3762"
           stroke-width="3"
           visibility="hidden"
         />
@@ -200,7 +200,7 @@ onUnmounted(() => {
           rx="59.4123"
           transform="matrix(-0.866025 -0.5 0 -1 675.746 878.068)"
           fill="#211927"
-          stroke="#7E7C78"
+          stroke="#4D3762"
           stroke-width="3"
         />
         <rect
@@ -212,7 +212,7 @@ onUnmounted(() => {
           rx="59.4123"
           transform="matrix(-0.866025 -0.5 0 -1 675.746 878.068)"
           fill="#211927"
-          stroke="#7E7C78"
+          stroke="#4D3762"
           stroke-width="3"
         />
         <rect
@@ -224,12 +224,12 @@ onUnmounted(() => {
           rx="59.4123"
           transform="matrix(-0.866025 -0.5 0 -1 675.746 878.068)"
           fill="#211927"
-          stroke="#7E7C78"
+          stroke="#4D3762"
           stroke-width="3"
         />
 
         <!-- Hex nodes -->
-        <g stroke="#7E7C78" stroke-width="6">
+        <g stroke="#4D3762" stroke-width="3">
           <path
             data-hex="5"
             d="M722.595 427.826L722.579 491.728C722.576 500.223 728.536 510.551 735.889 514.796L791.205 546.733C795.862 549.422 804.238 549.298 808.894 546.607L864.227 514.642C871.583 510.392 877.548 500.061 877.55 491.566L877.567 427.664C877.568 422.286 873.487 414.972 868.829 412.283L813.514 380.347C806.16 376.101 794.236 376.104 786.88 380.354L731.548 412.319C726.882 415.015 722.597 422.437 722.595 427.826Z"
@@ -283,11 +283,12 @@ onUnmounted(() => {
           y="150"
           width="250"
           height="900"
-          fill="url(#localHeroFade)"
+          fill="url(#localHeroFadeLeft)"
         />
+
         <defs>
           <linearGradient
-            id="localHeroFade"
+            id="localHeroFadeLeft"
             x1="550"
             y1="600"
             x2="300"
