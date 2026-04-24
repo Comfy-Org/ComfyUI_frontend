@@ -389,11 +389,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     // render-loop throttle value instead — that is what actually governs
     // frame cadence.
     const getFrameGap = (comfyPage: ComfyPage) =>
-      comfyPage.page.evaluate(
-        () =>
-          (window.app!.canvas as unknown as { _maximumFrameGap: number })
-            ._maximumFrameGap
-      )
+      comfyPage.page.evaluate(() => window.app!.canvas.maximumFps * 1000)
 
     test('caps the render loop frame gap', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('LiteGraph.Canvas.MaximumFps', 30)
