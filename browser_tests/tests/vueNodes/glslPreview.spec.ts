@@ -70,27 +70,27 @@ class GLSLShaderNode {
   ) {
     this.node = comfyPage.vueNodes.getNodeLocator(nodeId)
     this.previewImage = this.node.locator('img[src^="blob:"]')
-    this.shaderTextbox = this.node.getByRole('textbox', {
-      name: 'fragment_shader'
-    })
-    this.widthInput = this.node
-      .getByLabel('size_mode.width', { exact: true })
+    this.shaderTextbox = comfyPage.vueNodes.getWidgetByName(
+      title,
+      'fragment_shader'
+    )
+    this.widthInput = comfyPage.vueNodes
+      .getWidgetByName(title, 'size_mode.width')
       .locator('input')
-    this.heightInput = this.node
-      .getByLabel('size_mode.height', { exact: true })
+    this.heightInput = comfyPage.vueNodes
+      .getWidgetByName(title, 'size_mode.height')
       .locator('input')
   }
 
-  /**
-   * Fire `execution_start` + `executed` with an image output for this node,
-   * which satisfies the `hasExecutionOutput` gate in `useGLSLPreview`.
-   */
-  async simulateExecutionOutput(ws: WebSocketRoute) {
+  async simulateExecutionOutput(
+    ws: WebSocketRoute,
+    executionNodeId: string = this.nodeId
+  ) {
     const exec = new ExecutionHelper(this.comfyPage, ws)
     const jobId = await exec.run()
     await this.comfyPage.nextFrame()
     exec.executionStart(jobId)
-    exec.executed(jobId, this.nodeId, {
+    exec.executed(jobId, executionNodeId, {
       images: [{ filename: 'glsl_test.png', subfolder: '', type: 'output' }]
     })
     exec.executionSuccess(jobId)
@@ -585,6 +585,155 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await expect(subgraph.previewImage).toBeVisible()
       await subgraph.waitForBlobSrc()
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255])
+    })
+  })
+
+  test.describe('renderer paths', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_standalone')
+      await comfyPage.vueNodes.waitForNodes(1)
+    })
+
+    test('scales custom resolution down to the max preview dimension', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+
+      await glsl.selectSizeMode('custom')
+      await expect(glsl.widthInput).toBeVisible()
+      await glsl.widthInput.fill('2048')
+      await glsl.widthInput.blur()
+      await glsl.heightInput.fill('1024')
+      await glsl.heightInput.blur()
+
+      await glsl.simulateExecutionOutput(ws)
+      await glsl.waitForBlobSrc()
+
+      // MAX_PREVIEW_DIMENSION is 1024 → clampResolution scales 2048x1024 to 1024x512.
+      await expect
+        .poll(() => glsl.getPreviewNaturalSize())
+        .toEqual({ width: 1024, height: 512 })
+    })
+
+    test('runs a multi-pass shader via #pragma passes', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+
+      // Pass 0 writes red to the ping-pong FBO; pass 1 swizzles it to green.
+      // If pass 0 didn't run, u_image0 is the black fallback and output is black.
+      const MULTIPASS_SHADER = [
+        '#version 300 es',
+        '#pragma passes 2',
+        'precision highp float;',
+        'uniform int u_pass;',
+        'uniform sampler2D u_image0;',
+        'in vec2 v_texCoord;',
+        'layout(location = 0) out vec4 fragColor0;',
+        'void main() {',
+        '  if (u_pass == 0) {',
+        '    fragColor0 = vec4(1.0, 0.0, 0.0, 1.0);',
+        '  } else {',
+        '    vec4 prev = texture(u_image0, v_texCoord);',
+        '    fragColor0 = vec4(prev.g, prev.r, 0.0, 1.0);',
+        '  }',
+        '}'
+      ].join('\n')
+
+      await glsl.shaderTextbox.fill(MULTIPASS_SHADER)
+      await glsl.simulateExecutionOutput(ws)
+      await glsl.waitForBlobSrc()
+      // RGBA16F → WebP round-trip drifts a couple of levels on saturated channels.
+      await glsl.expectEveryPixelToBe([0, 255, 0, 255], 2)
+    })
+
+    test('revokes the preview blob URL when the GLSL node is removed', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
+
+      await glsl.simulateExecutionOutput(ws)
+      const blobUrl = await glsl.waitForBlobSrc()
+
+      // Sanity check: the blob URL resolves before the node is deleted.
+      await expect(
+        comfyPage.page.evaluate((url) => fetch(url), blobUrl)
+      ).resolves.toBeTruthy()
+
+      await comfyPage.vueNodes.deleteNode(GLSL_NODE_ID)
+      await expect(glsl.node).toHaveCount(0)
+
+      // Delete tears down the inner scope → URL.revokeObjectURL → fetch rejects.
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(async (url) => {
+            try {
+              await fetch(url)
+              return 'resolved'
+            } catch {
+              return 'rejected'
+            }
+          }, blobUrl)
+        )
+        .toBe('rejected')
+    })
+  })
+
+  test.describe('inner GLSL sampling image through subgraph boundary', () => {
+    // Outer ids come from the workflow JSON; inner ids are reassigned on load.
+    const OUTER_LOAD_IMAGE_NODE_ID = '2'
+    const OUTER_SUBGRAPH_NODE_ID = '1'
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'nodes/glsl_shader_subgraph_with_loadimage'
+      )
+      await comfyPage.vueNodes.waitForNodes(2)
+    })
+
+    test('inner GLSL node reads upstream image via subgraph boundary', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+
+      await dropImageOntoLoadImage(
+        comfyPage,
+        OUTER_LOAD_IMAGE_NODE_ID,
+        'image64x64.webp'
+      )
+
+      // Enter the subgraph so the inner GLSL node mounts its LGraphNode.vue
+      await comfyPage.vueNodes.enterSubgraph(OUTER_SUBGRAPH_NODE_ID)
+      await comfyPage.vueNodes.waitForNodes(1)
+
+      const innerNode = comfyPage.vueNodes
+        .getNodeByTitle(GLSL_NODE_TITLE)
+        .first()
+      await innerNode.waitFor({ state: 'visible' })
+      const innerGlslId = await innerNode.getAttribute('data-node-id')
+      if (!innerGlslId) {
+        throw new Error('inner GLSLShader node is missing data-node-id')
+      }
+
+      const glsl = new GLSLShaderNode(comfyPage, innerGlslId, GLSL_NODE_TITLE)
+      await glsl.simulateExecutionOutput(
+        ws,
+        `${OUTER_SUBGRAPH_NODE_ID}:${innerGlslId}`
+      )
+
+      await expect(glsl.previewImage).toBeVisible()
+      await glsl.waitForBlobSrc()
+
+      await expect
+        .poll(() => glsl.getPreviewNaturalSize())
+        .toEqual({ width: 64, height: 64 })
     })
   })
 })
