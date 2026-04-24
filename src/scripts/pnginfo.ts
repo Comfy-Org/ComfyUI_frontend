@@ -140,34 +140,29 @@ export function getWebpMetadata(file: File) {
   })
 }
 
-export function getLatentMetadata(
+// Matches backend MAX_SAFETENSORS_HEADER_SIZE in
+// ComfyUI/app/assets/services/metadata_extract.py
+const MAX_SAFETENSORS_HEADER_SIZE = 8 * 1024 * 1024
+
+export async function getLatentMetadata(
   file: File
 ): Promise<Record<string, string> | undefined> {
-  return new Promise((r) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const safetensorsData = new Uint8Array(
-          event.target?.result as ArrayBuffer
-        )
-        const dataView = new DataView(safetensorsData.buffer)
-        const headerSize = dataView.getUint32(0, true)
-        const offset = 8
-        const header = JSON.parse(
-          new TextDecoder().decode(
-            safetensorsData.slice(offset, offset + headerSize)
-          )
-        )
-        r(header.__metadata__)
-      } catch {
-        r(undefined)
-      }
+  try {
+    const prefix = await file.slice(0, 8).arrayBuffer()
+    if (prefix.byteLength < 8) return undefined
+    const headerSize = new DataView(prefix).getUint32(0, true)
+    if (headerSize > MAX_SAFETENSORS_HEADER_SIZE) {
+      console.warn(
+        `Safetensors header size ${headerSize} bytes exceeds maximum ${MAX_SAFETENSORS_HEADER_SIZE} bytes`
+      )
+      return undefined
     }
-    reader.onerror = () => r(undefined)
-    reader.onabort = () => r(undefined)
-    const slice = file.slice(0, 1024 * 1024 * 4)
-    reader.readAsArrayBuffer(slice)
-  })
+    const headerData = await file.slice(8, 8 + headerSize).arrayBuffer()
+    const header = JSON.parse(new TextDecoder().decode(headerData))
+    return header.__metadata__
+  } catch {
+    return undefined
+  }
 }
 
 interface NodeConnection {

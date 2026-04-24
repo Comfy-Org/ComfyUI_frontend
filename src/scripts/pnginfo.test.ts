@@ -182,4 +182,34 @@ describe('getLatentMetadata', () => {
 
     expect(metadata).toBeUndefined()
   })
+
+  it('extracts metadata when the header is larger than 4 MiB', async () => {
+    const filler = 'x'.repeat(5 * 1024 * 1024)
+    const workflow =
+      '{"nodes":[{"id":1,"type":"KSampler","pos":[0,0],"size":[1,1]}]}'
+    const file = buildSafetensors({
+      __metadata__: { workflow, filler }
+    })
+
+    const metadata = await getLatentMetadata(file)
+
+    expect(metadata?.workflow).toBe(workflow)
+    expect(metadata?.filler).toBe(filler)
+  })
+
+  it('warns and returns undefined when the header size exceeds the 8 MiB limit', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const prefix = new Uint8Array(8)
+    const prefixView = new DataView(prefix.buffer)
+    const oversized = 8 * 1024 * 1024 + 1
+    prefixView.setUint32(0, oversized, true)
+    const file = new File([prefix], 'too-big.safetensors')
+
+    const metadata = await getLatentMetadata(file)
+
+    expect(metadata).toBeUndefined()
+    expect(warnSpy).toHaveBeenCalledWith(
+      `Safetensors header size ${oversized} bytes exceeds maximum ${8 * 1024 * 1024} bytes`
+    )
+  })
 })
