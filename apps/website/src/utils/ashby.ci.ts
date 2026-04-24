@@ -60,9 +60,6 @@ function staleAnnotation(reason: string): string {
   if (reason.startsWith('envelope')) {
     return `::error title=Ashby schema mismatch::${escaped}. The Ashby API contract has likely changed. Build continues with the snapshot, but future updates will fail until the schema is fixed.%0A%0AAction items:%0A  1. Check https://developers.ashbyhq.com/reference for API changelog.%0A  2. Update apps/website/src/utils/ashby.schema.ts to match the new shape.`
   }
-  if (reason === 'all roles failed validation') {
-    return `::error title=Ashby: every role dropped::Every role in the Ashby response failed schema validation. Build continues with the snapshot.%0A%0AAction items:%0A  1. Inspect apps/website/src/utils/ashby.schema.ts against a current Ashby response.%0A  2. Fix the schema or the postings before the next snapshot refresh.`
-  }
   return `::warning title=Ashby API unavailable::${escaped}. Using last-known-good snapshot.%0A%0AAction items:%0A  1. Check https://status.ashbyhq.com%0A  2. Re-run this workflow once Ashby is healthy.`
 }
 

@@ -68,7 +68,7 @@ async function doFetchRolesForBuild(
   }
 
   const result = await tryFetchAndParse(apiKey, boardName, options)
-  if (result.kind === 'ok' && result.departments.length > 0) {
+  if (result.kind === 'ok') {
     return {
       status: 'fresh',
       snapshot: {
@@ -80,9 +80,7 @@ async function doFetchRolesForBuild(
     }
   }
 
-  const reason =
-    result.kind === 'ok' ? 'all roles failed validation' : result.reason
-  return fallback(reason, options.snapshotUrl)
+  return fallback(result.reason, options.snapshotUrl)
 }
 
 async function fallback(
@@ -224,13 +222,17 @@ function extractTitle(raw: unknown): string {
   return ''
 }
 
+const DEFAULT_DEPARTMENT = 'Other'
+const DEFAULT_LOCATION = 'Remote'
+
 function groupByDepartment(jobs: readonly AshbyJobPosting[]): Department[] {
   const byKey = new Map<string, Department>()
   for (const job of jobs) {
-    const name = job.department.trim().toUpperCase()
+    const displayDepartment = normalizeDepartment(job.department)
+    const name = displayDepartment.toUpperCase()
     const key = slugify(name)
     const existing = byKey.get(key)
-    const role = toDomainRole(job)
+    const role = toDomainRole(job, displayDepartment)
     if (existing) {
       existing.roles.push(role)
     } else {
@@ -240,15 +242,20 @@ function groupByDepartment(jobs: readonly AshbyJobPosting[]): Department[] {
   return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function toDomainRole(job: AshbyJobPosting): Role {
+function toDomainRole(job: AshbyJobPosting, department: string): Role {
   const applyUrl = job.applyUrl ?? job.jobUrl
   return {
     id: createHash('sha1').update(applyUrl).digest('hex').slice(0, 16),
     title: job.title,
-    department: capitalize(job.department.trim()),
-    location: job.location,
+    department: capitalize(department),
+    location: (job.location ?? '').trim() || DEFAULT_LOCATION,
     applyUrl
   }
+}
+
+function normalizeDepartment(raw: string | undefined): string {
+  const trimmed = (raw ?? '').trim()
+  return trimmed.length > 0 ? trimmed : DEFAULT_DEPARTMENT
 }
 
 function slugify(value: string): string {

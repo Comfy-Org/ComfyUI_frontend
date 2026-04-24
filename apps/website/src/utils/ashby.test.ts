@@ -125,14 +125,30 @@ describe('fetchRolesForBuild', () => {
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
-  it('falls back to snapshot when every role fails validation', async () => {
-    const snapshot = makeSnapshot()
-    const snapshotUrl = withSnapshotDir(snapshot)
+  it('renders an empty-but-fresh outcome when hiring is paused', async () => {
+    const snapshotUrl = withSnapshotDir(makeSnapshot())
+    const fetchImpl = vi.fn(async () => response({ apiVersion: '1', jobs: [] }))
+    const outcome = await fetchRolesForBuild({
+      apiKey: KEY,
+      boardName: BOARD,
+      baseUrl: BASE_URL,
+      snapshotUrl,
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.departments).toEqual([])
+    expect(outcome.droppedCount).toBe(0)
+    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
+
+  it('normalizes missing department and location to safe defaults', async () => {
+    const snapshotUrl = withSnapshotDir(makeSnapshot())
+    const job = validJob()
+    delete (job as Record<string, unknown>).department
+    delete (job as Record<string, unknown>).location
     const fetchImpl = vi.fn(async () =>
-      response({
-        apiVersion: '1',
-        jobs: [validJob({ department: '' })]
-      })
+      response({ apiVersion: '1', jobs: [job] })
     )
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
@@ -141,10 +157,11 @@ describe('fetchRolesForBuild', () => {
       snapshotUrl,
       fetchImpl: fetchImpl as unknown as typeof fetch
     })
-    expect(outcome.status).toBe('stale')
-    if (outcome.status !== 'stale') return
-    expect(outcome.reason).toBe('all roles failed validation')
-    expect(outcome.snapshot.fetchedAt).toBe(snapshot.fetchedAt)
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    const [department] = outcome.snapshot.departments
+    expect(department?.name).toBe('OTHER')
+    expect(department?.roles[0]?.location).toBe('Remote')
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
