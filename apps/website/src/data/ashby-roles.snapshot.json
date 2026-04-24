@@ -1,33 +1,6 @@
 {
-  "fetchedAt": "2026-04-24T18:02:16.997Z",
+  "fetchedAt": "2026-04-24T18:59:03.989Z",
   "departments": [
-    {
-      "name": "BUSINESS",
-      "key": "business",
-      "roles": [
-        {
-          "id": "ec68ae44dd5943c9",
-          "title": "Senior Technical Recruiter",
-          "department": "Business",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/d5008532-c45d-46e6-ba2c-20489d364362/application"
-        },
-        {
-          "id": "16f556001ce1cef4",
-          "title": "BizOps Strategist",
-          "department": "Business",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/145b8558-0ab4-43e8-8fac-b59059cf2537/application"
-        },
-        {
-          "id": "8e773a72c1b8e099",
-          "title": "Founding Customer Success Manager",
-          "department": "Business",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a1c5c5ed-62ac-4767-af57-a3ba4e0bf5e4/application"
-        }
-      ]
-    },
     {
       "name": "DESIGN",
       "key": "design",
@@ -162,6 +135,33 @@
           "department": "Marketing",
           "location": "San Francisco",
           "applyUrl": "https://jobs.ashbyhq.com/comfy-org/89d3ff75-2055-4e92-9c69-81feff55627c/application"
+        }
+      ]
+    },
+    {
+      "name": "OPERATIONS",
+      "key": "operations",
+      "roles": [
+        {
+          "id": "ec68ae44dd5943c9",
+          "title": "Senior Technical Recruiter",
+          "department": "Operations",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/d5008532-c45d-46e6-ba2c-20489d364362/application"
+        },
+        {
+          "id": "16f556001ce1cef4",
+          "title": "BizOps Strategist",
+          "department": "Operations",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/145b8558-0ab4-43e8-8fac-b59059cf2537/application"
+        },
+        {
+          "id": "8e773a72c1b8e099",
+          "title": "Founding Customer Success Manager",
+          "department": "Operations",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a1c5c5ed-62ac-4767-af57-a3ba4e0bf5e4/application"
         }
       ]
     }
