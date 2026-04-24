@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
   test('should display node title', async ({ comfyPage }) => {
@@ -22,8 +21,8 @@ test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
     // Test cancel with Escape
     await vueNode.title.dblclick()
     await comfyPage.nextFrame()
-    await vueNode.titleInput.fill('This Should Be Cancelled')
-    await vueNode.titleInput.press('Escape')
+    await vueNode.titleEditor.input.fill('This Should Be Cancelled')
+    await vueNode.titleEditor.cancel()
     await comfyPage.nextFrame()
 
     // Title should remain as the previously saved value
@@ -40,9 +39,6 @@ test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
     if (!nodeBbox) throw new Error('Node not found')
     await loadCheckpointNode.dblclick()
 
-    const editingTitleInput = comfyPage.page.getByTestId(
-      TestIds.node.titleInput
-    )
-    await expect(editingTitleInput).toBeHidden()
+    await comfyPage.titleEditor.expectHidden()
   })
 })
