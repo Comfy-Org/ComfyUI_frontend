@@ -29,7 +29,7 @@ export type FetchOutcome =
   | { status: 'stale'; snapshot: RolesSnapshot; reason: string }
   | { status: 'failed'; reason: string }
 
-export interface FetchRolesOptions {
+interface FetchRolesOptions {
   apiKey?: string
   boardName?: string
   baseUrl?: string

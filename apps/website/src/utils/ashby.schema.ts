@@ -15,4 +15,3 @@ export const AshbyJobBoardResponseSchema = z.object({
 })
 
 export type AshbyJobPosting = z.infer<typeof AshbyJobPostingSchema>
-export type AshbyJobBoardResponse = z.infer<typeof AshbyJobBoardResponseSchema>
