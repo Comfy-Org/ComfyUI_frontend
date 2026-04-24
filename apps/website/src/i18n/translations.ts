@@ -742,7 +742,7 @@ const translations = {
     'zh-CN': 'Cloud'
   },
   'cloud.reason.1.title': {
-    en: 'Powerful GPUs with end-\nto-end security built-in',
+    en: 'Powerful GPUs with <span class="whitespace-nowrap">end-to-end</span> security <span class="whitespace-nowrap">built-in</span>',
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
@@ -777,7 +777,7 @@ const translations = {
       '每个节点都可见。每个设置都可调。ComfyUI 为您提供完整的推理管线。选择您的采样器、调度器、模型链。云端简化了设置并增强了底层硬件。'
   },
   'cloud.reason.4.title': {
-    en: 'Community workflows,\nunlimited customization\nthrough pre-installed\ncustom nodes',
+    en: 'Community workflows,\nunlimited customization\nthrough <span class="whitespace-nowrap">pre-installed</span>\ncustom nodes',
     'zh-CN': '社区工作流，\n通过预安装自定义节点\n实现无限自定义'
   },
   'cloud.reason.4.description': {
@@ -1195,9 +1195,9 @@ const translations = {
     'zh-CN': '单个任务时限'
   },
   'pricing.included.feature2.description': {
-    en: 'Each workflow run has a maximum duration of 60 minutes. On the Pro plan, the time limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
+    en: 'On our Standard and Creator plans, each workflow has a maximum run time of 30 minutes. On the Pro plan, the limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
     'zh-CN':
-      '每个工作流运行最长为 60 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
+      'Standard 和 Creator 计划下，每个工作流最长运行时间为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
   },
   'pricing.included.feature3.title': {
     en: 'Usage',
