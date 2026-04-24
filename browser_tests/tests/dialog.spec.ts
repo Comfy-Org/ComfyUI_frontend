@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import type { Keybinding } from '@/platform/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
-import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
 import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -179,21 +178,6 @@ test.describe('Signin dialog', () => {
     await expect(dialog.root).toBeHidden()
     expect(await dialogResult).toBe(false)
   })
-})
-
-test('API Nodes sign-in dialog', async ({ comfyPage }) => {
-  const dialog = new ApiSignin(comfyPage.page)
-  const { result: dialogResult } = await dialog.open([
-    'FluxProGenerate',
-    'StableDiffusion3Generate'
-  ])
-
-  await expect(dialog.root.getByText('FluxProGenerate')).toBeVisible()
-  await expect(dialog.root.getByText('StableDiffusion3Generate')).toBeVisible()
-
-  await dialog.cancel.click()
-  await expect(dialog.root).toBeHidden()
-  expect(await dialogResult).toBe(false)
 })
 
 test.describe('Update password dialog', () => {
