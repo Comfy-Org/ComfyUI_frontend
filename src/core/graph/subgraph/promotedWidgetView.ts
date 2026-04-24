@@ -66,9 +66,19 @@ interface PromotedSourceWriteMeta {
 function cloneWidgetValue<TValue extends IBaseWidget['value']>(
   value: TValue
 ): TValue {
-  return value != null && typeof value === 'object'
-    ? (JSON.parse(JSON.stringify(value)) as TValue)
-    : value
+  if (value == null || typeof value !== 'object') return value
+  try {
+    return structuredClone(value) as TValue
+  } catch {
+    /**
+     * Malformed blobs (circular references, values with throwing `toJSON`,
+     * `BigInt` inside `JSON`-backed paths, etc.) used to crash the whole
+     * configure when clone was unconditionally `JSON.parse(JSON.stringify)`.
+     * Fall back to the raw reference so a bad saved `{value}` cannot abort
+     * subgraph load.
+     */
+    return value
+  }
 }
 
 function getPromotedSourceWriteMeta(
@@ -219,16 +229,15 @@ class PromotedWidgetView implements IPromotedWidgetView {
    * direct-edit self-heal does not discard the restored value.
    */
   restorePerInstanceValue(value: IBaseWidget['value']): void {
-    const cloned = cloneWidgetValue(value)
-    this.subgraphNode._instanceWidgetValues.set(this.instanceKey, cloned)
-    setPromotedSourceWriteMeta(
-      this.subgraphNode.rootGraph,
-      this._sharedSourceKey,
-      {
-        value: cloneWidgetValue(value),
-        writerInstanceId: String(this.subgraphNode.id)
-      }
-    )
+    /**
+     * Guard against ghost entries: a save path that stores `undefined` (or
+     * round-trips it through `raw ?? null`) must not poison
+     * `_instanceWidgetValues` with an entry that `captureSiblingFallbackValues`
+     * would then treat as "already written" and skip.
+     */
+    if (value === undefined) return
+
+    this._seedInstanceState(value)
     /**
      * Align shared state with the restored value so `getTrackedValue`'s
      * direct-edit self-heal does not mistake the pre-existing inner value
@@ -239,6 +248,21 @@ class PromotedWidgetView implements IPromotedWidgetView {
      * needs to be captured.
      */
     this._writeValueToSharedState(value)
+  }
+
+  private _seedInstanceState(value: IBaseWidget['value']): void {
+    this.subgraphNode._instanceWidgetValues.set(
+      this.instanceKey,
+      cloneWidgetValue(value)
+    )
+    setPromotedSourceWriteMeta(
+      this.subgraphNode.rootGraph,
+      this._sharedSourceKey,
+      {
+        value: cloneWidgetValue(value),
+        writerInstanceId: String(this.subgraphNode.id)
+      }
+    )
   }
 
   private _writeValueToSharedState(value: IBaseWidget['value']): void {
@@ -305,63 +329,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   set value(value: IBaseWidget['value']) {
     this.captureSiblingFallbackValues()
-
-    // Keep per-instance map in sync for execution (graphToPrompt)
-    this.subgraphNode._instanceWidgetValues.set(
-      this.instanceKey,
-      cloneWidgetValue(value)
-    )
-    setPromotedSourceWriteMeta(
-      this.subgraphNode.rootGraph,
-      this._sharedSourceKey,
-      {
-        value: cloneWidgetValue(value),
-        writerInstanceId: String(this.subgraphNode.id)
-      }
-    )
-
-    const linkedWidgets = this.getLinkedInputWidgets()
-    if (linkedWidgets.length > 0) {
-      const widgetStore = useWidgetValueStore()
-      let didUpdateState = false
-      for (const linkedWidget of linkedWidgets) {
-        const state = widgetStore.getWidget(
-          this.graphId,
-          linkedWidget.nodeId,
-          linkedWidget.widgetName
-        )
-        if (state) {
-          state.value = value
-          didUpdateState = true
-        }
-      }
-
-      const resolved = this.resolveDeepest()
-      if (resolved) {
-        const resolvedState = widgetStore.getWidget(
-          this.graphId,
-          stripGraphPrefix(String(resolved.node.id)),
-          resolved.widget.name
-        )
-        if (resolvedState) {
-          resolvedState.value = value
-          didUpdateState = true
-        }
-      }
-
-      if (didUpdateState) return
-    }
-
-    const state = this.getWidgetState()
-    if (state) {
-      state.value = value
-      return
-    }
-
-    const resolved = this.resolveAtHost()
-    if (resolved && isWidgetValue(value)) {
-      resolved.widget.value = value
-    }
+    this._seedInstanceState(value)
+    this._writeValueToSharedState(value)
   }
 
   get label(): string | undefined {

@@ -315,6 +315,10 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       widgets_values: [999]
     })
 
+    // LOAD invariant: stale positional widgets_values must not leak into the
+    // promoted view — it falls back to the inner widget's own value (42).
+    expect(instance.widgets?.[0].value).toBe(42)
+    // SAVE invariant: re-serialized output drops the dead widgets_values.
     expect(instance.serialize().widgets_values).toBeUndefined()
   })
 })

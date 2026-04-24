@@ -44,7 +44,10 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import {
+  getProxyWidgetInlineState,
+  parseProxyWidgets
+} from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   makePromotionEntryKey,
@@ -70,6 +73,21 @@ type LinkedPromotionEntry = PromotedWidgetSource & {
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
+
+/**
+ * Deep-clone a widget value for inlined serialization. Unlike raw
+ * `JSON.parse(JSON.stringify(...))`, `structuredClone` handles `Date`,
+ * `Map`/`Set`, and `BigInt` natively; the fallback preserves the original
+ * reference for pathological values (circular refs, throwing `toJSON`)
+ * rather than aborting the entire serialize/configure pass.
+ */
+function safeDeepClone<T>(value: T): T {
+  try {
+    return structuredClone(value)
+  } catch {
+    return value
+  }
+}
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -645,16 +663,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
-  private _serializeEntries(
-    entries: PromotedWidgetSource[]
-  ): (string[] | [string, string, string])[] {
-    return entries.map((e) =>
-      e.disambiguatingSourceNodeId
-        ? [e.sourceNodeId, e.sourceWidgetName, e.disambiguatingSourceNodeId]
-        : [e.sourceNodeId, e.sourceWidgetName]
-    )
-  }
-
   /**
    * Serialize promotion entries with their per-instance value inlined on
    * each entry as an optional trailing `{value}` state object.
@@ -681,26 +689,65 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const key = makePromotionEntryKey(e)
       const view = viewByInstanceKey.get(key)
       const disambiguator = e.disambiguatingSourceNodeId ?? null
-
-      if (!view?.sourceSerialize) {
-        return disambiguator
+      const identityOnly: [string, string] | [string, string, string] =
+        disambiguator
           ? [e.sourceNodeId, e.sourceWidgetName, disambiguator]
           : [e.sourceNodeId, e.sourceWidgetName]
-      }
+
+      if (!view?.sourceSerialize) return identityOnly
 
       const raw = view.serializeValue
         ? view.serializeValue(this, -1)
         : view.value
+      /**
+       * Downgrade to identity-only when the resolved value is `undefined`.
+       * Without this, the `?? null` coercion below would persist `null` and
+       * the reload path would seed `_instanceWidgetValues[key] = null` —
+       * a ghost entry that `captureSiblingFallbackValues` treats as "already
+       * written" and that `getTrackedValue` would return as a real value.
+       */
+      if (raw === undefined) return identityOnly
+
       const cloned =
-        raw != null && typeof raw === 'object'
-          ? JSON.parse(JSON.stringify(raw))
-          : (raw ?? null)
+        raw !== null && typeof raw === 'object' ? safeDeepClone(raw) : raw
 
       return [
         e.sourceNodeId,
         e.sourceWidgetName,
         disambiguator,
         { value: cloned }
+      ]
+    })
+  }
+
+  /**
+   * Write-back variant used during `configure`. Identity comes from the
+   * resolved entries (normalization output), and values come from the
+   * `pendingValues` map built in the same pass. Called before
+   * `_resolveInputWidget` runs, so `_instanceWidgetValues` is still empty
+   * and the view-backed serializer cannot be used here.
+   */
+  private _serializeEntriesWithPendingValues(
+    entries: PromotedWidgetSource[],
+    pendingValues: Map<string, unknown>
+  ): (
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string | null, { value: unknown }]
+  )[] {
+    return entries.map((e) => {
+      const disambiguator = e.disambiguatingSourceNodeId ?? null
+      const key = makePromotionEntryKey(e)
+      if (!pendingValues.has(key)) {
+        return disambiguator
+          ? [e.sourceNodeId, e.sourceWidgetName, disambiguator]
+          : [e.sourceNodeId, e.sourceWidgetName]
+      }
+      return [
+        e.sourceNodeId,
+        e.sourceWidgetName,
+        disambiguator,
+        { value: pendingValues.get(key) }
       ]
     })
   }
@@ -1174,13 +1221,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           )
         }
 
-        if (resolved && rawEntry.length >= 4) {
-          const state = (rawEntry as unknown[])[3]
-          if (state != null && typeof state === 'object' && 'value' in state) {
-            pendingValues.set(
-              makePromotionEntryKey(resolved),
-              (state as { value: unknown }).value
-            )
+        if (resolved) {
+          const state = getProxyWidgetInlineState(rawEntry)
+          if (state) {
+            pendingValues.set(makePromotionEntryKey(resolved), state.value)
           }
         }
 
@@ -1190,8 +1234,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     store.setPromotions(this.rootGraph.id, this.id, entries)
 
-    // Write back resolved entries so legacy or stale entries don't persist
-    const serialized = this._serializeEntries(entries)
+    /**
+     * Write back resolved entries so legacy or stale identities don't
+     * persist — but preserve the inline `{value}` state from `pendingValues`
+     * alongside the normalized identity, otherwise this runs on every load
+     * and demotes 4-tuple entries (which always differ byte-for-byte from
+     * the pre-normalization `_serializeEntries` output) into 2/3-tuple,
+     * stripping saved per-instance values from `properties.proxyWidgets`
+     * until the next `serialize()` rebuilds them.
+     */
+    const serialized = this._serializeEntriesWithPendingValues(
+      entries,
+      pendingValues
+    )
     if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
       this.properties.proxyWidgets = serialized
     }
