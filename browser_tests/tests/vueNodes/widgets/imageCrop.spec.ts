@@ -899,7 +899,6 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           height: 200
         })
 
-        // First select a preset (auto-locks, shows 4 corner handles)
         await node.getByRole('combobox').click()
         await comfyPage.page
           .getByRole('option', { name: '1:1', exact: true })
@@ -911,7 +910,6 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           'preset selection should lock ratio and show 4 handles'
         ).toHaveCount(4)
 
-        // Select Custom to unlock
         await node.getByRole('combobox').click()
         await comfyPage.page
           .getByRole('option', { name: 'Custom', exact: true })
@@ -1020,14 +1018,16 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         })
         await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
 
+        const before = await getCropValue(comfyPage, 2)
+        if (!before) throw new Error('missing crop')
+        const initialRatio = before.width / before.height
+
         await dragOnLocator(
           comfyPage,
           node.getByTestId('crop-resize-se'),
           600,
           400
         )
-
-        const initialRatio = 80 / 60
 
         await expect
           .poll(
@@ -1090,7 +1090,6 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         })
         await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
 
-        // Drag SE corner inward to shrink below minimum size
         await dragOnLocator(
           comfyPage,
           node.getByTestId('crop-resize-se'),
@@ -1176,7 +1175,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         const xInput = node.getByTestId('bounding-box-x').locator('input')
 
         await expect
-          .poll(async () => parseInt(await xInput.inputValue()), {
+          .poll(async () => Number(await xInput.inputValue()), {
             message: 'X input should show initial crop x value'
           })
           .toBe(50)
@@ -1184,7 +1183,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await dragOnLocator(comfyPage, node.getByTestId('crop-overlay'), 40, 20)
 
         await expect
-          .poll(async () => parseInt(await xInput.inputValue()), {
+          .poll(async () => Number(await xInput.inputValue()), {
             message: 'X input should update after crop drag'
           })
           .toBeGreaterThan(50)
