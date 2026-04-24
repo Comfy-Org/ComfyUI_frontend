@@ -888,3 +888,44 @@ test.describe('Assets sidebar - media type filter', () => {
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
 })
+
+test.describe('Assets sidebar - drag and drop', () => {
+  test('Dragging outputs from assets skips upload', async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({
+        id: 'job',
+        preview_output: {
+          filename: `test.png`,
+          type: 'temp',
+          nodeId: '1',
+          mediaType: 'images'
+        }
+      })
+    ])
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+    await comfyPage.page.route('**/upload/image', (route) => {
+      expect(true, 'file is not uploaded').toBe(false)
+      return route.fulfill({ status: 405 })
+    })
+
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+
+    await comfyPage.canvas.focus()
+    await comfyPage.page.keyboard.press('.')
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    const targetPosition =
+      (await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')) ??
+      undefined
+
+    await tab.assetCards.dragTo(comfyPage.canvas, { targetPosition })
+
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const fileComboWidget = await nodes[0].getWidget(0)
+    await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
+  })
+})
