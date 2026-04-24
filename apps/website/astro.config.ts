@@ -7,6 +7,7 @@ export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
   build: {
+    assets: '_website',
     assetsPrefix: '/_website'
   },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
