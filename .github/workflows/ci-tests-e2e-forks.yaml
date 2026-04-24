@@ -64,15 +64,16 @@ jobs:
 
       - name: Download and Deploy Reports
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
-        uses: actions/download-artifact@v7
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-          pattern: playwright-report-*
+          run_id: ${{ github.event.workflow_run.id }}
+          name: playwright-report-.*
+          name_is_regexp: true
           path: reports
+          if_no_artifact_found: warn
 
       - name: Handle Test Completion
-        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
+        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed' && hashFiles('reports/**') != ''
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
