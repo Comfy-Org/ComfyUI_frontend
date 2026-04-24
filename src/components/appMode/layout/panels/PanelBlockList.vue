@@ -2,13 +2,27 @@
 /**
  * PanelBlockList — 2D grid of blocks inside a FloatingPanel.
  *
- * Rows stack vertically; within a row, blocks sit side-by-side. A
- * grip handle on each block's left edge drives pointer reorder via
- * useBlockDrag. During drag, the layout reshuffles to preview the
- * post-drop arrangement with a dashed outline on the moving block.
+ * Rows stack vertically; within a row, blocks sit side-by-side.
+ *
+ * Variant-gated drag:
+ * - `builder` — the whole block is the drag target (no grip). Widget
+ *   bodies are already inert in this variant (see InputCell), so a
+ *   stray click on a text field can't eat the drag. This mode is
+ *   where users restructure the layout.
+ * - `app-mode` — drag is disabled entirely. Widgets are fully
+ *   interactive (users type prompts, scrub numbers, etc.) without
+ *   any risk of accidentally reordering; re-enter builder to edit
+ *   the layout.
+ *
+ * Motion: FLIP animation (capture rects before update, apply inverse
+ * transform after, transition back to zero) so blocks slide into
+ * their new positions instead of snapping. The dragging block is
+ * excluded from FLIP — it's anchored at its target by the reshuffle
+ * preview and lifted (shadow + scale); animating it would compete
+ * with that affordance.
  */
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, useTemplateRef } from 'vue'
+import { computed, onBeforeUpdate, onUpdated, useTemplateRef } from 'vue'
 
 import InputCell from '../cells/InputCell.vue'
 import type { InputCellEntry, InputCellVariant } from '../cells/InputCell.vue'
@@ -20,7 +34,8 @@ const { rows, variant = 'app-mode' } = defineProps<{
   rows: BlockRow[]
   inputEntryMap: Map<string, InputCellEntry>
   /** Forwarded to InputCell — `builder` adds the ⋯ Rename/Remove menu
-   *  and makes the widget body inert. */
+   *  and makes the widget body inert, and is also the only variant
+   *  where drag-to-reorder is active. */
   variant?: InputCellVariant
 }>()
 
@@ -35,8 +50,8 @@ const { draggingPos, dropTarget, startDrag } = useBlockDrag({
   onCommit: (from, target) => emit('reorder', from, target)
 })
 
-// id of the block in flight — used to flag it in the displayed rows
-// and apply the dashed-outline preview styling.
+// id of the block in flight — used to flag it in the displayed rows,
+// apply the lift styling, and skip it during FLIP animation.
 const draggingBlockId = computed<string | null>(() => {
   const pos = draggingPos.value
   if (!pos) return null
@@ -68,33 +83,80 @@ const originalById = computed(() => {
   return map
 })
 
-// Look up the block's original position and start a drag from there.
-// `originalById` is built from `rows` and every block in `displayRows`
-// is a re-reference from `rows`, so a missing entry means the block
-// isn't ours to drag — skip silently rather than invent coords.
+// Builder-only drag entry point. `startDrag` preventDefaults the
+// pointerdown, so short-circuiting here in app-mode means native
+// text-selection / focus behavior inside widgets is untouched.
 function beginDrag(blockId: string, event: PointerEvent) {
+  if (variant !== 'builder') return
   const pos = originalById.value.get(blockId)
   if (pos) startDrag(pos, event)
 }
+
+// --- FLIP reorder animation --------------------------------------
+// `onBeforeUpdate` fires on any reactive update (including drag-
+// preview reshuffles and committed reorders), so we sample rects
+// each time and only animate blocks whose positions actually
+// changed. The dragging block is excluded because it's visually
+// held at its target by the lift treatment.
+const FLIP_DURATION_MS = 200
+const prevRects = new Map<string, DOMRect>()
+
+onBeforeUpdate(() => {
+  prevRects.clear()
+  const els = listEl.value?.querySelectorAll<HTMLElement>('[data-flip-key]')
+  if (!els) return
+  for (const el of els) {
+    const key = el.dataset.flipKey
+    if (key) prevRects.set(key, el.getBoundingClientRect())
+  }
+})
+
+onUpdated(() => {
+  const els = listEl.value?.querySelectorAll<HTMLElement>('[data-flip-key]')
+  if (!els) return
+  const draggingId = draggingBlockId.value
+  for (const el of els) {
+    const key = el.dataset.flipKey
+    if (!key || key === draggingId) continue
+    const prev = prevRects.get(key)
+    if (!prev) continue
+    const next = el.getBoundingClientRect()
+    const dx = prev.left - next.left
+    const dy = prev.top - next.top
+    // Sub-pixel deltas (layout rounding) would animate a barely-
+    // visible jiggle every keystroke; skip them.
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue
+    // Invert: jump back to the old position with no transition…
+    el.style.transform = `translate(${dx}px, ${dy}px)`
+    el.style.transition = 'none'
+    // …then on the next frame, enable the transition and clear the
+    // transform so the browser interpolates back to its natural
+    // (new) position. Double-RAF avoids the browser batching the
+    // two style writes and skipping the animation.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.transition = `transform ${FLIP_DURATION_MS}ms ease`
+        el.style.transform = ''
+      })
+    })
+  }
+})
 </script>
 
 <template>
   <!--
     During drag, `displayRows` shows the layout exactly as it would
     look after the drop (via `applyMove`). The block in flight lands
-    at its proposed new position with a dashed orange outline framing
-    the space it will occupy — no separate line indicator, so the user
-    sees the real geometry instead of inferring it from a hairline.
-    10px list gap matches InputCell's header→body gap so the vertical
-    rhythm stays uniform across panel and cell.
+    at its proposed new position, lifted with shadow + scale so the
+    user sees what they're holding while the other blocks slide into
+    their new arrangement via FLIP. 10px list gap matches InputCell's
+    header→body gap so the vertical rhythm stays uniform.
   -->
   <ul
     ref="listEl"
     class="m-0 flex list-none flex-col gap-[10px] p-0"
     role="list"
   >
-    <!-- 16px row gap matches the grip width — the grip fills the gap
-         exactly, with 4px dots centered so there's 6px clear per side. -->
     <li
       v-for="(row, rowIdx) in displayRows"
       :key="`row-${rowIdx}-${row[0]?.id}`"
@@ -107,44 +169,24 @@ function beginDrag(blockId: string, event: PointerEvent) {
           cn(
             'group relative block min-w-0 flex-1',
             'rounded-layout-cell bg-transparent',
-            'duration-layout transition-opacity ease-layout',
-            block.id === draggingBlockId &&
-              'outline-2 outline-offset-2 outline-warning-background outline-dashed'
+            'duration-layout transition-[box-shadow,transform] ease-layout',
+            variant === 'builder' && [
+              'cursor-grab touch-none active:cursor-grabbing',
+              'hover:outline-[3px] hover:outline-offset-[6px] hover:outline-warning-background hover:outline-dashed'
+            ],
+            block.id === draggingBlockId && [
+              'z-20 scale-[1.02] shadow-2xl',
+              'outline-[3px] outline-offset-[6px] outline-warning-background outline-dashed'
+            ]
           )
         "
         :data-block-row="originalById.get(block.id)?.row"
         :data-block-col="originalById.get(block.id)?.col"
         :data-block-kind="block.kind"
         :data-dragging="block.id === draggingBlockId ? 'true' : undefined"
+        :data-flip-key="block.id"
+        @pointerdown="beginDrag(block.id, $event)"
       >
-        <!-- Grip is a pointer-only affordance — hidden from the tab
-             order and screen readers until keyboard reorder
-             (Enter/Space to grab, arrow keys to move, Enter to drop)
-             lands as a follow-up. Was a focusable <button>, but
-             tabbing to it did nothing, which is the focusable-but-
-             inert antipattern. Absolutely positioned into the panel
-             body's 16px left padding — grip's right edge touches the
-             block's left edge so content gets full width and the
-             panel reads with symmetric 16px margins. -->
-        <span
-          :class="
-            cn(
-              'absolute inset-y-0 -left-4 flex w-4 p-0',
-              'items-center justify-center bg-transparent',
-              'cursor-grab touch-none active:cursor-grabbing',
-              'duration-layout opacity-0 transition-opacity ease-layout',
-              'group-hover:opacity-70',
-              block.id === draggingBlockId && 'opacity-70'
-            )
-          "
-          aria-hidden="true"
-          @pointerdown="beginDrag(block.id, $event)"
-        >
-          <span
-            class="h-full w-1 bg-[radial-gradient(circle,var(--color-layout-mute)_1px,transparent_1.2px)] bg-size-[4px_4px] bg-repeat-y"
-            aria-hidden="true"
-          />
-        </span>
         <div class="w-full min-w-0 overflow-hidden">
           <!-- 1-item v-for binds the Map lookup once into `entry`, then
                v-if narrows to non-undefined so InputCell's :entry is
@@ -165,6 +207,20 @@ function beginDrag(blockId: string, event: PointerEvent) {
             </div>
           </template>
         </div>
+        <!--
+          Drag-tint overlay: child widgets + label rows paint their
+          own opaque backgrounds, so a bg class on the block itself
+          only bleeds through in the gaps. Absolute overlay sized to
+          the outline's rect (matching -inset / offset) sits above
+          the content with `pointer-events-none` so clicks still
+          bubble into the drag machinery. Rendered only while the
+          block is in flight.
+        -->
+        <div
+          v-if="block.id === draggingBlockId"
+          class="pointer-events-none absolute -inset-1.5 z-10 rounded-layout-cell bg-warning-background/15"
+          aria-hidden="true"
+        />
       </div>
     </li>
   </ul>

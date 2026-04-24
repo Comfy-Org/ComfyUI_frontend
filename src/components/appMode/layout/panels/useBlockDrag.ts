@@ -2,17 +2,39 @@
  * useBlockDrag — pointer-driven reorder for blocks inside a panel,
  * with multi-column row support.
  *
- * Drop-target detection: find the block closest to the pointer, then
- * classify the pointer's position inside that block's rect into one of
- * four zones — left edge → columnBefore, right edge → columnAfter,
- * upper middle → newRowBefore, lower middle → newRowAfter.
+ * Architecture:
+ * - **Snapshot hit-testing.** At drag start we capture each block's
+ *   `{rect, rowIndex, colIndex}`. Every subsequent hit-test runs
+ *   against that snapshot, never the live DOM. Without this, the
+ *   reshuffle preview (`displayRows = applyMove(...)`) and its FLIP
+ *   animation change rects during the drag, creating a feedback
+ *   loop — a target change reshuffles the DOM, which changes
+ *   `getBoundingClientRect()`, which changes the target again.
+ *   Snapshot makes hit zones static and immune to mid-drag DOM
+ *   mutation.
+ * - **Target-shape equality.** `computeDropTarget()` returns a fresh
+ *   object per call; writing it straight to the ref would re-trigger
+ *   `displayRows` + FLIP every single pointermove even when the
+ *   logical target is unchanged. A deep equality guard before the
+ *   assignment keeps the reactive graph quiet unless the zone
+ *   actually changes.
+ * - **Hysteresis on zone boundaries.** Once a zone is active, we
+ *   expand its effective boundary by `HYSTERESIS_PX` so the cursor
+ *   has to move meaningfully past the edge before switching. Kills
+ *   the jittery flip-flop when the pointer hovers exactly on a
+ *   column-edge or the row midline.
+ *
+ * Drop-target detection: find the block whose (snapshot) center is
+ * closest to the pointer, then classify the pointer's position
+ * inside that block's snapshot rect into one of four zones — left
+ * edge → columnBefore, right edge → columnAfter, upper middle →
+ * newRowBefore, lower middle → newRowAfter.
  *
  * Drag contract:
- * - Starts on grip pointerdown; only activates (`draggingPos` set) once
- *   the pointer moves past `DRAG_THRESHOLD_PX`, so a plain click on the
- *   grip doesn't count as a drag.
- * - Only responds to the pointer that started the drag (activePointerId
- *   filter).
+ * - Starts on pointerdown; only activates (`draggingPos` set) once
+ *   the pointer moves past `DRAG_THRESHOLD_PX`, so a plain click on
+ *   the block doesn't count as a drag.
+ * - Only responds to the pointer that started the drag.
  * - Ends on pointerup / pointercancel / window blur.
  */
 import { useEventListener, useWindowFocus } from '@vueuse/core'
@@ -28,60 +50,119 @@ interface UseBlockDragOptions {
   onCommit: (from: BlockPos, target: DropTarget) => void
 }
 
+interface BlockSnapshot {
+  rect: DOMRect
+  rowIndex: number
+  colIndex: number
+}
+
 /** Fraction of a block's width that counts as "edge zone" for side-drop. */
 const EDGE_FRACTION = 0.3
 const EDGE_MIN_PX = 40
 const EDGE_MAX_PX = 140
 /** Pointer must move at least this far (px) to count as a drag, not a click. */
 const DRAG_THRESHOLD_PX = 5
+/** Current zone sticks by this many px past its edge before switching. */
+const HYSTERESIS_PX = 8
+
+function captureSnapshot(container: HTMLElement): BlockSnapshot[] {
+  const blocks = container.querySelectorAll<HTMLElement>(
+    '[data-block-row][data-block-col]'
+  )
+  const out: BlockSnapshot[] = []
+  for (const el of blocks) {
+    const rowIndex = Number(el.dataset.blockRow)
+    const colIndex = Number(el.dataset.blockCol)
+    if (!Number.isFinite(rowIndex) || !Number.isFinite(colIndex)) continue
+    out.push({ rect: el.getBoundingClientRect(), rowIndex, colIndex })
+  }
+  return out
+}
+
+function targetsEqual(a: DropTarget | null, b: DropTarget | null): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  if (a.kind !== b.kind) return false
+  if (a.rowIndex !== b.rowIndex) return false
+  const aCol = 'colIndex' in a ? a.colIndex : undefined
+  const bCol = 'colIndex' in b ? b.colIndex : undefined
+  return aCol === bCol
+}
 
 function computeDropTarget(
-  container: HTMLElement,
+  snapshot: BlockSnapshot[],
+  dragFrom: BlockPos,
   pointerX: number,
-  pointerY: number
+  pointerY: number,
+  currentTarget: DropTarget | null
 ): DropTarget | null {
-  // Filter out the block currently in flight — PanelBlockList tags it
-  // with `data-dragging="true"` so the dropTarget math snaps to siblings
-  // instead of to the block's own preview position (which would always
-  // read as the nearest and trap the target).
-  const blocks = Array.from(
-    container.querySelectorAll<HTMLElement>(
-      '[data-block-row][data-block-col]:not([data-dragging])'
-    )
-  )
-  if (blocks.length === 0) return null
+  // Exclude the dragged block by its ORIGINAL row/col so the nearest
+  // search doesn't snap to the block the user is currently holding.
+  const candidates: BlockSnapshot[] = []
+  for (const s of snapshot) {
+    if (s.rowIndex === dragFrom.row && s.colIndex === dragFrom.col) continue
+    candidates.push(s)
+  }
+  if (candidates.length === 0) return null
 
-  // Find the block whose center is closest to the pointer.
-  let nearest: HTMLElement | null = null
+  let nearest: BlockSnapshot | null = null
   let nearestDist = Infinity
-  for (const el of blocks) {
-    const r = el.getBoundingClientRect()
-    const dx = r.left + r.width / 2 - pointerX
-    const dy = r.top + r.height / 2 - pointerY
+  for (const s of candidates) {
+    const dx = s.rect.left + s.rect.width / 2 - pointerX
+    const dy = s.rect.top + s.rect.height / 2 - pointerY
     const d = dx * dx + dy * dy
     if (d < nearestDist) {
       nearestDist = d
-      nearest = el
+      nearest = s
     }
   }
   if (!nearest) return null
 
-  const rowIndex = Number(nearest.dataset.blockRow)
-  const colIndex = Number(nearest.dataset.blockCol)
-  const rect = nearest.getBoundingClientRect()
-
+  const { rect, rowIndex, colIndex } = nearest
   const edgeZone = Math.min(
     Math.max(rect.width * EDGE_FRACTION, EDGE_MIN_PX),
     EDGE_MAX_PX
   )
 
-  if (pointerX < rect.left + edgeZone) {
+  // Hysteresis — stickiness only applies when the nearest is the
+  // same block/row we were targeting last. A target switch that
+  // crosses to a different block uses the fresh boundaries; only
+  // *staying put* gets the extra grace space.
+  let stickyKind: DropTarget['kind'] | null = null
+  if (currentTarget && currentTarget.rowIndex === rowIndex) {
+    if (
+      currentTarget.kind === 'columnBefore' ||
+      currentTarget.kind === 'columnAfter'
+    ) {
+      if (currentTarget.colIndex === colIndex) stickyKind = currentTarget.kind
+    } else {
+      // newRowBefore / newRowAfter are per-row, not per-column — any
+      // block in the same row keeps the stickiness alive.
+      stickyKind = currentTarget.kind
+    }
+  }
+
+  const leftEdge =
+    rect.left + edgeZone + (stickyKind === 'columnBefore' ? HYSTERESIS_PX : 0)
+  const rightEdge =
+    rect.right - edgeZone - (stickyKind === 'columnAfter' ? HYSTERESIS_PX : 0)
+
+  if (pointerX < leftEdge) {
     return { kind: 'columnBefore', rowIndex, colIndex }
   }
-  if (pointerX > rect.right - edgeZone) {
+  if (pointerX > rightEdge) {
     return { kind: 'columnAfter', rowIndex, colIndex }
   }
-  if (pointerY < rect.top + rect.height / 2) {
+
+  const midY = rect.top + rect.height / 2
+  const effectiveMidY =
+    stickyKind === 'newRowBefore'
+      ? midY + HYSTERESIS_PX
+      : stickyKind === 'newRowAfter'
+        ? midY - HYSTERESIS_PX
+        : midY
+
+  if (pointerY < effectiveMidY) {
     return { kind: 'newRowBefore', rowIndex }
   }
   return { kind: 'newRowAfter', rowIndex }
@@ -98,6 +179,7 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
   let startY = 0
   let movedFarEnough = false
   let pendingPos: BlockPos | null = null
+  let snapshot: BlockSnapshot[] = []
 
   const isDragging = computed(() => draggingPos.value !== null)
 
@@ -119,6 +201,7 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     capturedEl = null
     movedFarEnough = false
     pendingPos = null
+    snapshot = []
   }
 
   useEventListener(window, 'pointermove', (e: PointerEvent) => {
@@ -129,14 +212,21 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
       if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
       movedFarEnough = true
       // Promote the pending position into the live drag state.
-      // PanelBlockList reads `draggingPos` + `dropTarget` to reshuffle
-      // its layout into the post-drop preview and frame the moving
-      // block with a dashed outline.
       if (pendingPos) draggingPos.value = { ...pendingPos }
     }
-    const container = opts.listEl.value
-    if (container) {
-      dropTarget.value = computeDropTarget(container, e.clientX, e.clientY)
+    if (!pendingPos) return
+    const next = computeDropTarget(
+      snapshot,
+      pendingPos,
+      e.clientX,
+      e.clientY,
+      dropTarget.value
+    )
+    // Equality guard: a fresh `computeDropTarget` object every frame
+    // would re-fire displayRows + FLIP even when logically nothing
+    // changed. Only write when the zone shape actually differs.
+    if (!targetsEqual(dropTarget.value, next)) {
+      dropTarget.value = next
     }
   })
 
@@ -146,7 +236,7 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     const target = dropTarget.value
     reset()
     // If we never crossed the threshold, draggingPos is null and we
-    // skip the commit — a click on the grip is a no-op.
+    // skip the commit — a click on the block is a no-op.
     if (from && target) opts.onCommit(from, target)
   })
 
@@ -170,13 +260,17 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     startY = e.clientY
     movedFarEnough = false
     pendingPos = pos
+    // Capture rects from the pre-drag layout — no reshuffle or FLIP
+    // has run yet, so the DOM is in its stable original state.
+    const container = opts.listEl.value
+    snapshot = container ? captureSnapshot(container) : []
     try {
       target.setPointerCapture(e.pointerId)
     } catch {
       // ignore
     }
     // draggingPos + dropTarget stay null until the threshold crosses —
-    // so a click on the grip is a no-op.
+    // so a click on the block is a no-op.
     e.preventDefault()
     e.stopPropagation()
   }
