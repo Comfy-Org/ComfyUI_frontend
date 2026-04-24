@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -35,19 +35,17 @@ function completedJob(): AssetDownload {
 
 describe('ProgressToastItem — completed state', () => {
   it('keeps the finished badge outside the dimmed (opacity-50) subtree', () => {
-    const { container } = render(ProgressToastItem, {
+    render(ProgressToastItem, {
       props: { job: completedJob() },
       global: { plugins: [i18n] }
     })
 
-    const badge = container.querySelector<HTMLElement>(
-      '[class*="rounded-full"]'
-    )
-    expect(badge).not.toBeNull()
-    expect(badge!.closest('.opacity-50')).toBeNull()
+    const badge = screen.getByText('Finished')
+    // eslint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
+    expect(badge.closest('.opacity-50')).toBeNull()
 
-    const dimmed = container.querySelector('.opacity-50')
-    expect(dimmed).not.toBeNull()
-    expect(dimmed!.textContent).toContain('controlnet-canny.safetensors')
+    const assetName = screen.getByText('controlnet-canny.safetensors')
+    // eslint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
+    expect(assetName.closest('.opacity-50')).not.toBeNull()
   })
 })
