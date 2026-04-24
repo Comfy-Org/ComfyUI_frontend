@@ -212,6 +212,21 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  e2e-status:
+    if: ${{ always() }}
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check E2E results
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should_run }}
+          SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          BROWSERS: ${{ needs.playwright-tests.result }}
+        run: |
+          [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          echo "E2E passed"
+
   #### BEGIN Deployment and commenting (non-forked PRs only)
   # when using pull_request event, we have permission to comment directly
   # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
