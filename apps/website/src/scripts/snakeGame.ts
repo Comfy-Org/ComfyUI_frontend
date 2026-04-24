@@ -62,10 +62,15 @@ function requireElement<T extends Element>(
 const isSVGSVG = (el: Element): el is SVGSVGElement =>
   el instanceof SVGSVGElement
 const isSVGG = (el: Element): el is SVGGElement => el instanceof SVGGElement
-const isSVGText = (el: Element): el is SVGTextElement =>
-  el instanceof SVGTextElement
-const isHTMLDiv = (el: Element): el is HTMLDivElement =>
-  el instanceof HTMLDivElement
+function isSVGText(el: Element): el is SVGTextElement {
+  return el instanceof SVGTextElement
+}
+function isHTMLDiv(el: Element): el is HTMLDivElement {
+  return el instanceof HTMLDivElement
+}
+function isHTMLSpan(el: Element): el is HTMLSpanElement {
+  return el instanceof HTMLSpanElement
+}
 
 function setOverlayVisible(el: HTMLElement, visible: boolean) {
   el.classList.toggle('hidden', !visible)
@@ -370,7 +375,8 @@ const board = requireElement('board', isSVGG)
 const pauseOverlay = requireElement('pauseOverlay', isHTMLDiv)
 const svg = requireElement('game', isSVGSVG)
 const startCta = requireElement('startCta', isSVGText)
-const scoreLine = requireElement('scoreLine', isSVGText)
+const scoreNowEl = requireElement('scoreNow', isHTMLSpan)
+const scoreBestEl = requireElement('scoreBest', isHTMLSpan)
 
 let best = loadBest()
 let waitingToStart = true
@@ -400,6 +406,11 @@ function saveBest(v: number) {
   }
 }
 
+function updateScoreDisplay() {
+  scoreNowEl.textContent = String(score)
+  scoreBestEl.textContent = String(best)
+}
+
 const cellsEqual = (a: Cell, b: Cell) => a.i === b.i && a.j === b.j
 const inBounds = (c: Cell) => c.i >= 0 && c.j >= 0 && c.i < COLS && c.j < ROWS
 
@@ -425,6 +436,7 @@ function reset() {
   }
   rebirthStart = performance.now()
   placeFood()
+  updateScoreDisplay()
   render()
   ensureAnimationLoop()
 }
@@ -467,6 +479,7 @@ function step() {
       best = score
       saveBest(best)
     }
+    updateScoreDisplay()
     placeFood()
     onEat()
   } else {
@@ -484,14 +497,10 @@ function gameOver() {
     window.clearInterval(tickHandle)
     tickHandle = null
   }
-  const finalScore = score
-  const finalBest = best
   triggerExplosion()
   restartTimeout = window.setTimeout(() => {
     waitingToStart = true
     startCta.removeAttribute('display')
-    scoreLine.textContent = `Last Score: ${finalScore}  |  Best: ${finalBest}`
-    scoreLine.removeAttribute('display')
     reset()
   }, EXPLODE_DURATION_MS + 300)
 }
@@ -541,6 +550,11 @@ function render() {
           '</g>'
       )
     }
+    board.innerHTML = parts.join('')
+    return
+  }
+
+  if (!alive) {
     board.innerHTML = parts.join('')
     return
   }
@@ -678,7 +692,6 @@ function startGame() {
   }
   waitingToStart = false
   startCta.setAttribute('display', 'none')
-  scoreLine.setAttribute('display', 'none')
   if (tickHandle !== null) window.clearInterval(tickHandle)
   tickHandle = window.setInterval(step, TICK_MS)
 }
