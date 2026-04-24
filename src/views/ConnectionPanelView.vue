@@ -151,6 +151,9 @@
             >
               comfy install
             </code>
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.managerIncludedNote') }}
+            </p>
           </div>
 
           <div class="flex flex-col gap-1">
@@ -168,6 +171,25 @@
         <p class="text-xs text-neutral-500">
           {{ t('connectionPanel.corsNote') }}
         </p>
+
+        <aside
+          class="flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-800/50 p-3"
+        >
+          <h3 class="text-xs font-medium text-neutral-300">
+            {{ t('connectionPanel.managerTitle') }}
+          </h3>
+          <p class="text-xs text-neutral-400">
+            {{ t('connectionPanel.managerDescription') }}
+          </p>
+          <a
+            href="https://github.com/Comfy-Org/ComfyUI-Manager"
+            target="_blank"
+            rel="noopener"
+            class="text-xs text-neutral-300 underline hover:text-neutral-100"
+          >
+            {{ t('connectionPanel.managerLearnMore') }}
+          </a>
+        </aside>
       </section>
 
       <!-- Alternative: manual python / pip -->
@@ -190,6 +212,17 @@
             <p class="text-xs text-neutral-500">
               {{ t('connectionPanel.altPipNote') }}
             </p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <p class="text-xs text-neutral-400">
+              {{ t('connectionPanel.altManagerDescription') }}
+            </p>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              git clone https://github.com/Comfy-Org/ComfyUI-Manager.git
+              custom_nodes/ComfyUI-Manager
+            </code>
           </div>
           <div class="flex flex-col gap-1">
             <p class="text-xs text-neutral-400">
