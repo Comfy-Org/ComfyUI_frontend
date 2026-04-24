@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Détection",
+    "inputs": {
+      "bboxes": {
+        "name": "boîtes_englobantes",
+        "tooltip": "Boîtes englobantes à segmenter"
+      },
+      "conditioning": {
+        "name": "conditionnement",
+        "tooltip": "Conditionnement texte depuis CLIPTextEncode"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "masques_individuels",
+        "tooltip": "Sortir des masques par objet au lieu de l’union"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative_coords": {
+        "name": "coords_négatives",
+        "tooltip": "Points négatifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+      },
+      "positive_coords": {
+        "name": "coords_positives",
+        "tooltip": "Points positifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+      },
+      "refine_iterations": {
+        "name": "itérations_affinage",
+        "tooltip": "Passes d’affinage du décodeur SAM (0 = utiliser les masques bruts du détecteur)"
+      },
+      "threshold": {
+        "name": "seuil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masques",
+        "tooltip": null
+      },
+      "1": {
+        "name": "boîtes_englobantes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "Aperçu du suivi SAM3",
+    "inputs": {
+      "fps": {
+        "name": "ips"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacité"
+      },
+      "track_data": {
+        "name": "données_suivi"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Suivi vers Masque",
+    "inputs": {
+      "object_indices": {
+        "name": "indices_objets",
+        "tooltip": "Indices d’objets séparés par des virgules à inclure (ex : '0,2,3'). Vide = tous les objets."
+      },
+      "track_data": {
+        "name": "données_suivi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masques",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Suivi Vidéo",
+    "inputs": {
+      "conditioning": {
+        "name": "conditionnement",
+        "tooltip": "Conditionnement texte pour détecter de nouveaux objets pendant le suivi"
+      },
+      "detect_interval": {
+        "name": "intervalle_de_détection",
+        "tooltip": "Détecter tous les N frames (1 = chaque frame). Plus élevé = économie de calcul."
+      },
+      "detection_threshold": {
+        "name": "seuil_de_détection",
+        "tooltip": "Seuil de score pour la détection par texte"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images des frames vidéo en lot"
+      },
+      "initial_mask": {
+        "name": "masque_initial",
+        "tooltip": "Masque(s) pour la première frame à suivre (un par objet)"
+      },
+      "max_objects": {
+        "name": "objets_max",
+        "tooltip": "Nombre maximal d’objets suivis (0 = illimité). Les masques initiaux comptent dans cette limite."
+      },
+      "model": {
+        "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "données_suivi",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
