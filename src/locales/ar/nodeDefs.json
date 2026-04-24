@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 كشف",
+    "inputs": {
+      "bboxes": {
+        "name": "مربعات الإحاطة",
+        "tooltip": "مربعات الإحاطة للتقسيم ضمنها"
+      },
+      "conditioning": {
+        "name": "التهيئة",
+        "tooltip": "تهيئة نصية من CLIPTextEncode"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "individual_masks": {
+        "name": "أقنعة فردية",
+        "tooltip": "إخراج أقنعة لكل كائن بدلاً من الاتحاد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "negative_coords": {
+        "name": "إحداثيات سلبية",
+        "tooltip": "مطالبات نقاط سلبية بصيغة JSON [{\"x\": int, \"y\": int}, ...] (إحداثيات بكسل)"
+      },
+      "positive_coords": {
+        "name": "إحداثيات إيجابية",
+        "tooltip": "مطالبات نقاط إيجابية بصيغة JSON [{\"x\": int, \"y\": int}, ...] (إحداثيات بكسل)"
+      },
+      "refine_iterations": {
+        "name": "تكرارات التحسين",
+        "tooltip": "تمريرات تحسين مفكك ترميز SAM (٠=استخدام أقنعة الكاشف الخام)"
+      },
+      "threshold": {
+        "name": "العَتَبة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الأقنعة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "مربعات الإحاطة",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "معاينة تتبع SAM3",
+    "inputs": {
+      "fps": {
+        "name": "الإطارات في الثانية"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "opacity": {
+        "name": "الشفافية"
+      },
+      "track_data": {
+        "name": "بيانات التتبع"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "تتبع SAM3 إلى قناع",
+    "inputs": {
+      "object_indices": {
+        "name": "مؤشرات الكائنات",
+        "tooltip": "مؤشرات الكائنات مفصولة بفواصل (مثال: '0,2,3'). فارغ = جميع الكائنات."
+      },
+      "track_data": {
+        "name": "بيانات التتبع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الأقنعة",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "تتبع فيديو SAM3",
+    "inputs": {
+      "conditioning": {
+        "name": "التهيئة",
+        "tooltip": "تهيئة نصية لاكتشاف كائنات جديدة أثناء التتبع"
+      },
+      "detect_interval": {
+        "name": "فاصل الكشف",
+        "tooltip": "تشغيل الكشف كل N إطار (١=كل إطار). القيم الأعلى توفر في الحساب."
+      },
+      "detection_threshold": {
+        "name": "عَتَبة الكشف",
+        "tooltip": "عَتَبة النتيجة للكشف بناءً على النص"
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "إطارات الفيديو كصور مجمعة"
+      },
+      "initial_mask": {
+        "name": "القناع الأولي",
+        "tooltip": "قناع(أقنعة) للإطار الأول للتتبع (واحد لكل كائن)"
+      },
+      "max_objects": {
+        "name": "أقصى عدد للكائنات",
+        "tooltip": "أقصى عدد للكائنات المتتبعة (٠=غير محدود). الأقنعة الأولية تُحتسب ضمن هذا الحد."
+      },
+      "model": {
+        "name": "النموذج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "بيانات التتبع",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {

@@ -21,17 +21,12 @@ const features = computed(() => [
   {
     title: t('enterprise.team.feature2.title', locale),
     description: t('enterprise.team.feature2.description', locale),
-    image: 'https://media.comfy.org/website/enterprise/dark-fluid-texture.webp',
-    ctaText: t('enterprise.team.feature2.cta', locale),
-    ctaHref: routes.value.cloud
+    image: 'https://media.comfy.org/website/enterprise/dark-fluid-texture.webp'
   },
   {
     title: t('enterprise.team.feature3.title', locale),
     description: t('enterprise.team.feature3.description', locale),
-    image:
-      'https://media.comfy.org/website/enterprise/isometric-interface.webp',
-    ctaText: t('enterprise.hero.contactSales', locale),
-    ctaHref: routes.value.contact
+    image: 'https://media.comfy.org/website/enterprise/isometric-interface.webp'
   }
 ])
 </script>

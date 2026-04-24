@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 偵測",
+    "inputs": {
+      "bboxes": {
+        "name": "邊界框",
+        "tooltip": "要分割的區域邊界框"
+      },
+      "conditioning": {
+        "name": "條件",
+        "tooltip": "來自 CLIPTextEncode 的文字條件"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "individual_masks": {
+        "name": "個別 mask",
+        "tooltip": "輸出每個物件的 mask，而非合併"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "負向座標",
+        "tooltip": "負向點提示，格式為 JSON [{\"x\": int, \"y\": int}, ...]（像素座標）"
+      },
+      "positive_coords": {
+        "name": "正向座標",
+        "tooltip": "正向點提示，格式為 JSON [{\"x\": int, \"y\": int}, ...]（像素座標）"
+      },
+      "refine_iterations": {
+        "name": "細化次數",
+        "tooltip": "SAM 解碼器細化次數（0=使用原始偵測器 mask）"
+      },
+      "threshold": {
+        "name": "閾值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "邊界框",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 追蹤預覽",
+    "inputs": {
+      "fps": {
+        "name": "每秒影格數"
+      },
+      "images": {
+        "name": "影像"
+      },
+      "opacity": {
+        "name": "不透明度"
+      },
+      "track_data": {
+        "name": "追蹤資料"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 追蹤轉 mask",
+    "inputs": {
+      "object_indices": {
+        "name": "物件索引",
+        "tooltip": "要包含的物件索引（以逗號分隔，例如 '0,2,3'）。空白=所有物件。"
+      },
+      "track_data": {
+        "name": "追蹤資料"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 影片追蹤",
+    "inputs": {
+      "conditioning": {
+        "name": "條件",
+        "tooltip": "追蹤期間偵測新物件的文字條件"
+      },
+      "detect_interval": {
+        "name": "偵測間隔",
+        "tooltip": "每 N 個影格執行一次偵測（1=每個影格）。數值越高越省運算資源。"
+      },
+      "detection_threshold": {
+        "name": "偵測閾值",
+        "tooltip": "文字提示偵測的分數閾值"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "影片影格（批次影像）"
+      },
+      "initial_mask": {
+        "name": "初始 mask",
+        "tooltip": "第一個影格要追蹤的 mask（每個物件一個）"
+      },
+      "max_objects": {
+        "name": "最大物件數",
+        "tooltip": "最多追蹤物件數（0=無限制）。初始 mask 也計入此限制。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "追蹤資料",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
