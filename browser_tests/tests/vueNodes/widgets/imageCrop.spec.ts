@@ -1027,14 +1027,21 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           400
         )
 
+        const initialRatio = 80 / 60
+
         await expect
           .poll(
             async () => {
               const v = await getCropValue(comfyPage, 2)
-              return v ? v.x + v.width <= nw && v.y + v.height <= nh : false
+              if (!v) return false
+              const withinBounds = v.x + v.width <= nw && v.y + v.height <= nh
+              const ratio = v.width / v.height
+              const ratioPreserved = Math.abs(ratio - initialRatio) < 0.05
+              return withinBounds && ratioPreserved
             },
             {
-              message: 'constrained resize should stay within image boundaries'
+              message:
+                'constrained resize should stay within image boundaries and preserve aspect ratio'
             }
           )
           .toBe(true)
@@ -1117,8 +1124,10 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         const before = await getCropValue(comfyPage, 2)
         if (!before) throw new Error('missing crop')
 
-        // First increment button in BoundingBox order: X, Y, Width, Height
-        await node.getByTestId('increment').first().click()
+        await node
+          .getByTestId('bounding-box-x')
+          .getByTestId('increment')
+          .click()
 
         await expect
           .poll(async () => (await getCropValue(comfyPage, 2))?.x, {
@@ -1141,8 +1150,10 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         const before = await getCropValue(comfyPage, 2)
         if (!before) throw new Error('missing crop')
 
-        // Width is the third increment button (X=0, Y=1, Width=2, Height=3)
-        await node.getByTestId('increment').nth(2).click()
+        await node
+          .getByTestId('bounding-box-width')
+          .getByTestId('increment')
+          .click()
 
         await expect
           .poll(async () => (await getCropValue(comfyPage, 2))?.width, {
@@ -1162,7 +1173,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           height: 150
         })
 
-        const xInput = node.locator('input[inputmode="decimal"]').first()
+        const xInput = node.getByTestId('bounding-box-x').locator('input')
 
         await expect
           .poll(async () => parseInt(await xInput.inputValue()), {
