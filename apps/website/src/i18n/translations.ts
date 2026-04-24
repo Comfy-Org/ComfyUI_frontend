@@ -742,7 +742,7 @@ const translations = {
     'zh-CN': 'Cloud'
   },
   'cloud.reason.1.title': {
-    en: 'Powerful GPUs with end-\nto-end security built-in',
+    en: 'Powerful GPUs with <span class="whitespace-nowrap">end-to-end</span> security <span class="whitespace-nowrap">built-in</span>',
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
@@ -777,7 +777,7 @@ const translations = {
       '每个节点都可见。每个设置都可调。ComfyUI 为您提供完整的推理管线。选择您的采样器、调度器、模型链。云端简化了设置并增强了底层硬件。'
   },
   'cloud.reason.4.title': {
-    en: 'Community workflows,\nunlimited customization\nthrough pre-installed\ncustom nodes',
+    en: 'Community workflows,\nunlimited customization\nthrough <span class="whitespace-nowrap">pre-installed</span>\ncustom nodes',
     'zh-CN': '社区工作流，\n通过预安装自定义节点\n实现无限自定义'
   },
   'cloud.reason.4.description': {

@@ -58,12 +58,11 @@ const {
         :key="reason.titleKey"
         class="border-primary-comfy-canvas/20 flex flex-col gap-4 border-b py-10 first:pt-0 lg:flex-row lg:gap-12"
       >
-        <div class="shrink-0 lg:w-52">
+        <div class="shrink-0 lg:w-84">
           <h3
             class="text-primary-comfy-canvas text-2xl font-light whitespace-pre-line"
-          >
-            {{ t(reason.titleKey, locale) }}
-          </h3>
+            v-html="t(reason.titleKey, locale)"
+          />
           <slot name="reason-extra" :reason="reason" />
         </div>
         <p class="text-primary-comfy-canvas/70 flex-1 text-sm">
