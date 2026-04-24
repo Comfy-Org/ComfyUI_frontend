@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  build: {
+    assets: '_website'
+  },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [vue(), sitemap()],
   vite: {

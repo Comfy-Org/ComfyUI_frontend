@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Tespit",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "İçinde segmentasyon yapılacak sınırlayıcı kutular"
+      },
+      "conditioning": {
+        "name": "koşullandırma",
+        "tooltip": "CLIPTextEncode'dan metin koşullandırması"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "individual_masks": {
+        "name": "bireysel_maskeler",
+        "tooltip": "Birleşim yerine nesne başına maske çıktısı"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negatif_koordinatlar",
+        "tooltip": "JSON olarak negatif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+      },
+      "positive_coords": {
+        "name": "pozitif_koordinatlar",
+        "tooltip": "JSON olarak pozitif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+      },
+      "refine_iterations": {
+        "name": "iyileştirme_iterasyonları",
+        "tooltip": "SAM kod çözücü iyileştirme geçişleri (0=ham dedektör maskelerini kullan)"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 İz Önizleme",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "görüntüler"
+      },
+      "opacity": {
+        "name": "opaklık"
+      },
+      "track_data": {
+        "name": "iz_verisi"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 İzden Maskeye",
+    "inputs": {
+      "object_indices": {
+        "name": "nesne_indeksleri",
+        "tooltip": "Dahil edilecek nesne indeksleri virgülle ayrılmış şekilde (örn. '0,2,3'). Boş = tüm nesneler."
+      },
+      "track_data": {
+        "name": "iz_verisi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video İzleme",
+    "inputs": {
+      "conditioning": {
+        "name": "koşullandırma",
+        "tooltip": "İzleme sırasında yeni nesneleri tespit etmek için metin koşullandırması"
+      },
+      "detect_interval": {
+        "name": "tespit_aralığı",
+        "tooltip": "Her N karede bir tespit çalıştır (1=her karede). Daha yüksek değerler işlem tasarrufu sağlar."
+      },
+      "detection_threshold": {
+        "name": "tespit_eşiği",
+        "tooltip": "Metin istemli tespit için skor eşiği"
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Toplu görüntüler olarak video kareleri"
+      },
+      "initial_mask": {
+        "name": "ilk_maske",
+        "tooltip": "İlk kare için izlenecek maske(ler) (her nesne için bir tane)"
+      },
+      "max_objects": {
+        "name": "maks_nesne",
+        "tooltip": "Maksimum izlenen nesne (0=sınırsız). İlk maskeler bu sınıra dahildir."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iz_verisi",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
