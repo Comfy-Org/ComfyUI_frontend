@@ -707,7 +707,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _resolveLegacyEntry(
     widgetName: string
-  ): [string, string] | undefined {
+  ): PromotedWidgetSource | undefined {
     // Legacy -1 entries use the slot name as the widget name.
     // Find the input with that name, then trace to the connected interior widget.
     const input = this.inputs.find((i) => i.name === widgetName)
@@ -715,19 +715,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // Fallback: find via subgraph input slot connection
       const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
       if (!resolvedTarget) return undefined
-      return [resolvedTarget.nodeId, resolvedTarget.widgetName]
+      return {
+        sourceNodeId: resolvedTarget.nodeId,
+        sourceWidgetName: resolvedTarget.widgetName
+      }
     }
 
     const widget = input._widget
     if (isPromotedWidgetView(widget)) {
-      return [widget.sourceNodeId, widget.sourceWidgetName]
+      return {
+        sourceNodeId: widget.sourceNodeId,
+        sourceWidgetName: widget.sourceWidgetName,
+        ...(widget.disambiguatingSourceNodeId && {
+          disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+        })
+      }
     }
 
     // Fallback: find via subgraph input slot connection
     const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
     if (!resolvedTarget) return undefined
 
-    return [resolvedTarget.nodeId, resolvedTarget.widgetName]
+    return {
+      sourceNodeId: resolvedTarget.nodeId,
+      sourceWidgetName: resolvedTarget.widgetName
+    }
   }
 
   /** Manages lifecycle of all subgraph event listeners */
@@ -1142,7 +1154,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (nodeId === '-1') {
           const legacy = this._resolveLegacyEntry(widgetName)
           if (legacy) {
-            resolved = { sourceNodeId: legacy[0], sourceWidgetName: legacy[1] }
+            resolved = legacy
           } else {
             if (import.meta.env.DEV) {
               console.warn(
