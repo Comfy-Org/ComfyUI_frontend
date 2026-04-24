@@ -21,8 +21,8 @@ const proxyWidgetTupleSchema = z.union([
   z.tuple([z.string(), z.string()])
 ])
 const proxyWidgetsPropertySchema = z.array(proxyWidgetTupleSchema)
-export type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
-export type ProxyWidgetEntry = ProxyWidgetsProperty[number]
+type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
+type ProxyWidgetEntry = ProxyWidgetsProperty[number]
 
 export function parseProxyWidgets(
   property: NodeProperty | undefined
