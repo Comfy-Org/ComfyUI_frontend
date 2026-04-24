@@ -278,10 +278,26 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
         await expect(panel.blueprintTag).toHaveCount(0)
       })
 
-      await test.step('Publish a KSampler-only subgraph as a blueprint', async () => {
+      await test.step('Convert to Subgraph', async () => {
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
         await comfyPage.contextMenu.openForVueNode(ksampler.header)
         await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
+      })
+
+      const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
+      const subgraphNode =
+        await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+
+      await test.step('Unpublished subgraph does not show the blueprint tag', async () => {
+        await subgraphNode.centerOnNode()
+        await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+        await expect(panel.blueprintTag).toHaveCount(0)
+        await comfyPage.subgraph.exitViaBreadcrumb()
+      })
+
+      await test.step('Publish the subgraph as a blueprint', async () => {
+        await subgraphNode.click('title')
         await comfyPage.subgraph.publishSubgraph(blueprintName)
       })
 
