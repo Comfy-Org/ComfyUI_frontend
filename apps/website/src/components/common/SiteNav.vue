@@ -53,7 +53,7 @@ const navLinks: NavLink[] = [
     label: t('nav.resources', locale),
     items: [
       {
-        label: t('nav.blogs', locale),
+        label: t('nav.blog', locale),
         href: externalLinks.blog,
         external: true
       },

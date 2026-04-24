@@ -1600,7 +1600,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
-  'nav.blogs': { en: 'Blogs', 'zh-CN': '博客' },
+  'nav.blog': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
   'nav.docs': { en: 'Docs', 'zh-CN': '文档' },
