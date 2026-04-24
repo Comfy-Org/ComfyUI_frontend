@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { fetchRolesForBuild } from '../src/utils/ashby'
@@ -6,6 +6,7 @@ import { fetchRolesForBuild } from '../src/utils/ashby'
 const snapshotPath = fileURLToPath(
   new URL('../src/data/ashby-roles.snapshot.json', import.meta.url)
 )
+const tempPath = `${snapshotPath}.tmp`
 
 const outcome = await fetchRolesForBuild()
 
@@ -18,10 +19,11 @@ if (outcome.status !== 'fresh') {
 }
 
 writeFileSync(
-  snapshotPath,
+  tempPath,
   JSON.stringify(outcome.snapshot, null, 2) + '\n',
   'utf8'
 )
+renameSync(tempPath, snapshotPath)
 const totalRoles = outcome.snapshot.departments.reduce(
   (n, d) => n + d.roles.length,
   0

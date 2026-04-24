@@ -15,18 +15,22 @@ const { locale = 'en', departments = [] } = defineProps<{
 
 const activeCategory = ref('all')
 
+const visibleDepartments = computed(() =>
+  departments.filter((d) => d.roles.length > 0)
+)
+
 const categories = computed(() => [
   { label: 'ALL', value: 'all' },
-  ...departments.map((d) => ({ label: d.name, value: d.key }))
+  ...visibleDepartments.value.map((d) => ({ label: d.name, value: d.key }))
 ])
 
 const filteredDepartments = computed(() =>
   activeCategory.value === 'all'
-    ? departments
-    : departments.filter((d) => d.key === activeCategory.value)
+    ? visibleDepartments.value
+    : visibleDepartments.value.filter((d) => d.key === activeCategory.value)
 )
 
-const hasRoles = computed(() => departments.some((d) => d.roles.length > 0))
+const hasRoles = computed(() => visibleDepartments.value.length > 0)
 </script>
 
 <template>
