@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import {
+  __testAwaitPendingEvaluations,
   evaluateNodeDefPricing,
   formatCreditsListValue,
   formatCreditsRangeValue,
@@ -151,6 +152,25 @@ describe('useNodePricing', () => {
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('Free')
+    })
+
+    it('does not crash when jsonata evaluate throws synchronously', async () => {
+      // $assert fails synchronously inside jsonata's evaluate, which
+      // would bypass a plain Promise.resolve(evaluate()) chain and crash
+      // the caller. The scheduler wraps evaluate() inside the promise
+      // chain so synchronous throws become rejections handled by .catch.
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestThrowingNode',
+        priceBadge('$assert(false, "boom")')
+      )
+
+      expect(() => getNodeDisplayPrice(node)).not.toThrow()
+      await __testAwaitPendingEvaluations()
+      // Failed evaluations resolve to an empty label — no retry spam, no
+      // crash. The assertion is that this resolves, not what string it
+      // resolves to.
+      expect(() => getNodeDisplayPrice(node)).not.toThrow()
     })
   })
 

@@ -1,9 +1,9 @@
 import _ from 'es-toolkit/compat'
 import { computed, onMounted, watch } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
-import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
 import { BadgePosition, LGraphBadge } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -121,7 +121,7 @@ export const useNodeBadge = () => {
 
         node.badges.push(() => badge.value)
 
-        if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
+        if (node.constructor.nodeData?.api_node) {
           // JSONata rules are dynamic if they depend on any widgets/inputs/input_groups
           const pricingConfig = nodePricing.getNodePricingConfig(node)
           const hasDynamicPricing =
@@ -130,25 +130,31 @@ export const useNodeBadge = () => {
               (pricingConfig.depends_on?.inputs?.length ?? 0) > 0 ||
               (pricingConfig.depends_on?.input_groups?.length ?? 0) > 0)
 
-          // Keep the existing widget-watch wiring ONLY to trigger redraws on widget change.
-          // (We no longer rely on it to hold the current badge value.)
+          // Watchers are installed regardless of ShowApiPricing because the
+          // aggregator (actionbar chip + sign-in dialog) reads pricing even
+          // when per-node badges are hidden. Previously this wiring was
+          // nested inside the ShowApiPricing guard, so disabling the badge
+          // stopped widget/input edits from ever waking the aggregator —
+          // dynamic totals went stale until a graph-structure event.
           if (hasDynamicPricing) {
-            // For dynamic pricing nodes, use computed that watches widget changes
             const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
               node.constructor.nodeData?.name
             )
 
-            const computedWithWidgetWatch = useComputedWithWidgetWatch(node, {
-              widgetNames: relevantWidgetNames,
-              triggerCanvasRedraw: true
-            })
+            if (node.widgets) {
+              const widgetsToWatch = node.widgets.filter((w) =>
+                relevantWidgetNames.includes(w.name)
+              )
+              for (const widget of widgetsToWatch) {
+                widget.callback = useChainCallback(widget.callback, () => {
+                  nodePricing.triggerPriceRecalculation(node)
+                  if (showApiPricingBadge.value) {
+                    node.graph?.setDirtyCanvas(true, true)
+                  }
+                })
+              }
+            }
 
-            // Ensure watchers are installed; ignore the returned value.
-            // (This call is what registers the widget listeners in most implementations.)
-            computedWithWidgetWatch(() => 0)
-
-            // Hook into connection changes to trigger price recalculation
-            // This handles both connect and disconnect in VueNodes mode
             const relevantInputs = pricingConfig?.depends_on?.inputs ?? []
             const inputGroupPrefixes =
               pricingConfig?.depends_on?.input_groups ?? []
@@ -172,7 +178,6 @@ export const useNodeBadge = () => {
                   link,
                   ioSlot
                 )
-                // Only trigger if this input affects pricing
                 const inputName = ioSlot?.name
                 if (!inputName) return
                 const isRelevantInput =
@@ -187,19 +192,21 @@ export const useNodeBadge = () => {
             }
           }
 
-          let lastLabel = nodePricing.getNodeDisplayPrice(node)
-          let lastBadge = priceBadge.getCreditsBadge(lastLabel)
+          if (showApiPricingBadge.value) {
+            let lastLabel = nodePricing.getNodeDisplayPrice(node)
+            let lastBadge = priceBadge.getCreditsBadge(lastLabel)
 
-          const creditsBadgeGetter: () => LGraphBadge = () => {
-            const label = nodePricing.getNodeDisplayPrice(node)
-            if (label !== lastLabel) {
-              lastLabel = label
-              lastBadge = priceBadge.getCreditsBadge(label)
+            const creditsBadgeGetter: () => LGraphBadge = () => {
+              const label = nodePricing.getNodeDisplayPrice(node)
+              if (label !== lastLabel) {
+                lastLabel = label
+                lastBadge = priceBadge.getCreditsBadge(label)
+              }
+              return lastBadge
             }
-            return lastBadge
-          }
 
-          node.badges.push(creditsBadgeGetter)
+            node.badges.push(creditsBadgeGetter)
+          }
         }
       },
       init() {

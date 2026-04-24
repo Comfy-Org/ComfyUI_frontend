@@ -168,6 +168,16 @@ const getNodeConstructorData = (
 ): NodeConstructorData | undefined =>
   (node.constructor as { nodeData?: NodeConstructorData }).nodeData
 
+/**
+ * Predicate used by the pricing pipeline and by consumers that enumerate
+ * api-nodes for display. Reads the same constructor-data path pricing uses
+ * so enumeration and pricing never disagree on "what counts as an api-node" —
+ * a custom-node registration that sets `nodeData.api_node` but bypasses the
+ * node-def store is visible to both.
+ */
+export const isApiNode = (node: LGraphNode): boolean =>
+  getNodeConstructorData(node)?.api_node === true
+
 type JsonataEvalContext = {
   widgets: Record<string, NormalizedWidgetValue>
   inputs: Record<string, { connected: boolean }>
@@ -443,8 +453,19 @@ const getCompiledRuleForNodeType = (
 // -----------------------------
 
 // Reactive tick to force UI updates when async evaluations resolve.
-// We purposely read pricingTick.value inside getNodeDisplayPrice to create a dependency.
+// We purposely read pricingTick.value inside getNodeDisplayPrice to create
+// a dependency. Bumped only in Nodes-1.0 mode so VueNodes keeps its
+// fine-grained per-node re-render optimization — see `aggregateTick`
+// below for the coarse signal that graph-wide consumers subscribe to.
 const pricingTick = ref(0)
+
+// Coarse "any node's async evaluation just completed" signal that fires in
+// both modes. Consumed by graph-wide consumers (the cost aggregator, the
+// row-list composable) that need to wake on every eval regardless of which
+// node triggered it. Kept separate from pricingTick so bumping it doesn't
+// invalidate every VueNodes badge computed on the page — that path still
+// relies exclusively on per-node revision refs.
+const aggregateTick = ref(0)
 
 // Per-node revision tracking for VueNodes mode (more efficient than global tick)
 // Uses plain Map with individual refs per node for fine-grained reactivity
@@ -465,13 +486,101 @@ const getNodeRevisionRef = (nodeId: string | number): Ref<number> => {
   return rev
 }
 
+type NumericPrice = { min: number; max: number }
+
 // WeakMaps avoid memory leaks when nodes are removed.
-type CacheEntry = { sig: string; label: string }
+type CacheEntry = {
+  sig: string
+  label: string
+  values: NumericPrice | null
+}
 type InflightEntry = { sig: string; promise: Promise<void> }
+
+/**
+ * Extract raw numeric USD bounds from a pricing result.
+ * Parallels {@link formatPricingResult} but preserves precision for aggregation.
+ * Returns null for text-type, legacy or invalid shapes, or list_usd with no finite entries.
+ *
+ * `list_usd` folds to `{min: Math.min(values), max: Math.max(values)}`.
+ * Alternative semantics (sum-of-list, product) are intentionally unhandled —
+ * flagged as a reviewer question in the PR body.
+ */
+const extractNumericPrice = (result: unknown): NumericPrice | null => {
+  if (result === null || typeof result !== 'object') return null
+
+  // Legacy format: { usd: number } without type field.
+  if (!('type' in result) && 'usd' in result) {
+    const usd = asFiniteNumber((result as { usd: unknown }).usd)
+    return usd === null ? null : { min: usd, max: usd }
+  }
+
+  if (!isPricingResult(result)) return null
+
+  if (result.type === 'text') return null
+
+  if (result.type === 'usd') {
+    const usd = asFiniteNumber(result.usd)
+    return usd === null ? null : { min: usd, max: usd }
+  }
+
+  if (result.type === 'range_usd') {
+    const min = asFiniteNumber(result.min_usd)
+    const max = asFiniteNumber(result.max_usd)
+    if (min === null || max === null) return null
+    // Clamp inverted bounds. JSONata can emit min_usd > max_usd from a
+    // malformed rule (e.g. swapped fields, off-by-one branch). Letting
+    // it propagate would render `~104.6-76.5` and feed an inverted
+    // range into the aggregator's hasRange comparison.
+    return { min: Math.min(min, max), max: Math.max(min, max) }
+  }
+
+  if (result.type === 'list_usd') {
+    const arr = Array.isArray(result.usd) ? result.usd : null
+    if (!arr) return null
+    const values = arr
+      .map(asFiniteNumber)
+      .filter((x): x is number => x !== null)
+    if (values.length === 0) return null
+    // Fold as alternatives-pick-one: each entry is a price the node could
+    // charge for a single run depending on user selection (e.g. quality
+    // preset, model size). The aggregate bounds span the cheapest and
+    // most expensive choice. This is NOT the right fold for nodes that
+    // run all stages in sequence — those would need a summing fold — but
+    // ComfyUI's api-node schema uses list_usd for mutually exclusive
+    // options, not pipelines.
+    return { min: Math.min(...values), max: Math.max(...values) }
+  }
+
+  return null
+}
 
 const cache = new WeakMap<LGraphNode, CacheEntry>()
 const desiredSig = new WeakMap<LGraphNode, string>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()
+
+// Tracks the settle-promises of every in-flight evaluation so tests can
+// await them deterministically instead of polling with a fixed timeout.
+// Entries are removed in the scheduler's .finally(), so this stays bounded
+// by the number of concurrently evaluating nodes and never holds a
+// reference after the promise settles.
+const pendingEvaluations = new Set<Promise<unknown>>()
+
+/**
+ * Test-only: await every in-flight pricing evaluation. Replaces the
+ * ambient `setTimeout(50)` flush pattern that previously lived in
+ * composable tests — those were a flake surface whenever the evaluator
+ * took longer than 50ms on a busy CI worker, and silently over-waited
+ * when evals resolved faster. Returns once every settling promise has
+ * been removed from the tracking set.
+ */
+export const __testAwaitPendingEvaluations = async (): Promise<void> => {
+  // Drain loop: reads the live set on every iteration so evaluations
+  // scheduled by settling callbacks (cache write → tick bump → dependent
+  // computed → new evaluation) are awaited in the same flush.
+  while (pendingEvaluations.size > 0) {
+    await Promise.allSettled([...pendingEvaluations])
+  }
+}
 
 const scheduleEvaluation = (
   node: LGraphNode,
@@ -484,37 +593,60 @@ const scheduleEvaluation = (
   const running = inflight.get(node)
   if (running && running.sig === sig) return
 
-  if (!rule._compiled) return
+  const compiled = rule._compiled
+  if (!compiled) return
 
-  const promise = Promise.resolve(rule._compiled.evaluate(ctx))
+  // Only bump the reactive ticks when the cache actually changed. Rapid
+  // widget edits produce a stream of stale evaluations whose results are
+  // discarded; bumping the aggregate tick on each of them would wake
+  // useGraphCostAggregator and useApiNodeRows to recompute a total that
+  // hasn't changed. Track a local flag and gate the bump on it.
+  let didUpdate = false
+
+  // Wrap the evaluate() invocation inside the promise chain so synchronous
+  // throws (jsonata raises RangeError / ValueError on malformed data)
+  // land in the .catch() below instead of crashing the Vue render that
+  // triggered the read.
+  const promise = Promise.resolve()
+    .then(() => compiled.evaluate(ctx))
     .then((res) => {
       const label = formatPricingResult(res)
+      const values = extractNumericPrice(res)
 
       // Ignore stale results: if the node changed while we were evaluating,
       // desiredSig will no longer match.
       if (desiredSig.get(node) !== sig) return
 
-      cache.set(node, { sig, label })
+      cache.set(node, { sig, label, values })
+      didUpdate = true
     })
     .catch(() => {
       // Cache empty to avoid retry-spam for same signature
       if (desiredSig.get(node) === sig) {
-        cache.set(node, { sig, label: '' })
+        cache.set(node, { sig, label: '', values: null })
+        didUpdate = true
       }
     })
     .finally(() => {
       const cur = inflight.get(node)
       if (cur && cur.sig === sig) inflight.delete(node)
+      pendingEvaluations.delete(promise)
+      if (!didUpdate) return
 
       if (LiteGraph.vueNodesMode) {
-        // VueNodes mode: bump per-node revision (only this node re-renders)
+        // VueNodes mode: bump per-node revision so only this node re-renders.
         getNodeRevisionRef(node.id).value++
       } else {
-        // Nodes 1.0 mode: bump global tick to trigger setDirtyCanvas
+        // Nodes 1.0 mode: bump the global tick to trigger setDirtyCanvas.
         pricingTick.value++
       }
+      // Coarse signal for graph-wide consumers (aggregator, row list). Fires
+      // in both modes so they react to any eval completing, without the per-
+      // node badges in VueNodes mode paying for a global invalidation.
+      aggregateTick.value++
     })
 
+  pendingEvaluations.add(promise)
   inflight.set(node, { sig, promise })
 }
 
@@ -549,36 +681,66 @@ const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
 // -----------------------------
 export const useNodePricing = () => {
   /**
-   * Sync getter:
-   * - returns cached label for the current node signature when available
-   * - schedules async evaluation when needed
-   * - remains non-fatal on errors (returns safe fallback '')
+   * Shared sync lookup:
+   * - validates the node has a usable pricing rule
+   * - returns the fresh cache entry for the current signature, or
+   *   the last-known (stale) entry while scheduling a refresh
+   * - returns null when the node can never produce a price
    */
-  const getNodeDisplayPrice = (node: LGraphNode): string => {
-    // Make this function reactive: when async evaluation completes, we bump pricingTick,
-    // which causes this getter to recompute in Vue render/computed contexts.
-    void pricingTick.value
-
+  const getNodePricingEntry = (node: LGraphNode): CacheEntry | null => {
     const nodeData = getNodeConstructorData(node)
-    if (!nodeData?.api_node) return ''
+    if (!nodeData?.api_node) return null
 
     const rule = getRuleForNode(node)
-    if (!rule) return ''
-    if (rule.engine !== 'jsonata') return ''
-    if (!rule._compiled) return ''
+    if (!rule || rule.engine !== 'jsonata' || !rule._compiled) return null
 
     const ctx = buildJsonataContext(node, rule)
     const sig = buildSignature(ctx, rule)
 
     const cached = cache.get(node)
-    if (cached && cached.sig === sig) {
-      return cached.label
-    }
+    if (cached && cached.sig === sig) return cached
 
     // Cache miss: start async evaluation.
-    // Return last-known label (if any) to avoid flicker; otherwise return empty.
+    // Return last-known entry (if any) to avoid flicker; otherwise null.
     scheduleEvaluation(node, rule, ctx, sig)
-    return cached?.label ?? ''
+    return cached ?? null
+  }
+
+  /**
+   * Sync getter for display label: returns cached label or '' if not available.
+   * Subscribes only to `pricingTick` (canvas-redraw signal) so per-node VueNodes
+   * badge computeds do not invalidate on every graph-wide re-evaluation.
+   */
+  const getNodeDisplayPrice = (node: LGraphNode): string => {
+    void pricingTick.value
+    return getNodePricingEntry(node)?.label ?? ''
+  }
+
+  /**
+   * Sync getter for display label that does NOT establish its own reactive
+   * dependency. Use from graph-wide consumers (aggregator-adjacent row
+   * lists) that already subscribe to `pricingAggregateRevision` — reading
+   * `pricingTick` through {@link getNodeDisplayPrice} would double-
+   * subscribe and couple graph-wide UI to the canvas-redraw signal, which
+   * is dead in VueNodes mode and redundant with the aggregate tick in
+   * Nodes-1.0 mode.
+   */
+  const getCachedDisplayLabel = (node: LGraphNode): string =>
+    getNodePricingEntry(node)?.label ?? ''
+
+  /**
+   * Sync getter for raw numeric bounds: returns `{min, max}` USD or null.
+   * Null is returned when the node is not an api-node, has no pricing rule,
+   * evaluation has not yet produced a numeric result, or the result is text-only.
+   * Use for aggregation; use {@link getNodeDisplayPrice} for UI label output.
+   *
+   * Subscribes only to `aggregateTick` — the graph-wide "any node re-evaluated"
+   * signal that aggregator/row consumers want. Keeping this separate from
+   * `pricingTick` is why per-node badges stay stable under graph-wide churn.
+   */
+  const getNodeNumericPrice = (node: LGraphNode): NumericPrice | null => {
+    void aggregateTick.value
+    return getNodePricingEntry(node)?.values ?? null
   }
 
   /**
@@ -668,6 +830,8 @@ export const useNodePricing = () => {
 
   return {
     getNodeDisplayPrice,
+    getCachedDisplayLabel,
+    getNodeNumericPrice,
     getNodePricingConfig,
     getRelevantWidgetNames,
     hasDynamicPricing,
@@ -675,7 +839,8 @@ export const useNodePricing = () => {
     getInputNames,
     getNodeRevisionRef, // Each node has its own independent ref, so updates to one won't trigger others
     triggerPriceRecalculation,
-    pricingRevision: readonly(pricingTick) // reactive invalidation signal
+    pricingRevision: readonly(pricingTick), // canvas-redraw signal (Nodes-1.0 mode only)
+    pricingAggregateRevision: readonly(aggregateTick) // graph-wide "any node re-evaluated" signal
   }
 }
 
