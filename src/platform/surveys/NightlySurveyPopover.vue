@@ -127,6 +127,7 @@ watch(
     showTimeout = setTimeout(() => {
       showTimeout = null
       if (!isValidTypeformId.value) return
+      if (openModel.value) return
       openModel.value = true
       markSurveyShown()
       emit('shown')
@@ -142,12 +143,20 @@ onUnmounted(() => {
 })
 
 function handleDismiss() {
+  if (showTimeout) {
+    clearTimeout(showTimeout)
+    showTimeout = null
+  }
   openModel.value = false
   emit('dismissed')
 }
 
 function handleOptOut() {
   optOut()
+  if (showTimeout) {
+    clearTimeout(showTimeout)
+    showTimeout = null
+  }
   openModel.value = false
   emit('optedOut')
 }
