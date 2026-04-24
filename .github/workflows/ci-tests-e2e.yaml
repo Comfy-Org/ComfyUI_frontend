@@ -7,7 +7,6 @@ on:
     paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+    outputs:
+      should_run: ${{ steps.filter.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            should_run:
+              - '!(**.md)'
+
   setup:
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -153,9 +171,9 @@ jobs:
 
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
-    needs: [playwright-tests-chromium-sharded]
+    needs: [changes, playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.should_run == 'true') }}
     steps:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -190,8 +208,9 @@ jobs:
 
   # Post starting comment for non-forked PRs
   comment-on-pr-start:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && needs.changes.outputs.should_run == 'true'
     permissions:
       pull-requests: write
     steps:
@@ -210,9 +229,9 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [playwright-tests, merge-reports]
+    needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && needs.changes.outputs.should_run == 'true'
     permissions:
       pull-requests: write
       contents: read
@@ -237,4 +256,24 @@ jobs:
             "${{ github.event.pull_request.number }}" \
             "${{ github.head_ref }}" \
             "completed"
+
+  e2e-status:
+    if: always()
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine e2e outcome
+        run: |
+          if [[ "${{ needs.changes.outputs.should_run }}" != "true" && "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "E2E tests skipped (no relevant changes)"
+            exit 0
+          fi
+          if [[ "${{ needs.playwright-tests-chromium-sharded.result }}" == "success" && "${{ needs.playwright-tests.result }}" == "success" ]]; then
+            echo "All E2E tests passed"
+            exit 0
+          fi
+          echo "E2E tests failed or were cancelled"
+          echo "  chromium-sharded: ${{ needs.playwright-tests-chromium-sharded.result }}"
+          echo "  playwright-tests: ${{ needs.playwright-tests.result }}"
+          exit 1
   #### END Deployment and commenting (non-forked PRs only)
