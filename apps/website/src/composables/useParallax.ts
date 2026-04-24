@@ -19,6 +19,8 @@ interface ParallaxOptions {
   start?: string
   /** ScrollTrigger end value (default: 'bottom top') */
   end?: string
+  /** Media query string — animation only runs when matched (responsive) */
+  mediaQuery?: string
 }
 
 export function useParallax(
@@ -26,7 +28,7 @@ export function useParallax(
   options: ParallaxOptions = {}
 ) {
   const { fromY = 0, y = 200 } = options
-  let ctx: gsap.Context | undefined
+  let ctx: gsap.Context | gsap.MatchMedia | undefined
 
   onMounted(() => {
     const triggerEl = options.trigger?.value
@@ -43,7 +45,7 @@ export function useParallax(
       scrub: 1
     }
 
-    ctx = gsap.context(() => {
+    const createAnimations = () => {
       els.forEach((el) => {
         gsap.fromTo(
           el,
@@ -51,7 +53,15 @@ export function useParallax(
           { y: resolve(y, el, trigger), ease: 'none', scrollTrigger }
         )
       })
-    })
+    }
+
+    if (options.mediaQuery) {
+      const mm = gsap.matchMedia()
+      mm.add(options.mediaQuery, createAnimations)
+      ctx = mm
+    } else {
+      ctx = gsap.context(createAnimations)
+    }
   })
 
   onUnmounted(() => {
