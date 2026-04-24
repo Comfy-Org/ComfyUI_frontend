@@ -42,16 +42,16 @@ Open roles already live in Ashby. The goal is to **fetch them at build time** fr
    apps/website/src/pages/careers.astro (frontmatter, server ctx)
                                 │
                                 ▼
-   apps/website/src/utils/ashby.ts → fetchRoles()
+   apps/website/src/utils/ashby.ts → fetchRolesForBuild()
         ├─ 1. fetch Ashby public API (Basic auth, API key)
         ├─ 2. safeParse(AshbyJobBoardResponseSchema)
         ├─ 3. filter isListed === true
         ├─ 4. map → domain Role[]
-        ├─ 5. on success → write snapshot, return fresh roles
-        └─ 6. on failure → read snapshot, return stale roles
+        ├─ 5. on success → return { status: 'fresh', ... } (read-only)
+        └─ 6. on failure → read snapshot from disk, return stale roles
                                 │
                                 ▼
-   <RolesSection :departments="departments" client:visible />
+   <RolesSection {departments} locale="en" client:visible />
 ```
 
 ### Why build-time, not runtime
@@ -302,7 +302,7 @@ steps:
   - run: pnpm --filter @comfyorg/website build
 ```
 
-The secret is also configured in the Vercel project environment so that `vercel build` in the preview workflow sees it. This is how the user can "add it and test on the preview url of PR" — once the secret lands in both GitHub Actions and Vercel, any PR preview will exercise the real Ashby fetch.
+The secret is also configured in the Vercel project environment so that `vercel build` in the preview workflow sees it. Once the secret lands in both GitHub Actions and Vercel, **same-repo PRs** exercise the real Ashby fetch on their Vercel preview URL. Fork PRs do **not** have access to repo secrets (by GitHub design), so they fall back to the committed snapshot — which is exactly the behavior a would-be external contributor should see anyway, and matches how other `VERCEL_WEBSITE_*` secret-gated paths already behave in `ci-vercel-website-preview.yaml`.
 
 ## 9. Failure modes and the errors we want to see
 
@@ -375,22 +375,22 @@ Build **succeeds** with the snapshot.
 
 ### 9.5 Per-role validation drops
 
-A subset of roles fails `AshbyJobPostingSchema`. Most common cause: Ashby ships a new `employmentType` enum value (e.g. `Fellowship`).
+A subset of roles fails `AshbyJobPostingSchema`. Most common causes in v1: a role in Ashby is missing a `department`, or its `jobUrl`/`applyUrl` is not a valid URL (e.g. someone typed a relative path into the "external apply URL" field).
 
 ```
 ::warning title=Ashby: dropped 2 invalid role(s)::
 
 Dropped roles:
-  - "ML Research Fellow": employmentType expected one of [FullTime, PartTime, Intern, Contract, Temporary], received "Fellowship"
-  - "Contract Designer (EU)": applyUrl is not a valid URL
+  - "Senior Platform Engineer": department is required (received empty string)
+  - "Contract Designer (EU)": jobUrl is not a valid URL ("jobs/ashby/contract-designer")
 
 Action items:
-  1. If this is a new valid employment type, add it to the enum in apps/website/src/utils/ashby.schema.ts.
-  2. If this is data corruption in Ashby, fix the posting in Ashby admin.
+  1. Fix the posting in Ashby admin (e.g. assign a department, fix the URL).
+  2. If the v1 schema is too strict for a legitimate case, relax the field in apps/website/src/utils/ashby.schema.ts and add a test.
   3. These roles will not appear on the careers page until fixed.
 ```
 
-Build **succeeds** with the valid subset; the snapshot is refreshed to the valid subset.
+Build **succeeds** with the valid subset. Normal builds never write the snapshot, so the committed file is unchanged; the next scheduled refresh run will pick up the corrected data.
 
 ### 9.6 No snapshot available (compounds 9.2–9.5)
 
@@ -420,7 +420,7 @@ Every build writes a concise summary so reviewers see the state without digging 
 | Status | ✅ Fresh (fetched from Ashby) |
 | Roles  | 14 |
 | Dropped | 0 |
-| Snapshot | apps/website/src/data/ashby-roles.snapshot.json (updated) |
+| Snapshot | apps/website/src/data/ashby-roles.snapshot.json (not written; refresh via `pnpm ashby:refresh-snapshot`) |
 ```
 
 or on failure:
@@ -478,9 +478,9 @@ A nightly workflow `.github/workflows/ashby-refresh-snapshot.yaml` runs on cron,
 `apps/website` does not currently have a Vitest config. The implementation PR adds:
 
 - `apps/website/vitest.config.ts` with `environment: 'node'` (we only unit-test Node-side utils).
-- `apps/website/package.json` script `"test:unit": "vitest run"`.
-- Nx target so `pnpm --filter @comfyorg/website test:unit` works.
-- `.github/workflows/ci-tests-unit.yaml` already picks up any workspace with a `test:coverage` script; we add `test:coverage` too so the existing coverage upload flow keeps working.
+- `apps/website/package.json` scripts `"test:unit": "vitest run"` and `"test:coverage": "vitest run --coverage"`.
+- An Nx target in `apps/website/project.json` (or package.json) so `pnpm --filter @comfyorg/website test:unit` works.
+- **CI wiring is not automatic.** `.github/workflows/ci-tests-unit.yaml` currently runs only the root `pnpm test:coverage` script. The implementation PR must either (a) extend the root `test:coverage` script to include `apps/website` (preferred — reuses the existing Codecov upload), or (b) add a new job in `ci-tests-unit.yaml` that runs `pnpm --filter @comfyorg/website test:coverage`. Option (a) is simpler; option (b) keeps website unit tests in their own job for easier triage.
 
 ### Unit (Vitest) — `apps/website/src/utils/ashby.test.ts`
 
