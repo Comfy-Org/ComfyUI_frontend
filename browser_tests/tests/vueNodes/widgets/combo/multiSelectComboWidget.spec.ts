@@ -4,7 +4,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { TestGraphAccess } from '@e2e/types/globals'
 
 // Repro lifted from #bug-dump (Jedrzej Kosinski, 2026-04-21): `multi_select`
 // combo widgets declared with `ComfyUI_devtools`'s `DevToolsMultiSelectNode`
@@ -61,18 +60,22 @@ test.describe(
       const node = comfyPage.vueNodes.getNodeByTitle('Multi Select Node')
 
       // The multi_select widget must surface as an interactive control with
-      // an ARIA role. In the broken state Vue Nodes renders this as a legacy
-      // canvas widget (no role, no accessible options), so the listbox-style
-      // trigger never appears.
-      const trigger = node
-        .getByRole('combobox', { name: 'foo', exact: true })
-        .or(node.getByRole('listbox', { name: 'foo', exact: true }))
+      // an accessible label. In the broken state Vue Nodes renders this as a
+      // legacy canvas widget (no accessible control, no selectable options),
+      // so the trigger never appears.
+      await expect(
+        node.getByRole('combobox', { name: 'foo', exact: true })
+      ).toHaveCount(1)
+      const trigger = node.getByText('Choose foos', { exact: true })
       await expect(trigger.first()).toBeVisible({ timeout: 3000 })
       await trigger.first().click()
 
       await comfyPage.page
         .getByRole('option', { name: 'A', exact: true })
         .click()
+      await expect(
+        comfyPage.page.getByRole('option', { name: 'B', exact: true })
+      ).toBeVisible()
       await comfyPage.page
         .getByRole('option', { name: 'B', exact: true })
         .click()
@@ -82,9 +85,8 @@ test.describe(
       // In the broken state the value is either untouched (empty array / no
       // widget) or collapses to a single string under single-select semantics.
       const widgetValue = await comfyPage.page.evaluate(() => {
-        const graph = window.graph as unknown as TestGraphAccess | undefined
-        if (!graph) return null
-        const multiSelectNode = Object.values(graph._nodes_by_id).find(
+        if (!window.graph) return null
+        const multiSelectNode = Object.values(window.graph._nodes_by_id).find(
           (n) => n.type === 'DevToolsMultiSelectNode'
         )
         return multiSelectNode?.widgets?.[0]?.value ?? null
