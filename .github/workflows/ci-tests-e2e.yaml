@@ -7,7 +7,6 @@ on:
     paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +14,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Detect whether e2e-relevant files changed. Required checks see "skipped"
+  # (which counts as passing) when only docs/apps/storybook files are touched,
+  # avoiding the stall that paths-ignore would cause.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.e2e }}
+    steps:
+      - name: Checkout repository
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@v6
+      - name: Check for e2e-relevant changes
+        if: ${{ github.event_name == 'pull_request' }}
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            e2e:
+              - '**'
+              - '!apps/**'
+              - '!docs/**'
+              - '!.storybook/**'
+              - '!**/*.md'
+
   setup:
+    needs: changes
+    if: ${{ needs.changes.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -153,9 +181,9 @@ jobs:
 
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
-    needs: [playwright-tests-chromium-sharded]
+    needs: [changes, playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.changes.outputs.should_run == 'true' }}
     steps:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -190,8 +218,14 @@ jobs:
 
   # Post starting comment for non-forked PRs
   comment-on-pr-start:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        needs.changes.outputs.should_run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
     steps:
@@ -210,9 +244,15 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [playwright-tests, merge-reports]
+    needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should_run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
       contents: read
