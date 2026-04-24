@@ -10,6 +10,12 @@ export const FEATURE_SURVEYS: Record<string, FeatureSurveyConfig> = {
     typeformId: 'goZLqjKL',
     triggerThreshold: 3,
     delayMs: 5000
+  },
+  'queue-progress-overlay': {
+    featureId: 'queue-progress-overlay',
+    typeformId: 'HZ5saxry',
+    triggerThreshold: 16,
+    delayMs: 5000
   }
 }
 
