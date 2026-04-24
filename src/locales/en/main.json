@@ -1911,6 +1911,7 @@
   "apiNodesCostBreakdown": {
     "title": "API Node(s)",
     "costPerRun": "Cost per run",
+    "costPerRunAria": "Cost per run: {cost}",
     "totalCost": "Total Cost",
     "creditsValue": "{value} credits"
   },
