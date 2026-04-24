@@ -43,6 +43,7 @@ function interpolateY(
 export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   const activeIndex = ref(0)
   const isEnabled = ref(false)
+  const isPinned = ref(false)
   let ctx: gsap.Context | undefined
   let scrollTriggerInstance: ScrollTrigger | undefined
 
@@ -81,6 +82,14 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
       const sectionStyle = getComputedStyle(section)
       contentH = content.scrollHeight
       vpH = window.innerHeight - parseFloat(sectionStyle.paddingTop)
+
+      // Ensure the section is tall enough for its content so nothing clips
+      const naturalH = section.scrollHeight
+      const viewportH = window.innerHeight + 60
+      if (naturalH > viewportH) {
+        section.style.height = `${naturalH}px`
+      }
+
       buttonCenters = Array.from(nav.querySelectorAll(':scope > *')).map(
         (btn) => {
           const btnRect = btn.getBoundingClientRect()
@@ -104,11 +113,8 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
             end: `+=${options.itemCount * vhPerItem}%`,
             pin: true,
             scrub: true,
-            snap: {
-              snapTo: 1 / (options.itemCount - 1),
-              duration: { min: 0.2, max: 0.6 },
-              delay: 0.1,
-              ease: 'power1.inOut'
+            onToggle(self) {
+              isPinned.value = self.isActive
             },
             onRefresh: cacheLayout,
             onUpdate(self) {
@@ -138,5 +144,5 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
     ctx?.revert()
   })
 
-  return { activeIndex, isEnabled, scrollToIndex }
+  return { activeIndex, isEnabled, isPinned, scrollToIndex }
 }
