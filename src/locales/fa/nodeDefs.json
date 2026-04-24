@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "تشخیص SAM3",
+    "inputs": {
+      "bboxes": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی برای بخش‌بندی درون آن‌ها"
+      },
+      "conditioning": {
+        "name": "شرط‌گذاری",
+        "tooltip": "شرط‌گذاری متنی از CLIPTextEncode"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "individual_masks": {
+        "name": "ماسک‌های جداگانه",
+        "tooltip": "خروجی ماسک برای هر شیء به صورت جداگانه به جای ترکیب"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "negative_coords": {
+        "name": "مختصات منفی",
+        "tooltip": "نقاط راهنمای منفی به صورت JSON [{\"x\": int, \"y\": int}, ...] (مختصات پیکسلی)"
+      },
+      "positive_coords": {
+        "name": "مختصات مثبت",
+        "tooltip": "نقاط راهنمای مثبت به صورت JSON [{\"x\": int, \"y\": int}, ...] (مختصات پیکسلی)"
+      },
+      "refine_iterations": {
+        "name": "تعداد تکرار پالایش",
+        "tooltip": "تعداد دفعات پالایش رمزگشا SAM (۰=استفاده از ماسک‌های خام آشکارساز)"
+      },
+      "threshold": {
+        "name": "آستانه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک‌ها",
+        "tooltip": null
+      },
+      "1": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "پیش‌نمایش ردیابی SAM3",
+    "inputs": {
+      "fps": {
+        "name": "فریم بر ثانیه"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "opacity": {
+        "name": "شفافیت"
+      },
+      "track_data": {
+        "name": "داده ردیابی"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "تبدیل ردیابی SAM3 به ماسک",
+    "inputs": {
+      "object_indices": {
+        "name": "اندیس‌های اشیاء",
+        "tooltip": "اندیس‌های اشیاء مورد نظر به صورت جداشده با ویرگول (مثلاً '۰,۲,۳'). خالی = همه اشیاء."
+      },
+      "track_data": {
+        "name": "داده ردیابی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک‌ها",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "ردیابی ویدئویی SAM3",
+    "inputs": {
+      "conditioning": {
+        "name": "شرط‌گذاری",
+        "tooltip": "شرط‌گذاری متنی برای تشخیص اشیاء جدید در طول ردیابی"
+      },
+      "detect_interval": {
+        "name": "فاصله تشخیص",
+        "tooltip": "اجرای تشخیص هر N فریم (۱=هر فریم). مقادیر بالاتر باعث صرفه‌جویی در محاسبات می‌شود."
+      },
+      "detection_threshold": {
+        "name": "آستانه تشخیص",
+        "tooltip": "آستانه امتیاز برای تشخیص مبتنی بر متن"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "فریم‌های ویدئو به صورت تصاویر دسته‌ای"
+      },
+      "initial_mask": {
+        "name": "ماسک اولیه",
+        "tooltip": "ماسک(ها) برای فریم اول جهت ردیابی (برای هر شیء یک ماسک)"
+      },
+      "max_objects": {
+        "name": "حداکثر اشیاء",
+        "tooltip": "حداکثر اشیاء قابل ردیابی (۰=نامحدود). ماسک‌های اولیه در این محدودیت لحاظ می‌شوند."
+      },
+      "model": {
+        "name": "مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "داده ردیابی",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {

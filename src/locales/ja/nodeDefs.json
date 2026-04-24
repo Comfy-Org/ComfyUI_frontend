@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3検出",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "セグメント化するバウンディングボックス"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "CLIPTextEncodeによるテキストコンディショニング"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "オブジェクトごとのマスクを出力（結合ではなく個別）"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negative_coords",
+        "tooltip": "JSON形式のネガティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+      },
+      "positive_coords": {
+        "name": "positive_coords",
+        "tooltip": "JSON形式のポジティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+      },
+      "refine_iterations": {
+        "name": "refine_iterations",
+        "tooltip": "SAMデコーダーのリファインパス数（0=生の検出マスクを使用）"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3トラックプレビュー",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3トラックからマスク",
+    "inputs": {
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "含めるオブジェクトのインデックスをカンマ区切りで指定（例: '0,2,3'）。空欄=全オブジェクト。"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3ビデオトラック",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "追跡中に新しいオブジェクトを検出するためのテキストコンディショニング"
+      },
+      "detect_interval": {
+        "name": "detect_interval",
+        "tooltip": "Nフレームごとに検出を実行（1=毎フレーム）。値が大きいほど計算量を節約。"
+      },
+      "detection_threshold": {
+        "name": "detection_threshold",
+        "tooltip": "テキストプロンプト検出のスコア閾値"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "バッチ化された画像としてのビデオフレーム"
+      },
+      "initial_mask": {
+        "name": "initial_mask",
+        "tooltip": "最初のフレームで追跡するマスク（一つのオブジェクトにつき一つ）"
+      },
+      "max_objects": {
+        "name": "max_objects",
+        "tooltip": "追跡する最大オブジェクト数（0=無制限）。初期マスクもこの制限に含まれます。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {

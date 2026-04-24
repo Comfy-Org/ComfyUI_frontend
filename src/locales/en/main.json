@@ -379,6 +379,10 @@
     "actions": "Actions",
     "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "incompatibleVersion": {
+      "title": "ComfyUI-Manager upgrade required",
+      "message": "Please upgrade ComfyUI-Manager to version 4.2.1 or higher.\n• Desktop: Update the ComfyUI Desktop app\n• Standalone: Run pip install -U comfyui-manager and restart\nLearn more: https://github.com/Comfy-Org/ComfyUI-Manager"
+    },
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
@@ -1820,6 +1824,7 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
     "STRING": "STRING",
@@ -2775,6 +2780,10 @@
     "notNow": "Not Now",
     "dontAskAgain": "Don't Ask Again",
     "loadError": "Failed to load survey. Please try again later."
+  },
+  "errorPanelSurvey": {
+    "ctaText": "How's the new error panel?",
+    "ctaButton": "Give feedback"
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",

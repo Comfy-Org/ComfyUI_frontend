@@ -70,7 +70,7 @@ const translations = {
     'zh-CN': '广告 &\n创意工作室'
   },
   'useCase.gaming': {
-    en: 'Gaming Industry',
+    en: 'Gaming',
     'zh-CN': '电子游戏'
   },
   'useCase.ecommerce': {
@@ -120,9 +120,17 @@ const translations = {
     en: 'Load a workflow',
     'zh-CN': '加载工作流'
   },
-  'getStarted.step2.description': {
-    en: 'Start from a community template or build your own.',
-    'zh-CN': '从社区模板开始，或自行构建。'
+  'getStarted.step2.descriptionPrefix': {
+    en: 'Start from ',
+    'zh-CN': '从'
+  },
+  'getStarted.step2.descriptionLink': {
+    en: 'a community template',
+    'zh-CN': '社区模板'
+  },
+  'getStarted.step2.descriptionSuffix': {
+    en: ' or build your own.',
+    'zh-CN': '开始，或自行构建。'
   },
   'getStarted.step3.title': {
     en: 'Generate & Iterate',
@@ -201,12 +209,12 @@ const translations = {
     'zh-CN': '客户故事'
   },
   'caseStudy.heading': {
-    en: 'See Comfy\nin the real world',
-    'zh-CN': '看看 Comfy\n在真实世界中的应用'
+    en: 'See ComfyUI\nin the real world',
+    'zh-CN': '看看 ComfyUI\n在真实世界中的应用'
   },
   'caseStudy.subheading': {
-    en: 'Videos & case studies from teams building with Comfy',
-    'zh-CN': '来自使用 Comfy 构建的团队的视频和案例研究'
+    en: 'Videos & case studies from teams building with ComfyUI',
+    'zh-CN': '来自使用 ComfyUI 构建的团队的视频和案例研究'
   },
   'caseStudy.seeAll': {
     en: 'SEE ALL CASE STUDIES',
@@ -734,7 +742,7 @@ const translations = {
     'zh-CN': 'Cloud'
   },
   'cloud.reason.1.title': {
-    en: 'Powerful GPUs with end-\nto-end security built-in',
+    en: 'Powerful GPUs with <span class="whitespace-nowrap">end-to-end</span> security <span class="whitespace-nowrap">built-in</span>',
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
@@ -769,7 +777,7 @@ const translations = {
       '每个节点都可见。每个设置都可调。ComfyUI 为您提供完整的推理管线。选择您的采样器、调度器、模型链。云端简化了设置并增强了底层硬件。'
   },
   'cloud.reason.4.title': {
-    en: 'Community workflows,\nunlimited customization\nthrough pre-installed\ncustom nodes',
+    en: 'Community workflows,\nunlimited customization\nthrough <span class="whitespace-nowrap">pre-installed</span>\ncustom nodes',
     'zh-CN': '社区工作流，\n通过预安装自定义节点\n实现无限自定义'
   },
   'cloud.reason.4.description': {
@@ -1074,8 +1082,8 @@ const translations = {
     'zh-CN': '包含免费版全部能力，另加：'
   },
   'pricing.plan.standard.feature1': {
-    en: '60-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 60 分钟'
+    en: '30-minute max runtime per workflow',
+    'zh-CN': '单个工作流最长运行 30 分钟'
   },
   'pricing.plan.standard.feature2': {
     en: 'Add more credits anytime',
@@ -1108,10 +1116,6 @@ const translations = {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
   },
-  'pricing.plan.creator.feature2': {
-    en: 'Up to 5 seats per workspace (coming soon!)',
-    'zh-CN': '每个工作区最多 5 个席位（即将上线）'
-  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.summary': {
@@ -1135,10 +1139,6 @@ const translations = {
   'pricing.plan.pro.feature1': {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
-  },
-  'pricing.plan.pro.feature2': {
-    en: 'Up to 20 seats per workspace (coming soon!)',
-    'zh-CN': '每个工作区最多 20 个席位（即将上线）'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1195,9 +1195,9 @@ const translations = {
     'zh-CN': '单个任务时限'
   },
   'pricing.included.feature2.description': {
-    en: 'Each workflow run has a maximum duration of 60 minutes. On the Pro plan, the time limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
+    en: 'On our Standard and Creator plans, each workflow has a maximum run time of 30 minutes. On the Pro plan, the limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
     'zh-CN':
-      '每个工作流运行最长为 60 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
+      'Standard 和 Creator 计划下，每个工作流最长运行时间为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
   },
   'pricing.included.feature3.title': {
     en: 'Usage',
@@ -1505,6 +1505,10 @@ const translations = {
 
   // CareersRolesSection
   'careers.roles.heading': { en: 'Roles', 'zh-CN': '职位' },
+  'careers.roles.empty': {
+    en: 'No open roles right now. Check back soon.',
+    'zh-CN': '目前暂无开放职位，请稍后再来查看。'
+  },
 
   // CareersFAQSection
   'careers.faq.heading': { en: 'Q&A', 'zh-CN': 'Q&A' },
