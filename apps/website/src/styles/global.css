@@ -75,14 +75,25 @@
   --aspect-ratio-gallery-card: 47/31;
 }
 
-@keyframes border-spin {
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes border-angle-spin {
   to {
-    transform: rotate(360deg);
+    --border-angle: 360deg;
   }
 }
 
 @utility animate-border-spin {
-  animation: border-spin 2s linear infinite;
+  animation: border-angle-spin 2s linear infinite;
+  background: conic-gradient(
+    from var(--border-angle),
+    color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent) 0%,
+    var(--color-primary-comfy-yellow) 100%
+  );
 }
 
 @keyframes marquee {
@@ -178,6 +189,14 @@
   display: inline-block;
   position: relative;
   top: 0.19em;
+}
+
+/* Hide native play-button overlay iOS Safari shows when autoplay is blocked
+   (e.g. Low Power Mode). These are decorative background videos. */
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
 }
 
 :root {
