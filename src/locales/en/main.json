@@ -1913,7 +1913,8 @@
     "costPerRun": "Cost per run",
     "costPerRunAria": "Cost per run: {cost}",
     "totalCost": "Total Cost",
-    "creditsValue": "{value} credits"
+    "creditsValue": "{value} credits",
+    "chipAriaLabel": "Estimated API run cost: {value} credits"
   },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",

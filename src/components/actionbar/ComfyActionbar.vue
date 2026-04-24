@@ -29,6 +29,7 @@
             )
           "
         />
+        <ApiNodesCostIndicator :graph="rootGraphGetter" />
         <Suspense @resolve="comfyRunButtonResolved">
           <ComfyRunButton />
         </Suspense>
@@ -104,13 +105,16 @@ import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ApiNodesCostIndicator from '@/components/actionbar/ApiNodesCostIndicator.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -140,6 +144,14 @@ const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
 const position = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+
+// Getter threaded into <ApiNodesCostIndicator />. A getter — not a
+// computed — so the chip's composables re-read the global on each of
+// their reactive invalidations (pricingAggregateRevision, structure
+// ticks, workflowStore.activeWorkflow). Pulling `app.rootGraph` up to
+// the orchestration layer keeps the indicator itself free of the
+// global-singleton import.
+const rootGraphGetter = (): LGraph | Subgraph | null => app.rootGraph ?? null
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 
