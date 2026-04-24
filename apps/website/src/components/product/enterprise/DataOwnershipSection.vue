@@ -16,9 +16,11 @@ const midRightRef = ref<HTMLElement>()
 const bottomLeftRef = ref<HTMLElement>()
 const bottomRightRef = ref<HTMLElement>()
 
-useParallax([topLeftRef, topRightRef], { trigger: sectionRef, y: 200 })
-useParallax([midLeftRef, midRightRef], { trigger: sectionRef, y: 300 })
-useParallax([bottomLeftRef, bottomRightRef], { trigger: sectionRef, y: 400 })
+const parallaxOpts = { trigger: sectionRef, mediaQuery: '(min-width: 1024px)' }
+
+useParallax([topLeftRef, topRightRef], { ...parallaxOpts, y: 200 })
+useParallax([midLeftRef, midRightRef], { ...parallaxOpts, y: 300 })
+useParallax([bottomLeftRef, bottomRightRef], { ...parallaxOpts, y: 400 })
 </script>
 
 <template>

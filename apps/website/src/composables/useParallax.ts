@@ -19,6 +19,8 @@ interface ParallaxOptions {
   start?: string
   /** ScrollTrigger end value (default: 'bottom top') */
   end?: string
+  /** Media query string — animation only runs when matched (responsive) */
+  mediaQuery?: string
 }
 
 export function useParallax(
@@ -26,24 +28,27 @@ export function useParallax(
   options: ParallaxOptions = {}
 ) {
   const { fromY = 0, y = 200 } = options
-  let ctx: gsap.Context | undefined
+  let ctx: gsap.Context | gsap.MatchMedia | undefined
 
   onMounted(() => {
+    if (prefersReducedMotion()) return
+
     const triggerEl = options.trigger?.value
-    const els = elements
-      .map((r) => r.value)
-      .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)
-    if (!els.length || prefersReducedMotion()) return
 
-    const trigger = triggerEl ?? els[0]
-    const scrollTrigger = {
-      trigger,
-      start: options.start ?? 'top bottom',
-      end: options.end ?? 'bottom top',
-      scrub: 1
-    }
+    const createAnimations = () => {
+      const els = elements
+        .map((r) => r.value)
+        .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)
+      if (!els.length) return
 
-    ctx = gsap.context(() => {
+      const trigger = triggerEl ?? els[0]
+      const scrollTrigger = {
+        trigger,
+        start: options.start ?? 'top bottom',
+        end: options.end ?? 'bottom top',
+        scrub: 1
+      }
+
       els.forEach((el) => {
         gsap.fromTo(
           el,
@@ -51,7 +56,15 @@ export function useParallax(
           { y: resolve(y, el, trigger), ease: 'none', scrollTrigger }
         )
       })
-    })
+    }
+
+    if (options.mediaQuery) {
+      const mm = gsap.matchMedia()
+      mm.add(options.mediaQuery, createAnimations)
+      ctx = mm
+    } else {
+      ctx = gsap.context(createAnimations)
+    }
   })
 
   onUnmounted(() => {
