@@ -1,10 +1,10 @@
 import type { ResultItem } from '@/schemas/apiSchema'
 
-const hasAnnotation = (filepath: string): boolean =>
-  /\[(input|output|temp)\]/i.test(filepath)
+const hasAnnotation = (type: string): boolean =>
+  /\[(input|output|temp)\]/i.test(type)
 
-const createAnnotation = (filepath: string, rootFolder = 'input'): string =>
-  !hasAnnotation(filepath) && rootFolder !== 'input' ? ` [${rootFolder}]` : ''
+const createAnnotation = (type: string, rootType: string = 'input'): string =>
+  !hasAnnotation(type) && type !== rootType ? ` [${type}]` : ''
 
 const createPath = (filename: string, subfolder = ''): string =>
   subfolder ? `${subfolder}/${filename}` : filename

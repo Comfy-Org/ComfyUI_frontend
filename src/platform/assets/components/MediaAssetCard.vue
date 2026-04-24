@@ -135,12 +135,14 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -150,7 +152,6 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
@@ -313,10 +314,14 @@ function dragStart(e: DragEvent) {
 
   const { dataTransfer } = e
   if (!dataTransfer) return
+  const { filename, subfolder, type } =
+    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
+  const outputString = JSON.stringify({ filename, subfolder, type })
 
   const url = URL.parse(asset.preview_url, location.href)
   if (!url) return
 
+  dataTransfer.items.add(outputString, 'comfy/asset-info')
   dataTransfer.items.add(url.toString(), 'text/uri-list')
 }
 </script>

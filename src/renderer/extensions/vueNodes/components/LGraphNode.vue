@@ -822,6 +822,10 @@ async function handleDrop(event: DragEvent) {
   const node = lgraphNode.value
   if (!node?.onDragDrop) return
 
-  await node.onDragDrop(event, true)
+  const handled = await node.onDragDrop(event, true)
+  if (handled === true) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
 }
 </script>

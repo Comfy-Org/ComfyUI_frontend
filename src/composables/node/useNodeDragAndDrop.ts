@@ -1,5 +1,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { zResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -7,6 +9,7 @@ type DropHandler<T> = (files: File[]) => Promise<T[]>
 interface DragAndDropOptions<T> {
   onDragOver?: DragHandler
   onDrop: DropHandler<T>
+  onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
 }
 
@@ -57,6 +60,12 @@ export const useNodeDragAndDrop = <T>(
         e.stopPropagation()
       }
       await onDrop(files)
+      return true
+    }
+    const assetString = e?.dataTransfer?.getData('comfy/asset-info') ?? ''
+    const asset = zResultItem.safeParse(JSON.parse(assetString)).data
+    if (asset && options.onResultItemDrop) {
+      await options.onResultItemDrop(asset)
       return true
     }
 
