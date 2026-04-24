@@ -133,23 +133,12 @@
 
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-neutral-400">
-              {{ t('connectionPanel.step2InstallComfyCli') }}
+              {{ t('connectionPanel.step2InstallComfyui') }}
             </span>
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
             >
-              uv pip install comfy-cli --system
-            </code>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-neutral-400">
-              {{ t('connectionPanel.step3InstallComfyui') }}
-            </span>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              comfy install
+              uv pip install comfy-cli --system && comfy install
             </code>
             <p class="text-xs text-neutral-500">
               {{ t('connectionPanel.managerIncludedNote') }}
@@ -158,7 +147,7 @@
 
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-neutral-400">
-              {{ t('connectionPanel.step4Launch') }}
+              {{ t('connectionPanel.step3Launch') }}
             </span>
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
