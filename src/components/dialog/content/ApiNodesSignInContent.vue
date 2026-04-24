@@ -64,7 +64,8 @@ const aggregate = useGraphCostAggregator(graph)
 const apiNodesFromGraph = useApiNodeRows(graph)
 
 const apiNodes = computed(() => {
-  if (apiNodesFromGraph.value.length > 0) return apiNodesFromGraph.value
+  const graphRows = apiNodesFromGraph.value
+  if (graphRows.length > 0) return graphRows
   // No graph / no api-nodes: surface the prop-supplied names. Key
   // includes the index so duplicate names (two instances of the same
   // node type) don't collide on Vue's :key.
