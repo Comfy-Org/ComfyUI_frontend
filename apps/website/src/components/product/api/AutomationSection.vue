@@ -10,7 +10,7 @@ const features = [
   {
     title: t('api.automation.feature1.title', locale),
     description: t('api.automation.feature1.description', locale),
-    image: 'https://media.comfy.org/website/gallery/desert.webp',
+    image: 'https://media.comfy.org/website/api/infrastructure-nodes.webp',
     description2: t('api.automation.feature1.description2', locale)
   },
   {
@@ -22,7 +22,7 @@ const features = [
   {
     title: t('api.automation.feature3.title', locale),
     description: t('api.automation.feature3.description', locale),
-    image: 'https://media.comfy.org/website/pricing/free.webp'
+    image: 'https://media.comfy.org/website/api/precision-tools.webp'
   }
 ]
 </script>
