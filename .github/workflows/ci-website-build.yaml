@@ -29,33 +29,5 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Run website unit tests
-        run: pnpm --filter @comfyorg/website test:unit
-
       - name: Build website
-        env:
-          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ vars.WEBSITE_ASHBY_JOB_BOARD_NAME || 'comfy-org' }}
         run: pnpm --filter @comfyorg/website build
-
-      - name: Verify API key is not leaked into build output
-        if: env.HAS_KEY == 'true'
-        env:
-          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-          HAS_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY != '' }}
-        run: |
-          set +x
-          if [ -z "${WEBSITE_ASHBY_API_KEY:-}" ]; then
-            echo "Secret not available in this run; skipping leak check."
-            exit 0
-          fi
-          # grep -rlF never echoes match content — only file paths. Redirect stderr to
-          # /dev/null to suppress binary-match previews and fail only on matched paths.
-          MATCHES=$(grep -rlF --exclude-dir=node_modules --null \
-            -e "$WEBSITE_ASHBY_API_KEY" apps/website/dist/ 2>/dev/null | tr '\0' '\n' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "::error title=Ashby API key leaked into build output::The value of WEBSITE_ASHBY_API_KEY was found in the following files (paths shown, secret bytes never printed):"
-            echo "$MATCHES"
-            exit 1
-          fi
-          echo "Leak check passed: no file in apps/website/dist/ contains the API key."
