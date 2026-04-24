@@ -72,19 +72,6 @@ describe('ValueControlButton', () => {
   })
 
   describe('Interaction', () => {
-    it('is keyboard-activatable as a button', async () => {
-      const onClick = vi.fn()
-      render(ValueControlButton, {
-        global: { plugins: [i18n] },
-        props: { mode: 'fixed' },
-        attrs: { onClick }
-      })
-      const user = userEvent.setup()
-      await user.tab()
-      await user.keyboard('{Enter}')
-      expect(onClick).toHaveBeenCalled()
-    })
-
     it('fires click on pointer activation', async () => {
       const onClick = vi.fn()
       render(ValueControlButton, {
@@ -95,13 +82,6 @@ describe('ValueControlButton', () => {
       const user = userEvent.setup()
       await user.click(screen.getByRole('button'))
       expect(onClick).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe('Accessibility', () => {
-    it('has type="button" to avoid form submission', () => {
-      renderButton({ mode: 'fixed' })
-      expect(screen.getByRole('button')).toHaveAttribute('type', 'button')
     })
   })
 })

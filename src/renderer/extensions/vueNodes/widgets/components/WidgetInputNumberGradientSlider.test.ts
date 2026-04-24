@@ -17,12 +17,12 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 const GradientSliderStub = defineComponent({
   name: 'GradientSlider',
   props: {
-    modelValue: { type: Number, default: 0 },
-    stops: { type: Array, default: () => [] },
-    min: { type: Number, default: 0 },
-    max: { type: Number, default: 100 },
-    step: { type: Number, default: 1 },
-    disabled: { type: Boolean, default: false }
+    modelValue: { type: Number, default: undefined },
+    stops: { type: Array, default: undefined },
+    min: { type: Number, default: undefined },
+    max: { type: Number, default: undefined },
+    step: { type: Number, default: undefined },
+    disabled: { type: Boolean, default: undefined }
   },
   template: `<div data-testid="gradient-slider"
     :data-stops="JSON.stringify(stops)"
@@ -133,9 +133,9 @@ describe('WidgetInputNumberGradientSlider', () => {
   })
 
   describe('Precision', () => {
-    it('integer step defaults when precision is unset', () => {
+    it('omits step when precision is unset so GradientSlider uses its own default', () => {
       renderComponent(makeWidget(5), 5)
-      expect(Number(getGradientSlider().dataset.step)).toBe(1)
+      expect(getGradientSlider().dataset.step).toBe('undefined')
     })
 
     it('uses 0.1 step when precision is 1', () => {

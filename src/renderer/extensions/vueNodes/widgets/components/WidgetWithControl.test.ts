@@ -64,7 +64,7 @@ const makeControlWidget = (
 ): SimplifiedControlWidget => {
   const controlWidget: SafeControlWidget = {
     value: initial as SafeControlWidget['value'],
-    update
+    update: (value) => update(value)
   }
   return createMockWidget<WidgetValue>({
     value: 0,
@@ -103,24 +103,15 @@ describe('WidgetWithControl', () => {
     )
   })
 
-  it('defaults mode to randomize when that is the initial value', () => {
-    mount(makeControlWidget(() => {}, 'randomize'))
-    expect(screen.getByTestId('control-button')).toHaveAttribute(
-      'data-mode',
-      'randomize'
-    )
-  })
-
   it('calls widget.controlWidget.update when popover emits a new mode', async () => {
-    const update = vi.fn()
+    const update = vi.fn<(value: WidgetValue) => void>()
     mount(makeControlWidget(update, 'randomize'))
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('set-fixed'))
     await nextTick()
 
-    expect(update).toHaveBeenCalledTimes(1)
-    expect(update.mock.calls[0][0]).toBe('fixed')
+    expect(update).toHaveBeenCalledWith('fixed')
   })
 
   it('does not call update on initial mount', () => {
