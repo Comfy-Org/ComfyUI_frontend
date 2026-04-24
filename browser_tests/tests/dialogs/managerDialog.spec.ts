@@ -4,9 +4,9 @@ import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type { components as RegistryComponents } from '@comfyorg/registry-types'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import type { ComfyPage } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { mockSystemStats } from '../../fixtures/data/systemStats'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
