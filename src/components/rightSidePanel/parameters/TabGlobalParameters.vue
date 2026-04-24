@@ -28,6 +28,7 @@ const { t } = useI18n()
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = ref<{ widgetsContainer: HTMLElement }>()
 const isSearching = ref(false)
+const isDragging = ref(false)
 
 const favoritedWidgets = computed(
   () => favoritedWidgetsStore.validFavoritedWidgets
@@ -56,8 +57,29 @@ function setDraggableState() {
   const container = sectionWidgetsRef.value?.widgetsContainer
   if (isSearching.value || !container?.children?.length) return
 
-  draggableList.value = new DraggableList(container, '.draggable-item')
+  draggableList.value = new DraggableList(container, '.draggable-item', {
+    dragAxis: 'y'
+  })
 
+  draggableList.value.addEventListener('dragstart', () => {
+    isDragging.value = true
+  })
+
+  const baseDragEnd = draggableList.value.dragEnd
+  draggableList.value.dragEnd = function () {
+    baseDragEnd.call(this)
+    nextTick(() => {
+      isDragging.value = false
+    })
+  }
+
+  /**
+   * Override to skip the base class's DOM `appendChild` reorder, which breaks
+   * Vue's vdom tracking inside <TransitionGroup> fragments. Instead, only
+   * update reactive state and let Vue handle the DOM reconciliation.
+   * TransitionGroup's move animation is suppressed via the `isDragging` prop
+   * on SectionWidgets to prevent the FLIP "snap-back" effect.
+   */
   draggableList.value.applyNewItemsOrder = function () {
     const reorderedItems: HTMLElement[] = []
 
@@ -75,6 +97,8 @@ function setDraggableState() {
       reorderedItems[newIndex] = item
     })
 
+    if (oldPosition === -1) return
+
     for (let index = 0; index < this.getAllItems().length; index++) {
       const item = reorderedItems[index]
       if (typeof item === 'undefined') {
@@ -85,11 +109,13 @@ function setDraggableState() {
     const newPosition = reorderedItems.indexOf(
       this.draggableItem as HTMLElement
     )
-    const widgets = [...searchedFavoritedWidgets.value]
-    const [widget] = widgets.splice(oldPosition, 1)
-    widgets.splice(newPosition, 0, widget)
-    searchedFavoritedWidgets.value = widgets
-    favoritedWidgetsStore.reorderFavorites(widgets)
+    if (oldPosition !== newPosition) {
+      const widgets = [...searchedFavoritedWidgets.value]
+      const [widget] = widgets.splice(oldPosition, 1)
+      widgets.splice(newPosition, 0, widget)
+      searchedFavoritedWidgets.value = widgets
+      favoritedWidgetsStore.reorderFavorites(widgets)
+    }
   }
 }
 
@@ -131,6 +157,7 @@ function onCollapseUpdate() {
     :label
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!isSearching"
+    :is-dragging="isDragging"
     hidden-favorite-indicator
     show-node-name
     enable-empty-state

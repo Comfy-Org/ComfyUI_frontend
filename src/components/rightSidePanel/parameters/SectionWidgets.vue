@@ -31,6 +31,7 @@ const {
   widgets: widgetsProp,
   showLocateButton = false,
   isDraggable = false,
+  isDragging = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
   parents = [],
@@ -43,6 +44,7 @@ const {
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
   isDraggable?: boolean
+  isDragging?: boolean
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
   /**
@@ -272,7 +274,7 @@ defineExpose({
         ref="widgetsContainer"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
-        <TransitionGroup name="list-scale">
+        <TransitionGroup :name="isDragging ? undefined : 'list-scale'">
           <WidgetItem
             v-for="{ widget, node } in widgets"
             :key="getStableWidgetRenderKey(widget)"
