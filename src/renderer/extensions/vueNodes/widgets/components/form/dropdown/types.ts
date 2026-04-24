@@ -18,6 +18,8 @@ export interface FormDropdownItem {
   is_immutable?: boolean
   /** Base models this item is compatible with - used for base model filtering */
   base_models?: string[]
+  /** ISO timestamp used by the "All" filter to sort items chronologically */
+  created_at?: string | null
 }
 
 export interface SortOption<TId extends string = string> {

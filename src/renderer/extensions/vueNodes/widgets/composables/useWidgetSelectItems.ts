@@ -64,6 +64,7 @@ interface UseWidgetSelectItemsOptions {
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
   outputMediaAssets: ReturnType<typeof useMediaAssets>
+  inputMediaAssets?: ReturnType<typeof useMediaAssets>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
@@ -146,18 +147,34 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     { immediate: true }
   )
 
+  const inputAssetsByName = computed<Map<string, AssetItem>>(() => {
+    const map = new Map<string, AssetItem>()
+    const assets = options.inputMediaAssets?.media.value
+    if (!assets) return map
+    for (const asset of assets) {
+      map.set(asset.name, asset)
+    }
+    return map
+  })
+
   const inputItems = computed<FormDropdownItem[]>(() => {
     const values = toValue(options.values) || []
     if (!Array.isArray(values)) return []
 
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
-    return values.map((value, index) => ({
-      id: `input-${index}`,
-      preview_url: getMediaUrl(String(value), 'input', kind),
-      name: String(value),
-      label: getDisplayLabel(String(value), labelFn)
-    }))
+    const lookup = inputAssetsByName.value
+    return values.map((value, index) => {
+      const name = String(value)
+      const matched = lookup.get(name)
+      return {
+        id: `input-${index}`,
+        preview_url: getMediaUrl(name, 'input', kind),
+        name,
+        label: getDisplayLabel(name, labelFn),
+        created_at: matched?.created_at
+      }
+    })
   })
 
   const outputItems = computed<FormDropdownItem[]>(() => {
@@ -185,7 +202,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(annotatedPath, labelFn)
+        label: getDisplayLabel(annotatedPath, labelFn),
+        created_at: asset.created_at
       })
     }
 
@@ -261,11 +279,26 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (toValue(options.isAssetMode) && assetData) {
       return filteredAssetItems.value
     }
-    return [
-      ...(missingValueItem.value ? [missingValueItem.value] : []),
-      ...inputItems.value,
-      ...outputItems.value
-    ]
+    const missing = missingValueItem.value ? [missingValueItem.value] : []
+    const combined = [...inputItems.value, ...outputItems.value]
+    const sorted = combined
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const aTime = a.item.created_at
+          ? new Date(a.item.created_at).getTime()
+          : NaN
+        const bTime = b.item.created_at
+          ? new Date(b.item.created_at).getTime()
+          : NaN
+        const aHas = Number.isFinite(aTime)
+        const bHas = Number.isFinite(bTime)
+        if (aHas && bHas) return bTime - aTime
+        if (aHas) return -1
+        if (bHas) return 1
+        return a.index - b.index
+      })
+      .map(({ item }) => item)
+    return [...missing, ...sorted]
   })
 
   const dropdownItems = computed<FormDropdownItem[]>(() => {
