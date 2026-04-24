@@ -74,8 +74,12 @@ function togglePromotion() {
         class="group pointer-events-auto fixed flex cursor-pointer flex-row items-stretch"
         :style="{
           top: `${top}px`,
-          left: `calc(${left}px - ${1.5 * canvasScale}rem - var(--spacing-layout-gutter) * 4 * ${canvasScale})`,
-          width: `calc(${width}px + ${1.5 * canvasScale}rem + var(--spacing-layout-gutter) * 4 * ${canvasScale})`,
+          left:
+            `calc(${left}px - ${1.5 * canvasScale}rem ` +
+            `- var(--spacing-layout-gutter) * 4 * ${canvasScale})`,
+          width:
+            `calc(${width}px + ${1.5 * canvasScale}rem ` +
+            `+ var(--spacing-layout-gutter) * 4 * ${canvasScale})`,
           height: `${height}px`,
           gap: `calc(var(--spacing-layout-gutter) * 2.5 * ${canvasScale})`,
           zIndex: 5
@@ -93,10 +97,14 @@ function togglePromotion() {
           }"
           :class="
             cn(
-              'flex shrink-0 items-center justify-center self-center rounded-lg border-[3px] shadow-sm',
+              'flex shrink-0 items-center justify-center self-center',
+              'rounded-lg border-[3px] shadow-sm',
               isPromoted
                 ? 'border-warning-background bg-warning-background'
-                : 'border-primary-background bg-base-background group-hover:border-dashed group-hover:border-warning-background'
+                : [
+                    'border-primary-background bg-base-background',
+                    'group-hover:border-dashed group-hover:border-warning-background'
+                  ]
             )
           "
         >
@@ -111,7 +119,10 @@ function togglePromotion() {
               'pointer-events-none flex-1 self-stretch rounded-lg border-[3px]',
               isPromoted
                 ? 'border-warning-background bg-warning-background/15'
-                : 'border-primary-background group-hover:border-dashed group-hover:border-warning-background'
+                : [
+                    'border-primary-background',
+                    'group-hover:border-dashed group-hover:border-warning-background'
+                  ]
             )
           "
         />

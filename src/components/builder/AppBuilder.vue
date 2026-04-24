@@ -246,7 +246,11 @@ const renderedInputCandidates = computed(() => {
             <div class="absolute top-0 right-0 size-8">
               <div
                 v-if="isSelected"
-                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
+                :class="[
+                  'pointer-events-auto absolute -top-1/2 -right-1/2',
+                  'size-full cursor-pointer rounded-lg p-2',
+                  'bg-warning-background'
+                ]"
                 @click.stop="
                   remove(
                     appModeStore.selectedOutputs,
@@ -259,7 +263,12 @@ const renderedInputCandidates = computed(() => {
               </div>
               <div
                 v-else
-                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-component-node-background ring-4 ring-warning-background/50 ring-inset"
+                :class="[
+                  'pointer-events-auto absolute -top-1/2 -right-1/2',
+                  'size-full cursor-pointer rounded-lg',
+                  'bg-component-node-background',
+                  'ring-4 ring-warning-background/50 ring-inset'
+                ]"
                 @click.stop="appModeStore.selectedOutputs.push(key)"
                 @pointerdown.stop
               />

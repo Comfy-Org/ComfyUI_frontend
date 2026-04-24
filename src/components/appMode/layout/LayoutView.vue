@@ -68,8 +68,8 @@ const panelSide = computed(() =>
     <!-- Chrome layer: floating utility cells. Shared with the builder. -->
     <AppChrome variant="app-mode" />
 
-    <!-- Overlay layer: the floating panel(s). Phase 4-A: one panel;
-         Phase 4-C: drag between presets. -->
+    <!-- Overlay layer: a single floating panel, draggable between 6
+         preset positions (left/right dock + four float corners). -->
     <FloatingPanel
       v-model:preset="panelPreset"
       v-model:collapsed="panelCollapsed"

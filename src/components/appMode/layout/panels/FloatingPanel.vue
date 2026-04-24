@@ -6,23 +6,28 @@
  * the snap preview so every consumer gets identical behavior without
  * re-implementing it.
  *
- * Header is Vizcom-style: collapse chevron on the left, title centered
- * against it, 3-dot menu on the right. A 1px border-bottom visually
- * separates the header (which is the drag grip) from the body.
+ * Header: collapse chevron on the left, title centered against it,
+ * 3-dot menu on the right. The header itself is the drag grip; a
+ * distinct header-fill signals the grabbable region without a hard
+ * divider.
  *
- * API:
- *   v-model:preset    — two-way preset binding (right-dock, left-dock,
- *     float-tr/tl/br/bl). Drag commits flow back via update:preset.
- *   v-model:collapsed — two-way collapse binding. When true, body +
- *     footer are hidden and the panel shrinks to the header pill.
- *   movable           — opt-in for drag. When false, the header is
- *     static (no grab cursor).
- *   title             — optional panel title shown in the header.
+ * Props:
+ * - `title` — optional title shown in the header.
+ * - `movable` (default `false`) — opt-in for drag. When false the
+ *   header is static (no grab cursor).
+ * - `defaultPreset` (default `right-dock`) — preset restored when the
+ *   user picks "Reset layout".
+ *
+ * Two-way bindings (v-model):
+ * - `preset` (required) — panel position. One of right-dock,
+ *   left-dock, or float-tr/tl/br/bl. Drag commits flow back via this.
+ * - `collapsed` (default `false`) — when true, body and footer are
+ *   hidden and the panel shrinks to the header pill.
  *
  * Events:
- *   reset-layout      — fired when the user picks "Reset layout" from
- *     the header menu. Consumers may re-seed panel state; preset +
- *     collapsed are reset internally via the v-model bindings.
+ * - `reset-layout` — fires when the user picks "Reset layout" from
+ *   the header menu. Consumers may re-seed their own state; preset
+ *   and collapsed reset internally via the v-model bindings.
  *
  * A single appModeStore.panelPreset + panelCollapsed are the shared
  * source. Both LayoutView and BuilderPanel bind them here, so moving
@@ -40,6 +45,7 @@ import Popover from '@/components/ui/Popover.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 import PanelDragPreview from './PanelDragPreview.vue'
+import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
 import type { PanelPreset } from './panelTypes'
 import { usePanelDrag } from './usePanelDrag'
 import { usePanelResize } from './usePanelResize'
@@ -97,8 +103,11 @@ const isDockPreset = computed(
 // affected by the user's resize.
 const widthStyle = computed(() => {
   if (!isDockPreset.value) return undefined
+  const cells = panelWidthCells.value
   return {
-    width: `calc(${panelWidthCells.value} * var(--spacing-layout-cell) + ${panelWidthCells.value - 1} * var(--spacing-layout-gutter))`
+    width:
+      `calc(${cells} * var(--spacing-layout-cell) ` +
+      `+ ${cells - 1} * var(--spacing-layout-gutter))`
   }
 })
 
@@ -111,34 +120,9 @@ const { startResize } = usePanelResize({
   widthCells: panelWidthCells
 })
 
-// Preset positions — each preset pins one anchor edge (top/left or
-// bottom/right). Dock presets use a fixed `height` so the panel
-// stretches to fill the vertical slot (small content leaves dead
-// space at the bottom rather than the panel shrinking). Float
-// presets use `max-height` so they remain content-driven.
-//
-// Left-anchored presets offset by `--sidebar-width` so the panel
-// clears the Comfy icon strip when the sidebar is on the left;
-// falls back to 0px when the sidebar is on the right / hidden. Same
-// pattern as BuilderMenu + BuilderBackdrop.
-//
-// Kept in a map rather than inline cn() so each preset's geometry
-// reads as one block. Mirrors PanelDragPreview exactly — keep them
-// in sync.
-const PRESET_CLASSES: Record<PanelPreset, string> = {
-  'right-dock':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)-var(--spacing-layout-gutter))]',
-  'left-dock':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
-  'float-tr':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
-  'float-br':
-    'bottom-(--spacing-layout-outer) right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
-  'float-tl':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
-  'float-bl':
-    'bottom-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
-}
+// Preset positioning is shared with PanelDragPreview via
+// `PANEL_PRESET_CLASSES` (./panelPresetClasses) so the live panel and
+// the drop-target outline always land at the same coordinates.
 
 // Build the full class list for the floating-panel section. Classname
 // `floating-panel` is kept as an external CSS hook — `src/assets/css/
@@ -171,7 +155,7 @@ const sectionClass = computed(() =>
     movable && isDragging.value
       ? 'opacity-[0.15] transition-opacity'
       : 'transition-[top,bottom,left,right,max-height,height,opacity]',
-    PRESET_CLASSES[preset.value],
+    PANEL_PRESET_CLASSES[preset.value],
     // Collapsed state: release size constraints (height, max-height) but
     // NOT positional anchors. Placed last so tw-merge lets h-auto /
     // max-h-none override the preset's max-h-[calc(...)] cap.
@@ -196,6 +180,16 @@ function handleHeaderPointerDown(e: PointerEvent) {
 function toggleCollapsed() {
   collapsed.value = !collapsed.value
 }
+
+// Shared class list for the two interactive controls inside the
+// header (collapse chevron + 3-dot menu). They look identical —
+// 32px square, no border, subtle canvas-dark hover — so keep one
+// source of truth rather than duplicating the utility list inline.
+const HEADER_CONTROL_CLASS =
+  'inline-flex size-8 cursor-pointer items-center justify-center ' +
+  'rounded-md border-0 bg-transparent text-layout-text ' +
+  'transition-colors duration-layout ease-layout ' +
+  'hover:bg-layout-cell-hover [&>i]:size-[18px]'
 
 const menuEntries = computed<MenuItem[]>(() => [
   {
@@ -239,14 +233,15 @@ const menuEntries = computed<MenuItem[]>(() => [
       "
       @pointerdown="startResize"
     />
-    <!-- Vizcom-style header strip: also the drag grip when `movable`.
-         Distinct header-fill so the grabbable region reads at a glance
-         without a hard divider. Grab cursor switches to grabbing while
-         the panel is being dragged. -->
+    <!-- Header strip: also the drag grip when `movable`. Distinct
+         header-fill so the grabbable region reads at a glance without
+         a hard divider. Grab cursor switches to grabbing while the
+         panel is being dragged. -->
     <header
       :class="
         cn(
-          'flex min-h-layout-cell items-center gap-2 bg-(--color-layout-header-fill) px-[10px] py-2 select-none',
+          'flex min-h-layout-cell items-center gap-2 select-none',
+          'bg-(--color-layout-header-fill) px-[10px] py-2',
           movable && 'cursor-grab touch-none',
           movable && isDragging && 'cursor-grabbing'
         )
@@ -256,7 +251,7 @@ const menuEntries = computed<MenuItem[]>(() => [
       <button
         type="button"
         data-header-control
-        class="duration-layout inline-flex size-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-layout-text transition-colors ease-layout hover:bg-layout-cell-hover [&>i]:size-[18px]"
+        :class="HEADER_CONTROL_CLASS"
         :aria-label="
           collapsed
             ? t('linearMode.floatingPanel.expand')
@@ -292,7 +287,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           <button
             type="button"
             data-header-control
-            class="duration-layout inline-flex size-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-layout-text transition-colors ease-layout hover:bg-layout-cell-hover [&>i]:size-[18px]"
+            :class="HEADER_CONTROL_CLASS"
             :aria-label="t('linearMode.floatingPanel.menu')"
             @pointerdown.stop
           >

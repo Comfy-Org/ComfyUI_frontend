@@ -4,9 +4,6 @@
  * (the batch count used when Run is clicked).
  *
  * At 1 row tall × 3 cols wide the label and input sit side-by-side.
- * This cell is also the first label/widget pair broken into its own
- * layout cell — a template for Phase 2 when every input gets its
- * own cell.
  */
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'

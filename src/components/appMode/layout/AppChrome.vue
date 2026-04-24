@@ -148,7 +148,11 @@ async function loadSelectedWorkflow() {
   if (!sel) return
   const { workflow } = await extractWorkflowFromAsset(sel.asset)
   if (!workflow) return
-  if (workflow.id !== app.rootGraph.id) {
+  // `app.rootGraph` may be null mid-transition (e.g. during a workflow
+  // swap). Treat "no current graph" as "not the same graph" — fall
+  // through to loadGraphData so we end up with the selected workflow
+  // loaded either way.
+  if (workflow.id !== app.rootGraph?.id) {
     await app.loadGraphData(workflow)
     return
   }
@@ -337,6 +341,11 @@ function cellTitle(cell: ChromeCell): string | undefined {
   return undefined
 }
 
+// Shared base for the three corner zones. Each zone adds its own
+// top/left/right/bottom offset in the template.
+const ZONE_BASE =
+  'pointer-events-none absolute flex h-layout-cell flex-row gap-layout-gutter'
+
 // Placeholder go/stop fill colors for the run cluster (RunCell,
 // InterruptCell, ProgressCell). Set on the chrome root so descendants
 // read them via `var(--app-mode-*)`. Kept local here so the rest of
@@ -378,15 +387,20 @@ function cellClass(cell: ChromeCell): string {
     :class="
       cn(
         'app-chrome pointer-events-none absolute inset-0 z-1',
-        variant === 'builder' &&
-          'fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-90 cursor-not-allowed'
+        variant === 'builder' && [
+          'fixed top-(--workflow-tabs-height) right-0 bottom-0',
+          'left-(--sidebar-width,0px) z-90 cursor-not-allowed'
+        ]
       )
     "
     :data-variant="variant"
     :style="goStopVars"
   >
     <div
-      class="pointer-events-none absolute top-(--spacing-layout-outer) left-(--spacing-layout-outer) flex h-layout-cell flex-row gap-layout-gutter"
+      :class="[
+        ZONE_BASE,
+        'top-(--spacing-layout-outer) left-(--spacing-layout-outer)'
+      ]"
     >
       <div
         v-for="cell in topLeftCells"
@@ -425,7 +439,12 @@ function cellClass(cell: ChromeCell): string {
         />
         <div
           v-else-if="cell.kind === 'action-info'"
-          class="duration-layout flex size-full cursor-default items-center gap-2 rounded-layout-cell bg-layout-cell px-3 font-inter text-layout-md text-layout-text transition-colors ease-layout hover:bg-layout-cell-hover"
+          :class="[
+            'duration-layout flex size-full cursor-default items-center gap-2',
+            'rounded-layout-cell bg-layout-cell px-3',
+            'font-inter text-layout-md text-layout-text',
+            'transition-colors ease-layout hover:bg-layout-cell-hover'
+          ]"
         >
           <i class="icon-[lucide--file] size-5 shrink-0" aria-hidden="true" />
           <span
@@ -448,7 +467,10 @@ function cellClass(cell: ChromeCell): string {
     </div>
 
     <div
-      class="pointer-events-none absolute top-(--spacing-layout-outer) right-(--spacing-layout-outer) flex h-layout-cell flex-row gap-layout-gutter"
+      :class="[
+        ZONE_BASE,
+        'top-(--spacing-layout-outer) right-(--spacing-layout-outer)'
+      ]"
     >
       <div
         v-for="cell in topRightCells"
@@ -476,7 +498,10 @@ function cellClass(cell: ChromeCell): string {
     </div>
 
     <div
-      class="pointer-events-none absolute bottom-(--spacing-layout-outer) left-(--spacing-layout-outer) flex h-layout-cell flex-row gap-layout-gutter"
+      :class="[
+        ZONE_BASE,
+        'bottom-(--spacing-layout-outer) left-(--spacing-layout-outer)'
+      ]"
     >
       <div
         v-for="cell in bottomLeftCells"

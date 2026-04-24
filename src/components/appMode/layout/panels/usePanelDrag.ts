@@ -1,9 +1,9 @@
 /**
  * usePanelDrag — pointer-driven drag for FloatingPanel.
  *
- * Phase 4-C: panels move between 6 preset positions only (no free
- * positioning). During drag, `snapTarget` tracks the closest preset
- * under the pointer. On release, the caller commits the preset.
+ * Panels move between 6 preset positions only (no free positioning).
+ * During drag, `snapTarget` tracks the closest preset under the
+ * pointer. On release, the caller commits the preset.
  *
  * Drag contract:
  * - Starts on header pointerdown; only activates (`isDragging` flips

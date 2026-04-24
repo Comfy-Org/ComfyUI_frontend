@@ -2,10 +2,10 @@
 /**
  * PanelBlockList — 2D grid of blocks inside a FloatingPanel.
  *
- * Phase 4-E + 4-F: rows stack vertically; within a row, blocks sit
- * side-by-side. Grip handle on each block's left edge drives pointer
- * reorder via useBlockDrag. Drop indicators: horizontal line between
- * rows, vertical line between columns.
+ * Rows stack vertically; within a row, blocks sit side-by-side. A
+ * grip handle on each block's left edge drives pointer reorder via
+ * useBlockDrag. During drag, the layout reshuffles to preview the
+ * post-drop arrangement with a dashed outline on the moving block.
  */
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useTemplateRef } from 'vue'
@@ -67,6 +67,15 @@ const originalById = computed(() => {
   )
   return map
 })
+
+// Look up the block's original position and start a drag from there.
+// `originalById` is built from `rows` and every block in `displayRows`
+// is a re-reference from `rows`, so a missing entry means the block
+// isn't ours to drag — skip silently rather than invent coords.
+function beginDrag(blockId: string, event: PointerEvent) {
+  const pos = originalById.value.get(blockId)
+  if (pos) startDrag(pos, event)
+}
 </script>
 
 <template>
@@ -86,8 +95,6 @@ const originalById = computed(() => {
   >
     <!-- 16px row gap matches the grip width — the grip fills the gap
          exactly, with 4px dots centered so there's 6px clear per side. -->
-    <!-- 16px row gap matches the grip width — the grip fills the gap
-         exactly, with 4px dots centered so there's 6px clear per side. -->
     <li
       v-for="(row, rowIdx) in displayRows"
       :key="`row-${rowIdx}-${row[0]?.id}`"
@@ -98,7 +105,9 @@ const originalById = computed(() => {
         :key="block.id"
         :class="
           cn(
-            'group duration-layout relative block min-w-0 flex-1 rounded-layout-cell bg-transparent transition-opacity ease-layout',
+            'group relative block min-w-0 flex-1',
+            'rounded-layout-cell bg-transparent',
+            'duration-layout transition-opacity ease-layout',
             block.id === draggingBlockId &&
               'outline-2 outline-offset-2 outline-warning-background outline-dashed'
           )
@@ -120,14 +129,16 @@ const originalById = computed(() => {
         <span
           :class="
             cn(
-              'duration-layout absolute inset-y-0 -left-4 flex w-4 cursor-grab touch-none items-center justify-center bg-transparent p-0 opacity-0 transition-opacity ease-layout group-hover:opacity-70 active:cursor-grabbing',
+              'absolute inset-y-0 -left-4 flex w-4 p-0',
+              'items-center justify-center bg-transparent',
+              'cursor-grab touch-none active:cursor-grabbing',
+              'duration-layout opacity-0 transition-opacity ease-layout',
+              'group-hover:opacity-70',
               block.id === draggingBlockId && 'opacity-70'
             )
           "
           aria-hidden="true"
-          @pointerdown="
-            startDrag(originalById.get(block.id) ?? { row: 0, col: 0 }, $event)
-          "
+          @pointerdown="beginDrag(block.id, $event)"
         >
           <span
             class="h-full w-1 bg-[radial-gradient(circle,var(--color-layout-mute)_1px,transparent_1.2px)] bg-size-[4px_4px] bg-repeat-y"
@@ -135,13 +146,24 @@ const originalById = computed(() => {
           />
         </span>
         <div class="w-full min-w-0 overflow-hidden">
-          <div
-            v-if="inputEntryMap.get(block.entryKey)"
-            class="panel-block__input"
-            :data-multiline="block.isMultiline ? 'true' : 'false'"
+          <!-- 1-item v-for binds the Map lookup once into `entry`, then
+               v-if narrows to non-undefined so InputCell's :entry is
+               correctly typed without a ! assertion. `entry?.key`
+               satisfies vue/valid-v-for (key must derive from the
+               iteration variable) while falling back to a stable
+               string when the lookup misses. -->
+          <template
+            v-for="entry in [inputEntryMap.get(block.entryKey)]"
+            :key="entry?.key ?? block.entryKey"
           >
-            <InputCell :entry="inputEntryMap.get(block.entryKey)!" :variant />
-          </div>
+            <div
+              v-if="entry"
+              class="panel-block__input"
+              :data-multiline="block.isMultiline ? 'true' : 'false'"
+            >
+              <InputCell :entry :variant />
+            </div>
+          </template>
         </div>
       </div>
     </li>

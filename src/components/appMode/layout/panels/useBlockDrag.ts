@@ -1,6 +1,6 @@
 /**
  * useBlockDrag — pointer-driven reorder for blocks inside a panel,
- * with Notion-style column support.
+ * with multi-column row support.
  *
  * Drop-target detection: find the block closest to the pointer, then
  * classify the pointer's position inside that block's rect into one of
@@ -128,9 +128,10 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
       const dy = e.clientY - startY
       if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
       movedFarEnough = true
-      // Promote the pending position into the live drag state. Render
-      // side-effect: the source block gets the .panel-block--dragging
-      // class (opacity fade) and drop indicators start rendering.
+      // Promote the pending position into the live drag state.
+      // PanelBlockList reads `draggingPos` + `dropTarget` to reshuffle
+      // its layout into the post-drop preview and frame the moving
+      // block with a dashed outline.
       if (pendingPos) draggingPos.value = { ...pendingPos }
     }
     const container = opts.listEl.value

@@ -118,9 +118,11 @@ const isSaved = computed(
 // horizontal to 8px and shrink height to 32px so the blue pill feels
 // square-balanced rather than a tall rectangle with a short word.
 const activeSaveClasses =
-  'bg-primary-background text-white border border-cobalt-800 hover:bg-primary-background-hover h-8 px-2'
+  'bg-primary-background text-white border border-cobalt-800 ' +
+  'hover:bg-primary-background-hover h-8 px-2'
 const disabledSaveClasses =
-  'bg-secondary-background text-muted-foreground/50 disabled:opacity-100 h-8 px-2'
+  'bg-secondary-background text-muted-foreground/50 ' +
+  'disabled:opacity-100 h-8 px-2'
 
 const isModified = computed(
   () => workflowStore.activeWorkflow?.isModified === true

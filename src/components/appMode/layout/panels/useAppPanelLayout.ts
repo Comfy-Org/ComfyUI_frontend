@@ -33,12 +33,15 @@ export function useAppPanelLayout() {
   const appModeStore = useAppModeStore()
 
   // Re-resolve on graph reconfigure (e.g. after app.loadGraphData) so
-  // stale selected-input entries get pruned.
-  const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
+  // stale selected-input entries get pruned. `app.rootGraph` may be
+  // null during transitions, so seed with an empty array and subscribe
+  // via a getter — VueUse re-binds the listener when the target
+  // becomes available.
+  const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph?.nodes ?? [])
   useEventListener(
-    app.rootGraph.events,
+    () => app.rootGraph?.events,
     'configured',
-    () => (graphNodes.value = app.rootGraph.nodes)
+    () => (graphNodes.value = app.rootGraph?.nodes ?? [])
   )
 
   const inputEntries = computed<InputEntryWithMeta[]>(() => {
@@ -52,10 +55,11 @@ export function useAppPanelLayout() {
       const [node, widget] = resolveNodeWidget(nodeId, widgetName)
       if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
 
-      if (!nodeDataByNode.has(node)) {
-        nodeDataByNode.set(node, extractVueNodeData(node))
+      let fullNodeData = nodeDataByNode.get(node)
+      if (!fullNodeData) {
+        fullNodeData = extractVueNodeData(node)
+        nodeDataByNode.set(node, fullNodeData)
       }
-      const fullNodeData = nodeDataByNode.get(node)!
 
       const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
         if (vueWidget.slotMetadata?.linked) return false
@@ -107,9 +111,6 @@ export function useAppPanelLayout() {
   // preserve existing rows/columns, drop blocks whose entry is gone,
   // refresh sizing meta, and append new inputs as single-block rows.
   watchEffect(() => {
-    const desiredInputIds = new Set(
-      inputEntries.value.map((e) => `input-${e.key}`)
-    )
     const entryByBlockId = new Map(
       inputEntries.value.map((e) => [`input-${e.key}`, e])
     )
@@ -120,13 +121,16 @@ export function useAppPanelLayout() {
       }
     }
 
+    // Drop blocks whose entry is gone (entry-missing check replaces
+    // the separate desiredInputIds set — entryByBlockId is built from
+    // the same source, so "no entry" == "no longer desired").
     const preserved: BlockRow[] = appModeStore.panelRows
       .map(
         (row): BlockRow =>
           row.flatMap((block): BlockConfig[] => {
             if (block.kind === 'input') {
-              if (!desiredInputIds.has(block.id)) return []
-              const entry = entryByBlockId.get(block.id)!
+              const entry = entryByBlockId.get(block.id)
+              if (!entry) return []
               return [
                 {
                   ...block,

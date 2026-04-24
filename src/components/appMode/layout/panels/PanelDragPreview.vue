@@ -11,6 +11,7 @@
  */
 import { computed } from 'vue'
 
+import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
 import type { PanelPreset } from './panelTypes'
 
 const props = defineProps<{
@@ -19,29 +20,10 @@ const props = defineProps<{
   panelWidth?: number
 }>()
 
-// Mirror FloatingPanel's preset positions. Dock presets use a fixed
-// `height` so the preview reads as a full-height landing zone; float
-// presets stay content-driven via `max-height`. Keep these in sync
-// with FloatingPanel's PRESET_CLASSES — otherwise the preview
-// wouldn't match where the live panel lands. The CSS calc()
-// expressions stay verbatim as arbitrary Tailwind values since they
-// don't translate to a single token.
-const PRESET_CLASSES: Record<PanelPreset, string> = {
-  'right-dock':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)-var(--spacing-layout-gutter))]',
-  'left-dock':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
-  'float-tr':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
-  'float-br':
-    'bottom-(--spacing-layout-outer) right-(--spacing-layout-outer) max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
-  'float-tl':
-    'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]',
-  'float-bl':
-    'bottom-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))] left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))] max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
-}
-
-const presetClass = computed(() => PRESET_CLASSES[props.preset])
+// Preset classes are shared with FloatingPanel via
+// `PANEL_PRESET_CLASSES` so the drop preview always lands where the
+// live panel will.
+const presetClass = computed(() => PANEL_PRESET_CLASSES[props.preset])
 // Match the live panel's rendered dimensions so the preview lands the
 // same size the panel will — important when the user has drag-resized
 // the dock wider than the default.
@@ -59,7 +41,11 @@ const sizeStyle = computed(() => {
       // Base chrome: absolute, brand-blue outline + 30% tint fill,
       // content non-interactive, animated through the shared layout
       // duration/easing so the preview tweens between presets.
-      'duration-layout pointer-events-none absolute z-20 w-(--panel-dock-width,440px) rounded-[10px] border-2 border-primary-background bg-primary-background/30 transition-[top,bottom,left,right,max-height] ease-layout',
+      'pointer-events-none absolute z-20',
+      'w-(--panel-dock-width,440px)',
+      'rounded-[10px] border-2 border-primary-background',
+      'bg-primary-background/30',
+      'duration-layout transition-[top,bottom,left,right,max-height] ease-layout',
       presetClass
     ]"
     :style="sizeStyle"

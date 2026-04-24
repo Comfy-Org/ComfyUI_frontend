@@ -1,6 +1,6 @@
 /**
- * Panel + block config types for Solution 04 (semi-customizable floating
- * panels). Phase 4-A keeps this in-memory only — persistence lands in 4-B.
+ * Panel + block config types for the semi-customizable floating panel.
+ * State is in-memory only for now; persistence is a follow-up.
  */
 
 export type PanelPreset =

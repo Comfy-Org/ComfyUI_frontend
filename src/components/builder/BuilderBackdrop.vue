@@ -29,7 +29,15 @@ const { isArrangeMode } = useAppMode()
        see the :deep() exception below for the descendant override. -->
   <div
     v-if="isArrangeMode"
-    class="builder-backdrop pointer-events-none fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-50 overflow-hidden bg-layout-canvas bg-[radial-gradient(circle,var(--color-layout-grid-dot)_1px,transparent_1.5px)] bg-size-[var(--spacing-layout-dot)_var(--spacing-layout-dot)] bg-position-[0_0]"
+    :class="[
+      'builder-backdrop pointer-events-none fixed z-50 overflow-hidden',
+      'top-(--workflow-tabs-height) right-0 bottom-0',
+      'left-(--sidebar-width,0px)',
+      'bg-layout-canvas',
+      'bg-[radial-gradient(circle,var(--color-layout-grid-dot)_1px,transparent_1.5px)]',
+      'bg-size-[var(--spacing-layout-dot)_var(--spacing-layout-dot)]',
+      'bg-position-[0_0]'
+    ]"
   >
     <LinearPreview hide-chrome />
   </div>

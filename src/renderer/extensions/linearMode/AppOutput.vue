@@ -75,7 +75,11 @@ function togglePromotion() {
         </div>
         <div
           v-else
-          class="absolute -top-1/2 -right-1/2 size-full rounded-lg border-4 border-primary-background bg-component-node-background group-hover:border-dashed group-hover:border-warning-background"
+          :class="[
+            'absolute -top-1/2 -right-1/2 size-full rounded-lg',
+            'border-4 border-primary-background bg-component-node-background',
+            'group-hover:border-dashed group-hover:border-warning-background'
+          ]"
         />
       </div>
     </div>

@@ -86,7 +86,13 @@ const emptyCopy = computed(() => {
            the canvas; radius + colors align with design tokens. -->
       <div
         v-else
-        class="m-2 flex flex-1 items-center justify-center rounded-layout-cell border-[3px] border-dashed border-warning-background bg-warning-background/15 p-6 text-center text-lg text-warning-background"
+        :class="[
+          'm-2 flex flex-1 items-center justify-center p-6',
+          'rounded-layout-cell',
+          'border-[3px] border-dashed border-warning-background',
+          'bg-warning-background/15',
+          'text-center text-lg text-warning-background'
+        ]"
       >
         {{ emptyCopy }}
       </div>

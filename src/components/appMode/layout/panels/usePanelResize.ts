@@ -8,8 +8,8 @@
  * width so the panel can never be narrower than its non-resizable
  * baseline.
  */
-import { useEventListener } from '@vueuse/core'
-import { ref } from 'vue'
+import { useEventListener, useWindowFocus } from '@vueuse/core'
+import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 interface UsePanelResizeOptions {
@@ -81,6 +81,14 @@ export function usePanelResize(opts: UsePanelResizeOptions) {
   useEventListener(window, 'pointercancel', (e: PointerEvent) => {
     if (!isOurPointer(e)) return
     reset()
+  })
+
+  // Abandon on window blur so a resize doesn't survive alt-tab / OS
+  // modals waiting for a pointerup that never arrives. Matches
+  // usePanelDrag's behavior for the same reason.
+  const focused = useWindowFocus()
+  watch(focused, (nowFocused) => {
+    if (!nowFocused && activePointerId !== null) reset()
   })
 
   function startResize(e: PointerEvent) {

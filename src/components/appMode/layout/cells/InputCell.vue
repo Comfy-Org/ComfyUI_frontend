@@ -121,13 +121,23 @@ function cancelRename() {
       </span>
     </div>
     <div
-      class="min-h-0 flex-1 overflow-hidden [&_input]:text-layout-md! [&_textarea]:h-full! [&_textarea]:min-h-0! [&_textarea]:resize-none! [&_textarea]:text-layout-md!"
+      :class="[
+        'min-h-0 flex-1 overflow-hidden',
+        '[&_input]:text-layout-md!',
+        '[&_textarea]:h-full! [&_textarea]:min-h-0!',
+        '[&_textarea]:resize-none! [&_textarea]:text-layout-md!'
+      ]"
       :inert="variant === 'builder' || undefined"
     >
       <DropZone>
         <NodeWidgets
           :node-data="entry.nodeData"
-          class="gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10"
+          :class="[
+            'gap-y-3 rounded-lg py-1',
+            '[&_textarea]:resize-y',
+            '**:[.col-span-2]:grid-cols-1',
+            'not-md:**:[.h-7]:h-10'
+          ]"
         />
       </DropZone>
     </div>

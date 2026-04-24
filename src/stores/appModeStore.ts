@@ -27,6 +27,13 @@ export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
 }
 
+/**
+ * Single source of truth for App Mode and App Builder — panel preset,
+ * collapse, width, block arrangement, selected inputs + outputs. Both
+ * modes render through the same chrome + floating panel and read and
+ * write here, so the builder is WYSIWYG with the runtime by
+ * construction rather than by translation.
+ */
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const settingStore = useSettingStore()
@@ -43,7 +50,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   // the floating inputs panel across App Mode (runtime) and App Builder
   // (edit). Moving or collapsing the panel in either view updates both,
   // so the builder is WYSIWYG with App Mode by construction. In-memory
-  // only for now; persistence is Phase 4-B.
+  // only for now.
   const panelPreset = ref<PanelPreset>('right-dock')
   const panelCollapsed = ref(false)
   // Width of the dock panel in grid cells (8 = default 440px). Bumping

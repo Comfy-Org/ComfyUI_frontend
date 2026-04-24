@@ -1,6 +1,6 @@
 # App Mode layout
 
-Components for App Mode's layout system — a full-viewport output canvas with floating panels snapped to a grid. Related context and design docs live in [`comfyui-app-mode`](https://github.com/eliheuer/comfyui-app-mode) (private).
+Components for App Mode's layout system — a full-viewport output canvas with floating panels snapped to a grid.
 
 ## Before editing anything in this folder
 
@@ -15,23 +15,19 @@ The type scale is deliberately tight: **4 sizes only** (`layout-md` / `layout-lg
 - `AppChrome.vue` — shared chrome rail (mode toggle, run cluster, share, action cells, history thumbs, feedback). Three fixed-gutter flex zones pinned to the top-left, top-right, and bottom-left corners. Each cell's width composes from the same tokens `FloatingPanel` uses (`span × cell + (span−1) × gutter`), so chrome + panel snap to identical pixel positions at every viewport. Consumed by both App Mode runtime and App Builder via a `variant` prop.
 - `LayoutView.vue` — App Mode runtime view. Mounts `LinearPreview` as the full-viewport background layer, `AppChrome` above it, and one or more floating panels on top.
 - `cells/` — individual cell components. Each fills its assigned chrome cell and renders one coherent piece of UI.
-- `panels/` — floating-panel shell + snap-drag + Notion-style block list. `--panel-dock-width` is derived from the same cell + gutter tokens the chrome uses.
+- `panels/` — floating-panel shell + snap-drag + drag-to-reorder block list. `--panel-dock-width` is derived from the same cell + gutter tokens the chrome uses.
 - Tokens are loaded globally via `@comfyorg/design-system/css/style.css` (imported once at the app entry), so no per-view CSS import is needed.
 
 ## Cell conventions
 
 - Cell roots fill their assigned box: `size-full` (or absolute fill if the cell is a positioning context).
-- Visible cell background + hairline border + radius are applied by `AppChrome` on the `.app-chrome__cell` wrapper — individual cell components don't set their own outer background.
+- Visible cell background + hairline border + radius are applied by `AppChrome` (via its `cellClass()` helper) on the per-cell wrapper — individual cell components don't set their own outer background.
 - Text at `text-layout-md` unless there's a concrete reason otherwise.
 - Padding uses the token-implied rhythm (multiples of `gap-layout-gutter`).
 - No decorative chrome: no shadows, no gradients, no rounded corners larger than `rounded-layout-cell`. Accent / primary color is owned by the shared `Button` primitive, not cells.
 
-## Phase map
+## Status
 
-Tracked in detail in the context repo's `todo.md` (Solution 04 — Semi-Customizable Floating Panels). Brief:
-
-- **Phase 1–2 (done):** grid substrate + per-input / per-output cells + design tokens.
-- **Phase 4-A / 4-C / 4-E / 4-F (done):** floating-panel shell, drag-to-snap between presets, Notion-style block reorder, multi-column blocks within a panel.
-- **Phase 4-I (in progress):** UI/UX polish for draft PR.
-- **Phase 4-B / 4-G / 4-H (next):** schema + persistence, edit-mode lock, builder integration.
-- **Phase 5+ (backlog):** multi-panel, output-as-panel, mobile, additional block types.
+- **Landed:** grid substrate, per-input / per-output cells, design tokens, floating-panel shell, drag-to-snap between presets, drag-to-reorder block list, multi-column blocks within a panel.
+- **Next:** schema + persistence, edit-mode lock, deeper builder integration.
+- **Backlog:** multi-panel, output-as-panel, mobile, additional block types.

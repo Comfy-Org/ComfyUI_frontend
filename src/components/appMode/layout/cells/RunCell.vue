@@ -39,7 +39,12 @@ async function handleClick(e: MouseEvent | KeyboardEvent) {
 <template>
   <Button
     size="unset"
-    class="size-full rounded-lg border border-(--app-mode-go-border) bg-(--app-mode-go-bg) text-layout-xl text-white hover:bg-(--app-mode-go-bg-hover) focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1"
+    :class="[
+      'size-full rounded-lg text-layout-xl text-white',
+      'border border-(--app-mode-go-border) bg-(--app-mode-go-bg)',
+      'hover:bg-(--app-mode-go-bg-hover)',
+      'focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1'
+    ]"
     data-testid="layout-run-cell"
     @click="handleClick"
   >
