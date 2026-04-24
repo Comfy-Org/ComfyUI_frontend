@@ -15,7 +15,7 @@ const { title, description, cta, href, bg } = defineProps<{
     :href="href"
     :class="
       cn(
-        'flex flex-col justify-between rounded-2xl p-8 transition-opacity hover:opacity-90',
+        'rounded-4.5xl flex flex-col justify-between p-8 transition-opacity hover:opacity-90',
         bg
       )
     "

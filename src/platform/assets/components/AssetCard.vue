@@ -147,7 +147,7 @@ import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem
