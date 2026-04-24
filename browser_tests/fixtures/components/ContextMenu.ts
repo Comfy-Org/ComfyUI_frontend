@@ -4,11 +4,13 @@ import type { Locator, Page } from '@playwright/test'
 export class ContextMenu {
   public readonly primeVueMenu: Locator
   public readonly litegraphMenu: Locator
+  public readonly litegraphContextMenu: Locator
   public readonly menuItems: Locator
 
   constructor(public readonly page: Page) {
     this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
     this.litegraphMenu = page.locator('.litemenu')
+    this.litegraphContextMenu = page.locator('.litecontextmenu')
     this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
   }
 

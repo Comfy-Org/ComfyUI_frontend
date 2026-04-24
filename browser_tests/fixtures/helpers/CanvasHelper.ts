@@ -260,11 +260,39 @@ export class CanvasHelper {
     await this.page.mouse.up({ button: 'middle' })
   }
 
-  async disconnectEdge(): Promise<void> {
-    await this.dragAndDrop(
-      DefaultGraphPositions.clipTextEncodeNode1InputSlot,
-      DefaultGraphPositions.emptySpace
-    )
+  async disconnectEdge(
+    options: { modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[] } = {}
+  ): Promise<void> {
+    const { modifiers = [] } = options
+    for (const mod of modifiers) await this.page.keyboard.down(mod)
+    try {
+      await this.dragAndDrop(
+        DefaultGraphPositions.clipTextEncodeNode1InputSlot,
+        DefaultGraphPositions.emptySpace
+      )
+    } finally {
+      for (const mod of modifiers) await this.page.keyboard.up(mod)
+    }
+  }
+
+  async middleClick(position: Position): Promise<void> {
+    await this.mouseClickAt(position, { button: 'middle' })
+  }
+
+  async dblclickGroupTitle(title: string): Promise<void> {
+    const clientPos = await this.page.evaluate((targetTitle) => {
+      const groups = window.app!.rootGraph.groups
+      const group = groups.find(
+        (g: { title: string }) => g.title === targetTitle
+      )
+      if (!group) return null
+      const cx = group.pos[0] + group.size[0] / 2
+      const cy = group.pos[1] + group.titleHeight / 2
+      return window.app!.canvasPosToClientPos([cx, cy])
+    }, title)
+    if (!clientPos) throw new Error(`Group "${title}" not found`)
+    await this.page.mouse.dblclick(clientPos[0], clientPos[1], { delay: 5 })
+    await nextFrame(this.page)
   }
 
   async connectEdge(options: { reverse?: boolean } = {}): Promise<void> {
