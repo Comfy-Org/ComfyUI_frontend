@@ -13,13 +13,13 @@ const steps = [
     number: '01',
     titleKey: 'api.steps.step1.title' as const,
     descriptionKey: 'api.steps.step1.description' as const,
-    image: 'https://media.comfy.org/website/api/logo-purple.webp'
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_1.webp'
   },
   {
     number: '02',
     titleKey: 'api.steps.step2.title' as const,
     descriptionKey: 'api.steps.step2.description' as const,
-    image: 'https://media.comfy.org/website/api/logo-yellow.webp'
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_2.webp'
   },
   {
     number: '03',
