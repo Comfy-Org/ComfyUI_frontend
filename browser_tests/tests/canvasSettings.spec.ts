@@ -40,7 +40,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       const box = await comfyPage.canvas.boundingBox()
       expect(box, 'Canvas bounding box must be available').not.toBeNull()
       // HUD is drawn ~80px tall along the bottom edge of the canvas; grab a
-      // comfortable 160px × 180px strip to catch it across viewports.
+      // comfortable 180px × 160px strip to catch it across viewports.
       const HUD_WIDTH = 180
       const HUD_HEIGHT = 160
       const hudClip = {
