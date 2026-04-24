@@ -332,9 +332,9 @@ const translations = {
     'zh-CN': '商业许可保障'
   },
   'enterprise.reason.5.description': {
-    en: 'Every major model available through Comfy Cloud is cleared for commercial use. No license ambiguity for your legal team.',
+    en: 'Every model available through Comfy Cloud is cleared for commercial use. No license ambiguity for your legal team.',
     'zh-CN':
-      '通过 Comfy Cloud 提供的每个主流模型均已获得商业使用许可。法务团队无需担心许可歧义。'
+      '通过 Comfy Cloud 提供的每个模型均已获得商业使用许可。法务团队无需担心许可歧义。'
   },
 
   // Enterprise – HeroSection
@@ -781,9 +781,9 @@ const translations = {
     'zh-CN': '社区工作流，\n通过预安装自定义节点\n实现无限自定义'
   },
   'cloud.reason.4.description': {
-    en: 'Browse, run, and remix workflows built by thousands of creators. Start from proven templates instead of blank canvases. Upload custom LoRAs or finetuned foundational models from CivitAI and Hugging Face. The nodes powering ~90% of local ComfyUI workflows are now in the cloud.',
+    en: 'Browse, run, and remix workflows built by thousands of creators. Start from proven templates instead of blank canvases. Upload custom LoRAs or finetuned foundational models from CivitAI and Hugging Face. The most popular local custom nodes are pre-installed on cloud.',
     'zh-CN':
-      '浏览、运行和混搭由数千名创作者构建的工作流。从经过验证的模板开始，而非空白画布。上传自定义 LoRA 或来自 CivitAI 和 Hugging Face 的微调基础模型。驱动约 90% 本地 ComfyUI 工作流的节点现已上云。'
+      '浏览、运行和混搭由数千名创作者构建的工作流。从经过验证的模板开始，而非空白画布。上传自定义 LoRA 或来自 CivitAI 和 Hugging Face 的微调基础模型。最受欢迎的本地自定义节点已预装在云端。'
   },
 
   // Cloud – AIModelsSection
