@@ -564,7 +564,7 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse the active workflow when loading the same path repeatedly', async () => {
-      const workflowId = 'repeat-workflow-id'
+      const workflowId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
       existingWorkflow.changeTracker.activeState.id = workflowId
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
@@ -596,7 +596,8 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow when only one side has an id', async () => {
-      existingWorkflow.changeTracker.activeState.id = 'existing-id'
+      existingWorkflow.changeTracker.activeState.id =
+        '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
@@ -610,7 +611,7 @@ describe('useWorkflowService', () => {
 
     it('should reuse active workflow when only workflowData has an id', async () => {
       await useWorkflowService().afterLoadNewGraph('repeat', {
-        id: 'incoming-id',
+        id: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
       } as never)
 
@@ -621,7 +622,8 @@ describe('useWorkflowService', () => {
     })
 
     it('should create new temporary when ids differ', async () => {
-      existingWorkflow.changeTracker.activeState.id = 'existing-id'
+      existingWorkflow.changeTracker.activeState.id =
+        '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
       const tempWorkflow = createModeTestWorkflow({
         path: 'workflows/repeat (2).json'
@@ -630,7 +632,7 @@ describe('useWorkflowService', () => {
       vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
-        id: 'different-id',
+        id: '11111111-2222-3333-4444-555555555555',
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
       } as never)
 
@@ -700,6 +702,33 @@ describe('useWorkflowService', () => {
       )
 
       expect(existingWorkflow.shareId).toBe('share-2')
+    })
+
+    it('should reuse active workflow when the incoming id is a legacy slug and existing id is a fresh UUID', async () => {
+      existingWorkflow.changeTracker.activeState.id =
+        '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        id: 'video-point-prompt-example',
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+    })
+
+    it('should reuse active workflow when both sides carry malformed legacy ids', async () => {
+      existingWorkflow.changeTracker.activeState.id = 'legacy-workflow-name'
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        id: 'different-legacy-name',
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
     })
   })
 
