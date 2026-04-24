@@ -8,6 +8,18 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section class="px-6 py-16 lg:px-20 lg:py-40">
-    <VideoPlayer :locale />
+    <VideoPlayer
+      src="https://media.comfy.org/website/customers/silverside/video.webm"
+      poster="https://media.comfy.org/website/customers/silverside/poster.webp"
+      :tracks="[
+        {
+          src: 'https://media.comfy.org/website/customers/silverside/video.vtt',
+          kind: 'subtitles',
+          srclang: 'en',
+          label: 'English'
+        }
+      ]"
+      :locale
+    />
   </section>
 </template>
