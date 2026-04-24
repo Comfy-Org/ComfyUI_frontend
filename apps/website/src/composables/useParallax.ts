@@ -31,21 +31,24 @@ export function useParallax(
   let ctx: gsap.Context | gsap.MatchMedia | undefined
 
   onMounted(() => {
-    const triggerEl = options.trigger?.value
-    const els = elements
-      .map((r) => r.value)
-      .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)
-    if (!els.length || prefersReducedMotion()) return
+    if (prefersReducedMotion()) return
 
-    const trigger = triggerEl ?? els[0]
-    const scrollTrigger = {
-      trigger,
-      start: options.start ?? 'top bottom',
-      end: options.end ?? 'bottom top',
-      scrub: 1
-    }
+    const triggerEl = options.trigger?.value
 
     const createAnimations = () => {
+      const els = elements
+        .map((r) => r.value)
+        .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)
+      if (!els.length) return
+
+      const trigger = triggerEl ?? els[0]
+      const scrollTrigger = {
+        trigger,
+        start: options.start ?? 'top bottom',
+        end: options.end ?? 'bottom top',
+        scrub: 1
+      }
+
       els.forEach((el) => {
         gsap.fromTo(
           el,
