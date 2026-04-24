@@ -26,7 +26,7 @@
     <Tag
       v-if="item.isBlueprint"
       data-testid="subgraph-breadcrumb-blueprint-tag"
-      value="Blueprint"
+      :value="t('breadcrumbsMenu.blueprint')"
       severity="primary"
     />
     <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
