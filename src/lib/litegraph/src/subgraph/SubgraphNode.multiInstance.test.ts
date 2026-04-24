@@ -321,4 +321,28 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     // SAVE invariant: re-serialized output drops the dead widgets_values.
     expect(instance.serialize().widgets_values).toBeUndefined()
   })
+
+  it('safeDeepClone falls back to raw reference when structuredClone throws', () => {
+    // Locks in the configure/serialize crash-resilience contract: a
+    // pathological inlined `{value}` blob (e.g. a value carrying a function
+    // or symbol — structuredClone throws DataCloneError on those) must not
+    // abort the whole subgraph serialize. Pre-review this path unconditionally
+    // ran `JSON.parse(JSON.stringify(...))` and crashed.
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const { node, widget } = createNodeWithWidget('TestNode', 0)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 901 })
+    instance.graph!.add(instance)
+
+    // Force a value that structuredClone cannot handle. Functions trigger
+    // DataCloneError synchronously, proving the catch branch is reachable.
+    const uncloneable = { fn: () => 'nope' }
+    widget.value = uncloneable as unknown as typeof widget.value
+
+    expect(() => instance.serialize()).not.toThrow()
+  })
 })

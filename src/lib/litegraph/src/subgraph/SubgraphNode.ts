@@ -759,13 +759,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Find the input with that name, then trace to the connected interior widget.
     const input = this.inputs.find((i) => i.name === widgetName)
     if (!input?._widget) {
-      // Fallback: find via subgraph input slot connection
-      const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
-      if (!resolvedTarget) return undefined
-      return {
-        sourceNodeId: resolvedTarget.nodeId,
-        sourceWidgetName: resolvedTarget.widgetName
-      }
+      // Fallback: find via subgraph input slot connection. During normal
+      // configure this is the path that actually runs — inputs are freshly
+      // rebuilt with no `_widget`, and `_resolveInputWidget` doesn't run
+      // until after entry resolution. `resolvedTarget.sourceNodeId` carries
+      // the disambiguator when the deeper resolution chain terminates at a
+      // nested `PromotedWidgetView`.
+      return this._fromResolvedTarget(widgetName)
     }
 
     const widget = input._widget
@@ -779,13 +779,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
     }
 
-    // Fallback: find via subgraph input slot connection
+    return this._fromResolvedTarget(widgetName)
+  }
+
+  private _fromResolvedTarget(
+    widgetName: string
+  ): PromotedWidgetSource | undefined {
     const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
     if (!resolvedTarget) return undefined
-
     return {
       sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName
+      sourceWidgetName: resolvedTarget.widgetName,
+      ...(resolvedTarget.sourceNodeId && {
+        disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
+      })
     }
   }
 
