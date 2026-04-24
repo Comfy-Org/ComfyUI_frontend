@@ -109,21 +109,24 @@ watch(activeIndex, (current, previous) => {
           <!-- Video area (mobile, rendered before active item) -->
           <div
             v-if="activeIndex === i"
-            :class="
-              cn(
-                'aspect-video overflow-hidden rounded-4xl lg:hidden',
-                i !== 0 && 'mt-4'
-              )
-            "
+            :class="cn('aspect-video lg:hidden', i !== 0 && 'mt-4')"
           >
-            <video
-              :src="feature.video"
-              autoplay
-              loop
-              muted
-              playsinline
-              class="size-full object-cover"
-            />
+            <div
+              class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
+            >
+              <div
+                class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
+              >
+                <video
+                  :src="feature.video"
+                  autoplay
+                  loop
+                  muted
+                  playsinline
+                  class="size-full object-cover"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Connector (mobile) -->
