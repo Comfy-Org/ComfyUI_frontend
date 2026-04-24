@@ -33,7 +33,7 @@ Open roles already live in Ashby. The goal is to **fetch them at build time** fr
 
 ## 3. Architecture
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────┐
 │ Build time (vercel build / pnpm --filter @comfyorg/website build)│
 └────────────────────────────────────────────────────────────────┘
@@ -282,7 +282,7 @@ The `zh-CN/careers.astro` page passes `locale="zh-CN"` to preserve the existing 
 
 Add to the repo root `.env_example`:
 
-```
+```dotenv
 # Ashby (website careers page build)
 WEBSITE_ASHBY_API_KEY=
 WEBSITE_ASHBY_JOB_BOARD_NAME=comfy-org
@@ -302,7 +302,9 @@ steps:
   - run: pnpm --filter @comfyorg/website build
 ```
 
-The secret is also configured in the Vercel project environment so that `vercel build` in the preview workflow sees it. Once the secret lands in both GitHub Actions and Vercel, **same-repo PRs** exercise the real Ashby fetch on their Vercel preview URL. Fork PRs do **not** have access to repo secrets (by GitHub design), so they fall back to the committed snapshot — which is exactly the behavior a would-be external contributor should see anyway, and matches how other `VERCEL_WEBSITE_*` secret-gated paths already behave in `ci-vercel-website-preview.yaml`.
+The secret is also configured in the Vercel project environment so that `vercel build` in the preview workflow sees it. Once the secret lands in both GitHub Actions and Vercel, **same-repo PRs** exercise the real Ashby fetch on their Vercel preview URL.
+
+**Fork PRs don't exercise this path at all.** `ci-vercel-website-preview.yaml` receives an empty `VERCEL_TOKEN` for fork PRs, so the `deploy-preview` job fails at the `vercel pull` step before any build runs — every step after Vercel auth is architecturally unreachable. Fork-safe PR interactions (the preview-URL comment on the PR) are handled separately by `pr-vercel-website-preview.yaml`, which is triggered by `workflow_run` and only posts a comment when the upstream `ci-vercel-website-preview` workflow already succeeded (i.e. only for same-repo PRs). The committed snapshot still matters for fork contributors running `pnpm --filter @comfyorg/website build` **locally** without a key, and for `ci-website-build.yaml` (which builds the site but never calls Vercel) — but not as a "fork-preview fallback", because there is no fork preview to fall back inside of.
 
 ## 9. Failure modes and the errors we want to see
 
@@ -314,7 +316,7 @@ The failure modes below are grouped by **root cause**. §9.6 is a degraded varia
 
 Happens on a local dev build without the secret, or if the secret is removed from CI.
 
-```
+```text
 ::warning title=Ashby integration::WEBSITE_ASHBY_API_KEY or WEBSITE_ASHBY_JOB_BOARD_NAME is not set. Falling back to committed snapshot.
 
 Action items:
@@ -326,7 +328,7 @@ Build **succeeds** with the snapshot. Not an error.
 
 ### 9.2 Invalid / expired API key (HTTP 401 / 403)
 
-```
+```text
 ::error title=Ashby authentication failed::HTTP 401 from api.ashbyhq.com. The WEBSITE_ASHBY_API_KEY is missing, invalid, or revoked.
 
 Action items:
@@ -342,7 +344,7 @@ Build **succeeds** with the snapshot (stale). The `::error::` annotation surface
 
 ### 9.3 Ashby API is down (HTTP 5xx or network error after retries)
 
-```
+```text
 ::warning title=Ashby API unavailable::api.ashbyhq.com returned 503 after 3 attempts. Using snapshot fetched 2026-04-20.
 
 Action items:
@@ -357,7 +359,7 @@ Build **succeeds** with the snapshot. The "fetched 2026-04-20" date comes from `
 
 Ashby changed `apiVersion` or removed `jobs`. Wholesale mismatch.
 
-```
+```text
 ::error title=Ashby schema mismatch::Response envelope failed Zod validation. The Ashby API contract has likely changed.
 
 Validation errors:
@@ -377,7 +379,7 @@ Build **succeeds** with the snapshot.
 
 A subset of roles fails `AshbyJobPostingSchema`. Most common causes in v1: a role in Ashby is missing a `department`, or its `jobUrl`/`applyUrl` is not a valid URL (e.g. someone typed a relative path into the "external apply URL" field).
 
-```
+```text
 ::warning title=Ashby: dropped 2 invalid role(s)::
 
 Dropped roles:
@@ -396,7 +398,7 @@ Build **succeeds** with the valid subset. Normal builds never write the snapshot
 
 Happens only if one of 9.2–9.5 triggers AND the committed snapshot is missing (e.g. the very first build, or someone deleted the file).
 
-```
+```text
 ::error title=Ashby fetch failed and no snapshot is available::Cannot build careers page without data.
 
 Reason: <original fetch failure reason>
@@ -413,26 +415,28 @@ Build **fails hard**. This is the only code path where the workflow goes red; a 
 
 Every build writes a concise summary so reviewers see the state without digging into logs:
 
-```
+```markdown
 ## 💼 Careers (Ashby)
-| | |
-|---|---|
-| Status | ✅ Fresh (fetched from Ashby) |
-| Roles  | 14 |
-| Dropped | 0 |
+
+|          |                                                                                                          |
+| -------- | -------------------------------------------------------------------------------------------------------- |
+| Status   | ✅ Fresh (fetched from Ashby)                                                                            |
+| Roles    | 14                                                                                                       |
+| Dropped  | 0                                                                                                        |
 | Snapshot | apps/website/src/data/ashby-roles.snapshot.json (not written; refresh via `pnpm ashby:refresh-snapshot`) |
 ```
 
 or on failure:
 
-```
+```markdown
 ## 💼 Careers (Ashby)
-| | |
-|---|---|
-| Status | ⚠️ Stale (using snapshot — Ashby fetch failed) |
-| Roles  | 13 |
-| Reason | HTTP 401 Unauthorized |
-| Snapshot age | 4 days |
+
+|              |                                                |
+| ------------ | ---------------------------------------------- |
+| Status       | ⚠️ Stale (using snapshot — Ashby fetch failed) |
+| Roles        | 13                                             |
+| Reason       | HTTP 401 Unauthorized                          |
+| Snapshot age | 4 days                                         |
 ```
 
 ## 10. Snapshot strategy
@@ -518,7 +522,7 @@ E2E tests run against the built site, so they exercise whatever snapshot ships i
 - The API key never appears in the client bundle. Enforced by:
   - Reading it only inside `fetchRolesForBuild`, which runs in the Astro server/build context.
   - Astro only inlines `PUBLIC_*`-prefixed vars into the client bundle; `WEBSITE_ASHBY_API_KEY` has no such prefix, so it is not inlined.
-- Because GitHub Actions masks the secret value in logs with `***`, grepping for the variable **name** in `dist/` is not a useful leak check. Instead, the implementation PR adds a CI step that grabs the first 8 characters of the secret value at job start and greps for that literal in `apps/website/dist/`. If it appears, the job fails. This catches accidental inlining that the prefix rule is supposed to prevent.
+- Grepping for the variable **name** in `dist/` is not a useful leak check (GitHub Actions masks secret values with `***` in logs, but that masking doesn't apply to files written to disk). The implementation PR instead adds a CI step that performs a leak check **without ever logging any secret bytes, full or partial**. One concrete approach: inside the job, pipe `$WEBSITE_ASHBY_API_KEY` directly into `sha256sum` to produce a hex fingerprint, then scan `apps/website/dist/` for substrings of that fingerprint (or for the raw secret via a stream-compare that never prints a match — e.g. `grep -rlF --null -e "$WEBSITE_ASHBY_API_KEY" apps/website/dist/` followed by checking only the file list, not the match content). The secret never reaches `set -x`, `echo`, step summaries, or the job log. If a file is flagged, the job fails and reports only the file path, never the offending bytes. Any dedicated secret-scanning tool (`trufflehog`, `gitleaks`) that operates on the file tree without echoing matches is an acceptable substitute.
 - Snapshot content is low-sensitivity (it's the same data the public careers page displays), so committing it is safe.
 - No user input reaches the Ashby call — zero injection surface.
 
