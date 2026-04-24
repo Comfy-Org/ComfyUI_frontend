@@ -1,30 +1,30 @@
 {
-  "fetchedAt": "2026-04-24T00:00:00.000Z",
+  "fetchedAt": "2026-04-24T18:02:16.997Z",
   "departments": [
     {
-      "name": "ENGINEERING",
-      "key": "engineering",
+      "name": "BUSINESS",
+      "key": "business",
       "roles": [
         {
-          "id": "abc787b9ad85421c",
-          "title": "Design Engineer",
-          "department": "Engineering",
+          "id": "ec68ae44dd5943c9",
+          "title": "Senior Technical Recruiter",
+          "department": "Business",
           "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/abc787b9-ad85-421c-8218-debd23bea096"
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/d5008532-c45d-46e6-ba2c-20489d364362/application"
         },
         {
-          "id": "99dc26c751ca43cd",
-          "title": "Software Engineer",
-          "department": "Engineering",
+          "id": "16f556001ce1cef4",
+          "title": "BizOps Strategist",
+          "department": "Business",
           "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/99dc26c7-51ca-43cd-a1ba-7d475a0f4a40"
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/145b8558-0ab4-43e8-8fac-b59059cf2537/application"
         },
         {
-          "id": "a0665088331445_7a",
-          "title": "Tech Lead Manager, Frontend",
-          "department": "Engineering",
+          "id": "8e773a72c1b8e099",
+          "title": "Founding Customer Success Manager",
+          "department": "Business",
           "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a0665088-3314-457a-aa7b-12ca5c3eb261"
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a1c5c5ed-62ac-4767-af57-a3ba4e0bf5e4/application"
         }
       ]
     },
@@ -33,18 +33,115 @@
       "key": "design",
       "roles": [
         {
-          "id": "49fa0b073fa14a3a",
-          "title": "Creative Director",
-          "department": "Design",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f"
-        },
-        {
-          "id": "a7ccc2b44d9d4e04",
+          "id": "4c5d6afb78652df7",
           "title": "Freelance Motion Designer",
           "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a7ccc2b4-4d9d-4e04-b39c-28a711995b5b/application"
+        },
+        {
+          "id": "0f5256cf302e552b",
+          "title": "Creative Artist",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/19ba10aa-4961-45e8-8473-66a8a7a8079d/application"
+        },
+        {
+          "id": "e915f2c78b17f93b",
+          "title": "Senior Product Designer",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/b2e864c6-4754-4e04-8f46-1022baa103c3/application"
+        },
+        {
+          "id": "b9f9a23219be7cd4",
+          "title": "Design Engineer",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/abc787b9-ad85-421c-8218-debd23bea096/application"
+        },
+        {
+          "id": "5746486d87874937",
+          "title": "Graphic Designer",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f/application"
+        },
+        {
+          "id": "547b6ba622c800a5",
+          "title": "Senior Product Designer - Craft",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a32c6769-b791-41f4-9225-50bbd8a1cf0f/application"
+        },
+        {
+          "id": "7bb02634a24763bc",
+          "title": "Staff Product Designer - Systems",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/0bc8356b-615e-4f40-b632-fd3b2691be34/application"
+        }
+      ]
+    },
+    {
+      "name": "ENGINEERING",
+      "key": "engineering",
+      "roles": [
+        {
+          "id": "102d58e35a8a9817",
+          "title": "Senior Software Engineer, Frontend",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/c3e0584d-5490-491f-aae4-b5922ef63fd2/application"
+        },
+        {
+          "id": "d01d69fba7743905",
+          "title": "Senior Software Engineer, Backend Generalist",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/732f8b39-076d-4847-afe3-f54d4451607e/application"
+        },
+        {
+          "id": "f36f60cfd5bb5910",
+          "title": "Senior/Staff Applied Machine Learning Engineer",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/5cc4d0bc-97b0-463b-8466-3ec1d07f6ac0/application"
+        },
+        {
+          "id": "9d8ec4c65e20b19e",
+          "title": "Software Engineer, Frontend",
+          "department": "Engineering",
           "location": "Remote",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a7ccc2b4-4d9d-4e04-b39c-28a711995b5b"
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/99dc26c7-51ca-43cd-a1ba-7d475a0f4a40/application"
+        },
+        {
+          "id": "be94b193d1f4d482",
+          "title": "Tech Lead Manager, Frontend",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a0665088-3314-457a-aa7b-12ca5c3eb261/application"
+        },
+        {
+          "id": "ab48f5db6bd1783c",
+          "title": "Software Engineer, Core ComfyUI Contributor",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/7d4062d6-d500-445a-9a5f-014971af259f/application"
+        },
+        {
+          "id": "c5dff4ee628bdcd1",
+          "title": "Software Engineer, ComfyUI Desktop",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/ad2f76cb-a787-47d8-81c5-7e7f917747c0/application"
+        },
+        {
+          "id": "4302a7aaa87e16e3",
+          "title": "Product Manager, ComfyUI",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/9e4b9029-c3e9-436b-82c4-a1a9f1b8c16e/application"
         }
       ]
     },
@@ -53,11 +150,18 @@
       "key": "marketing",
       "roles": [
         {
-          "id": "be74d2103b50408c",
+          "id": "b5803a0d4785d406",
           "title": "Lifecycle Growth Marketer",
           "department": "Marketing",
           "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/be74d210-3b50-408c-9f61-8fee8833ce64"
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/be74d210-3b50-408c-9f61-8fee8833ce64/application"
+        },
+        {
+          "id": "130d7218d7895bdb",
+          "title": "Partnership & Events Marketing Manager",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/89d3ff75-2055-4e92-9c69-81feff55627c/application"
         }
       ]
     }

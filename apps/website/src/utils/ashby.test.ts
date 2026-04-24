@@ -56,12 +56,19 @@ function withSnapshotDir(snapshot: RolesSnapshot | null): URL {
 }
 
 describe('fetchRolesForBuild', () => {
+  const savedApiKey = process.env.WEBSITE_ASHBY_API_KEY
+  const savedBoardName = process.env.WEBSITE_ASHBY_JOB_BOARD_NAME
+
   beforeEach(() => {
     resetAshbyFetcherForTests()
+    delete process.env.WEBSITE_ASHBY_API_KEY
+    delete process.env.WEBSITE_ASHBY_JOB_BOARD_NAME
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    process.env.WEBSITE_ASHBY_API_KEY = savedApiKey
+    process.env.WEBSITE_ASHBY_JOB_BOARD_NAME = savedBoardName
   })
 
   it('returns fresh when the API succeeds', async () => {
