@@ -1,0 +1,65 @@
+{
+  "fetchedAt": "2026-04-24T00:00:00.000Z",
+  "departments": [
+    {
+      "name": "ENGINEERING",
+      "key": "engineering",
+      "roles": [
+        {
+          "id": "abc787b9ad85421c",
+          "title": "Design Engineer",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/abc787b9-ad85-421c-8218-debd23bea096"
+        },
+        {
+          "id": "99dc26c751ca43cd",
+          "title": "Software Engineer",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/99dc26c7-51ca-43cd-a1ba-7d475a0f4a40"
+        },
+        {
+          "id": "a0665088331445_7a",
+          "title": "Tech Lead Manager, Frontend",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a0665088-3314-457a-aa7b-12ca5c3eb261"
+        }
+      ]
+    },
+    {
+      "name": "DESIGN",
+      "key": "design",
+      "roles": [
+        {
+          "id": "49fa0b073fa14a3a",
+          "title": "Creative Director",
+          "department": "Design",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f"
+        },
+        {
+          "id": "a7ccc2b44d9d4e04",
+          "title": "Freelance Motion Designer",
+          "department": "Design",
+          "location": "Remote",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a7ccc2b4-4d9d-4e04-b39c-28a711995b5b"
+        }
+      ]
+    },
+    {
+      "name": "MARKETING",
+      "key": "marketing",
+      "roles": [
+        {
+          "id": "be74d2103b50408c",
+          "title": "Lifecycle Growth Marketer",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/be74d210-3b50-408c-9f61-8fee8833ce64"
+        }
+      ]
+    }
+  ]
+}
