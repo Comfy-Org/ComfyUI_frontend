@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -161,6 +162,10 @@ export const useDialogService = () => {
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
+          // Getter so the dialog's composables re-read the root graph
+          // through invalidations — ComfyApp mutates the LGraph in place
+          // across workflow loads rather than assigning a new instance.
+          graph: () => app.rootGraph ?? null,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
