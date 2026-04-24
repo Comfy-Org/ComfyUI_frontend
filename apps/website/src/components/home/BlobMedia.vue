@@ -33,6 +33,8 @@ function isVideo(url: string): boolean {
         muted
         loop
         playsinline
+        :controls="false"
+        disablepictureinpicture
         aria-hidden="true"
         :class="
           cn(
