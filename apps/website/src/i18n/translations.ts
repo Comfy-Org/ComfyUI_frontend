@@ -332,9 +332,9 @@ const translations = {
     'zh-CN': '商业许可保障'
   },
   'enterprise.reason.5.description': {
-    en: 'Every model available through Comfy Cloud is cleared for commercial use. No license ambiguity for your legal team.',
+    en: 'Every major model available through Comfy Cloud is cleared for commercial use. No license ambiguity for your legal team.',
     'zh-CN':
-      '通过 Comfy Cloud 提供的每个模型均已获得商业使用许可。法务团队无需担心许可歧义。'
+      '通过 Comfy Cloud 提供的每个主流模型均已获得商业使用许可。法务团队无需担心许可歧义。'
   },
 
   // Enterprise – HeroSection
