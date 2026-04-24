@@ -13887,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Detect",
+    "inputs": {
+      "bboxes": {
+        "name": "cajas_delimitadoras",
+        "tooltip": "Cajas delimitadoras dentro de las cuales segmentar"
+      },
+      "conditioning": {
+        "name": "condicionamiento",
+        "tooltip": "Condicionamiento de texto desde CLIPTextEncode"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "individual_masks": {
+        "name": "máscaras_individuales",
+        "tooltip": "Generar máscaras por objeto en lugar de una unión"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative_coords": {
+        "name": "coordenadas_negativas",
+        "tooltip": "Puntos negativos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de píxeles)"
+      },
+      "positive_coords": {
+        "name": "coordenadas_positivas",
+        "tooltip": "Puntos positivos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de píxeles)"
+      },
+      "refine_iterations": {
+        "name": "iteraciones_de_refinamiento",
+        "tooltip": "Pasadas de refinamiento del decodificador SAM (0=usar máscaras del detector sin procesar)"
+      },
+      "threshold": {
+        "name": "umbral"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      },
+      "1": {
+        "name": "cajas_delimitadoras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 Track Preview",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "imágenes"
+      },
+      "opacity": {
+        "name": "opacidad"
+      },
+      "track_data": {
+        "name": "datos_de_rastreo"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Track to Mask",
+    "inputs": {
+      "object_indices": {
+        "name": "índices_de_objeto",
+        "tooltip": "Índices de objetos separados por comas para incluir (ej. '0,2,3'). Vacío = todos los objetos."
+      },
+      "track_data": {
+        "name": "datos_de_rastreo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video Track",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamiento",
+        "tooltip": "Condicionamiento de texto para detectar nuevos objetos durante el rastreo"
+      },
+      "detect_interval": {
+        "name": "intervalo_de_detección",
+        "tooltip": "Ejecutar detección cada N fotogramas (1=cada fotograma). Valores mayores ahorran recursos."
+      },
+      "detection_threshold": {
+        "name": "umbral_de_detección",
+        "tooltip": "Umbral de puntuación para la detección por texto"
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Fotogramas de video como imágenes por lote"
+      },
+      "initial_mask": {
+        "name": "máscara_inicial",
+        "tooltip": "Máscara(s) para el primer fotograma a rastrear (una por objeto)"
+      },
+      "max_objects": {
+        "name": "máx_objetos",
+        "tooltip": "Máximo de objetos rastreados (0=ilimitado). Las máscaras iniciales cuentan para este límite."
+      },
+      "model": {
+        "name": "modelo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "datos_de_rastreo",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
