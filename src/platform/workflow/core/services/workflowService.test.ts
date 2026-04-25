@@ -530,8 +530,8 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow when the incoming id is a legacy slug and existing id is a fresh UUID', async () => {
-      existingWorkflow.changeTracker.activeState.id =
-        '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+      const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+      existingWorkflow.changeTracker.activeState.id = existingUuid
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
         id: 'video-point-prompt-example',
@@ -539,7 +539,9 @@ describe('useWorkflowService', () => {
       } as never)
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
-      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+        expect.objectContaining({ id: existingUuid })
+      )
       expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
       expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
     })
@@ -554,6 +556,26 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
       expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+      const resetArg = vi.mocked(existingWorkflow.changeTracker.reset).mock
+        .calls[0][0]
+      expect(resetArg?.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      )
+      expect(resetArg?.id).not.toBe('different-legacy-name')
+    })
+
+    it('should pass through the incoming UUID id to changeTracker.reset on same-path reuse', async () => {
+      const sharedUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+      existingWorkflow.changeTracker.activeState.id = sharedUuid
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        id: sharedUuid,
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+        expect.objectContaining({ id: sharedUuid })
+      )
     })
   })
 
