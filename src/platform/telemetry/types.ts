@@ -40,6 +40,11 @@ export interface SurveyResponses {
   industry?: string
   useCase?: string
   making?: string[]
+  role?: string
+  workflowRelationship?: string
+  teamSize?: string
+  source?: string
+  usage?: string
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
