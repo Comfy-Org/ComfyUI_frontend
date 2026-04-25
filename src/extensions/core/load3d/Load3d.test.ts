@@ -241,6 +241,148 @@ describe('Load3d', () => {
     })
   })
 
+  describe('viewport wiring', () => {
+    it('isActive ORs the activity flags through isLoad3dActive', () => {
+      Object.assign(ctx.load3d, {
+        STATUS_MOUSE_ON_NODE: false,
+        STATUS_MOUSE_ON_SCENE: false,
+        STATUS_MOUSE_ON_VIEWER: false,
+        INITIAL_RENDER_DONE: true,
+        animationManager: { isAnimationPlaying: false, dispose: vi.fn() },
+        recordingManager: { getIsRecording: vi.fn(() => false) }
+      })
+
+      expect(ctx.load3d.isActive()).toBe(false)
+      ;(ctx.load3d as { STATUS_MOUSE_ON_NODE: boolean }).STATUS_MOUSE_ON_NODE =
+        true
+      expect(ctx.load3d.isActive()).toBe(true)
+    })
+
+    it('handleResize letterboxes the renderer when a target aspect ratio is set', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 800,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 600,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setSize = vi.fn()
+      const cameraResize = vi.fn()
+      const sceneResize = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        renderer: { domElement: canvas, setSize },
+        targetWidth: 400,
+        targetHeight: 200,
+        targetAspectRatio: 2,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: cameraResize },
+        sceneManager: { ...ctx.sceneManager, handleResize: sceneResize }
+      })
+
+      ctx.load3d.handleResize()
+
+      // Container 800x600, target aspect 2:1 → letterboxed render area 800x400
+      expect(setSize).toHaveBeenCalledWith(800, 600)
+      expect(cameraResize).toHaveBeenCalledWith(800, 400)
+      expect(sceneResize).toHaveBeenCalledWith(800, 400)
+    })
+
+    it('renderMainScene applies the letterboxed viewport and feeds aspect to the camera', () => {
+      const setViewport = vi.fn()
+      const setScissor = vi.fn()
+      const setScissorTest = vi.fn()
+      const setClearColor = vi.fn()
+      const clear = vi.fn()
+      const render = vi.fn()
+      const updateAspectRatio = vi.fn()
+      const renderBackground = vi.fn()
+
+      const canvas = document.createElement('canvas')
+      Object.defineProperty(canvas, 'clientWidth', {
+        value: 800,
+        configurable: true
+      })
+      Object.defineProperty(canvas, 'clientHeight', {
+        value: 600,
+        configurable: true
+      })
+      const scene = {} as THREE.Scene
+
+      Object.assign(ctx.load3d, {
+        renderer: {
+          domElement: canvas,
+          setViewport,
+          setScissor,
+          setScissorTest,
+          setClearColor,
+          clear,
+          render
+        },
+        targetWidth: 400,
+        targetHeight: 200,
+        targetAspectRatio: 2,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, updateAspectRatio },
+        sceneManager: { ...ctx.sceneManager, renderBackground, scene }
+      })
+
+      ctx.load3d.renderMainScene()
+
+      expect(setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(updateAspectRatio).toHaveBeenCalledWith(2)
+      expect(setScissorTest).toHaveBeenCalledWith(true)
+      expect(render).toHaveBeenCalledWith(scene, ctx.cameraManager.activeCamera)
+    })
+
+    it('setBackgroundImage updates background size with letterbox dimensions when a texture is loaded', async () => {
+      const updateBackgroundSize = vi.fn()
+      const setBackgroundImage = vi.fn().mockResolvedValue(undefined)
+      const canvas = document.createElement('canvas')
+      Object.defineProperty(canvas, 'clientWidth', {
+        value: 800,
+        configurable: true
+      })
+      Object.defineProperty(canvas, 'clientHeight', {
+        value: 600,
+        configurable: true
+      })
+
+      Object.assign(ctx.load3d, {
+        renderer: { domElement: canvas },
+        targetWidth: 400,
+        targetHeight: 200,
+        targetAspectRatio: 2,
+        isViewerMode: false,
+        sceneManager: {
+          ...ctx.sceneManager,
+          setBackgroundImage,
+          updateBackgroundSize,
+          backgroundTexture: {},
+          backgroundMesh: {}
+        }
+      })
+
+      await ctx.load3d.setBackgroundImage('test.png')
+
+      expect(setBackgroundImage).toHaveBeenCalledWith('test.png')
+      // Container 800x600, target aspect 2:1 → letterbox render area 800x400
+      const args = updateBackgroundSize.mock.calls[0]
+      expect(args[2]).toBe(800)
+      expect(args[3]).toBe(400)
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }
