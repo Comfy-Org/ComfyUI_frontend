@@ -122,7 +122,7 @@ const props = defineProps<{
    * `assetsStore.getAssets(cacheKey)` fetch and renders this list directly.
    * Production callers should leave this undefined and rely on the store.
    */
-  assets?: AssetItem[]
+  overrideAssets?: AssetItem[]
 }>()
 
 const emit = defineEmits<{
@@ -139,7 +139,7 @@ const cacheKey = computed(() => {
 })
 
 const fetchedAssets = computed(
-  () => props.assets ?? assetStore.getAssets(cacheKey.value)
+  () => props.overrideAssets ?? assetStore.getAssets(cacheKey.value)
 )
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
@@ -149,7 +149,7 @@ const isLoading = computed(
 )
 
 async function refreshAssets(): Promise<void> {
-  if (props.assets) return
+  if (props.overrideAssets) return
   if (props.nodeType) {
     await assetStore.updateModelsForNodeType(props.nodeType)
   } else if (props.assetType) {
