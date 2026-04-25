@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 /* eslint-disable vue/no-reserved-component-names */
 /* eslint-disable vue/no-unused-emit-declarations */
 import { render, screen } from '@testing-library/vue'
