@@ -4,6 +4,7 @@ import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
+  'https://civitai.red/',
   'https://huggingface.co/',
   'http://localhost:'
 ] as const
