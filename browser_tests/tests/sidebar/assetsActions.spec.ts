@@ -54,7 +54,7 @@ const GENERATED_JOBS: JobEntry[] = [
 
 test.describe('Assets sidebar actions', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(GENERATED_JOBS)
+    await assetScenario.mockGeneratedHistory(GENERATED_JOBS)
     await comfyPage.setup()
   })
 
