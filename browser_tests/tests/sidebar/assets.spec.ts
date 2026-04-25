@@ -63,7 +63,7 @@ const SAMPLE_IMPORTED_FILES = [
 
 test.describe('Assets sidebar - empty states', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedEmptyState()
+    await assetScenario.mockEmptyState()
     await comfyPage.setup()
   })
 
@@ -94,8 +94,8 @@ test.describe('Assets sidebar - empty states', () => {
 
 test.describe('Assets sidebar - tab navigation', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles(SAMPLE_IMPORTED_FILES)
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles(SAMPLE_IMPORTED_FILES)
     await comfyPage.setup()
   })
 
@@ -135,8 +135,8 @@ test.describe('Assets sidebar - tab navigation', () => {
 
 test.describe('Assets sidebar - grid view display', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles(SAMPLE_IMPORTED_FILES)
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles(SAMPLE_IMPORTED_FILES)
     await comfyPage.setup()
   })
 
@@ -165,7 +165,7 @@ test.describe('Assets sidebar - grid view display', () => {
   })
 
   test('Displays svg outputs', async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory([
+    await assetScenario.mockGeneratedHistory([
       createMockJob({
         id: 'job-alpha',
         create_time: 1000,
@@ -191,8 +191,8 @@ test.describe('Assets sidebar - grid view display', () => {
 
 test.describe('Assets sidebar - view mode toggle', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
@@ -227,8 +227,8 @@ test.describe('Assets sidebar - view mode toggle', () => {
 
 test.describe('Assets sidebar - search', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
@@ -280,8 +280,8 @@ test.describe('Assets sidebar - search', () => {
 
 test.describe('Assets sidebar - selection', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
@@ -356,8 +356,8 @@ test.describe('Assets sidebar - selection', () => {
 
 test.describe('Assets sidebar - context menu', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
@@ -485,8 +485,8 @@ test.describe('Assets sidebar - context menu', () => {
 
 test.describe('Assets sidebar - bulk actions', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
@@ -538,8 +538,8 @@ test.describe('Assets sidebar - bulk actions', () => {
 
 test.describe('Assets sidebar - delete confirmation', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
@@ -611,7 +611,7 @@ test.describe('Assets sidebar - pagination', () => {
     assetScenario
   }) => {
     const manyJobs = createMockJobs(250)
-    await assetScenario.seedGeneratedHistory(manyJobs)
+    await assetScenario.mockGeneratedHistory(manyJobs)
     await comfyPage.setup()
 
     const firstRequest = comfyPage.page.waitForRequest((req) => {
@@ -634,8 +634,8 @@ test.describe('Assets sidebar - pagination', () => {
 
 test.describe('Assets sidebar - settings menu', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
-    await assetScenario.seedImportedFiles([])
+    await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 

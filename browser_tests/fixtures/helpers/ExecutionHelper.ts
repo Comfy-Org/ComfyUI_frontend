@@ -192,7 +192,7 @@ export class ExecutionHelper {
       })
     )
 
-    await this.assetScenario.seedGeneratedHistory(this.completedJobs)
+    await this.assetScenario.mockGeneratedHistory(this.completedJobs)
     this.executionSuccess(jobId)
     // Trigger queue/history refresh
     this.status(0)

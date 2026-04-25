@@ -56,14 +56,14 @@ async function openOverlayMenu(comfyPage: {
 
 test.describe('Job history sidebar', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(HISTORY_JOBS)
+    await assetScenario.mockGeneratedHistory(HISTORY_JOBS)
     await comfyPage.setupSettings({
       'Comfy.Queue.QPOV2': true
     })
     await comfyPage.setup()
   })
 
-  test('shows seeded history and filters failed jobs', async ({
+  test('shows mocked history and filters failed jobs', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
@@ -116,7 +116,7 @@ test.describe('Job history sidebar', () => {
 
 test.describe('Floating overlay dock to job history', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(HISTORY_JOBS)
+    await assetScenario.mockGeneratedHistory(HISTORY_JOBS)
     await comfyPage.setupSettings({
       'Comfy.Queue.QPOV2': false
     })
