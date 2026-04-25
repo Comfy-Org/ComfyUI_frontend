@@ -63,7 +63,7 @@ test.describe('Job history sidebar', () => {
     await comfyPage.setup()
   })
 
-  test('shows seeded history and filters failed jobs', async ({
+  test('shows mocked history and filters failed jobs', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
