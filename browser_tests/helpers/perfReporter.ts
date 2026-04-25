@@ -1,4 +1,10 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync
+} from 'fs'
 import { join } from 'path'
 
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
@@ -56,6 +62,7 @@ export function writePerfReport(
   gitSha = process.env.GITHUB_SHA ?? 'local',
   branch = process.env.GITHUB_HEAD_REF ?? 'local'
 ) {
+  if (!existsSync('test-results')) return
   if (!readdirSync('test-results', { withFileTypes: true }).length) return
 
   let tempFiles: string[]

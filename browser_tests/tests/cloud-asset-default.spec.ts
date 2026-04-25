@@ -18,17 +18,24 @@ const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, STABLE_CHECKPOINT_2]
 // first load. Narrow pattern avoids intercepting static /assets/*.js bundles.
 //
 // TODO: Consider moving this stub into ComfyPage fixture for all @cloud tests.
-const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
+const test = comfyPageFixture.extend<{
+  cloudAssetRequests: string[]
+  stubCloudAssets: void
+}>({
+  cloudAssetRequests: async ({ page: _page }, use) => {
+    await use([])
+  },
   stubCloudAssets: [
-    async ({ page }, use) => {
+    async ({ cloudAssetRequests, page }, use) => {
       const pattern = '**/api/assets?*'
-      await page.route(pattern, (route) =>
-        route.fulfill({
+      await page.route(pattern, (route) => {
+        cloudAssetRequests.push(route.request().url())
+        return route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(makeAssetsResponse(CLOUD_ASSETS))
         })
-      )
+      })
       await use()
       await page.unroute(pattern)
     },
@@ -42,12 +49,23 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
   })
 
   test('should use first cloud asset when server default is not in assets', async ({
+    cloudAssetRequests,
     comfyPage
   }) => {
-    // The default workflow contains a CheckpointLoaderSimple node whose
-    // server default (from object_info) is a local file not in cloud assets.
-    // Wait for the existing node's asset widget to mount, confirming the
-    // assets store has been populated from the stub before adding a new node.
+    // Wait for the checkpoint asset query to complete and the existing widget
+    // to upgrade into asset mode before creating a fresh node. The current
+    // default node may keep a previously resolved value; what matters is that
+    // new nodes resolve against the cloud asset list after the fetch.
+    await expect
+      .poll(() =>
+        cloudAssetRequests.some((url) => {
+          const includeTags =
+            new URL(url).searchParams.get('include_tags') ?? ''
+          return includeTags.split(',').includes('checkpoints')
+        })
+      )
+      .toBe(true)
+
     await expect
       .poll(
         () =>
@@ -55,9 +73,11 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
             const node = window.app!.graph.nodes.find(
               (n: { type: string }) => n.type === 'CheckpointLoaderSimple'
             )
-            return node?.widgets?.find(
-              (w: { name: string }) => w.name === 'ckpt_name'
-            )?.type
+            return (
+              node?.widgets?.find(
+                (w: { name: string }) => w.name === 'ckpt_name'
+              )?.type ?? 'waiting:type'
+            )
           }),
         { timeout: 10_000 }
       )

@@ -1,11 +1,21 @@
 import { expect } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
+
+import type {
+  CreateAssetExportData,
+  CreateAssetExportResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -61,6 +71,186 @@ const SAMPLE_IMPORTED_FILES = [
   'background.jpg',
   'audio_clip.wav'
 ]
+
+const EMPTY_CLOUD_ASSET_RESPONSE: ListAssetsResponse = {
+  assets: [],
+  total: 0,
+  has_more: false
+}
+
+type AssetExportRequestBody = Omit<
+  CreateAssetExportData['body'],
+  'naming_strategy'
+> & {
+  naming_strategy?:
+    | 'group_by_job_id'
+    | 'group_by_job_time'
+    | 'preserve'
+    | 'asset_id'
+}
+
+const MOCK_ASSET_EXPORT_RESPONSE: CreateAssetExportResponse = {
+  task_id: 'asset-export-task',
+  status: 'created'
+}
+
+const JOB_GAMMA_DETAIL: JobDetail = {
+  ...SAMPLE_JOBS[2],
+  outputs: {
+    '3': {
+      images: [
+        {
+          filename: 'abstract_art.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'abstract_art_alt.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
+async function captureAssetExportRequests(
+  page: Page
+): Promise<AssetExportRequestBody[]> {
+  const requests: AssetExportRequestBody[] = []
+
+  await page.route('**/api/assets/export', async (route) => {
+    requests.push(route.request().postDataJSON() as AssetExportRequestBody)
+
+    await route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_ASSET_EXPORT_RESPONSE)
+    })
+  })
+
+  return requests
+}
+
+async function mockJobDetail(
+  page: Page,
+  jobId: string,
+  detail: JobDetail
+): Promise<void> {
+  await page.route(
+    `**/api/jobs/${encodeURIComponent(jobId)}`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detail)
+      })
+    }
+  )
+}
+
+function parseLimit(url: URL, total: number): number {
+  const value = Number(url.searchParams.get('limit'))
+  if (!Number.isInteger(value) || value <= 0) {
+    return total
+  }
+  return value
+}
+
+function parseOffset(url: URL): number {
+  const value = Number(url.searchParams.get('offset'))
+  if (!Number.isInteger(value) || value < 0) {
+    return 0
+  }
+  return value
+}
+
+function getExecutionDuration(job: RawJobListItem): number {
+  const start = job.execution_start_time ?? 0
+  const end = job.execution_end_time ?? 0
+  return end - start
+}
+
+const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
+  mockCloudAssetSidebarData: [
+    async ({ page }, use) => {
+      const jobsRouteHandler = async (route: Route) => {
+        const url = new URL(route.request().url())
+        const statuses = url.searchParams
+          .get('status')
+          ?.split(',')
+          .map((status) => status.trim())
+          .filter(Boolean)
+        const workflowId = url.searchParams.get('workflow_id')
+        const sortBy = url.searchParams.get('sort_by')
+        const sortOrder = url.searchParams.get('sort_order') === 'asc' ? 1 : -1
+
+        let filteredJobs = [...SAMPLE_JOBS]
+
+        if (statuses?.length) {
+          filteredJobs = filteredJobs.filter((job) =>
+            statuses.includes(job.status)
+          )
+        }
+
+        if (workflowId) {
+          filteredJobs = filteredJobs.filter(
+            (job) => job.workflow_id === workflowId
+          )
+        }
+
+        filteredJobs.sort((left, right) => {
+          const leftValue =
+            sortBy === 'execution_duration'
+              ? getExecutionDuration(left)
+              : left.create_time
+          const rightValue =
+            sortBy === 'execution_duration'
+              ? getExecutionDuration(right)
+              : right.create_time
+
+          return (leftValue - rightValue) * sortOrder
+        })
+
+        const offset = parseOffset(url)
+        const total = filteredJobs.length
+        const limit = parseLimit(url, total)
+        const visibleJobs = filteredJobs.slice(offset, offset + limit)
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            jobs: visibleJobs,
+            pagination: {
+              offset,
+              limit,
+              total,
+              has_more: offset + visibleJobs.length < total
+            }
+          })
+        })
+      }
+
+      const assetsRouteHandler = async (route: Route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(EMPTY_CLOUD_ASSET_RESPONSE)
+        })
+      }
+
+      await page.route(/\/api\/jobs(?:\?.*)?$/, jobsRouteHandler)
+      await page.route('**/api/assets?*', assetsRouteHandler)
+
+      await use()
+
+      await page.unroute(/\/api\/jobs(?:\?.*)?$/, jobsRouteHandler)
+      await page.unroute('**/api/assets?*', assetsRouteHandler)
+    },
+    { auto: true }
+  ]
+})
 
 // ==========================================================================
 // 1. Empty states
@@ -631,6 +821,90 @@ test.describe('Assets sidebar - bulk actions', () => {
     await expect(tab.selectionCountButton).toBeVisible()
     await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
   })
+})
+
+cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
+  cloudTest(
+    'Single selected multi-output job export preserves naming strategy',
+    async ({ comfyPage }) => {
+      const exportRequests = await captureAssetExportRequests(comfyPage.page)
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.first().click()
+      await expect(tab.downloadSelectedButton).toBeVisible()
+
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests.length).toBe(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('preserve')
+    }
+  )
+
+  cloudTest(
+    'Multiple selected assets within one job preserve naming strategy',
+    async ({ comfyPage }) => {
+      const exportRequests = await captureAssetExportRequests(comfyPage.page)
+      await mockJobDetail(comfyPage.page, 'job-gamma', JOB_GAMMA_DETAIL)
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.first().locator('button').first().click()
+      await expect(tab.backToAssetsButton).toBeVisible()
+      await expect.poll(() => tab.assetCards.count()).toBe(2)
+
+      await tab.assetCards.first().click()
+      await comfyPage.page.keyboard.down('Control')
+      await tab.assetCards.nth(1).click()
+      await comfyPage.page.keyboard.up('Control')
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests.length).toBe(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_asset_name_filters?.['job-gamma']?.toSorted()).toEqual(
+        ['abstract_art.png', 'abstract_art_alt.png']
+      )
+      expect(payload.naming_strategy).toBe('preserve')
+    }
+  )
+
+  cloudTest(
+    'Multiple selected jobs use job-time naming strategy',
+    async ({ comfyPage }) => {
+      const exportRequests = await captureAssetExportRequests(comfyPage.page)
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.nth(1).click()
+      await comfyPage.page.keyboard.down('Control')
+      await tab.assetCards.nth(2).click()
+      await comfyPage.page.keyboard.up('Control')
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests.length).toBe(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids?.toSorted()).toEqual(['job-alpha', 'job-beta'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('group_by_job_time')
+    }
+  )
 })
 
 // ==========================================================================
