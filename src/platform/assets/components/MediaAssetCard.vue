@@ -123,6 +123,7 @@
               $t('mediaAsset.actions.seeMoreOutputs')
             "
             variant="secondary"
+            :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             @click.stop="handleOutputCountClick"
           >
             <i class="icon-[lucide--layers] size-4" />
