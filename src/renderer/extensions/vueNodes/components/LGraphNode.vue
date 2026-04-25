@@ -796,33 +796,84 @@ const nodeContainerRef = ref<HTMLDivElement>()
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+const URI_DROP_TYPES = ['text/uri-list', 'text/x-moz-url']
+
+function clearDragOverState(nodeId?: number | string) {
+  isDraggingOver.value = false
+
+  if (nodeId !== undefined && app.dragOverNode?.id === nodeId) {
+    app.dragOverNode = null
+    app.canvas.setDirty(false, true)
+  }
+}
+
+function hasRealFileTransfer(event: DragEvent): boolean {
+  const dataTransfer = event.dataTransfer
+  if (!dataTransfer) return false
+
+  return (
+    Array.from(dataTransfer.items)
+      .map((item) => item.getAsFile())
+      .some((file) => file && file.type !== 'image/bmp') ||
+    Array.from(dataTransfer.files).some((file) => file.type !== 'image/bmp')
+  )
+}
+
+function isUriOnlyDrop(event: DragEvent): boolean {
+  const dataTransfer = event.dataTransfer
+  if (!dataTransfer) return false
+
+  return (
+    URI_DROP_TYPES.some((type) => dataTransfer.types.includes(type)) &&
+    !hasRealFileTransfer(event)
+  )
+}
 
 function handleDragOver(event: DragEvent) {
   const node = lgraphNode.value
   if (!node || !node.onDragOver) {
-    isDraggingOver.value = false
+    clearDragOverState(node?.id)
     return
   }
 
   // Call the litegraph node's onDragOver callback to check if files are valid
   const canDrop = node.onDragOver(event)
   isDraggingOver.value = canDrop
+
+  if (canDrop) {
+    app.dragOverNode = node
+  } else {
+    clearDragOverState(node.id)
+  }
 }
 
 function handleDragLeave() {
-  isDraggingOver.value = false
+  clearDragOverState(lgraphNode.value?.id)
 }
 
-function handleDrop(event: DragEvent) {
-  isDraggingOver.value = false
-
+async function handleDrop(event: DragEvent) {
   const node = lgraphNode.value
-  if (!node?.onDragDrop) return
+  if (!node?.onDragDrop) {
+    isDraggingOver.value = false
+    if (app.dragOverNode) {
+      app.dragOverNode = null
+      app.canvas.setDirty(false, true)
+    }
+    return
+  }
 
-  const handled = node.onDragDrop(event)
-  if (handled === true) {
-    event.preventDefault()
-    event.stopPropagation()
+  if (isUriOnlyDrop(event)) {
+    clearDragOverState(node.id)
+    return
+  }
+
+  event.preventDefault()
+  event.stopPropagation()
+  app.dragOverNode = node
+  try {
+    await node.onDragDrop(event)
+  } finally {
+    clearDragOverState(node.id)
   }
 }
 </script>

@@ -183,6 +183,17 @@ describe('pasteImageNode', () => {
     expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
   })
+
+  it('should accept image files with empty MIME type when extension is recognized', async () => {
+    const mockNode = createMockNode()
+    const imageFile = createImageFile('test.jpg', '')
+    const dataTransfer = createDataTransfer([imageFile])
+
+    await pasteImageNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
+  })
 })
 
 describe('pasteImageNodes', () => {
@@ -427,6 +438,23 @@ describe('usePaste', () => {
     usePaste()
 
     const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
+  it('should handle image paste with empty MIME type by extension', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    usePaste()
+
+    const file = createImageFile('test.jpg', '')
     const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)

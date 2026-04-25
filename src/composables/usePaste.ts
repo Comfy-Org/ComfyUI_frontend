@@ -11,6 +11,11 @@ import {
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import {
+  hasAudioType,
+  hasImageType,
+  hasVideoType
+} from '@/utils/eventUtils'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
@@ -64,9 +69,18 @@ function pasteItemsOnNode(
 ): void {
   if (!node) return
 
-  const filteredItems = Array.from(items).filter((item) =>
-    item.type.startsWith(contentType)
-  )
+  const matchesContentType = (file: File) =>
+    contentType === 'image'
+      ? hasImageType(file)
+      : contentType === 'audio'
+        ? hasAudioType(file)
+        : hasVideoType(file)
+
+  const filteredItems = Array.from(items).filter((item) => {
+    if (item.kind !== 'file') return false
+    const file = item.getAsFile()
+    return file ? matchesContentType(file) : false
+  })
 
   const blob = filteredItems[0]?.getAsFile()
   if (!blob) return
@@ -216,15 +230,19 @@ export const usePaste = () => {
       ? currentNode
       : null
 
-    // Look for image paste data
+    // Look for media paste data
     for (const item of items) {
-      if (item.type.startsWith('image/')) {
+      if (item.kind !== 'file') continue
+      const file = item.getAsFile()
+      if (!file) continue
+
+      if (hasImageType(file)) {
         await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
-      } else if (item.type.startsWith('video/')) {
+      } else if (hasVideoType(file)) {
         await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
         return
-      } else if (item.type.startsWith('audio/')) {
+      } else if (hasAudioType(file)) {
         await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
         return
       }

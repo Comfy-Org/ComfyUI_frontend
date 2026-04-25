@@ -10,8 +10,43 @@ function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
   })
 }
 
+class FakeDragEvent extends DragEvent {
+  override dataTransfer: DataTransfer | null
+
+  constructor(type: string, dataTransfer: DataTransfer | null) {
+    super(type)
+    this.dataTransfer = dataTransfer
+  }
+}
+
 function createFile(name: string, type = 'image/png'): File {
   return new File(['data'], name, { type })
+}
+
+function createItemsOnlyDataTransfer(file: File): DataTransfer {
+  const source = new DataTransfer()
+  source.items.add(file)
+
+  return {
+    items: source.items,
+    files: [] as unknown as FileList,
+    types: [],
+    getData: () => '',
+    setData: () => {},
+    clearData: () => {},
+    dropEffect: 'none',
+    effectAllowed: 'all',
+    setDragImage: () => {}
+  } as unknown as DataTransfer
+}
+
+function createUriTransferWithBmpPlaceholder(): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  dataTransfer.items.add(
+    new File([''], 'placeholder.bmp', { type: 'image/bmp' })
+  )
+  dataTransfer.setData('text/uri-list', 'https://example.com/image.png')
+  return dataTransfer
 }
 
 function createDragEvent(options: {
@@ -103,6 +138,37 @@ describe('useNodeDragAndDrop', () => {
 
     expect(result).toBe(true)
     expect(onDrop).toHaveBeenCalledWith([keep])
+  })
+
+  it('onDragDrop calls onDrop with files from dataTransfer.items when files is empty', async () => {
+    const onDrop = vi.fn().mockResolvedValue([])
+    const node = createNode()
+
+    useNodeDragAndDrop(node, {
+      onDrop,
+      fileFilter: (file) => file.name.endsWith('.png')
+    })
+
+    const file = new File([''], 'image.png', { type: '' })
+    const event = new FakeDragEvent('drop', createItemsOnlyDataTransfer(file))
+
+    await expect(node.onDragDrop?.(event)).resolves.toBe(true)
+    expect(onDrop).toHaveBeenCalledWith([file])
+  })
+
+  it('onDragDrop ignores bmp placeholders so uri drags are not treated as file-backed', async () => {
+    const node = createNode()
+    const onDrop = vi.fn().mockResolvedValue([])
+
+    useNodeDragAndDrop(node, { onDrop })
+
+    const event = new FakeDragEvent(
+      'drop',
+      createUriTransferWithBmpPlaceholder()
+    )
+
+    await expect(node.onDragDrop?.(event)).resolves.toBe(false)
+    expect(onDrop).not.toHaveBeenCalled()
   })
 
   it('onDragDrop returns false for invalid drops', async () => {
