@@ -17,11 +17,11 @@ const LEGACY_PREFIXED_WORKFLOW =
 const MULTI_INSTANCE_WORKFLOW =
   'subgraphs/subgraph-multi-instance-promoted-text-values'
 
-const expectPromotedWidgetsToResolveToInteriorNodes = async (
+async function expectPromotedWidgetsToResolveToInteriorNodes(
   comfyPage: ComfyPage,
   hostSubgraphNodeId: string,
   widgets: PromotedWidgetEntry[]
-) => {
+) {
   expect(widgets.length).toBeGreaterThan(0)
 
   const interiorNodeIds = widgets.map(([id]) => id)
@@ -42,10 +42,10 @@ const expectPromotedWidgetsToResolveToInteriorNodes = async (
   expect(results).toEqual(widgets.map(() => true))
 }
 
-const getPromotedHostWidgetValues = async (
+async function getPromotedHostWidgetValues(
   comfyPage: ComfyPage,
   nodeIds: string[]
-) => {
+) {
   return comfyPage.page.evaluate((ids) => {
     const graph = window.app!.canvas.graph!
 
