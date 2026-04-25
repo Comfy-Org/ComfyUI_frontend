@@ -293,8 +293,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         await comfyPage.page.keyboard.up('Alt')
       }
 
-      const collectSubgraphNodeIds = () =>
-        comfyPage.page.evaluate(() => {
+      async function collectSubgraphNodeIds() {
+        return comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph!
           return graph.nodes
             .filter(
@@ -303,6 +303,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
             )
             .map((n) => String(n.id))
         })
+      }
 
       await expect
         .poll(async () => (await collectSubgraphNodeIds()).length)
