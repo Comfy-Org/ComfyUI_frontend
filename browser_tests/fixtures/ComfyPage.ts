@@ -23,6 +23,7 @@ import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
 import {
   AssetsSidebarTab,
+  JobHistorySidebarTab,
   ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
@@ -30,7 +31,6 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
-import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
@@ -63,6 +63,7 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
+  private _jobHistoryTab: JobHistorySidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
@@ -99,6 +100,11 @@ class ComfyMenu {
   get assetsTab() {
     this._assetsTab ??= new AssetsSidebarTab(this.page)
     return this._assetsTab
+  }
+
+  get jobHistoryTab() {
+    this._jobHistoryTab ??= new JobHistorySidebarTab(this.page)
+    return this._jobHistoryTab
   }
 
   get workflowsTab() {
@@ -176,7 +182,6 @@ export class ComfyPage {
   public readonly bottomPanel: BottomPanel
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
-  public readonly assets: AssetsHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
   public readonly visibleToasts: Locator
@@ -229,7 +234,6 @@ export class ComfyPage {
     this.bottomPanel = new BottomPanel(page)
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
-    this.assets = new AssetsHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
   }
