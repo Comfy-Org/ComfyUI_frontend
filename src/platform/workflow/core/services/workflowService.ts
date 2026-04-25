@@ -55,6 +55,21 @@ function normalizeWorkflowIdForReuse(id: unknown): string | undefined {
   return isValidUuid(id) ? id : undefined
 }
 
+/**
+ * Returns the workflow payload with a UUID-shaped `id`, preserving the
+ * existing one when valid and otherwise substituting `fallbackId` (or a fresh
+ * UUID). Used before passing data to `ChangeTracker.reset` so a slug id on the
+ * incoming payload cannot overwrite the migrated UUID already stored on the
+ * reused workflow.
+ */
+function withMigratedId(
+  workflowData: ComfyWorkflowJSON,
+  fallbackId: string | undefined
+): ComfyWorkflowJSON {
+  if (isValidUuid(workflowData.id)) return workflowData
+  return { ...workflowData, id: fallbackId ?? generateUUID() }
+}
+
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
@@ -519,7 +534,9 @@ export const useWorkflowService = () => {
           if (shareId) {
             loadedWorkflow.shareId = shareId
           }
-          loadedWorkflow.changeTracker.reset(workflowData)
+          loadedWorkflow.changeTracker.reset(
+            withMigratedId(workflowData, existingId)
+          )
           loadedWorkflow.changeTracker.restore()
           return
         }
@@ -546,7 +563,12 @@ export const useWorkflowService = () => {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
     }
-    loadedWorkflow.changeTracker.reset(workflowData)
+    loadedWorkflow.changeTracker.reset(
+      withMigratedId(
+        workflowData,
+        normalizeWorkflowIdForReuse(loadedWorkflow.activeState?.id)
+      )
+    )
     loadedWorkflow.changeTracker.restore()
   }
 
