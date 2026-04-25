@@ -567,11 +567,11 @@ class Load3d {
   }
 
   isSplatModel(): boolean {
-    return this.modelManager.containsSplatMesh()
+    return this.loaderManager.getCurrentAdapter()?.kind === 'splat'
   }
 
   isPlyModel(): boolean {
-    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+    return this.loaderManager.getCurrentAdapter()?.kind === 'pointCloud'
   }
 
   clearModel(): void {
