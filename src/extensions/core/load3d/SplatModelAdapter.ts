@@ -1,11 +1,11 @@
 import { SplatMesh } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 
-import {
-  fetchModelData,
-  type ModelAdapter,
-  type ModelAdapterCapabilities,
-  type ModelLoadContext
+import { fetchModelData } from './ModelAdapter'
+import type {
+  ModelAdapter,
+  ModelAdapterCapabilities,
+  ModelLoadContext
 } from './ModelAdapter'
 
 export class SplatModelAdapter implements ModelAdapter {

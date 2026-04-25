@@ -4,11 +4,11 @@ import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isPLYAsciiFormat } from '@/scripts/metadata/ply'
 
-import {
-  fetchModelData,
-  type ModelAdapter,
-  type ModelAdapterCapabilities,
-  type ModelLoadContext
+import { fetchModelData } from './ModelAdapter'
+import type {
+  ModelAdapter,
+  ModelAdapterCapabilities,
+  ModelLoadContext
 } from './ModelAdapter'
 import { FastPLYLoader } from './loader/FastPLYLoader'
 

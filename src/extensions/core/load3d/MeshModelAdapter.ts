@@ -106,7 +106,7 @@ export class MeshModelAdapter implements ModelAdapter {
     if (ctx.materialMode === 'original') {
       try {
         this.mtlLoader.setPath(path)
-        const mtlFileName = filename.replace(/\.obj$/, '.mtl')
+        const mtlFileName = filename.replace(/\.obj$/i, '.mtl')
         const materials = await this.mtlLoader.loadAsync(mtlFileName)
         materials.preload()
         const materialsFromMtl =
