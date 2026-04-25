@@ -319,7 +319,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     })
   })
 
-  test.describe('Duplicate ID Remapping', { tag: ['@subgraph'] }, () => {
+  test.describe('Duplicate ID Remapping', () => {
     test('All node IDs are globally unique after loading', async ({
       comfyPage
     }) => {
