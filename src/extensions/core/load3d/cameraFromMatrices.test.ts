@@ -131,4 +131,20 @@ describe('computeCameraFromMatrices', () => {
       ])
     ).toThrow(/intrinsics/)
   })
+
+  it.each([
+    ['zero', 0],
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY]
+  ])(
+    'throws when fy is %s rather than producing a NaN/Infinite FOV',
+    (_label, fy) => {
+      expect(() =>
+        computeCameraFromMatrices(
+          extrinsics(IDENTITY_R, [0, 0, 0]),
+          intrinsics(500, fy, 320, 240)
+        )
+      ).toThrow(/fy/)
+    }
+  )
 })

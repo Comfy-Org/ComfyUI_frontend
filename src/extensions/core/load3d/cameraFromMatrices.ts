@@ -58,6 +58,11 @@ export function computeCameraFromMatrices(
 
   const fy = intrinsics[1][1]
   const cy = intrinsics[1][2]
+  if (!Number.isFinite(fy) || fy === 0) {
+    throw new Error(
+      `intrinsics[1][1] (fy) must be a non-zero finite number, got ${fy}`
+    )
+  }
   const fovYRad = 2 * Math.atan(cy / fy)
   const fovYDegrees = (fovYRad * 180) / Math.PI
 

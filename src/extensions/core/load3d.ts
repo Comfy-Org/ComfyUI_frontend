@@ -538,7 +538,14 @@ useExtensionService().registerExtension({
           }
 
           if (extrinsics && intrinsics) {
-            load3d.setCameraFromMatrices(extrinsics, intrinsics)
+            try {
+              load3d.setCameraFromMatrices(extrinsics, intrinsics)
+            } catch (error) {
+              console.error(
+                'Failed to apply camera matrices from Preview3D output:',
+                error
+              )
+            }
           }
         }
       }
