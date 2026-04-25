@@ -78,16 +78,7 @@ const EMPTY_CLOUD_ASSET_RESPONSE: ListAssetsResponse = {
   has_more: false
 }
 
-type AssetExportRequestBody = Omit<
-  CreateAssetExportData['body'],
-  'naming_strategy'
-> & {
-  naming_strategy?:
-    | 'group_by_job_id'
-    | 'group_by_job_time'
-    | 'preserve'
-    | 'asset_id'
-}
+type AssetExportRequestBody = CreateAssetExportData['body']
 
 const MOCK_ASSET_EXPORT_RESPONSE: CreateAssetExportResponse = {
   task_id: 'asset-export-task',
