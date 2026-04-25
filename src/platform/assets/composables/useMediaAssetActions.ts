@@ -168,7 +168,7 @@ export function useMediaAssetActions() {
         ...(Object.keys(jobAssetNameFilters).length > 0
           ? { job_asset_name_filters: jobAssetNameFilters }
           : {}),
-        naming_strategy: 'preserve'
+        naming_strategy: jobIds.length > 1 ? 'group_by_job_time' : 'preserve'
       })
 
       assetExportStore.trackExport(result.task_id)
