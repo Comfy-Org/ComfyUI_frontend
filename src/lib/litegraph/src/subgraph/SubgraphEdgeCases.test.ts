@@ -27,15 +27,15 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     const sub1 = createTestSubgraph({ name: 'Sub1' })
     const sub2 = createTestSubgraph({ name: 'Sub2' })
 
-    // Create circular reference
     const node1 = createTestSubgraphNode(sub1, { id: 1 })
     const node2 = createTestSubgraphNode(sub2, { id: 2 })
 
-    // Current limitation: adding a circular reference overflows recursion depth.
+    // Cycle guard in forEachNode (used by LGraph.add for subgraph registry
+    // tracking) keeps cyclic references from overflowing the stack.
     sub1.add(node2)
     expect(() => {
       sub2.add(node1)
-    }).toThrow(RangeError)
+    }).not.toThrow()
   })
 
   it('should handle deep nesting scenarios', () => {
@@ -52,14 +52,15 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     expect(firstLevel.isSubgraphNode()).toBe(true)
   })
 
-  it('should throw RangeError for self-referential subgraph', () => {
-    // Current limitation: creating self-referential subgraph instances overflows recursion depth.
+  it('should not crash on self-referential subgraph', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph)
 
+    // forEachNode's cycle guard skips re-entering an already-visited subgraph
+    // when a subgraph node points back at its containing subgraph.
     expect(() => {
       subgraph.add(subgraphNode)
-    }).toThrow(RangeError)
+    }).not.toThrow()
   })
 
   it('should respect MAX_NESTED_SUBGRAPHS constant', () => {

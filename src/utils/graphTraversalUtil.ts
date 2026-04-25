@@ -131,15 +131,34 @@ export function mapAllNodes<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
+  return mapAllNodesWithVisited(graph, mapFn, new Set())
+}
+
+function mapAllNodesWithVisited<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<LGraph | Subgraph>
+): T[] {
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
-    // Recursively map over subgraphs first
+    // Path-local cycle guard: add on descent, delete on return. Skips
+    // the subgraph only when it's already on the current descent path
+    // (a cycle), but allows re-visit when the same Subgraph definition
+    // is reached via a sibling SubgraphNode. Each SubgraphNode is an
+    // independent execution — global dedup would under-count contents
+    // (cost-aggregation would miss the second instance's nodes).
+    // Object identity rather than `subgraph.id` because LGraph defaults
+    // to the zero UUID until `configure()` assigns a real one. Mirrors
+    // the WeakSet pattern in `useGraphStructureRevision.forEachSubgraph`.
     if (node.isSubgraphNode?.() && node.subgraph) {
-      results.push(...mapAllNodes(node.subgraph, mapFn))
+      if (!visited.has(node.subgraph)) {
+        visited.add(node.subgraph)
+        results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
+        visited.delete(node.subgraph)
+      }
     }
 
-    // Apply map function to current node
     const result = mapFn(node)
     if (result !== undefined) {
       results.push(result)
@@ -160,13 +179,25 @@ export function forEachNode(
   graph: LGraph | Subgraph,
   fn: (node: LGraphNode) => void
 ): void {
+  forEachNodeWithVisited(graph, fn, new Set())
+}
+
+function forEachNodeWithVisited(
+  graph: LGraph | Subgraph,
+  fn: (node: LGraphNode) => void,
+  visited: Set<LGraph | Subgraph>
+): void {
   visitGraphNodes(graph, (node) => {
-    // Recursively process subgraphs first
+    // See `mapAllNodesWithVisited` — path-local visited set, object
+    // identity, sibling-permits, cycle-blocks.
     if (node.isSubgraphNode?.() && node.subgraph) {
-      forEachNode(node.subgraph, fn)
+      if (!visited.has(node.subgraph)) {
+        visited.add(node.subgraph)
+        forEachNodeWithVisited(node.subgraph, fn, visited)
+        visited.delete(node.subgraph)
+      }
     }
 
-    // Execute function on current node
     fn(node)
   })
 }
@@ -617,28 +648,47 @@ export function traverseNodesDepthFirst<T = void>(
     initialContext = undefined as T,
     expandSubgraphs = true
   } = options || {}
-  type StackItem = { node: LGraphNode; context: T }
+  // The recursive helpers (mapAllNodes/forEachNode) implement a path-local
+  // visited set by deleting on return from the recursion. The iterative
+  // DFS here gets the same semantics by pushing an "exit-subgraph"
+  // sentinel onto the stack alongside the node items: when the sentinel
+  // pops, the subgraph leaves the visited set. Cycles are blocked
+  // (subgraph still in visited when revisited within its own subtree),
+  // sibling SubgraphNode instances are permitted (subgraph removed from
+  // visited before the next sibling pops). See `mapAllNodesWithVisited`
+  // for the full rationale.
+  type StackItem =
+    | { kind: 'node'; node: LGraphNode; context: T }
+    | { kind: 'exit'; subgraph: LGraph | Subgraph }
   const stack: StackItem[] = []
+  const visited = new Set<LGraph | Subgraph>()
 
-  // Initialize stack with starting nodes
   for (const node of nodes) {
-    stack.push({ node, context: initialContext })
+    stack.push({ kind: 'node', node, context: initialContext })
   }
 
-  // Process stack iteratively (DFS)
   while (stack.length > 0) {
-    const { node, context } = stack.pop()!
+    const item = stack.pop()!
 
-    // Visit node and get updated context for children
+    if (item.kind === 'exit') {
+      visited.delete(item.subgraph)
+      continue
+    }
+
+    const { node, context } = item
     const childContext = visitor(node, context)
 
-    // If it's a subgraph and we should expand, add children to stack
     if (expandSubgraphs && node.isSubgraphNode?.() && node.subgraph) {
-      // Process children in reverse order to maintain left-to-right DFS processing
-      // when popping from stack (LIFO). Iterate backwards to avoid array reversal.
-      const children = node.subgraph.nodes
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], context: childContext })
+      if (!visited.has(node.subgraph)) {
+        visited.add(node.subgraph)
+        // Exit sentinel goes on first so it pops after all children are
+        // processed. Children pushed in reverse to preserve left-to-right
+        // DFS order on LIFO pops.
+        stack.push({ kind: 'exit', subgraph: node.subgraph })
+        const children = node.subgraph.nodes
+        for (let i = children.length - 1; i >= 0; i--) {
+          stack.push({ kind: 'node', node: children[i], context: childContext })
+        }
       }
     }
   }

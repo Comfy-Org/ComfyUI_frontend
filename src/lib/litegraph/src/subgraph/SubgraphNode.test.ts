@@ -611,16 +611,14 @@ describe('SubgraphNode Execution', () => {
   })
 
   it('should prevent infinite recursion', () => {
-    // Circular self-references currently recurse in traversal; this test documents
-    // that execution flattening throws instead of silently succeeding.
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph, {
       parentGraph: subgraph
     })
 
-    // Add subgraph node to its own subgraph (circular reference)
-    // add() itself throws due to recursive forEachNode traversal
-    expect(() => subgraph.add(subgraphNode)).toThrow()
+    // Cycle guard in forEachNode short-circuits the self-referential
+    // traversal instead of overflowing the call stack.
+    expect(() => subgraph.add(subgraphNode)).not.toThrow()
   })
 
   it('should resolve cross-boundary links', () => {

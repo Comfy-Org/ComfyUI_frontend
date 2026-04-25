@@ -87,6 +87,20 @@ function createMockSubgraph(
   return graph
 }
 
+// Builds the canonical A↔B cyclic-subgraph fixture: subA contains a node
+// referencing subB and vice versa, with subA hung off a root subgraph node.
+// Used by every "no infinite loop on cyclic subgraph references" test.
+function makeCyclicSubgraphFixture(): { graph: LGraph; rootNodeId: number } {
+  const subA = createMockSubgraph('sub-a', [])
+  const subB = createMockSubgraph('sub-b', [])
+  const nodeInA = createMockNode(10, { isSubgraph: true, subgraph: subB })
+  const nodeInB = createMockNode(20, { isSubgraph: true, subgraph: subA })
+  ;(subA.nodes as LGraphNode[]).push(nodeInA)
+  ;(subB.nodes as LGraphNode[]).push(nodeInB)
+  const rootNode = createMockNode(1, { isSubgraph: true, subgraph: subA })
+  return { graph: createMockGraph([rootNode]), rootNodeId: 1 }
+}
+
 describe('graphTraversalUtil', () => {
   describe('Pure utility functions', () => {
     describe('parseExecutionId', () => {
@@ -379,6 +393,53 @@ describe('graphTraversalUtil', () => {
         expect(results).toHaveLength(5)
         expect(results).toContain('node-300')
       })
+
+      it('should not infinite-loop on cyclic subgraph references', () => {
+        const { graph } = makeCyclicSubgraphFixture()
+
+        expect(() => mapAllNodes(graph, (node) => node.id)).not.toThrow()
+
+        const results = mapAllNodes(graph, (node) => node.id)
+        expect(results).toContain(1)
+        expect(results).toContain(10)
+        expect(results).toContain(20)
+      })
+
+      it('treats sibling subgraphs sharing the default id as distinct', () => {
+        // Reproduces the zero-UUID collision: LGraph.id defaults to a
+        // sentinel UUID until configure() runs. A visited-set keyed on
+        // String(subgraph.id) would skip the second instance — this test
+        // pins the object-identity behavior in place.
+        const sharedId = '00000000-0000-0000-0000-000000000000'
+        const subA = createMockSubgraph(sharedId, [createMockNode(11)])
+        const subB = createMockSubgraph(sharedId, [createMockNode(22)])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: subA }),
+          createMockNode(2, { isSubgraph: true, subgraph: subB })
+        ])
+
+        const results = mapAllNodes(graph, (node) => node.id)
+        expect(results).toContain(11)
+        expect(results).toContain(22)
+      })
+
+      it('counts shared subgraph contents once per SubgraphNode instance', () => {
+        // Two SubgraphNode instances pointing at the SAME Subgraph object
+        // — e.g. user copy-pasted a subgraph node. Each instance is an
+        // independent execution. A global-visited set would visit the
+        // shared subgraph's contents once and undercount; path-local
+        // re-permits the second visit.
+        const child = createMockNode(99)
+        const shared = createMockSubgraph('shared', [child])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: shared }),
+          createMockNode(2, { isSubgraph: true, subgraph: shared })
+        ])
+
+        const results = mapAllNodes(graph, (node) => node.id)
+        const childCount = results.filter((id) => id === 99).length
+        expect(childCount).toBe(2)
+      })
     })
 
     describe('forEachNode', () => {
@@ -449,6 +510,56 @@ describe('graphTraversalUtil', () => {
         })
 
         expect(matchingNodes).toEqual([2, 4])
+      })
+
+      it('should not infinite-loop on cyclic subgraph references', () => {
+        const { graph } = makeCyclicSubgraphFixture()
+
+        const visitCounts = new Map<number | string, number>()
+        forEachNode(graph, (node) => {
+          visitCounts.set(node.id, (visitCounts.get(node.id) ?? 0) + 1)
+        })
+
+        expect(visitCounts.get(10)).toBe(1)
+        expect(visitCounts.get(20)).toBe(1)
+        expect(visitCounts.get(1)).toBe(1)
+      })
+
+      it('treats sibling subgraphs sharing the default id as distinct', () => {
+        // See mapAllNodes counterpart — same zero-UUID collision case.
+        const sharedId = '00000000-0000-0000-0000-000000000000'
+        const subA = createMockSubgraph(sharedId, [createMockNode(11)])
+        const subB = createMockSubgraph(sharedId, [createMockNode(22)])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: subA }),
+          createMockNode(2, { isSubgraph: true, subgraph: subB })
+        ])
+
+        const visited: (string | number)[] = []
+        forEachNode(graph, (node) => {
+          visited.push(node.id)
+        })
+        expect(visited).toContain(11)
+        expect(visited).toContain(22)
+      })
+
+      it('visits shared subgraph contents once per SubgraphNode instance', () => {
+        // See mapAllNodes counterpart — sibling SubgraphNode instances
+        // pointing at the same Subgraph object should each trigger a
+        // visit to the shared contents.
+        const child = createMockNode(99)
+        const shared = createMockSubgraph('shared', [child])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: shared }),
+          createMockNode(2, { isSubgraph: true, subgraph: shared })
+        ])
+
+        const visitCounts = new Map<number | string, number>()
+        forEachNode(graph, (node) => {
+          visitCounts.set(node.id, (visitCounts.get(node.id) ?? 0) + 1)
+        })
+
+        expect(visitCounts.get(99)).toBe(2)
       })
     })
 
@@ -1223,6 +1334,65 @@ describe('graphTraversalUtil', () => {
         })
 
         expect(visited).toEqual(['100:', '200:100', '300:100/200'])
+      })
+
+      it('should not infinite-loop on cyclic subgraph references', () => {
+        const { graph } = makeCyclicSubgraphFixture()
+        const rootNode = graph.nodes[0]
+
+        const visitCounts = new Map<number | string, number>()
+        expect(() =>
+          traverseNodesDepthFirst([rootNode], {
+            visitor: (node) => {
+              visitCounts.set(node.id, (visitCounts.get(node.id) ?? 0) + 1)
+            }
+          })
+        ).not.toThrow()
+
+        expect(visitCounts.get(1)).toBe(1)
+        expect(visitCounts.get(10)).toBe(1)
+        expect(visitCounts.get(20)).toBe(1)
+      })
+
+      it('treats sibling subgraphs sharing the default id as distinct', () => {
+        // See mapAllNodes counterpart — same zero-UUID collision case.
+        const sharedId = '00000000-0000-0000-0000-000000000000'
+        const subA = createMockSubgraph(sharedId, [createMockNode(11)])
+        const subB = createMockSubgraph(sharedId, [createMockNode(22)])
+        const nodes = [
+          createMockNode(1, { isSubgraph: true, subgraph: subA }),
+          createMockNode(2, { isSubgraph: true, subgraph: subB })
+        ]
+
+        const visited: (string | number)[] = []
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node) => {
+            visited.push(node.id)
+          }
+        })
+        expect(visited).toContain(11)
+        expect(visited).toContain(22)
+      })
+
+      it('visits shared subgraph contents once per SubgraphNode instance', () => {
+        // See mapAllNodes counterpart — sibling SubgraphNode instances
+        // pointing at the same Subgraph object are independent
+        // executions and each must emit a visit to the shared contents.
+        const child = createMockNode(99)
+        const shared = createMockSubgraph('shared', [child])
+        const nodes = [
+          createMockNode(1, { isSubgraph: true, subgraph: shared }),
+          createMockNode(2, { isSubgraph: true, subgraph: shared })
+        ]
+
+        const visitCounts = new Map<number | string, number>()
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node) => {
+            visitCounts.set(node.id, (visitCounts.get(node.id) ?? 0) + 1)
+          }
+        })
+
+        expect(visitCounts.get(99)).toBe(2)
       })
     })
 
