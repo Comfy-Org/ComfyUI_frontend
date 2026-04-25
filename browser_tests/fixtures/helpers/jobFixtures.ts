@@ -1,6 +1,6 @@
 import type { JobDetailResponse, JobEntry } from '@comfyorg/ingest-types'
 
-import type { SeededJob } from '@e2e/fixtures/helpers/InMemoryJobsBackend'
+import type { MockJobRecord } from '@e2e/fixtures/helpers/JobsApiMock'
 
 export function createMockJob(
   overrides: Partial<JobEntry> & { id: string }
@@ -28,7 +28,7 @@ function isTerminalStatus(status: JobEntry['status']) {
   return status === 'completed' || status === 'failed' || status === 'cancelled'
 }
 
-function createSeededJob(listItem: JobEntry): SeededJob {
+function createMockJobRecord(listItem: JobEntry): MockJobRecord {
   const updateTime =
     listItem.execution_end_time ??
     listItem.execution_start_time ??
@@ -45,6 +45,8 @@ function createSeededJob(listItem: JobEntry): SeededJob {
   }
 }
 
-export function createSeededJobs(listItems: readonly JobEntry[]): SeededJob[] {
-  return listItems.map(createSeededJob)
+export function createMockJobRecords(
+  listItems: readonly JobEntry[]
+): MockJobRecord[] {
+  return listItems.map(createMockJobRecord)
 }

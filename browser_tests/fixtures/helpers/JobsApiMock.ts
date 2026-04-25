@@ -9,48 +9,21 @@ const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const jobDetailRoutePattern = /\/api\/jobs\/[^/?#]+(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history(?:\?.*)?$/
 
-export type SeededJob = {
+export type MockJobRecord = {
   listItem: JobEntry
   detail: JobDetailResponse
 }
 
-type JobsListFixtureResponse = Omit<JobsListResponse, 'pagination'> & {
+type JobsListMockResponse = Omit<JobsListResponse, 'pagination'> & {
   pagination: Omit<JobsListResponse['pagination'], 'limit'> & {
     limit: number | null
   }
 }
 
-function parseLimit(url: URL): { error?: string; limit?: number } {
-  if (!url.searchParams.has('limit')) {
-    return {}
-  }
+function parsePositiveIntegerParam(url: URL, name: string): number | undefined {
+  const value = Number(url.searchParams.get(name))
 
-  const value = Number(url.searchParams.get('limit'))
-  if (!Number.isInteger(value)) {
-    return { error: 'limit must be an integer' }
-  }
-
-  if (value <= 0) {
-    return { error: 'limit must be a positive integer' }
-  }
-
-  return { limit: value }
-}
-
-function parseOffset(url: URL): number {
-  const value = Number(url.searchParams.get('offset'))
-  if (!Number.isInteger(value) || value < 0) {
-    return 0
-  }
-
-  return value
-}
-
-function getExecutionDuration(job: JobEntry): number {
-  const start = job.execution_start_time ?? 0
-  const end = job.execution_end_time ?? 0
-
-  return end - start
+  return Number.isInteger(value) && value > 0 ? value : undefined
 }
 
 function getJobIdFromRequest(route: Route): string | null {
@@ -60,23 +33,25 @@ function getJobIdFromRequest(route: Route): string | null {
   return jobId ? decodeURIComponent(jobId) : null
 }
 
-export class InMemoryJobsBackend {
+export class JobsApiMock {
   private listRouteHandler: ((route: Route) => Promise<void>) | null = null
   private detailRouteHandler: ((route: Route) => Promise<void>) | null = null
   private historyRouteHandler: ((route: Route) => Promise<void>) | null = null
-  private seededJobs = new Map<string, SeededJob>()
+  private jobsById = new Map<string, MockJobRecord>()
 
   constructor(private readonly page: Page) {}
 
-  async seed(jobs: SeededJob[]): Promise<void> {
-    this.seededJobs = new Map(
-      jobs.map((job) => [job.listItem.id, job] satisfies [string, SeededJob])
+  async mockJobs(jobs: MockJobRecord[]): Promise<void> {
+    this.jobsById = new Map(
+      jobs.map(
+        (job) => [job.listItem.id, job] satisfies [string, MockJobRecord]
+      )
     )
     await this.ensureRoutesRegistered()
   }
 
   async clear(): Promise<void> {
-    this.seededJobs.clear()
+    this.jobsById.clear()
 
     if (this.listRouteHandler) {
       await this.page.unroute(jobsListRoutePattern, this.listRouteHandler)
@@ -103,12 +78,9 @@ export class InMemoryJobsBackend {
           ?.split(',')
           .map((status) => status.trim())
           .filter(Boolean)
-        const workflowId = url.searchParams.get('workflow_id')
-        const sortBy = url.searchParams.get('sort_by')
-        const sortOrder = url.searchParams.get('sort_order') === 'asc' ? 1 : -1
 
         let filteredJobs = Array.from(
-          this.seededJobs.values(),
+          this.jobsById.values(),
           ({ listItem }) => listItem
         )
 
@@ -118,36 +90,8 @@ export class InMemoryJobsBackend {
           )
         }
 
-        if (workflowId) {
-          filteredJobs = filteredJobs.filter(
-            (job) => job.workflow_id === workflowId
-          )
-        }
-
-        filteredJobs.sort((left, right) => {
-          const leftValue =
-            sortBy === 'execution_duration'
-              ? getExecutionDuration(left)
-              : left.create_time
-          const rightValue =
-            sortBy === 'execution_duration'
-              ? getExecutionDuration(right)
-              : right.create_time
-
-          return (leftValue - rightValue) * sortOrder
-        })
-
-        const offset = parseOffset(url)
-        const { error: limitError, limit } = parseLimit(url)
-        if (limitError) {
-          await route.fulfill({
-            status: 400,
-            contentType: 'application/json',
-            body: JSON.stringify({ error: limitError })
-          })
-          return
-        }
-
+        const offset = parsePositiveIntegerParam(url, 'offset') ?? 0
+        const limit = parsePositiveIntegerParam(url, 'limit')
         const total = filteredJobs.length
         const visibleJobs =
           limit === undefined
@@ -162,7 +106,7 @@ export class InMemoryJobsBackend {
             total,
             has_more: offset + visibleJobs.length < total
           }
-        } satisfies JobsListFixtureResponse
+        } satisfies JobsListMockResponse
 
         await route.fulfill({
           status: 200,
@@ -177,7 +121,7 @@ export class InMemoryJobsBackend {
     if (!this.detailRouteHandler) {
       this.detailRouteHandler = async (route: Route) => {
         const jobId = getJobIdFromRequest(route)
-        const job = jobId ? this.seededJobs.get(jobId) : undefined
+        const job = jobId ? this.jobsById.get(jobId) : undefined
 
         if (!job) {
           await route.fulfill({
@@ -211,8 +155,8 @@ export class InMemoryJobsBackend {
           | undefined
 
         if (requestBody?.clear) {
-          this.seededJobs = new Map(
-            Array.from(this.seededJobs).filter(([, job]) => {
+          this.jobsById = new Map(
+            Array.from(this.jobsById).filter(([, job]) => {
               const status = job.listItem.status
 
               return status === 'pending' || status === 'in_progress'
@@ -222,7 +166,7 @@ export class InMemoryJobsBackend {
 
         if (requestBody?.delete?.length) {
           for (const jobId of requestBody.delete) {
-            this.seededJobs.delete(jobId)
+            this.jobsById.delete(jobId)
           }
         }
 

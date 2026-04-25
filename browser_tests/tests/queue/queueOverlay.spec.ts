@@ -2,14 +2,14 @@ import { expect, mergeTests } from '@playwright/test'
 import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { jobsBackendFixture } from '@e2e/fixtures/jobsBackendFixture'
+import { jobsApiMockFixture } from '@e2e/fixtures/jobsApiMockFixture'
 import {
   createMockJob,
-  createSeededJobs
+  createMockJobRecords
 } from '@e2e/fixtures/helpers/jobFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-const test = mergeTests(comfyPageFixture, jobsBackendFixture)
+const test = mergeTests(comfyPageFixture, jobsApiMockFixture)
 
 const now = Date.now()
 
@@ -41,8 +41,8 @@ const MOCK_JOBS: JobEntry[] = [
 ]
 
 test.describe('Queue overlay', () => {
-  test.beforeEach(async ({ comfyPage, jobsBackend }) => {
-    await jobsBackend.seed(createSeededJobs(MOCK_JOBS))
+  test.beforeEach(async ({ comfyPage, jobsApi }) => {
+    await jobsApi.mockJobs(createMockJobRecords(MOCK_JOBS))
     await comfyPage.setupSettings({
       'Comfy.Queue.QPOV2': false
     })
