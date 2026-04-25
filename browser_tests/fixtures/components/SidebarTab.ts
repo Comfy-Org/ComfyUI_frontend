@@ -249,70 +249,62 @@ export class ModelLibrarySidebarTab extends SidebarTab {
 }
 
 export class AssetsSidebarTab extends SidebarTab {
-  // --- Tab navigation ---
+  public readonly root: Locator
   public readonly generatedTab: Locator
   public readonly importedTab: Locator
-
-  // --- Empty state ---
   public readonly emptyStateMessage: Locator
-
-  // --- Search & filter ---
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
-
-  // --- View mode ---
   public readonly listViewOption: Locator
   public readonly gridViewOption: Locator
-
-  // --- Sort options (cloud-only, shown inside settings popover) ---
+  public readonly backToAssetsButton: Locator
+  public readonly copyJobIdButton: Locator
+  public readonly previewDialog: Locator
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
-
-  // --- Asset cards ---
   public readonly assetCards: Locator
   public readonly selectedCards: Locator
-
-  // --- List view items ---
   public readonly listViewItems: Locator
-
-  // --- Selection footer ---
   public readonly selectionFooter: Locator
   public readonly selectionCountButton: Locator
   public readonly deselectAllButton: Locator
   public readonly deleteSelectedButton: Locator
   public readonly downloadSelectedButton: Locator
-
-  // --- Folder view ---
-  public readonly backToAssetsButton: Locator
-
-  // --- Loading ---
   public readonly skeletonLoaders: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'assets')
+    this.root = page.locator('.sidebar-content-container')
     this.generatedTab = page.getByRole('tab', { name: 'Generated' })
     this.importedTab = page.getByRole('tab', { name: 'Imported' })
     this.emptyStateMessage = page.getByText(
       'Upload files or generate content to see them here'
     )
-    this.searchInput = page.getByPlaceholder('Search Assets...')
-    this.settingsButton = page.getByRole('button', { name: 'View settings' })
+    this.searchInput = this.root.getByPlaceholder(/Search Assets/i)
+    this.settingsButton = this.root.getByLabel('View settings')
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
+    this.backToAssetsButton = page.getByRole('button', {
+      name: 'Back to all assets'
+    })
+    this.copyJobIdButton = page.getByRole('button', {
+      name: 'Copy job ID'
+    })
+    this.previewDialog = page.getByRole('dialog', { name: 'Gallery' })
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
-    this.assetCards = page
+    this.assetCards = this.root
       .getByRole('button')
-      .and(page.locator('[data-selected]'))
-    this.selectedCards = page.locator('[data-selected="true"]')
-    this.listViewItems = page.locator(
-      '.sidebar-content-container [role="button"][tabindex="0"]'
-    )
-    this.selectionFooter = page
-      .locator('.sidebar-content-container')
-      .locator('..')
-      .locator('[class*="h-18"]')
-    this.selectionCountButton = page.getByText(/Assets Selected: \d+/)
+      .and(this.root.locator('[data-selected]'))
+    this.selectedCards = this.root.locator('[data-selected="true"]')
+    this.listViewItems = this.root.getByRole('button', { name: /asset$/i })
+    this.selectionFooter = this.root.locator('..').getByRole('toolbar', {
+      name: 'Selected asset actions'
+    })
+    this.selectionCountButton = this.root
+      .getByRole('button', { name: /Assets Selected:/ })
+      .or(page.getByText(/Assets Selected: \d+/))
+      .first()
     this.deselectAllButton = page.getByText('Deselect all')
     this.deleteSelectedButton = page
       .getByTestId('assets-delete-selected')
@@ -322,28 +314,113 @@ export class AssetsSidebarTab extends SidebarTab {
       .getByTestId('assets-download-selected')
       .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
       .first()
-    this.backToAssetsButton = page.getByText('Back to all assets')
-    this.skeletonLoaders = page.locator(
-      '.sidebar-content-container .animate-pulse'
-    )
+    this.skeletonLoaders = this.root.locator('.animate-pulse')
   }
 
   emptyStateTitle(title: string) {
     return this.page.getByText(title)
   }
 
+  previewImage(filename: string) {
+    return this.previewDialog.getByRole('img', { name: filename })
+  }
+
+  asset(name: string) {
+    return this.getAssetCardByName(name)
+  }
+
   getAssetCardByName(name: string) {
-    return this.assetCards.filter({ hasText: name })
+    return this.assetCards.filter({ hasText: name }).first()
   }
 
   contextMenuItem(label: string) {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
+  contextMenuAction(label: string) {
+    return this.contextMenuItem(label)
+  }
+
+  async showGenerated() {
+    await this.switchToGenerated()
+  }
+
+  async showImported() {
+    await this.switchToImported()
+  }
+
+  async search(query: string) {
+    await this.searchInput.fill(query)
+  }
+
+  async switchToListView() {
+    await this.openSettingsMenu()
+    await this.listViewOption.click()
+  }
+
+  async switchToGridView() {
+    await this.openSettingsMenu()
+    await this.gridViewOption.click()
+  }
+
+  async openContextMenuForAsset(name: string) {
+    await this.asset(name).click({ button: 'right' })
+    await this.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async runContextMenuAction(assetName: string, actionName: string) {
+    await this.openContextMenuForAsset(assetName)
+    await this.contextMenuAction(actionName).click()
+  }
+
+  async openAssetPreview(name: string) {
+    const asset = this.asset(name)
+    await asset.hover()
+
+    const zoomButton = asset.getByLabel('Zoom in')
+    if (await zoomButton.isVisible().catch(() => false)) {
+      await zoomButton.click()
+      return
+    }
+
+    await asset.dblclick()
+  }
+
+  async openOutputFolder(name: string) {
+    await this.asset(name)
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+
+    await this.backToAssetsButton.waitFor({ state: 'visible' })
+  }
+
+  async toggleStack(name: string) {
+    await this.asset(name)
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+  }
+
+  async selectAssets(names: string[]) {
+    if (names.length === 0) {
+      return
+    }
+
+    await this.asset(names[0]).click()
+
+    for (const name of names.slice(1)) {
+      await this.asset(name).click({
+        modifiers: ['ControlOrMeta']
+      })
+    }
+  }
+
   override async open() {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
+    await this.root.waitFor({ state: 'visible' })
     await this.generatedTab.waitFor({ state: 'visible' })
   }
 
