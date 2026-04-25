@@ -394,18 +394,21 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         ]
 
         const SENTINEL_IDS = new Set([-1, -10, -20])
-        const isResolvableNodeId = (id: number | string): id is number =>
-          typeof id === 'number' && id >= 0 && !SENTINEL_IDS.has(id)
+        const isSentinelNodeId = (id: number | string): id is number =>
+          typeof id === 'number' && SENTINEL_IDS.has(id)
 
         const checkEndpoint = (
           label: string,
           kind: 'origin_id' | 'target_id',
           id: number | string,
           g: typeof graph
-        ): string | null =>
-          isResolvableNodeId(id) && !g._nodes_by_id[id]
-            ? `${label}: ${kind} ${id} not found`
-            : null
+        ): string | null => {
+          if (isSentinelNodeId(id)) return null
+          if (typeof id !== 'number' || !g._nodes_by_id[id]) {
+            return `${label}: ${kind} ${id} invalid or not found`
+          }
+          return null
+        }
 
         return labeledGraphs.flatMap(([label, g]) =>
           [...g._links.values()].flatMap((link) =>
@@ -453,8 +456,20 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     'Legacy Prefixed proxyWidget Normalization',
     { tag: ['@subgraph', '@widget'] },
     () => {
+      let previousVueNodesEnabled: unknown
+
       test.beforeEach(async ({ comfyPage }) => {
+        previousVueNodesEnabled = await comfyPage.settings.getSetting(
+          'Comfy.VueNodes.Enabled'
+        )
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      })
+
+      test.afterEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          previousVueNodesEnabled
+        )
       })
 
       test('Loads without console warnings about failed widget resolution', async ({
