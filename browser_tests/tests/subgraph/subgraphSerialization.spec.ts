@@ -22,6 +22,8 @@ const expectPromotedWidgetsToResolveToInteriorNodes = async (
   hostSubgraphNodeId: string,
   widgets: PromotedWidgetEntry[]
 ) => {
+  expect(widgets.length).toBeGreaterThan(0)
+
   const interiorNodeIds = widgets.map(([id]) => id)
   const results = await comfyPage.page.evaluate(
     ([hostId, ids]) => {
@@ -37,9 +39,7 @@ const expectPromotedWidgetsToResolveToInteriorNodes = async (
     [hostSubgraphNodeId, interiorNodeIds] as const
   )
 
-  for (const exists of results) {
-    expect(exists).toBe(true)
-  }
+  expect(results).toEqual(widgets.map(() => true))
 }
 
 const getPromotedHostWidgetValues = async (
@@ -203,8 +203,19 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
   })
 
   test.describe('Legacy And Round-Trip Coverage', () => {
+    let previousUseNewMenu: unknown
+
     test.beforeEach(async ({ comfyPage }) => {
+      previousUseNewMenu =
+        await comfyPage.settings.getSetting('Comfy.UseNewMenu')
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.UseNewMenu',
+        previousUseNewMenu
+      )
     })
 
     test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
@@ -282,16 +293,22 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         await comfyPage.page.keyboard.up('Alt')
       }
 
-      const subgraphNodeIds = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        return graph.nodes
-          .filter(
-            (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-          )
-          .map((n) => String(n.id))
-      })
+      const collectSubgraphNodeIds = () =>
+        comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph!
+          return graph.nodes
+            .filter(
+              (n) =>
+                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+            )
+            .map((n) => String(n.id))
+        })
 
-      expect(subgraphNodeIds.length).toBeGreaterThan(1)
+      await expect
+        .poll(async () => (await collectSubgraphNodeIds()).length)
+        .toBeGreaterThan(1)
+
+      const subgraphNodeIds = await collectSubgraphNodeIds()
       for (const nodeId of subgraphNodeIds) {
         const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
         expect(promotedWidgets.length).toBeGreaterThan(0)
@@ -376,19 +393,26 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           )
         ]
 
-        const isNonNegative = (id: number | string) =>
-          typeof id === 'number' && id >= 0
+        const SENTINEL_IDS = new Set([-1, -10, -20])
+        const isResolvableNodeId = (id: number | string): id is number =>
+          typeof id === 'number' && id >= 0 && !SENTINEL_IDS.has(id)
+
+        const checkEndpoint = (
+          label: string,
+          kind: 'origin_id' | 'target_id',
+          id: number | string,
+          g: typeof graph
+        ): string | null =>
+          isResolvableNodeId(id) && !g._nodes_by_id[id]
+            ? `${label}: ${kind} ${id} not found`
+            : null
 
         return labeledGraphs.flatMap(([label, g]) =>
           [...g._links.values()].flatMap((link) =>
             [
-              isNonNegative(link.origin_id) &&
-                !g._nodes_by_id[link.origin_id] &&
-                `${label}: origin_id ${link.origin_id} not found`,
-              isNonNegative(link.target_id) &&
-                !g._nodes_by_id[link.target_id] &&
-                `${label}: target_id ${link.target_id} not found`
-            ].filter(Boolean)
+              checkEndpoint(label, 'origin_id', link.origin_id, g),
+              checkEndpoint(label, 'target_id', link.target_id, g)
+            ].filter((e): e is string => e !== null)
           )
         )
       })
@@ -483,33 +507,31 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           ).toBeVisible()
         }
       })
-
-      test('Multiple instances of the same subgraph keep distinct promoted widget values after load and reload', async ({
-        comfyPage
-      }) => {
-        const hostNodeIds = ['11', '12', '13']
-        const expectedValues = ['Alpha\n', 'Beta\n', 'Gamma\n']
-
-        await comfyPage.workflow.loadWorkflow(MULTI_INSTANCE_WORKFLOW)
-
-        const initialValues = await getPromotedHostWidgetValues(
-          comfyPage,
-          hostNodeIds
-        )
-        expect(initialValues.map(({ values }) => values[0])).toEqual(
-          expectedValues
-        )
-
-        await comfyPage.subgraph.serializeAndReload()
-
-        const reloadedValues = await getPromotedHostWidgetValues(
-          comfyPage,
-          hostNodeIds
-        )
-        expect(reloadedValues.map(({ values }) => values[0])).toEqual(
-          expectedValues
-        )
-      })
     }
   )
+
+  test('Multiple instances of the same subgraph keep distinct promoted widget values after load and reload', async ({
+    comfyPage
+  }) => {
+    const hostNodeIds = ['11', '12', '13']
+    const expectedValues = ['Alpha\n', 'Beta\n', 'Gamma\n']
+
+    await comfyPage.workflow.loadWorkflow(MULTI_INSTANCE_WORKFLOW)
+
+    const initialValues = await getPromotedHostWidgetValues(
+      comfyPage,
+      hostNodeIds
+    )
+    expect(initialValues.map(({ values }) => values[0])).toEqual(expectedValues)
+
+    await comfyPage.subgraph.serializeAndReload()
+
+    const reloadedValues = await getPromotedHostWidgetValues(
+      comfyPage,
+      hostNodeIds
+    )
+    expect(reloadedValues.map(({ values }) => values[0])).toEqual(
+      expectedValues
+    )
+  })
 })
