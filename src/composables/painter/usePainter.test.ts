@@ -424,6 +424,27 @@ describe('usePainter', () => {
 
       expect(mockSetPointerCapture).not.toHaveBeenCalled()
     })
+
+    it('tolerates setPointerCapture throwing for synthetic events', () => {
+      const { painter } = mountPainter()
+
+      const event = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+      Object.defineProperty(event, 'target', {
+        value: {
+          setPointerCapture: vi.fn(() => {
+            throw new DOMException('NotFoundError')
+          }),
+          getBoundingClientRect: vi.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 100,
+            height: 100
+          }))
+        }
+      })
+
+      expect(() => painter.handlePointerDown(event)).not.toThrow()
+    })
   })
 
   describe('handlePointerUp', () => {
@@ -441,6 +462,22 @@ describe('usePainter', () => {
       painter.handlePointerUp(event)
 
       expect(mockReleasePointerCapture).not.toHaveBeenCalled()
+    })
+
+    it('tolerates releasePointerCapture throwing for synthetic events', () => {
+      const { painter } = mountPainter()
+
+      const event = {
+        button: 0,
+        pointerId: 1,
+        target: {
+          releasePointerCapture: vi.fn(() => {
+            throw new DOMException('NotFoundError')
+          })
+        }
+      } as unknown as PointerEvent
+
+      expect(() => painter.handlePointerUp(event)).not.toThrow()
     })
   })
 })
