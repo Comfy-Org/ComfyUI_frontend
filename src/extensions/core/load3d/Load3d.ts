@@ -24,6 +24,7 @@ import type {
   MaterialMode,
   UpDirection
 } from './interfaces'
+import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
@@ -354,22 +355,10 @@ class Load3d {
     }
 
     if (this.shouldMaintainAspectRatio()) {
-      const containerAspectRatio = containerWidth / containerHeight
-
-      let renderWidth: number
-      let renderHeight: number
-      let offsetX: number = 0
-      let offsetY: number = 0
-
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
-        offsetX = (containerWidth - renderWidth) / 2
-      } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
-        offsetY = (containerHeight - renderHeight) / 2
-      }
+      const { offsetX, offsetY, width, height } = computeLetterboxedViewport(
+        { width: containerWidth, height: containerHeight },
+        this.targetAspectRatio
+      )
 
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
       this.renderer.setScissor(0, 0, containerWidth, containerHeight)
@@ -377,11 +366,10 @@ class Load3d {
       this.renderer.setClearColor(0x0a0a0a)
       this.renderer.clear()
 
-      this.renderer.setViewport(offsetX, offsetY, renderWidth, renderHeight)
-      this.renderer.setScissor(offsetX, offsetY, renderWidth, renderHeight)
+      this.renderer.setViewport(offsetX, offsetY, width, height)
+      this.renderer.setScissor(offsetX, offsetY, width, height)
 
-      const renderAspectRatio = renderWidth / renderHeight
-      this.cameraManager.updateAspectRatio(renderAspectRatio)
+      this.cameraManager.updateAspectRatio(width / height)
     } else {
       // No aspect ratio constraint: fill the entire container
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
@@ -459,14 +447,14 @@ class Load3d {
   }
 
   isActive(): boolean {
-    return (
-      this.STATUS_MOUSE_ON_NODE ||
-      this.STATUS_MOUSE_ON_SCENE ||
-      this.STATUS_MOUSE_ON_VIEWER ||
-      this.isRecording() ||
-      !this.INITIAL_RENDER_DONE ||
-      this.animationManager.isAnimationPlaying
-    )
+    return isLoad3dActive({
+      mouseOnNode: this.STATUS_MOUSE_ON_NODE,
+      mouseOnScene: this.STATUS_MOUSE_ON_SCENE,
+      mouseOnViewer: this.STATUS_MOUSE_ON_VIEWER,
+      recording: this.isRecording(),
+      initialRenderDone: this.INITIAL_RENDER_DONE,
+      animationPlaying: this.animationManager.isAnimationPlaying
+    })
   }
 
   async exportModel(format: string): Promise<void> {
@@ -527,24 +515,16 @@ class Load3d {
       const containerHeight = this.renderer.domElement.clientHeight
 
       if (this.shouldMaintainAspectRatio()) {
-        const containerAspectRatio = containerWidth / containerHeight
-
-        let renderWidth: number
-        let renderHeight: number
-
-        if (containerAspectRatio > this.targetAspectRatio) {
-          renderHeight = containerHeight
-          renderWidth = renderHeight * this.targetAspectRatio
-        } else {
-          renderWidth = containerWidth
-          renderHeight = renderWidth / this.targetAspectRatio
-        }
+        const { width, height } = computeLetterboxedViewport(
+          { width: containerWidth, height: containerHeight },
+          this.targetAspectRatio
+        )
 
         this.sceneManager.updateBackgroundSize(
           this.sceneManager.backgroundTexture,
           this.sceneManager.backgroundMesh,
-          renderWidth,
-          renderHeight
+          width,
+          height
         )
       } else {
         // No aspect ratio constraints: fill container
@@ -742,21 +722,14 @@ class Load3d {
     }
 
     if (this.shouldMaintainAspectRatio()) {
-      const containerAspectRatio = containerWidth / containerHeight
-      let renderWidth: number
-      let renderHeight: number
-
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
-      } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
-      }
+      const { width, height } = computeLetterboxedViewport(
+        { width: containerWidth, height: containerHeight },
+        this.targetAspectRatio
+      )
 
       this.renderer.setSize(containerWidth, containerHeight)
-      this.cameraManager.handleResize(renderWidth, renderHeight)
-      this.sceneManager.handleResize(renderWidth, renderHeight)
+      this.cameraManager.handleResize(width, height)
+      this.sceneManager.handleResize(width, height)
     } else {
       // No aspect ratio constraint: use container dimensions directly
       this.renderer.setSize(containerWidth, containerHeight)
