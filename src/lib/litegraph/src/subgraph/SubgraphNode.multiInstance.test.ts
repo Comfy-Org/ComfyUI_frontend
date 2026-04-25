@@ -84,8 +84,8 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     const widgets1 = instance1.widgets!
     const widgets2 = instance2.widgets!
 
-    expect(widgets1.length).toBeGreaterThan(0)
-    expect(widgets2.length).toBeGreaterThan(0)
+    expect(widgets1).toHaveLength(1)
+    expect(widgets2).toHaveLength(1)
     expect(widgets1[0].value).toBe(10)
     expect(widgets2[0].value).toBe(20)
     expect(widgets1[0].serializeValue!(instance1, 0)).toBe(10)
@@ -322,7 +322,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(instance.serialize().widgets_values).toBeUndefined()
   })
 
-  it('safeDeepClone falls back to raw reference when structuredClone throws', () => {
+  it('serialize succeeds when widget value is uncloneable', () => {
     // Locks in the configure/serialize crash-resilience contract: a
     // pathological inlined `{value}` blob (e.g. a value carrying a function
     // or symbol — structuredClone throws DataCloneError on those) must not

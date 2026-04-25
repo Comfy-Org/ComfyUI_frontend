@@ -34,6 +34,7 @@ import {
   createPromotedWidgetView,
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
+import { cloneWidgetValue } from '@/core/graph/subgraph/cloneWidgetValue'
 import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -73,21 +74,6 @@ type LinkedPromotionEntry = PromotedWidgetSource & {
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
-
-/**
- * Deep-clone a widget value for inlined serialization. Unlike raw
- * `JSON.parse(JSON.stringify(...))`, `structuredClone` handles `Date`,
- * `Map`/`Set`, and `BigInt` natively; the fallback preserves the original
- * reference for pathological values (circular refs, throwing `toJSON`)
- * rather than aborting the entire serialize/configure pass.
- */
-function safeDeepClone<T>(value: T): T {
-  try {
-    return structuredClone(value)
-  } catch {
-    return value
-  }
-}
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -664,22 +650,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Serialize promotion entries with their per-instance value inlined on
-   * each entry as an optional trailing `{value}` state object.
+   * Serialize promotion entries with optional inline `{value}` state.
    *
    * Binding identity and value into the same record lets every downstream
    * transformation — promotion-store reordering, null-entry filtering,
    * clipboard-paste / subgraph-dedup / nested-pack ID remaps — carry them
    * together without any extra bookkeeping.
    *
-   * Non-serializable source widgets (where `sourceSerialize` is false)
-   * are written in the legacy 2- or 3-tuple form so `widgets_values` on
-   * the SubgraphNode remains a dead field, matching the pre-#10849
-   * invariant.
+   * `resolveValue` returns `undefined` when the entry should be written as
+   * an identity-only 2- or 3-tuple (no view, non-serializable source, or
+   * resolved value is undefined). Returning `undefined` keeps
+   * `widgets_values` on the SubgraphNode a dead field, matching the
+   * pre-#10849 invariant.
    */
-  private _serializeEntriesWithState(
+  private _serializeEntries(
     entries: PromotedWidgetSource[],
-    viewByInstanceKey: Map<string, PromotedWidgetView>
+    resolveValue: (
+      key: string,
+      entry: PromotedWidgetSource
+    ) => unknown | undefined
   ): (
     | [string, string]
     | [string, string, string]
@@ -687,67 +676,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   )[] {
     return entries.map((e) => {
       const key = makePromotionEntryKey(e)
-      const view = viewByInstanceKey.get(key)
       const disambiguator = e.disambiguatingSourceNodeId ?? null
       const identityOnly: [string, string] | [string, string, string] =
         disambiguator
           ? [e.sourceNodeId, e.sourceWidgetName, disambiguator]
           : [e.sourceNodeId, e.sourceWidgetName]
 
-      if (!view?.sourceSerialize) return identityOnly
-
-      const raw = view.serializeValue
-        ? view.serializeValue(this, -1)
-        : view.value
-      /**
-       * Downgrade to identity-only when the resolved value is `undefined`.
-       * Without this, the `?? null` coercion below would persist `null` and
-       * the reload path would seed `_instanceWidgetValues[key] = null` —
-       * a ghost entry that `captureSiblingFallbackValues` treats as "already
-       * written" and that `getTrackedValue` would return as a real value.
-       */
-      if (raw === undefined) return identityOnly
-
-      const cloned =
-        raw !== null && typeof raw === 'object' ? safeDeepClone(raw) : raw
+      const resolved = resolveValue(key, e)
+      if (resolved === undefined) return identityOnly
 
       return [
         e.sourceNodeId,
         e.sourceWidgetName,
         disambiguator,
-        { value: cloned }
-      ]
-    })
-  }
-
-  /**
-   * Write-back variant used during `configure`. Identity comes from the
-   * resolved entries (normalization output), and values come from the
-   * `pendingValues` map built in the same pass. Called before
-   * `_resolveInputWidget` runs, so `_instanceWidgetValues` is still empty
-   * and the view-backed serializer cannot be used here.
-   */
-  private _serializeEntriesWithPendingValues(
-    entries: PromotedWidgetSource[],
-    pendingValues: Map<string, unknown>
-  ): (
-    | [string, string]
-    | [string, string, string]
-    | [string, string, string | null, { value: unknown }]
-  )[] {
-    return entries.map((e) => {
-      const disambiguator = e.disambiguatingSourceNodeId ?? null
-      const key = makePromotionEntryKey(e)
-      if (!pendingValues.has(key)) {
-        return disambiguator
-          ? [e.sourceNodeId, e.sourceWidgetName, disambiguator]
-          : [e.sourceNodeId, e.sourceWidgetName]
-      }
-      return [
-        e.sourceNodeId,
-        e.sourceWidgetName,
-        disambiguator,
-        { value: pendingValues.get(key) }
+        { value: resolved }
       ]
     })
   }
@@ -1230,7 +1172,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         if (resolved) {
           const state = getProxyWidgetInlineState(rawEntry)
-          if (state) {
+          if (state && state.value !== undefined) {
             pendingValues.set(makePromotionEntryKey(resolved), state.value)
           }
         }
@@ -1250,9 +1192,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
      * stripping saved per-instance values from `properties.proxyWidgets`
      * until the next `serialize()` rebuilds them.
      */
-    const serialized = this._serializeEntriesWithPendingValues(
-      entries,
-      pendingValues
+    const serialized = this._serializeEntries(entries, (key) =>
+      pendingValues.get(key)
     )
     if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
       this.properties.proxyWidgets = serialized
@@ -1762,10 +1703,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     for (const view of this._getPromotedViews()) {
       viewByInstanceKey.set(view.instanceKey, view)
     }
-    this.properties.proxyWidgets = this._serializeEntriesWithState(
-      entries,
-      viewByInstanceKey
-    )
+    this.properties.proxyWidgets = this._serializeEntries(entries, (key) => {
+      const view = viewByInstanceKey.get(key)
+      if (!view?.sourceSerialize) return undefined
+      const raw = view.serializeValue
+        ? view.serializeValue(this, -1)
+        : view.value
+      if (raw === undefined) return undefined
+      return cloneWidgetValue(raw)
+    })
 
     const serialized = super.serialize()
     /**

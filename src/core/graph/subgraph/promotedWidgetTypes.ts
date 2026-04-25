@@ -30,8 +30,7 @@ export interface PromotedWidgetView extends IBaseWidget {
   readonly instanceKey: string
   /**
    * Restore a per-instance value during configure without triggering the
-   * setter's sibling-fallback capture or widget-store writes. Seeds
-   * `_instanceWidgetValues` and `promotedSourceWriteMeta` directly.
+   * setter's sibling-fallback capture.
    */
   restorePerInstanceValue(value: IBaseWidget['value']): void
 }

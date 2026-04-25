@@ -5,10 +5,8 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
 const proxyWidgetStateSchema = z.object({ value: z.unknown() })
 /**
- * Order is load-bearing: `z.union` tries variants in declared order and the
- * first match wins. The 4-tuple (with optional trailing state) must come
- * before the 3- and 2-tuple variants, otherwise a 4-tuple would match the
- * 3-tuple form (dropping the trailing state object).
+ * Ordering is defensive: longest tuple first, though `z.tuple` also enforces
+ * exact arity so a 4-tuple cannot match the 3-tuple form by length alone.
  */
 const proxyWidgetTupleSchema = z.union([
   z.tuple([

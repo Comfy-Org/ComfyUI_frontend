@@ -24,6 +24,7 @@ import {
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 
+import { cloneWidgetValue } from './cloneWidgetValue'
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
@@ -61,24 +62,6 @@ const promotedSourceWriteMetaByGraph = new WeakMap<
 interface PromotedSourceWriteMeta {
   value: IBaseWidget['value']
   writerInstanceId: string
-}
-
-function cloneWidgetValue<TValue extends IBaseWidget['value']>(
-  value: TValue
-): TValue {
-  if (value == null || typeof value !== 'object') return value
-  try {
-    return structuredClone(value) as TValue
-  } catch {
-    /**
-     * Malformed blobs (circular references, values with throwing `toJSON`,
-     * `BigInt` inside `JSON`-backed paths, etc.) used to crash the whole
-     * configure when clone was unconditionally `JSON.parse(JSON.stringify)`.
-     * Fall back to the raw reference so a bad saved `{value}` cannot abort
-     * subgraph load.
-     */
-    return value
-  }
 }
 
 function getPromotedSourceWriteMeta(
@@ -222,44 +205,24 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   /**
    * Restore a per-instance value during `configure` without triggering the
-   * value setter's sibling-fallback capture.
-   *
-   * Seeds `_instanceWidgetValues`, `promotedSourceWriteMeta`, and the
-   * shared widget-store state in lock-step so `getTrackedValue`'s
-   * direct-edit self-heal does not discard the restored value.
+   * setter's sibling-fallback capture. Skipped for `undefined` so a ghost
+   * entry doesn't poison the per-instance map.
    */
   restorePerInstanceValue(value: IBaseWidget['value']): void {
-    /**
-     * Guard against ghost entries: a save path that stores `undefined` (or
-     * round-trips it through `raw ?? null`) must not poison
-     * `_instanceWidgetValues` with an entry that `captureSiblingFallbackValues`
-     * would then treat as "already written" and skip.
-     */
     if (value === undefined) return
 
     this._seedInstanceState(value)
-    /**
-     * Align shared state with the restored value so `getTrackedValue`'s
-     * direct-edit self-heal does not mistake the pre-existing inner value
-     * for a post-load edit and discard the per-instance state.
-     *
-     * Unlike the value setter, this skips `captureSiblingFallbackValues`
-     * — each loaded instance brings its own saved value, so no fallback
-     * needs to be captured.
-     */
     this._writeValueToSharedState(value)
   }
 
   private _seedInstanceState(value: IBaseWidget['value']): void {
-    this.subgraphNode._instanceWidgetValues.set(
-      this.instanceKey,
-      cloneWidgetValue(value)
-    )
+    const cloned = cloneWidgetValue(value)
+    this.subgraphNode._instanceWidgetValues.set(this.instanceKey, cloned)
     setPromotedSourceWriteMeta(
       this.subgraphNode.rootGraph,
       this._sharedSourceKey,
       {
-        value: cloneWidgetValue(value),
+        value: cloned,
         writerInstanceId: String(this.subgraphNode.id)
       }
     )
