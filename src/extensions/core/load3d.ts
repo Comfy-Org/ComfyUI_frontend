@@ -19,8 +19,9 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
+type Matrix = number[][]
 type Load3dPreviewOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, string?]
+  result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
@@ -516,6 +517,8 @@ useExtensionService().registerExtension({
 
           const cameraState = result?.[1]
           const bgImagePath = result?.[2]
+          const extrinsics = result?.[3]
+          const intrinsics = result?.[4]
 
           modelWidget.value = filePath?.replaceAll('\\', '/')
 
@@ -532,6 +535,10 @@ useExtensionService().registerExtension({
 
           if (bgImagePath) {
             load3d.setBackgroundImage(bgImagePath)
+          }
+
+          if (extrinsics && intrinsics) {
+            load3d.setCameraFromMatrices(extrinsics, intrinsics)
           }
         }
       }

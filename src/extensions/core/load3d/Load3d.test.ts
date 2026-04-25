@@ -496,6 +496,62 @@ describe('Load3d', () => {
     })
   })
 
+  describe('setCameraFromMatrices', () => {
+    it('derives the camera pose from extrinsics+intrinsics and applies it via setCameraState + setFOV', () => {
+      const setCameraState = vi.fn()
+      const setFOVImpl = vi.fn()
+      const getCameraState = vi.fn(() => ({
+        position: new THREE.Vector3(0, 0, 0),
+        target: new THREE.Vector3(0, 0, 0),
+        zoom: 1.5,
+        cameraType: 'orthographic' as const
+      }))
+
+      Object.assign(ctx.load3d, {
+        setCameraState,
+        setFOV: setFOVImpl,
+        cameraManager: { ...ctx.cameraManager, getCameraState }
+      })
+
+      // Identity rotation, zero translation, fy=cy=1 → fovY = 2*atan(1) = 90°.
+      // OpenCV → three.js flips Y/Z, so position (0,0,0) stays at origin
+      // and forward (0,0,1) → target (0,0,-1).
+      const extrinsics = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+      ]
+      const intrinsics = [
+        [1, 0, 0],
+        [0, 1, 1],
+        [0, 0, 1]
+      ]
+
+      ctx.load3d.setCameraFromMatrices(extrinsics, intrinsics)
+
+      expect(setCameraState).toHaveBeenCalledOnce()
+      const stateArg = setCameraState.mock.calls[0][0] as {
+        position: THREE.Vector3
+        target: THREE.Vector3
+        zoom: number
+        cameraType: string
+      }
+      expect(stateArg.position.x).toBeCloseTo(0)
+      expect(stateArg.position.y).toBeCloseTo(0)
+      expect(stateArg.position.z).toBeCloseTo(0)
+      expect(stateArg.target.x).toBeCloseTo(0)
+      expect(stateArg.target.y).toBeCloseTo(0)
+      expect(stateArg.target.z).toBeCloseTo(-1)
+      // Zoom and cameraType must be preserved from the current state.
+      expect(stateArg.zoom).toBe(1.5)
+      expect(stateArg.cameraType).toBe('orthographic')
+
+      expect(setFOVImpl).toHaveBeenCalledOnce()
+      expect(setFOVImpl.mock.calls[0][0]).toBeCloseTo(90)
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }
