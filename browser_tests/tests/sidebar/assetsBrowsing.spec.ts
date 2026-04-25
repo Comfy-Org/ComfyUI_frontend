@@ -56,12 +56,12 @@ const IMPORTED_FILES = ['reference_photo.png', 'background.jpg', 'notes.txt']
 
 test.describe('Assets sidebar browsing', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedGeneratedHistory(GENERATED_JOBS)
-    await assetScenario.seedImportedFiles(IMPORTED_FILES)
+    await assetScenario.mockGeneratedHistory(GENERATED_JOBS)
+    await assetScenario.mockImportedFiles(IMPORTED_FILES)
     await comfyPage.setup()
   })
 
-  test('shows seeded generated and imported assets', async ({ comfyPage }) => {
+  test('shows mocked generated and imported assets', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
     await tab.waitForAssets()
@@ -72,7 +72,7 @@ test.describe('Assets sidebar browsing', () => {
     await expect(tab.getAssetCardByName('reference_photo.png')).toBeVisible()
   })
 
-  test('switches between grid and list views with seeded results', async ({
+  test('switches between grid and list views with mocked results', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -142,7 +142,7 @@ test.describe('Assets sidebar browsing', () => {
 
 test.describe('Assets sidebar empty states', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
-    await assetScenario.seedEmptyState()
+    await assetScenario.mockEmptyState()
     await comfyPage.setup()
   })
 

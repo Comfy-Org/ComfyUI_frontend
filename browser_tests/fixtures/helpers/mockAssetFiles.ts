@@ -10,13 +10,13 @@ import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
 
 const helperDir = path.dirname(fileURLToPath(import.meta.url))
 
-export type SeededAssetFile = {
+export type MockAssetFile = {
   filePath?: string
   contentType?: string
   textContent?: string
 }
 
-export type SeededFileLocation = {
+export type MockFileLocation = {
   filename: string
   type: string
   subfolder: string
@@ -26,11 +26,11 @@ function getFixturePath(relativePath: string): string {
   return path.resolve(helperDir, '../../assets', relativePath)
 }
 
-export function buildSeededFileKey({
+export function buildFileRequestKey({
   filename,
   type,
   subfolder
-}: SeededFileLocation): string {
+}: MockFileLocation): string {
   return new URLSearchParams({
     filename,
     type,
@@ -38,7 +38,7 @@ export function buildSeededFileKey({
   }).toString()
 }
 
-export function defaultFileFor(filename: string): SeededAssetFile {
+export function defaultFileFor(filename: string): MockAssetFile {
   const normalized = filename.toLowerCase()
 
   if (normalized.endsWith('.png')) {
@@ -89,7 +89,7 @@ export function defaultFileFor(filename: string): SeededAssetFile {
   }
 }
 
-function outputLocation(output: GeneratedOutputFixture): SeededFileLocation {
+function outputLocation(output: GeneratedOutputFixture): MockFileLocation {
   return {
     filename: output.filename,
     type: output.type ?? 'output',
@@ -97,9 +97,7 @@ function outputLocation(output: GeneratedOutputFixture): SeededFileLocation {
   }
 }
 
-function importedAssetLocation(
-  asset: ImportedAssetFixture
-): SeededFileLocation {
+function importedAssetLocation(asset: ImportedAssetFixture): MockFileLocation {
   return {
     filename: asset.name,
     type: 'input',
@@ -107,20 +105,20 @@ function importedAssetLocation(
   }
 }
 
-export function buildSeededFiles({
+export function buildMockAssetFiles({
   generated,
   imported
 }: {
   generated: readonly GeneratedJobFixture[]
   imported: readonly ImportedAssetFixture[]
-}): Map<string, SeededAssetFile> {
-  const seededFiles = new Map<string, SeededAssetFile>()
+}): Map<string, MockAssetFile> {
+  const mockFiles = new Map<string, MockAssetFile>()
 
   for (const job of generated) {
     for (const output of job.outputs) {
       const fallback = defaultFileFor(output.filename)
 
-      seededFiles.set(buildSeededFileKey(outputLocation(output)), {
+      mockFiles.set(buildFileRequestKey(outputLocation(output)), {
         filePath: output.filePath ?? fallback.filePath,
         contentType: output.contentType ?? fallback.contentType,
         textContent: fallback.textContent
@@ -131,12 +129,12 @@ export function buildSeededFiles({
   for (const asset of imported) {
     const fallback = defaultFileFor(asset.name)
 
-    seededFiles.set(buildSeededFileKey(importedAssetLocation(asset)), {
+    mockFiles.set(buildFileRequestKey(importedAssetLocation(asset)), {
       filePath: asset.filePath ?? fallback.filePath,
       contentType: asset.contentType ?? fallback.contentType,
       textContent: fallback.textContent
     })
   }
 
-  return seededFiles
+  return mockFiles
 }

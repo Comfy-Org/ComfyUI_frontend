@@ -9,14 +9,14 @@ import type {
   GeneratedOutputFixture,
   ImportedAssetFixture
 } from '@e2e/fixtures/helpers/assetScenarioTypes'
-import { InMemoryJobsBackend } from '@e2e/fixtures/helpers/InMemoryJobsBackend'
+import { JobsApiMock } from '@e2e/fixtures/helpers/JobsApiMock'
 import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
 import {
-  buildSeededFileKey,
-  buildSeededFiles,
+  buildFileRequestKey,
+  buildMockAssetFiles,
   defaultFileFor
-} from '@e2e/fixtures/helpers/seededAssetFiles'
-import type { SeededAssetFile } from '@e2e/fixtures/helpers/seededAssetFiles'
+} from '@e2e/fixtures/helpers/mockAssetFiles'
+import type { MockAssetFile } from '@e2e/fixtures/helpers/mockAssetFiles'
 
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const viewRoutePattern = /\/api\/view(?:\?.*)?$/
@@ -98,7 +98,7 @@ function generatedJobFromJobEntry(job: JobEntry): GeneratedJobFixture {
   }
 }
 
-function buildSeededJob(job: GeneratedJobFixture) {
+function buildMockJobRecord(job: GeneratedJobFixture) {
   const outputs = job.outputs.map(normalizeOutputFixture)
   const preview = outputs[0]
   const createTime =
@@ -143,37 +143,37 @@ export class AssetScenarioHelper {
   private viewRouteHandler: ((route: Route) => Promise<void>) | null = null
   private generatedJobs: GeneratedJobFixture[] = []
   private importedFiles: ImportedAssetFixture[] = []
-  private seededFiles = new Map<string, SeededAssetFile>()
+  private filesByRequestKey = new Map<string, MockAssetFile>()
 
   constructor(
     private readonly page: Page,
-    private readonly jobsBackend = new InMemoryJobsBackend(page)
+    private readonly jobsApi = new JobsApiMock(page)
   ) {}
 
-  async seedGeneratedHistory(jobs: readonly JobEntry[]): Promise<void> {
-    await this.seed({
+  async mockGeneratedHistory(jobs: readonly JobEntry[]): Promise<void> {
+    await this.mockScenario({
       generated: jobs.map(generatedJobFromJobEntry),
       imported: this.importedFiles
     })
   }
 
-  async seedImportedFiles(files: readonly string[]): Promise<void> {
-    await this.seed({
+  async mockImportedFiles(files: readonly string[]): Promise<void> {
+    await this.mockScenario({
       generated: this.generatedJobs,
       imported: files.map((name) => ({ name }))
     })
   }
 
-  async seedEmptyState(): Promise<void> {
-    await this.seed({ generated: [], imported: [] })
+  async mockEmptyState(): Promise<void> {
+    await this.mockScenario({ generated: [], imported: [] })
   }
 
   async clear(): Promise<void> {
     this.generatedJobs = []
     this.importedFiles = []
-    this.seededFiles.clear()
+    this.filesByRequestKey.clear()
 
-    await this.jobsBackend.clear()
+    await this.jobsApi.clear()
 
     if (this.inputFilesRouteHandler) {
       await this.page.unroute(
@@ -189,7 +189,7 @@ export class AssetScenarioHelper {
     }
   }
 
-  private async seed({
+  private async mockScenario({
     generated,
     imported
   }: {
@@ -198,12 +198,12 @@ export class AssetScenarioHelper {
   }): Promise<void> {
     this.generatedJobs = [...generated]
     this.importedFiles = [...imported]
-    this.seededFiles = buildSeededFiles({
+    this.filesByRequestKey = buildMockAssetFiles({
       generated: this.generatedJobs,
       imported: this.importedFiles
     })
 
-    await this.jobsBackend.seed(this.generatedJobs.map(buildSeededJob))
+    await this.jobsApi.mockJobs(this.generatedJobs.map(buildMockJobRecord))
     await this.ensureInputFilesRoute()
     await this.ensureViewRoute()
   }
@@ -244,20 +244,20 @@ export class AssetScenarioHelper {
         return
       }
 
-      const seededFile =
-        this.seededFiles.get(
-          buildSeededFileKey({
+      const mockFile =
+        this.filesByRequestKey.get(
+          buildFileRequestKey({
             filename,
             type,
             subfolder
           })
         ) ?? defaultFileFor(filename)
 
-      if (seededFile.filePath) {
-        const body = await readFile(seededFile.filePath)
+      if (mockFile.filePath) {
+        const body = await readFile(mockFile.filePath)
         await route.fulfill({
           status: 200,
-          contentType: seededFile.contentType ?? getMimeType(filename),
+          contentType: mockFile.contentType ?? getMimeType(filename),
           body
         })
         return
@@ -265,8 +265,8 @@ export class AssetScenarioHelper {
 
       await route.fulfill({
         status: 200,
-        contentType: seededFile.contentType ?? getMimeType(filename),
-        body: seededFile.textContent ?? ''
+        contentType: mockFile.contentType ?? getMimeType(filename),
+        body: mockFile.textContent ?? ''
       })
     }
 
