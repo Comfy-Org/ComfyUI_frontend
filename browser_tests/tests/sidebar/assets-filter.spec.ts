@@ -219,10 +219,10 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
 
     await tab.toggleMediaTypeFilter('image')
 
-    // TODO: follow-up — the 3D preview card does not remount after a filter
-    // toggle restores it (see DOM snapshot from CI; only image/video/audio
-    // reappear). Image, video, and audio cover the restoration path; the
-    // missing 3D remount is tracked separately.
+    // TODO(#11635): the 3D preview card does not remount after a filter
+    // toggle restores it (only image/video/audio reappear). Image, video,
+    // and audio cover the restoration path; once #11635 is fixed, add the
+    // 3D card back to this assertion list.
     await expect(tab.getAssetCardByName(imageCardName)).toBeVisible({
       timeout: 10_000
     })
