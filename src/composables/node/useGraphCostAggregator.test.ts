@@ -149,10 +149,11 @@ describe('useGraphCostAggregator', () => {
     // Regression guard for the quantize-after-sum contract. Each node
     // priced at $0.04 quantizes to 0 credits individually (below the
     // one-decimal-credit display precision), so a sum-quantized-per-node
-    // aggregator would total zero. The real total is 50 × $0.04 = $2.00 =
-    // 20 credits at CREDITS_PER_USD=10. If someone "fixes" the aggregator
-    // to match per-row displays by quantizing-before-summing, this test
-    // catches it.
+    // aggregator would total zero. The aggregator stores raw USD, so the
+    // real total is 50 × $0.04 = $2.00 (rendered by the display layer as
+    // 422 credits at CREDITS_PER_USD=211). If someone "fixes" the
+    // aggregator to match per-row displays by quantizing-before-summing,
+    // this test catches it.
     const nodes = Array.from({ length: 50 }, (_, i) =>
       createApiNode(`SubDisplay${i}`, priceBadge('{"type":"usd","usd":0.04}'))
     )

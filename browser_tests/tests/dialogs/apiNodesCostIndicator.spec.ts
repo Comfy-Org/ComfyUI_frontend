@@ -25,7 +25,7 @@ test.describe('API Nodes cost indicator', { tag: ['@ui', '@slow'] }, () => {
     await loadTemplateIntoGraph(comfyPage.page, TEMPLATE_WITH_API_NODES)
     const indicator = comfyPage.page.getByTestId('api-nodes-cost-indicator')
     await expect(indicator).toBeVisible()
-    await expect(indicator).toContainText(/credits|\d/)
+    await expect(indicator).toContainText(/[\d.]+\s*credits/i)
   })
 
   test('disappears after swapping to a no-api-node workflow', async ({
@@ -84,5 +84,10 @@ test.describe('API Nodes cost indicator', { tag: ['@ui', '@slow'] }, () => {
     expect(lastRowBox!.y + lastRowBox!.height).toBeLessThanOrEqual(
       popBox!.y + popBox!.height + 1
     )
+
+    // Escape closes the popover. Guards against a Reka version bump
+    // breaking dismiss-on-Escape and silently leaving focus trapped.
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(popover).toBeHidden()
   })
 })
