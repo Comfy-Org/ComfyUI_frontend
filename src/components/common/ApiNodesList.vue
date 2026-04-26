@@ -84,4 +84,10 @@ const hasAnyCost = computed(() => nodes.some((item) => item.cost !== null))
 // Stable auto-generated id so two ApiNodesList instances on the page
 // (possible during app transitions) do not collide on the shared title id.
 const titleId = useId()
+
+// Expose so a parent landmark (e.g. the popover's role="dialog") can name
+// itself via `aria-labelledby="titleId"`. Without this hand-off the
+// dialog has no accessible name and screen-reader landmark navigation
+// announces it as anonymous.
+defineExpose({ titleId })
 </script>

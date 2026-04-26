@@ -23,11 +23,12 @@
     </PopoverTrigger>
     <PopoverPortal>
       <!--
-        No aria-label on PopoverContent — Reka gives it role="dialog"
-        and the inner ApiNodesList already supplies the accessible name
-        via aria-labelledby. Adding an aria-label here would shadow that
-        name; the trigger button has its own aria-label for context
-        before the popover opens.
+        Reka renders PopoverContent as role="dialog". The list's title
+        id is exposed via defineExpose so we can name the dialog with
+        aria-labelledby — without this hand-off the dialog has no
+        accessible name and screen-reader landmark navigation announces
+        it as anonymous. The trigger button still carries its own
+        aria-label for the pre-open state.
       -->
       <!--
         max-height bounded by the lesser of a 36rem cap and Reka's
@@ -41,10 +42,16 @@
         side="top"
         :side-offset="8"
         :collision-padding="16"
+        :aria-labelledby="listRef?.titleId"
         class="z-1400 flex max-h-[min(36rem,var(--reka-popover-content-available-height))] w-80 flex-col rounded-lg border border-border-subtle bg-base-background p-3 shadow-interface"
         data-testid="api-nodes-cost-popover"
       >
-        <ApiNodesList :nodes="rows" :total="popoverTotal" :heading-level="2" />
+        <ApiNodesList
+          ref="listRef"
+          :nodes="rows"
+          :total="popoverTotal"
+          :heading-level="2"
+        />
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>
@@ -57,7 +64,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ApiNodesList from '@/components/common/ApiNodesList.vue'
@@ -84,6 +91,10 @@ const { graph } = defineProps<{
 
 const aggregate = useGraphCostAggregator(graph)
 const rows = useApiNodeRows(graph)
+
+// Ref handle on the inner ApiNodesList so the popover dialog can read
+// the list's title element id and bind its own aria-labelledby.
+const listRef = useTemplateRef<{ titleId: string }>('listRef')
 
 // Chip label drops the unit — visual weight comes from the coin icon —
 // while the popover total follows the same "<value> credits" shape the
