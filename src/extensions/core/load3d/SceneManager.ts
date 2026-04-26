@@ -9,10 +9,10 @@ import {
 } from './interfaces'
 
 export class SceneManager implements SceneManagerInterface {
-  scene: THREE.Scene
+  scene!: THREE.Scene
   gridHelper: THREE.GridHelper
 
-  backgroundScene: THREE.Scene
+  backgroundScene!: THREE.Scene
   backgroundCamera: THREE.OrthographicCamera
   backgroundMesh: THREE.Mesh | null = null
   backgroundTexture: THREE.Texture | null = null
@@ -38,6 +38,8 @@ export class SceneManager implements SceneManagerInterface {
     this.eventManager = eventManager
     this.scene = new THREE.Scene()
 
+    this.scene.name = 'MainScene'
+
     this.getActiveCamera = getActiveCamera
 
     this.gridHelper = new THREE.GridHelper(20, 20)
@@ -45,6 +47,7 @@ export class SceneManager implements SceneManagerInterface {
     this.scene.add(this.gridHelper)
 
     this.backgroundScene = new THREE.Scene()
+    this.backgroundScene.name = 'BackgroundScene'
     this.backgroundCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1)
 
     this.initBackgroundScene()
@@ -92,6 +95,8 @@ export class SceneManager implements SceneManagerInterface {
     if (this.scene.background) {
       this.scene.background = null
     }
+
+    this.backgroundScene.clear()
 
     this.scene.clear()
   }

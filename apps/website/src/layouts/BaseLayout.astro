@@ -5,6 +5,7 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import SiteNav from '../components/common/SiteNav.vue'
+import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
 interface Props {
   title: string
@@ -16,7 +17,7 @@ interface Props {
 const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
-  ogImage = '/og-default.png',
+  ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
 } = Astro.props
 
@@ -25,6 +26,9 @@ const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
 const rawLocale = Astro.currentLocale ?? 'en'
 const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
@@ -53,7 +57,7 @@ const websiteJsonLd = {
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html lang={locale} class="overflow-x-clip">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -106,7 +110,7 @@ const websiteJsonLd = {
 
     <ClientRouter />
   </head>
-  <body class="bg-primary-comfy-ink text-white font-formula antialiased">
+  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
       <noscript>
         <iframe
@@ -118,8 +122,8 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <SiteNav locale={locale} client:load />
-    <main>
+    <SiteNav locale={locale} github-stars={githubStars} client:load />
+    <main class="mt-20 lg:mt-32">
       <slot />
     </main>
     <SiteFooter locale={locale} client:load />
@@ -127,8 +131,18 @@ const websiteJsonLd = {
     <Analytics />
 
     <script>
-      import { initSmoothScroll } from '../scripts/smoothScroll'
+      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
+      import { ScrollTrigger } from '../scripts/gsapSetup'
+
       initSmoothScroll()
+
+      document.addEventListener('astro:page-load', () => {
+        ScrollTrigger.refresh()
+      })
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelScroll()
+      })
     </script>
   </body>
 </html>

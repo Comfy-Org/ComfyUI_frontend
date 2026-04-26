@@ -57,7 +57,7 @@ import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const selectedCategory = defineModel<string>('selectedCategory', {
   required: true

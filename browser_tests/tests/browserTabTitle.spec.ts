@@ -30,7 +30,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         window.app!.graph!.setDirtyCanvas(true, true)
         ;(
           window.app!.extensionManager as WorkspaceStore
-        ).workflow.activeWorkflow?.changeTracker?.checkState()
+        ).workflow.activeWorkflow?.changeTracker?.captureCanvasState()
       })
       await expect
         .poll(() => comfyPage.page.title())

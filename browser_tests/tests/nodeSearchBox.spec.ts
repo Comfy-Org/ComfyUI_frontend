@@ -303,8 +303,8 @@ test.describe('Release context menu', { tag: '@node' }, () => {
         'CLIP | CLIP'
       )
       await comfyPage.page.mouse.move(10, 10)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'link-release-context-menu.png'
       )
     }

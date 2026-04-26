@@ -728,6 +728,109 @@ describe('realtime verification staleness guards', () => {
 
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
   })
+
+  it('skips adding verified model when rootGraph switched before verification resolved', async () => {
+    // Workflow A has a pending candidate on node id=1. A is replaced
+    // by workflow B (fresh LGraph, potentially has a node with the
+    // same id). Late verification from A must not leak into B.
+    const graphA = new LGraph()
+    const nodeA = new LGraphNode('CheckpointLoaderSimple')
+    graphA.add(nodeA)
+    const rootSpy = vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graphA)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: String(nodeA.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: true,
+        name: 'stale_from_A.safetensors',
+        isMissing: undefined
+      }
+    ])
+    let resolveVerify: (() => void) | undefined
+    const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async (candidates) => {
+        await verifyPromise
+        for (const c of candidates) c.isMissing = true
+      })
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graphA)
+
+    nodeA.mode = LGraphEventMode.ALWAYS
+    graphA.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: nodeA.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    // Workflow swap: app.rootGraph now points at graphB.
+    const graphB = new LGraph()
+    const nodeB = new LGraphNode('CheckpointLoaderSimple')
+    graphB.add(nodeB)
+    rootSpy.mockReturnValue(graphB)
+
+    resolveVerify!()
+    await new Promise((r) => setTimeout(r, 0))
+
+    // A's verification finished but rootGraph is now B — the late
+    // result must not be added to the store.
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+})
+
+describe('scan skips interior of bypassed subgraph containers', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('does not surface interior missing model when entering a bypassed subgraph', async () => {
+    // Repro: root has a bypassed subgraph container, interior node is
+    // itself active. useGraphNodeManager replays `onNodeAdded` for each
+    // interior node on subgraph entry, which previously reached
+    // scanSingleNodeErrors without an ancestor check and resurfaced the
+    // error that the initial pipeline post-filter had correctly dropped.
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    subgraphNode.mode = LGraphEventMode.BYPASS
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    // Any scanner output would surface the error if the ancestor guard
+    // didn't short-circuit first — return a concrete missing candidate.
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: `${subgraphNode.id}:${interiorNode.id}`,
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'fake.safetensors',
+        isMissing: true
+      }
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(subgraph)
+
+    // Simulate useGraphNodeManager replaying onNodeAdded for existing
+    // interior nodes after Vue node manager init on subgraph entry.
+    subgraph.onNodeAdded?.(interiorNode)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
 })
 
 describe('clearWidgetRelatedErrors parameter routing', () => {

@@ -24,8 +24,8 @@ test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
         .filter({ hasText: 'Load Checkpoint' })
         .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'vue-node-bypassed-state.png'
       )
 

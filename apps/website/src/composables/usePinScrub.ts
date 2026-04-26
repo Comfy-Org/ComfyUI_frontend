@@ -1,6 +1,8 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
+import type { ScrollTrigger } from '../scripts/gsapSetup'
 import { gsap } from '../scripts/gsapSetup'
+import { scrollTo } from '../scripts/smoothScroll'
 import { prefersReducedMotion } from './useReducedMotion'
 
 interface PinScrubRefs {
@@ -11,9 +13,12 @@ interface PinScrubRefs {
 
 interface PinScrubOptions {
   itemCount: number
-  /** Viewport-height percentage per item (default: 100) */
+  /** Viewport-height percentage per item (default: 20) */
   vhPerItem?: number
 }
+
+/** Viewport-height percentage each category occupies in the scroll distance. */
+export const VH_PER_ITEM = 20
 
 function interpolateY(
   index: number,
@@ -37,9 +42,24 @@ function interpolateY(
 
 export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   const activeIndex = ref(0)
+  const isEnabled = ref(false)
+  const isPinned = ref(false)
   let ctx: gsap.Context | undefined
+  let scrollTriggerInstance: ScrollTrigger | undefined
 
-  const vhPerItem = options.vhPerItem ?? 100
+  const vhPerItem = options.vhPerItem ?? VH_PER_ITEM
+
+  function scrollToIndex(index: number) {
+    if (!scrollTriggerInstance) {
+      activeIndex.value = index
+      return
+    }
+    const progress = index / (options.itemCount - 1)
+    const scrollPos =
+      scrollTriggerInstance.start +
+      progress * (scrollTriggerInstance.end - scrollTriggerInstance.start)
+    scrollTo(scrollPos, { duration: 0.6 })
+  }
 
   onMounted(() => {
     if (
@@ -59,8 +79,17 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
 
     function cacheLayout() {
       const contentRect = content.getBoundingClientRect()
+      const sectionStyle = getComputedStyle(section)
       contentH = content.scrollHeight
-      vpH = window.innerHeight
+      vpH = window.innerHeight - parseFloat(sectionStyle.paddingTop)
+
+      // Ensure the section is tall enough for its content so nothing clips
+      const naturalH = section.scrollHeight
+      const viewportH = window.innerHeight + 60
+      if (naturalH > viewportH) {
+        section.style.height = `${naturalH}px`
+      }
+
       buttonCenters = Array.from(nav.querySelectorAll(':scope > *')).map(
         (btn) => {
           const btnRect = btn.getBoundingClientRect()
@@ -70,40 +99,50 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
     }
 
     cacheLayout()
+    isEnabled.value = true
+    const setContentY = gsap.quickSetter(content, 'y', 'px')
 
-    const proxy = { index: 0 }
     ctx = gsap.context(() => {
-      gsap.to(proxy, {
-        index: options.itemCount - 1,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: `+=${options.itemCount * vhPerItem}%`,
-          pin: true,
-          scrub: true,
-          refreshPriority: 1,
-          onRefresh: cacheLayout
-        },
-        onUpdate() {
-          activeIndex.value = Math.round(proxy.index)
+      const tween = gsap.to(
+        {},
+        {
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: `+=${options.itemCount * vhPerItem}%`,
+            pin: true,
+            scrub: true,
+            onToggle(self) {
+              isPinned.value = self.isActive
+            },
+            onRefresh: cacheLayout,
+            onUpdate(self) {
+              const index = self.progress * (options.itemCount - 1)
+              const nextActive = Math.round(index)
 
-          if (contentH <= vpH) {
-            gsap.set(content, { y: 0 })
-            return
+              if (nextActive !== activeIndex.value) {
+                activeIndex.value = nextActive
+              }
+
+              if (contentH <= vpH) {
+                setContentY(0)
+                return
+              }
+
+              setContentY(interpolateY(index, buttonCenters, contentH, vpH))
+            }
           }
-
-          gsap.set(content, {
-            y: interpolateY(proxy.index, buttonCenters, contentH, vpH)
-          })
         }
-      })
+      )
+      scrollTriggerInstance = tween.scrollTrigger as ScrollTrigger
     })
   })
 
   onUnmounted(() => {
+    isEnabled.value = false
     ctx?.revert()
   })
 
-  return { activeIndex }
+  return { activeIndex, isEnabled, isPinned, scrollToIndex }
 }

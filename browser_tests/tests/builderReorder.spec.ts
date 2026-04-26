@@ -157,7 +157,10 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
 
   test('Reordering inputs in one app does not corrupt another app', async ({
     comfyPage
-  }) => {
+  }, testInfo) => {
+    // This test creates 2 apps, switches tabs 3 times, and enters builder 3
+    // times — the default 15s timeout is insufficient in CI.
+    testInfo.setTimeout(45_000)
     const { appMode } = comfyPage
     const app2Widgets = ['seed', 'steps']
     const app1Reordered = ['steps', 'cfg', 'seed']

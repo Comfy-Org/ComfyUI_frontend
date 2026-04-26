@@ -5,6 +5,14 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "e2e/**/*", "astro.config.ts"],
-  "exclude": ["src/**/*.stories.ts"]
+  "include": [
+    "src/**/*",
+    "e2e/**/*",
+    "scripts/**/*",
+    "astro.config.ts",
+    "playwright.config.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["src/**/*.stories.ts"],
+  "references": [{ "path": "./tsconfig.stories.json" }]
 }

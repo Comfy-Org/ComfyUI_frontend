@@ -110,8 +110,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(comfyPage.appMode.steps.toolbar).toBeVisible()
 
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Escape')
 
     await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })

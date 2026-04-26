@@ -143,7 +143,7 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   disconnectOnReset = false
 
   // Notify changeTracker - new step should be added
-  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
+  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
   window.requestAnimationFrame(closeDialog)
 }
 
