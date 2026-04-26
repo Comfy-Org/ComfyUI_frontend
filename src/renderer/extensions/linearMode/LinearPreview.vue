@@ -39,9 +39,9 @@ const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 const executionStore = useExecutionStore()
 
-// Mirrors ProgressCell.vue's blended progress: completed-node count +
-// the executing node's internal step progress, so the bar moves
-// during long single-node phases (KSampler etc.) instead of freezing.
+// Blended progress: completed-node count + the executing node's
+// internal step progress, so the bar moves during long single-node
+// phases (KSampler etc.) instead of freezing between node events.
 const progressPercent = computed(() => {
   const total = executionStore.totalNodesToExecute
   if (total <= 0) return 0
@@ -434,10 +434,9 @@ async function rerun(e: Event) {
         />
       </Transition>
       <!-- Run-status overlay (centered): progress bar + stop button.
-           Replaces the AppChrome ProgressCell + InterruptCell which
-           used to flash on/off in the top-right cluster every run.
-           Now the active-state UI lives on the image itself, where the
-           user is already looking. -->
+           Active-state UI lives on the image itself, where the user
+           is already looking, instead of in chrome cells that flash
+           on/off in the corner of the canvas. -->
       <template #body-overlay>
         <div
           v-if="isWorkflowActive"

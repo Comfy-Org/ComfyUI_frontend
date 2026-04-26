@@ -5,9 +5,9 @@
  * Dispatches the same commands LinearControls does: Comfy.QueuePromptFront
  * with shift held (priority queue), Comfy.QueuePrompt otherwise.
  *
- * Styled as the "Go" half of the go/stop pair with InterruptCell:
- * saturated green fill + darker border for depth. Paired with the
- * tomato Stop button this gives the top-right cluster a bauhaus-
+ * Styled as the "Go" half of the go/stop pair (the Stop button now
+ * lives inside OutputWindow's body-overlay): saturated green fill +
+ * darker border for depth. Together they give the run UX a bauhaus-
  * primary semantic language (green = go, red = stop) that reads
  * instantly without the user parsing the text.
  */
