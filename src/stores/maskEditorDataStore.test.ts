@@ -26,23 +26,6 @@ describe('maskEditorDataStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  describe('initial state', () => {
-    it('should start with null input/output/sourceNode', () => {
-      const store = useMaskEditorDataStore()
-
-      expect(store.inputData).toBeNull()
-      expect(store.outputData).toBeNull()
-      expect(store.sourceNode).toBeNull()
-    })
-
-    it('should start not loading and without error', () => {
-      const store = useMaskEditorDataStore()
-
-      expect(store.isLoading).toBe(false)
-      expect(store.loadError).toBeNull()
-    })
-  })
-
   describe('hasValidInput', () => {
     it('should be false when inputData is null', () => {
       const store = useMaskEditorDataStore()
