@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "앱",
+    "blueprint": "블루프린트",
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteBlueprint": "블루프린트 삭제",
     "deleteWorkflow": "워크플로 삭제",
@@ -917,6 +918,10 @@
     "showMissingNodes": "누락된 노드 표시",
     "showSwapNodes": "교체 가능한 노드 표시",
     "swapNodes": "일부 노드는 대체 가능한 노드로 교체할 수 있습니다"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "피드백 남기기",
+    "ctaText": "새로운 오류 패널은 어떠신가요?"
   },
   "essentials": {
     "batchImage": "이미지 일괄 처리",
