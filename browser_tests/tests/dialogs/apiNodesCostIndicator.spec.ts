@@ -25,7 +25,16 @@ test.describe('API Nodes cost indicator', { tag: ['@ui', '@slow'] }, () => {
     await loadTemplateIntoGraph(comfyPage.page, TEMPLATE_WITH_API_NODES)
     const indicator = comfyPage.page.getByTestId('api-nodes-cost-indicator')
     await expect(indicator).toBeVisible()
-    await expect(indicator).toContainText(/[\d.]+\s*credits/i)
+    // Visible chip drops the unit — compact range with optional `~` (range)
+    // and `+` (unpriced nodes present) sigils. The "credits" word lives in
+    // the accessible name, asserted separately so a copy change to either
+    // surface fails this test loudly instead of silently.
+    await expect(indicator).toHaveText(/^[~]?[\d.]+(?:-[\d.]+)?[+]?$/)
+    await expect(
+      comfyPage.page.getByRole('button', {
+        name: /Estimated API run cost: .* credits/i
+      })
+    ).toBeVisible()
   })
 
   test('disappears after swapping to a no-api-node workflow', async ({
