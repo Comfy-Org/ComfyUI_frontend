@@ -1,18 +1,17 @@
 <template>
-  <div class="flex flex-col gap-3">
-    <label
-      :for="controlId"
-      class="block text-lg font-medium text-base-foreground"
-    >
+  <fieldset
+    v-if="field.type !== 'text'"
+    :aria-invalid="Boolean(errorMessage)"
+    class="flex flex-col gap-3 border-0 p-0"
+  >
+    <legend class="block text-lg font-medium text-base-foreground">
       {{ resolvedLabel }}
-    </label>
+    </legend>
     <ToggleGroup
       v-if="field.type === 'single'"
-      :id="controlId"
       :model-value="(modelValue as string) ?? ''"
       type="single"
       class="flex flex-col gap-2"
-      :aria-invalid="Boolean(errorMessage)"
       @update:model-value="onSingleChange"
     >
       <ToggleGroupItem
@@ -25,12 +24,10 @@
       </ToggleGroupItem>
     </ToggleGroup>
     <ToggleGroup
-      v-else-if="field.type === 'multi'"
-      :id="controlId"
+      v-else
       :model-value="(modelValue as string[]) ?? []"
       type="multiple"
       class="flex flex-col gap-2"
-      :aria-invalid="Boolean(errorMessage)"
       @update:model-value="onMultiChange"
     >
       <ToggleGroupItem
@@ -43,13 +40,6 @@
       </ToggleGroupItem>
     </ToggleGroup>
     <Input
-      v-else
-      :id="controlId"
-      :model-value="(modelValue as string) ?? ''"
-      :placeholder="field.placeholder"
-      @update:model-value="onTextChange"
-    />
-    <Input
       v-if="field.allowOther && field.otherFieldId && modelValue === 'other'"
       :model-value="(otherValue as string) ?? ''"
       :placeholder="
@@ -60,6 +50,22 @@
       "
       class="ml-1"
       @update:model-value="onOtherChange"
+    />
+    <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
+  </fieldset>
+  <div v-else class="flex flex-col gap-3">
+    <label
+      :for="controlId"
+      class="block text-lg font-medium text-base-foreground"
+    >
+      {{ resolvedLabel }}
+    </label>
+    <Input
+      :id="controlId"
+      :model-value="(modelValue as string) ?? ''"
+      :placeholder="field.placeholder"
+      :aria-invalid="Boolean(errorMessage)"
+      @update:model-value="onTextChange"
     />
     <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
   </div>

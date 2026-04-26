@@ -82,7 +82,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -109,28 +109,38 @@ const emit = defineEmits<{
 
 const { t, te } = useI18n()
 
-const preparedSurvey = prepareSurvey(survey)
+const preparedSurvey = computed(() => prepareSurvey(survey))
 
 const introText = computed(() => {
-  const key = preparedSurvey.introKey
+  const key = preparedSurvey.value.introKey
   if (!key) return ''
   return te(key) ? t(key) : ''
 })
 
-const initialValues = buildInitialValues(preparedSurvey)
-const liveValues = ref<SurveyValues>({ ...initialValues })
+const liveValues = ref<SurveyValues>(buildInitialValues(preparedSurvey.value))
 
 const validationSchema = computed(() =>
-  toTypedSchema(buildZodSchema(preparedSurvey, liveValues.value))
+  toTypedSchema(buildZodSchema(preparedSurvey.value, liveValues.value))
 )
 
-const { values, errors, setFieldValue, validate } = useForm<SurveyValues>({
-  initialValues,
-  validationSchema
-})
+const { values, errors, setFieldValue, validate, resetForm } =
+  useForm<SurveyValues>({
+    initialValues: liveValues.value,
+    validationSchema
+  })
+
+watch(
+  () => survey,
+  () => {
+    const fresh = buildInitialValues(preparedSurvey.value)
+    liveValues.value = { ...fresh }
+    resetForm({ values: fresh })
+    stepIndex.value = 0
+  }
+)
 
 const visible = computed(() =>
-  visibleFields(preparedSurvey, values as SurveyValues)
+  visibleFields(preparedSurvey.value, values as SurveyValues)
 )
 const stepIndex = ref(0)
 
@@ -179,6 +189,9 @@ const goPrevious = () => {
 const onSubmit = async () => {
   const result = await validate()
   if (!result.valid) return
-  emit('submit', buildSubmissionPayload(preparedSurvey, values as SurveyValues))
+  emit(
+    'submit',
+    buildSubmissionPayload(preparedSurvey.value, values as SurveyValues)
+  )
 }
 </script>

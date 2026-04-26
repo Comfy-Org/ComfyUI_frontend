@@ -9,19 +9,26 @@ import type {
 
 export type SurveyValues = Record<string, string | string[] | undefined>
 
+const hasNonEmptyValue = (current: string | string[] | undefined): boolean => {
+  if (current === undefined || current === '') return false
+  if (Array.isArray(current)) return current.length > 0
+  return true
+}
+
 const conditionMatches = (
   condition: OnboardingSurveyFieldCondition | undefined,
   values: SurveyValues
 ): boolean => {
   if (!condition) return true
   const current = values[condition.field]
-  if (current === undefined || current === '') return false
+  if (!hasNonEmptyValue(current)) return false
   const expected = condition.equals
-  if (expected === undefined) return Boolean(current)
-  if (Array.isArray(expected)) {
-    return typeof current === 'string' && expected.includes(current)
+  if (expected === undefined) return true
+  const expectedSet = Array.isArray(expected) ? expected : [expected]
+  if (Array.isArray(current)) {
+    return current.some((v) => expectedSet.includes(v))
   }
-  return current === expected
+  return typeof current === 'string' && expectedSet.includes(current)
 }
 
 export const visibleFields = (

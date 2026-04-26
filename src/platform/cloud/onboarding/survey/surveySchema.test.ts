@@ -83,6 +83,24 @@ describe('visibleFields', () => {
     expect(visibleFields(survey, { usage: 'education' })).toHaveLength(1)
     expect(visibleFields(survey, { usage: 'personal' })).toHaveLength(0)
   })
+
+  it('intersects multi-select source values with expected set', () => {
+    const survey: OnboardingSurvey = {
+      version: 1,
+      fields: [
+        {
+          id: 'follow_up',
+          type: 'single',
+          showWhen: { field: 'making', equals: ['video', '3d'] }
+        }
+      ]
+    }
+    expect(visibleFields(survey, { making: [] })).toHaveLength(0)
+    expect(visibleFields(survey, { making: ['images'] })).toHaveLength(0)
+    expect(visibleFields(survey, { making: ['images', 'video'] })).toHaveLength(
+      1
+    )
+  })
 })
 
 describe('buildInitialValues', () => {
