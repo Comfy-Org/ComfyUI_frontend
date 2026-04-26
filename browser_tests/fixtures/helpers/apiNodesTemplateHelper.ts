@@ -26,13 +26,26 @@ export const loadTemplateIntoGraph = async (
       isSubgraphNode?: () => boolean
       subgraph?: { nodes: NodeLike[] } | null
     }
-    const countApiNodes = (graph: { nodes: NodeLike[] }): number =>
+    type GraphLike = { nodes: NodeLike[] }
+    // Path-local visited set so a cyclic test template can't stack-
+    // overflow the browser tab. Mirrors the production traversal in
+    // graphTraversalUtil — sibling SubgraphNodes pointing at the same
+    // graph each contribute their counts, but a cycle short-circuits.
+    const countApiNodes = (
+      graph: GraphLike,
+      visited: Set<GraphLike> = new Set()
+    ): number =>
       graph.nodes.reduce((sum, node) => {
         const isApi = node.constructor?.nodeData?.api_node === true
-        const subCount =
-          node.isSubgraphNode?.() && node.subgraph
-            ? countApiNodes(node.subgraph)
-            : 0
+        let subCount = 0
+        if (node.isSubgraphNode?.() && node.subgraph) {
+          const sub = node.subgraph
+          if (!visited.has(sub)) {
+            visited.add(sub)
+            subCount = countApiNodes(sub, visited)
+            visited.delete(sub)
+          }
+        }
         return sum + (isApi ? 1 : 0) + subCount
       }, 0)
     const rootGraph = window.app?.rootGraph
