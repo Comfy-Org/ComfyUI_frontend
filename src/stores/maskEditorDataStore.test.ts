@@ -3,8 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore';
-import type { EditorOutputData } from '@/stores/maskEditorDataStore';
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import type { EditorOutputData } from '@/stores/maskEditorDataStore'
 
 const createImage = (): HTMLImageElement => document.createElement('img')
 
