@@ -124,8 +124,14 @@ if [ "$STATUS" = "starting" ]; then
     
 elif [ "$STATUS" = "completed" ]; then
     # Deploy and post completion comment
-    # Use PR-scoped alias to avoid branch-name collisions
-    cloudflare_branch="pr-$PR_NUMBER"
+    # Convert branch name to Cloudflare-compatible format (lowercase, only alphanumeric and dashes)
+    # Falls back to pr-$PR_NUMBER if BRANCH_NAME is unset
+    if [ -n "$BRANCH_NAME" ]; then
+        cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
+            sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+    else
+        cloudflare_branch="pr-$PR_NUMBER"
+    fi
     
     echo "Looking for frontend build in: $(pwd)/dist"
     

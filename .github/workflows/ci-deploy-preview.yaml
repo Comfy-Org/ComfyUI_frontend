@@ -110,6 +110,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_CONCLUSION: ${{ needs.build.outputs.conclusion }}
           WORKFLOW_URL: ${{ needs.build.outputs.workflow-url }}
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           ./scripts/cicd/pr-preview-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
