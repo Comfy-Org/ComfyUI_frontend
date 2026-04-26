@@ -172,7 +172,6 @@ Composables for node-specific functionality:
 | `useNodePaste`              | Manages paste operations for nodes         |
 | `useNodePricing`            | Handles pricing display for nodes          |
 | `useNodeProgressText`       | Displays progress text in nodes            |
-| `useWatchWidget`            | Watches widget value changes               |
 
 ### Settings
 
