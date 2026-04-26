@@ -102,7 +102,7 @@ export class LoaderManager implements LoaderManagerInterface {
 
   private pickAdapter(extension: string): ModelAdapter | null {
     const match = this.adapters.find((adapter) =>
-      adapter.extensions.includes(extension as never)
+      adapter.extensions.includes(extension)
     )
     if (!match) return null
 
