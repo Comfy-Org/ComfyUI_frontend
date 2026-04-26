@@ -3,13 +3,64 @@
     <main
       class="relative my-8 flex w-full max-w-lg flex-col gap-6 rounded-lg bg-(--comfy-menu-bg) p-8 shadow-lg"
     >
-      <header class="flex flex-col gap-1">
+      <header class="flex flex-col gap-2">
         <h1 class="text-xl font-semibold text-neutral-100">
           {{ t('connectionPanel.title') }}
         </h1>
         <p class="text-sm text-neutral-400">
           {{ t('connectionPanel.subtitle') }}
         </p>
+        <aside
+          v-if="prNumber"
+          class="mt-1 flex flex-col gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200"
+        >
+          <p class="font-medium">
+            {{ t('connectionPanel.previewWarningTitle') }}
+          </p>
+          <p class="text-amber-200/85">
+            {{ t('connectionPanel.previewWarningBody') }}
+          </p>
+          <i18n-t
+            keypath="connectionPanel.previewProvenance"
+            tag="p"
+            class="text-amber-200/85"
+          >
+            <template #pr>
+              <a
+                :href="prUrl"
+                target="_blank"
+                rel="noopener"
+                class="underline hover:text-amber-100"
+                >#{{ prNumber }}</a
+              >
+            </template>
+            <template #commit>
+              <a
+                :href="commitUrl"
+                target="_blank"
+                rel="noopener"
+                class="underline hover:text-amber-100"
+                ><code>{{ commitShort }}</code></a
+              >
+            </template>
+            <template #author>
+              <a
+                v-if="prAuthor"
+                :href="authorUrl"
+                target="_blank"
+                rel="noopener"
+                class="underline hover:text-amber-100"
+                >@{{ prAuthor }}</a
+              >
+              <span v-else>{{
+                t('connectionPanel.previewUnknownAuthor')
+              }}</span>
+            </template>
+          </i18n-t>
+          <p class="font-medium text-amber-100">
+            {{ t('connectionPanel.previewTrustWarning') }}
+          </p>
+        </aside>
       </header>
 
       <!-- Backend URL input -->
@@ -444,8 +495,14 @@ const version = __COMFYUI_FRONTEND_VERSION__
 const commit = __COMFYUI_FRONTEND_COMMIT__
 const branch = __CI_BRANCH__
 const prNumber = __CI_PR_NUMBER__
+const prAuthor = __CI_PR_AUTHOR__
 const runId = __CI_RUN_ID__
 const jobId = __CI_JOB_ID__
+
+const commitShort = commit ? commit.slice(0, 8) : ''
+const prUrl = prNumber ? `${REPO}/pull/${prNumber}` : REPO
+const commitUrl = commit ? `${REPO}/commit/${commit}` : REPO
+const authorUrl = prAuthor ? `https://github.com/${prAuthor}` : ''
 
 const buildLabel = computed(() => {
   if (prNumber) return t('connectionPanel.buildPr', { prNumber })

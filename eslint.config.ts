@@ -30,6 +30,7 @@ const commonGlobals = {
   __IS_NIGHTLY__: 'readonly',
   __CI_BRANCH__: 'readonly',
   __CI_PR_NUMBER__: 'readonly',
+  __CI_PR_AUTHOR__: 'readonly',
   __CI_RUN_ID__: 'readonly',
   __CI_JOB_ID__: 'readonly'
 } as const

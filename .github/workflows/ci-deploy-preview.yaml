@@ -49,6 +49,7 @@ jobs:
           FRONTEND_COMMIT_HASH: ${{ github.sha }}
           CI_BRANCH: ${{ github.head_ref || github.ref_name }}
           CI_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          CI_PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
           CI_RUN_ID: ${{ github.run_id }}
           CI_JOB_ID: ${{ github.job }}
         run: pnpm build

@@ -3802,6 +3802,11 @@
   "connectionPanel": {
     "title": "ComfyUI Frontend Preview",
     "subtitle": "Connect to a running ComfyUI backend to use this preview.",
+    "previewWarningTitle": "⚠ This is a preview build of an in-flight pull request.",
+    "previewWarningBody": "The UI may change rapidly as the branch is pushed and is under heavy development. Use it for testing and review only — never rely on any *.comfy-ui.pages.dev URL for production work.",
+    "previewProvenance": "Built from {pr} ({commit}) by {author}.",
+    "previewUnknownAuthor": "an unknown author",
+    "previewTrustWarning": "Do not connect a ComfyUI instance you care about unless you trust the author of this PR — a malicious frontend can read and modify any workflow, model, or output on the connected backend.",
     "backendUrl": "Backend URL",
     "test": "Test",
     "http": "HTTP",

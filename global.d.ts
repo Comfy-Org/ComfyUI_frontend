@@ -4,6 +4,7 @@ declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
 declare const __CI_BRANCH__: string
 declare const __CI_PR_NUMBER__: string
+declare const __CI_PR_AUTHOR__: string
 declare const __CI_RUN_ID__: string
 declare const __CI_JOB_ID__: string
 declare const __ALGOLIA_APP_ID__: string
