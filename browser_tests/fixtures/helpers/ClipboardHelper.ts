@@ -3,8 +3,8 @@ import { basename } from 'path'
 
 import type { Locator, Page } from '@playwright/test'
 
-import type { KeyboardHelper } from './KeyboardHelper'
-import { getMimeType } from './mimeTypeUtil'
+import type { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
+import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
 
 export class ClipboardHelper {
   constructor(

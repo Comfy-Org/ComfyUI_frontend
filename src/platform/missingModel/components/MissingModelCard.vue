@@ -38,6 +38,7 @@
       <!-- Asset unsupported group notice -->
       <div
         v-if="isCloud && !group.isAssetSupported"
+        data-testid="missing-model-import-unsupported"
         class="flex items-start gap-1.5 px-0.5 py-1 pl-2"
       >
         <i

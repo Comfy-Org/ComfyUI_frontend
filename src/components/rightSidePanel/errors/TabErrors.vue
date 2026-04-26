@@ -15,6 +15,7 @@
     <div
       v-if="singleRuntimeErrorCard"
       data-testid="runtime-error-panel"
+      aria-live="polite"
       class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
     >
       <div
@@ -103,7 +104,7 @@
               <Button
                 v-else-if="
                   group.type === 'missing_model' &&
-                  downloadableModels.length > 0
+                  downloadableModels.length > 1
                 "
                 variant="secondary"
                 size="sm"
@@ -168,11 +169,21 @@
             v-else-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
             :show-node-id-badge="showNodeIdBadge"
-            @locate-model="handleLocateModel"
+            @locate-model="handleLocateAssetNode"
+          />
+
+          <!-- Missing Media -->
+          <MissingMediaCard
+            v-else-if="group.type === 'missing_media'"
+            :missing-media-groups="missingMediaGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>
       </TransitionGroup>
     </div>
+
+    <ErrorPanelSurveyCta v-if="ErrorPanelSurveyCta" />
 
     <!-- Fixed Footer: Help Links -->
     <div class="min-w-0 shrink-0 border-t border-interface-stroke p-4">
@@ -207,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
@@ -225,7 +236,8 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
-import { isCloud } from '@/platform/distribution/types'
+import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import {
   downloadModel,
   isModelDownloadable
@@ -241,6 +253,13 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+
+const ErrorPanelSurveyCta =
+  isNightly && !isCloud && !isDesktop
+    ? defineAsyncComponent(
+        () => import('@/platform/surveys/ErrorPanelSurveyCta.vue')
+      )
+    : undefined
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -261,7 +280,8 @@ const isSearching = computed(() => searchQuery.value.trim() !== '')
 const fullSizeGroupTypes = new Set([
   'missing_node',
   'swap_nodes',
-  'missing_model'
+  'missing_model',
+  'missing_media'
 ])
 function getGroupSize(group: ErrorGroup) {
   return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
@@ -282,7 +302,8 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
-  missingModelGroups,
+  filteredMissingModelGroups: missingModelGroups,
+  filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
@@ -393,7 +414,7 @@ function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
 }
 
-function handleLocateModel(nodeId: string) {
+function handleLocateAssetNode(nodeId: string) {
   focusNode(nodeId)
 }
 

@@ -472,6 +472,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
+    "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image for the video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image for the video."
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "Seedance asset_id to use as the first frame. Mutually exclusive with the first_frame image input."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "Seedance asset_id to use as the last frame. Mutually exclusive with the last_frame image input."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "display_name": "ByteDance Seedance 2.0 Reference to Video",
+    "description": "Generate, edit, or extend video using Seedance 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "display_name": "ByteDance Seedance 2.0 Text to Video",
+    "description": "Generate video using Seedance 2.0 models based on a text prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.0 for maximum quality; Seedance 2.0 Fast for speed optimization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "display_name": "ByteDance Create Image Asset",
+    "description": "Create a Seedance 2.0 personal image asset. Uploads the input image and registers it in the given asset group. If group_id is empty, runs a real-person H5 authentication flow to create a new group before adding the asset.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image to register as a personal asset."
+      },
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reuse an existing Seedance asset group ID to skip repeated human verification for the same person. Leave empty to run real-person authentication in the browser and create a new group."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "display_name": "ByteDance Create Video Asset",
+    "description": "Create a Seedance 2.0 personal video asset. Uploads the input video and registers it in the given asset group. If group_id is empty, runs a real-person H5 authentication flow to create a new group before adding the asset.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Video to register as a personal asset."
+      },
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reuse an existing Seedance asset group ID to skip repeated human verification for the same person. Leave empty to run real-person authentication in the browser and create a new group."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "display_name": "ByteDance First-Last-Frame to Video",
     "description": "Generate video using prompt and first and last frames.",
@@ -1358,6 +1548,36 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "display_name": "ColorTransfer",
+    "description": "Match the colors of one image to another using various algorithms.",
+    "inputs": {
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Image(s) to apply the color transform to."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: each frame matched to image_ref individually. uniform: pool stats across all source frames as baseline, match to image_ref. target_frame: use one chosen frame as the baseline for the transform to image_ref, applied uniformly to all frames (preserves relative differences)"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Reference image(s) to match colors to. If not provided, processing is skipped"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -3530,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "Frame Interpolate",
+    "inputs": {
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "images": {
+        "name": "images"
+      },
+      "multiplier": {
+        "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Load Frame Interpolation Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Select a frame interpolation model to load. Models must be placed in the 'frame_interpolation' folder."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreeU": {
     "display_name": "FreeU",
     "inputs": {
@@ -5006,6 +5259,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Image Histogram",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminance",
+        "tooltip": null
+      },
+      "2": {
+        "name": "red",
+        "tooltip": null
+      },
+      "3": {
+        "name": "green",
+        "tooltip": null
+      },
+      "4": {
+        "name": "blue",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Invert Image",
     "inputs": {
@@ -5423,6 +5706,22 @@
       },
       "alpha": {
         "name": "alpha"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Extract String from JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -11376,7 +11675,7 @@
     }
   },
   "OpenAIGPTImage1": {
-    "display_name": "OpenAI GPT Image 1.5",
+    "display_name": "OpenAI GPT Image 2",
     "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
@@ -11444,8 +11743,8 @@
     }
   },
   "OpenAIVideoSora2": {
-    "display_name": "OpenAI Sora - Video",
-    "description": "OpenAI video and audio generation.",
+    "display_name": "OpenAI Sora - Video (Deprecated)",
+    "description": "OpenAI video and audio generation.\n\nDEPRECATION NOTICE: OpenAI will stop serving the Sora v2 API in September 2026. This node will be removed from ComfyUI at that time.",
     "inputs": {
       "model": {
         "name": "model"
@@ -13588,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Detect",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "threshold": {
+        "name": "threshold"
+      },
+      "refine_iterations": {
+        "name": "refine_iterations",
+        "tooltip": "SAM decoder refinement passes (0=use raw detector masks)"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "Output per-object masks instead of union"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "Text conditioning from CLIPTextEncode"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Bounding boxes to segment within"
+      },
+      "positive_coords": {
+        "name": "positive_coords",
+        "tooltip": "Positive point prompts as JSON [{\"x\": int, \"y\": int}, ...] (pixel coords)"
+      },
+      "negative_coords": {
+        "name": "negative_coords",
+        "tooltip": "Negative point prompts as JSON [{\"x\": int, \"y\": int}, ...] (pixel coords)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 Track Preview",
+    "inputs": {
+      "track_data": {
+        "name": "track_data"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "images"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Track to Mask",
+    "inputs": {
+      "track_data": {
+        "name": "track_data"
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "Comma-separated object indices to include (e.g. '0,2,3'). Empty = all objects."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video Track",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Video frames as batched images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "detection_threshold": {
+        "name": "detection_threshold",
+        "tooltip": "Score threshold for text-prompted detection"
+      },
+      "max_objects": {
+        "name": "max_objects",
+        "tooltip": "Max tracked objects (0=unlimited). Initial masks count toward this limit."
+      },
+      "detect_interval": {
+        "name": "detect_interval",
+        "tooltip": "Run detection every N frames (1=every frame). Higher values save compute."
+      },
+      "initial_mask": {
+        "name": "initial_mask",
+        "tooltip": "Mask(s) for the first frame to track (one per object)"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "Text conditioning for detecting new objects during tracking"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
   "SamplerCustom": {
     "display_name": "SamplerCustom",
     "inputs": {
@@ -14648,6 +15068,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "display_name": "Sonilo Text to Music",
+    "description": "Generate music from a text prompt using Sonilo's AI model. Leave duration at 0 to let the model infer it from the prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the music to generate."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Target duration in seconds. Set to 0 to let the model infer the duration from the prompt. Maximum: 6 minutes."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility. Currently ignored by the Sonilo service but kept for graph consistency."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "display_name": "Sonilo Video to Music",
+    "description": "Generate music from video content using Sonilo's AI model. Analyzes the video and creates matching music.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Input video to generate music from. Maximum duration: 6 minutes."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional text prompt to guide music generation. Leave empty for best quality - the model will fully analyze the video content."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility. Currently ignored by the Sonilo service but kept for graph consistency."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "display_name": "Split Audio Channels",
     "description": "Separates the audio into left and right channels.",
@@ -15391,6 +15863,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Control strength at the start of sampling (high sigma)."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Control strength at the end of sampling (low sigma). Linearly interpolated from start."
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Pulls denoised output toward the input latent. Higher = stronger fidelity to input. 0 to disable."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Sigma threshold below which restore_cfg is disabled."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D_Conditioning",
     "inputs": {
@@ -15975,6 +16485,10 @@
         "name": "thinking",
         "tooltip": "Operate in thinking mode if the model supports it."
       },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use the built in system prompt/template if the model has one."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
       },
@@ -16025,6 +16539,10 @@
       "thinking": {
         "name": "thinking",
         "tooltip": "Operate in thinking mode if the model supports it."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use the built in system prompt/template if the model has one."
       },
       "sampling_mode_min_p": {
         "name": "min_p"
@@ -17174,13 +17692,17 @@
         "name": "aspect_ratio",
         "tooltip": "Aspect ratio of the output video"
       },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output video resolution. 4K is not available for veo-3.1-lite and veo-3.0 models."
+      },
       "negative_prompt": {
         "name": "negative_prompt",
         "tooltip": "Negative text prompt to guide what to avoid in the video"
       },
       "duration_seconds": {
         "name": "duration_seconds",
-        "tooltip": "Duration of the output video in seconds (Veo 3 only supports 8 seconds)"
+        "tooltip": "Duration of the output video in seconds"
       },
       "enhance_prompt": {
         "name": "enhance_prompt",
@@ -17968,6 +18490,241 @@
       },
       "start_image": {
         "name": "start_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "display_name": "Wan 2.7 Image to Video",
+    "description": "Generate a video from a first-frame image, with optional last-frame image and audio.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image. The output aspect ratio is derived from this image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The model generates a video transitioning from first to last frame."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio for driving video generation (e.g., lip sync, beat-matched motion). Duration: 2s-30s. If not provided, the model automatically generates matching background music or sound effects."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "display_name": "Wan 2.7 Reference to Video",
+    "description": "Generate a video featuring a person or object from reference materials. Supports single-character performances and multi-character interactions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "display_name": "Wan 2.7 Text to Video",
+    "description": "Generates a video based on a text prompt using the Wan 2.7 model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio for driving video generation (e.g., lip sync, beat-matched motion). Duration: 3s-30s. If not provided, the model automatically generates matching background music or sound effects."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "display_name": "Wan 2.7 Video Continuation",
+    "description": "Continue a video from where it left off, with optional last-frame control.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "Input video to continue from. Duration: 2s-10s. The output aspect ratio is derived from this video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The continuation will transition towards this frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "display_name": "Wan 2.7 Video Edit",
+    "description": "Edit a video using text instructions, reference images, or style transfer.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The video to edit."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': model decides whether to regenerate audio based on the prompt. 'origin': preserve the original audio from the input video."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {

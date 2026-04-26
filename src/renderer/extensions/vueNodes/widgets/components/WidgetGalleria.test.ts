@@ -1,8 +1,9 @@
-import { mount } from '@vue/test-utils'
-import PrimeVue from 'primevue/config'
-import Galleria from 'primevue/galleria'
+/* eslint-disable vue/no-unused-emit-declarations */
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import type { GalleriaProps } from 'primevue/galleria'
 import { describe, expect, it } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -19,6 +20,32 @@ const i18n = createI18n({
       'Gallery image': 'Gallery image'
     }
   }
+})
+
+const GalleriaStub = defineComponent({
+  name: 'Galleria',
+  props: {
+    value: { type: Array, default: () => [] },
+    showThumbnails: { type: Boolean, default: false },
+    showItemNavigators: { type: Boolean, default: false },
+    activeIndex: { type: Number, default: 0 },
+    circular: { type: Boolean, default: false },
+    autoPlay: { type: Boolean, default: false },
+    transitionInterval: { type: Number, default: 0 },
+    pt: { type: Object, default: () => ({}) }
+  },
+  emits: ['update:activeIndex'],
+  template: `<div data-testid="galleria"
+    class="max-w-full"
+    :data-value="JSON.stringify(value)"
+    :data-show-thumbnails="String(showThumbnails)"
+    :data-show-item-navigators="String(showItemNavigators)"
+    :data-active-index="String(activeIndex)"
+    :data-circular="String(circular)"
+    :data-auto-play="String(autoPlay)"
+    :data-transition-interval="String(transitionInterval)"
+    :data-pt="JSON.stringify(pt)"
+  ><button data-testid="galleria-set-index" @click="$emit('update:activeIndex', 2)">set</button></div>`
 })
 
 // Test data constants for better test isolation
@@ -45,6 +72,22 @@ const TEST_IMAGE_OBJECTS: readonly GalleryImage[] = Object.freeze([
   }
 ])
 
+function getGalleriaElement(): HTMLElement {
+  return screen.getByTestId('galleria')
+}
+
+function getGalleriaProp(name: string): string | null {
+  return getGalleriaElement().getAttribute(`data-${name}`)
+}
+
+function getGalleriaValue(): unknown[] {
+  return JSON.parse(getGalleriaProp('value') ?? '[]')
+}
+
+function getGalleriaPt(): Record<string, unknown> {
+  return JSON.parse(getGalleriaProp('pt') ?? '{}')
+}
+
 // Helper functions outside describe blocks for better clarity
 function createGalleriaWidget(
   value: GalleryValue = [],
@@ -58,14 +101,14 @@ function createGalleriaWidget(
   })
 }
 
-function mountComponent(
+function renderComponent(
   widget: SimplifiedWidget<GalleryValue>,
   modelValue: GalleryValue
 ) {
-  return mount(WidgetGalleria, {
+  return render(WidgetGalleria, {
     global: {
-      plugins: [PrimeVue, i18n],
-      components: { Galleria }
+      plugins: [i18n],
+      stubs: { Galleria: GalleriaStub }
     },
     props: {
       widget,
@@ -81,50 +124,44 @@ function createImageStrings(count: number): string[] {
   )
 }
 
-// Factory function that takes images, creates widget internally, returns wrapper
-function createGalleriaWrapper(
+// Factory function that takes images, creates widget internally, renders
+function renderGalleria(
   images: GalleryValue,
   options: Partial<GalleriaProps> = {}
 ) {
   const widget = createGalleriaWidget(images, options)
-  return mountComponent(widget, images)
+  return renderComponent(widget, images)
 }
 
 describe('WidgetGalleria Image Display', () => {
-  // Group tests using the readonly constants where appropriate
-
   describe('Component Rendering', () => {
     it('renders galleria component', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      renderGalleria([...TEST_IMAGES_SMALL])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.exists()).toBe(true)
+      expect(getGalleriaElement()).toBeTruthy()
     })
 
     it('displays empty gallery when no images provided', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(widget, [])
+      renderComponent(widget, [])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('value')).toEqual([])
+      expect(getGalleriaValue()).toEqual([])
     })
 
     it('handles null or undefined value gracefully', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(widget, [])
+      renderComponent(widget, [])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('value')).toEqual([])
+      expect(getGalleriaValue()).toEqual([])
     })
   })
 
   describe('String Array Input', () => {
     it('converts string array to image objects', () => {
       const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
-      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
+      renderComponent(widget, [...TEST_IMAGES_SMALL])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      const value = galleria.props('value')
+      const value = getGalleriaValue()
 
       expect(value).toHaveLength(3)
       expect(value[0]).toEqual({
@@ -136,10 +173,9 @@ describe('WidgetGalleria Image Display', () => {
 
     it('handles single string image', () => {
       const widget = createGalleriaWidget([...TEST_IMAGES_SINGLE])
-      const wrapper = mountComponent(widget, [...TEST_IMAGES_SINGLE])
+      renderComponent(widget, [...TEST_IMAGES_SINGLE])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      const value = galleria.props('value')
+      const value = getGalleriaValue()
 
       expect(value).toHaveLength(1)
       expect(value[0]).toEqual({
@@ -153,10 +189,9 @@ describe('WidgetGalleria Image Display', () => {
   describe('Object Array Input', () => {
     it('preserves image objects as-is', () => {
       const widget = createGalleriaWidget([...TEST_IMAGE_OBJECTS])
-      const wrapper = mountComponent(widget, [...TEST_IMAGE_OBJECTS])
+      renderComponent(widget, [...TEST_IMAGE_OBJECTS])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      const value = galleria.props('value')
+      const value = getGalleriaValue()
 
       expect(value).toEqual([...TEST_IMAGE_OBJECTS])
     })
@@ -168,10 +203,9 @@ describe('WidgetGalleria Image Display', () => {
         { thumbnailImageSrc: 'https://example.com/thumb3.jpg' }
       ]
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      const value = galleria.props('value')
+      const value = getGalleriaValue()
 
       expect(value).toEqual(images)
     })
@@ -179,69 +213,65 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('Thumbnail Display', () => {
     it('shows thumbnails when multiple images present', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      renderGalleria([...TEST_IMAGES_SMALL])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showThumbnails')).toBe(true)
+      expect(getGalleriaProp('show-thumbnails')).toBe('true')
     })
 
     it('hides thumbnails for single image', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+      renderGalleria([...TEST_IMAGES_SINGLE])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showThumbnails')).toBe(false)
+      expect(getGalleriaProp('show-thumbnails')).toBe('false')
     })
 
     it('respects widget option to hide thumbnails', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL], {
+      renderGalleria([...TEST_IMAGES_SMALL], {
         showThumbnails: false
       })
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showThumbnails')).toBe(false)
+      expect(getGalleriaProp('show-thumbnails')).toBe('false')
     })
 
     it('shows thumbnails when explicitly enabled for multiple images', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL], {
+      renderGalleria([...TEST_IMAGES_SMALL], {
         showThumbnails: true
       })
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showThumbnails')).toBe(true)
+      expect(getGalleriaProp('show-thumbnails')).toBe('true')
     })
   })
 
   describe('Navigation Buttons', () => {
     it('shows navigation buttons when multiple images present', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      renderGalleria([...TEST_IMAGES_SMALL])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showItemNavigators')).toBe(true)
+      expect(getGalleriaProp('show-item-navigators')).toBe('true')
     })
 
     it('hides navigation buttons for single image', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+      renderGalleria([...TEST_IMAGES_SINGLE])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showItemNavigators')).toBe(false)
+      expect(getGalleriaProp('show-item-navigators')).toBe('false')
     })
 
     it('respects widget option to hide navigation buttons', () => {
       const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images, { showItemNavigators: false })
-      const wrapper = mountComponent(widget, images)
+      const widget = createGalleriaWidget(images, {
+        showItemNavigators: false
+      })
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showItemNavigators')).toBe(false)
+      expect(getGalleriaProp('show-item-navigators')).toBe('false')
     })
 
     it('shows navigation buttons when explicitly enabled for multiple images', () => {
       const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images, { showItemNavigators: true })
-      const wrapper = mountComponent(widget, images)
+      const widget = createGalleriaWidget(images, {
+        showItemNavigators: true
+      })
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('showItemNavigators')).toBe(true)
+      expect(getGalleriaProp('show-item-navigators')).toBe('true')
     })
   })
 
@@ -253,22 +283,19 @@ describe('WidgetGalleria Image Display', () => {
         autoPlay: true,
         transitionInterval: 3000
       })
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('circular')).toBe(true)
-      expect(galleria.props('autoPlay')).toBe(true)
-      expect(galleria.props('transitionInterval')).toBe(3000)
+      expect(getGalleriaProp('circular')).toBe('true')
+      expect(getGalleriaProp('auto-play')).toBe('true')
+      expect(getGalleriaProp('transition-interval')).toBe('3000')
     })
 
     it('applies custom styling props', () => {
       const images = createImageStrings(2)
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      // Check that galleria has styling attributes rather than specific classes
-      expect(galleria.attributes('class')).toBeDefined()
+      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
     })
   })
 
@@ -276,23 +303,20 @@ describe('WidgetGalleria Image Display', () => {
     it('initializes with zero active index', () => {
       const images = createImageStrings(3)
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('activeIndex')).toBe(0)
+      expect(getGalleriaProp('active-index')).toBe('0')
     })
 
     it('can update active index', async () => {
       const images = createImageStrings(3)
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      await galleria.vm.$emit('update:activeIndex', 2)
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('galleria-set-index'))
 
-      // Check that the internal activeIndex ref was updated
-      const vm = wrapper.vm as typeof wrapper.vm & { activeIndex: number }
-      expect(vm.activeIndex).toBe(2)
+      await waitFor(() => expect(getGalleriaProp('active-index')).toBe('2'))
     })
   })
 
@@ -306,11 +330,9 @@ describe('WidgetGalleria Image Display', () => {
         { src: 'https://example.com/only-src.jpg' }
       ]
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      // The template logic should prioritize itemImageSrc > src > fallback to the item itself
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.exists()).toBe(true)
+      expect(getGalleriaElement()).toBeTruthy()
     })
 
     it('renders thumbnail template with correct image source priorities', () => {
@@ -322,23 +344,20 @@ describe('WidgetGalleria Image Display', () => {
         { src: 'https://example.com/only-src.jpg' }
       ]
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      // The template logic should prioritize thumbnailImageSrc > src > fallback to the item itself
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.exists()).toBe(true)
+      expect(getGalleriaElement()).toBeTruthy()
     })
   })
 
   describe('Edge Cases', () => {
     it('handles empty array gracefully', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(widget, [])
+      renderComponent(widget, [])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('value')).toEqual([])
-      expect(galleria.props('showThumbnails')).toBe(false)
-      expect(galleria.props('showItemNavigators')).toBe(false)
+      expect(getGalleriaValue()).toEqual([])
+      expect(getGalleriaProp('show-thumbnails')).toBe('false')
+      expect(getGalleriaProp('show-item-navigators')).toBe('false')
     })
 
     it('handles malformed image objects', () => {
@@ -349,23 +368,21 @@ describe('WidgetGalleria Image Display', () => {
         undefined // Undefined value
       ]
       const widget = createGalleriaWidget(malformedImages as string[])
-      const wrapper = mountComponent(widget, malformedImages as string[])
+      renderComponent(widget, malformedImages as string[])
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
       // Null/undefined should be filtered out, leaving only the objects
       const expectedValue = [{}, { randomProp: 'value' }]
-      expect(galleria.props('value')).toEqual(expectedValue)
+      expect(getGalleriaValue()).toEqual(expectedValue)
     })
 
     it('handles very large image arrays', () => {
       const largeImageArray = createImageStrings(100)
       const widget = createGalleriaWidget(largeImageArray)
-      const wrapper = mountComponent(widget, largeImageArray)
+      renderComponent(widget, largeImageArray)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('value')).toHaveLength(100)
-      expect(galleria.props('showThumbnails')).toBe(true)
-      expect(galleria.props('showItemNavigators')).toBe(true)
+      expect(getGalleriaValue()).toHaveLength(100)
+      expect(getGalleriaProp('show-thumbnails')).toBe('true')
+      expect(getGalleriaProp('show-item-navigators')).toBe('true')
     })
 
     it('handles mixed string and object arrays gracefully', () => {
@@ -378,16 +395,17 @@ describe('WidgetGalleria Image Display', () => {
       const widget = createGalleriaWidget(mixedArray as string[])
 
       // The component expects consistent typing, but let's test it handles mixed input
-      expect(() => mountComponent(widget, mixedArray as string[])).not.toThrow()
+      expect(() =>
+        renderComponent(widget, mixedArray as string[])
+      ).not.toThrow()
     })
 
     it('handles invalid URL strings', () => {
       const invalidUrls = ['not-a-url', '', ' ', 'http://', 'ftp://invalid']
       const widget = createGalleriaWidget(invalidUrls)
-      const wrapper = mountComponent(widget, invalidUrls)
+      renderComponent(widget, invalidUrls)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      expect(galleria.props('value')).toHaveLength(5)
+      expect(getGalleriaValue()).toHaveLength(5)
     })
   })
 
@@ -395,20 +413,17 @@ describe('WidgetGalleria Image Display', () => {
     it('applies max-width constraint', () => {
       const images = createImageStrings(2)
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      // Check that component has styling applied rather than specific classes
-      expect(galleria.attributes('class')).toBeDefined()
+      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
     })
 
     it('applies passthrough props for thumbnails', () => {
       const images = createImageStrings(3)
       const widget = createGalleriaWidget(images)
-      const wrapper = mountComponent(widget, images)
+      renderComponent(widget, images)
 
-      const galleria = wrapper.findComponent({ name: 'Galleria' })
-      const pt = galleria.props('pt')
+      const pt = getGalleriaPt()
 
       expect(pt).toBeDefined()
       expect(pt.thumbnails).toBeDefined()

@@ -1,21 +1,15 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 import {
   saveAndReopenInAppMode,
   setupSubgraphBuilder
-} from '../helpers/builderTestUtils'
+} from '@e2e/helpers/builderTestUtils'
 
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
       true
@@ -32,7 +26,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await appMode.steps.goToInputs()
 
     const menu = appMode.select.getInputItemMenu('seed')
-    await expect(menu).toBeVisible({ timeout: 5000 })
+    await expect(menu).toBeVisible()
     await appMode.select.renameInputViaMenu('seed', 'Builder Input Seed')
 
     // Verify in app mode after save/reload
@@ -40,7 +34,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const workflowName = `${new Date().getTime()} builder-input-menu`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(
       appMode.linearWidgets.getByText('Builder Input Seed')
     ).toBeVisible()
@@ -60,7 +54,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const workflowName = `${new Date().getTime()} builder-input-dblclick`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.linearWidgets.getByText('Dblclick Seed')).toBeVisible()
   })
 
@@ -71,7 +65,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await appMode.steps.goToPreview()
 
     const menu = appMode.select.getPreviewWidgetMenu('seed — New Subgraph')
-    await expect(menu).toBeVisible({ timeout: 5000 })
+    await expect(menu).toBeVisible()
     await appMode.select.renameWidget(menu, 'Preview Seed')
 
     // Verify in app mode after save/reload
@@ -79,7 +73,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const workflowName = `${new Date().getTime()} builder-preview`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.linearWidgets.getByText('Preview Seed')).toBeVisible()
   })
 
@@ -91,7 +85,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await appMode.footer.exitBuilder()
     await appMode.toggleAppMode()
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
 
     const menu = appMode.getAppModeWidgetMenu('seed')
     await appMode.select.renameWidget(menu, 'App Mode Seed')
@@ -103,7 +97,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const workflowName = `${new Date().getTime()} app-mode`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
   })
 })

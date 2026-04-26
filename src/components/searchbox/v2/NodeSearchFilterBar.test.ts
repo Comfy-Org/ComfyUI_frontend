@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -30,54 +31,59 @@ describe(NodeSearchFilterBar, () => {
     ])
   })
 
-  async function createWrapper(props = {}) {
-    const wrapper = mount(NodeSearchFilterBar, {
-      props,
+  async function createRender(props = {}) {
+    const user = userEvent.setup()
+    const onSelectChip = vi.fn()
+    const { container } = render(NodeSearchFilterBar, {
+      props: { onSelectChip, ...props },
       global: { plugins: [testI18n] }
     })
     await nextTick()
-    return wrapper
+    const view = within(container as HTMLElement)
+    return { user, onSelectChip, view }
   }
 
   it('should render all filter chips', async () => {
-    const wrapper = await createWrapper()
+    const { view } = await createRender()
 
-    const buttons = wrapper.findAll('button')
+    const buttons = view.getAllByRole('button')
     expect(buttons).toHaveLength(6)
-    expect(buttons[0].text()).toBe('Blueprints')
-    expect(buttons[1].text()).toBe('Partner Nodes')
-    expect(buttons[2].text()).toBe('Essentials')
-    expect(buttons[3].text()).toBe('Extensions')
-    expect(buttons[4].text()).toBe('Input')
-    expect(buttons[5].text()).toBe('Output')
+    expect(buttons[0]).toHaveTextContent('Blueprints')
+    expect(buttons[1]).toHaveTextContent('Partner Nodes')
+    expect(buttons[2]).toHaveTextContent('Essentials')
+    expect(buttons[3]).toHaveTextContent('Extensions')
+    expect(buttons[4]).toHaveTextContent('Input')
+    expect(buttons[5]).toHaveTextContent('Output')
   })
 
   it('should mark active chip as pressed when activeChipKey matches', async () => {
-    const wrapper = await createWrapper({ activeChipKey: 'input' })
+    const { view } = await createRender({ activeChipKey: 'input' })
 
-    const inputBtn = wrapper.findAll('button').find((b) => b.text() === 'Input')
-    expect(inputBtn?.attributes('aria-pressed')).toBe('true')
+    expect(view.getByRole('button', { name: 'Input' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   })
 
   it('should not mark chips as pressed when activeChipKey does not match', async () => {
-    const wrapper = await createWrapper({ activeChipKey: null })
+    const { view } = await createRender({ activeChipKey: null })
 
-    wrapper.findAll('button').forEach((btn) => {
-      expect(btn.attributes('aria-pressed')).toBe('false')
+    view.getAllByRole('button').forEach((btn) => {
+      expect(btn).toHaveAttribute('aria-pressed', 'false')
     })
   })
 
   it('should emit selectChip with chip data when clicked', async () => {
-    const wrapper = await createWrapper()
+    const { user, onSelectChip, view } = await createRender()
 
-    const inputBtn = wrapper.findAll('button').find((b) => b.text() === 'Input')
-    await inputBtn?.trigger('click')
+    await user.click(view.getByRole('button', { name: 'Input' }))
 
-    const emitted = wrapper.emitted('selectChip')!
-    expect(emitted[0][0]).toMatchObject({
-      key: 'input',
-      label: 'Input',
-      filter: expect.anything()
-    })
+    expect(onSelectChip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: 'input',
+        label: 'Input',
+        filter: expect.anything()
+      })
+    )
   })
 })

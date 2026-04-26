@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -76,12 +77,7 @@ interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
 
-export type SubscriptionTier =
-  | 'FREE'
-  | 'STANDARD'
-  | 'CREATOR'
-  | 'PRO'
-  | 'FOUNDERS_EDITION'
+export type { SubscriptionTier }
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 type PlanAvailabilityReason =
   | 'same_plan'

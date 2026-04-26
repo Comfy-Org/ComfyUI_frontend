@@ -1,6 +1,8 @@
 # E2E Testing Guidelines
 
 See `@docs/guidance/playwright.md` for Playwright best practices (auto-loaded for `*.spec.ts`).
+See `@browser_tests/FLAKE_PREVENTION_RULES.md` when triaging or editing
+flaky browser tests.
 
 ## Directory Structure
 
@@ -37,6 +39,39 @@ browser_tests/
 - **`fixtures/components/`** — Page object components. Encapsulate locators and user interactions for a specific UI area.
 - **`fixtures/helpers/`** — Focused helper classes. Domain-specific actions that coordinate multiple page objects (e.g. canvas operations, workflow loading).
 - **`fixtures/utils/`** — Pure utility functions. No `Page` dependency; stateless helpers that can be used anywhere.
+
+## Page Object Locator Style
+
+Define UI element locators as `public readonly` properties assigned in the constructor — not as getter methods. Getters that simply return a locator add unnecessary indirection and hide the object shape from IDE auto-complete.
+
+```typescript
+// ✅ Correct — public readonly, assigned in constructor
+export class MyDialog extends BaseDialog {
+  public readonly submitButton: Locator
+  public readonly cancelButton: Locator
+
+  constructor(page: Page) {
+    super(page)
+    this.submitButton = this.root.getByRole('button', { name: 'Submit' })
+    this.cancelButton = this.root.getByRole('button', { name: 'Cancel' })
+  }
+}
+
+// ❌ Avoid — getter-based locators
+export class MyDialog extends BaseDialog {
+  get submitButton() {
+    return this.root.getByRole('button', { name: 'Submit' })
+  }
+}
+```
+
+**Keep as getters only when:**
+
+- Lazy initialization is needed (`this._tab ??= new Tab(this.page)`)
+- The value is computed from runtime state (e.g. `get id() { return this.userIds[index] }`)
+- It's a private convenience accessor (e.g. `private get page() { return this.comfyPage.page }`)
+
+When a class has cached locator properties, prefer reusing them in methods rather than rebuilding locators from scratch.
 
 ## Polling Assertions
 

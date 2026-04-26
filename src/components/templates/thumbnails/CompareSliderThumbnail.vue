@@ -23,6 +23,7 @@
         }"
       />
       <div
+        data-testid="compare-slider-divider"
         class="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-white/30 backdrop-blur-sm"
         :style="{
           left: `${sliderPosition}%`

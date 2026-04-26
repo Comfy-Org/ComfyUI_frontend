@@ -202,7 +202,7 @@ Most common testing needs are already addressed by these helpers, which will mak
    await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None')
 
    // Clean up uploaded files if needed
-   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`)
+   comfyPage.deleteFileAfterTest({ filename: 'image.png' })
    ```
 
 6. **Prefer functional assertions over screenshots**:
@@ -210,8 +210,8 @@ Most common testing needs are already addressed by these helpers, which will mak
 
    ```typescript
    // Prefer this:
-   expect(await node.isPinned()).toBe(true)
-   expect(await node.getProperty('title')).toBe('Expected Title')
+   await expect.poll(() => node.isPinned()).toBe(true)
+   await expect.poll(() => node.getProperty('title')).toBe('Expected Title')
 
    // Over this - only use when needed:
    await expect(comfyPage.canvas).toHaveScreenshot('state.png')

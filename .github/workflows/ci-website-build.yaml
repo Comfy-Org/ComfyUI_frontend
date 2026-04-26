@@ -1,0 +1,33 @@
+# Description: Build and validate the marketing website (apps/website)
+name: 'CI: Website Build'
+
+on:
+  push:
+    branches: [main, master, website/*]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build website
+        run: pnpm --filter @comfyorg/website build

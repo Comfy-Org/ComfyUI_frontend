@@ -5,6 +5,7 @@ import { useAudioService } from '@/services/audioService'
 
 interface AudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => Promise<void>
+  onStop?: () => void
   onError?: (error: Error) => void
 }
 
@@ -48,12 +49,12 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
         }
         recordedURL.value = URL.createObjectURL(blob)
 
+        cleanup()
+
         // Notify completion
         if (options.onRecordingComplete) {
           await options.onRecordingComplete(blob)
         }
-
-        cleanup()
       }
 
       // Start recording
@@ -77,11 +78,14 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
 
   function cleanup() {
     isRecording.value = false
+    mediaRecorder.value = null
 
     if (stream.value) {
       stream.value.getTracks().forEach((track) => track.stop())
       stream.value = null
     }
+
+    options.onStop?.()
   }
 
   function dispose() {

@@ -186,11 +186,16 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         if (!widget) return
 
         // Special case: SubgraphNode widget.
+        // Prefer serializeValue (per-instance) over the shared .value getter
+        // so multiple SubgraphNode instances return their own configured values.
+        const widgetValue = widget.serializeValue
+          ? widget.serializeValue(subgraphNode, -1)
+          : widget.value
         return {
           node: this,
           origin_id: this.id,
           origin_slot: -1,
-          widgetInfo: { value: widget.value }
+          widgetInfo: { value: widgetValue }
         }
       }
 

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { PropertiesPanelHelper } from './PropertiesPanelHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Properties panel - Workflow Overview', () => {
   let panel: PropertiesPanelHelper
@@ -23,15 +23,14 @@ test.describe('Properties panel - Workflow Overview', () => {
   })
 
   test('should not show Info tab when nothing is selected', async () => {
-    await expect(panel.getTab('Info')).not.toBeVisible()
+    await expect(panel.getTab('Info')).toBeHidden()
   })
 
   test('should switch to Nodes tab and list all workflow nodes', async ({
     comfyPage
   }) => {
     await panel.switchToTab('Nodes')
-    const nodeCount = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCount).toBeGreaterThan(0)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBeGreaterThan(0)
     await expect(panel.contentArea.locator('text=KSampler')).toBeVisible()
   })
 

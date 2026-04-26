@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
@@ -59,7 +60,7 @@ describe('NodeSearchInput', () => {
     vi.restoreAllMocks()
   })
 
-  function createWrapper(
+  function createRender(
     props: Partial<{
       filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
       activeFilter: FilterChip | null
@@ -67,101 +68,128 @@ describe('NodeSearchInput', () => {
       filterQuery: string
     }> = {}
   ) {
-    return mount(NodeSearchInput, {
+    const user = userEvent.setup()
+    const onUpdateSearchQuery = vi.fn()
+    const onUpdateFilterQuery = vi.fn()
+    const onCancelFilter = vi.fn()
+    const onSelectCurrent = vi.fn()
+    const onNavigateDown = vi.fn()
+    const onNavigateUp = vi.fn()
+    render(NodeSearchInput, {
       props: {
         filters: [],
         activeFilter: null,
         searchQuery: '',
         filterQuery: '',
+        'onUpdate:searchQuery': onUpdateSearchQuery,
+        'onUpdate:filterQuery': onUpdateFilterQuery,
+        onCancelFilter,
+        onSelectCurrent,
+        onNavigateDown,
+        onNavigateUp,
         ...props
       },
       global: { plugins: [testI18n] }
     })
+    return {
+      user,
+      onUpdateSearchQuery,
+      onUpdateFilterQuery,
+      onCancelFilter,
+      onSelectCurrent,
+      onNavigateDown,
+      onNavigateUp
+    }
   }
 
   it('should route input to searchQuery when no active filter', async () => {
-    const wrapper = createWrapper()
-    await wrapper.find('input').setValue('test search')
+    const { user, onUpdateSearchQuery } = createRender()
+    await user.type(screen.getByRole('combobox'), 'test search')
 
-    expect(wrapper.emitted('update:searchQuery')![0]).toEqual(['test search'])
+    expect(onUpdateSearchQuery).toHaveBeenLastCalledWith('test search')
   })
 
   it('should route input to filterQuery when active filter is set', async () => {
-    const wrapper = createWrapper({
+    const { user, onUpdateFilterQuery, onUpdateSearchQuery } = createRender({
       activeFilter: createActiveFilter('Input')
     })
-    await wrapper.find('input').setValue('IMAGE')
+    await user.type(screen.getByRole('combobox'), 'IMAGE')
 
-    expect(wrapper.emitted('update:filterQuery')![0]).toEqual(['IMAGE'])
-    expect(wrapper.emitted('update:searchQuery')).toBeUndefined()
+    expect(onUpdateFilterQuery).toHaveBeenLastCalledWith('IMAGE')
+    expect(onUpdateSearchQuery).not.toHaveBeenCalled()
   })
 
   it('should show filter label placeholder when active filter is set', () => {
-    const wrapper = createWrapper({
+    createRender({
       activeFilter: createActiveFilter('Input')
     })
 
-    expect(
-      (wrapper.find('input').element as HTMLInputElement).placeholder
-    ).toContain('input')
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'placeholder',
+      expect.stringContaining('input')
+    )
   })
 
   it('should show add node placeholder when no active filter', () => {
-    const wrapper = createWrapper()
+    createRender()
 
-    expect(
-      (wrapper.find('input').element as HTMLInputElement).placeholder
-    ).toContain('Add a node')
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'placeholder',
+      expect.stringContaining('Add a node')
+    )
   })
 
   it('should hide filter chips when active filter is set', () => {
-    const wrapper = createWrapper({
+    createRender({
       filters: [createFilter('input', 'IMAGE')],
       activeFilter: createActiveFilter('Input')
     })
 
-    expect(wrapper.findAll('[data-testid="filter-chip"]')).toHaveLength(0)
+    expect(screen.queryAllByTestId('filter-chip')).toHaveLength(0)
   })
 
   it('should show filter chips when no active filter', () => {
-    const wrapper = createWrapper({
+    createRender({
       filters: [createFilter('input', 'IMAGE')]
     })
 
-    expect(wrapper.findAll('[data-testid="filter-chip"]')).toHaveLength(1)
+    expect(screen.getAllByTestId('filter-chip')).toHaveLength(1)
   })
 
   it('should emit cancelFilter when cancel button is clicked', async () => {
-    const wrapper = createWrapper({
+    const { user, onCancelFilter } = createRender({
       activeFilter: createActiveFilter('Input')
     })
 
-    await wrapper.find('[data-testid="cancel-filter"]').trigger('click')
+    await user.click(screen.getByTestId('cancel-filter'))
 
-    expect(wrapper.emitted('cancelFilter')).toHaveLength(1)
+    expect(onCancelFilter).toHaveBeenCalledOnce()
   })
 
   it('should emit selectCurrent on Enter', async () => {
-    const wrapper = createWrapper()
+    const { user, onSelectCurrent } = createRender()
 
-    await wrapper.find('input').trigger('keydown', { key: 'Enter' })
+    await user.click(screen.getByRole('combobox'))
+    await user.keyboard('{Enter}')
 
-    expect(wrapper.emitted('selectCurrent')).toHaveLength(1)
+    expect(onSelectCurrent).toHaveBeenCalledOnce()
   })
 
   it('should emit navigateDown on ArrowDown', async () => {
-    const wrapper = createWrapper()
+    const { user, onNavigateDown } = createRender()
 
-    await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
+    await user.click(screen.getByRole('combobox'))
+    await user.keyboard('{ArrowDown}')
 
-    expect(wrapper.emitted('navigateDown')).toHaveLength(1)
+    expect(onNavigateDown).toHaveBeenCalledOnce()
   })
 
   it('should emit navigateUp on ArrowUp', async () => {
-    const wrapper = createWrapper()
+    const { user, onNavigateUp } = createRender()
 
-    await wrapper.find('input').trigger('keydown', { key: 'ArrowUp' })
+    await user.click(screen.getByRole('combobox'))
+    await user.keyboard('{ArrowUp}')
 
-    expect(wrapper.emitted('navigateUp')).toHaveLength(1)
+    expect(onNavigateUp).toHaveBeenCalledOnce()
   })
 })

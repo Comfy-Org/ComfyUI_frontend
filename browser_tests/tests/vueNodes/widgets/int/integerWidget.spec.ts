@@ -1,19 +1,13 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Integer Widget', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-  })
-
+test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
   test('should be disabled and not allow changing value when link connected to slot', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
-    await comfyPage.vueNodes.waitForNodes()
 
     const seedWidget = comfyPage.vueNodes
       .getWidgetByName('KSampler', 'seed')
@@ -22,10 +16,8 @@ test.describe('Vue Integer Widget', () => {
     const initialValue = Number(await controls.input.inputValue())
 
     // Verify widget is disabled when linked
-    await controls.incrementButton.click({ force: true })
-    await expect(controls.input).toHaveValue(initialValue.toString())
-
-    await controls.decrementButton.click({ force: true })
+    await expect(controls.incrementButton).toBeDisabled()
+    await expect(controls.decrementButton).toBeDisabled()
     await expect(controls.input).toHaveValue(initialValue.toString())
 
     await expect(seedWidget).toBeVisible()

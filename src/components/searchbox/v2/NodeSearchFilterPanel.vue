@@ -42,7 +42,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { chip } = defineProps<{
   chip: FilterChip

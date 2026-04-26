@@ -2,26 +2,25 @@
 
 ## During Execution
 
-Maintain `execution-log.md` with per-branch tables:
+Maintain `execution-log.md` with per-branch tables (this is internal, markdown tables are fine here):
 
 ```markdown
-| PR#   | Title | CI Status                      | Status                            | Backport PR | Notes   |
-| ----- | ----- | ------------------------------ | --------------------------------- | ----------- | ------- |
-| #XXXX | Title | ✅ Pass / ❌ Fail / ⏳ Pending | ✅ Merged / ⏭️ Skip / ⏸️ Deferred | #YYYY       | Details |
+| PR#   | Title | Status | Backport PR | Notes   |
+| ----- | ----- | ------ | ----------- | ------- |
+| #XXXX | Title | merged | #YYYY       | Details |
 ```
 
 ## Wave Verification Log
 
-Track verification results per wave:
+Track verification results per wave within execution-log.md:
 
 ```markdown
-## Wave N Verification — TARGET_BRANCH
+Wave N Verification -- TARGET_BRANCH
 
 - PRs merged: #A, #B, #C
-- Typecheck: ✅ Pass / ❌ Fail
-- Unit tests: ✅ Pass / ❌ Fail
+- Typecheck: pass / fail
+- Fix PR: #YYYY (if needed)
 - Issues found: (if any)
-- Human review needed: (list any non-trivial conflict resolutions)
 ```
 
 ## Session Report Template
@@ -63,40 +62,42 @@ Track verification results per wave:
 - Feature branches that need tracking for future sessions?
 ```
 
-## Final Deliverable: Visual Summary
+## Final Deliverables
 
-At session end, generate a **mermaid diagram** showing all backported PRs organized by target branch and category (MUST/SHOULD), plus a summary table. Present this to the user as the final output.
+After all branches are complete and verified, generate these files in `~/temp/backport-session/`:
 
-```mermaid
-graph TD
-    subgraph branch1["☁️ cloud/X.XX — N PRs"]
-        C1["#XXXX title"]
-        C2["#XXXX title"]
-    end
+### 1. execution-log.md (internal)
 
-    subgraph branch2must["🔴 core/X.XX MUST — N PRs"]
-        M1["#XXXX title"]
-    end
+Per-branch tables with PR#, title, status, backport PR#, notes. Markdown tables are fine — this is for internal tracking, not Slack.
 
-    subgraph branch2should["🟡 core/X.XX SHOULD — N PRs"]
-        S1["#XXXX-#XXXX N auto-merged"]
-        S2["#XXXX-#XXXX N manual picks"]
-    end
+### 2. backport-author-accountability.md (Slack-compatible)
 
-    classDef cloudStyle fill:#1a3a5c,stroke:#4da6ff,color:#e0f0ff
-    classDef coreStyle fill:#1a4a2e,stroke:#4dff88,color:#e0ffe8
-    classDef mustStyle fill:#5c1a1a,stroke:#ff4d4d,color:#ffe0e0
-    classDef shouldStyle fill:#4a3a1a,stroke:#ffcc4d,color:#fff5e0
-```
+See SKILL.md "Final Deliverables" section. Plain text, no emojis/tables/headers/bold. Authors sorted alphabetically with PRs nested under each.
 
-Use the `mermaid` tool to render this diagram and present it alongside the summary table as the session's final deliverable.
+### 3. slack-status-update.md (Slack-compatible)
+
+See SKILL.md "Final Deliverables" section. Plain text summary that pastes cleanly into Slack. Includes branch counts, notable fixes, conflict patterns, author count.
+
+## Slack Formatting Rules
+
+Both shareable files (author accountability + status update) must follow these rules:
+
+- No emojis (no checkmarks, no arrows, no icons)
+- No markdown tables (use plain lists with dashes)
+- No headers (no # or ##)
+- No bold (\*_) or italic (_)
+- No inline code backticks
+- Use -- instead of em dash
+- Use plain dashes (-) for lists with 4-space indent for nesting
+- Line breaks between sections for readability
+
+These files should paste directly into a Slack message and look clean.
 
 ## Files to Track
 
-- `candidate_list.md` — all candidates per branch
-- `decisions.md` — MUST/SHOULD/SKIP with rationale
-- `wave-plan.md` — execution order
-- `execution-log.md` — real-time status
-- `backport-session-report.md` — final summary
+All in `~/temp/backport-session/`:
 
-All in `~/temp/backport-session/`.
+- `execution-plan.md` -- approved PRs with merge SHAs (input)
+- `execution-log.md` -- real-time status with per-branch tables (internal)
+- `backport-author-accountability.md` -- PRs grouped by author (Slack-compatible)
+- `slack-status-update.md` -- session summary (Slack-compatible)

@@ -8,7 +8,9 @@
 import { onMounted, onUnmounted, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
@@ -134,10 +136,25 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
     .value?.el.closest('[data-node-id]')
   const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
   const nodeRect = nodeEl?.getBoundingClientRect()
+
+  // Collapsed nodes preserve expanded size in layoutStore, so DOM-relative
+  // scale derivation breaks. Fall back to clientPosToCanvasPos instead.
+  const isCollapsed = nodeEl?.dataset.collapsed != null
   const effectiveScale =
-    nodeRect && nodeLayout.size.width > 0
+    !isCollapsed && nodeRect && nodeLayout.size.width > 0
       ? nodeRect.width / nodeLayout.size.width
       : 0
+
+  const canvasStore = useCanvasStore()
+  const conv =
+    isCollapsed && canvasStore.canvas
+      ? useSharedCanvasPositionConversion()
+      : null
+
+  if (isCollapsed && !conv) {
+    scheduleSlotLayoutSync(nodeId)
+    return
+  }
 
   const batch: Array<{ key: string; layout: SlotLayout }> = []
 
@@ -155,22 +172,30 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
       rect.top + rect.height / 2
     ]
 
-    if (!nodeRect || effectiveScale <= 0) continue
+    let centerCanvas: { x: number; y: number }
 
-    // DOM-relative measurement: compute offset from the node element's
-    // top-left corner in canvas units. The node element is rendered at
-    // (position.x, position.y - NODE_TITLE_HEIGHT), so the Y offset
-    // must subtract NODE_TITLE_HEIGHT to be relative to position.y.
-    entry.cachedOffset = {
-      x: (screenCenter[0] - nodeRect.left) / effectiveScale,
-      y:
-        (screenCenter[1] - nodeRect.top) / effectiveScale -
-        LiteGraph.NODE_TITLE_HEIGHT
-    }
+    if (conv) {
+      const [cx, cy] = conv.clientPosToCanvasPos(screenCenter)
+      centerCanvas = { x: cx, y: cy }
+      entry.cachedOffset = undefined
+    } else {
+      if (!nodeRect || effectiveScale <= 0) continue
 
-    const centerCanvas = {
-      x: nodeLayout.position.x + entry.cachedOffset.x,
-      y: nodeLayout.position.y + entry.cachedOffset.y
+      // DOM-relative measurement: compute offset from the node element's
+      // top-left corner in canvas units. The node element is rendered at
+      // (position.x, position.y - NODE_TITLE_HEIGHT), so the Y offset
+      // must subtract NODE_TITLE_HEIGHT to be relative to position.y.
+      entry.cachedOffset = {
+        x: (screenCenter[0] - nodeRect.left) / effectiveScale,
+        y:
+          (screenCenter[1] - nodeRect.top) / effectiveScale -
+          LiteGraph.NODE_TITLE_HEIGHT
+      }
+
+      centerCanvas = {
+        x: nodeLayout.position.x + entry.cachedOffset.x,
+        y: nodeLayout.position.y + entry.cachedOffset.y
+      }
     }
 
     const nextLayout = createSlotLayout({

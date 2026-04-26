@@ -285,7 +285,18 @@ const zExtra = z
     linearMode: z.boolean().optional(),
     linearData: z
       .object({
-        inputs: z.array(z.tuple([zNodeId, z.string()])).optional(),
+        inputs: z
+          .array(
+            z.union([
+              z.tuple([
+                zNodeId,
+                z.string(),
+                z.object({ height: z.number().optional() }).passthrough()
+              ]),
+              z.tuple([zNodeId, z.string()])
+            ])
+          )
+          .optional(),
         outputs: z.array(zNodeId).optional()
       })
       .optional()

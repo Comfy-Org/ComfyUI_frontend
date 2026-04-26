@@ -1,15 +1,13 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { PropertiesPanelHelper } from './PropertiesPanelHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
-test.describe('Properties panel - Node settings', () => {
+test.describe('Properties panel - Node settings', { tag: '@vue-nodes' }, () => {
   let panel: PropertiesPanelHelper
 
   test.beforeEach(async ({ comfyPage }) => {
     panel = new PropertiesPanelHelper(comfyPage.page)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
     await comfyPage.actionbar.propertiesButton.click()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await panel.switchToTab('Settings')
@@ -42,8 +40,8 @@ test.describe('Properties panel - Node settings', () => {
       await expect(nodeLocator.getByText('Bypassed')).toBeVisible()
 
       await panel.getNodeStateButton('Normal').click()
-      await expect(nodeLocator.getByText('Bypassed')).not.toBeVisible()
-      await expect(nodeLocator.getByText('Muted')).not.toBeVisible()
+      await expect(nodeLocator.getByText('Bypassed')).toBeHidden()
+      await expect(nodeLocator.getByText('Muted')).toBeHidden()
     })
   })
 
@@ -114,9 +112,7 @@ test.describe('Properties panel - Node settings', () => {
       await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeVisible()
 
       await panel.pinnedSwitch.click()
-      await expect(
-        nodeLocator.getByTestId('node-pin-indicator')
-      ).not.toBeVisible()
+      await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeHidden()
     })
   })
 })

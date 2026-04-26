@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +15,7 @@ describe('getDomWidgetZIndex', () => {
     first.order = 0
     second.order = 1
 
-    const nodes = fromAny<{ _nodes: LGraphNode[] }, unknown>(graph)._nodes
+    const nodes = fromPartial<{ _nodes: LGraphNode[] }>(graph)._nodes
     nodes.splice(nodes.indexOf(first), 1)
     nodes.push(first)
 
