@@ -114,6 +114,7 @@
         ref="scrollEl"
         class="flex-1 overflow-y-auto p-2 font-mono text-xs/snug"
         @scroll="onScroll"
+        @mousedown="onScrollMouseDown"
       >
         <div v-for="m in store.messages" :key="m.id" class="agent-block">
           <div
@@ -204,67 +205,70 @@
         </div>
         <div
           v-if="store.messages.length === 0"
-          class="p-2 text-muted-foreground/70"
+          class="text-muted-foreground/70"
         >
           {{ t('agent.panel.prompt') }} {{ t('agent.panel.brandTitle') }}
           {{ t('agent.panel.readyHint') }}
         </div>
-      </div>
 
-      <div
-        v-if="store.pendingAssets.length > 0"
-        class="border-default/30 flex flex-wrap gap-1 border-t bg-secondary-background/40 p-1.5"
-      >
         <div
-          v-for="asset in store.pendingAssets"
-          :key="asset.id"
-          class="group flex items-center gap-1 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs"
+          v-if="store.pendingAssets.length > 0"
+          class="my-1 flex flex-wrap gap-1"
         >
-          <img
-            v-if="asset.previewUrl"
-            :src="asset.previewUrl"
-            :alt="asset.name"
-            class="size-5 rounded-sm object-cover"
-          />
-          <i v-else class="icon-[lucide--file] size-3" />
-          <span class="max-w-32 truncate font-mono">{{ asset.path }}</span>
-          <button
-            class="opacity-50 hover:opacity-100"
-            :aria-label="t('agent.input.removeAsset')"
-            @click="store.removePendingAsset(asset.id)"
+          <div
+            v-for="asset in store.pendingAssets"
+            :key="asset.id"
+            class="group flex items-center gap-1 rounded-sm bg-secondary-background/60 px-1.5 py-0.5 text-xs"
           >
-            <i class="icon-[lucide--x] size-3" />
-          </button>
+            <img
+              v-if="asset.previewUrl"
+              :src="asset.previewUrl"
+              :alt="asset.name"
+              class="size-5 rounded-sm object-cover"
+            />
+            <i v-else class="icon-[lucide--file] size-3" />
+            <span class="max-w-32 truncate">{{ asset.path }}</span>
+            <button
+              class="opacity-50 hover:opacity-100"
+              :aria-label="t('agent.input.removeAsset')"
+              @click="store.removePendingAsset(asset.id)"
+            >
+              <i class="icon-[lucide--x] size-3" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div
-        class="border-default/30 flex items-end gap-1.5 border-t bg-secondary-background/30 px-2 py-1.5"
-      >
-        <span class="pt-1 font-mono text-xs text-azure-400 select-none">{{
-          t('agent.panel.prompt')
-        }}</span>
-        <textarea
-          ref="inputEl"
-          v-model="inputText"
-          rows="1"
-          autocomplete="off"
-          spellcheck="false"
-          :placeholder="
-            store.isStreaming
-              ? t('agent.panel.streamingPlaceholder')
-              : t('agent.panel.inputPlaceholder')
-          "
-          :class="
-            cn(
-              'flex-1 resize-none bg-transparent font-mono text-xs/snug',
-              'text-(--fg-color) placeholder:text-muted-foreground/50',
-              'focus:outline-none'
-            )
-          "
-          @keydown="onInputKey"
-          @input="autoGrow"
-        />
+        <!--
+          Inline prompt — visually flows as the next line of scrollback
+          rather than a separate input widget. Same font / colour scheme
+          as user-message blocks; no border, no background.
+        -->
+        <div class="agent-prompt-row flex items-start gap-1.5">
+          <span class="text-azure-400 select-none">{{
+            t('agent.panel.prompt')
+          }}</span>
+          <textarea
+            ref="inputEl"
+            v-model="inputText"
+            rows="1"
+            autocomplete="off"
+            spellcheck="false"
+            :placeholder="
+              store.isStreaming
+                ? t('agent.panel.streamingPlaceholder')
+                : t('agent.panel.inputPlaceholder')
+            "
+            :class="
+              cn(
+                'flex-1 resize-none border-0 bg-transparent p-0 font-mono text-xs/snug',
+                'text-(--fg-color) placeholder:text-muted-foreground/50',
+                'focus:ring-0 focus:outline-none'
+              )
+            "
+            @keydown="onInputKey"
+            @input="autoGrow"
+          />
+        </div>
       </div>
 
       <div
@@ -615,6 +619,19 @@ function clearAll(): void {
 
 function focusInput(): void {
   void nextTick(() => inputEl.value?.focus())
+}
+
+/**
+ * Click anywhere in the scrollback — but only on the bare container
+ * itself, not on a message — focuses the input. Mirrors how a real
+ * terminal lets you keep typing after scrolling away.
+ */
+function onScrollMouseDown(e: MouseEvent): void {
+  const target = e.target as HTMLElement | null
+  if (!target) return
+  if (target === scrollEl.value) {
+    focusInput()
+  }
 }
 
 async function onDrop(e: DragEvent): Promise<void> {
