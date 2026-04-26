@@ -136,11 +136,11 @@ describe('ToolPanel', () => {
       expect(screen.getByTestId('zoom-dimensions').textContent).toBe('800x600')
     })
 
-    it('should render a single space placeholder when no image', () => {
+    it('should render a single-space placeholder when no image', () => {
       mockStore.image = null
       renderPanel()
 
-      expect(screen.getByTestId('zoom-dimensions').textContent?.trim()).toBe('')
+      expect(screen.getByTestId('zoom-dimensions').textContent).toBe(' ')
     })
 
     it('should call resetZoom when the zoom indicator is clicked', async () => {
