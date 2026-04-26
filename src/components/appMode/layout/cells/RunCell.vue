@@ -16,13 +16,19 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCommandStore } from '@/stores/commandStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
+const appModeStore = useAppModeStore()
 const { toastErrorHandler } = useErrorHandling()
 
 async function handleClick(e: MouseEvent | KeyboardEvent) {
   const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
+  // Flip a transient flag so the OutputWindow (and any other surface
+  // gated on "a run is starting") can mount before the queue/linear
+  // stores reflect an active run a beat later.
+  appModeStore.markRunPending()
   try {
     await commandStore.execute(commandId, {
       metadata: {
@@ -31,6 +37,7 @@ async function handleClick(e: MouseEvent | KeyboardEvent) {
       }
     })
   } catch (error) {
+    appModeStore.clearRunPending()
     toastErrorHandler(error)
   }
 }

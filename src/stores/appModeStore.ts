@@ -295,6 +295,32 @@ export const useAppModeStore = defineStore('appMode', () => {
     entry[2] = { ...entry[2], ...config }
   }
 
+  // Bridges the gap between Run-click and the queue/linear stores
+  // reflecting an active run. RunCell sets this true immediately on
+  // click so the OutputWindow can mount without waiting for the
+  // backend handshake; LinearPreview clears it the moment
+  // `isWorkflowActive` flips true (real signal takes over). 5s safety
+  // timeout in case the dispatch fails silently.
+  const runPending = ref(false)
+  let runPendingTimer: ReturnType<typeof setTimeout> | null = null
+
+  function markRunPending() {
+    runPending.value = true
+    if (runPendingTimer) clearTimeout(runPendingTimer)
+    runPendingTimer = setTimeout(() => {
+      runPending.value = false
+      runPendingTimer = null
+    }, 5000)
+  }
+
+  function clearRunPending() {
+    runPending.value = false
+    if (runPendingTimer) {
+      clearTimeout(runPendingTimer)
+      runPendingTimer = null
+    }
+  }
+
   return {
     enterBuilder,
     exitBuilder,
@@ -319,6 +345,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     viewportScale,
     zoomAt,
     zoomIn,
-    zoomOut
+    zoomOut,
+    runPending,
+    markRunPending,
+    clearRunPending
   }
 })

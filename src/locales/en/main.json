@@ -3369,6 +3369,9 @@
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app",
       "dragHint": "Drag input blocks in the panel to reorder them or split a row into columns."
     },
+    "outputs": {
+      "title": "Output"
+    },
     "builder": {
       "title": "App builder mode",
       "exit": "Exit builder",

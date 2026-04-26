@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import OutputWindow from '@/components/appMode/layout/OutputWindow.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
@@ -25,6 +28,7 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
+const appModeStore = useAppModeStore()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId, hideChrome } = defineProps<{
@@ -42,6 +46,24 @@ const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
+
+// True whenever the OutputWindow should be mounted. `runPending` is
+// set by RunCell on click so the window appears immediately,
+// bridging the gap before `isWorkflowActive` flips true. Cleared
+// the moment the real active signal takes over so the window
+// unmounts cleanly when nothing is in flight.
+const { runPending } = storeToRefs(appModeStore)
+const hasOutputContent = computed(
+  () =>
+    runPending.value ||
+    isWorkflowActive.value ||
+    !!(canShowPreview.value && latentPreview.value) ||
+    !!selectedOutput.value ||
+    showSkeleton.value
+)
+watch(isWorkflowActive, (v) => {
+  if (v) appModeStore.clearRunPending()
+})
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -141,15 +163,40 @@ async function rerun(e: Event) {
     />
   </section>
   <!--
-    Crossfade between preview states — the "image arrives" beat for
-    a run. `mode="default"` (the omitted default) lets the outgoing
-    element overlap the incoming one, and the `.preview-fade-leave-
-    active` rule pins the leaving element to the workspace bounds so
-    it holds its position while the new one fades in underneath. The
-    workspace is `position: absolute; inset: 0`, so the pinning
-    keeps the full preview area covered during the ~250ms swap.
+    App Mode (hideChrome): output content (skeleton / latent / final)
+    renders inside a movable OutputWindow card, so the run→image
+    beat happens inside a stable spatial frame instead of swapping
+    a full-viewport layer. Welcome / arrange states stay full-
+    viewport in the workspace behind the window. Standalone linear-
+    mode (the original chromeful path) keeps the prior behavior.
   -->
-  <Transition name="preview-fade">
+  <template v-if="hideChrome">
+    <OutputWindow v-if="hasOutputContent">
+      <Transition name="preview-fade">
+        <ImagePreview
+          v-if="canShowPreview && latentPreview"
+          key="latent"
+          :mobile
+          :src="latentPreview"
+          :show-size="false"
+        />
+        <MediaOutputPreview
+          v-else-if="selectedOutput"
+          key="final"
+          :output="selectedOutput"
+          :mobile
+          :hide-info="hideChrome"
+        />
+        <LatentPreview
+          v-else-if="showSkeleton || isWorkflowActive || runPending"
+          key="skeleton"
+        />
+      </Transition>
+    </OutputWindow>
+    <LinearArrange v-else-if="isArrangeMode" />
+    <LinearWelcome v-else />
+  </template>
+  <Transition v-else name="preview-fade">
     <ImagePreview
       v-if="canShowPreview && latentPreview"
       key="latent"

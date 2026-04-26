@@ -103,16 +103,16 @@ const existingOutput = computed(() => {
     data-testid="linear-arrange-no-outputs"
     class="mx-auto flex h-full w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
-    <p class="m-0 text-base-foreground">
+    <p class="m-0 text-3xl font-bold text-base-foreground">
       {{ t('linearMode.arrange.noOutputs') }}
     </p>
 
-    <div class="flex w-lg flex-col gap-1 text-[14px] text-muted-foreground">
+    <div class="flex w-lg flex-col gap-2 text-lg text-base-foreground">
       <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
-          <span class="font-bold italic">
+          <span class="font-bold text-(--color-app-mode-active-temp) italic">
             {{ t('linearMode.arrange.atLeastOne') }}
           </span>
         </template>
@@ -121,9 +121,16 @@ const existingOutput = computed(() => {
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
     <div class="flex flex-row gap-2">
+      <!-- Color override matches the Save button (BuilderFooterToolbar)
+           — uses the temp App Mode accent purple instead of the brand
+           blue `variant="primary"` token. -->
       <Button
-        variant="primary"
         size="lg"
+        :class="[
+          'border bg-(--color-app-mode-accent-temp) text-white',
+          'border-(--color-app-mode-accent-temp-deep)',
+          'hover:bg-(--color-app-mode-accent-temp-deep)'
+        ]"
         data-testid="linear-arrange-switch-to-outputs"
         @click="setMode('builder:outputs')"
       >
