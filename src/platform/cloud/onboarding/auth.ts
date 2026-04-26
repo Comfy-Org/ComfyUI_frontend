@@ -87,6 +87,10 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
 }
 
 export async function getSurveyCompletedStatus(): Promise<boolean> {
+  // DO NOT MERGE: forced to false so QA always sees the survey, even if a
+  // previous submission populated the onboarding_survey user setting.
+  // Restore the real implementation below before merging.
+  return false
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
       method: 'GET',
