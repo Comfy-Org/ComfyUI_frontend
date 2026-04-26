@@ -827,6 +827,7 @@ const MIXED_MEDIA_JOBS: RawJobListItem[] = [
 // supports authenticated comfyPage setup.
 test.describe('Assets sidebar - media type filter', () => {
   test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
     await comfyPage.assets.mockInputFiles([])
@@ -854,8 +855,11 @@ test.describe('Assets sidebar - media type filter', () => {
     await tab.open()
     await tab.waitForAssets()
 
-    const initialCount = await tab.assetCards.count()
-    expect(initialCount, 'All three mixed-media jobs should render').toBe(3)
+    const initialCount = tab.assetCards
+    await expect(
+      initialCount,
+      'All three mixed-media jobs should render'
+    ).toHaveCount(3)
 
     // Open filter menu and enable only image filter (selecting a filter
     // restricts to that type only, hiding unselected types)
