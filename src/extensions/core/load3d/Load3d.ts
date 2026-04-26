@@ -1,7 +1,5 @@
 import * as THREE from 'three'
 
-import { exceedsClickThreshold } from '@/composables/useClickDragGuard'
-
 import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
@@ -24,6 +22,9 @@ import type {
   MaterialMode,
   UpDirection
 } from './interfaces'
+import { attachContextMenuGuard } from './load3dContextMenuGuard'
+import type { RenderLoopHandle } from './load3dRenderLoop'
+import { startRenderLoop } from './load3dRenderLoop'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
 
 function positionThumbnailCamera(
@@ -48,7 +49,7 @@ function positionThumbnailCamera(
 class Load3d {
   renderer: THREE.WebGLRenderer
   protected clock: THREE.Clock
-  protected animationFrameId: number | null = null
+  private renderLoop: RenderLoopHandle | null = null
   private loadingPromise: Promise<void> | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
@@ -76,10 +77,7 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
-  private rightMouseStart: { x: number; y: number } = { x: 0, y: 0 }
-  private rightMouseMoved: boolean = false
-  private readonly dragThreshold: number = 5
-  private contextMenuAbortController: AbortController | null = null
+  private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
 
   constructor(container: Element | HTMLElement, options: Load3DOptions = {}) {
@@ -215,69 +213,12 @@ class Load3d {
     this.resizeObserver.observe(container)
   }
 
-  /**
-   * Initialize context menu on the Three.js canvas
-   * Detects right-click vs right-drag to show menu only on click
-   */
   private initContextMenu(): void {
-    const canvas = this.renderer.domElement
-
-    this.contextMenuAbortController = new AbortController()
-    const { signal } = this.contextMenuAbortController
-
-    const mousedownHandler = (e: MouseEvent) => {
-      if (e.button === 2) {
-        this.rightMouseStart = { x: e.clientX, y: e.clientY }
-        this.rightMouseMoved = false
-      }
-    }
-
-    const mousemoveHandler = (e: MouseEvent) => {
-      if (e.buttons === 2) {
-        if (
-          exceedsClickThreshold(
-            this.rightMouseStart,
-            { x: e.clientX, y: e.clientY },
-            this.dragThreshold
-          )
-        ) {
-          this.rightMouseMoved = true
-        }
-      }
-    }
-
-    const contextmenuHandler = (e: MouseEvent) => {
-      if (this.isViewerMode) return
-
-      const wasDragging =
-        this.rightMouseMoved ||
-        exceedsClickThreshold(
-          this.rightMouseStart,
-          { x: e.clientX, y: e.clientY },
-          this.dragThreshold
-        )
-
-      this.rightMouseMoved = false
-
-      if (wasDragging) {
-        return
-      }
-
-      e.preventDefault()
-      e.stopPropagation()
-
-      this.showNodeContextMenu(e)
-    }
-
-    canvas.addEventListener('mousedown', mousedownHandler, { signal })
-    canvas.addEventListener('mousemove', mousemoveHandler, { signal })
-    canvas.addEventListener('contextmenu', contextmenuHandler, { signal })
-  }
-
-  private showNodeContextMenu(event: MouseEvent): void {
-    if (this.onContextMenuCallback) {
-      this.onContextMenuCallback(event)
-    }
+    this.disposeContextMenuGuard = attachContextMenuGuard(
+      this.renderer.domElement,
+      (event) => this.onContextMenuCallback?.(event),
+      { isDisabled: () => this.isViewerMode }
+    )
   }
 
   getEventManager(): EventManager {
@@ -410,28 +351,23 @@ class Load3d {
   }
 
   private startAnimation(): void {
-    const animate = () => {
-      this.animationFrameId = requestAnimationFrame(animate)
+    this.renderLoop = startRenderLoop({
+      tick: () => {
+        const delta = this.clock.getDelta()
+        this.animationManager.update(delta)
+        this.viewHelperManager.update(delta)
+        this.controlsManager.update()
 
-      if (!this.isActive()) {
-        return
-      }
+        this.renderMainScene()
 
-      const delta = this.clock.getDelta()
-      this.animationManager.update(delta)
-      this.viewHelperManager.update(delta)
-      this.controlsManager.update()
+        this.resetViewport()
 
-      this.renderMainScene()
-
-      this.resetViewport()
-
-      if (this.viewHelperManager.viewHelper.render) {
-        this.viewHelperManager.viewHelper.render(this.renderer)
-      }
-    }
-
-    animate()
+        if (this.viewHelperManager.viewHelper.render) {
+          this.viewHelperManager.viewHelper.render(this.renderer)
+        }
+      },
+      isActive: () => this.isActive()
+    })
   }
 
   updateStatusMouseOnNode(onNode: boolean): void {
@@ -631,11 +567,11 @@ class Load3d {
   }
 
   isSplatModel(): boolean {
-    return this.modelManager.containsSplatMesh()
+    return this.loaderManager.getCurrentAdapter()?.kind === 'splat'
   }
 
   isPlyModel(): boolean {
-    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+    return this.loaderManager.getCurrentAdapter()?.kind === 'pointCloud'
   }
 
   clearModel(): void {
@@ -918,10 +854,8 @@ class Load3d {
       this.resizeObserver = null
     }
 
-    if (this.contextMenuAbortController) {
-      this.contextMenuAbortController.abort()
-      this.contextMenuAbortController = null
-    }
+    this.disposeContextMenuGuard?.()
+    this.disposeContextMenuGuard = null
 
     this.renderer.forceContextLoss()
     const canvas = this.renderer.domElement
@@ -931,9 +865,8 @@ class Load3d {
     })
     canvas.dispatchEvent(event)
 
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId)
-    }
+    this.renderLoop?.stop()
+    this.renderLoop = null
 
     this.sceneManager.dispose()
     this.cameraManager.dispose()

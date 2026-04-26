@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Aplicación",
+    "blueprint": "Plano",
     "clearWorkflow": "Limpiar flujo de trabajo",
     "deleteBlueprint": "Eliminar Plano",
     "deleteWorkflow": "Eliminar flujo de trabajo",
@@ -917,6 +918,10 @@
     "showMissingNodes": "Mostrar nodos faltantes",
     "showSwapNodes": "Mostrar nodos intercambiables",
     "swapNodes": "Algunos nodos pueden ser reemplazados por alternativas"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Dar opinión",
+    "ctaText": "¿Qué te parece el nuevo panel de errores?"
   },
   "essentials": {
     "batchImage": "Procesar imágenes por lotes",
