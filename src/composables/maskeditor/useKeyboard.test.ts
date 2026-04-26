@@ -105,8 +105,15 @@ describe('useKeyboard', () => {
       expect(keyboard.isKeyDown(' ')).toBe(true)
     })
 
-    it('should not throw when no active element with blur is present', () => {
+    it('should not throw when activeElement is null', () => {
+      Object.defineProperty(document, 'activeElement', {
+        value: null,
+        configurable: true
+      })
+
       expect(() => dispatchKeyDown({ key: ' ' })).not.toThrow()
+
+      Reflect.deleteProperty(document, 'activeElement')
     })
 
     it('should call undo on Ctrl+Z without shift', () => {
