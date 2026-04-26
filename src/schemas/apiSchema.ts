@@ -301,7 +301,7 @@ const zSettings = z.object({
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
   'Comfy.Appearance.DisableAnimations': z.boolean(),
-  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
+  'Comfy.UI.TabBarLayout': z.literal('Default'),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
   'Comfy.Desktop.CloudNotificationShown': z.boolean(),
