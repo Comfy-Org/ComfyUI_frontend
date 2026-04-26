@@ -121,7 +121,11 @@ export const useGraphCostAggregator = (
     // Reactive deps: any node's eval completion (coarse aggregate signal —
     // see useNodePricing for why this is separate from the canvas tick),
     // in-place node add/remove, and workflow swap (replace LGraph contents
-    // in place).
+    // in place). All three are read up-front so the dep registration is
+    // unconditional — for graphs that early-return below (null graph) or
+    // contain no api-nodes (no `getNodeNumericPrice` call inside the
+    // reducer to register the eval tick transitively), the computed
+    // would otherwise miss its triggers.
     void pricingAggregateRevision.value
     void graphStructureRevision.value
     void activeWorkflow.value
