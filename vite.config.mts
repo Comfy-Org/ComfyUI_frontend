@@ -17,7 +17,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin } from './build/plugins'
+import { agentLogPlugin, comfyAPIPlugin } from './build/plugins'
 
 dotenvConfig()
 
@@ -260,6 +260,7 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    agentLogPlugin(),
     // Exclude proprietary ABCROM fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
