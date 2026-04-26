@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "應用程式",
+    "blueprint": "藍圖",
     "clearWorkflow": "清除工作流程",
     "deleteBlueprint": "刪除藍圖",
     "deleteWorkflow": "刪除工作流程",
@@ -917,6 +918,10 @@
     "showMissingNodes": "顯示缺少的節點",
     "showSwapNodes": "顯示可替換的節點",
     "swapNodes": "有些節點可以用其他選項替換"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "提供回饋",
+    "ctaText": "新的錯誤面板感覺如何？"
   },
   "essentials": {
     "batchImage": "批次圖片",
