@@ -86,6 +86,129 @@ describe('useNodeDragAndDrop', () => {
     expect(isDragging).toBe(false)
   })
 
+  describe('claimEvent flag', () => {
+    function createClaimableEvent(
+      options: Parameters<typeof createDragEvent>[0]
+    ) {
+      const event = createDragEvent(options)
+      const preventDefault = vi.fn()
+      const stopPropagation = vi.fn()
+      Object.assign(event, { preventDefault, stopPropagation })
+      return { event, preventDefault, stopPropagation }
+    }
+
+    it('claims the event synchronously before awaiting onDrop for valid file drops', async () => {
+      const { event, preventDefault, stopPropagation } = createClaimableEvent({
+        files: [createFile('a.png')]
+      })
+
+      const onDrop = vi.fn().mockImplementation(async () => {
+        // By the time onDrop runs, the event must already be claimed —
+        // claiming after the await would let document fallback handlers fire.
+        expect(preventDefault).toHaveBeenCalledTimes(1)
+        expect(stopPropagation).toHaveBeenCalledTimes(1)
+        return []
+      })
+
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop })
+
+      const result = await node.onDragDrop?.(event, true)
+
+      expect(result).toBe(true)
+      expect(onDrop).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not claim the event when files are filtered out', async () => {
+      const node = createNode()
+      useNodeDragAndDrop(node, {
+        onDrop: vi.fn().mockResolvedValue([]),
+        fileFilter: (file) => file.type === 'image/png'
+      })
+
+      const { event, preventDefault, stopPropagation } = createClaimableEvent({
+        files: [createFile('a.jpg', 'image/jpeg')]
+      })
+
+      const result = await node.onDragDrop?.(event, true)
+
+      expect(result).toBe(false)
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopPropagation).not.toHaveBeenCalled()
+    })
+
+    it('claims the event for same-origin uri drops before fetching', async () => {
+      const { event, preventDefault, stopPropagation } = createClaimableEvent({
+        uri: `${location.origin}/api/file?filename=uri.png`,
+        types: ['text/uri-list']
+      })
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        expect(preventDefault).toHaveBeenCalledTimes(1)
+        expect(stopPropagation).toHaveBeenCalledTimes(1)
+        return fromAny<Response, unknown>({
+          ok: true,
+          blob: vi
+            .fn()
+            .mockResolvedValue(new Blob(['uri'], { type: 'image/png' }))
+        })
+      })
+
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+      const result = await node.onDragDrop?.(event, true)
+
+      expect(result).toBe(true)
+    })
+
+    it('does not claim the event for cross-origin uri drops', async () => {
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+      const { event, preventDefault, stopPropagation } = createClaimableEvent({
+        uri: 'https://example.com/api/file?filename=uri.png',
+        types: ['text/uri-list']
+      })
+
+      const result = await node.onDragDrop?.(event, true)
+
+      expect(result).toBe(false)
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopPropagation).not.toHaveBeenCalled()
+    })
+
+    it('does not claim the event when drop has no files and no uri', async () => {
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+      const { event, preventDefault, stopPropagation } = createClaimableEvent(
+        {}
+      )
+
+      const result = await node.onDragDrop?.(event, true)
+
+      expect(result).toBe(false)
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopPropagation).not.toHaveBeenCalled()
+    })
+
+    it('does not claim the event when claimEvent is omitted', async () => {
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+      const { event, preventDefault, stopPropagation } = createClaimableEvent({
+        files: [createFile('a.png')]
+      })
+
+      const result = await node.onDragDrop?.(event)
+
+      expect(result).toBe(true)
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopPropagation).not.toHaveBeenCalled()
+    })
+  })
+
   it('onDragDrop calls onDrop with filtered files', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const node = createNode()
