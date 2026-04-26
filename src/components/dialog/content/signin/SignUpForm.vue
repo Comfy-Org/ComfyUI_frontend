@@ -15,6 +15,7 @@
       </label>
       <InputText
         pt:root:id="comfy-org-sign-up-email"
+        pt:root:name="email"
         pt:root:autocomplete="email"
         class="h-10"
         type="text"

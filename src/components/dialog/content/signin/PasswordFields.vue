@@ -12,6 +12,7 @@
     <Password
       v-model="password"
       input-id="comfy-org-sign-up-password"
+      pt:pc-input-text:root:name="new-password"
       pt:pc-input-text:root:autocomplete="new-password"
       name="password"
       :feedback="false"
@@ -76,6 +77,7 @@
     <Password
       name="confirmPassword"
       input-id="comfy-org-sign-up-confirm-password"
+      pt:pc-input-text:root:name="confirm-password"
       pt:pc-input-text:root:autocomplete="new-password"
       :feedback="false"
       toggle-mask
