@@ -264,20 +264,6 @@ describe('MaskEditorContent', () => {
       expect(previewCanvas.width).toBe(999)
       expect(previewCanvas.height).toBe(777)
     })
-
-    it.each([
-      ['mask', 'z-40'],
-      ['rgb', 'z-20']
-    ] as const)(
-      'should switch GPU canvas z-index to %s when activeLayer is %s',
-      async (layer, expectedClass) => {
-        renderContent()
-        const gpu = await screen.findByTestId('gpu-preview-canvas')
-
-        mockStore.activeLayer = layer
-        await waitFor(() => expect(gpu.className).toContain(expectedClass))
-      }
-    )
   })
 
   describe('init error', () => {

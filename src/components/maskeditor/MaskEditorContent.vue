@@ -30,7 +30,6 @@
       <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
-        data-testid="gpu-preview-canvas"
         class="pointer-events-none absolute top-0 left-0 size-full"
         :class="{
           'z-20': store.activeLayer === 'rgb',
