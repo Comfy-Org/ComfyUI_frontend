@@ -383,6 +383,92 @@ describe('Load3d', () => {
     })
   })
 
+  describe('render loop wiring', () => {
+    it('startAnimation registers a render loop whose tick body runs the per-frame managers when active', () => {
+      const animationUpdate = vi.fn()
+      const viewHelperUpdate = vi.fn()
+      const viewHelperRender = vi.fn()
+      const controlsUpdate = vi.fn()
+      const renderMainScene = vi.fn()
+      const resetViewport = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        STATUS_MOUSE_ON_NODE: true,
+        STATUS_MOUSE_ON_SCENE: false,
+        STATUS_MOUSE_ON_VIEWER: false,
+        INITIAL_RENDER_DONE: false,
+        clock: new THREE.Clock(),
+        animationManager: {
+          update: animationUpdate,
+          isAnimationPlaying: false,
+          dispose: vi.fn()
+        },
+        viewHelperManager: {
+          update: viewHelperUpdate,
+          viewHelper: { render: viewHelperRender }
+        },
+        controlsManager: { update: controlsUpdate },
+        recordingManager: { getIsRecording: vi.fn(() => false) },
+        renderMainScene,
+        resetViewport,
+        renderer: {}
+      })
+
+      ;(ctx.load3d as unknown as { startAnimation(): void }).startAnimation()
+
+      const loop = (ctx.load3d as unknown as { renderLoop: { stop(): void } })
+        .renderLoop
+      expect(loop).not.toBeNull()
+      expect(typeof loop.stop).toBe('function')
+
+      // The first loop() ran synchronously; isActive() returned true
+      // (STATUS_MOUSE_ON_NODE), so the tick body executed once.
+      expect(animationUpdate).toHaveBeenCalledOnce()
+      expect(viewHelperUpdate).toHaveBeenCalledOnce()
+      expect(controlsUpdate).toHaveBeenCalledOnce()
+      expect(renderMainScene).toHaveBeenCalledOnce()
+      expect(resetViewport).toHaveBeenCalledOnce()
+      expect(viewHelperRender).toHaveBeenCalledOnce()
+
+      // Cancel the queued rAF so the test doesn't leak frames.
+      loop.stop()
+    })
+
+    it('remove() stops the active render loop and clears the handle', () => {
+      const stop = vi.fn()
+      const canvas = document.createElement('canvas')
+
+      Object.assign(ctx.load3d, {
+        renderLoop: { stop },
+        resizeObserver: null,
+        contextMenuAbortController: null,
+        renderer: {
+          forceContextLoss: vi.fn(),
+          dispose: vi.fn(),
+          domElement: canvas
+        },
+        sceneManager: { ...ctx.sceneManager, dispose: vi.fn() },
+        cameraManager: { ...ctx.cameraManager, dispose: vi.fn() },
+        controlsManager: { ...ctx.controlsManager, dispose: vi.fn() },
+        lightingManager: { dispose: vi.fn() },
+        hdriManager: { dispose: vi.fn() },
+        viewHelperManager: { dispose: vi.fn() },
+        loaderManager: { dispose: vi.fn() },
+        modelManager: { ...ctx.modelManager, dispose: vi.fn() },
+        recordingManager: { dispose: vi.fn() },
+        animationManager: { ...ctx.animationManager, dispose: vi.fn() },
+        gizmoManager: { ...ctx.gizmo, dispose: vi.fn() }
+      })
+
+      ctx.load3d.remove()
+
+      expect(stop).toHaveBeenCalledOnce()
+      expect(
+        (ctx.load3d as unknown as { renderLoop: unknown }).renderLoop
+      ).toBeNull()
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }

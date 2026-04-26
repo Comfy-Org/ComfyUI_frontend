@@ -24,6 +24,8 @@ import type {
   MaterialMode,
   UpDirection
 } from './interfaces'
+import type { RenderLoopHandle } from './load3dRenderLoop'
+import { startRenderLoop } from './load3dRenderLoop'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
 
 function positionThumbnailCamera(
@@ -48,7 +50,7 @@ function positionThumbnailCamera(
 class Load3d {
   renderer: THREE.WebGLRenderer
   protected clock: THREE.Clock
-  protected animationFrameId: number | null = null
+  private renderLoop: RenderLoopHandle | null = null
   private loadingPromise: Promise<void> | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
@@ -410,28 +412,23 @@ class Load3d {
   }
 
   private startAnimation(): void {
-    const animate = () => {
-      this.animationFrameId = requestAnimationFrame(animate)
+    this.renderLoop = startRenderLoop({
+      tick: () => {
+        const delta = this.clock.getDelta()
+        this.animationManager.update(delta)
+        this.viewHelperManager.update(delta)
+        this.controlsManager.update()
 
-      if (!this.isActive()) {
-        return
-      }
+        this.renderMainScene()
 
-      const delta = this.clock.getDelta()
-      this.animationManager.update(delta)
-      this.viewHelperManager.update(delta)
-      this.controlsManager.update()
+        this.resetViewport()
 
-      this.renderMainScene()
-
-      this.resetViewport()
-
-      if (this.viewHelperManager.viewHelper.render) {
-        this.viewHelperManager.viewHelper.render(this.renderer)
-      }
-    }
-
-    animate()
+        if (this.viewHelperManager.viewHelper.render) {
+          this.viewHelperManager.viewHelper.render(this.renderer)
+        }
+      },
+      isActive: () => this.isActive()
+    })
   }
 
   updateStatusMouseOnNode(onNode: boolean): void {
@@ -931,9 +928,8 @@ class Load3d {
     })
     canvas.dispatchEvent(event)
 
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId)
-    }
+    this.renderLoop?.stop()
+    this.renderLoop = null
 
     this.sceneManager.dispose()
     this.cameraManager.dispose()
