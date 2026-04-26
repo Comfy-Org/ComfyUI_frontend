@@ -187,7 +187,16 @@ export function useAgentSession() {
           if (ac.signal.aborted) return
           toolCalls.push(inv)
           const summary = `$ ${inv.script}\n${inv.stdout}${inv.stderr ? `\n[stderr] ${inv.stderr}` : ''}`
-          store.addMessage({ role: 'system', text: summary })
+          store.addMessage({
+            role: 'system',
+            text: summary,
+            tool: {
+              script: inv.script,
+              stdout: inv.stdout,
+              stderr: inv.stderr,
+              exitCode: inv.exitCode
+            }
+          })
         }
       )
       // Fallback: model ran tools but didn't speak — surface a minimal

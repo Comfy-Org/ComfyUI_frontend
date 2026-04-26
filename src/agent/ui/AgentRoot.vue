@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <AgentFab />
-    <XtermPanel />
+    <FoldablePanel />
   </Teleport>
 </template>
 
@@ -14,7 +14,7 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import { useAgentStore } from '../stores/agentStore'
 import AgentFab from './AgentFab.vue'
-import XtermPanel from './XtermPanel.vue'
+import FoldablePanel from './FoldablePanel.vue'
 
 onMounted(() => {
   const commandStore = useCommandStore()
