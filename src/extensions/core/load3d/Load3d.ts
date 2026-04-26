@@ -498,6 +498,16 @@ class Load3d {
     return this.loadingPromise
   }
 
+  async whenLoadIdle(): Promise<void> {
+    let last: Promise<void> | null = null
+    while (this.loadingPromise && this.loadingPromise !== last) {
+      last = this.loadingPromise
+      try {
+        await last
+      } catch (e) {}
+    }
+  }
+
   private async _loadModelInternal(
     url: string,
     originalFileName?: string

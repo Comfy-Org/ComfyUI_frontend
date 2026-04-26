@@ -552,6 +552,78 @@ describe('Load3d', () => {
     })
   })
 
+  describe('whenLoadIdle', () => {
+    it('resolves immediately when no load is in flight', async () => {
+      Object.assign(ctx.load3d, { loadingPromise: null })
+      await expect(ctx.load3d.whenLoadIdle()).resolves.toBeUndefined()
+    })
+
+    it('waits for the current loadingPromise to settle', async () => {
+      let resolveLoad!: () => void
+      const p = new Promise<void>((resolve) => {
+        resolveLoad = resolve
+      })
+      Object.assign(ctx.load3d, { loadingPromise: p })
+
+      const idle = ctx.load3d.whenLoadIdle()
+      let settled = false
+      void idle.then(() => {
+        settled = true
+      })
+
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      resolveLoad()
+
+      Object.assign(ctx.load3d, { loadingPromise: null })
+      await idle
+      expect(settled).toBe(true)
+    })
+
+    it('drains a chained sequence of loads before resolving', async () => {
+      let resolveFirst!: () => void
+      const first = new Promise<void>((resolve) => {
+        resolveFirst = resolve
+      })
+      let resolveSecond!: () => void
+      const second = new Promise<void>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      Object.assign(ctx.load3d, { loadingPromise: first })
+      void first.then(() => {
+        Object.assign(ctx.load3d, { loadingPromise: second })
+      })
+
+      const idle = ctx.load3d.whenLoadIdle()
+      let settled = false
+      void idle.then(() => {
+        settled = true
+      })
+
+      resolveFirst()
+      await new Promise((r) => setTimeout(r, 0))
+      expect(settled).toBe(false)
+
+      resolveSecond()
+      Object.assign(ctx.load3d, { loadingPromise: null })
+      await idle
+      expect(settled).toBe(true)
+    })
+
+    it('swallows a rejected loadingPromise and continues draining', async () => {
+      const failing = Promise.reject(new Error('boom'))
+      failing.catch(() => {})
+      Object.assign(ctx.load3d, { loadingPromise: failing })
+
+      const idle = ctx.load3d.whenLoadIdle()
+      Object.assign(ctx.load3d, { loadingPromise: null })
+
+      await expect(idle).resolves.toBeUndefined()
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }
