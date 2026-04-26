@@ -537,7 +537,7 @@ useExtensionService().registerExtension({
             load3d.setBackgroundImage(bgImagePath)
           }
 
-          if (extrinsics && intrinsics) {
+          if (filePath && extrinsics && intrinsics) {
             const applyMatrices = () => {
               try {
                 load3d.setCameraFromMatrices(extrinsics, intrinsics)
