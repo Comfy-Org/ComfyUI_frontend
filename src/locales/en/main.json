@@ -3886,7 +3886,14 @@
       "dropHint": "Drop to attach",
       "resize": "Resize panel",
       "brandTitle": "COMFY-AI",
-      "logoAlt": "Comfy"
+      "logoAlt": "Comfy",
+      "prompt": "comfy>",
+      "readyHint": "ready. Ask anything, or type a shell command directly.",
+      "toolFolded": "{count} line | {count} lines, exit {exit}",
+      "foldAll": "Fold all tool calls (Ctrl+O)",
+      "unfoldAll": "Expand all tool calls (Ctrl+O)",
+      "inputPlaceholder": "ask anything, or run a shell command",
+      "streamingPlaceholder": "(streaming…)"
     },
     "settings": {
       "title": "Agent settings",

@@ -16,12 +16,25 @@ export interface IngestedAsset {
   previewUrl?: string
 }
 
+interface ToolMessageMeta {
+  script: string
+  stdout: string
+  stderr?: string
+  exitCode: number
+}
+
 interface AgentMessage {
   id: string
   role: AgentMessageRole
   text: string
   assets?: IngestedAsset[]
   createdAt: number
+  /**
+   * Present on system messages that record a tool invocation. Lets the
+   * renderer fold/unfold individual tool calls by structure instead of
+   * re-parsing the synthesized text summary.
+   */
+  tool?: ToolMessageMeta
 }
 
 interface FabPosition {
