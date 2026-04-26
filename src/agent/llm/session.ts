@@ -14,14 +14,16 @@ import { collect } from '../shell/types'
  * the model regularly violates.
  */
 const PROMISSORY_PATTERN =
-  /\b(let'?s try|let me (try|investigate|check|explore|re-?examine|verify|look)|i'?ll (try|explore|investigate|check|re-?try|re-?run)|another approach|trying (a different|another)|let me approach|could you|continue investigating|let me run|i need to (check|run|investigate))\b/i
+  /\b(let'?s try|let me (try|investigate|check|explore|re-?examine|verify|look)|i'?ll (try|explore|investigate|check|re-?try|re-?run|need to|then|now)|another approach|trying (a different|another)|let me approach|could you|continue investigating|let me run|i need to (check|run|investigate)|here'?s? (a|the|my) plan|here is (a|the|my) plan|next,? (i'?ll|we'?ll|let'?s)|next steps?:|we can (also )?add|to (build|finish|complete) (this|the workflow))\b/i
 
 /**
  * Up to this many extra streamText calls per send() to recover from
- * promissory-stop. Caps the cost: the agent can't burn unlimited
- * tokens looping on itself.
+ * promissory-stop. The agent must keep working until the user's goal
+ * is met — six extra rounds is enough headroom for multi-step builds
+ * (e.g. wallpaper workflow: load checkpoint → empty latent → encode →
+ * sample → decode → save) without unbounded looping.
  */
-const MAX_AUTOCONTINUE = 3
+const MAX_AUTOCONTINUE = 6
 
 /**
  * Layer 1 guardrail: shell-idiom blocklist.
@@ -78,6 +80,77 @@ function vetScript(
     }
   }
   return { ok: true }
+}
+
+/**
+ * Layer 1.5 guardrail: read-before-write.
+ *
+ * The agent has a habit of starting a turn with `add-node`/`connect`/
+ * `clear-workflow` without first observing what's on the canvas — which
+ * silently overwrites the user's existing workflow. This gate forces an
+ * environment-observing read at least once per turn before any mutation
+ * is allowed to run.
+ *
+ * Read commands listed here are the ones that actually reveal canvas
+ * state (graph contents, node positions, errors, queue). Registry
+ * lookups like `node-search` / `templates` / `cmd-list` don't count —
+ * they tell you what's *available*, not what's *currently there*.
+ */
+const ENV_READ_COMMANDS = new Set([
+  'graph',
+  'graph-dot',
+  'graph-links',
+  'node-list',
+  'node-pos',
+  'node-size',
+  'active-workflow',
+  'workflow-errors',
+  'show-errors',
+  'missing-models',
+  'show-missing-models',
+  'queue-status',
+  'history',
+  'get-widget',
+  'see'
+])
+
+const WRITE_COMMANDS = new Set([
+  'add-node',
+  'remove-node',
+  'connect',
+  'disconnect',
+  'set-widget',
+  'set-subgraph-aliases',
+  'set-subgraph-desc',
+  'clear-workflow',
+  'new-workflow',
+  'rename-workflow',
+  'save-as',
+  'load-template',
+  'apply-layout',
+  'layout',
+  'align-nodes',
+  'distribute-nodes',
+  'install-model',
+  'copy-to-input',
+  'sweep'
+])
+
+function commandHeads(script: string): string[] {
+  return script
+    .split(/[;|&\n]+/)
+    .map((seg) => seg.trim().split(/\s+/)[0] ?? '')
+    .filter(Boolean)
+}
+
+function classifyScript(script: string): {
+  hasEnvRead: boolean
+  writes: string[]
+} {
+  const heads = commandHeads(script)
+  const writes = heads.filter((h) => WRITE_COMMANDS.has(h))
+  const hasEnvRead = heads.some((h) => ENV_READ_COMMANDS.has(h))
+  return { hasEnvRead, writes }
 }
 
 /**
@@ -358,9 +431,22 @@ THE ONLY BUILT-IN COMMANDS ARE:
               set-subgraph-aliases <a1> [a2 ...]
                                       Set search aliases on the open subgraph.
                                       Bypass for Comfy.Subgraph.SetSearchAliases.
-  nodeops:    node-search <pattern>   List registered node types matching the
-                                      pattern (regex or substring, case-
-                                      insensitive). Use BEFORE add-node.
+  nodeops:    node-search <pattern>   List registered (locally installed) node
+                                      types matching the pattern. Use BEFORE
+                                      add-node. If empty, escalate to
+                                      node-search-registry.
+              node-search-registry <p> Search the public Comfy Registry for
+                                      node-classes matching <p> across ALL
+                                      published packs (incl. uninstalled).
+                                      Use when node-search returns nothing.
+              pack-search <pattern>   Search registry packs by name/description.
+              pack-info <pack_id>     List every node-class in <pack_id>'s
+                                      latest version (verifies before install).
+              comfy-codesearch <q>    Full-text source search across the WHOLE
+                                      public ComfyUI community (cs.comfy.org).
+                                      Last-resort lookup for nodes/code in
+                                      unregistered repos. --repo for repo-name
+                                      search. --count N (default 20).
               add-node <type> [x] [y] Create a node of <type> and add to the
                                       active graph. Prints the new node id.
                                       If <type> is unknown, use node-search.
@@ -460,6 +546,23 @@ Rules:
          "add a nano banana node"   → node-search banana
          "add a KSampler"           → node-search KSampler
          "find loaders"             → node-search loader
+       If 'node-search' returns NOTHING, the node may belong to a
+       custom-node pack the user has not installed yet. Escalate to:
+         'node-search-registry <pattern>'  — fuzzy node-class search across
+                                            all PUBLISHED packs (not just
+                                            installed ones)
+         'pack-search <pattern>'           — pack-name/description search
+         'pack-info <pack_id>'             — list every node-class in a pack
+       If THAT also returns nothing, the node may live in an unregistered
+       repo. Final fallback:
+         'comfy-codesearch <pattern>'        — full-text source search across
+                                              the WHOLE public ComfyUI
+                                              community (cs.comfy.org) — finds
+                                              class defs in repos that aren't
+                                              in the registry yet
+         'comfy-codesearch --repo <pattern>' — repo-name search (when looking
+                                              for a project by topic)
+       before concluding the capability is missing.
     2. For any UI/panel/view intent ("show me X", "open Y panel",
        "bring me to Z"): FIRST try 'toggle-panel <name>' with the
        most likely alias, OR 'cmd-list <keyword1> <keyword2> …'.
@@ -805,6 +908,11 @@ export async function streamSession(
     baseURL: opts.baseURL
   })
   const toolCalls: ToolInvocation[] = []
+  // Per-turn flag: has the agent observed canvas state yet? Reset at the
+  // start of every runSession invocation (i.e. each user message), so the
+  // agent must re-read between user turns — the user may have edited the
+  // graph in between.
+  let envObserved = false
 
   const system = opts.systemPromptAppend
     ? `${SYSTEM_PROMPT}\n\n# Additional instructions\n${opts.systemPromptAppend}`
@@ -839,6 +947,26 @@ export async function streamSession(
           onTool(inv)
           return { stdout: '', stderr: vet.error, exitCode: 2 }
         }
+
+        // Layer 1.5: read-before-write. Reject mutating scripts until the
+        // agent has observed canvas state at least once this turn.
+        const { hasEnvRead, writes } = classifyScript(script)
+        if (!envObserved && writes.length > 0) {
+          const error =
+            'script rejected by guardrail: this script attempts to mutate the canvas (' +
+            writes.join(', ') +
+            ") but you have not yet observed the current workflow this turn. The user may already have a workflow loaded — blindly adding/removing nodes will overwrite their work.\n\nRun a read command FIRST to see what's there. Choose one:\n  - 'graph' (full snapshot, recommended)\n  - 'node-list' (just ids + types)\n  - 'active-workflow' (current workflow id + name)\n\nThen decide whether to extend the existing workflow or call 'new-workflow' / 'clear-workflow' to start fresh. This is a runtime check; rephrasing won't bypass it."
+          const inv: ToolInvocation = {
+            script,
+            stdout: '',
+            stderr: error,
+            exitCode: 2
+          }
+          toolCalls.push(inv)
+          onTool(inv)
+          return { stdout: '', stderr: error, exitCode: 2 }
+        }
+        if (hasEnvRead) envObserved = true
         const res = await runScript(script, opts.execContext)
         const stdout = await collect(res.stdout)
         const inv: ToolInvocation = {
