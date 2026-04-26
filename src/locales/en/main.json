@@ -3862,5 +3862,51 @@
       "tooltipCloudApiDisabled": "Cloud API: disabled",
       "configureBackend": "Configure backend →"
     }
+  },
+  "agent": {
+    "fab": {
+      "aria": "Open Comfy agent"
+    },
+    "input": {
+      "placeholder": "Ask the agent to do something...",
+      "send": "Send",
+      "attach": "Attach file",
+      "removeAsset": "Remove attachment"
+    },
+    "panel": {
+      "title": "Agent",
+      "close": "Close",
+      "clear": "Clear messages",
+      "empty": "Drop a file, paste an image, or ask anything.",
+      "stop": "Stop",
+      "settings": "Open settings",
+      "dropHint": "Drop to attach",
+      "resize": "Resize panel",
+      "brandTitle": "COMFY-AI",
+      "logoAlt": "Comfy"
+    },
+    "settings": {
+      "title": "Agent settings",
+      "frontendOnly": "Frontend-only agent.",
+      "frontendOnlyHint": "Runs entirely in your browser. Your API key is stored in localStorage and only sent to the API endpoint you configure — never to ComfyUI's frontend or backend.",
+      "noKeyWarning": "No API key set yet. Paste an OpenAI or OpenRouter key below to start chatting.",
+      "advanced": "Advanced",
+      "baseUrl": "API base URL",
+      "baseUrlHint": "Leave blank to use the OpenAI default. For OpenRouter use https://openrouter.ai/api/v1; for a local proxy/gateway use its URL.",
+      "model": "Model",
+      "modelHint": "Default gpt-5.4 (OpenAI). For OpenRouter try anthropic/claude-3.7-sonnet, google/gemini-2.5-pro, etc.",
+      "apiKey": "API key",
+      "apiKeyHint": "Stored only in this browser (localStorage). Overrides VITE_OPENAI_API_KEY.",
+      "systemPrompt": "Additional system prompt",
+      "systemPromptHint": "Appended to the built-in system prompt.",
+      "systemPromptPlaceholder": "Extra instructions for the agent...",
+      "modelPlaceholder": "gpt-5.4",
+      "reasoning": "Reasoning effort",
+      "reasoningHint": "For reasoning-capable models (o1/o3/gpt-5 line). Higher = smarter + slower.",
+      "reasoningMinimal": "minimal",
+      "reasoningLow": "low",
+      "reasoningMedium": "medium",
+      "reasoningHigh": "high"
+    }
   }
 }
