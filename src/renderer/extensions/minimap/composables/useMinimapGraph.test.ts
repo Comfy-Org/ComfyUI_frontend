@@ -152,6 +152,44 @@ describe('useMinimapGraph', () => {
     expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
   })
 
+  it('should not stack a second wrapper after chain-wrap survives cleanup', () => {
+    // Regression: cleanup correctly leaves chain-wrapped slots alone
+    // (clobber-guard), but used to unconditionally drop the patch
+    // record. The next setup would then capture the chain-wrapper as
+    // the new "original" and install a second minimap wrapper
+    // underneath it — one node event then fired the minimap update
+    // twice. Now the record is only dropped once every slot is back
+    // to the captured original, so a re-setup with a chain-wrapped
+    // slot lives in the resubscribe path that does not re-stack.
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    const minimapWrapper = mockGraph.onNodeAdded!
+
+    // External extension chain-wraps the minimap's onNodeAdded slot
+    // (forwards through the captured wrapper, mirroring the real
+    // useGraphStructureRevision interop pattern).
+    mockGraph.onNodeAdded = function (this: LGraph, node: LGraphNode) {
+      minimapWrapper.call(this, node)
+    }
+    const chainWrapped = mockGraph.onNodeAdded
+
+    graphManager.cleanupEventListeners()
+    // Slot still holds the extension's wrapper; we did not clobber it.
+    expect(mockGraph.onNodeAdded).toBe(chainWrapped)
+
+    graphManager.setupEventListeners()
+    // Slot is unchanged — resubscribe path detected the chain-wrap and
+    // did not stack a second wrapper above it.
+    expect(mockGraph.onNodeAdded).toBe(chainWrapped)
+
+    vi.mocked(onGraphChangedMock).mockClear()
+    mockGraph.onNodeAdded!({ id: '99' } as LGraphNode)
+    // Bug would have fired twice (outer-new + inner-old minimap wrappers).
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+  })
+
   it('should handle cleanup for never-setup graph', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
