@@ -38,6 +38,21 @@ const quantizeUsdToDisplayPrecision = (usd: number): number =>
   Math.round(usd * CREDITS_PER_USD * 10) / 10 / CREDITS_PER_USD
 
 /**
+ * Compact value-only representation of an aggregate: optional `~` prefix
+ * for ranges, optional `+` suffix for the presence of unpriced api-nodes,
+ * and the credits range itself in between. Shared by the sign-in dialog
+ * total label and the actionbar chip so the two surfaces can never drift
+ * (e.g. the chip showing `~76.5-104.6+` while the dialog says `~76.5-104.6`).
+ */
+export const formatCompactCreditRange = (
+  aggregate: GraphCostAggregate
+): string => {
+  const prefix = aggregate.hasRange ? '~' : ''
+  const suffix = aggregate.unpricedNodeCount > 0 ? '+' : ''
+  return `${prefix}${formatCreditsRangeValue(aggregate.min, aggregate.max)}${suffix}`
+}
+
+/**
  * Format an aggregate for the total-cost labels used by the sign-in dialog
  * and the actionbar popover. The `t` parameter comes from `useI18n()` at the
  * call site so the composable itself stays framework-light and the single
@@ -62,11 +77,10 @@ export const formatAggregateTotal = (
 ): { label: string; hasRange: boolean } | null => {
   if (!aggregate) return null
   if (aggregate.pricedNodeCount === 0) return null
-  const prefix = aggregate.hasRange ? '~' : ''
-  const suffix = aggregate.unpricedNodeCount > 0 ? '+' : ''
-  const value = `${prefix}${formatCreditsRangeValue(aggregate.min, aggregate.max)}${suffix}`
   return {
-    label: t('apiNodesCostBreakdown.creditsValue', { value }),
+    label: t('apiNodesCostBreakdown.creditsValue', {
+      value: formatCompactCreditRange(aggregate)
+    }),
     hasRange: aggregate.hasRange
   }
 }

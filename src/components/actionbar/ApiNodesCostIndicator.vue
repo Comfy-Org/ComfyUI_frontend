@@ -23,11 +23,11 @@
     </PopoverTrigger>
     <PopoverPortal>
       <!--
-        No aria-label on PopoverContent — Reka renders a roleless div
-        and screen readers ignore aria-label there. The ApiNodesList's
-        title is already named via aria-labelledby inside the list, and
-        the trigger button carries its own aria-label, so the popover's
-        accessible context is covered.
+        No aria-label on PopoverContent — Reka gives it role="dialog"
+        and the inner ApiNodesList already supplies the accessible name
+        via aria-labelledby. Adding an aria-label here would shadow that
+        name; the trigger button has its own aria-label for context
+        before the popover opens.
       -->
       <!--
         max-height bounded by the lesser of a 36rem cap and Reka's
@@ -65,9 +65,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useApiNodeRows } from '@/composables/node/useApiNodeRows'
 import {
   formatAggregateTotal,
+  formatCompactCreditRange,
   useGraphCostAggregator
 } from '@/composables/node/useGraphCostAggregator'
-import { formatCreditsRangeValue } from '@/composables/node/useNodePricing'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
 const { t } = useI18n()
@@ -87,16 +87,12 @@ const rows = useApiNodeRows(graph)
 
 // Chip label drops the unit — visual weight comes from the coin icon —
 // while the popover total follows the same "<value> credits" shape the
-// sign-in dialog uses via the shared helper. A `+` suffix appears when
-// the graph contains api-nodes without a numeric price (text-only,
-// pre-eval) so the reader knows the number is a lower bound.
-const compactLabel = computed(() => {
-  const agg = aggregate.value
-  if (!agg) return ''
-  const prefix = agg.hasRange ? '~' : ''
-  const suffix = agg.unpricedNodeCount > 0 ? '+' : ''
-  return `${prefix}${formatCreditsRangeValue(agg.min, agg.max)}${suffix}`
-})
+// sign-in dialog uses via the shared helper. The same range/suffix
+// formatting backs both surfaces so a chip change cannot drift away
+// from the dialog's total.
+const compactLabel = computed(() =>
+  aggregate.value ? formatCompactCreditRange(aggregate.value) : ''
+)
 
 const popoverTotal = computed(() => formatAggregateTotal(aggregate.value, t))
 
