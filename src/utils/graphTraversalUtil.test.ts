@@ -12,6 +12,7 @@ import {
   findNodeInHierarchy,
   findSubgraphByUuid,
   forEachNode,
+  findSubgraphPathById,
   forEachSubgraphNode,
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes,
@@ -645,6 +646,44 @@ describe('graphTraversalUtil', () => {
       })
     })
 
+    describe('findSubgraphPathById', () => {
+      it('should find a direct child subgraph by id', () => {
+        const target = createMockSubgraph('target', [])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: target })
+        ])
+        expect(findSubgraphPathById(graph, 'target')).toEqual(['target'])
+      })
+
+      it('should find a nested subgraph by id', () => {
+        const target = createMockSubgraph('target', [])
+        const mid = createMockSubgraph('mid', [
+          createMockNode(20, { isSubgraph: true, subgraph: target })
+        ])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: mid })
+        ])
+        expect(findSubgraphPathById(graph, 'target')).toEqual(['mid', 'target'])
+      })
+
+      it('should return null for missing target', () => {
+        const some = createMockSubgraph('some', [])
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: some })
+        ])
+        expect(findSubgraphPathById(graph, 'missing')).toBeNull()
+      })
+
+      it('should not infinite-loop on cyclic subgraph references', () => {
+        // The bulk traversers gained path-local cycle guards in this PR;
+        // findSubgraphPathById was overlooked. Without an exit-sentinel on
+        // its DFS stack, an A→B→A cycle would push graph items forever.
+        const { graph } = makeCyclicSubgraphFixture()
+        expect(() => findSubgraphPathById(graph, 'missing')).not.toThrow()
+        expect(findSubgraphPathById(graph, 'missing')).toBeNull()
+      })
+    })
+
     describe('getNodeByExecutionId', () => {
       it('should find node in root graph', () => {
         const nodes = [createMockNode('123'), createMockNode('456')]
@@ -754,6 +793,20 @@ describe('graphTraversalUtil', () => {
 
         const execId = getExecutionIdByNode(rootGraph, targetNode)
         expect(execId).toBe('123:456:999')
+      })
+
+      it('should not stack-overflow on cyclic subgraphs when target is unreachable', () => {
+        // findPartialExecutionPathToGraph (called when node.graph differs
+        // from rootGraph) recurses through subgraph children searching for
+        // the target. Without a path-local visited set, an A→B→A cycle
+        // would recurse indefinitely. The exhaustive search path (target
+        // unreachable, so every path explored) is what trips the bug.
+        const { graph } = makeCyclicSubgraphFixture()
+        const orphan = createMockNode('999')
+        const orphanGraph = createMockSubgraph('orphan', [orphan])
+        orphan.graph = orphanGraph
+        expect(() => getExecutionIdByNode(graph, orphan)).not.toThrow()
+        expect(getExecutionIdByNode(graph, orphan)).toBeNull()
       })
     })
 

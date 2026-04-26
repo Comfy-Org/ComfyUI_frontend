@@ -298,12 +298,26 @@ export function findSubgraphPathById(
   rootGraph: LGraph,
   targetId: string
 ): string[] | null {
-  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
-    { graph: rootGraph, path: [] }
-  ]
+  // Cycle guard mirrors traverseNodesDepthFirst: an "exit" sentinel
+  // removes the subgraph from `visited` after its subtree is fully
+  // processed, so a malformed A→B→A cycle short-circuits while two
+  // sibling SubgraphNodes pointing at the same Subgraph are still
+  // searched independently.
+  type StackItem =
+    | { kind: 'node'; graph: LGraph | Subgraph; path: string[] }
+    | { kind: 'exit'; subgraph: LGraph | Subgraph }
+  const stack: StackItem[] = [{ kind: 'node', graph: rootGraph, path: [] }]
+  const visited = new Set<LGraph | Subgraph>()
 
   while (stack.length > 0) {
-    const { graph, path } = stack.pop()!
+    const item = stack.pop()!
+
+    if (item.kind === 'exit') {
+      visited.delete(item.subgraph)
+      continue
+    }
+
+    const { graph, path } = item
 
     // Check if graph exists and has _nodes property
     if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
@@ -316,7 +330,10 @@ export function findSubgraphPathById(
         if (node.subgraph.id === targetId) {
           return newPath
         }
-        stack.push({ graph: node.subgraph, path: newPath })
+        if (visited.has(node.subgraph)) continue
+        visited.add(node.subgraph)
+        stack.push({ kind: 'exit', subgraph: node.subgraph })
+        stack.push({ kind: 'node', graph: node.subgraph, path: newPath })
       }
     }
   }
@@ -832,14 +849,22 @@ export function getActiveGraphNodeIds(
 
 function findPartialExecutionPathToGraph(
   target: LGraph,
-  root: LGraph
+  root: LGraph,
+  visited: Set<LGraph | Subgraph> = new Set()
 ): string | undefined {
   for (const node of root.nodes) {
     if (!node.isSubgraphNode()) continue
 
     if (node.subgraph === target) return `${node.id}`
 
-    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
+    if (visited.has(node.subgraph)) continue
+    visited.add(node.subgraph)
+    const subpath = findPartialExecutionPathToGraph(
+      target,
+      node.subgraph,
+      visited
+    )
+    visited.delete(node.subgraph)
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
