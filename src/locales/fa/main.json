@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "برنامه",
+    "blueprint": "نقشه راه",
     "clearWorkflow": "پاک‌سازی workflow",
     "deleteBlueprint": "حذف blueprint",
     "deleteWorkflow": "حذف workflow",
@@ -917,6 +918,10 @@
     "showMissingNodes": "نمایش نودهای مفقود",
     "showSwapNodes": "نمایش نودهای قابل جایگزینی",
     "swapNodes": "برخی از نودها را می‌توان با گزینه‌های جایگزین تعویض کرد"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "ارسال بازخورد",
+    "ctaText": "نظر شما درباره پنل خطا جدید چیست؟"
   },
   "essentials": {
     "batchImage": "پردازش دسته‌ای تصویر",

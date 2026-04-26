@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "应用",
+    "blueprint": "蓝图",
     "clearWorkflow": "清除工作流",
     "deleteBlueprint": "删除蓝图",
     "deleteWorkflow": "删除工作流",
@@ -917,6 +918,10 @@
     "showMissingNodes": "显示缺失节点",
     "showSwapNodes": "显示可替换节点",
     "swapNodes": "部分节点可以用替代项替换"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "提交反馈",
+    "ctaText": "新的错误面板感觉如何？"
   },
   "essentials": {
     "batchImage": "批量图像",
