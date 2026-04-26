@@ -1,37 +1,20 @@
 import { expect } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  JobsListResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createJobsWithExecutionTimes } from '@e2e/fixtures/helpers/AssetsHelper'
 
 // The assets sidebar's sort options live inside the settings popover and are
 // only rendered in cloud mode (`MediaAssetFilterBar.vue`:
-// `:show-sort-options="isCloud"`). We piggyback on the @cloud project's
-// compile-time `__DISTRIBUTION__='cloud'` build and stub `/api/assets` so the
-// assets store doesn't poison itself on first load (same pattern as
-// cloud-asset-default.spec.ts).
-
-function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
-  return { assets, total: assets.length, has_more: false }
-}
-
-const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
-  stubCloudAssets: [
-    async ({ page }, use) => {
-      const pattern = '**/api/assets?*'
-      await page.route(pattern, (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse([]))
-        })
-      )
-      await use()
-      await page.unroute(pattern)
-    },
-    { auto: true }
-  ]
-})
+// `:show-sort-options="isCloud"`). We tag tests `@cloud` so they run against
+// the cloud Playwright project, and register `/api/assets`, `/api/jobs`, and
+// `/internal/files/input` route handlers as auto fixtures — Playwright runs
+// auto fixtures before the `comfyPage` fixture's internal `setup()`, so the
+// page first-loads with mocks already in place.
 
 // Three jobs whose `(create_time, duration)` axes are intentionally
 // misaligned so newest/oldest and longest/fastest sorts produce *different*
@@ -55,17 +38,78 @@ const NAME_BY_ID: Record<string, string> = {
   'job-003': 'output_job-003.png'
 }
 
+function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
+  return { assets, total: assets.length, has_more: false }
+}
+
+function makeJobsResponseBody() {
+  return {
+    jobs: SORT_JOBS,
+    pagination: {
+      offset: 0,
+      limit: SORT_JOBS.length,
+      total: SORT_JOBS.length,
+      has_more: false
+    }
+  } satisfies {
+    jobs: unknown[]
+    pagination: JobsListResponse['pagination']
+  }
+}
+
+const test = comfyPageFixture.extend<{
+  stubCloudAssets: void
+  stubJobs: void
+  stubInputFiles: void
+}>({
+  stubCloudAssets: [
+    async ({ page }, use) => {
+      const pattern = '**/api/assets?*'
+      await page.route(pattern, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(makeAssetsResponse([]))
+        })
+      )
+      await use()
+      await page.unroute(pattern)
+    },
+    { auto: true }
+  ],
+  stubJobs: [
+    async ({ page }, use) => {
+      const pattern = /\/api\/jobs(?:\?.*)?$/
+      await page.route(pattern, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(makeJobsResponseBody())
+        })
+      )
+      await use()
+      await page.unroute(pattern)
+    },
+    { auto: true }
+  ],
+  stubInputFiles: [
+    async ({ page }, use) => {
+      const pattern = /\/internal\/files\/input(?:\?.*)?$/
+      await page.route(pattern, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([])
+        })
+      )
+      await use()
+      await page.unroute(pattern)
+    },
+    { auto: true }
+  ]
+})
+
 test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SORT_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
   test('Settings menu exposes all four sort options in cloud mode', async ({
     comfyPage
   }) => {
