@@ -2,6 +2,21 @@ import _ from 'es-toolkit/compat'
 import { computed, onMounted, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+
+// Markers stamped on widgets / nodes we've already chain-wrapped with
+// the pricing recalculation callback. Re-running useNodeBadge on the
+// same widget or node (copy/paste, undo/redo, badge re-init) would
+// otherwise stack another wrapper each cycle, multiplying the per-edit
+// work by the number of init cycles since the widget/node was created.
+const WIDGET_PRICING_PATCHED = Symbol('pricingWidgetPatched')
+const NODE_CONN_PRICING_PATCHED = Symbol('pricingNodeConnPatched')
+type WidgetWithPatchMark = {
+  callback?: (...args: unknown[]) => unknown
+  [WIDGET_PRICING_PATCHED]?: true
+}
+type NodeWithConnPatchMark = {
+  [NODE_CONN_PRICING_PATCHED]?: true
+}
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import { BadgePosition, LGraphBadge } from '@/lib/litegraph/src/litegraph'
@@ -146,12 +161,15 @@ export const useNodeBadge = () => {
                 relevantWidgetNames.includes(w.name)
               )
               for (const widget of widgetsToWatch) {
+                const marked = widget as unknown as WidgetWithPatchMark
+                if (marked[WIDGET_PRICING_PATCHED]) continue
                 widget.callback = useChainCallback(widget.callback, () => {
                   nodePricing.triggerPriceRecalculation(node)
                   if (showApiPricingBadge.value) {
                     node.graph?.setDirtyCanvas(true, true)
                   }
                 })
+                marked[WIDGET_PRICING_PATCHED] = true
               }
             }
 
@@ -162,32 +180,24 @@ export const useNodeBadge = () => {
               relevantInputs.length > 0 || inputGroupPrefixes.length > 0
 
             if (hasRelevantInputs) {
-              const originalOnConnectionsChange = node.onConnectionsChange
-              node.onConnectionsChange = function (
-                type,
-                slotIndex,
-                isConnected,
-                link,
-                ioSlot
-              ) {
-                originalOnConnectionsChange?.call(
-                  this,
-                  type,
-                  slotIndex,
-                  isConnected,
-                  link,
-                  ioSlot
+              const markedNode = node as unknown as NodeWithConnPatchMark
+              if (!markedNode[NODE_CONN_PRICING_PATCHED]) {
+                node.onConnectionsChange = useChainCallback(
+                  node.onConnectionsChange,
+                  function (_type, _slotIndex, _isConnected, _link, ioSlot) {
+                    const inputName = ioSlot?.name
+                    if (!inputName) return
+                    const isRelevantInput =
+                      relevantInputs.includes(inputName) ||
+                      inputGroupPrefixes.some((prefix) =>
+                        inputName.startsWith(prefix + '.')
+                      )
+                    if (isRelevantInput) {
+                      nodePricing.triggerPriceRecalculation(node)
+                    }
+                  }
                 )
-                const inputName = ioSlot?.name
-                if (!inputName) return
-                const isRelevantInput =
-                  relevantInputs.includes(inputName) ||
-                  inputGroupPrefixes.some((prefix) =>
-                    inputName.startsWith(prefix + '.')
-                  )
-                if (isRelevantInput) {
-                  nodePricing.triggerPriceRecalculation(node)
-                }
+                markedNode[NODE_CONN_PRICING_PATCHED] = true
               }
             }
           }
