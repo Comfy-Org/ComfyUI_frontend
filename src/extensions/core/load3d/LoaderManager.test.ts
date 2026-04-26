@@ -140,6 +140,31 @@ describe('LoaderManager', () => {
       await lm.loadModel('api/view?filename=cube.xyz')
       expect(lm.getCurrentAdapter()).toBeNull()
     })
+
+    it('stays null when the adapter rejects', async () => {
+      const { lm } = makeLoaderManager()
+      // Seed with a previously-successful mesh load so we can prove a later
+      // failed splat load does not leave the splat adapter published.
+      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      await lm.loadModel('api/view?filename=cube.glb')
+      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
+
+      splatLoad.mockRejectedValueOnce(new Error('boom'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=scan.splat')
+
+      expect(lm.getCurrentAdapter()).toBeNull()
+    })
+
+    it('stays null when the adapter resolves null (parse failure)', async () => {
+      const { lm } = makeLoaderManager()
+      pointCloudLoad.mockResolvedValueOnce(null)
+
+      await lm.loadModel('api/view?filename=scan.ply')
+
+      expect(lm.getCurrentAdapter()).toBeNull()
+    })
   })
 
   describe('loadModel ordering', () => {

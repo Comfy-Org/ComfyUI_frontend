@@ -80,19 +80,21 @@ export class LoaderManager implements LoaderManagerInterface {
         return
       }
 
-      const model = await this.loadModelInternal(url, fileExtension)
+      const result = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
         return
       }
 
-      if (model) {
-        await this.modelManager.setupModel(model)
+      if (result && result.model) {
+        this._currentAdapter = result.adapter
+        await this.modelManager.setupModel(result.model)
       }
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
     } catch (error) {
       if (loadId === this.currentLoadId) {
+        this._currentAdapter = null
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
         useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
@@ -133,7 +135,7 @@ export class LoaderManager implements LoaderManagerInterface {
   private async loadModelInternal(
     url: string,
     fileExtension: string
-  ): Promise<THREE.Object3D | null> {
+  ): Promise<{ adapter: ModelAdapter; model: THREE.Object3D | null } | null> {
     const params = new URLSearchParams(url.split('?')[1])
     const filename = params.get('filename')
 
@@ -154,7 +156,7 @@ export class LoaderManager implements LoaderManagerInterface {
     const adapter = this.pickAdapter(fileExtension)
     if (!adapter) return null
 
-    this._currentAdapter = adapter
-    return adapter.load(this.createLoadContext(), path, filename)
+    const model = await adapter.load(this.createLoadContext(), path, filename)
+    return { adapter, model }
   }
 }
