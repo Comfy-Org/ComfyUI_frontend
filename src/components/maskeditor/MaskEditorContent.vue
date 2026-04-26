@@ -1,6 +1,7 @@
 <template>
   <div
     ref="containerRef"
+    data-testid="mask-editor-root"
     class="maskEditor-dialog-root flex size-full flex-col"
     @contextmenu.prevent
     @dragstart="handleDragStart"
@@ -29,6 +30,7 @@
       <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
+        data-testid="gpu-preview-canvas"
         class="pointer-events-none absolute top-0 left-0 size-full"
         :class="{
           'z-20': store.activeLayer === 'rgb',
