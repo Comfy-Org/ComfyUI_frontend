@@ -344,7 +344,9 @@ import {
 } from '@/config/comfyApi'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-type SystemStats = { system?: { argv?: string[] } }
+type SystemStats = {
+  system?: { argv?: string[]; comfy_api_base?: string }
+}
 
 const COMFY_API_BASE_FLAG = '--comfy-api-base'
 const DEFAULT_CLOUD_API_BASE = 'https://api.comfy.org'
@@ -353,16 +355,22 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '')
 }
 
-function parseBackendCloudBase(argv: string[] | undefined): string {
-  if (!argv) return DEFAULT_CLOUD_API_BASE
-  let value: string | undefined
+function parseArgvApiBase(argv: string[] | undefined): string | undefined {
+  if (!argv) return undefined
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
-    if (a === COMFY_API_BASE_FLAG && i + 1 < argv.length) value = argv[i + 1]
-    else if (a.startsWith(`${COMFY_API_BASE_FLAG}=`))
-      value = a.slice(COMFY_API_BASE_FLAG.length + 1)
+    if (a === COMFY_API_BASE_FLAG && i + 1 < argv.length) return argv[i + 1]
+    if (a.startsWith(`${COMFY_API_BASE_FLAG}=`))
+      return a.slice(COMFY_API_BASE_FLAG.length + 1)
   }
-  return stripTrailingSlash(value ?? DEFAULT_CLOUD_API_BASE)
+  return undefined
+}
+
+function resolveBackendCloudBase(system: SystemStats['system']): string {
+  const explicit = system?.comfy_api_base
+  if (explicit) return stripTrailingSlash(explicit)
+  const fromArgv = parseArgvApiBase(system?.argv)
+  return stripTrailingSlash(fromArgv ?? DEFAULT_CLOUD_API_BASE)
 }
 
 const { t } = useI18n()
@@ -461,7 +469,7 @@ async function testConnection() {
     httpStatus.value = stats !== null
     wsStatus.value = ws
     backendCloudBase.value = stats
-      ? parseBackendCloudBase(stats.system?.argv)
+      ? resolveBackendCloudBase(stats.system)
       : null
 
     if (stats === null && !ws) {
