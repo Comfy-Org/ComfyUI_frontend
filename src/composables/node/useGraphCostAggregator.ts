@@ -115,6 +115,10 @@ export const useGraphCostAggregator = (
     const resolved = toValue(graph)
     if (!resolved) return null
 
+    // Mutate the accumulator instead of returning a fresh object per node.
+    // The accumulator is private to this reduce — no aliasing risk — and a
+    // 50-node graph at 30fps recompute saves ~1500 short-lived allocations
+    // per second.
     const raw = reduceAllNodes<{
       min: number
       max: number
@@ -126,14 +130,13 @@ export const useGraphCostAggregator = (
         if (!isApiNode(node)) return acc
         const price = getNodeNumericPrice(node)
         if (price === null) {
-          return { ...acc, unpricedNodeCount: acc.unpricedNodeCount + 1 }
+          acc.unpricedNodeCount++
+          return acc
         }
-        return {
-          min: acc.min + price.min,
-          max: acc.max + price.max,
-          pricedNodeCount: acc.pricedNodeCount + 1,
-          unpricedNodeCount: acc.unpricedNodeCount
-        }
+        acc.min += price.min
+        acc.max += price.max
+        acc.pricedNodeCount++
+        return acc
       },
       { min: 0, max: 0, pricedNodeCount: 0, unpricedNodeCount: 0 }
     )

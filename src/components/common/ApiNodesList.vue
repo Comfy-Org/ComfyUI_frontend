@@ -10,7 +10,7 @@
       <h3 :id="titleId">
         {{ t('apiNodesCostBreakdown.title') }} ({{ nodes.length }})
       </h3>
-      <div v-if="nodes.some((item) => item.cost !== null)">
+      <div v-if="hasAnyCost">
         {{ t('apiNodesCostBreakdown.costPerRun') }}
       </div>
     </div>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { useId } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -68,6 +68,8 @@ const { nodes, total = null } = defineProps<{
   // prop here keeps the component's contract to what it actually uses.
   total?: { label: string } | null
 }>()
+
+const hasAnyCost = computed(() => nodes.some((item) => item.cost !== null))
 
 // Stable auto-generated id so two ApiNodesList instances on the page
 // (possible during app transitions) do not collide on the shared title id.
