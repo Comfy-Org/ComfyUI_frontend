@@ -261,6 +261,13 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Search & filter ---
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
+  public readonly filterButton: Locator
+
+  // --- Filter menu checkboxes (cloud-only, shown inside filter popover) ---
+  public readonly filterImageCheckbox: Locator
+  public readonly filterVideoCheckbox: Locator
+  public readonly filterAudioCheckbox: Locator
+  public readonly filter3DCheckbox: Locator
 
   // --- View mode ---
   public readonly listViewOption: Locator
@@ -269,6 +276,8 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
+  public readonly sortLongestFirst: Locator
+  public readonly sortFastestFirst: Locator
 
   // --- Asset cards ---
   public readonly assetCards: Locator
@@ -299,10 +308,20 @@ export class AssetsSidebarTab extends SidebarTab {
     )
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
+    // MediaAssetFilterButton has no aria-label; target by its lucide icon.
+    this.filterButton = page
+      .locator('button:has(.icon-\\[lucide--list-filter\\])')
+      .first()
+    this.filterImageCheckbox = page.getByRole('checkbox', { name: 'Image' })
+    this.filterVideoCheckbox = page.getByRole('checkbox', { name: 'Video' })
+    this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
+    this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
+    this.sortLongestFirst = page.getByText('Generation time (longest first)')
+    this.sortFastestFirst = page.getByText('Generation time (fastest first)')
     this.assetCards = page
       .getByRole('button')
       .and(page.locator('[data-selected]'))
@@ -381,6 +400,52 @@ export class AssetsSidebarTab extends SidebarTab {
       .or(this.gridViewOption)
       .first()
       .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async openFilterMenu() {
+    await this.dismissToasts()
+    await this.filterButton.click()
+    // Wait for popover content to render
+    await this.filterImageCheckbox.waitFor({
+      state: 'visible',
+      timeout: 3000
+    })
+  }
+
+  /** Get the locator for a filter-menu checkbox by media kind. */
+  filterCheckbox(kind: 'image' | 'video' | 'audio' | '3d'): Locator {
+    switch (kind) {
+      case 'image':
+        return this.filterImageCheckbox
+      case 'video':
+        return this.filterVideoCheckbox
+      case 'audio':
+        return this.filterAudioCheckbox
+      case '3d':
+        return this.filter3DCheckbox
+    }
+  }
+
+  /**
+   * Toggle a single media-type filter and wait for its `aria-checked` state to
+   * flip. Assumes the filter menu is already open.
+   */
+  async toggleMediaTypeFilter(
+    kind: 'image' | 'video' | 'audio' | '3d'
+  ): Promise<void> {
+    const checkbox = this.filterCheckbox(kind)
+    const before = await checkbox.getAttribute('aria-checked')
+    await checkbox.click()
+    const expected = before === 'true' ? 'false' : 'true'
+    await expect(checkbox).toHaveAttribute('aria-checked', expected)
+  }
+
+  /**
+   * Returns the visible asset card names in current DOM order. Use to assert
+   * sort or filter results.
+   */
+  async getAssetCardOrder(): Promise<string[]> {
+    return await this.assetCards.allInnerTexts()
   }
 
   async rightClickAsset(name: string) {
