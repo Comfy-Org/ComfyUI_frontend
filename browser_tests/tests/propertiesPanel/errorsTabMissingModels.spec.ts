@@ -99,5 +99,52 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       )
       await expect(downloadButton.first()).toBeVisible()
     })
+
+    test('Should render Download all and Refresh when one model is downloadable', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+
+      const actions = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelActions
+      )
+      await expect(actions).toBeVisible()
+      await expect(
+        actions.getByRole('button', { name: /Download all/ })
+      ).toBeVisible()
+      await expect(
+        actions.getByRole('button', { name: 'Refresh' })
+      ).toBeVisible()
+    })
+
+    test('Should re-fetch object info and model folders when Refresh is clicked', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+
+      const page = comfyPage.page
+      const actions = page.getByTestId(TestIds.dialogs.missingModelActions)
+      const refreshButton = actions.getByRole('button', { name: 'Refresh' })
+
+      await expect(refreshButton).toBeVisible()
+
+      const objectInfoResponse = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname.endsWith('/object_info') &&
+          response.ok()
+      )
+      const modelFoldersResponse = page.waitForResponse((response) => {
+        const pathname = new URL(response.url()).pathname
+        return pathname.endsWith('/experiment/models') && response.ok()
+      })
+
+      await Promise.all([
+        objectInfoResponse,
+        modelFoldersResponse,
+        refreshButton.click()
+      ])
+
+      await expect(refreshButton).toBeEnabled()
+    })
   })
 })

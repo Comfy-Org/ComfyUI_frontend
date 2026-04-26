@@ -58,6 +58,7 @@ export const TestIds = {
     missingModelLocate: 'missing-model-locate',
     missingModelCopyName: 'missing-model-copy-name',
     missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelActions: 'missing-model-actions',
     missingModelDownload: 'missing-model-download',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
