@@ -43,7 +43,7 @@ export class PointCloudModelAdapter implements ModelAdapter {
     const plyGeometry =
       isASCII && getPLYEngine() === 'fastply'
         ? this.fastPlyLoader.parse(arrayBuffer)
-        : (this.plyLoader.setPath(path), this.plyLoader.parse(arrayBuffer))
+        : this.plyLoader.parse(arrayBuffer)
 
     ctx.setOriginalModel(plyGeometry)
     plyGeometry.computeVertexNormals()
