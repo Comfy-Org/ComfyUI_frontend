@@ -538,14 +538,19 @@ useExtensionService().registerExtension({
           }
 
           if (extrinsics && intrinsics) {
-            try {
-              load3d.setCameraFromMatrices(extrinsics, intrinsics)
-            } catch (error) {
-              console.error(
-                'Failed to apply camera matrices from Preview3D output:',
-                error
-              )
+            const applyMatrices = () => {
+              try {
+                load3d.setCameraFromMatrices(extrinsics, intrinsics)
+              } catch (error) {
+                console.error(
+                  'Failed to apply camera matrices from Preview3D output:',
+                  error
+                )
+              } finally {
+                load3d.removeEventListener('modelLoadingEnd', applyMatrices)
+              }
             }
+            load3d.addEventListener('modelLoadingEnd', applyMatrices)
           }
         }
       }
