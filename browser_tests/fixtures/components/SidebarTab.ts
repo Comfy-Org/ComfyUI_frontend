@@ -261,6 +261,7 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Search & filter ---
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
+  public readonly filterButton: Locator
 
   // --- View mode ---
   public readonly listViewOption: Locator
@@ -299,6 +300,7 @@ export class AssetsSidebarTab extends SidebarTab {
     )
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
+    this.filterButton = page.getByRole('button', { name: 'Filter by' })
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')
@@ -332,6 +334,10 @@ export class AssetsSidebarTab extends SidebarTab {
 
   emptyStateTitle(title: string) {
     return this.page.getByText(title)
+  }
+
+  filterCheckbox(label: string) {
+    return this.page.getByRole('checkbox', { name: label })
   }
 
   getAssetCardByName(name: string) {
@@ -381,6 +387,16 @@ export class AssetsSidebarTab extends SidebarTab {
       .or(this.gridViewOption)
       .first()
       .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async openFilterMenu() {
+    await this.dismissToasts()
+    await this.filterButton.click()
+    // Wait for popover content with checkboxes to render
+    await this.filterCheckbox('Image').waitFor({
+      state: 'visible',
+      timeout: 3000
+    })
   }
 
   async rightClickAsset(name: string) {
