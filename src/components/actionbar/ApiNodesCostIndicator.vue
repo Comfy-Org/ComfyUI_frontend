@@ -8,7 +8,7 @@
     the actionbar chip is a passive glance and silence is fine when
     there's no numeric cost to show.
   -->
-  <PopoverRoot v-if="aggregate?.pricedNodeCount">
+  <PopoverRoot v-if="aggregate?.pricedNodeCount" v-model:open="open">
     <PopoverTrigger as-child>
       <Button
         variant="secondary"
@@ -58,13 +58,14 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import {
   PopoverContent,
   PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { computed, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ApiNodesList from '@/components/common/ApiNodesList.vue'
@@ -91,6 +92,29 @@ const { graph } = defineProps<{
 
 const aggregate = useGraphCostAggregator(graph)
 const rows = useApiNodeRows(graph)
+
+const open = ref(false)
+
+// Reka's DismissableLayer skips its dismiss path when Escape arrives with
+// `defaultPrevented` already set. ComfyUI's window-level keybindHandler
+// owns Escape for `Comfy.Graph.ExitSubgraph` and unconditionally calls
+// preventDefault before Reka's bubble-phase listener sees the event,
+// which silently traps the popover open. Close it ourselves in the
+// capture phase so the dismiss happens before keybindHandler runs, and
+// stop propagation so the same keystroke doesn't also exit the active
+// subgraph; without the stopPropagation, dismissing the popover from
+// inside a subgraph pops the navigation stack as a side effect.
+useEventListener(
+  window,
+  'keydown',
+  (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && open.value) {
+      open.value = false
+      event.stopPropagation()
+    }
+  },
+  { capture: true }
+)
 
 // Ref handle on the inner ApiNodesList so the popover dialog can read
 // the list's title element id and bind its own aria-labelledby.
