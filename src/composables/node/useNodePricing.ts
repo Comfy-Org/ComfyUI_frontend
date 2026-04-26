@@ -588,10 +588,13 @@ const scheduleEvaluation = (
   ctx: JsonataEvalContext,
   sig: string
 ) => {
-  desiredSig.set(node, sig)
-
+  // Short-circuit on identical-signature in-flight before recording the
+  // desired signature — the existing in-flight evaluation will satisfy
+  // this request as-is, no state mutation needed.
   const running = inflight.get(node)
   if (running && running.sig === sig) return
+
+  desiredSig.set(node, sig)
 
   const compiled = rule._compiled
   if (!compiled) return
