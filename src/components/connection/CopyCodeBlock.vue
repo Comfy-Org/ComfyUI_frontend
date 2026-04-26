@@ -1,7 +1,7 @@
 <template>
   <div class="relative">
     <code
-      class="block rounded-md bg-neutral-800 p-3 pr-10 text-xs text-neutral-200 select-all whitespace-pre-wrap"
+      class="block rounded-md bg-neutral-800 p-3 pr-10 text-xs whitespace-pre-wrap text-neutral-200 select-all"
       >{{ text }}</code
     >
     <button
@@ -9,7 +9,7 @@
       :aria-label="
         copied ? t('clipboard.successMessage') : t('g.copyToClipboard')
       "
-      class="absolute top-2 right-2 rounded p-1 text-neutral-500 transition-colors hover:text-neutral-100"
+      class="absolute top-2 right-2 rounded-sm p-1 text-neutral-500 transition-colors hover:text-neutral-100"
       @click="copy(text)"
     >
       <span
