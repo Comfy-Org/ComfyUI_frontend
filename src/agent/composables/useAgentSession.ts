@@ -8,6 +8,7 @@ import type { ToolInvocation } from '../llm/session'
 import { streamSession } from '../llm/session'
 import { log } from '../services/logger'
 import { registerBrowserCommands } from '../shell/commands/browser'
+import { registerCodesearchCommands } from '../shell/commands/codesearch'
 import { registerComfyCommands } from '../shell/commands/comfy'
 import { registerComfyNamespace } from '../shell/commands/comfyNs'
 import { registerCoreutils } from '../shell/commands/coreutils'
@@ -17,6 +18,7 @@ import { registerImageCommands } from '../shell/commands/images'
 import { registerInstallCommands } from '../shell/commands/install'
 import { registerLayoutCommands } from '../shell/commands/layout'
 import { registerNodeOpsCommands } from '../shell/commands/nodeOps'
+import { registerRegistrySearchCommands } from '../shell/commands/registrySearch'
 import { registerSeeCommands } from '../shell/commands/see'
 import { registerStateCommands } from '../shell/commands/state'
 import { registerSweepCommands } from '../shell/commands/sweep'
@@ -49,12 +51,14 @@ function buildExecContext(signal: AbortSignal): ExecContext {
   registerComfyNamespace(registry)
   registerStateCommands(registry)
   registerBrowserCommands(registry)
+  registerCodesearchCommands(registry)
   registerExecutionCommands(registry)
   registerGraphCommands(registry)
   registerImageCommands(registry)
   registerInstallCommands(registry)
   registerLayoutCommands(registry)
   registerNodeOpsCommands(registry)
+  registerRegistrySearchCommands(registry)
   registerSeeCommands(registry)
   registerSweepCommands(registry)
   registerTemplateCommands(registry)
