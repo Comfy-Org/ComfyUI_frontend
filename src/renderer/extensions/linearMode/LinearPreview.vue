@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
-import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,16 +6,12 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { useErrorHandling } from '@/composables/useErrorHandling'
-import { isCloud } from '@/platform/distribution/types'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
-import OutputWindow from '@/components/appMode/layout/OutputWindow.vue'
+import OutputWindowList from '@/components/appMode/layout/OutputWindowList.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
@@ -26,18 +20,22 @@ import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
+import { useOutputWindowSync } from '@/renderer/extensions/linearMode/useOutputWindowSync'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
-import { ResultItemImpl } from '@/stores/queueStore'
-import { resolveNode } from '@/utils/litegraphUtil'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const appModeStore = useAppModeStore()
-const commandStore = useCommandStore()
-const { toastErrorHandler } = useErrorHandling()
 const executionStore = useExecutionStore()
+
+// Drive the multi-window store from `linearOutputStore`'s in-progress
+// lifecycle. One call site per app — anchoring it here keeps the
+// bridge alive whenever the App Mode renderer is mounted.
+useOutputWindowSync()
+const windowStore = useOutputWindowStore()
 
 // Blended progress: completed-node count + the executing node's
 // internal step progress, so the bar moves during long single-node
@@ -110,155 +108,13 @@ const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
 
-// True whenever the OutputWindow should be mounted. Two bridge
-// signals book-end the active phase to keep the window from
-// flashing on/off around the queue/linear store transitions:
-//   `runPending`   — covers Run-click → isWorkflowActive=true
-//   `gracePeriod`  — covers isWorkflowActive=false → selectedOutput set
-// Without grace the window unmounts the moment the run ends, then
-// remounts when the OutputHistory event lands a beat later.
-const { runPending } = storeToRefs(appModeStore)
-const gracePeriod = ref(false)
-let graceTimer: ReturnType<typeof setTimeout> | null = null
-const hasOutputContent = computed(
-  () =>
-    runPending.value ||
-    isWorkflowActive.value ||
-    gracePeriod.value ||
-    !!(canShowPreview.value && latentPreview.value) ||
-    !!selectedOutput.value ||
-    showSkeleton.value
+// Welcome / arrange screens hide as soon as the moodboard has
+// anything to show. We treat an active run as content even before
+// the first window mounts, so the welcome doesn't flash back on
+// during the small Run-click → first-skeleton-event gap.
+const hasMoodboardContent = computed(
+  () => windowStore.windows.length > 0 || isWorkflowActive.value
 )
-watch(isWorkflowActive, (active) => {
-  if (active) {
-    appModeStore.clearRunPending()
-    gracePeriod.value = false
-    if (graceTimer) {
-      clearTimeout(graceTimer)
-      graceTimer = null
-    }
-  } else {
-    gracePeriod.value = true
-    if (graceTimer) clearTimeout(graceTimer)
-    graceTimer = setTimeout(() => {
-      gracePeriod.value = false
-      graceTimer = null
-    }, 2000)
-  }
-})
-
-// Window title derives from the source output node's title — same
-// label graph view shows on the node ("Save Image" / "Save Video" /
-// any user-renamed node). When no run has happened yet, fall back to
-// the i18n default. Re-reads on selectedOutput change; node-title
-// edits made while the window is open won't reflect until the next
-// selection swap, which is fine for now.
-const windowTitle = computed(() => {
-  const out = selectedOutput.value
-  if (!out) return undefined
-  const node = resolveNode(out.nodeId)
-  return node?.title || undefined
-})
-
-const windowFilename = computed(() => {
-  const out = selectedOutput.value
-  if (!out) return undefined
-  return out.display_name?.trim() || out.filename || undefined
-})
-
-// In Cloud mode the file is stored under `asset.asset_hash`, not the
-// user-facing filename — the original `output.url` builds
-// `/view?filename=<original>` which 404s. Re-clone the ResultItem
-// with the hash as the filename param so the URL resolves; keep
-// display_name etc. for the user-facing label. OSS mode passes
-// through unchanged.
-const resolvedOutput = computed<ResultItemImpl | undefined>(() => {
-  const out = selectedOutput.value
-  if (!out) return undefined
-  if (!isCloud) return out
-  const hash = selectedItem.value?.asset_hash
-  if (!hash) return out
-  return new ResultItemImpl({
-    filename: hash,
-    subfolder: out.subfolder,
-    // ResultItemImpl widens type to string; the zod schema and the
-    // init interface keep it as the narrow union, so cast back.
-    type: out.type as 'input' | 'output' | 'temp' | undefined,
-    nodeId: out.nodeId,
-    mediaType: out.mediaType,
-    format: out.format,
-    frame_rate: out.frame_rate,
-    display_name: out.display_name,
-    content: out.content
-  })
-})
-
-// Header ellipsis menu — multi-image bulk actions + delete. Single-
-// image runs only get delete; the bulk download item drops out at
-// length === 1 to avoid the redundant single-item entry.
-const windowMenuEntries = computed<MenuItem[]>(() => {
-  const item = selectedItem.value
-  if (!item) return []
-  const all = allOutputs(item)
-  const entries: MenuItem[] = []
-  if (all.length > 1) {
-    entries.push({
-      icon: 'icon-[lucide--download]',
-      label: t('linearMode.downloadAll', { count: all.length }),
-      command: () => downloadAsset(item)
-    })
-    entries.push({ separator: true })
-  }
-  entries.push({
-    icon: 'icon-[lucide--trash-2]',
-    label: t('linearMode.deleteAllAssets'),
-    command: () => mediaActions.deleteAssets(item)
-  })
-  return entries
-})
-
-// Hover-toolbar handlers. These mirror AppChrome's actionRerun /
-// actionDownload (App Mode does NOT pass `runButtonClick`, so the
-// existing `rerun()` function above is a no-op in App Mode) and
-// dispatch the command directly via commandStore.
-async function windowRerun() {
-  const item = selectedItem.value
-  if (!item) return
-  await loadWorkflow(item)
-  appModeStore.markRunPending()
-  try {
-    await commandStore.execute('Comfy.QueuePrompt', {
-      metadata: { subscribe_to_run: false, trigger_source: 'linear' }
-    })
-  } catch (error) {
-    appModeStore.clearRunPending()
-    toastErrorHandler(error)
-  }
-}
-
-function windowDownload() {
-  const url = selectedOutput.value?.url
-  if (url) downloadFile(url)
-}
-
-async function windowInterrupt() {
-  try {
-    await commandStore.execute('Comfy.Interrupt')
-  } catch (error) {
-    toastErrorHandler(error)
-  }
-}
-
-// Graph-view image-node toolbar styling: light pill on dark icon so
-// the toolbar reads against any image content. Matches
-// vueNodes/components/ImagePreview.vue's actionButtonClass.
-const BODY_ACTION_CLASS =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center ' +
-  'rounded-lg border-0 bg-base-foreground p-2 text-base-background ' +
-  'shadow-interface transition-colors duration-200 ' +
-  'hover:bg-base-foreground/90 focus-visible:outline-none ' +
-  'focus-visible:ring-2 focus-visible:ring-base-foreground ' +
-  'focus-visible:ring-offset-2'
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -358,145 +214,22 @@ async function rerun(e: Event) {
     />
   </section>
   <!--
-    App Mode (hideChrome): output content (skeleton / latent / final)
-    renders inside a movable OutputWindow card, so the run→image
-    beat happens inside a stable spatial frame instead of swapping
-    a full-viewport layer. Welcome / arrange states stay full-
-    viewport in the workspace behind the window. Standalone linear-
-    mode (the original chromeful path) keeps the prior behavior.
+    App Mode (hideChrome): each generation lives in its own movable
+    OutputWindow inside the workspace, so multiple runs accumulate as
+    a moodboard rather than a single hero image. Welcome / arrange
+    screens fill the canvas only when no windows are mounted and no
+    run is in flight; once content exists, OutputWindowList paints
+    the windows over an empty workspace background.
   -->
   <template v-if="hideChrome">
-    <OutputWindow
-      v-if="hasOutputContent"
-      :title="windowTitle"
-      :filename="windowFilename"
-      :menu-entries="windowMenuEntries"
-    >
-      <template #body-actions>
-        <button
-          v-if="selectedItem"
-          type="button"
-          :class="BODY_ACTION_CLASS"
-          :title="t('linearMode.rerun')"
-          :aria-label="t('linearMode.rerun')"
-          @click="windowRerun"
-        >
-          <i class="icon-[lucide--refresh-cw] size-4" />
-        </button>
-        <button
-          v-if="selectedItem"
-          type="button"
-          :class="BODY_ACTION_CLASS"
-          :title="t('linearMode.reuseParameters')"
-          :aria-label="t('linearMode.reuseParameters')"
-          @click="() => loadWorkflow(selectedItem)"
-        >
-          <i class="icon-[lucide--list-restart] size-4" />
-        </button>
-        <button
-          v-if="selectedOutput"
-          type="button"
-          :class="BODY_ACTION_CLASS"
-          :title="t('g.download')"
-          :aria-label="t('g.download')"
-          @click="windowDownload"
-        >
-          <i class="icon-[lucide--download] size-4" />
-        </button>
-      </template>
-      <!-- size-full overrides ImagePreview's flex-1 sizing so the
-           media fills the OutputWindow body without depending on the
-           parent flex context (which `contain: size` on the
-           ImagePreview wrapper interacts with unpredictably). -->
-      <Transition name="preview-fade">
-        <ImagePreview
-          v-if="canShowPreview && latentPreview"
-          key="latent"
-          class="size-full"
-          :mobile
-          :src="latentPreview"
-          :show-size="false"
-        />
-        <MediaOutputPreview
-          v-else-if="resolvedOutput"
-          key="final"
-          class="size-full"
-          :output="resolvedOutput"
-          :mobile
-          :hide-info="hideChrome"
-        />
-        <LatentPreview
-          v-else-if="
-            showSkeleton || isWorkflowActive || runPending || gracePeriod
-          "
-          key="skeleton"
-          class="size-full"
-        />
-      </Transition>
-      <!-- Run-status overlay (centered): progress bar + stop button.
-           Active-state UI lives on the image itself, where the user
-           is already looking, instead of in chrome cells that flash
-           on/off in the corner of the canvas. -->
-      <template #body-overlay>
-        <div
-          v-if="isWorkflowActive"
-          class="pointer-events-auto flex w-72 flex-col items-stretch gap-3 rounded-xl bg-black/65 p-4 shadow-2xl backdrop-blur-md"
-          data-testid="output-window-run-status"
-        >
-          <div
-            class="h-2 overflow-hidden rounded-full bg-white/10"
-            role="progressbar"
-            :aria-label="t('linearMode.runProgress')"
-            :aria-valuenow="progressPercent"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          >
-            <div
-              class="h-full bg-(--app-mode-go-bg-hover) transition-[width] duration-300 ease-out"
-              :style="{ width: `${progressPercent}%` }"
-            />
-          </div>
-          <!-- Step counter + ETA. Hides when no node is reporting
-               progress (between nodes / cold model load) so we don't
-               render a stale "step 30/30" from the prior node. ETA
-               line is rendered separately so step counter stays as
-               soon as the first progress event lands. -->
-          <div
-            v-if="stepProgress"
-            class="flex items-baseline justify-between gap-3 text-xs text-white/85 tabular-nums"
-          >
-            <span>{{
-              t('linearMode.outputs.step', {
-                value: stepProgress.value,
-                max: stepProgress.max
-              })
-            }}</span>
-            <span v-if="etaSeconds !== null">{{
-              t('linearMode.outputs.etaRemaining', {
-                eta: formatEta(etaSeconds)
-              })
-            }}</span>
-          </div>
-          <button
-            type="button"
-            :class="[
-              'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg',
-              'border border-(--app-mode-stop-border) bg-(--app-mode-stop-bg) text-white',
-              'transition-colors duration-200 hover:bg-(--app-mode-stop-bg-hover)'
-            ]"
-            :title="t('linearMode.stop')"
-            :aria-label="t('linearMode.stop')"
-            data-testid="output-window-cancel-run"
-            @click="windowInterrupt"
-          >
-            <i class="icon-[lucide--x] size-4" />
-            {{ t('linearMode.stop') }}
-          </button>
-        </div>
-      </template>
-    </OutputWindow>
-    <LinearArrange v-else-if="isArrangeMode" />
-    <LinearWelcome v-else />
+    <OutputWindowList
+      :progress-percent="progressPercent"
+      :step-progress="stepProgress"
+      :eta-seconds="etaSeconds"
+      :format-eta="formatEta"
+    />
+    <LinearArrange v-if="isArrangeMode && !hasMoodboardContent" />
+    <LinearWelcome v-else-if="!hasMoodboardContent" />
   </template>
   <Transition v-else name="preview-fade">
     <ImagePreview

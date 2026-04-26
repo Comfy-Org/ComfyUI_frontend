@@ -21,7 +21,7 @@
 import { useEventListener } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -33,7 +33,9 @@ const {
   height = 568,
   title,
   filename,
-  menuEntries = []
+  menuEntries = [],
+  initialPosition,
+  zIndex
 } = defineProps<{
   width?: number
   height?: number
@@ -50,6 +52,20 @@ const {
    *  button is hidden so the header reads as "no extra actions" rather
    *  than "menu with nothing in it". */
   menuEntries?: MenuItem[]
+  /** Workspace-coord starting position. When omitted the window
+   *  centers itself in the viewport (single-window legacy behavior).
+   *  Drag is still local — parents that need final position can
+   *  listen for `update:position`. */
+  initialPosition?: { x: number; y: number }
+  /** Stack order. Defaults to `30` to match the old single-window
+   *  layer; multi-window callers pass per-window values from a
+   *  promote-on-focus store. */
+  zIndex?: number
+}>()
+
+const emit = defineEmits<{
+  'update:position': [position: { x: number; y: number }]
+  promote: []
 }>()
 
 const collapsed = ref(false)
@@ -81,7 +97,15 @@ const wy = ref(0)
 const dragging = ref(false)
 
 onMounted(() => {
-  // Initial position: roughly screen-center in workspace coords.
+  if (initialPosition) {
+    // Multi-window mode: parent assigns workspace coords (cascade,
+    // moodboard layout, etc). Snap them so they sit on the same grid
+    // drag uses, regardless of how the parent computed them.
+    wx.value = snap(initialPosition.x)
+    wy.value = snap(initialPosition.y)
+    return
+  }
+  // Single-window legacy: roughly screen-center in workspace coords.
   // Holds at scale=1 / no pan; if the user has zoomed/panned away
   // before the window appears it'll land wherever the corresponding
   // workspace coord lives — they can drag it.
@@ -89,10 +113,26 @@ onMounted(() => {
   wy.value = snap(Math.max(0, (window.innerHeight - height) / 2 - 32))
 })
 
+// External position updates (e.g. parent moves a window programmatically
+// while it's mounted) sync into the local refs. Skipped while dragging
+// so we don't fight the user's pointer with stale store values.
+watch(
+  () => initialPosition,
+  (next) => {
+    if (!next || dragging.value) return
+    if (next.x === wx.value && next.y === wy.value) return
+    wx.value = snap(next.x)
+    wy.value = snap(next.y)
+  }
+)
+
 let dragStart: { px: number; py: number; bx: number; by: number } | null = null
 
 function handleHeaderPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
+  // Promote-on-focus fires regardless of maximized state — clicking
+  // the header should always raise the window in multi-window stacks.
+  emit('promote')
   // Drag is disabled while maximized — there's nowhere to drag to.
   if (maximized.value) return
   // Stop bubbling so LayoutView's bgRef pan handler doesn't also
@@ -118,6 +158,7 @@ function endDrag() {
   if (dragStart) {
     wx.value = snap(wx.value)
     wy.value = snap(wy.value)
+    emit('update:position', { x: wx.value, y: wy.value })
   }
   dragStart = null
   dragging.value = false
@@ -134,14 +175,15 @@ const HEADER_CONTROL_CLASS =
 
 <template>
   <section
-    class="panel-chrome floating-panel pointer-events-auto absolute z-30 flex flex-col overflow-hidden"
+    class="panel-chrome floating-panel pointer-events-auto absolute flex flex-col overflow-hidden"
     :style="
       maximized
-        ? { inset: '0px' }
+        ? { inset: '0px', zIndex: zIndex ?? 30 }
         : {
             left: `${wx}px`,
             top: `${wy}px`,
             width: `${width}px`,
+            zIndex: zIndex ?? 30,
             // When collapsed the body / footer hide and the section
             // auto-sizes to header height. Drop the explicit height
             // so the box doesn't keep its full 568px and stay empty.
