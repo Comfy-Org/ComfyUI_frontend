@@ -53,6 +53,20 @@ export function useKeybindingService() {
         if (dialogStore.dialogStack.length > 0) {
           return
         }
+        // Reka's DismissableLayer (Popover, DropdownMenu, ContextMenu,
+        // HoverCard, Combobox, Select, etc.) checks `defaultPrevented`
+        // before emitting `dismiss`. Calling preventDefault() below for
+        // a no-op `Comfy.Graph.ExitSubgraph` at root level silently
+        // swallows Escape-to-close for every Reka surface in the app.
+        // Bail when one is open so the layer's own listener can dismiss
+        // it. The `data-dismissable-layer` + `data-state="open"` pair
+        // is Reka's stable contract; the codebase already relies on it
+        // in tests (e.g. SingleSelect.test.ts, MultiSelect.test.ts).
+        if (
+          document.querySelector('[data-dismissable-layer][data-state="open"]')
+        ) {
+          return
+        }
       }
 
       event.preventDefault()
