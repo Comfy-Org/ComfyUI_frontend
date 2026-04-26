@@ -3810,6 +3810,7 @@
     "connected": "Connected — backend is reachable.",
     "backendCloud": "Backend cloud API:",
     "cloudMismatch": "⚠ Cloud environment mismatch — this preview signs in via {frontend}, so tokens won't be accepted by the backend. Restart the backend with --comfy-api-base={frontend} (or use a frontend build that targets the backend's environment).",
+    "getApiKeyLink": "→ Generate an API key for this cloud",
     "connectAndGo": "Connect & Open ComfyUI",
     "quickStart": "Quick Start with Comfy CLI",
     "quickStartDescription": "The fastest way to get ComfyUI running locally. No existing Python install required — uv handles it for you.",

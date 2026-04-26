@@ -111,6 +111,15 @@
               })
             }}
           </p>
+          <a
+            v-if="apiKeyPageUrl"
+            :href="apiKeyPageUrl"
+            target="_blank"
+            rel="noopener"
+            class="text-neutral-300 underline decoration-dotted hover:text-neutral-100"
+          >
+            {{ t('connectionPanel.getApiKeyLink') }}
+          </a>
         </div>
 
         <!-- Connect & Go button -->
@@ -286,7 +295,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import {
+  getComfyApiBaseUrl,
+  getPlatformBaseUrlForApiBase
+} from '@/config/comfyApi'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 type SystemStats = { system?: { argv?: string[] } }
@@ -330,6 +342,11 @@ const cloudMismatch = computed(
     backendCloudBase.value !== null &&
     backendCloudBase.value !== frontendCloudBase
 )
+const apiKeyPageUrl = computed(() => {
+  if (!backendCloudBase.value) return null
+  const platform = getPlatformBaseUrlForApiBase(backendCloudBase.value)
+  return platform ? `${platform}/profile/api-keys` : null
+})
 
 function normalizeUrl(raw: string): string {
   let url = raw.trim()

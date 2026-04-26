@@ -41,3 +41,15 @@ export function getComfyPlatformBaseUrl(): string {
     BUILD_TIME_PLATFORM_BASE_URL
   )
 }
+
+/**
+ * Maps a Comfy Cloud API base URL (as reported by the backend) to its paired
+ * platform URL where users manage their account / API keys. Returns null for
+ * unknown bases so callers can hide the link rather than guess.
+ */
+export function getPlatformBaseUrlForApiBase(apiBase: string): string | null {
+  const normalized = apiBase.replace(/\/+$/, '')
+  if (normalized === PROD_API_BASE_URL) return PROD_PLATFORM_BASE_URL
+  if (normalized === STAGING_API_BASE_URL) return STAGING_PLATFORM_BASE_URL
+  return null
+}

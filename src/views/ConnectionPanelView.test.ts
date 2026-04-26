@@ -179,6 +179,46 @@ describe('ConnectionPanelView', () => {
     })
   })
 
+  it('links to staging platform when backend uses staging cloud base', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              system: {
+                argv: [
+                  'main.py',
+                  '--comfy-api-base=https://stagingapi.comfy.org'
+                ]
+              }
+            })
+        } as Response)
+      )
+    )
+    class StubWS {
+      addEventListener(type: string, cb: () => void) {
+        if (type === 'open') setTimeout(cb, 0)
+      }
+      close() {}
+    }
+    vi.stubGlobal('WebSocket', StubWS as unknown as typeof WebSocket)
+
+    renderPanel()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /test/i }))
+
+    await vi.waitFor(() => {
+      const link = screen.getByRole('link', {
+        name: 'connectionPanel.getApiKeyLink'
+      })
+      expect(link.getAttribute('href')).toBe(
+        'https://stagingplatform.comfy.org/profile/api-keys'
+      )
+    })
+  })
+
   it('parses backend cloud API base from system_stats argv', async () => {
     vi.stubGlobal(
       'fetch',
