@@ -44,7 +44,7 @@
         class="z-1400 flex max-h-[min(36rem,var(--reka-popover-content-available-height))] w-80 flex-col rounded-lg border border-border-subtle bg-base-background p-3 shadow-interface"
         data-testid="api-nodes-cost-popover"
       >
-        <ApiNodesList :nodes="rows" :total="popoverTotal" />
+        <ApiNodesList :nodes="rows" :total="popoverTotal" :heading-level="2" />
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

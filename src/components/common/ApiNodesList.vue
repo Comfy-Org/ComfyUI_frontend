@@ -7,9 +7,9 @@
 <template>
   <div class="flex min-h-0 flex-col gap-3">
     <div class="flex items-center justify-between text-xs opacity-70">
-      <h3 :id="titleId">
+      <component :is="`h${headingLevel}`" :id="titleId">
         {{ t('apiNodesCostBreakdown.title') }} ({{ nodes.length }})
-      </h3>
+      </component>
       <div v-if="hasAnyCost">
         {{ t('apiNodesCostBreakdown.costPerRun') }}
       </div>
@@ -60,13 +60,23 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const { nodes, total = null } = defineProps<{
+const {
+  nodes,
+  total = null,
+  headingLevel = 3
+} = defineProps<{
   nodes: { id: string | number; name: string; cost: string | null }[]
   // Only `label` is rendered; callers may pass richer objects (the
   // aggregator's `formatAggregateTotal` result carries a `hasRange` flag)
   // and TypeScript's structural typing lets them through. Narrowing the
   // prop here keeps the component's contract to what it actually uses.
   total?: { label: string } | null
+  // The list renders its title as a heading. Default `3` fits the
+  // sign-in dialog where an `<h2>` wraps this list. Surfaces without an
+  // outer heading (the actionbar popover) should pass `2` so the
+  // document hierarchy doesn't skip from the dialog landmark straight
+  // to `<h3>`.
+  headingLevel?: 2 | 3 | 4 | 5 | 6
 }>()
 
 const hasAnyCost = computed(() => nodes.some((item) => item.cost !== null))
