@@ -1,43 +1,23 @@
 import { expect } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  JobsListResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 
 // The assets sidebar's media-type filter menu only renders in cloud mode
 // (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
-// We piggyback on the @cloud project's compile-time `__DISTRIBUTION__='cloud'`
-// build and additionally stub `/api/assets` so the assets store doesn't poison
-// itself on first load (same pattern as cloud-asset-default.spec.ts).
-
-function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
-  return { assets, total: assets.length, has_more: false }
-}
-
-const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
-  stubCloudAssets: [
-    async ({ page }, use) => {
-      const pattern = '**/api/assets?*'
-      await page.route(pattern, (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse([]))
-        })
-      )
-      await use()
-      await page.unroute(pattern)
-    },
-    { auto: true }
-  ]
-})
+// We tag tests `@cloud` so they run against the cloud Playwright project,
+// and register both `/api/assets` and `/api/jobs` route handlers as auto
+// fixtures — Playwright runs auto fixtures before the `comfyPage` fixture's
+// internal `setup()`, so the page first-loads with mocks already in place.
+// See cloud-asset-default.spec.ts for the same pattern.
 
 const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
 
-// Derive the filenames from the fixture so the test fails loudly if the
-// helper's id/extension scheme ever drifts. `preview_output` is optional in
-// the schema; `expectFilename` collapses the optional chain into a hard
-// assertion.
 function expectFilename(index: number): string {
   const filename = MIXED_JOBS[index]?.preview_output?.filename
   if (!filename) {
@@ -54,17 +34,78 @@ const videoCardName = expectFilename(1)
 const audioCardName = expectFilename(2)
 const threeDCardName = expectFilename(3)
 
+function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
+  return { assets, total: assets.length, has_more: false }
+}
+
+function makeJobsResponseBody() {
+  return {
+    jobs: MIXED_JOBS,
+    pagination: {
+      offset: 0,
+      limit: MIXED_JOBS.length,
+      total: MIXED_JOBS.length,
+      has_more: false
+    }
+  } satisfies {
+    jobs: unknown[]
+    pagination: JobsListResponse['pagination']
+  }
+}
+
+const test = comfyPageFixture.extend<{
+  stubCloudAssets: void
+  stubJobs: void
+  stubInputFiles: void
+}>({
+  stubCloudAssets: [
+    async ({ page }, use) => {
+      const pattern = '**/api/assets?*'
+      await page.route(pattern, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(makeAssetsResponse([]))
+        })
+      )
+      await use()
+      await page.unroute(pattern)
+    },
+    { auto: true }
+  ],
+  stubJobs: [
+    async ({ page }, use) => {
+      const pattern = /\/api\/jobs(?:\?.*)?$/
+      await page.route(pattern, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(makeJobsResponseBody())
+        })
+      )
+      await use()
+      await page.unroute(pattern)
+    },
+    { auto: true }
+  ],
+  stubInputFiles: [
+    async ({ page }, use) => {
+      const pattern = /\/internal\/files\/input(?:\?.*)?$/
+      await page.route(pattern, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([])
+        })
+      )
+      await use()
+      await page.unroute(pattern)
+    },
+    { auto: true }
+  ]
+})
+
 test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(MIXED_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
   test('Filter menu opens and exposes all four media-type checkboxes', async ({
     comfyPage
   }) => {
