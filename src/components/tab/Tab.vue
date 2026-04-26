@@ -30,7 +30,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { computed, inject } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
