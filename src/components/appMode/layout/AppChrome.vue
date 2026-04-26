@@ -28,20 +28,17 @@
  */
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountCell from './cells/BatchCountCell.vue'
 import FeedbackCell from './cells/FeedbackCell.vue'
 import IconCell from './cells/IconCell.vue'
-import InterruptCell from './cells/InterruptCell.vue'
 import JobQueueCell from './cells/JobQueueCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
 import OutputThumbCell from './cells/OutputThumbCell.vue'
-import ProgressCell from './cells/ProgressCell.vue'
 import RunCell from './cells/RunCell.vue'
 
-import { downloadFile } from '@/base/common/downloadUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -51,11 +48,7 @@ import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
-import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
-import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -69,13 +62,7 @@ type ChromeCellKind =
   | 'system-feedback'
   | 'system-batch-count'
   | 'system-job-queue'
-  | 'system-interrupt'
-  | 'system-progress'
   | 'system-run'
-  | 'action-rerun'
-  | 'action-reuse-params'
-  | 'action-download'
-  | 'action-info'
   | 'output-thumb'
   | 'nav-zoom-in'
   | 'nav-zoom-out'
@@ -181,113 +168,6 @@ function openShare() {
 const outputHistory = useOutputHistory()
 const { outputs, allOutputs } = outputHistory
 
-const linearOutputStore = useLinearOutputStore()
-const { selectedId } = storeToRefs(linearOutputStore)
-
-const selectedHistory = computed<{
-  asset: AssetItem
-  output: ResultItemImpl
-} | null>(() => {
-  const id = selectedId.value
-  if (!id || !id.startsWith('history:')) return null
-  const afterPrefix = id.substring('history:'.length)
-  const lastColon = afterPrefix.lastIndexOf(':')
-  if (lastColon === -1) return null
-  const assetId = afterPrefix.substring(0, lastColon)
-  const outputIndex = Number.parseInt(afterPrefix.substring(lastColon + 1), 10)
-  if (!assetId || !Number.isInteger(outputIndex) || outputIndex < 0) return null
-  const asset = outputs.media.value.find((a) => a.id === assetId)
-  if (!asset) return null
-  const output = allOutputs(asset)[outputIndex]
-  if (!output) return null
-  return { asset, output }
-})
-
-const hasSelection = computed(() => selectedHistory.value !== null)
-
-async function loadSelectedWorkflow() {
-  const sel = selectedHistory.value
-  if (!sel) return
-  const { workflow } = await extractWorkflowFromAsset(sel.asset)
-  if (!workflow) return
-  // `app.rootGraph` may be null mid-transition (e.g. during a workflow
-  // swap). Treat "no current graph" as "not the same graph" — fall
-  // through to loadGraphData so we end up with the selected workflow
-  // loaded either way.
-  if (workflow.id !== app.rootGraph?.id) {
-    await app.loadGraphData(workflow)
-    return
-  }
-  const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-  if (!changeTracker) {
-    await app.loadGraphData(workflow)
-    return
-  }
-  changeTracker.redoQueue = []
-  await changeTracker.updateState([workflow], changeTracker.undoQueue)
-}
-
-async function actionRerun() {
-  await loadSelectedWorkflow()
-  try {
-    await commandStore.execute('Comfy.QueuePrompt', {
-      metadata: { subscribe_to_run: false, trigger_source: 'linear' }
-    })
-  } catch (error) {
-    toastErrorHandler(error)
-  }
-}
-
-function actionReuseParams() {
-  loadSelectedWorkflow().catch(toastErrorHandler)
-}
-
-function actionDownload() {
-  const url = selectedHistory.value?.output.url
-  if (url) downloadFile(url)
-}
-
-const infoName = computed(() => {
-  const sel = selectedHistory.value
-  if (!sel) return ''
-  return sel.output.display_name?.trim() || sel.output.filename || ''
-})
-
-// Track the loaded image's natural dimensions for the selected output.
-const dimensions = ref<{ w: number; h: number } | null>(null)
-watch(
-  () => selectedHistory.value?.output.url,
-  (url) => {
-    dimensions.value = null
-    if (!url) return
-    const img = new Image()
-    img.onload = () => {
-      if (selectedHistory.value?.output.url !== url) return
-      dimensions.value = { w: img.naturalWidth, h: img.naturalHeight }
-    }
-    img.onerror = () => {
-      // Dimension-probe failures fall through to the non-dimensions
-      // filename label — no surface-level error is needed because the
-      // asset itself still renders via its main preview element. Silent
-      // by design so a flaky image URL doesn't spam toasts on every
-      // thumb switch.
-    }
-    img.src = url
-  },
-  { immediate: true }
-)
-
-const infoDims = computed(() =>
-  dimensions.value ? `${dimensions.value.w}x${dimensions.value.h}` : ''
-)
-const infoLabel = computed(() => {
-  const dotIdx = infoName.value.lastIndexOf('.')
-  return dotIdx >= 0 ? infoName.value.slice(dotIdx + 1).toLowerCase() : ''
-})
-const infoTitle = computed(() =>
-  [infoDims.value, infoName.value].filter(Boolean).join(' ')
-)
-
 // --- History thumbnails ----------------------------------------------
 interface HistoryThumb {
   id: string
@@ -315,7 +195,6 @@ const HIDE_IN_BUILDER = new Set<ChromeCellKind>([
 
 const DISABLE_IN_BUILDER = new Set<ChromeCellKind>([
   'system-batch-count',
-  'system-interrupt',
   'system-run'
 ])
 
@@ -339,16 +218,6 @@ const topLeftCells = computed<ChromeCell[]>(() => {
   if (enableAppBuilder.value) {
     include(out, { id: 'builder', kind: 'system-builder', span: 1 })
   }
-  if (hasSelection.value) {
-    include(out, { id: 'action-rerun', kind: 'action-rerun', span: 1 })
-    include(out, {
-      id: 'action-reuse-params',
-      kind: 'action-reuse-params',
-      span: 1
-    })
-    include(out, { id: 'action-download', kind: 'action-download', span: 1 })
-    include(out, { id: 'action-info', kind: 'action-info', span: 4 })
-  }
   const thumbCount = Math.min(historyThumbs.value.length, MAX_HISTORY_THUMBS)
   for (let i = 0; i < thumbCount; i++) {
     include(out, {
@@ -362,11 +231,12 @@ const topLeftCells = computed<ChromeCell[]>(() => {
 
 const topRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
-  // Progress bar sits leftmost in the cluster so it stays out of the
-  // right-docked FloatingPanel's way and flanks Share / batch / run
-  // without bumping the cluster's right edge when it appears.
+  // Job-queue first so its conditional presence pushes the cluster's
+  // left edge instead of inserting between always-on cells (the
+  // cluster is right-justified, so leftmost adds/removes don't move
+  // share / batch / run visually).
   if (showJobQueue.value)
-    include(out, { id: 'system-progress', kind: 'system-progress', span: 4 })
+    include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
   if (showShare.value)
     include(out, { id: 'share', kind: 'system-share', span: 2 })
   include(out, {
@@ -374,14 +244,6 @@ const topRightCells = computed<ChromeCell[]>(() => {
     kind: 'system-batch-count',
     span: 5
   })
-  if (showJobQueue.value)
-    include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
-  if (showJobQueue.value)
-    include(out, {
-      id: 'system-interrupt',
-      kind: 'system-interrupt',
-      span: 1
-    })
   include(out, { id: 'system-run', kind: 'system-run', span: 3 })
   return out
 })
@@ -413,7 +275,6 @@ function cellWidth(span: number): string {
 
 function cellTitle(cell: ChromeCell): string | undefined {
   if (cell.disabled) return t('linearMode.builder.runDisabledHint')
-  if (cell.kind === 'action-info') return infoTitle.value
   return undefined
 }
 
@@ -422,14 +283,13 @@ function cellTitle(cell: ChromeCell): string | undefined {
 const ZONE_BASE =
   'pointer-events-none absolute flex h-layout-cell flex-row gap-layout-gutter'
 
-// Placeholder go/stop fill colors for the run cluster (RunCell,
-// InterruptCell, ProgressCell). Set on the chrome root so descendants
-// read them via `var(--app-mode-*)`. Kept local here so the rest of
-// the app's design-system tokens stay untouched — pending a
-// product/design decision on whether "go green" + "stop red" get
-// promoted to proper semantic tokens (--color-success-*, etc.). When
-// that lands, swap the four call sites to the real tokens and delete
-// this block.
+// Placeholder go/stop fill colors used by RunCell + the in-window
+// run-status overlay (LinearPreview). Set on the chrome root so
+// descendants read them via `var(--app-mode-*)`. Kept local here so
+// the rest of the app's design-system tokens stay untouched —
+// pending a product/design decision on whether "go green" + "stop
+// red" get promoted to proper semantic tokens. When that lands,
+// swap the call sites to the real tokens and delete this block.
 const goStopVars = {
   '--app-mode-go-bg': '#16a34a', // tw green-600
   '--app-mode-go-bg-hover': '#22c55e', // tw green-500
@@ -439,11 +299,11 @@ const goStopVars = {
   '--app-mode-stop-border': '#b91c1c' // tw red-700
 } as const
 
-// Run + Interrupt cells host full-bleed colored buttons directly —
-// they don't want the cell's hairline border or layout-cell fill so
-// the accent paint reaches the cell edges cleanly.
+// Run cell hosts a full-bleed colored button directly — it doesn't
+// want the cell's hairline border or layout-cell fill so the accent
+// paint reaches the cell edges cleanly.
 function cellClass(cell: ChromeCell): string {
-  const bare = cell.kind === 'system-run' || cell.kind === 'system-interrupt'
+  const bare = cell.kind === 'system-run'
   return cn(
     'pointer-events-auto flex h-full overflow-hidden',
     !bare && 'rounded-[10px] border border-white/8 bg-layout-cell',
@@ -495,55 +355,6 @@ function cellClass(cell: ChromeCell): string {
           :on-activate="enterBuilder"
         />
         <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
-        <IconCell
-          v-else-if="cell.kind === 'action-rerun'"
-          icon="icon-[lucide--refresh-cw]"
-          :label="t('linearMode.rerun')"
-          :on-activate="actionRerun"
-        />
-        <IconCell
-          v-else-if="cell.kind === 'action-reuse-params'"
-          icon="icon-[lucide--list-restart]"
-          :label="t('linearMode.reuseParameters')"
-          :on-activate="actionReuseParams"
-        />
-        <IconCell
-          v-else-if="cell.kind === 'action-download'"
-          icon="icon-[lucide--download]"
-          :label="t('g.download')"
-          :on-activate="actionDownload"
-        />
-        <div
-          v-else-if="cell.kind === 'action-info'"
-          :class="[
-            'duration-layout flex size-full cursor-default items-center justify-between',
-            'rounded-layout-cell bg-layout-cell px-3',
-            'font-inter text-layout-md text-layout-text',
-            'transition-colors ease-layout hover:bg-layout-cell-hover'
-          ]"
-        >
-          <!-- justify-between distributes the icon / bullet / dims /
-               bullet / ext row evenly across the cell width; bullets
-               read as separators rather than padding, and the row
-               collapses gracefully if either dims or ext is empty. -->
-          <i class="icon-[lucide--file] size-5 shrink-0" aria-hidden="true" />
-          <span v-if="infoDims" class="shrink-0 opacity-50" aria-hidden="true"
-            >•</span
-          >
-          <span
-            v-if="infoDims"
-            class="shrink-0 text-layout-text tabular-nums"
-            >{{ infoDims }}</span
-          >
-          <span v-if="infoLabel" class="shrink-0 opacity-50" aria-hidden="true"
-            >•</span
-          >
-          <span
-            v-if="infoLabel"
-            class="shrink-0 tracking-[0.02em] tabular-nums"
-            >{{ infoLabel }}</span
-          >
-        </div>
         <OutputThumbCell
           v-else-if="
             cell.kind === 'output-thumb' && historyThumbMap.get(cell.id)
@@ -579,8 +390,6 @@ function cellClass(cell: ChromeCell): string {
         />
         <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
         <JobQueueCell v-else-if="cell.kind === 'system-job-queue'" />
-        <InterruptCell v-else-if="cell.kind === 'system-interrupt'" />
-        <ProgressCell v-else-if="cell.kind === 'system-progress'" />
         <RunCell v-else-if="cell.kind === 'system-run'" />
       </div>
     </div>

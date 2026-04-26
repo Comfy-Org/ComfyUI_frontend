@@ -299,8 +299,15 @@ export const useAppModeStore = defineStore('appMode', () => {
   // reflecting an active run. RunCell sets this true immediately on
   // click so the OutputWindow can mount without waiting for the
   // backend handshake; LinearPreview clears it the moment
-  // `isWorkflowActive` flips true (real signal takes over). 5s safety
-  // timeout in case the dispatch fails silently.
+  // `isWorkflowActive` flips true (real signal takes over).
+  //
+  // The timer is a pure safety net for silent dispatch failures (no
+  // ack, no error, no `isWorkflowActive` flip). On the success path
+  // the watcher clears `runPending` long before this fires. The bound
+  // is generous because cold local runs can take a minute+ to load
+  // multi-GB models into RAM before the first execution event lands —
+  // a tight timeout would unmount the window mid-load and look like
+  // the run had silently died.
   const runPending = ref(false)
   let runPendingTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -310,7 +317,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     runPendingTimer = setTimeout(() => {
       runPending.value = false
       runPendingTimer = null
-    }, 5000)
+    }, 300_000)
   }
 
   function clearRunPending() {

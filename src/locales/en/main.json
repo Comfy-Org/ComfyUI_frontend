@@ -3370,7 +3370,11 @@
       "dragHint": "Drag input blocks in the panel to reorder them or split a row into columns."
     },
     "outputs": {
-      "title": "Output"
+      "title": "Output",
+      "maximize": "Maximize to workspace",
+      "restore": "Restore window",
+      "step": "step {value}/{max}",
+      "etaRemaining": "{eta} remaining"
     },
     "builder": {
       "title": "App builder mode",
