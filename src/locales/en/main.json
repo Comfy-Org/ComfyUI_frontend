@@ -3849,5 +3849,13 @@
     "tooltipBranch": "Branch: {branch}",
     "tooltipRunId": "Run ID: {runId}",
     "tooltipJobId": "Job ID: {jobId}"
+  },
+  "prPreview": {
+    "badge": {
+      "label": "PR",
+      "tooltipBackend": "Backend: {url}",
+      "tooltipCloudApiNote": "Cloud API: see Settings → About",
+      "tooltipCloudApiDisabled": "Cloud API: disabled"
+    }
   }
 }

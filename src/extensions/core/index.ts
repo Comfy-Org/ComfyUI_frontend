@@ -52,3 +52,8 @@ if (isCloud || isNightly) {
 if (isNightly && !isCloud) {
   await import('./nightlyBadges')
 }
+
+// PR preview build badge
+if (__CI_PR_NUMBER__) {
+  await import('./prPreviewBadges')
+}

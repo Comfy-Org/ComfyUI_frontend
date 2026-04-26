@@ -342,35 +342,15 @@ import {
   getComfyApiBaseUrl,
   getPlatformBaseUrlForApiBase
 } from '@/config/comfyApi'
+import { resolveBackendCloudBase } from '@/platform/connectionPanel/resolveBackendCloudBase'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 type SystemStats = {
   system?: { argv?: string[]; comfy_api_base?: string }
 }
 
-const COMFY_API_BASE_FLAG = '--comfy-api-base'
-const DEFAULT_CLOUD_API_BASE = 'https://api.comfy.org'
-
 function stripTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '')
-}
-
-function parseArgvApiBase(argv: string[] | undefined): string | undefined {
-  if (!argv) return undefined
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (a === COMFY_API_BASE_FLAG && i + 1 < argv.length) return argv[i + 1]
-    if (a.startsWith(`${COMFY_API_BASE_FLAG}=`))
-      return a.slice(COMFY_API_BASE_FLAG.length + 1)
-  }
-  return undefined
-}
-
-function resolveBackendCloudBase(system: SystemStats['system']): string {
-  const explicit = system?.comfy_api_base
-  if (explicit) return stripTrailingSlash(explicit)
-  const fromArgv = parseArgvApiBase(system?.argv)
-  return stripTrailingSlash(fromArgv ?? DEFAULT_CLOUD_API_BASE)
 }
 
 const { t } = useI18n()
