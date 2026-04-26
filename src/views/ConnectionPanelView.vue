@@ -90,6 +90,29 @@
           {{ t('connectionPanel.connected') }}
         </p>
 
+        <!-- Backend cloud-API base + mismatch warning -->
+        <div
+          v-if="backendCloudBase"
+          class="flex flex-col gap-1 border-t border-neutral-700 pt-2 text-xs"
+        >
+          <p class="text-neutral-400">
+            <span class="text-neutral-500"
+              >{{ t('connectionPanel.backendCloud') }}
+            </span>
+            <code
+              class="ml-1 rounded-sm bg-neutral-900 px-1 py-0.5 text-neutral-200"
+              >{{ backendCloudBase }}</code
+            >
+          </p>
+          <p v-if="cloudMismatch" class="text-amber-400">
+            {{
+              t('connectionPanel.cloudMismatch', {
+                frontend: frontendCloudBase
+              })
+            }}
+          </p>
+        </div>
+
         <!-- Connect & Go button -->
         <Button
           v-if="httpStatus === true"
@@ -263,7 +286,29 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+type SystemStats = { system?: { argv?: string[] } }
+
+const COMFY_API_BASE_FLAG = '--comfy-api-base'
+const DEFAULT_CLOUD_API_BASE = 'https://api.comfy.org'
+
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
+function parseBackendCloudBase(argv: string[] | undefined): string {
+  if (!argv) return DEFAULT_CLOUD_API_BASE
+  let value: string | undefined
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === COMFY_API_BASE_FLAG && i + 1 < argv.length) value = argv[i + 1]
+    else if (a.startsWith(`${COMFY_API_BASE_FLAG}=`))
+      value = a.slice(COMFY_API_BASE_FLAG.length + 1)
+  }
+  return stripTrailingSlash(value ?? DEFAULT_CLOUD_API_BASE)
+}
 
 const { t } = useI18n()
 
@@ -278,6 +323,13 @@ const isTesting = ref(false)
 const httpStatus = ref<boolean | null>(null)
 const wsStatus = ref<boolean | null>(null)
 const connectionError = ref('')
+const backendCloudBase = ref<string | null>(null)
+const frontendCloudBase = stripTrailingSlash(getComfyApiBaseUrl())
+const cloudMismatch = computed(
+  () =>
+    backendCloudBase.value !== null &&
+    backendCloudBase.value !== frontendCloudBase
+)
 
 function normalizeUrl(raw: string): string {
   let url = raw.trim()
@@ -286,16 +338,17 @@ function normalizeUrl(raw: string): string {
   return url.replace(/\/+$/, '')
 }
 
-async function testHttp(base: string): Promise<boolean> {
+async function fetchSystemStats(base: string): Promise<SystemStats | null> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 5000)
   try {
     const res = await fetch(`${base}/api/system_stats`, {
       signal: controller.signal
     })
-    return res.ok
+    if (!res.ok) return null
+    return (await res.json()) as SystemStats
   } catch {
-    return false
+    return null
   } finally {
     clearTimeout(timeout)
   }
@@ -330,19 +383,26 @@ async function testConnection() {
   httpStatus.value = null
   wsStatus.value = null
   connectionError.value = ''
+  backendCloudBase.value = null
 
   const base = normalizeUrl(backendUrl.value)
   backendUrl.value = base
   localStorage.setItem(STORAGE_KEY, base)
 
   try {
-    const [http, ws] = await Promise.all([testHttp(base), testWs(base)])
-    httpStatus.value = http
+    const [stats, ws] = await Promise.all([
+      fetchSystemStats(base),
+      testWs(base)
+    ])
+    httpStatus.value = stats !== null
     wsStatus.value = ws
+    backendCloudBase.value = stats
+      ? parseBackendCloudBase(stats.system?.argv)
+      : null
 
-    if (!http && !ws) {
+    if (stats === null && !ws) {
       connectionError.value = t('connectionPanel.errorUnreachable')
-    } else if (!http) {
+    } else if (stats === null) {
       connectionError.value = t('connectionPanel.errorHttpFailed')
     } else if (!ws) {
       connectionError.value = t('connectionPanel.errorWsFailed')

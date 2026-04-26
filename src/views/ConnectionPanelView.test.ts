@@ -11,7 +11,9 @@ vi.mock('@/utils/envUtil', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isDesktop: false
+  isDesktop: false,
+  isCloud: false,
+  isNightly: false
 }))
 
 vi.mock('vue-router', () => ({
@@ -177,10 +179,52 @@ describe('ConnectionPanelView', () => {
     })
   })
 
+  it('parses backend cloud API base from system_stats argv', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              system: {
+                argv: [
+                  'main.py',
+                  '--enable-cors-header=*',
+                  '--comfy-api-base',
+                  'https://stagingapi.comfy.org'
+                ]
+              }
+            })
+        } as Response)
+      )
+    )
+    class StubWS {
+      addEventListener(type: string, cb: () => void) {
+        if (type === 'open') setTimeout(cb, 0)
+      }
+      close() {}
+    }
+    vi.stubGlobal('WebSocket', StubWS as unknown as typeof WebSocket)
+
+    renderPanel()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /test/i }))
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('https://stagingapi.comfy.org')).toBeTruthy()
+    })
+  })
+
   it('reveals Connect & Open ComfyUI button after a successful HTTP test', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.resolve({ ok: true } as Response))
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ system: { argv: [] } })
+        } as Response)
+      )
     )
     class StubWS {
       addEventListener(type: string, cb: () => void) {
