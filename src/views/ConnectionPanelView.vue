@@ -199,16 +199,12 @@
             <span class="text-xs font-medium text-neutral-400">
               {{ t('connectionPanel.step1InstallUv') }}
             </span>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              curl -LsSf https://astral.sh/uv/install.sh | sh
-            </code>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-            </code>
+            <CopyCodeBlock
+              text="curl -LsSf https://astral.sh/uv/install.sh | sh"
+            />
+            <CopyCodeBlock
+              text='powershell -c "irm https://astral.sh/uv/install.ps1 | iex"'
+            />
             <p class="text-xs text-neutral-500">
               {{ t('connectionPanel.uvNote') }}
             </p>
@@ -218,11 +214,9 @@
             <span class="text-xs font-medium text-neutral-400">
               {{ t('connectionPanel.step2InstallComfyui') }}
             </span>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              uv pip install comfy-cli --system && comfy install
-            </code>
+            <CopyCodeBlock
+              text="uv pip install comfy-cli --system && comfy install"
+            />
             <p class="text-xs text-neutral-500">
               {{ t('connectionPanel.managerIncludedNote') }}
             </p>
@@ -232,11 +226,10 @@
             <span class="text-xs font-medium text-neutral-400">
               {{ t('connectionPanel.step3Launch') }}
             </span>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              comfy launch -- --enable-cors-header="{{ corsOrigin }}"
-            </code>
+            <CopyCodeBlock :text="launchCmd" />
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.corsOriginNote') }}
+            </p>
           </div>
         </div>
 
@@ -276,11 +269,7 @@
             <p class="text-xs text-neutral-400">
               {{ t('connectionPanel.altPipDescription') }}
             </p>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              pip install comfy-cli
-            </code>
+            <CopyCodeBlock text="pip install comfy-cli" />
             <p class="text-xs text-neutral-500">
               {{ t('connectionPanel.altPipNote') }}
             </p>
@@ -289,34 +278,36 @@
             <p class="text-xs text-neutral-400">
               {{ t('connectionPanel.altManagerDescription') }}
             </p>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              git clone https://github.com/Comfy-Org/ComfyUI-Manager.git
-              custom_nodes/ComfyUI-Manager
-            </code>
+            <CopyCodeBlock
+              text="git clone https://github.com/Comfy-Org/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager"
+            />
           </div>
           <div class="flex flex-col gap-1">
             <p class="text-xs text-neutral-400">
               {{ t('connectionPanel.guideDescription') }}
             </p>
-            <code
-              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-            >
-              python main.py --enable-cors-header="{{ corsOrigin }}"
-            </code>
+            <CopyCodeBlock :text="pythonMainCmd" />
           </div>
         </div>
       </details>
 
       <!-- Local network access -->
-      <section class="flex flex-col gap-2">
+      <section class="flex flex-col gap-3">
         <h2 class="text-sm font-medium text-neutral-300">
           {{ t('connectionPanel.localAccess') }}
         </h2>
         <p class="text-xs text-neutral-400">
           {{ t('connectionPanel.localAccessDescription') }}
         </p>
+        <div class="flex flex-col gap-1">
+          <p class="text-xs text-neutral-400">
+            {{ t('connectionPanel.localAccessListenDescription') }}
+          </p>
+          <CopyCodeBlock :text="launchListenCmd" />
+          <p class="text-xs text-neutral-500">
+            {{ t('connectionPanel.localAccessListenNote') }}
+          </p>
+        </div>
       </section>
 
       <footer
@@ -345,6 +336,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
+import CopyCodeBlock from '@/components/connection/CopyCodeBlock.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   getComfyApiBaseUrl,
@@ -381,6 +373,10 @@ const REPO = 'https://github.com/Comfy-Org/ComfyUI_frontend'
 const corsOrigin = window.location.origin
 
 const backendUrl = ref(localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
+
+const launchCmd = `comfy launch -- --enable-cors-header="${corsOrigin}"`
+const launchListenCmd = `comfy launch -- --listen --enable-cors-header="${corsOrigin}"`
+const pythonMainCmd = `python main.py --enable-cors-header="${corsOrigin}"`
 
 const isTesting = ref(false)
 const httpStatus = ref<boolean | null>(null)
