@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -20,6 +21,18 @@ vi.mock('./MissingModelRow.vue', () => ({
   }
 }))
 
+vi.mock('@/platform/missingModel/missingModelStore', () => ({
+  useMissingModelStore: vi.fn(() => ({
+    fileSizes: {},
+    folderPaths: {}
+  }))
+}))
+
+vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+  downloadModel: vi.fn(),
+  isModelDownloadable: vi.fn(() => true)
+}))
+
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -39,7 +52,9 @@ const i18n = createI18n({
           importNotSupported: 'Import Not Supported',
           customNodeDownloadDisabled:
             'Cloud environment does not support model imports for custom nodes.',
-          unknownCategory: 'Unknown Category'
+          unknownCategory: 'Unknown Category',
+          downloadAll: 'Download all',
+          refresh: 'Refresh'
         }
       }
     }
@@ -50,7 +65,11 @@ const i18n = createI18n({
 
 function makeViewModel(
   name: string,
-  nodeId: string = '1'
+  nodeId: string = '1',
+  opts: {
+    directory?: string
+    url?: string
+  } = {}
 ): MissingModelViewModel {
   return {
     name,
@@ -60,7 +79,9 @@ function makeViewModel(
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       isAssetSupported: true,
-      isMissing: true
+      isMissing: true,
+      directory: opts.directory,
+      url: opts.url
     },
     referencingNodes: [{ nodeId, widgetName: 'ckpt_name' }]
   }
@@ -71,13 +92,21 @@ function makeGroup(
     directory?: string | null
     isAssetSupported?: boolean
     modelNames?: string[]
+    urls?: string[]
   } = {}
 ): MissingModelGroup {
   const names = opts.modelNames ?? ['model.safetensors']
+  const directory =
+    'directory' in opts ? (opts.directory ?? null) : 'checkpoints'
   return {
-    directory: 'directory' in opts ? (opts.directory ?? null) : 'checkpoints',
+    directory,
     isAssetSupported: opts.isAssetSupported ?? true,
-    models: names.map((n, i) => makeViewModel(n, String(i + 1)))
+    models: names.map((n, i) =>
+      makeViewModel(n, String(i + 1), {
+        directory: opts.urls?.[i] && directory ? directory : undefined,
+        url: opts.urls?.[i]
+      })
+    )
   }
 }
 
@@ -96,7 +125,7 @@ function mountCard(
       ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [PrimeVue, i18n, createTestingPinia({ createSpy: vi.fn })]
     }
   })
 }
@@ -244,5 +273,39 @@ describe('MissingModelCard (OSS)', () => {
     })
     expect(container.textContent).toContain('Unknown Category')
     expect(container.textContent).not.toContain('Import Not Supported')
+  })
+
+  it('hides the action section when no models are downloadable', () => {
+    mountCard({
+      missingModelGroups: [
+        makeGroup({
+          modelNames: ['one.safetensors']
+        })
+      ]
+    })
+
+    expect(
+      screen.queryByTestId('missing-model-actions')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the action section when one model is downloadable', () => {
+    mountCard({
+      missingModelGroups: [
+        makeGroup({
+          modelNames: ['one.safetensors'],
+          urls: ['https://huggingface.co/org/repo/resolve/main/one.safetensors']
+        })
+      ]
+    })
+
+    expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Download all/ })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument()
   })
 })

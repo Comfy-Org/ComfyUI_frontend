@@ -102,18 +102,6 @@
                 }}
               </Button>
               <Button
-                v-else-if="
-                  group.type === 'missing_model' &&
-                  downloadableModels.length > 1
-                "
-                variant="secondary"
-                size="sm"
-                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
-                @click.stop="downloadAllModels"
-              >
-                {{ downloadAllLabel }}
-              </Button>
-              <Button
                 v-else-if="group.type === 'swap_nodes'"
                 v-tooltip.top="
                   t(
@@ -238,12 +226,6 @@ import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.v
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import {
-  downloadModel,
-  isModelDownloadable
-} from '@/platform/missingModel/missingModelDownload'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { formatSize } from '@/utils/formatUtil'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
@@ -320,45 +302,6 @@ const singleRuntimeErrorGroup = computed(() => {
 const singleRuntimeErrorCard = computed(
   () => singleRuntimeErrorGroup.value?.cards[0] ?? null
 )
-
-const missingModelStore = useMissingModelStore()
-
-const downloadableModels = computed(() => {
-  if (isCloud) return []
-  return missingModelGroups.value.flatMap((group) =>
-    group.models
-      .filter(
-        (m) =>
-          m.representative.url &&
-          m.representative.directory &&
-          isModelDownloadable({
-            name: m.representative.name,
-            url: m.representative.url,
-            directory: m.representative.directory
-          })
-      )
-      .map((m) => ({
-        name: m.representative.name,
-        url: m.representative.url!,
-        directory: m.representative.directory!
-      }))
-  )
-})
-
-const downloadAllLabel = computed(() => {
-  const base = t('rightSidePanel.missingModels.downloadAll')
-  const total = downloadableModels.value.reduce(
-    (sum, m) => sum + (missingModelStore.fileSizes[m.url] ?? 0),
-    0
-  )
-  return total > 0 ? `${base} (${formatSize(total)})` : base
-})
-
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
-  }
-}
 
 const isAllCollapsed = computed({
   get() {

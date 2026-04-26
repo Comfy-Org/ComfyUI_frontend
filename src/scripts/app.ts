@@ -2224,15 +2224,17 @@ export class ComfyApp {
   }
 
   /**
-   * Refresh combo list on whole nodes
+   * Refresh combo list on whole nodes.
+   *
+   * @param options.silent When true, suppress update toast messages.
    */
-  async refreshComboInNodes() {
+  async refreshComboInNodes(options: { silent?: boolean } = {}) {
     const requestToastMessage: ToastMessageOptions = {
       severity: 'info',
       summary: t('g.update'),
       detail: t('toastMessages.updateRequested')
     }
-    if (this.vueAppReady) {
+    if (this.vueAppReady && !options.silent) {
       useToastStore().add(requestToastMessage)
     }
 
@@ -2289,13 +2291,15 @@ export class ComfyApp {
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
-      useToastStore().remove(requestToastMessage)
-      useToastStore().add({
-        severity: 'success',
-        summary: t('g.updated'),
-        detail: t('toastMessages.nodeDefinitionsUpdated'),
-        life: 1000
-      })
+      if (!options.silent) {
+        useToastStore().remove(requestToastMessage)
+        useToastStore().add({
+          severity: 'success',
+          summary: t('g.updated'),
+          detail: t('toastMessages.nodeDefinitionsUpdated'),
+          life: 1000
+        })
+      }
     }
   }
 

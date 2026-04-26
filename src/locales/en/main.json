@@ -3572,7 +3572,10 @@
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
-      "downloadAll": "Download all"
+      "downloadAll": "Download all",
+      "refresh": "Refresh",
+      "refreshFailed": "Failed to refresh missing models. Try again.",
+      "refreshPartiallyFailed": "Some missing models were refreshed, but others could not be verified. Try again."
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs",
