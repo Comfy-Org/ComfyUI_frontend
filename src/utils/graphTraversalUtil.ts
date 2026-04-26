@@ -230,16 +230,23 @@ export function collectAllNodes(
  */
 export function findNodeInHierarchy(
   graph: LGraph | Subgraph,
-  nodeId: string | number
+  nodeId: string | number,
+  visited: Set<LGraph | Subgraph> = new Set()
 ): LGraphNode | null {
   // Check current graph
   const node = graph.getNodeById(nodeId)
   if (node) return node
 
-  // Search in subgraphs
+  // Search in subgraphs. Path-local cycle guard: a malformed A→B→A
+  // subgraph cycle would otherwise stack-overflow. See
+  // `mapAllNodesWithVisited` for the same pattern applied to the
+  // bulk-traversal helpers.
   for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
-      const found = findNodeInHierarchy(node.subgraph, nodeId)
+      if (visited.has(node.subgraph)) continue
+      visited.add(node.subgraph)
+      const found = findNodeInHierarchy(node.subgraph, nodeId, visited)
+      visited.delete(node.subgraph)
       if (found) return found
     }
   }
@@ -256,20 +263,25 @@ export function findNodeInHierarchy(
  */
 export function findSubgraphByUuid(
   graph: LGraph | Subgraph,
-  targetUuid: string
+  targetUuid: string,
+  visited: Set<LGraph | Subgraph> = new Set()
 ): Subgraph | null {
   // Fast O(1) lookup via the root graph's centralized subgraph registry.
   if ('subgraphs' in graph && graph.subgraphs instanceof Map) {
     return graph.subgraphs.get(targetUuid) ?? null
   }
 
-  // Fallback: recursive traversal for non-root graphs without the registry.
+  // Fallback: recursive traversal for non-root graphs without the
+  // registry. Path-local cycle guard mirrors `findNodeInHierarchy`.
   for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
       }
-      const found = findSubgraphByUuid(node.subgraph, targetUuid)
+      if (visited.has(node.subgraph)) continue
+      visited.add(node.subgraph)
+      const found = findSubgraphByUuid(node.subgraph, targetUuid, visited)
+      visited.delete(node.subgraph)
       if (found) return found
     }
   }
