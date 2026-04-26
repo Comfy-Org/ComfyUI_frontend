@@ -18,7 +18,9 @@ import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
 
-function expectFilename(index: number): string {
+// MediaAssetCard renders the filename *without* extension via
+// getFilenameDetails(...).filename, so card-text matching uses the basename.
+function expectCardText(index: number): string {
   const filename = MIXED_JOBS[index]?.preview_output?.filename
   if (!filename) {
     throw new Error(
@@ -26,13 +28,13 @@ function expectFilename(index: number): string {
         'createMixedMediaJobs contract changed.'
     )
   }
-  return filename
+  return filename.replace(/\.[^.]+$/, '')
 }
 
-const imageCardName = expectFilename(0)
-const videoCardName = expectFilename(1)
-const audioCardName = expectFilename(2)
-const threeDCardName = expectFilename(3)
+const imageCardName = expectCardText(0)
+const videoCardName = expectCardText(1)
+const audioCardName = expectCardText(2)
+const threeDCardName = expectCardText(3)
 
 function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
   return { assets, total: assets.length, has_more: false }
