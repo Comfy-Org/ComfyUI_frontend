@@ -32,10 +32,12 @@ const SORT_JOBS = createJobsWithExecutionTimes([
   { createTime: 3000, durationMs: 3000 }
 ])
 
+// MediaAssetCard renders the filename *without* extension via
+// getFilenameDetails(...).filename, so card-text matching uses the basename.
 const NAME_BY_ID: Record<string, string> = {
-  'job-001': 'output_job-001.png',
-  'job-002': 'output_job-002.png',
-  'job-003': 'output_job-003.png'
+  'job-001': 'output_job-001',
+  'job-002': 'output_job-002',
+  'job-003': 'output_job-003'
 }
 
 function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
