@@ -1,5 +1,5 @@
 const COMFY_API_BASE_FLAG = '--comfy-api-base'
-export const DEFAULT_CLOUD_API_BASE = 'https://api.comfy.org'
+const DEFAULT_CLOUD_API_BASE = 'https://api.comfy.org'
 
 type SystemInfo = { argv?: string[]; comfy_api_base?: string }
 
