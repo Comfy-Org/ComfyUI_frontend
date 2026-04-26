@@ -89,9 +89,9 @@ const emptyCopy = computed(() => {
         :class="[
           'm-2 flex flex-1 items-center justify-center p-6',
           'rounded-layout-cell',
-          'border-[3px] border-dashed border-warning-background',
-          'bg-warning-background/15',
-          'text-center text-lg text-warning-background'
+          'border-[3px] border-dashed border-(--color-app-mode-active-temp)',
+          'bg-(--color-app-mode-active-temp-wash)',
+          'text-center text-lg text-(--color-app-mode-active-temp)'
         ]"
       >
         {{ emptyCopy }}

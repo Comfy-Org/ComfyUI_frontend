@@ -38,13 +38,13 @@ const sizeStyle = computed(() => {
 <template>
   <div
     :class="[
-      // Base chrome: absolute, brand-blue outline + 30% tint fill,
+      // Base chrome: absolute, accent-temp outline + 30% tint fill,
       // content non-interactive, animated through the shared layout
       // duration/easing so the preview tweens between presets.
       'pointer-events-none absolute z-20',
       'w-(--panel-dock-width,440px)',
-      'rounded-[10px] border-2 border-primary-background',
-      'bg-primary-background/30',
+      'rounded-[10px] border-2 border-(--color-app-mode-accent-temp)',
+      'bg-(--color-app-mode-accent-temp-wash)',
       'duration-layout transition-[top,bottom,left,right,max-height] ease-layout',
       presetClass
     ]"

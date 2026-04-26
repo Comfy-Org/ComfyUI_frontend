@@ -115,11 +115,11 @@ const isSaved = computed(
 
 // Save has no trailing icon (unlike Next), so the default lg preset's
 // 40px height + 16px horizontal padding reads as lopsided. Tighten
-// horizontal to 8px and shrink height to 32px so the blue pill feels
+// horizontal to 8px and shrink height to 32px so the accent pill feels
 // square-balanced rather than a tall rectangle with a short word.
 const activeSaveClasses =
-  'bg-primary-background text-white border border-cobalt-800 ' +
-  'hover:bg-primary-background-hover h-8 px-2'
+  'bg-(--color-app-mode-accent-temp) text-white border border-(--color-app-mode-accent-temp-deep) ' +
+  'hover:bg-(--color-app-mode-accent-temp-deep) h-8 px-2'
 const disabledSaveClasses =
   'bg-secondary-background text-muted-foreground/50 ' +
   'disabled:opacity-100 h-8 px-2'

@@ -183,19 +183,26 @@ const panelSide = computed(() =>
     <AppChrome variant="app-mode" />
 
     <!-- Overlay layer: a single floating panel, draggable between 6
-         preset positions (left/right dock + four float corners). -->
-    <FloatingPanel
-      v-model:preset="panelPreset"
-      v-model:collapsed="panelCollapsed"
-      :title="panelTitle"
-      movable
-    >
-      <PanelBlockList
-        :rows="panelRows"
-        :input-entry-map="inputEntryMap"
-        @reorder="moveBlock"
-      />
-    </FloatingPanel>
+         preset positions (left/right dock + four float corners).
+         Wrapped in `<Transition appear>` so the first paint slides
+         + fades the panel into place instead of snapping — a
+         cinematic cold-start for demo video and a softer entry on
+         every fresh App Mode load. Only runs once per mount; preset
+         swaps and collapse toggles are outside this transition. -->
+    <Transition name="panel-enter" appear>
+      <FloatingPanel
+        v-model:preset="panelPreset"
+        v-model:collapsed="panelCollapsed"
+        :title="panelTitle"
+        movable
+      >
+        <PanelBlockList
+          :rows="panelRows"
+          :input-entry-map="inputEntryMap"
+          @reorder="moveBlock"
+        />
+      </FloatingPanel>
+    </Transition>
   </div>
 </template>
 
@@ -274,5 +281,66 @@ const panelSide = computed(() =>
 .layout-view__background :is(img, a) {
   -webkit-user-drag: none;
   user-select: none;
+}
+</style>
+
+<!--
+  Unscoped because Vue's `<Transition appear>` applies the
+  `panel-enter-*` classes to the FloatingPanel child component's
+  root element, which a scoped selector can't reach without
+  `:deep()`. The class prefix is unique to this transition so the
+  global footprint is safe.
+
+  Same block also hosts the TEMPORARY App Mode accent colors —
+  `:root` placement so they reach AppInput / AppOutput rings that
+  teleport to <body> and escape any component-scoped containing
+  block. Sole point of definition; tune or revert from here.
+-->
+<style>
+.panel-enter-enter-active {
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+.panel-enter-enter-from {
+  opacity: 0;
+  /* Slide in from the right edge — matches the default right-dock
+     preset so the entrance reads as "the panel settles into
+     position" rather than materializing from nowhere. */
+  transform: translateX(16px);
+}
+
+/* --- TEMPORARY App Mode color overrides (pending design-system
+   integration) ---
+   Two color stories live here while we iterate on the App Mode
+   palette before promoting either to real semantic tokens:
+
+   1. ACCENT (purple) — selectable / unselected affordance. Replaces
+      `primary-background` (design-system blue) in StepBadge,
+      AppInput, AppOutput. Lighter shade for fills, deeper shade
+      for paired borders.
+   2. ACTIVE (yellow) — selected / hover / drag-preview affordance.
+      Replaces `warning-background` (design-system gold) across
+      App Mode + builder surfaces (AppInput, AppOutput, builder
+      ring states, drag-block highlight, welcome-copy emphasis).
+      Three opacity variants because Tailwind's slash opacity
+      modifier doesn't compose reliably with arbitrary CSS vars.
+
+   When either color graduates to a real semantic token, remove the
+   relevant lines below and swap the call-site references to the
+   new token. Each call site has a one-line comment pointing back
+   here. */
+:root {
+  --color-app-mode-accent-temp: #6366f1;
+  --color-app-mode-accent-temp-deep: #4338ca;
+  --color-app-mode-accent-temp-wash: rgb(99 102 241 / 0.3);
+  --color-app-mode-active-temp: #edfa78;
+  --color-app-mode-active-temp-wash: rgb(237 250 120 / 0.1);
+  --color-app-mode-active-temp-half: rgb(237 250 120 / 0.5);
+  /* Foreground-on-active: dark gray for icons sitting on top of the
+     bright yellow chip (the selected-state checkmarks in AppInput,
+     AppOutput, AppBuilder). The previous `text-foreground` /
+     `primary-foreground` were near-white and disappeared on yellow. */
+  --color-app-mode-active-temp-fg: #1f2937;
 }
 </style>

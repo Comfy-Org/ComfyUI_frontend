@@ -140,21 +140,37 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <ImagePreview
-    v-if="canShowPreview && latentPreview"
-    :mobile
-    :src="latentPreview"
-    :show-size="false"
-  />
-  <MediaOutputPreview
-    v-else-if="selectedOutput"
-    :output="selectedOutput"
-    :mobile
-    :hide-info="hideChrome"
-  />
-  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
-  <LinearArrange v-else-if="isArrangeMode" />
-  <LinearWelcome v-else />
+  <!--
+    Crossfade between preview states — the "image arrives" beat for
+    a run. `mode="default"` (the omitted default) lets the outgoing
+    element overlap the incoming one, and the `.preview-fade-leave-
+    active` rule pins the leaving element to the workspace bounds so
+    it holds its position while the new one fades in underneath. The
+    workspace is `position: absolute; inset: 0`, so the pinning
+    keeps the full preview area covered during the ~250ms swap.
+  -->
+  <Transition name="preview-fade">
+    <ImagePreview
+      v-if="canShowPreview && latentPreview"
+      key="latent"
+      :mobile
+      :src="latentPreview"
+      :show-size="false"
+    />
+    <MediaOutputPreview
+      v-else-if="selectedOutput"
+      key="final"
+      :output="selectedOutput"
+      :mobile
+      :hide-info="hideChrome"
+    />
+    <LatentPreview
+      v-else-if="showSkeleton || isWorkflowActive"
+      key="skeleton"
+    />
+    <LinearArrange v-else-if="isArrangeMode" key="arrange" />
+    <LinearWelcome v-else key="welcome" />
+  </Transition>
   <!-- The inner OutputHistory must stay mounted even when the layout
        layout hides this bar — its watchers drive selectedItem /
        selectedOutput via `updateSelection`. v-show keeps the DOM +
@@ -186,3 +202,31 @@ async function rerun(e: Event) {
     @update-selection="handleSelection"
   />
 </template>
+
+<!--
+  Unscoped because Vue's `<Transition>` applies these classes to the
+  root element of whichever child component is currently mounted
+  (ImagePreview, MediaOutputPreview, etc.). Scoped styles wouldn't
+  reach those roots without `:deep()`, and the hashed selector would
+  add noise for no isolation benefit — `preview-fade-*` is unique to
+  this component's Transition.
+-->
+<style>
+.preview-fade-enter-active,
+.preview-fade-leave-active {
+  transition: opacity 250ms ease;
+}
+.preview-fade-enter-from,
+.preview-fade-leave-to {
+  opacity: 0;
+}
+/* Pin the outgoing element to the workspace bounds during its fade
+   so the incoming element can fade in underneath without a layout
+   collapse. The workspace (`.layout-view__background`) is
+   position:absolute inset:0, so the leaving element inherits a
+   stable full-viewport containing block. */
+.preview-fade-leave-active {
+  position: absolute;
+  inset: 0;
+}
+</style>

@@ -43,7 +43,11 @@ async function handleClick(e: MouseEvent | KeyboardEvent) {
       'size-full rounded-lg text-layout-xl text-white',
       'border border-(--app-mode-go-border) bg-(--app-mode-go-bg)',
       'hover:bg-(--app-mode-go-bg-hover)',
-      'focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1'
+      'focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1',
+      // Press feedback: a small scale-down on active so clicks feel
+      // tactile on camera. 100ms keeps it punchy — fast enough not to
+      // delay the command dispatch, long enough to be visible.
+      'transition-transform duration-100 ease-out active:scale-[0.97]'
     ]"
     data-testid="layout-run-cell"
     @click="handleClick"

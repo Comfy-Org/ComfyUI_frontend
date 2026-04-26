@@ -3366,7 +3366,8 @@
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
       "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
-      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app",
+      "dragHint": "Drag input blocks in the panel to reorder them or split a row into columns."
     },
     "builder": {
       "title": "App builder mode",

@@ -28,7 +28,7 @@
  */
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountCell from './cells/BatchCountCell.vue'
@@ -56,6 +56,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -99,14 +100,69 @@ const { variant = 'app-mode' } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { enableAppBuilder } = useAppMode()
+const { enableAppBuilder, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { enterBuilder, zoomIn, zoomOut, resetView } = appModeStore
 const { hasNodes, viewportScale } = storeToRefs(appModeStore)
 
-const zoomPercent = computed(() => `${Math.round(viewportScale.value * 100)}%`)
+const canvasStore = useCanvasStore()
+const { appScalePercentage } = storeToRefs(canvasStore)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
+
+// In builder variant the cluster's percent readout reads
+// `appScalePercentage`, which is only kept in sync while something
+// has registered `canvasStore.initScaleSync()` (it wraps
+// `LGraphCanvas.ds.onChanged` to mirror the live scale into the
+// store). GraphCanvasMenu does this for the graph view; in builder
+// that menu isn't mounted, so we register from here instead.
+// Cleanup mirrors GraphCanvasMenu's so a graph→builder→graph swap
+// doesn't pile multiple wrappers on `ds.onChanged`.
+if (variant === 'builder') {
+  onMounted(() => canvasStore.initScaleSync())
+  onBeforeUnmount(() => canvasStore.cleanupScaleSync())
+}
+
+// Two zoom systems share one cluster:
+// - App Mode (and builder's arrange step, which renders the App Mode
+//   preview backdrop) drives `appModeStore.viewportScale` — the CSS
+//   transform on the workspace wrapper.
+// - Builder's inputs / outputs steps drive `LGraphCanvas.ds.scale`
+//   via the existing `Comfy.Canvas.*` commands;
+//   `canvasStore.appScalePercentage` is the integer-rounded read-back
+//   of that scale.
+// `isArrangeMode` flips builder-variant handlers over to the App
+// Mode side so the cluster operates whatever surface the user is
+// actually looking at (the graph canvas in inputs/outputs, the
+// preview backdrop in arrange). Keeps the visual cluster consistent
+// across phases — important for the builder→app-mode transition in
+// the demo video.
+const useAppModeZoom = computed(
+  () => variant !== 'builder' || isArrangeMode.value
+)
+
+const zoomPercent = computed(() =>
+  useAppModeZoom.value
+    ? `${Math.round(viewportScale.value * 100)}%`
+    : `${appScalePercentage.value}%`
+)
+
+function dispatchCanvas(commandId: string) {
+  commandStore.execute(commandId).catch(toastErrorHandler)
+}
+
+const navZoomIn = () => {
+  if (useAppModeZoom.value) return zoomIn()
+  dispatchCanvas('Comfy.Canvas.ZoomIn')
+}
+const navZoomOut = () => {
+  if (useAppModeZoom.value) return zoomOut()
+  dispatchCanvas('Comfy.Canvas.ZoomOut')
+}
+const navResetView = () => {
+  if (useAppModeZoom.value) return resetView()
+  dispatchCanvas('Comfy.Canvas.FitView')
+}
 const { flags } = useFeatureFlags()
 
 const showShare = computed(() => isCloud && flags.workflowSharingEnabled)
@@ -336,9 +392,11 @@ const bottomLeftCells = computed<ChromeCell[]>(() => {
   return out
 })
 
-// Bottom-right nav cluster — always present. The viewport transform
-// scales the whole workspace (dot grid + welcome + image), so the
-// cluster stays useful even before any generation exists.
+// Bottom-right nav cluster — renders in both variants. The handlers
+// branch on `variant` (App Mode drives the workspace transform;
+// builder dispatches `Comfy.Canvas.*` commands at the LGraphCanvas),
+// so the cluster stays visually consistent across the
+// builder ↔ app-mode transition.
 const bottomRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
   include(out, { id: 'nav-zoom-out', kind: 'nav-zoom-out', span: 1 })
@@ -565,7 +623,7 @@ function cellClass(cell: ChromeCell): string {
           v-if="cell.kind === 'nav-zoom-out'"
           icon="icon-[lucide--zoom-out]"
           :label="t('linearMode.zoomOut')"
-          :on-activate="zoomOut"
+          :on-activate="navZoomOut"
         />
         <div
           v-else-if="cell.kind === 'nav-zoom-percent'"
@@ -581,13 +639,13 @@ function cellClass(cell: ChromeCell): string {
           v-else-if="cell.kind === 'nav-zoom-in'"
           icon="icon-[lucide--zoom-in]"
           :label="t('linearMode.zoomIn')"
-          :on-activate="zoomIn"
+          :on-activate="navZoomIn"
         />
         <IconCell
           v-else-if="cell.kind === 'nav-zoom-fit'"
           icon="icon-[lucide--maximize]"
           :label="t('linearMode.resetView')"
-          :on-activate="resetView"
+          :on-activate="navResetView"
         />
       </div>
     </div>

@@ -226,7 +226,7 @@ const renderedInputCandidates = computed(() => {
               cn(
                 'fixed rounded-lg ring-2 ring-primary-background/60',
                 candidate.isSelected &&
-                  'bg-warning-background/15 ring-3 ring-warning-background'
+                  'bg-(--color-app-mode-active-temp-wash) ring-3 ring-(--color-app-mode-active-temp)'
               )
             "
           />
@@ -238,8 +238,8 @@ const renderedInputCandidates = computed(() => {
             :style="toValue(style)"
             :class="
               cn(
-                'fixed rounded-2xl ring-5 ring-warning-background',
-                !isSelected && 'ring-warning-background/50'
+                'fixed rounded-2xl ring-5 ring-(--color-app-mode-active-temp)',
+                !isSelected && 'ring-(--color-app-mode-active-temp-half)'
               )
             "
           >
@@ -249,7 +249,7 @@ const renderedInputCandidates = computed(() => {
                 :class="[
                   'pointer-events-auto absolute -top-1/2 -right-1/2',
                   'size-full cursor-pointer rounded-lg p-2',
-                  'bg-warning-background'
+                  'bg-(--color-app-mode-active-temp)'
                 ]"
                 @click.stop="
                   remove(
@@ -259,7 +259,20 @@ const renderedInputCandidates = computed(() => {
                 "
                 @pointerdown.stop
               >
-                <i class="bg-text-foreground icon-[lucide--check] size-full" />
+                <!-- Inline SVG (see AppInput.vue for rationale) so we
+                     can set `stroke-width="3"` directly. -->
+                <svg
+                  class="size-full text-(--color-app-mode-active-temp-fg)"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               </div>
               <div
                 v-else
@@ -267,7 +280,7 @@ const renderedInputCandidates = computed(() => {
                   'pointer-events-auto absolute -top-1/2 -right-1/2',
                   'size-full cursor-pointer rounded-lg',
                   'bg-component-node-background',
-                  'ring-4 ring-warning-background/50 ring-inset'
+                  'ring-4 ring-(--color-app-mode-active-temp-half) ring-inset'
                 ]"
                 @click.stop="appModeStore.selectedOutputs.push(key)"
                 @pointerdown.stop

@@ -100,28 +100,44 @@ function togglePromotion() {
               'flex shrink-0 items-center justify-center self-center',
               'rounded-lg border-[3px] shadow-sm',
               isPromoted
-                ? 'border-warning-background bg-warning-background'
+                ? 'border-(--color-app-mode-active-temp) bg-(--color-app-mode-active-temp)'
                 : [
-                    'border-primary-background bg-base-background',
-                    'group-hover:border-dashed group-hover:border-warning-background'
+                    // Colors are TEMPORARY App Mode overrides — see
+                    // definitions in LayoutView.vue.
+                    'border-(--color-app-mode-accent-temp) bg-base-background',
+                    'group-hover:border-dashed group-hover:border-(--color-app-mode-active-temp)'
                   ]
             )
           "
         >
-          <i
+          <!-- Inline SVG (instead of `icon-[lucide--check]`) so we can
+               set `stroke-width="3"` directly. The bundled iconify
+               lucide set only ships the default 2-stroke variant, and
+               the icon is rendered as a 1-bit CSS mask which can't be
+               thickened from the outside. -->
+          <svg
             v-if="isPromoted"
-            class="bg-primary-foreground icon-[lucide--check] size-3/4"
-          />
+            class="size-3/4 text-(--color-app-mode-active-temp-fg)"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
         <div
           :class="
             cn(
               'pointer-events-none flex-1 self-stretch rounded-lg border-[3px]',
               isPromoted
-                ? 'border-warning-background bg-warning-background/15'
+                ? 'border-(--color-app-mode-active-temp) bg-(--color-app-mode-active-temp-wash)'
                 : [
-                    'border-primary-background',
-                    'group-hover:border-dashed group-hover:border-warning-background'
+                    'border-(--color-app-mode-accent-temp)',
+                    'group-hover:border-dashed group-hover:border-(--color-app-mode-active-temp)'
                   ]
             )
           "
