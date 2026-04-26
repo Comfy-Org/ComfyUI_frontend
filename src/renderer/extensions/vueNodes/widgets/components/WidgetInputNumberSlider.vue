@@ -40,7 +40,7 @@ import { computed, ref } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps

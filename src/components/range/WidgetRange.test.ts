@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

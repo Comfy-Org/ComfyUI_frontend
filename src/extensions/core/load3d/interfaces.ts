@@ -3,11 +3,7 @@
 import type * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
-import type { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import type { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import type { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import type { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
-import type { OBJLoader2Parallel } from 'wwobjloader2'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
 export type MaterialMode =
   | 'original'
@@ -203,12 +199,6 @@ export interface ModelManagerInterface {
 }
 
 export interface LoaderManagerInterface {
-  gltfLoader: GLTFLoader
-  objLoader: OBJLoader2Parallel
-  mtlLoader: MTLLoader
-  fbxLoader: FBXLoader
-  stlLoader: STLLoader
-
   init(): void
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>

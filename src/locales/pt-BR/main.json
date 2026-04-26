@@ -99,6 +99,7 @@
     "findInLibrary": "Encontre na seção {type} da biblioteca de modelos.",
     "finish": "Concluir",
     "genericLinkPlaceholder": "Cole o link aqui",
+    "gridView": "Visualização em grade",
     "importAnother": "Importar outro",
     "imported": "Importado",
     "invalidAsset": "Ativo inválido",
@@ -106,6 +107,7 @@
     "invalidFilename": "Nome de arquivo inválido",
     "invalidFilenameDetail": "Não foi possível determinar o nome do arquivo do ativo. Por favor, tente novamente.",
     "jobId": "ID do trabalho",
+    "listView": "Visualização em lista",
     "loadingModels": "Carregando {type}...",
     "maxFileSize": "Tamanho máximo do arquivo: {size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "Padrão",
     "sortPopular": "Popular",
     "sortRecent": "Recentes",
+    "sortUnsorted": "Sem ordenação",
     "sortZA": "Z-A",
     "sortingType": "Tipo de ordenação",
     "tags": "Tags",
@@ -332,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "App",
+    "blueprint": "Blueprint",
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
@@ -807,6 +811,7 @@
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
+    "INTERP_MODEL": "MODELO_INTERP",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERAÇÃO LATENT",
     "LATENT_UPSCALE_MODEL": "MODELO DE AUMENTO DE LATENT",
@@ -834,6 +839,7 @@
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
     "RETARGET_TASK_ID": "ID DA TAREFA DE REDIRECIONAMENTO",
     "RIG_TASK_ID": "ID DA TAREFA DE RIG",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "AMOSTRADOR",
     "SIGMAS": "SIGMAS",
     "STRING": "TEXTO",
@@ -912,6 +918,10 @@
     "showMissingNodes": "Mostrar nós ausentes",
     "showSwapNodes": "Mostrar nós alternativos",
     "swapNodes": "Alguns nós podem ser substituídos por alternativas"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Enviar feedback",
+    "ctaText": "O que achou do novo painel de erros?"
   },
   "essentials": {
     "batchImage": "Imagem em lote",
@@ -1821,6 +1831,10 @@
     "gettingInfo": "Obtendo informações...",
     "importFailedGenericError": "Falha ao importar o pacote. Verifique o console para mais detalhes.",
     "inWorkflow": "No Workflow",
+    "incompatibleVersion": {
+      "message": "Por favor, atualize o ComfyUI-Manager para a versão 4.2.1 ou superior.\n• Desktop: Atualize o aplicativo ComfyUI Desktop\n• Standalone: Execute pip install -U comfyui-manager e reinicie\nSaiba mais: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Atualização do ComfyUI-Manager necessária"
+    },
     "infoPanelEmpty": "Clique em um item para ver as informações",
     "installAllMissingNodes": "Instalar Todos",
     "installError": "Erro de Instalação",
