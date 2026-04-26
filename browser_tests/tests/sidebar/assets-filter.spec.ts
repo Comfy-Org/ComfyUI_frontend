@@ -218,6 +218,19 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.assetCards).toHaveCount(1)
 
     await tab.toggleMediaTypeFilter('image')
-    await expect(tab.assetCards).toHaveCount(MIXED_JOBS.length)
+
+    // Assert each of the four mocked cards is back individually rather than
+    // relying on the count alone — surfaces *which* card is missing if the
+    // restoration is partial.
+    for (const name of [
+      imageCardName,
+      videoCardName,
+      audioCardName,
+      threeDCardName
+    ]) {
+      await expect(tab.getAssetCardByName(name)).toBeVisible({
+        timeout: 10_000
+      })
+    }
   })
 })
