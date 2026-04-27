@@ -36,39 +36,43 @@ const getClipNodesDragBox = async (comfyPage: ComfyPage) => {
 
 test.describe('Canvas settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Graph.CanvasInfo', () => {
-    test('toggles the bottom-left HUD', async ({ comfyPage }) => {
-      const box = await comfyPage.canvas.boundingBox()
-      expect(box, 'Canvas bounding box must be available').not.toBeNull()
-      // HUD is drawn ~80px tall along the bottom edge of the canvas; grab a
-      // comfortable 180px × 160px strip to catch it across viewports.
-      const HUD_WIDTH = 180
-      const HUD_HEIGHT = 160
-      const hudClip = {
-        x: box!.x,
-        y: box!.y + box!.height - HUD_HEIGHT,
-        width: HUD_WIDTH,
-        height: HUD_HEIGHT
+    test(
+      'toggles the bottom-left HUD',
+      { tag: '@screenshot' },
+      async ({ comfyPage }) => {
+        const box = await comfyPage.canvas.boundingBox()
+        expect(box, 'Canvas bounding box must be available').not.toBeNull()
+        // HUD is drawn ~80px tall along the bottom edge of the canvas; grab a
+        // comfortable 180px × 160px strip to catch it across viewports.
+        const HUD_WIDTH = 180
+        const HUD_HEIGHT = 160
+        const hudClip = {
+          x: box!.x,
+          y: box!.y + box!.height - HUD_HEIGHT,
+          width: HUD_WIDTH,
+          height: HUD_HEIGHT
+        }
+
+        await test.step('Capture HUD region with setting off', async () => {
+          await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
+          await comfyPage.canvasOps.resetView()
+          await comfyPage.canvasOps.moveMouseToEmptyArea()
+          await expect(comfyPage.page).toHaveScreenshot(
+            'canvas-info-hud-off.png',
+            { clip: hudClip, maxDiffPixels: 50 }
+          )
+        })
+
+        await test.step('Capture HUD region with setting on', async () => {
+          await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', true)
+          await comfyPage.canvasOps.moveMouseToEmptyArea()
+          await expect(comfyPage.page).toHaveScreenshot(
+            'canvas-info-hud-on.png',
+            { clip: hudClip, maxDiffPixels: 50 }
+          )
+        })
       }
-
-      await test.step('Capture HUD region with setting off', async () => {
-        await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
-        await comfyPage.canvasOps.resetView()
-        await comfyPage.canvasOps.moveMouseToEmptyArea()
-        await expect(comfyPage.page).toHaveScreenshot(
-          'canvas-info-hud-off.png',
-          { clip: hudClip, maxDiffPixels: 50 }
-        )
-      })
-
-      await test.step('Capture HUD region with setting on', async () => {
-        await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', true)
-        await comfyPage.canvasOps.moveMouseToEmptyArea()
-        await expect(comfyPage.page).toHaveScreenshot(
-          'canvas-info-hud-on.png',
-          { clip: hudClip, maxDiffPixels: 50 }
-        )
-      })
-    })
+    )
   })
 
   test.describe('Comfy.Graph.CtrlShiftZoom', () => {
