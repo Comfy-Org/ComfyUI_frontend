@@ -7,15 +7,12 @@ import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHist
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
 
 /**
- * Bridges `linearOutputStore.activeWorkflowInProgressItems` into
- * `outputWindowStore.windows`. Window store is monotonic: finalized
- * (state was `'image'`) windows stay rendered after the source item
- * gets absorbed out of the in-progress list; skeleton/latent items
- * that disappear were cancelled, and their windows go too.
- *
- * Also resolves each window's owning AssetItem from `outputs.media`
- * via `user_metadata.jobId` — the same pivot
- * `linearOutputStore.pendingResolve` uses to absorb items.
+ * Bridges `linearOutputStore.activeWorkflowInProgressItems` into the
+ * monotonic `outputWindowStore`. Finalized (`'image'`) windows stay
+ * rendered after the source item is absorbed; pre-image
+ * disappearance = cancellation, so those windows are removed.
+ * Also resolves each window's `AssetItem` from `outputs.media` via
+ * `user_metadata.jobId`.
  */
 export function useOutputWindowSync(): void {
   const linearStore = useLinearOutputStore()
@@ -38,17 +35,15 @@ export function useOutputWindowSync(): void {
       const currentIds = new Set(items.map((i) => i.id))
       for (const old of oldItems) {
         if (currentIds.has(old.id)) continue
-        // Pre-image disappearance = cancel; image disappearance =
-        // absorbed into outputs.media (window already has `output`,
-        // stays renderable).
+        // Pre-image disappearance is cancellation; image-state
+        // disappearance is absorption (window keeps its output).
         if (old.state !== 'image') windowStore.remove(old.id)
       }
     },
     { immediate: true }
   )
 
-  // O(media × windows) per tick is fine at session-realistic counts;
-  // avoids maintaining a parallel jobId index.
+  // O(media × windows) is fine at session counts; avoids a parallel index.
   watch(
     [() => outputs.media.value, () => windowStore.windows],
     ([assets, windows]) => {

@@ -1,19 +1,14 @@
 <script setup lang="ts">
 /**
- * PanelDragPreview — translucent brand-blue rectangle rendered at the
- * snap-target preset's bounds while a panel is being dragged. Appears
- * above the live panel to signal where the panel will land on release.
- *
- * Passing `panelHeight` makes the preview match the live panel's
- * content-fit height instead of stretching to the preset's full
- * `max-height`; each preset's `max-height` still caps the preview on
- * small viewports.
+ * Translucent outline rendered at the snap-target preset's bounds
+ * during a panel drag. Sits above the live panel to signal where it
+ * will land on release.
  */
 import { computed } from 'vue'
 
 import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
-import { isDockPreset } from './panelTypes';
-import type { PanelPreset } from './panelTypes';
+import { isDockPreset } from './panelTypes'
+import type { PanelPreset } from './panelTypes'
 
 const props = defineProps<{
   preset: PanelPreset
@@ -21,20 +16,13 @@ const props = defineProps<{
   panelWidth?: number
 }>()
 
-// Preset classes are shared with FloatingPanel via
-// `PANEL_PRESET_CLASSES` so the drop preview always lands where the
-// live panel will.
 const presetClass = computed(() => PANEL_PRESET_CLASSES[props.preset])
 const isDocked = computed(() => isDockPreset(props.preset))
-// Match the live panel's rendered dimensions so the preview lands the
-// same size the panel will — important when the user has drag-resized
-// the dock wider than the default. Dock presets span the full slot via
-// `top` + `bottom` CSS anchors, so leave the height out for them; an
-// explicit `height` would override the bottom anchor and shrink the
-// preview to the live panel's content-fit height (which is what was
-// happening when dragging from a float corner toward a dock — the
-// preview rendered as a short rectangle at the top instead of a
-// full-height column).
+// Match the live panel's rendered dimensions so the preview lands at
+// the size the panel will. Dock presets span the full slot via
+// top+bottom anchors, so leave height out for them — an explicit
+// height would override the bottom anchor and shrink the preview to
+// the live panel's content-fit height.
 const sizeStyle = computed(() => {
   const style: Record<string, string> = {}
   if (!isDocked.value && props.panelHeight != null)
@@ -47,9 +35,9 @@ const sizeStyle = computed(() => {
 <template>
   <div
     :class="[
-      // Base chrome: absolute, accent-temp outline + 30% tint fill,
-      // content non-interactive, animated through the shared layout
-      // duration/easing so the preview tweens between presets.
+      // Accent-temp outline + 30% tint fill, animated through the
+      // shared layout duration/easing so the preview tweens between
+      // presets when the snap target changes.
       'pointer-events-none absolute z-20',
       'w-(--panel-dock-width,440px)',
       'rounded-[10px] border-2 border-(--color-app-mode-accent-temp)',

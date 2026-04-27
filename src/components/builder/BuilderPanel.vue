@@ -1,22 +1,10 @@
 <script setup lang="ts">
 /**
- * BuilderPanel — floating right-dock panel for the App Builder flow.
- *
- * Renders the same PanelBlockList App Mode shows, via the same shared
- * state in appModeStore, so the builder is WYSIWYG by construction:
- * what you see while picking / arranging inputs is exactly what App
- * Mode renders at runtime. InputCell's `builder` variant adds the ⋯
- * Rename/Remove menu and inerts the widget body so preview inputs
- * aren't typed into while arranging.
- *
- * Panel preset, collapse state, and `panelRows` all live on
- * appModeStore; moving or rearranging in either view updates both.
- * Graph-canvas click-to-select overlays (widget highlights + output
- * rings) live in AppBuilder.vue — this component owns the panel
- * surface only.
- *
- * Run + Number-of-runs live in BuilderChrome (upper-right cluster) to
- * match App Mode's runtime chrome, not in this panel.
+ * Floating right-dock panel for the App Builder flow. Renders the
+ * same PanelBlockList as App Mode, reading from the same appModeStore
+ * — the builder is WYSIWYG with App Mode by construction. InputCell's
+ * `builder` variant adds rename/remove and inerts the widget body so
+ * inputs aren't typed into during arrangement.
  */
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
@@ -37,8 +25,7 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 const { isSelectInputsMode, isSelectOutputsMode } = useAppMode()
 const { inputEntryMap, moveBlock } = useAppPanelLayout()
 
-// Match App Mode's panel title (the workflow filename) so builder + App
-// Mode read as the same surface across modes.
+// Match App Mode's panel title (workflow filename) for WYSIWYG parity.
 const panelTitle = computed(() => {
   const path = workflowStore.activeWorkflow?.path
   if (!path) return t('linearMode.builder.title')
@@ -57,18 +44,12 @@ const emptyCopy = computed(() => {
 </script>
 
 <template>
-  <!-- Positioned ancestor so FloatingPanel's preset-based absolute
-       positioning resolves inside the builder just like it does inside
-       .layout-view. Left edge is offset by `--sidebar-width` so the
-       wrapper's coordinate system starts after the Comfy sidebar —
-       matching App Mode, where LayoutView is a flex sibling of the
-       sidebar and so already starts past it. With both contexts sharing
-       the same origin, the FloatingPanel preset classes use `left: 0`
-       and land flush against the sidebar in either mode. The root is
-       pointer-events-none so clicks on empty chrome areas fall through
-       to the graph canvas; FloatingPanel opts back into pointer-
-       events-auto in its own root class list so the panel itself still
-       captures input. -->
+  <!-- Positioned ancestor so FloatingPanel's absolute positioning
+       resolves correctly. Left offset by `--sidebar-width` so the
+       coordinate system starts past the Comfy sidebar — matching
+       App Mode, where LayoutView is a flex sibling of the sidebar
+       and already starts past it. Root is pointer-events-none so
+       empty chrome space falls through to the graph canvas. -->
   <div
     class="pointer-events-none fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-100"
   >
@@ -86,9 +67,7 @@ const emptyCopy = computed(() => {
         @reorder="moveBlock"
       />
 
-      <!-- Empty-state picker target. Dashed affordance matches the original
-           builder signal that this is a "drop zone" for widget picks from
-           the canvas; radius + colors align with design tokens. -->
+      <!-- Empty-state drop-zone affordance for widget picks from the canvas. -->
       <div
         v-else
         :class="[

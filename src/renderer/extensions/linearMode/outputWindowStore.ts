@@ -5,28 +5,23 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 /**
- * One floating output window in the App Mode workspace.
- *
- * Lifecycle is fed by `linearOutputStore.activeWorkflowInProgressItems`:
- * windows spawn in `'skeleton'`, transition to `'latent'` / `'image'`,
- * and stay in the store after the source item gets absorbed out of
- * the in-progress list — that's what gives the canvas its moodboard
- * accumulation across runs.
+ * One floating output window. Fed by
+ * `linearOutputStore.activeWorkflowInProgressItems`: spawns at
+ * `'skeleton'`, transitions to `'latent'` / `'image'`, and stays
+ * after the source item is absorbed out of the in-progress list —
+ * that's what gives the canvas its moodboard accumulation.
  */
 export interface OutputWindowEntry {
   id: string
-  /** Used to match the window back to its `AssetItem` once the run
-   *  lands in `outputs.media`. */
+  /** Matches the window back to its `AssetItem` via `outputs.media`. */
   jobId?: string
   state: 'skeleton' | 'latent' | 'image'
   latentPreviewUrl?: string
   output?: ResultItemImpl
-  /** Populated by `useOutputWindowSync` once the asset shows up in
-   *  `outputs.media`. Unlocks rerun / reuse-params and the Cloud
-   *  `asset_hash` URL fix. */
+  /** Populated by useOutputWindowSync; unlocks rerun + reuse-params
+   *  and the Cloud asset_hash URL fix. */
   asset?: AssetItem
-  /** Workspace coordinates (pre-transform). LayoutView's transform
-   *  handles zoom/pan. */
+  /** Workspace coordinates (pre-transform). */
   position: { x: number; y: number }
   zIndex: number
 }
@@ -90,8 +85,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   function promote(id: string): void {
     const w = windows.value.find((w) => w.id === id)
     if (!w) return
-    // No-op when already topmost — avoids unbounded zIndex climb from
-    // idle clicks on the focused window.
+    // Skip when already topmost — caps zIndex climb from idle clicks.
     const maxZ = windows.value.reduce(
       (m, x) => (x.zIndex > m ? x.zIndex : m),
       0

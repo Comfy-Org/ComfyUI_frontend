@@ -1,12 +1,7 @@
 /**
- * usePanelResize — pointer-driven width resize for FloatingPanel when
- * docked. Snaps to whole cell + gutter increments so the panel always
- * lands on the layout grid. Activates on pointerdown over an inner-
- * edge hit area (caller wires `startResize` to that element).
- *
- * Clamped to [MIN_CELLS, MAX_CELLS]; the min matches the default dock
- * width so the panel can never be narrower than its non-resizable
- * baseline.
+ * Pointer-driven width resize for FloatingPanel's dock presets.
+ * Snaps to whole cell+gutter steps so the panel lands on the grid.
+ * Clamped to [MIN_CELLS, MAX_CELLS] (min = default dock width).
  */
 import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { ref, watch } from 'vue'
@@ -22,8 +17,8 @@ interface UsePanelResizeOptions {
 const MIN_CELLS = 8
 const MAX_CELLS = 19
 
-/** Read the grid step (cell + gutter, in px) from design-system tokens
- *  at runtime so theme overrides take effect without a constant sync. */
+/** Read cell + gutter from design-system tokens at runtime so theme
+ *  overrides take effect without a constant sync. */
 function readGridStep(): number {
   if (typeof document === 'undefined') return 56
   const cs = getComputedStyle(document.documentElement)
@@ -60,9 +55,8 @@ export function usePanelResize(opts: UsePanelResizeOptions) {
 
   useEventListener(window, 'pointermove', (e: PointerEvent) => {
     if (!isOurPointer(e)) return
-    // For right-dock the panel's inner edge is on the LEFT — dragging
-    // the pointer left should widen the panel (negative clientX delta
-    // → more cells). For left-dock it's the opposite.
+    // Right-dock's inner edge is on the LEFT, so a leftward pointer
+    // delta widens the panel; left-dock is opposite.
     const delta = e.clientX - startX
     const widenPx = opts.side.value === 'right' ? -delta : delta
     const deltaCells = Math.round(widenPx / gridStep)
@@ -83,9 +77,8 @@ export function usePanelResize(opts: UsePanelResizeOptions) {
     reset()
   })
 
-  // Abandon on window blur so a resize doesn't survive alt-tab / OS
-  // modals waiting for a pointerup that never arrives. Matches
-  // usePanelDrag's behavior for the same reason.
+  // Abandon on window blur so a resize can't get stuck waiting for a
+  // pointerup that never arrives (alt-tab, OS modal, etc.).
   const focused = useWindowFocus()
   watch(focused, (nowFocused) => {
     if (!nowFocused && activePointerId !== null) reset()
