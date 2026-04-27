@@ -10,6 +10,7 @@ import {
   useNodePricing
 } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -606,6 +607,30 @@ describe('useNodePricing', () => {
       await new Promise((r) => setTimeout(r, 50))
 
       expect(pricingRevision.value).toBeGreaterThan(before)
+    })
+
+    it('bumps the per-node revision ref after async evaluation resolves in VueNodes mode', async () => {
+      const { getNodeDisplayPrice, getNodeRevisionRef, pricingRevision } =
+        useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestVueNodeRevision',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
+
+      LiteGraph.vueNodesMode = true
+      try {
+        const revBefore = getNodeRevisionRef(node.id).value
+        const tickBefore = pricingRevision.value
+
+        getNodeDisplayPrice(node)
+        await new Promise((r) => setTimeout(r, 50))
+
+        // VueNodes path bumps per-node ref instead of the global tick.
+        expect(getNodeRevisionRef(node.id).value).toBeGreaterThan(revBefore)
+        expect(pricingRevision.value).toBe(tickBefore)
+      } finally {
+        LiteGraph.vueNodesMode = false
+      }
     })
 
     it('returns the cached label on a second call with the same signature', async () => {
