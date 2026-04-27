@@ -42,7 +42,7 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 
-let capturedModel: MenuItem[] = []
+const capturedMenu = vi.hoisted(() => ({ model: [] as MenuItem[] }))
 
 const contextMenuStub = defineComponent({
   name: 'ContextMenu',
@@ -66,7 +66,7 @@ const contextMenuStub = defineComponent({
     model: {
       immediate: true,
       handler(items: MenuItem[]) {
-        capturedModel = items
+        capturedMenu.model = items
       }
     }
   },
@@ -143,14 +143,14 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 afterEach(() => {
   vi.clearAllMocks()
   capturedRef = null
-  capturedModel = []
+  capturedMenu.model = []
   document.body.innerHTML = ''
 })
 
 type MenuCommand = NonNullable<MenuItem['command']>
 
 function findDownloadCommand(): MenuCommand {
-  const downloadItem = capturedModel.find(
+  const downloadItem = capturedMenu.model.find(
     (item) => item.label === 'mediaAsset.actions.download'
   )
   if (!downloadItem?.command) {
