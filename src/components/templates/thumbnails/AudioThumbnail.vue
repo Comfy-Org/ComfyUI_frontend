@@ -7,7 +7,13 @@
         backgroundRepeat: 'round'
       }"
     >
-      <audio controls class="relative w-full" :src="src" @click.stop />
+      <audio
+        controls
+        class="relative w-full"
+        :src="src"
+        data-testid="audio-player"
+        @click.stop
+      />
     </div>
   </BaseThumbnail>
 </template>

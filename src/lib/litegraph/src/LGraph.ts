@@ -2480,8 +2480,8 @@ export class LGraph
   protected _configureBase(data: ISerialisedGraph | SerialisableGraph): void {
     const { id, extra } = data
 
-    // Create a new graph ID if none is provided
-    if (id) {
+    // Create a new graph ID if none is provided or the zero UUID is used on the root graph
+    if (id && !(this.isRootGraph && id === zeroUuid)) {
       this.id = id
     } else if (this.id === zeroUuid) {
       this.id = createUuidv4()

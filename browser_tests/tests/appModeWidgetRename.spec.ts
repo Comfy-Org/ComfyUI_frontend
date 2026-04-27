@@ -1,99 +1,15 @@
-import type { ComfyPage } from '../fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { fitToViewInstant } from '../helpers/fitToView'
-import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
-
-/**
- * Convert the KSampler (id 3) in the default workflow to a subgraph,
- * enter builder, select the promoted seed widget as input and
- * SaveImage/PreviewImage as output.
- *
- * Returns the subgraph node reference for further interaction.
- */
-async function setupSubgraphBuilder(comfyPage: ComfyPage) {
-  const { page, appMode } = comfyPage
-  await comfyPage.workflow.loadWorkflow('default')
-
-  const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
-  await ksampler.click('title')
-  const subgraphNode = await ksampler.convertToSubgraph()
-  await comfyPage.nextFrame()
-
-  const subgraphNodeId = String(subgraphNode.id)
-  const promotedNames = await getPromotedWidgetNames(comfyPage, subgraphNodeId)
-  expect(promotedNames).toContain('seed')
-
-  await fitToViewInstant(comfyPage)
-  await appMode.enterBuilder()
-  await appMode.goToInputs()
-
-  // Reset zoom to 1 and center on the subgraph node so click coords are accurate
-  await comfyPage.canvasOps.setScale(1)
-  await subgraphNode.centerOnNode()
-
-  // Click the promoted seed widget on the canvas to select it
-  const seedWidgetRef = await subgraphNode.getWidget(0)
-  const seedPos = await seedWidgetRef.getPosition()
-  const titleHeight = await page.evaluate(
-    () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
-  )
-
-  await page.mouse.click(seedPos.x, seedPos.y + titleHeight)
-  await comfyPage.nextFrame()
-
-  // Select an output node
-  await appMode.goToOutputs()
-
-  const saveImageNodeId = await page.evaluate(() =>
-    String(
-      window.app!.rootGraph.nodes.find(
-        (n: { type?: string }) =>
-          n.type === 'SaveImage' || n.type === 'PreviewImage'
-      )?.id
-    )
-  )
-  const saveImageRef = await comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-  await saveImageRef.centerOnNode()
-
-  // Node is centered on screen, so click the canvas center
-  const canvasBox = await page.locator('#graph-canvas').boundingBox()
-  if (!canvasBox) throw new Error('Canvas not found')
-  await page.mouse.click(
-    canvasBox.x + canvasBox.width / 2,
-    canvasBox.y + canvasBox.height / 2
-  )
-  await comfyPage.nextFrame()
-
-  return subgraphNode
-}
-
-/** Save the workflow, reopen it, and enter app mode. */
-async function saveAndReopenInAppMode(
-  comfyPage: ComfyPage,
-  workflowName: string
-) {
-  await comfyPage.menu.topbar.saveWorkflow(workflowName)
-
-  const { workflowsTab } = comfyPage.menu
-  await workflowsTab.open()
-  await workflowsTab.getPersistedItem(workflowName).dblclick()
-  await comfyPage.nextFrame()
-
-  await comfyPage.appMode.toggleAppMode()
-}
+} from '@e2e/fixtures/ComfyPage'
+import {
+  saveAndReopenInAppMode,
+  setupSubgraphBuilder
+} from '@e2e/helpers/builderTestUtils'
 
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
       true
@@ -107,18 +23,18 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await setupSubgraphBuilder(comfyPage)
 
     // Go back to inputs step where IoItems are shown
-    await appMode.goToInputs()
+    await appMode.steps.goToInputs()
 
-    const menu = appMode.getBuilderInputItemMenu('seed')
-    await expect(menu).toBeVisible({ timeout: 5000 })
-    await appMode.renameBuilderInputViaMenu('seed', 'Builder Input Seed')
+    const menu = appMode.select.getInputItemMenu('seed')
+    await expect(menu).toBeVisible()
+    await appMode.select.renameInputViaMenu('seed', 'Builder Input Seed')
 
     // Verify in app mode after save/reload
-    await appMode.exitBuilder()
+    await appMode.footer.exitBuilder()
     const workflowName = `${new Date().getTime()} builder-input-menu`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(
       appMode.linearWidgets.getByText('Builder Input Seed')
     ).toBeVisible()
@@ -130,15 +46,15 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
-    await appMode.goToInputs()
+    await appMode.steps.goToInputs()
 
-    await appMode.renameBuilderInput('seed', 'Dblclick Seed')
+    await appMode.select.renameInput('seed', 'Dblclick Seed')
 
-    await appMode.exitBuilder()
+    await appMode.footer.exitBuilder()
     const workflowName = `${new Date().getTime()} builder-input-dblclick`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.linearWidgets.getByText('Dblclick Seed')).toBeVisible()
   })
 
@@ -146,18 +62,18 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
-    await appMode.goToPreview()
+    await appMode.steps.goToPreview()
 
-    const menu = appMode.getBuilderPreviewWidgetMenu('seed — New Subgraph')
-    await expect(menu).toBeVisible({ timeout: 5000 })
-    await appMode.renameWidget(menu, 'Preview Seed')
+    const menu = appMode.select.getPreviewWidgetMenu('seed — New Subgraph')
+    await expect(menu).toBeVisible()
+    await appMode.select.renameWidget(menu, 'Preview Seed')
 
     // Verify in app mode after save/reload
-    await appMode.exitBuilder()
+    await appMode.footer.exitBuilder()
     const workflowName = `${new Date().getTime()} builder-preview`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.linearWidgets.getByText('Preview Seed')).toBeVisible()
   })
 
@@ -166,13 +82,13 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await setupSubgraphBuilder(comfyPage)
 
     // Enter app mode from builder
-    await appMode.exitBuilder()
+    await appMode.footer.exitBuilder()
     await appMode.toggleAppMode()
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
 
     const menu = appMode.getAppModeWidgetMenu('seed')
-    await appMode.renameWidget(menu, 'App Mode Seed')
+    await appMode.select.renameWidget(menu, 'App Mode Seed')
 
     await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
 
@@ -181,7 +97,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     const workflowName = `${new Date().getTime()} app-mode`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
   })
 })

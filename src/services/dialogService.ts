@@ -125,6 +125,7 @@ export const useDialogService = () => {
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
+        extensionFile: errorProps.extensionFile,
         traceback: errorProps.stackTrace ?? t('errorDialog.noStackTrace'),
         reportType: options.reportType
       }

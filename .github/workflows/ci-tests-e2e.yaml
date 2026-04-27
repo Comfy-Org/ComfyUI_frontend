@@ -7,7 +7,7 @@ on:
     paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +15,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Detect whether e2e-relevant files changed. Required checks see "skipped"
+  # (which counts as passing) when only docs/apps/storybook files are touched,
+  # avoiding the stall that paths-ignore would cause.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.e2e }}
+    steps:
+      - name: Checkout repository
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@v6
+      - name: Check for e2e-relevant changes
+        if: ${{ github.event_name == 'pull_request' }}
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            e2e:
+              - '**'
+              - '!apps/**'
+              - '!docs/**'
+              - '!.storybook/**'
+              - '!**/*.md'
+
   setup:
+    needs: changes
+    if: ${{ needs.changes.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,6 +59,20 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
+          path: dist/
+          retention-days: 1
+
+      # Build cloud distribution for @cloud tagged tests
+      # NX_SKIP_NX_CACHE=true is required because `nx build` was already run
+      # for the OSS distribution above. Without skipping cache, Nx returns
+      # the cached OSS build since env vars aren't part of the cache key.
+      - name: Build cloud frontend
+        run: NX_SKIP_NX_CACHE=true pnpm build:cloud
+
+      - name: Upload cloud frontend
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-dist-cloud
           path: dist/
           retention-days: 1
 
@@ -72,6 +115,7 @@ jobs:
         run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
         uses: actions/upload-artifact@v6
@@ -80,6 +124,15 @@ jobs:
           name: blob-report-chromium-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      - name: Upload shard coverage data
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage-shard-${{ matrix.shardIndex }}
+          path: coverage/playwright/
+          retention-days: 1
+          if-no-files-found: warn
 
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
@@ -97,14 +150,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome]
+        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: frontend-dist
+          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -139,9 +192,9 @@ jobs:
 
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
-    needs: [playwright-tests-chromium-sharded]
+    needs: [changes, playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.changes.outputs.should_run == 'true' }}
     steps:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -170,14 +223,38 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  # Gate job — single required check that passes whether the matrix ran or was
+  # skipped. Branch rulesets require this instead of the individual matrix-
+  # expanded check names so PRs with no e2e-relevant changes aren't stuck.
+  e2e-status:
+    if: ${{ always() }}
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check E2E results
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should_run }}
+          SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          BROWSERS: ${{ needs.playwright-tests.result }}
+        run: |
+          [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          echo "E2E passed"
+
   #### BEGIN Deployment and commenting (non-forked PRs only)
   # when using pull_request event, we have permission to comment directly
   # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
 
   # Post starting comment for non-forked PRs
   comment-on-pr-start:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        needs.changes.outputs.should_run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
     steps:
@@ -196,9 +273,15 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [playwright-tests, merge-reports]
+    needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should_run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
       contents: read

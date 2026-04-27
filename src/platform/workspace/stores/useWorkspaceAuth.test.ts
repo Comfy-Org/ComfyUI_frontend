@@ -10,8 +10,8 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockGetIdToken = vi.fn()
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
     getIdToken: mockGetIdToken
   })
 }))

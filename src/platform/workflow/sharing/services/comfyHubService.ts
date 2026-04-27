@@ -1,6 +1,7 @@
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import {
   zHubAssetUploadUrlResponse,
+  zHubLabelListResponse,
   zHubProfileResponse,
   zHubWorkflowPublishResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
@@ -213,11 +214,30 @@ export function useComfyHubService() {
     )
   }
 
+  async function fetchTagLabels(): Promise<string[]> {
+    const response = await api.fetchApi('/hub/labels?type=tag')
+
+    if (!response.ok) {
+      throw new Error(
+        await parseErrorMessage(response, 'Failed to fetch hub labels')
+      )
+    }
+
+    const data = await parseRequiredJson(
+      response,
+      zHubLabelListResponse,
+      'Invalid label list response from server'
+    )
+
+    return data.labels.map((label) => label.display_name)
+  }
+
   return {
     requestAssetUploadUrl,
     uploadFileToPresignedUrl,
     getMyProfile,
     createProfile,
-    publishWorkflow
+    publishWorkflow,
+    fetchTagLabels
   }
 }

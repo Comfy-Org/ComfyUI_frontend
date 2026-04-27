@@ -1,7 +1,7 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-
 import { getCnrIdFromNode, getCnrIdFromProperties } from './cnrIdUtil'
 
 describe('getCnrIdFromProperties', () => {
@@ -40,28 +40,28 @@ describe('getCnrIdFromProperties', () => {
 
 describe('getCnrIdFromNode', () => {
   it('returns cnr_id from node properties', () => {
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       properties: { cnr_id: 'node-pack' }
-    } as unknown as LGraphNode
+    })
     expect(getCnrIdFromNode(node)).toBe('node-pack')
   })
 
   it('returns aux_id when cnr_id is absent', () => {
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       properties: { aux_id: 'node-aux-pack' }
-    } as unknown as LGraphNode
+    })
     expect(getCnrIdFromNode(node)).toBe('node-aux-pack')
   })
 
   it('prefers cnr_id over aux_id in node properties', () => {
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       properties: { cnr_id: 'primary', aux_id: 'secondary' }
-    } as unknown as LGraphNode
+    })
     expect(getCnrIdFromNode(node)).toBe('primary')
   })
 
   it('returns undefined when node has no cnr_id or aux_id', () => {
-    const node = { properties: {} } as unknown as LGraphNode
+    const node = fromAny<LGraphNode, unknown>({ properties: {} })
     expect(getCnrIdFromNode(node)).toBeUndefined()
   })
 })

@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ContentSection from '../../components/common/ContentSection.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+---
+
+<BaseLayout
+  title="隐私政策 — Comfy"
+  description="Comfy 隐私政策。了解我们如何收集、使用和保护您的个人信息。"
+  noindex
+>
+  <HeroSection title="隐私政策" />
+  <ContentSection prefix="privacy" locale="zh-CN" client:load />
+</BaseLayout>

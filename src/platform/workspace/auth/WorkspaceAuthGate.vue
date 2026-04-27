@@ -27,7 +27,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000
@@ -38,7 +38,7 @@ const subscriptionDialog = useSubscriptionDialog()
 async function initialize(): Promise<void> {
   if (!isCloud) return
 
-  const authStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
   const { isInitialized, currentUser } = storeToRefs(authStore)
 
   try {

@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -29,10 +29,11 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount + 1)
   })
 
   test('Can add first default result with Enter', async ({ comfyPage }) => {
@@ -47,14 +48,17 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
     // Enter should add the first (selected) result
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount + 1)
   })
 
   test.describe('Category navigation', () => {
-    test('Favorites shows only bookmarked nodes', async ({ comfyPage }) => {
+    test('Bookmarked filter shows only bookmarked nodes', async ({
+      comfyPage
+    }) => {
       const { searchBoxV2 } = comfyPage
       await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [
         'KSampler'
@@ -64,7 +68,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
-      await searchBoxV2.categoryButton('favorites').click()
+      await searchBoxV2.filterBarButton('Bookmarked').click()
 
       await expect(searchBoxV2.results).toHaveCount(1)
       await expect(searchBoxV2.results.first()).toContainText('KSampler')
@@ -81,8 +85,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await searchBoxV2.categoryButton('sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const count = await searchBoxV2.results.count()
-      expect(count).toBeGreaterThan(0)
+      await expect.poll(() => searchBoxV2.results.count()).toBeGreaterThan(0)
     })
   })
 
@@ -100,7 +103,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await expect(searchBoxV2.filterOptions.first()).toBeVisible()
 
       // Type to narrow and select MODEL
-      await searchBoxV2.input.fill('MODEL')
+      await searchBoxV2.filterSearch.fill('MODEL')
       await searchBoxV2.filterOptions
         .filter({ hasText: 'MODEL' })
         .first()
@@ -140,10 +143,11 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
       // Enter selects and adds node
       await comfyPage.page.keyboard.press('Enter')
-      await expect(searchBoxV2.input).not.toBeVisible()
+      await expect(searchBoxV2.input).toBeHidden()
 
-      const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(newCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
   })
 })

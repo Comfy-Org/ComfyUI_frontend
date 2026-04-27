@@ -7,6 +7,7 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -2222,6 +2223,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.state.ghostNodeId != null) {
       if (e.button === 0) this.finalizeGhostPlacement(false)
       if (e.button === 2) this.finalizeGhostPlacement(true)
+      this.canvas.focus()
       e.stopPropagation()
       e.preventDefault()
       return
@@ -3678,6 +3680,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.state.ghostNodeId = node.id
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: true,
+      nodeId: node.id
+    })
 
     this.deselectAll()
     this.select(node)
@@ -3708,6 +3714,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
     this._autoPan?.stop()
     this._autoPan = null
 
@@ -4269,6 +4279,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(newPositions)
+
+    // Bring cloned/pasted nodes to front so they render above the originals
+    const allNodes = layoutStore.getAllNodes().value
+    let maxZIndex = 0
+    for (const [, layout] of allNodes) {
+      if (layout.zIndex > maxZIndex) maxZIndex = layout.zIndex
+    }
+    const { setNodeZIndex } = useLayoutMutations()
+    for (let i = 0; i < newPositions.length; i++) {
+      setNodeZIndex(newPositions[i].nodeId, maxZIndex + i + 1)
+    }
 
     this.selectItems(created)
     forEachNode(graph, (n) => n.onGraphConfigured?.())

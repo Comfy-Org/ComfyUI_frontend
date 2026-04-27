@@ -4,7 +4,6 @@ import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
@@ -51,7 +50,6 @@ interface Props {
 }
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 const {
   placeholder,
@@ -211,7 +209,6 @@ function handleSelection(item: FormDropdownItem, index: number) {
       ref="popoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {

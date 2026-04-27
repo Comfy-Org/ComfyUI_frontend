@@ -89,7 +89,8 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
-import { computed, ref } from 'vue'
+import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
+import { computed, onMounted, ref } from 'vue'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 
 const { tags } = defineProps<{
@@ -107,9 +108,20 @@ const emit = defineEmits<{
 const INITIAL_TAG_SUGGESTION_COUNT = 10
 
 const showAllSuggestions = ref(false)
+const tagOptions = ref<string[]>(COMFY_HUB_TAG_OPTIONS)
+
+const { fetchTagLabels } = useComfyHubService()
+
+onMounted(async () => {
+  try {
+    tagOptions.value = await fetchTagLabels()
+  } catch {
+    // Fall back to hardcoded tags
+  }
+})
 
 const availableSuggestions = computed(() =>
-  COMFY_HUB_TAG_OPTIONS.filter((tag) => !tags.includes(tag))
+  tagOptions.value.filter((tag) => !tags.includes(tag))
 )
 
 const displayedSuggestions = computed(() =>
