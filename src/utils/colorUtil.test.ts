@@ -8,8 +8,10 @@ import {
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
+  isTransparent,
   parseToRgb,
-  rgbToHex
+  rgbToHex,
+  toHexFromFormat
 } from '@/utils/colorUtil'
 
 interface ColorTestCase {
@@ -206,6 +208,86 @@ describe('colorUtil conversions', () => {
       const hsva = hexToHsva('#f008')
       expect(hsva.a).toBe(53)
       expect(hsvaToHex(hsva)).toMatch(/^#ff0000/)
+    })
+
+    it('round-trips a non-primary palette color through hsva within 1 RGB unit', () => {
+      // hsbToRgb floors while rgbToHex rounds, so allow ±1 per channel.
+      const original = { r: 0x80, g: 0xc0, b: 0xff }
+      const result = hexToRgb(hsvaToHex(hexToHsva(rgbToHex(original))))
+      expect(result.r).toBeGreaterThanOrEqual(original.r - 1)
+      expect(result.r).toBeLessThanOrEqual(original.r + 1)
+      expect(result.g).toBeGreaterThanOrEqual(original.g - 1)
+      expect(result.g).toBeLessThanOrEqual(original.g + 1)
+      expect(result.b).toBeGreaterThanOrEqual(original.b - 1)
+      expect(result.b).toBeLessThanOrEqual(original.b + 1)
+    })
+  })
+
+  describe('parseToRgb edge cases', () => {
+    it.each(['', 'not-a-color', '#GGGGGG', 'cmky(1,2,3,4)'])(
+      'returns black for unrecognized input %s',
+      (input) => {
+        expect(parseToRgb(input)).toEqual({ r: 0, g: 0, b: 0 })
+      }
+    )
+
+    it('parses 4-digit hex with alpha and ignores the alpha channel in RGB output', () => {
+      // #f008 == #ff0000 with 53% alpha; parseToRgb returns RGB only.
+      expect(parseToRgb('#f008')).toEqual({ r: 255, g: 0, b: 0 })
+    })
+
+    it('parses 8-digit hex and ignores the alpha channel in RGB output', () => {
+      expect(parseToRgb('#ff000080')).toEqual({ r: 255, g: 0, b: 0 })
+    })
+  })
+
+  describe('hsbToRgb normalization', () => {
+    it('normalizes negative hue', () => {
+      // h = -120 should map to h = 240 (blue) when s and b are both 100.
+      expect(hsbToRgb({ h: -120, s: 100, b: 100 })).toEqual({
+        r: 0,
+        g: 0,
+        b: 255
+      })
+    })
+  })
+
+  describe('isTransparent', () => {
+    it('returns true for the literal "transparent" keyword', () => {
+      expect(isTransparent('transparent')).toBe(true)
+    })
+
+    it('returns true for 5-char hex with zero alpha', () => {
+      expect(isTransparent('#abc0')).toBe(true)
+    })
+
+    it('returns true for 9-char hex with zero alpha', () => {
+      expect(isTransparent('#abcdef00')).toBe(true)
+    })
+
+    it('returns false for fully opaque hex colors', () => {
+      expect(isTransparent('#ff0000')).toBe(false)
+      expect(isTransparent('#ff0000ff')).toBe(false)
+    })
+  })
+
+  describe('toHexFromFormat', () => {
+    it('treats an HSV object (with v field) the same as an HSB object', () => {
+      const hsbObject = { h: 120, s: 100, b: 100 }
+      const hsvObject = { h: 120, s: 100, v: 100 }
+
+      expect(toHexFromFormat(hsvObject, 'hsb')).toBe(
+        toHexFromFormat(hsbObject, 'hsb')
+      )
+      expect(toHexFromFormat(hsvObject, 'hsb')).toBe('#00ff00')
+    })
+
+    it('returns #000000 for unparseable hsb input', () => {
+      expect(toHexFromFormat({ h: 0 }, 'hsb')).toBe('#000000')
+    })
+
+    it('prefixes a bare 6-digit hex with #', () => {
+      expect(toHexFromFormat('abcdef', 'hex')).toBe('#abcdef')
     })
   })
 })
