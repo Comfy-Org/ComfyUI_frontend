@@ -3,7 +3,7 @@ import type { Offset, Point } from '@/extensions/core/maskeditor/types'
 const ZOOM_MIN = 0.2
 const ZOOM_MAX = 10.0
 
-export interface FitViewParams {
+interface FitViewParams {
   rootWidth: number
   rootHeight: number
   imageWidth: number
@@ -12,7 +12,7 @@ export interface FitViewParams {
   sidePanelWidth: number
 }
 
-export interface FitViewResult {
+interface FitViewResult {
   zoomRatio: number
   panOffset: Offset
   fittedWidth: number
