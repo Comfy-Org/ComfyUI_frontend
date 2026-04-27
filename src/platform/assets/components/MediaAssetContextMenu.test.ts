@@ -147,16 +147,18 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-type MenuCommand = NonNullable<MenuItem['command']>
+type MenuItemWithCommand = MenuItem & {
+  command: NonNullable<MenuItem['command']>
+}
 
-function findDownloadCommand(): MenuCommand {
+function findDownloadMenuItem(): MenuItemWithCommand {
   const downloadItem = capturedMenu.model.find(
     (item) => item.label === 'mediaAsset.actions.download'
   )
   if (!downloadItem?.command) {
     throw new Error('Download menu item or command was not registered')
   }
-  return downloadItem.command
+  return downloadItem as MenuItemWithCommand
 }
 
 describe('MediaAssetContextMenu', () => {
@@ -186,8 +188,11 @@ describe('MediaAssetContextMenu', () => {
     const { container, unmount } = mountComponent()
     await showMenu(container)
 
-    const command = findDownloadCommand()
-    command({ originalEvent: new Event('click'), item: {} })
+    const downloadItem = findDownloadMenuItem()
+    downloadItem.command({
+      originalEvent: new MouseEvent('click'),
+      item: downloadItem
+    })
 
     expect(mediaAssetActions.downloadMultipleAssets).toHaveBeenCalledWith([
       asset
