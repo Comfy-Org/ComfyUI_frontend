@@ -1146,6 +1146,51 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'featured'
       ])
     })
+
+    it('rolls back the cache when removeAssetTags succeeds but addAssetTags rejects', async () => {
+      // Documents the known recovery gap on partial-failure during a
+      // "change category" mutation: remove succeeds server-side, add fails,
+      // and the cache is restored to the original tags. The server now has
+      // the old category tag removed, so the cache and backend diverge until
+      // the next refetch — surface that gap here rather than papering over it.
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(vi.mocked(assetService.removeAssetTags)).toHaveBeenCalledWith(
+        'tags-partial-fail',
+        ['loras']
+      )
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledWith(
+        'tags-partial-fail',
+        ['checkpoints']
+      )
+      // Cache restored to original tags even though the server has already
+      // removed 'loras'. This codifies a known divergence — fix the recovery
+      // semantics in updateAssetTags to address it (e.g. invalidate the
+      // category cache, or reconcile against the last confirmed total_tags).
+      expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
+      consoleSpy.mockRestore()
+    })
   })
 })
 
