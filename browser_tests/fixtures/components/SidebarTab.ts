@@ -428,7 +428,6 @@ export class AssetsSidebarTab extends SidebarTab {
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    // Wait for popover content with checkboxes to render
     await this.filterCheckbox('Image').waitFor({
       state: 'visible',
       timeout: 3000
