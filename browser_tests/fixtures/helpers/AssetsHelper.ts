@@ -7,26 +7,56 @@ const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
+/**
+ * Media kinds supported by the assets sidebar filter UI. The string values
+ * match what the backend stores on `preview_output.mediaType` (`images` is
+ * intentionally plural to match existing API conventions; the others are
+ * singular as emitted by `useMediaAssetGalleryStore`).
+ *
+ * The sidebar filter ultimately matches on the filename extension, so the
+ * fixture also picks an extension-appropriate filename for each kind.
+ */
+export type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
+
+const DEFAULT_EXTENSION: Record<MediaKindFixture, string> = {
+  images: 'png',
+  video: 'mp4',
+  audio: 'wav',
+  '3D': 'glb'
+}
+
 /** Factory to create a mock completed job with preview output. */
 export function createMockJob(
-  overrides: Partial<RawJobListItem> & { id: string }
+  overrides: Partial<RawJobListItem> & {
+    id: string
+    /**
+     * Optional shorthand to set both `preview_output.mediaType` and an
+     * extension-appropriate filename. Ignored when `preview_output` is also
+     * supplied via `overrides`.
+     */
+    mediaKind?: MediaKindFixture
+  }
 ): RawJobListItem {
+  const { mediaKind, ...rest } = overrides
   const now = Date.now()
+  const extension = mediaKind ? DEFAULT_EXTENSION[mediaKind] : 'png'
+  const mediaType = mediaKind ?? 'images'
+
   return {
     status: 'completed',
     create_time: now,
     execution_start_time: now,
     execution_end_time: now + 5000,
     preview_output: {
-      filename: `output_${overrides.id}.png`,
+      filename: `output_${rest.id}.${extension}`,
       subfolder: '',
       type: 'output',
       nodeId: '1',
-      mediaType: 'images'
+      mediaType
     },
     outputs_count: 1,
     priority: 0,
-    ...overrides
+    ...rest
   }
 }
 
@@ -50,6 +80,46 @@ export function createMockJobs(
         mediaType: 'images'
       },
       ...baseOverrides
+    })
+  )
+}
+
+/**
+ * Create one job per requested media kind, in the order supplied. Jobs share
+ * a stable timestamp ordering (newer first) so callers can rely on the result
+ * order when mediaType filters are inactive.
+ */
+export function createMixedMediaJobs(
+  kinds: MediaKindFixture[]
+): RawJobListItem[] {
+  const now = Date.now()
+  return kinds.map((kind, i) =>
+    createMockJob({
+      id: `${kind}-${String(i + 1).padStart(3, '0')}`,
+      mediaKind: kind,
+      create_time: now - i * 60_000,
+      execution_start_time: now - i * 60_000,
+      execution_end_time: now - i * 60_000 + 5000
+    })
+  )
+}
+
+/**
+ * Create jobs with explicit `(create_time, execution duration)` pairs so that
+ * sort assertions for newest/oldest and longest/fastest are unambiguous.
+ *
+ * Each spec entry yields a job whose `execution_end_time - execution_start_time`
+ * equals `durationMs`. The first spec becomes id `job-001`, etc.
+ */
+export function createJobsWithExecutionTimes(
+  specs: ReadonlyArray<{ createTime: number; durationMs: number }>
+): RawJobListItem[] {
+  return specs.map((spec, i) =>
+    createMockJob({
+      id: `job-${String(i + 1).padStart(3, '0')}`,
+      create_time: spec.createTime,
+      execution_start_time: spec.createTime,
+      execution_end_time: spec.createTime + spec.durationMs
     })
   )
 }

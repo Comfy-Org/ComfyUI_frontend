@@ -4,12 +4,12 @@ const translations = {
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
-    'zh-CN': '视觉 AI 的\n专业控制'
+    'zh-CN': '视觉 AI 的\n最强可控性'
   },
   'hero.subtitle': {
     en: 'Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output.',
     'zh-CN':
-      'Comfy 是面向视觉专业人士的 AI 创作引擎，让您掌控每个模型、每个参数和每个输出。'
+      'Comfy 是面向专业视觉人士的 AI 创作引擎。您可以精确掌控每个模型、每个参数和每个输出。'
   },
 
   // ProductShowcaseSection
@@ -20,11 +20,11 @@ const translations = {
   },
   'showcase.subtitle2': {
     en: 'Start from a community template or build from scratch.',
-    'zh-CN': '从社区模板开始，或从零构建。'
+    'zh-CN': '从工作流模板开始，或从零构建。'
   },
   'showcase.feature1.title': {
     en: 'Full Control with Nodes',
-    'zh-CN': '节点式完全控制'
+    'zh-CN': '节点带来的可控性'
   },
   'showcase.feature1.description': {
     en: 'Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.',
@@ -49,13 +49,17 @@ const translations = {
     'zh-CN':
       '浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。'
   },
-  'showcase.badgeHow': { en: 'HOW', 'zh-CN': '如何' },
-  'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运作' },
+  'showcase.badgeHow': { en: 'HOW', 'zh-CN': '了解' },
+  'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运行方式' },
 
   // UseCaseSection
   'useCase.label': {
     en: 'Industries that create with ComfyUI',
     'zh-CN': '使用 ComfyUI 创作的行业'
+  },
+  'useCase.navLabel': {
+    en: 'Industry categories',
+    'zh-CN': '行业分类'
   },
   'useCase.vfx': {
     en: 'VFX &\nAnimation',
@@ -66,7 +70,7 @@ const translations = {
     'zh-CN': '广告 &\n创意工作室'
   },
   'useCase.gaming': {
-    en: 'Video Games',
+    en: 'Gaming',
     'zh-CN': '电子游戏'
   },
   'useCase.ecommerce': {
@@ -79,8 +83,7 @@ const translations = {
   },
   'useCase.body': {
     en: 'Powered by 60,000+ nodes, thousands of workflows,\nand a community that builds faster than any one company could.',
-    'zh-CN':
-      '由 60,000+ 节点、数千个工作流\n和一个比任何公司都更快构建的社区驱动。'
+    'zh-CN': '60,000+ 节点，数千条工作流，\n一个比任何公司速度都更快的社区。'
   },
   'useCase.cta': {
     en: 'EXPLORE WORKFLOWS',
@@ -116,9 +119,17 @@ const translations = {
     en: 'Load a workflow',
     'zh-CN': '加载工作流'
   },
-  'getStarted.step2.description': {
-    en: 'Start from a community template or build your own.',
-    'zh-CN': '从社区模板开始，或自行构建。'
+  'getStarted.step2.descriptionPrefix': {
+    en: 'Start from ',
+    'zh-CN': '从'
+  },
+  'getStarted.step2.descriptionLink': {
+    en: 'a community template',
+    'zh-CN': '社区模板'
+  },
+  'getStarted.step2.descriptionSuffix': {
+    en: ' or build your own.',
+    'zh-CN': '开始，或自行构建。'
   },
   'getStarted.step3.title': {
     en: 'Generate & Iterate',
@@ -152,7 +163,7 @@ const translations = {
   },
   'products.local.cta': {
     en: 'SEE LOCAL FEATURES',
-    'zh-CN': '查看本地版特性'
+    'zh-CN': '查看本地版属性'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -164,7 +175,7 @@ const translations = {
   },
   'products.cloud.cta': {
     en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端特性'
+    'zh-CN': '查看云端属性'
   },
   'products.api.title': {
     en: 'Comfy\nAPI',
@@ -176,7 +187,7 @@ const translations = {
   },
   'products.api.cta': {
     en: 'SEE API FEATURES',
-    'zh-CN': '查看 API 特性'
+    'zh-CN': '查看 API 属性'
   },
   'products.enterprise.title': {
     en: 'Comfy\nEnterprise',
@@ -188,7 +199,7 @@ const translations = {
   },
   'products.enterprise.cta': {
     en: 'SEE ENTERPRISE FEATURES',
-    'zh-CN': '查看企业版特性'
+    'zh-CN': '查看企业版属性'
   },
 
   // CaseStudySpotlightSection
@@ -197,12 +208,12 @@ const translations = {
     'zh-CN': '客户故事'
   },
   'caseStudy.heading': {
-    en: 'See Comfy\nin the real world',
-    'zh-CN': '看看 Comfy\n在真实世界中的应用'
+    en: 'See ComfyUI\nin the real world',
+    'zh-CN': '看看 ComfyUI\n在真实世界中的应用'
   },
   'caseStudy.subheading': {
-    en: 'Videos & case studies from teams building with Comfy',
-    'zh-CN': '来自使用 Comfy 构建的团队的视频和案例研究'
+    en: 'Videos & case studies from teams building with ComfyUI',
+    'zh-CN': '来自使用 ComfyUI 构建的团队的视频和案例研究'
   },
   'caseStudy.seeAll': {
     en: 'SEE ALL CASE STUDIES',
@@ -730,7 +741,7 @@ const translations = {
     'zh-CN': 'Cloud'
   },
   'cloud.reason.1.title': {
-    en: 'Powerful GPUs with end-\nto-end security built-in',
+    en: 'Powerful GPUs with <span class="whitespace-nowrap">end-to-end</span> security <span class="whitespace-nowrap">built-in</span>',
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
@@ -765,7 +776,7 @@ const translations = {
       '每个节点都可见。每个设置都可调。ComfyUI 为您提供完整的推理管线。选择您的采样器、调度器、模型链。云端简化了设置并增强了底层硬件。'
   },
   'cloud.reason.4.title': {
-    en: 'Community workflows,\nunlimited customization\nthrough pre-installed\ncustom nodes',
+    en: 'Community workflows,\nunlimited customization\nthrough <span class="whitespace-nowrap">pre-installed</span>\ncustom nodes',
     'zh-CN': '社区工作流，\n通过预安装自定义节点\n实现无限自定义'
   },
   'cloud.reason.4.description': {
@@ -951,9 +962,9 @@ const translations = {
     'zh-CN': '我可以运行长时间或多个工作流吗？'
   },
   'cloud.faq.9.a': {
-    en: "Each workflow can run for up to 30 minutes, with one active job at a time. We're adding higher tiers and parallel runs soon for even more flexibility.",
+    en: "Each workflow can run for up to 60 minutes, with one active job at a time. We're adding higher tiers and parallel runs soon for even more flexibility.",
     'zh-CN':
-      '每个工作流最长可运行 30 分钟，同时运行一个活跃任务。我们即将推出更高层级和并行运行，提供更大灵活性。'
+      '每个工作流最长可运行 60 分钟，同时运行一个活跃任务。我们即将推出更高层级和并行运行，提供更大灵活性。'
   },
   'cloud.faq.10.q': {
     en: 'How is my user data stored and secured in Comfy Cloud?',
@@ -1081,7 +1092,7 @@ const translations = {
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.summary': {
     en: 'Small teams building fine-tuned, repeatable workflows',
-    'zh-CN': '面向专业人士与小团队，构建可复用、精细调优的工作流'
+    'zh-CN': '小团队构建精细调优、可复用的工作流'
   },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
   'pricing.plan.creator.credits': {
@@ -1103,10 +1114,6 @@ const translations = {
   'pricing.plan.creator.feature1': {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
-  },
-  'pricing.plan.creator.feature2': {
-    en: 'Up to 5 seats per workspace (coming soon!)',
-    'zh-CN': '每个工作区最多 5 个席位（即将上线）'
   },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
@@ -1132,10 +1139,6 @@ const translations = {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
-  'pricing.plan.pro.feature2': {
-    en: 'Up to 20 seats per workspace (coming soon!)',
-    'zh-CN': '每个工作区最多 20 个席位（即将上线）'
-  },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
   'pricing.enterprise.heading': {
@@ -1146,7 +1149,7 @@ const translations = {
     en: 'For teams running Comfy in production, and at scale.',
     'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
   },
-  'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '联系我们' },
+  'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
   'pricing.enterprise.featureIntro': {
     en: 'Everything in Pro, plus:',
     'zh-CN': '包含专业版全部能力，另加：'
@@ -1177,6 +1180,105 @@ const translations = {
   'pricing.included.heading': {
     en: "What's included\nin the Comfy plan",
     'zh-CN': 'Comfy 计划\n包含哪些内容'
+  },
+  'pricing.included.feature1.title': {
+    en: 'Machine Setup',
+    'zh-CN': '机器配置'
+  },
+  'pricing.included.feature1.description': {
+    en: 'Comfy Cloud runs on Blackwell RTX 6000 Pro – 96GB VRAM',
+    'zh-CN': 'Comfy Cloud 运行在 Blackwell RTX 6000 Pro 上，配备 96GB 显存'
+  },
+  'pricing.included.feature2.title': {
+    en: 'Time limit per job',
+    'zh-CN': '单个任务时限'
+  },
+  'pricing.included.feature2.description': {
+    en: 'On our Standard and Creator plans, each workflow has a maximum run time of 30 minutes. On the Pro plan, the limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
+    'zh-CN':
+      'Standard 和 Creator 计划下，每个工作流最长运行时间为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
+  },
+  'pricing.included.feature3.title': {
+    en: 'Usage',
+    'zh-CN': '用量计费'
+  },
+  'pricing.included.feature3.description': {
+    en: "You're only charged for <strong>active GPU</strong> time while a workflow is running. Idle time (e.g. time spent building workflows) does not consume GPU hours.",
+    'zh-CN':
+      '仅在工作流运行期间按<strong>实际 GPU</strong> 使用时长计费。空闲时间（如构建工作流）不消耗 GPU 时长。'
+  },
+  'pricing.included.feature4.title': {
+    en: 'Credit balance',
+    'zh-CN': '积分余额'
+  },
+  'pricing.included.feature4.description': {
+    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    'zh-CN':
+      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+  },
+  'pricing.included.feature5.title': {
+    en: 'Add more credits anytime',
+    'zh-CN': '随时加购积分'
+  },
+  'pricing.included.feature5.description': {
+    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
+    'zh-CN':
+      '可随时购买额外积分。未使用的充值积分自动结转至下月，最长保留 1 年。'
+  },
+  'pricing.included.feature6.title': {
+    en: 'Pre-installed models',
+    'zh-CN': '预装模型'
+  },
+  'pricing.included.feature6.description': {
+    en: 'Access a library of 900+ pre-installed models.',
+    'zh-CN': '可访问 900+ 预装模型库。'
+  },
+  'pricing.included.feature7.title': {
+    en: 'Custom nodes support',
+    'zh-CN': '自定义节点支持'
+  },
+  'pricing.included.feature7.description': {
+    en: "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility.",
+    'zh-CN':
+      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点，并根据需求和兼容性持续扩展支持范围。'
+  },
+  'pricing.included.feature8.title': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'pricing.included.feature8.description': {
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    'zh-CN':
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和本地 ComfyUI 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+  },
+  'pricing.included.feature9.title': {
+    en: 'Job queue',
+    'zh-CN': '任务队列'
+  },
+  'pricing.included.feature9.description': {
+    en: 'Queue up to 100 workflows at once.',
+    'zh-CN': '可同时排队最多 100 个工作流。'
+  },
+  'pricing.included.feature10.title': {
+    en: 'Custom LoRA importing',
+    'zh-CN': '自定义 LoRA 导入'
+  },
+  'pricing.included.feature10.description': {
+    en: 'For those on the Creator or Pro plans, you can bring in your own models & LoRAs from CivitAI or Huggingface to perfect your own style.',
+    'zh-CN':
+      'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
+  },
+  'pricing.included.feature11.title': {
+    en: 'Parallel job execution',
+    'zh-CN': '并行任务执行'
+  },
+  'pricing.included.feature11.description': {
+    en: 'Run multiple workflows in parallel to speed up your pipeline.',
+    'zh-CN': '并行运行多个工作流，加速你的流程。'
+  },
+  'pricing.included.comingSoon': {
+    en: 'coming soon',
+    'zh-CN': '即将推出'
   },
 
   // VideoPlayer
@@ -1212,10 +1314,10 @@ const translations = {
   // ContactSection
   'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'gallery.contact.heading': {
-    en: 'Questions? Reach out!',
-    'zh-CN': '有精彩作品想要分享？\n联系我们。'
+    en: 'Built something cool with ComfyUI? <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
+    'zh-CN':
+      '用 ComfyUI 创作了很酷的作品？<a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
   },
-  'gallery.contact.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
 
   // AboutHeroSection
   'about.hero.label': { en: 'ABOUT', 'zh-CN': '关于' },
@@ -1353,7 +1455,7 @@ const translations = {
   },
 
   // CareersHeroSection
-  'careers.hero.label': { en: 'CAREERS', 'zh-CN': 'CAREERS' },
+  'careers.hero.label': { en: 'CAREERS', 'zh-CN': '招聘' },
   'careers.hero.heading': {
     en: 'Building an operating\nsystem for Gen AI',
     'zh-CN': '构建生成式 AI 的\n\u201C操作系统\u201D'
@@ -1361,7 +1463,7 @@ const translations = {
   'careers.hero.body1': {
     en: "We're building the world's leading visual AI platform \u2014 open, modular, and designed for those who want control, quality and scale in their creative process.",
     'zh-CN':
-      '我们是全球领先的视觉 AI 平台\u2014\u2014一个开放、模块化的系统，任何人都可以精确地构建、定制和自动化 AI 工作流，并拥有完全的控制权。'
+      '我们正在构建全球领先的视觉 AI 平台——开放、模块化，专为追求创作过程中的控制力、品质和规模化的人而设计。'
   },
   'careers.hero.body2': {
     en: 'From solo creators to enterprise teams, millions of people rely on ComfyUI to push the boundaries of what creative AI can do.',
@@ -1402,6 +1504,10 @@ const translations = {
 
   // CareersRolesSection
   'careers.roles.heading': { en: 'Roles', 'zh-CN': '职位' },
+  'careers.roles.empty': {
+    en: 'No open roles right now. Check back soon.',
+    'zh-CN': '目前暂无开放职位，请稍后再来查看。'
+  },
 
   // CareersFAQSection
   'careers.faq.heading': { en: 'Q&A', 'zh-CN': 'Q&A' },
@@ -2078,6 +2184,13 @@ const translations = {
     'zh-CN':
       '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
   },
+  'customers.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
+  'customers.contact.heading': {
+    en: 'Interested in a case study with ComfyUI? Reach out <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-Keeq1VIePeanQIsdHq9eYeDE82MHJTdvwdgpxCoEzo_CUg/viewform" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>',
+    'zh-CN':
+      '有兴趣与 ComfyUI 合作案例研究？点击<a href="https://docs.google.com/forms/d/e/1FAIpQLSd-Keeq1VIePeanQIsdHq9eYeDE82MHJTdvwdgpxCoEzo_CUg/viewform" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">此处</a>联系我们'
+  },
+
   'customers.story.series-entertainment.category': {
     en: 'GAME & VIDEO PRODUCTION',
     'zh-CN': '游戏与视频制作'

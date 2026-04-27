@@ -10,6 +10,8 @@ export class SubgraphBreadcrumbPanel {
   readonly activeItem: Locator
   readonly missingNodesIcon: Locator
   readonly blueprintTag: Locator
+  readonly rootItem: Locator
+  readonly rootBlueprintTag: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.getByTestId(TestIds.breadcrumb.subgraph)
@@ -23,10 +25,10 @@ export class SubgraphBreadcrumbPanel {
       TestIds.breadcrumb.missingNodesIcon
     )
     this.blueprintTag = this.root.getByTestId(TestIds.breadcrumb.blueprintTag)
-  }
-
-  rootItem(): Locator {
-    return this.page.getByTestId(TestIds.breadcrumb.item('root'))
+    this.rootItem = page.getByTestId(TestIds.breadcrumb.item('root'))
+    this.rootBlueprintTag = this.rootItem.getByTestId(
+      TestIds.breadcrumb.blueprintTag
+    )
   }
 
   subgraphItem(subgraphId: string): Locator {

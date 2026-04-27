@@ -77,10 +77,7 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: subscribeUrl('creator'),
     featureIntroKey: 'pricing.plan.creator.featureIntro',
-    features: [
-      { text: 'pricing.plan.creator.feature1' },
-      { text: 'pricing.plan.creator.feature2' }
-    ],
+    features: [{ text: 'pricing.plan.creator.feature1' }],
     isPopular: true
   },
   {
@@ -93,10 +90,7 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: subscribeUrl('pro'),
     featureIntroKey: 'pricing.plan.pro.featureIntro',
-    features: [
-      { text: 'pricing.plan.pro.feature1' },
-      { text: 'pricing.plan.pro.feature2' }
-    ]
+    features: [{ text: 'pricing.plan.pro.feature1' }]
   },
   {
     id: 'enterprise',
@@ -104,14 +98,7 @@ const plans: PricingPlan[] = [
     summaryKey: 'pricing.enterprise.description',
     ctaKey: 'pricing.enterprise.cta',
     ctaHref: getRoutes(locale).cloudEnterprise,
-    featureIntroKey: 'pricing.enterprise.featureIntro',
-    features: [
-      { text: 'pricing.enterprise.feature1' },
-      { text: 'pricing.enterprise.feature2' },
-      { text: 'pricing.enterprise.feature3' },
-      { text: 'pricing.enterprise.feature4' }
-    ],
-    andMoreKey: 'pricing.enterprise.andMore',
+    features: [],
     isEnterprise: true
   }
 ]
@@ -229,7 +216,7 @@ const activePlanIndex = ref(0)
         <div v-else class="px-6" />
 
         <!-- Features -->
-        <div class="px-6 py-3">
+        <div v-if="plan.features.length" class="px-6 py-3">
           <p class="text-primary-comfy-canvas mb-2 text-sm font-semibold">
             {{
               plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
@@ -356,7 +343,10 @@ const activePlanIndex = ref(0)
         </div>
 
         <!-- Features card -->
-        <div class="bg-transparency-white-t4 mt-2 rounded-3xl p-6">
+        <div
+          v-if="plan.features.length"
+          class="bg-transparency-white-t4 mt-2 rounded-3xl p-6"
+        >
           <PricingPlanFeatureList
             :features="plan.features"
             :feature-intro-key="plan.featureIntroKey"
