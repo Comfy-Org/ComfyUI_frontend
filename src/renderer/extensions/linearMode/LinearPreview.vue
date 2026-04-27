@@ -253,13 +253,12 @@ async function rerun(e: Event) {
     <LinearArrange v-else-if="isArrangeMode" key="arrange" />
     <LinearWelcome v-else key="welcome" />
   </Transition>
-  <!-- The inner OutputHistory must stay mounted even when the layout
-       layout hides this bar — its watchers drive selectedItem /
-       selectedOutput via `updateSelection`. v-show keeps the DOM +
-       watchers alive; display:none just hides it visually. -->
+  <!-- OutputHistory only mounts in standalone linear mode. App Mode
+       drives the multi-window store directly from `linearOutputStore`
+       via `useOutputWindowSync`, so the thumb strip and its
+       selection-emit watchers are dead weight there. -->
   <div
-    v-if="!mobile"
-    v-show="!hideChrome"
+    v-if="!hideChrome && !mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
   >
     <LinearFeedback
@@ -279,8 +278,7 @@ async function rerun(e: Event) {
     />
   </div>
   <OutputHistory
-    v-else-if="!isBuilderMode"
-    v-show="!hideChrome"
+    v-else-if="!hideChrome && !isBuilderMode"
     @update-selection="handleSelection"
   />
 </template>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * AppChrome — the chrome rail (mode toggle, feedback, run cluster, share,
- * action cells, history thumbs) shared by App Mode and App Builder.
+ * AppChrome — the chrome rail (mode toggle, feedback, run cluster, share)
+ * shared by App Mode and App Builder.
  *
- * Architecture: three flex zones pinned to the viewport corners. Each
+ * Architecture: four flex zones pinned to the viewport corners. Each
  * zone lays its cells out with fixed gutters using the layout tokens —
  * `calc(span * --spacing-layout-cell + (span - 1) * --spacing-layout-gutter)`
  * for width, so every cell aligns to the same grid math FloatingPanel
@@ -12,12 +12,18 @@
  * to identical pixel positions at every viewport.
  *
  * Zones:
- * - `top-left`  — mode toggle, builder icon, optional action cells,
- *                 optional history thumbs. Pinned to top-left outer margin.
+ * - `top-left`  — mode toggle, builder icon. Pinned to top-left outer margin.
  * - `top-right` — share, batch count, job queue, run cluster. Right edge
  *                 is flush with the dock panel's right edge, so the
  *                 cluster's left edge lines up with the panel's left.
  * - `bottom-left` — feedback.
+ * - `bottom-right` — workspace zoom cluster.
+ *
+ * Run-related output UX (history, rerun, reuse-params, download,
+ * progress, interrupt) lives inside the OutputWindow surface in the
+ * workspace, not in the chrome — see `OutputWindowList.vue`. The
+ * thumbnail history strip + selection-driven action cells were
+ * removed when the multi-window output workspace landed.
  *
  * Variant behavior: both variants emit the same cell logic. The
  * `HIDE_IN_BUILDER` set drops contextually-wrong cells (mode toggle,
@@ -36,24 +42,20 @@ import FeedbackCell from './cells/FeedbackCell.vue'
 import IconCell from './cells/IconCell.vue'
 import JobQueueCell from './cells/JobQueueCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
-import OutputThumbCell from './cells/OutputThumbCell.vue'
 import RunCell from './cells/RunCell.vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
-import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
 
 type ChromeCellKind =
   | 'system-mode-toggle'
@@ -63,7 +65,6 @@ type ChromeCellKind =
   | 'system-batch-count'
   | 'system-job-queue'
   | 'system-run'
-  | 'output-thumb'
   | 'nav-zoom-in'
   | 'nav-zoom-out'
   | 'nav-zoom-percent'
@@ -162,31 +163,6 @@ function openShare() {
   openShareDialog().catch(toastErrorHandler)
 }
 
-// --- Output history (thumbnails + action-cell selection) ----------------
-// Must be called once per mount. `fetchMediaList()` runs as a side effect
-// so don't invoke this inside a computed.
-const outputHistory = useOutputHistory()
-const { outputs, allOutputs } = outputHistory
-
-// --- History thumbnails ----------------------------------------------
-interface HistoryThumb {
-  id: string
-  asset: AssetItem
-  output: ResultItemImpl
-}
-
-const historyThumbs = computed<HistoryThumb[]>(() =>
-  outputs.media.value.flatMap((asset) => {
-    const outs = allOutputs(asset)
-    if (outs.length === 0) return []
-    return [{ id: `thumb-${asset.id}`, asset, output: outs[0] }]
-  })
-)
-
-const historyThumbMap = computed(
-  () => new Map(historyThumbs.value.map((t) => [t.id, t]))
-)
-
 // --- Variant-specific overrides -----------------------------------------
 const HIDE_IN_BUILDER = new Set<ChromeCellKind>([
   'system-mode-toggle',
@@ -208,23 +184,12 @@ function include(out: ChromeCell[], cell: ChromeCell) {
 }
 
 // --- Zone cell lists ----------------------------------------------------
-// Cap so a history-heavy workflow doesn't push thumbs past the top-right
-// cluster on narrow viewports. Conservative for typical desktop widths.
-const MAX_HISTORY_THUMBS = 6
 
 const topLeftCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
   include(out, { id: 'mode-toggle', kind: 'system-mode-toggle', span: 2 })
   if (enableAppBuilder.value) {
     include(out, { id: 'builder', kind: 'system-builder', span: 1 })
-  }
-  const thumbCount = Math.min(historyThumbs.value.length, MAX_HISTORY_THUMBS)
-  for (let i = 0; i < thumbCount; i++) {
-    include(out, {
-      id: historyThumbs.value[i].id,
-      kind: 'output-thumb',
-      span: 1
-    })
   }
   return out
 })
@@ -355,13 +320,6 @@ function cellClass(cell: ChromeCell): string {
           :on-activate="enterBuilder"
         />
         <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
-        <OutputThumbCell
-          v-else-if="
-            cell.kind === 'output-thumb' && historyThumbMap.get(cell.id)
-          "
-          :asset="historyThumbMap.get(cell.id)!.asset"
-          :output="historyThumbMap.get(cell.id)!.output"
-        />
       </div>
     </div>
 
