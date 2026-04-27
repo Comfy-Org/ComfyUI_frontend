@@ -1,14 +1,17 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
@@ -39,7 +42,10 @@ const i18n = createI18n({
           importNotSupported: 'Import Not Supported',
           customNodeDownloadDisabled:
             'Cloud environment does not support model imports for custom nodes.',
-          unknownCategory: 'Unknown Category'
+          unknownCategory: 'Unknown Category',
+          downloadAll: 'Download all',
+          refresh: 'Refresh',
+          refreshing: 'Refreshing missing models.'
         }
       }
     }
@@ -50,7 +56,11 @@ const i18n = createI18n({
 
 function makeViewModel(
   name: string,
-  nodeId: string = '1'
+  nodeId: string = '1',
+  opts: {
+    url?: string
+    directory?: string
+  } = {}
 ): MissingModelViewModel {
   return {
     name,
@@ -60,7 +70,9 @@ function makeViewModel(
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       isAssetSupported: true,
-      isMissing: true
+      isMissing: true,
+      url: opts.url,
+      directory: opts.directory
     },
     referencingNodes: [{ nodeId, widgetName: 'ckpt_name' }]
   }
@@ -71,13 +83,23 @@ function makeGroup(
     directory?: string | null
     isAssetSupported?: boolean
     modelNames?: string[]
+    withDownloadUrls?: boolean
   } = {}
 ): MissingModelGroup {
   const names = opts.modelNames ?? ['model.safetensors']
+  const directory =
+    'directory' in opts ? (opts.directory ?? null) : 'checkpoints'
   return {
-    directory: 'directory' in opts ? (opts.directory ?? null) : 'checkpoints',
+    directory,
     isAssetSupported: opts.isAssetSupported ?? true,
-    models: names.map((n, i) => makeViewModel(n, String(i + 1)))
+    models: names.map((n, i) =>
+      makeViewModel(n, String(i + 1), {
+        url: opts.withDownloadUrls
+          ? `https://huggingface.co/comfy/test/resolve/main/${n}`
+          : undefined,
+        directory: directory ?? undefined
+      })
+    )
   }
 }
 
@@ -88,6 +110,7 @@ function mountCard(
   }> = {},
   onLocateModel?: (nodeId: string) => void
 ) {
+  const pinia = createTestingPinia({ createSpy: vi.fn })
   return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
@@ -96,7 +119,7 @@ function mountCard(
       ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [pinia, PrimeVue, i18n]
     }
   })
 }
@@ -244,5 +267,53 @@ describe('MissingModelCard (OSS)', () => {
     })
     expect(container.textContent).toContain('Unknown Category')
     expect(container.textContent).not.toContain('Import Not Supported')
+  })
+
+  it('shows bulk actions when one model is downloadable', () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+  })
+
+  it('hides bulk actions when no model is downloadable', () => {
+    mountCard()
+
+    expect(
+      screen.queryByRole('button', { name: /Download all/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('refreshes missing models from the action bar', async () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+    const store = useMissingModelStore()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+
+    expect(store.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('keeps the Refresh button focusable and announces refresh progress', async () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+    const store = useMissingModelStore()
+
+    store.isRefreshingMissingModels = true
+    await nextTick()
+
+    const refreshButton = screen.getByRole('button', { name: 'Refresh' })
+    expect(refreshButton).toHaveAttribute('aria-disabled', 'true')
+    expect(refreshButton).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Refreshing missing models.'
+    )
   })
 })
