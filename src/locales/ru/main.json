@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Приложение",
+    "blueprint": "Чертёж",
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteBlueprint": "Удалить схему",
     "deleteWorkflow": "Удалить рабочий процесс",
@@ -917,6 +918,10 @@
     "showMissingNodes": "Показать отсутствующие узлы",
     "showSwapNodes": "Показать заменяемые узлы",
     "swapNodes": "Некоторые узлы можно заменить альтернативами"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Оставить отзыв",
+    "ctaText": "Как вам новая панель ошибок?"
   },
   "essentials": {
     "batchImage": "Пакетная обработка изображений",
