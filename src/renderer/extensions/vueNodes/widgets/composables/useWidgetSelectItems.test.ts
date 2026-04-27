@@ -241,6 +241,59 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('mesh preview URL handling', () => {
+    it('leaves input preview_url empty for mesh kind', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['3d/model.glb', 'other.fbx'],
+          modelValue: ref('3d/model.glb'),
+          assetKind: () => 'mesh'
+        })
+      )
+      expect(dropdownItems.value).toHaveLength(2)
+      expect(dropdownItems.value[0].preview_url).toBe('')
+      expect(dropdownItems.value[1].preview_url).toBe('')
+    })
+
+    it('leaves output preview_url empty for mesh kind even when asset has one', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-1',
+          name: 'scene.glb',
+          preview_url: '/api/view?filename=scene.glb&type=output',
+          tags: ['output']
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh'
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].preview_url).toBe('')
+    })
+
+    it('still uses getMediaUrl for image kind inputs', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['img_001.png'],
+          modelValue: ref('img_001.png'),
+          assetKind: () => 'image'
+        })
+      )
+      expect(dropdownItems.value[0].preview_url).toContain(
+        'filename=img_001.png'
+      )
+      expect(dropdownItems.value[0].preview_url).toContain('type=input')
+    })
+  })
+
   describe('cloud asset mode', () => {
     const createTestAsset = (
       id: string,

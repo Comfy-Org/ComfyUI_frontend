@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Application",
+    "blueprint": "Plan",
     "clearWorkflow": "Effacer le workflow",
     "deleteBlueprint": "Supprimer le plan",
     "deleteWorkflow": "Supprimer le workflow",
@@ -917,6 +918,10 @@
     "showMissingNodes": "Afficher les nœuds manquants",
     "showSwapNodes": "Afficher les nœuds de remplacement",
     "swapNodes": "Certains nœuds peuvent être remplacés par des alternatives"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Donner votre avis",
+    "ctaText": "Que pensez-vous du nouveau panneau d’erreurs ?"
   },
   "essentials": {
     "batchImage": "Traitement par lot d'images",
