@@ -140,7 +140,6 @@ export class LinkConnectorAdapter {
 
   /** Drops moving links onto the canvas (no target). */
   dropOnCanvas(event: CanvasPointerEvent): void {
-    //Add extra check for connection to subgraphInput/subgraphOutput
     if (isSubgraph(this.network)) {
       const { canvasX, canvasY } = event
       const ioNode = this.network.getIoNodeOnPos?.(canvasX, canvasY)
