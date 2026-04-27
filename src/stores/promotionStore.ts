@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, triggerRef } from 'vue'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -19,6 +19,8 @@ export const usePromotionStore = defineStore('promotion', () => {
     new Map<UUID, Map<NodeId, PromotedWidgetSource[]>>()
   )
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
+  // Non-reactive: ephemeral position cache consumed only by promote/demote
+  const lastDemotedIndices = new Map<UUID, Map<string, number>>()
 
   function _getPromotionsForGraph(
     graphId: UUID
@@ -120,6 +122,22 @@ export const usePromotionStore = defineStore('promotion', () => {
     } else {
       promotions.set(subgraphNodeId, [...entries])
     }
+    triggerRef(graphPromotions)
+  }
+
+  function _positionKey(
+    subgraphNodeId: NodeId,
+    source: PromotedWidgetSource
+  ): string {
+    return `${subgraphNodeId}:${makePromotionEntryKey(source)}`
+  }
+
+  function _getLastDemotedForGraph(graphId: UUID): Map<string, number> {
+    const existing = lastDemotedIndices.get(graphId)
+    if (existing) return existing
+    const next = new Map<string, number>()
+    lastDemotedIndices.set(graphId, next)
+    return next
   }
 
   function promote(
@@ -136,7 +154,20 @@ export const usePromotionStore = defineStore('promotion', () => {
     }
     if (source.disambiguatingSourceNodeId)
       entry.disambiguatingSourceNodeId = source.disambiguatingSourceNodeId
-    setPromotions(graphId, subgraphNodeId, [...entries, entry])
+
+    const positionKey = _positionKey(subgraphNodeId, source)
+    const graphCache = lastDemotedIndices.get(graphId)
+    const lastIndex = graphCache?.get(positionKey)
+    graphCache?.delete(positionKey)
+
+    const nextEntries = [...entries]
+    if (lastIndex !== undefined) {
+      const insertAt = Math.min(lastIndex, nextEntries.length)
+      nextEntries.splice(insertAt, 0, entry)
+    } else {
+      nextEntries.push(entry)
+    }
+    setPromotions(graphId, subgraphNodeId, nextEntries)
   }
 
   function demote(
@@ -145,17 +176,22 @@ export const usePromotionStore = defineStore('promotion', () => {
     source: PromotedWidgetSource
   ): void {
     const entries = getPromotionsRef(graphId, subgraphNodeId)
+    const index = entries.findIndex(
+      (e) =>
+        e.sourceNodeId === source.sourceNodeId &&
+        e.sourceWidgetName === source.sourceWidgetName &&
+        e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
+    )
+    if (index === -1) return
+
+    _getLastDemotedForGraph(graphId).set(
+      _positionKey(subgraphNodeId, source),
+      index
+    )
     setPromotions(
       graphId,
       subgraphNodeId,
-      entries.filter(
-        (e) =>
-          !(
-            e.sourceNodeId === source.sourceNodeId &&
-            e.sourceWidgetName === source.sourceWidgetName &&
-            e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
-          )
-      )
+      entries.filter((_, i) => i !== index)
     )
   }
 
@@ -188,6 +224,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   function clearGraph(graphId: UUID): void {
     graphPromotions.value.delete(graphId)
     graphRefCounts.value.delete(graphId)
+    lastDemotedIndices.delete(graphId)
   }
 
   return {
