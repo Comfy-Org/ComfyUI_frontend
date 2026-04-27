@@ -13,9 +13,9 @@ import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 
+import PanelHeader from '../PanelHeader.vue'
 import PanelDragPreview from './PanelDragPreview.vue'
 import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
 import { isDockPreset, isFloatBottom, panelSide } from './panelTypes'
@@ -113,24 +113,11 @@ const sectionClass = computed(() =>
 
 function handleHeaderPointerDown(e: PointerEvent) {
   if (!movable) return
-  // Skip pointerdown on header controls (chevron, menu) so clicking
-  // them doesn't start a drag. Element narrow guards against Document
-  // / Window targets (legal but rare) crashing .closest().
-  const target = e.target
-  if (target instanceof Element && target.closest('[data-header-control]'))
-    return
+  // PanelHeader's chevron + menu buttons already `@pointerdown.stop`,
+  // so they won't bubble here — anywhere else on the header is fair
+  // game for the drag.
   onHeaderPointerDown(e)
 }
-
-function toggleCollapsed() {
-  collapsed.value = !collapsed.value
-}
-
-const HEADER_CONTROL_CLASS =
-  'inline-flex size-8 cursor-pointer items-center justify-center ' +
-  'rounded-md border-0 bg-transparent text-layout-text ' +
-  'transition-colors duration-layout ease-layout ' +
-  'hover:bg-layout-cell-hover [&>i]:size-[18px]'
 
 const menuEntries = computed<MenuItem[]>(() => [
   {
@@ -171,68 +158,17 @@ const menuEntries = computed<MenuItem[]>(() => [
       "
       @pointerdown="startResize"
     />
-    <!-- Header is also the drag grip when `movable`. Distinct
-         header-fill so the grabbable region reads at a glance. -->
-    <header
-      :class="
-        cn(
-          'flex min-h-layout-cell items-center gap-2 select-none',
-          'bg-(--color-layout-header-fill) px-[10px] py-2',
-          'border-b border-white/8',
-          movable && 'cursor-grab touch-none',
-          movable && isDragging && 'cursor-grabbing'
-        )
-      "
+    <PanelHeader
+      v-model:collapsed="collapsed"
+      :title="title"
+      :draggable="movable"
+      :dragging="isDragging"
+      :menu-entries="menuEntries"
+      :collapse-label="t('linearMode.floatingPanel.collapse')"
+      :expand-label="t('linearMode.floatingPanel.expand')"
+      :menu-label="t('linearMode.floatingPanel.menu')"
       @pointerdown="handleHeaderPointerDown"
-    >
-      <button
-        type="button"
-        data-header-control
-        :class="HEADER_CONTROL_CLASS"
-        :aria-label="
-          collapsed
-            ? t('linearMode.floatingPanel.expand')
-            : t('linearMode.floatingPanel.collapse')
-        "
-        :aria-expanded="!collapsed"
-        @click="toggleCollapsed"
-        @pointerdown.stop
-      >
-        <i
-          :class="
-            collapsed
-              ? 'icon-[lucide--chevron-right]'
-              : 'icon-[lucide--chevron-down]'
-          "
-        />
-      </button>
-
-      <span
-        v-if="title"
-        class="truncate text-layout-md font-semibold text-layout-text"
-        >{{ title }}</span
-      >
-      <div class="min-w-0 flex-1" />
-
-      <Popover
-        :entries="menuEntries"
-        :show-arrow="false"
-        to="body"
-        class="min-w-44 p-1"
-      >
-        <template #button>
-          <button
-            type="button"
-            data-header-control
-            :class="HEADER_CONTROL_CLASS"
-            :aria-label="t('linearMode.floatingPanel.menu')"
-            @pointerdown.stop
-          >
-            <i class="icon-[lucide--ellipsis]" />
-          </button>
-        </template>
-      </Popover>
-    </header>
+    />
 
     <!-- Body is content-driven, not flex-1: short widget lists shrink
          the panel; `min-h-0` lets flex-shrink engage scroll when

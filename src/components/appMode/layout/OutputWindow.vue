@@ -13,8 +13,9 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
+
+import PanelHeader from './PanelHeader.vue'
 
 const { t } = useI18n()
 const {
@@ -51,9 +52,6 @@ const emit = defineEmits<{
 
 const collapsed = ref(false)
 const maximized = ref(false)
-function toggleCollapsed() {
-  collapsed.value = !collapsed.value
-}
 function toggleMaximized() {
   maximized.value = !maximized.value
 }
@@ -132,14 +130,6 @@ function endDrag() {
 useEventListener(window, 'pointerup', endDrag)
 useEventListener(window, 'pointercancel', endDrag)
 
-const HEADER_CONTROL_CLASS =
-  'inline-flex size-8 cursor-pointer items-center justify-center ' +
-  'rounded-md border-0 bg-transparent text-layout-text ' +
-  'transition-colors duration-layout ease-layout ' +
-  'hover:bg-layout-cell-hover focus-visible:outline-none ' +
-  'focus-visible:ring-2 focus-visible:ring-base-foreground/40 ' +
-  '[&>i]:size-[18px]'
-
 // Maximize / Restore is OutputWindow-owned and merged with the
 // parent's menuEntries so the ellipsis is one menu, not two.
 const combinedMenuEntries = computed<MenuItem[]>(() => {
@@ -182,56 +172,22 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
           }
     "
   >
-    <header
-      :class="[
-        'flex min-h-layout-cell items-center gap-2 select-none',
-        'bg-(--color-layout-header-fill) px-[10px] py-2',
-        'border-b border-white/8',
-        maximized ? 'cursor-default' : 'cursor-grab touch-none',
-        !maximized && dragging && 'cursor-grabbing'
-      ]"
+    <PanelHeader
+      v-model:collapsed="collapsed"
+      :title="title || t('linearMode.outputs.title')"
+      :draggable="!maximized"
+      :dragging="dragging"
+      :collapsible="!maximized"
+      :menu-entries="combinedMenuEntries"
+      :collapse-label="t('linearMode.floatingPanel.collapse')"
+      :expand-label="t('linearMode.floatingPanel.expand')"
+      :menu-label="t('linearMode.floatingPanel.menu')"
       @pointerdown="handleHeaderPointerDown"
     >
-      <button
-        v-if="!maximized"
-        type="button"
-        data-header-control
-        :class="HEADER_CONTROL_CLASS"
-        :aria-expanded="!collapsed"
-        @pointerdown.stop
-        @click="toggleCollapsed"
-      >
-        <i
-          :class="
-            collapsed
-              ? 'icon-[lucide--chevron-right]'
-              : 'icon-[lucide--chevron-down]'
-          "
-        />
-      </button>
-      <span class="truncate text-layout-md font-semibold text-layout-text">
-        {{ title || t('linearMode.outputs.title') }}
-      </span>
-      <div class="min-w-0 flex-1" />
-      <slot name="header-actions-right" />
-      <Popover
-        :entries="combinedMenuEntries"
-        :show-arrow="false"
-        to="body"
-        class="min-w-44 p-1"
-      >
-        <template #button>
-          <button
-            type="button"
-            data-header-control
-            :class="HEADER_CONTROL_CLASS"
-            @pointerdown.stop
-          >
-            <i class="icon-[lucide--ellipsis]" />
-          </button>
-        </template>
-      </Popover>
-    </header>
+      <template #actions>
+        <slot name="header-actions-right" />
+      </template>
+    </PanelHeader>
     <div
       v-show="!collapsed"
       class="group/output relative flex min-h-0 flex-1 flex-col overflow-hidden"
