@@ -259,17 +259,8 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(serialized.widgets_values).toBeUndefined()
   })
 
-  // Pins the open #10849 regression: the post-#10849 SubgraphNode.configure
-  // applies `widgets_values` positionally to promoted widgets, which corrupts
-  // pre-#10849 templates (e.g. Z-Image-Turbo) where `widgets_values` was
-  // leftover from older serialization and never represented promoted-widget
-  // values. The fix on the unmerged inline-proxyWidgets-state branch
-  // distinguishes legacy entries (plain 2-tuples) from new-format entries
-  // (entries carrying inline state), and falls back to the source widget's
-  // value for the legacy shape.
-  //
-  // Uses it.fails so the suite stays green while the bug is present and
-  // flips to failing when the fix lands. Drop the `.fails` marker then.
+  // it.fails pins the open #10849 SubgraphNode.configure regression on Main;
+  // drop the marker once the inline-proxyWidgets-state fix lands.
   it.fails('falls back to source widget value when proxyWidgets is in legacy 2-tuple shape (regression for #10849)', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
