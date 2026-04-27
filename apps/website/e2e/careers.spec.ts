@@ -40,7 +40,7 @@ test.describe('Careers page @smoke', () => {
     const engineeringLocator = page.getByTestId('careers-role-link')
     await expect(engineeringLocator.first()).toBeVisible()
     const engineeringCount = await engineeringLocator.count()
-    expect(engineeringCount).toBeLessThanOrEqual(allCount)
+    expect(engineeringCount).toBeLessThan(allCount)
     expect(engineeringCount).toBeGreaterThan(0)
   })
 })

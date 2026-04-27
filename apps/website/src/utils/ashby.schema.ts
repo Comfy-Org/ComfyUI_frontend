@@ -11,6 +11,9 @@ export const AshbyJobPostingSchema = z.object({
 
 export const AshbyJobBoardResponseSchema = z.object({
   apiVersion: z.literal('1'),
+  // Deliberately z.unknown() — each job is validated individually in
+  // parseRoles() so that invalid postings are dropped with per-job error
+  // messages rather than rejecting the entire response.
   jobs: z.array(z.unknown())
 })
 

@@ -14,6 +14,8 @@ const BASE_URL = 'https://ashby.test'
 const BOARD = 'comfy-org'
 const KEY = 'abc-123-secret'
 
+const tempDirs = new Set<URL>()
+
 function validJob(overrides: Partial<AshbyJobPosting> = {}): unknown {
   return {
     title: 'Design Engineer',
@@ -52,7 +54,15 @@ function withSnapshotDir(snapshot: RolesSnapshot | null): URL {
   const dir = mkdtempSync(join(tmpdir(), 'ashby-test-'))
   const file = join(dir, 'ashby-roles.snapshot.json')
   if (snapshot) writeFileSync(file, JSON.stringify(snapshot))
-  return pathToFileURL(file)
+  const url = pathToFileURL(file)
+  tempDirs.add(url)
+  return url
+}
+
+function mockFetch(
+  impl: (...args: Parameters<typeof fetch>) => Promise<Response>
+): typeof fetch {
+  return vi.fn(impl) as unknown as typeof fetch
 }
 
 describe('fetchRolesForBuild', () => {
@@ -69,17 +79,21 @@ describe('fetchRolesForBuild', () => {
     vi.restoreAllMocks()
     process.env.WEBSITE_ASHBY_API_KEY = savedApiKey
     process.env.WEBSITE_ASHBY_JOB_BOARD_NAME = savedBoardName
+    for (const url of tempDirs) {
+      rmSync(new URL('.', url), { recursive: true, force: true })
+    }
+    tempDirs.clear()
   })
 
   it('returns fresh when the API succeeds', async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({ apiVersion: '1', jobs: [validJob()] })
     )
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -90,17 +104,37 @@ describe('fetchRolesForBuild', () => {
     )
   })
 
+  it('title-cases multi-word department names on the role', async () => {
+    const fetchImpl = mockFetch(async () =>
+      response({
+        apiVersion: '1',
+        jobs: [validJob({ department: 'Product Engineering' })]
+      })
+    )
+    const outcome = await fetchRolesForBuild({
+      apiKey: KEY,
+      boardName: BOARD,
+      baseUrl: BASE_URL,
+      fetchImpl
+    })
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.departments[0]!.roles[0]!.department).toBe(
+      'Product Engineering'
+    )
+  })
+
   it('falls back to jobUrl when applyUrl is missing and keeps the role', async () => {
     const job = validJob()
     delete (job as Record<string, unknown>).applyUrl
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({ apiVersion: '1', jobs: [job] })
     )
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -111,7 +145,7 @@ describe('fetchRolesForBuild', () => {
 
   it('drops invalid roles individually and keeps the valid ones', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({
         apiVersion: '1',
         jobs: [validJob(), validJob({ title: 'Bad Role', jobUrl: 'not-a-url' })]
@@ -122,31 +156,31 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
     expect(outcome.droppedCount).toBe(1)
     expect(outcome.droppedRoles[0]!.title).toBe('Bad Role')
     expect(outcome.snapshot.departments[0]!.roles).toHaveLength(1)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('renders an empty-but-fresh outcome when hiring is paused', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () => response({ apiVersion: '1', jobs: [] }))
+    const fetchImpl = mockFetch(async () =>
+      response({ apiVersion: '1', jobs: [] })
+    )
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
     expect(outcome.snapshot.departments).toEqual([])
     expect(outcome.droppedCount).toBe(0)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('normalizes missing department and location to safe defaults', async () => {
@@ -154,7 +188,7 @@ describe('fetchRolesForBuild', () => {
     const job = validJob()
     delete (job as Record<string, unknown>).department
     delete (job as Record<string, unknown>).location
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({ apiVersion: '1', jobs: [job] })
     )
     const outcome = await fetchRolesForBuild({
@@ -162,19 +196,18 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
     const [department] = outcome.snapshot.departments
     expect(department?.name).toBe('OTHER')
     expect(department?.roles[0]?.location).toBe('Remote')
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('filters out roles with isListed=false', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({
         apiVersion: '1',
         jobs: [validJob(), validJob({ title: 'Hidden', isListed: false })]
@@ -185,7 +218,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -193,54 +226,54 @@ describe('fetchRolesForBuild', () => {
       d.roles.map((r) => r.title)
     )
     expect(titles).not.toContain('Hidden')
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('returns stale with missing env when the snapshot is present', async () => {
     const snapshot = makeSnapshot()
     const snapshotUrl = withSnapshotDir(snapshot)
-    const fetchImpl = vi.fn()
+    const fetchImpl = mockFetch(async () => response({}))
     const outcome = await fetchRolesForBuild({
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
     expect(outcome.reason).toMatch(/^missing /)
+    expect(outcome.reasonCode).toBe('missing-env')
     expect(fetchImpl).not.toHaveBeenCalled()
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('returns failed when both env and snapshot are missing', async () => {
     const snapshotUrl = withSnapshotDir(null)
     const outcome = await fetchRolesForBuild({
       snapshotUrl,
-      fetchImpl: vi.fn() as unknown as typeof fetch
+      fetchImpl: mockFetch(async () => response({}))
     })
     expect(outcome.status).toBe('failed')
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+    if (outcome.status !== 'failed') return
+    expect(outcome.reasonCode).toBe('missing-env')
   })
 
   it('does not retry on HTTP 401', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () => response({}, { status: 401 }))
+    const fetchImpl = mockFetch(async () => response({}, { status: 401 }))
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
     expect(outcome.reason).toMatch(/^HTTP 401/)
+    expect(outcome.reasonCode).toBe('auth')
     expect(fetchImpl).toHaveBeenCalledTimes(1)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('retries 5xx up to the configured limit then falls back to snapshot', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () => response({}, { status: 503 }))
+    const fetchImpl = mockFetch(async () => response({}, { status: 503 }))
     const sleep = vi.fn(async () => undefined)
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
@@ -249,39 +282,42 @@ describe('fetchRolesForBuild', () => {
       snapshotUrl,
       retryDelaysMs: [1, 1, 1],
       sleep,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.reasonCode).toBe('network')
     expect(fetchImpl).toHaveBeenCalledTimes(4)
     expect(sleep).toHaveBeenCalledTimes(3)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('falls back to snapshot on envelope schema mismatch', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () => response({ apiVersion: '2', jobs: [] }))
+    const fetchImpl = mockFetch(async () =>
+      response({ apiVersion: '2', jobs: [] })
+    )
     const outcome = await fetchRolesForBuild({
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
     expect(outcome.reason).toMatch(/^envelope schema/)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+    expect(outcome.reasonCode).toBe('schema')
   })
 
   it('memoizes within a single process', async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({ apiVersion: '1', jobs: [validJob()] })
     )
     const opts = {
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     }
     const [a, b] = await Promise.all([
       fetchRolesForBuild(opts),
@@ -297,7 +333,7 @@ describe('fetchRolesForBuild', () => {
     const before = new URL(snapshotUrl.href)
     const fs = await import('node:fs')
     const initial = fs.readFileSync(before).toString()
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = mockFetch(async () =>
       response({ apiVersion: '1', jobs: [validJob()] })
     )
     await fetchRolesForBuild({
@@ -305,24 +341,75 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
     const after = fs.readFileSync(before).toString()
     expect(after).toBe(initial)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
   it('does not retry on 4xx auth failures for 403', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
-    const fetchImpl = vi.fn(async () => response({}, { status: 403 }))
-    await fetchRolesForBuild({
+    const fetchImpl = mockFetch(async () => response({}, { status: 403 }))
+    const outcome = await fetchRolesForBuild({
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl
     })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.reason).toMatch(/^HTTP 403/)
+    expect(outcome.reasonCode).toBe('auth')
     expect(fetchImpl).toHaveBeenCalledTimes(1)
-    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
+
+  it('retries on network errors and falls back to snapshot', async () => {
+    const snapshotUrl = withSnapshotDir(makeSnapshot())
+    const fetchImpl = mockFetch(async () => {
+      throw new Error('fetch failed')
+    })
+    const sleep = vi.fn(async () => undefined)
+    const outcome = await fetchRolesForBuild({
+      apiKey: KEY,
+      boardName: BOARD,
+      baseUrl: BASE_URL,
+      snapshotUrl,
+      retryDelaysMs: [1, 1],
+      sleep,
+      fetchImpl
+    })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.reason).toMatch(/^network error:/)
+    expect(outcome.reasonCode).toBe('network')
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    expect(sleep).toHaveBeenCalledTimes(2)
+  })
+
+  it('groups jobs by department and sorts alphabetically', async () => {
+    const fetchImpl = mockFetch(async () =>
+      response({
+        apiVersion: '1',
+        jobs: [
+          validJob({ title: 'Role Z', department: 'Zzz Dept' }),
+          validJob({ title: 'Role A', department: 'Aaa Dept' }),
+          validJob({ title: 'Role A2', department: 'Aaa Dept' })
+        ]
+      })
+    )
+    const outcome = await fetchRolesForBuild({
+      apiKey: KEY,
+      boardName: BOARD,
+      baseUrl: BASE_URL,
+      fetchImpl
+    })
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.departments).toHaveLength(2)
+    expect(outcome.snapshot.departments[0]!.name).toBe('AAA DEPT')
+    expect(outcome.snapshot.departments[0]!.roles).toHaveLength(2)
+    expect(outcome.snapshot.departments[1]!.name).toBe('ZZZ DEPT')
+    expect(outcome.snapshot.departments[1]!.roles).toHaveLength(1)
   })
 })

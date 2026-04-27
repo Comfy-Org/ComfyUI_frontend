@@ -1,6 +1,8 @@
 import { appendFileSync } from 'node:fs'
 
-import type { FetchOutcome } from './ashby'
+import type { FailureCode, FetchOutcome } from './ashby'
+
+const MS_PER_DAY = 86_400_000
 
 let hasReported = false
 
@@ -41,7 +43,7 @@ function buildAnnotations(outcome: FetchOutcome): string[] {
   }
 
   if (outcome.status === 'stale') {
-    return [staleAnnotation(outcome.reason)]
+    return [staleAnnotation(outcome.reason, outcome.reasonCode)]
   }
 
   return [
@@ -49,22 +51,29 @@ function buildAnnotations(outcome: FetchOutcome): string[] {
   ]
 }
 
-function staleAnnotation(reason: string): string {
+function staleAnnotation(reason: string, code: FailureCode): string {
   const escaped = escapeAnnotation(reason)
-  if (reason.startsWith('missing ')) {
-    return `::warning title=Ashby integration::${escaped}. Falling back to committed snapshot.%0A%0AAction items:%0A  1. If you're a contributor without key access, this is expected. The snapshot will be used.%0A  2. If this is CI, check that the \`WEBSITE_ASHBY_API_KEY\` secret exists in the repo and is referenced in .github/workflows/ci-website-build.yaml.`
+  switch (code) {
+    case 'missing-env':
+      return `::warning title=Ashby integration::${escaped}. Falling back to committed snapshot.%0A%0AAction items:%0A  1. If you're a contributor without key access, this is expected. The snapshot will be used.%0A  2. If this is CI, check that the \`WEBSITE_ASHBY_API_KEY\` secret exists in the repo and is referenced in .github/workflows/ci-website-build.yaml.`
+    case 'auth':
+      return `::error title=Ashby authentication failed::${escaped}. The WEBSITE_ASHBY_API_KEY is missing, invalid, or revoked. Build continues with the last-known-good snapshot.%0A%0AAction items:%0A  1. Open Ashby → Settings → API Keys and confirm the key is active.%0A  2. Update the \`WEBSITE_ASHBY_API_KEY\` secret in GitHub Actions and Vercel.%0A  3. Re-run this workflow.`
+    case 'schema':
+      return `::error title=Ashby schema mismatch::${escaped}. The Ashby API contract has likely changed. Build continues with the snapshot, but future updates will fail until the schema is fixed.%0A%0AAction items:%0A  1. Check https://developers.ashbyhq.com/reference for API changelog.%0A  2. Update apps/website/src/utils/ashby.schema.ts to match the new shape.`
+    case 'network':
+      return `::warning title=Ashby API unavailable::${escaped}. Using last-known-good snapshot.%0A%0AAction items:%0A  1. Check https://status.ashbyhq.com%0A  2. Re-run this workflow once Ashby is healthy.`
+    default: {
+      const _exhaustive: never = code
+      return _exhaustive
+    }
   }
-  if (reason.startsWith('HTTP 401') || reason.startsWith('HTTP 403')) {
-    return `::error title=Ashby authentication failed::${escaped}. The WEBSITE_ASHBY_API_KEY is missing, invalid, or revoked. Build continues with the last-known-good snapshot.%0A%0AAction items:%0A  1. Open Ashby → Settings → API Keys and confirm the key is active.%0A  2. Update the \`WEBSITE_ASHBY_API_KEY\` secret in GitHub Actions and Vercel.%0A  3. Re-run this workflow.`
-  }
-  if (reason.startsWith('envelope')) {
-    return `::error title=Ashby schema mismatch::${escaped}. The Ashby API contract has likely changed. Build continues with the snapshot, but future updates will fail until the schema is fixed.%0A%0AAction items:%0A  1. Check https://developers.ashbyhq.com/reference for API changelog.%0A  2. Update apps/website/src/utils/ashby.schema.ts to match the new shape.`
-  }
-  return `::warning title=Ashby API unavailable::${escaped}. Using last-known-good snapshot.%0A%0AAction items:%0A  1. Check https://status.ashbyhq.com%0A  2. Re-run this workflow once Ashby is healthy.`
 }
 
 function escapeAnnotation(value: string): string {
-  return value.replace(/\r?\n/g, '%0A').replace(/\r/g, '%0D')
+  return value
+    .replace(/%/g, '%25')
+    .replace(/\r?\n/g, '%0A')
+    .replace(/\r/g, '%0D')
 }
 
 function buildStepSummary(outcome: FetchOutcome): string {
@@ -106,8 +115,9 @@ function buildStepSummary(outcome: FetchOutcome): string {
 function describeSnapshotAge(fetchedAt: string): string {
   const fetched = new Date(fetchedAt).getTime()
   if (Number.isNaN(fetched)) return 'unknown'
-  const days = Math.floor((Date.now() - fetched) / 86_400_000)
-  if (days <= 0) return 'today'
+  const days = Math.floor((Date.now() - fetched) / MS_PER_DAY)
+  if (days < 0) return 'unknown'
+  if (days === 0) return 'today'
   if (days === 1) return '1 day'
   return `${days} days`
 }

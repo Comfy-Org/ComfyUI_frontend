@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
+import type { z } from 'zod'
+
 import type { AshbyJobPosting } from './ashby.schema'
 import type { Department, Role, RolesSnapshot } from '../data/roles'
 
@@ -19,6 +21,8 @@ export interface DroppedRole {
   reason: string
 }
 
+export type FailureCode = 'missing-env' | 'auth' | 'schema' | 'network'
+
 export type FetchOutcome =
   | {
       status: 'fresh'
@@ -26,8 +30,13 @@ export type FetchOutcome =
       droppedCount: number
       droppedRoles: DroppedRole[]
     }
-  | { status: 'stale'; snapshot: RolesSnapshot; reason: string }
-  | { status: 'failed'; reason: string }
+  | {
+      status: 'stale'
+      snapshot: RolesSnapshot
+      reason: string
+      reasonCode: FailureCode
+    }
+  | { status: 'failed'; reason: string; reasonCode: FailureCode }
 
 interface FetchRolesOptions {
   apiKey?: string
@@ -63,6 +72,7 @@ async function doFetchRolesForBuild(
   if (!apiKey || !boardName) {
     return fallback(
       'missing WEBSITE_ASHBY_API_KEY or WEBSITE_ASHBY_JOB_BOARD_NAME',
+      'missing-env',
       options.snapshotUrl
     )
   }
@@ -80,16 +90,17 @@ async function doFetchRolesForBuild(
     }
   }
 
-  return fallback(result.reason, options.snapshotUrl)
+  return fallback(result.reason, result.reasonCode, options.snapshotUrl)
 }
 
 async function fallback(
   reason: string,
+  reasonCode: FailureCode,
   snapshotUrl: URL | undefined
 ): Promise<FetchOutcome> {
   const snapshot = await readSnapshot(snapshotUrl)
-  if (snapshot) return { status: 'stale', snapshot, reason }
-  return { status: 'failed', reason }
+  if (snapshot) return { status: 'stale', snapshot, reason, reasonCode }
+  return { status: 'failed', reason, reasonCode }
 }
 
 interface FetchOk {
@@ -101,6 +112,7 @@ interface FetchOk {
 interface FetchErr {
   kind: 'err'
   reason: string
+  reasonCode: FailureCode
 }
 
 async function tryFetchAndParse(
@@ -134,21 +146,20 @@ async function tryFetchAndParse(
     if (!envelope.success) {
       return {
         kind: 'err',
-        reason: `envelope schema validation failed: ${envelope.error.issues
-          .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
-          .join('; ')}`
+        reasonCode: 'schema',
+        reason: `envelope schema validation failed: ${formatZodIssues(envelope.error.issues)}`
       }
     }
 
     return parseRoles(envelope.data.jobs)
   }
 
-  return { kind: 'err', reason: lastReason }
+  return { kind: 'err', reason: lastReason, reasonCode: 'network' }
 }
 
 type CallResponse =
   | { kind: 'ok'; body: unknown }
-  | { kind: 'err'; reason: string; retryable: boolean }
+  | { kind: 'err'; reason: string; reasonCode: FailureCode; retryable: boolean }
 
 async function callOnce(
   fetchImpl: typeof fetch,
@@ -172,9 +183,12 @@ async function callOnce(
     }
     const retryable =
       res.status === 429 || (res.status >= 500 && res.status < 600)
+    const reasonCode: FailureCode =
+      res.status === 401 || res.status === 403 ? 'auth' : 'network'
     return {
       kind: 'err',
       reason: `HTTP ${res.status} ${res.statusText || ''}`.trim(),
+      reasonCode,
       retryable
     }
   } catch (error) {
@@ -182,7 +196,7 @@ async function callOnce(
       error instanceof Error
         ? `network error: ${error.message}`
         : 'network error'
-    return { kind: 'err', reason, retryable: true }
+    return { kind: 'err', reason, reasonCode: 'network', retryable: true }
   } finally {
     clearTimeout(timer)
   }
@@ -197,9 +211,7 @@ function parseRoles(jobs: readonly unknown[]): FetchOk {
     if (!parsed.success) {
       droppedRoles.push({
         title: extractTitle(raw),
-        reason: parsed.error.issues
-          .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
-          .join('; ')
+        reason: formatZodIssues(parsed.error.issues)
       })
       continue
     }
@@ -211,15 +223,9 @@ function parseRoles(jobs: readonly unknown[]): FetchOk {
 }
 
 function extractTitle(raw: unknown): string {
-  if (
-    raw !== null &&
-    typeof raw === 'object' &&
-    'title' in raw &&
-    typeof (raw as { title: unknown }).title === 'string'
-  ) {
-    return (raw as { title: string }).title
-  }
-  return ''
+  if (typeof raw !== 'object' || raw === null) return ''
+  const title = (raw as Record<string, unknown>).title
+  return typeof title === 'string' ? title : ''
 }
 
 const DEFAULT_DEPARTMENT = 'Other'
@@ -266,7 +272,7 @@ function slugify(value: string): string {
 }
 
 function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+  return value.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 async function readSnapshot(
@@ -290,8 +296,20 @@ function isRolesSnapshot(value: unknown): value is RolesSnapshot {
   const candidate = value as { fetchedAt?: unknown; departments?: unknown }
   return (
     typeof candidate.fetchedAt === 'string' &&
-    Array.isArray(candidate.departments)
+    Array.isArray(candidate.departments) &&
+    candidate.departments.every(
+      (d) =>
+        typeof d === 'object' &&
+        d !== null &&
+        Array.isArray((d as Department).roles)
+    )
   )
+}
+
+function formatZodIssues(issues: z.ZodIssue[]): string {
+  return issues
+    .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
+    .join('; ')
 }
 
 function defaultSleep(ms: number): Promise<void> {
