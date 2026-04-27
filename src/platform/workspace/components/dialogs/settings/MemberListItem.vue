@@ -60,7 +60,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import RoleBadge from '@/platform/workspace/components/RoleBadge.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   showRoleBadge = false,

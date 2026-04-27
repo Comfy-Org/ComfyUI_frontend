@@ -99,6 +99,7 @@
     "findInLibrary": "Найдите это в разделе {type} библиотеки моделей.",
     "finish": "Готово",
     "genericLinkPlaceholder": "Вставьте ссылку сюда",
+    "gridView": "Вид сеткой",
     "importAnother": "Импортировать другой",
     "imported": "Импортировано",
     "invalidAsset": "Недопустимый ресурс",
@@ -106,6 +107,7 @@
     "invalidFilename": "Недопустимое имя файла",
     "invalidFilenameDetail": "Не удалось определить имя файла ресурса. Пожалуйста, попробуйте еще раз.",
     "jobId": "ID задачи",
+    "listView": "Вид списком",
     "loadingModels": "Загрузка {type}...",
     "maxFileSize": "Максимальный размер файла: {size}",
     "maxFileSizeValue": "1 ГБ",
@@ -333,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Приложение",
+    "blueprint": "Чертёж",
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteBlueprint": "Удалить схему",
     "deleteWorkflow": "Удалить рабочий процесс",
@@ -808,6 +811,7 @@
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
+    "INTERP_MODEL": "ИНТЕРП_МОДЕЛЬ",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -835,6 +839,7 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
     "RETARGET_TASK_ID": "ID_ЗАДАЧИ_РЕТАРГЕТИНГА",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
     "STRING": "СТРОКА",
@@ -913,6 +918,10 @@
     "showMissingNodes": "Показать отсутствующие узлы",
     "showSwapNodes": "Показать заменяемые узлы",
     "swapNodes": "Некоторые узлы можно заменить альтернативами"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Оставить отзыв",
+    "ctaText": "Как вам новая панель ошибок?"
   },
   "essentials": {
     "batchImage": "Пакетная обработка изображений",
@@ -1822,6 +1831,10 @@
     "gettingInfo": "Получение информации...",
     "importFailedGenericError": "Не удалось импортировать пакет. Проверьте консоль для получения дополнительной информации.",
     "inWorkflow": "В рабочем процессе",
+    "incompatibleVersion": {
+      "message": "Пожалуйста, обновите ComfyUI-Manager до версии 4.2.1 или выше.\n• Для Desktop: обновите приложение ComfyUI Desktop\n• Для Standalone: выполните pip install -U comfyui-manager и перезапустите\nПодробнее: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Требуется обновление ComfyUI-Manager"
+    },
     "infoPanelEmpty": "Нажмите на элемент, чтобы увидеть информацию",
     "installAllMissingNodes": "Установить все отсутствующие узлы",
     "installError": "Ошибка установки",
