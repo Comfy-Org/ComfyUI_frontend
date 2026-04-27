@@ -258,4 +258,80 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     const serialized = instance.serialize()
     expect(serialized.widgets_values).toBeUndefined()
   })
+
+  // Pins the open #10849 regression: the post-#10849 SubgraphNode.configure
+  // applies `widgets_values` positionally to promoted widgets, which corrupts
+  // pre-#10849 templates (e.g. Z-Image-Turbo) where `widgets_values` was
+  // leftover from older serialization and never represented promoted-widget
+  // values. The fix on the unmerged inline-proxyWidgets-state branch
+  // distinguishes legacy entries (plain 2-tuples) from new-format entries
+  // (entries carrying inline state), and falls back to the source widget's
+  // value for the legacy shape.
+  //
+  // Uses it.fails so the suite stays green while the bug is present and
+  // flips to failing when the fix lands. Drop the `.fails` marker then.
+  it.fails('falls back to source widget value when proxyWidgets is in legacy 2-tuple shape (regression for #10849)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const SOURCE_DEFAULT = 42
+    const LEGACY_NOISE = 999
+
+    const { node } = createNodeWithWidget('TestNode', SOURCE_DEFAULT)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 801 })
+    instance.configure({
+      id: 801,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [LEGACY_NOISE]
+    })
+
+    const widget = instance.widgets?.[0]
+    expect(widget?.value).toBe(SOURCE_DEFAULT)
+    expect(widget?.serializeValue?.(instance, 0)).toBe(SOURCE_DEFAULT)
+  })
+
+  it.fails('does not corrupt unbound promoted widgets when widgets_values length mismatches view count (regression for #10849)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const SOURCE_DEFAULT = 42
+    const LEGACY_NOISE_A = 111
+    const LEGACY_NOISE_B = 222
+
+    const { node } = createNodeWithWidget('TestNode', SOURCE_DEFAULT)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 802 })
+    instance.configure({
+      id: 802,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [LEGACY_NOISE_A, LEGACY_NOISE_B]
+    })
+
+    const widget = instance.widgets?.[0]
+    expect(widget?.value).toBe(SOURCE_DEFAULT)
+    expect(widget?.value).not.toBe(LEGACY_NOISE_A)
+  })
 })
