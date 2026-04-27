@@ -1,10 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync
-} from 'fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
@@ -69,7 +63,6 @@ export function writePerfReport(
     return
   }
   if (!entries.length) return
-  if (!readdirSync('test-results', { withFileTypes: true }).length) return
 
   let tempFiles: string[]
   try {
