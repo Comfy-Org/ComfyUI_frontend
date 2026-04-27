@@ -10,14 +10,15 @@ import {
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 
-const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
-const MOBILE_VIEWPORT = { width: 360, height: 800 }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+
+const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
+const MOBILE_VIEWPORT = { width: 360, height: 800 }
 
 describe('NodeSearchContent', () => {
   beforeEach(() => {
@@ -552,7 +553,7 @@ describe('NodeSearchContent', () => {
   })
 
   describe('filter integration', () => {
-    it('should display active filters in the input area', () => {
+    it('renders one chip per active filter with the filter value', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'ImageNode',
@@ -561,16 +562,20 @@ describe('NodeSearchContent', () => {
         })
       ])
 
+      const inputFilter = useNodeDefStore().nodeSearchService.inputTypeFilter
       renderComponent({
         filters: [
-          {
-            filterDef: useNodeDefStore().nodeSearchService.inputTypeFilter,
-            value: 'IMAGE'
-          }
+          { filterDef: inputFilter, value: 'IMAGE' },
+          { filterDef: inputFilter, value: 'LATENT' }
         ]
       })
 
-      expect(screen.getAllByTestId('filter-chip').length).toBeGreaterThan(0)
+      const chipTexts = screen
+        .getAllByTestId('filter-chip')
+        .map((c) => c.textContent ?? '')
+      expect(chipTexts).toHaveLength(2)
+      expect(chipTexts.some((t) => t.includes('IMAGE'))).toBe(true)
+      expect(chipTexts.some((t) => t.includes('LATENT'))).toBe(true)
     })
   })
 

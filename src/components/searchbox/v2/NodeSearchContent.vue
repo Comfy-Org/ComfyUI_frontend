@@ -90,8 +90,8 @@
               :node-def="node"
               :current-query="searchQuery"
               show-description
-              :show-source-badge="rootFilter !== 'essentials'"
-              :hide-bookmark-icon="selectedCategory === 'favorites'"
+              :show-source-badge="rootFilter !== RootCategory.Essentials"
+              :hide-bookmark-icon="selectedCategory === RootCategory.Favorites"
             />
           </div>
           <div
@@ -119,6 +119,8 @@ import NodeSearchCategorySidebar, {
 } from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
+import { RootCategory } from '@/components/searchbox/v2/rootCategories'
+import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -134,9 +136,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
-    essentials: isEssentialNode,
-    comfy: (n) => n.nodeSource.type === NodeSourceType.Core,
-    custom: isCustomNode
+    [RootCategory.Essentials]: isEssentialNode,
+    [RootCategory.Comfy]: (n) => n.nodeSource.type === NodeSourceType.Core,
+    [RootCategory.Custom]: isCustomNode
   }
 
 const { filters } = defineProps<{
@@ -192,21 +194,21 @@ function onSearchFocus() {
 }
 
 // Root filter from filter bar category buttons (radio toggle)
-const rootFilter = ref<string | null>(null)
+const rootFilter = ref<RootCategoryId | null>(null)
 
 const rootFilterLabel = computed(() => {
   switch (rootFilter.value) {
-    case 'favorites':
+    case RootCategory.Favorites:
       return t('g.bookmarked')
-    case BLUEPRINT_CATEGORY:
+    case RootCategory.Blueprint:
       return t('g.blueprints')
-    case 'partner-nodes':
+    case RootCategory.PartnerNodes:
       return t('g.partner')
-    case 'essentials':
+    case RootCategory.Essentials:
       return t('g.essentials')
-    case 'comfy':
+    case RootCategory.Comfy:
       return t('g.comfy')
-    case 'custom':
+    case RootCategory.Custom:
       return t('g.extensions')
     default:
       return undefined
@@ -219,11 +221,11 @@ const rootFilteredNodeDefs = computed(() => {
   const sourceFilter = sourceCategoryFilters[rootFilter.value]
   if (sourceFilter) return allNodes.filter(sourceFilter)
   switch (rootFilter.value) {
-    case 'favorites':
+    case RootCategory.Favorites:
       return allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
-    case BLUEPRINT_CATEGORY:
-      return allNodes.filter((n) => n.category.startsWith(rootFilter.value!))
-    case 'partner-nodes':
+    case RootCategory.Blueprint:
+      return allNodes.filter((n) => n.category.startsWith(BLUEPRINT_CATEGORY))
+    case RootCategory.PartnerNodes:
       return allNodes.filter((n) => n.api_node)
     default:
       return allNodes
@@ -250,7 +252,7 @@ function onClearFilterGroup(filterId: string) {
   }
 }
 
-function onSelectCategory(category: string) {
+function onSelectCategory(category: RootCategoryId) {
   if (rootFilter.value === category) {
     rootFilter.value = null
   } else {

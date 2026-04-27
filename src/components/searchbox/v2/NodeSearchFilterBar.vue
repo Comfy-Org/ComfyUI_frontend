@@ -82,6 +82,7 @@ import { useI18n } from 'vue-i18n'
 
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
+import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
@@ -111,7 +112,7 @@ const emit = defineEmits<{
   toggleFilter: [filterDef: FuseFilter<ComfyNodeDefImpl, string>, value: string]
   clearFilterGroup: [filterId: string]
   focusSearch: []
-  selectCategory: [category: string]
+  selectCategory: [category: RootCategoryId]
 }>()
 
 const { t } = useI18n()
@@ -120,7 +121,7 @@ const nodeDefStore = useNodeDefStore()
 const MAX_VISIBLE_DOTS = 4
 
 const categoryButtons = computed(() => {
-  const buttons: { id: string; label: string }[] = []
+  const buttons: { id: RootCategoryId; label: string }[] = []
   if (hasFavorites) {
     buttons.push({ id: RootCategory.Favorites, label: t('g.bookmarked') })
   }

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -9,23 +9,16 @@ import {
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
-      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
-      return undefined
-    }),
-    set: vi.fn()
-  }))
-}))
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     setupTestPinia()
+    const settings = useSettingStore()
+    settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
+    settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
     useNodeDefStore().updateNodeDefs([
       createMockNodeDef({
         name: 'ImageNode',
@@ -59,46 +52,33 @@ describe(NodeSearchFilterBar, () => {
     return { user, onSelectCategory, onUpdateIsSidebarOpen }
   }
 
-  it('should render Extensions button and Input/Output popover triggers', async () => {
-    await createRender({ hasCustomNodes: true })
+  const buttonTexts = () =>
+    screen.getAllByRole('button').map((b) => b.textContent?.trim())
 
-    const buttons = screen.getAllByRole('button')
-    const texts = buttons.map((b) => b.textContent?.trim())
-    expect(texts).toContain('Extensions')
+  it.each([
+    { prop: 'hasFavorites', label: 'Bookmarked' },
+    { prop: 'hasBlueprintNodes', label: 'Blueprints' },
+    { prop: 'hasEssentialNodes', label: 'Essentials' },
+    { prop: 'hasPartnerNodes', label: 'Partner' },
+    { prop: 'hasCustomNodes', label: 'Extensions' }
+  ] as const)(
+    'shows the $label button only when $prop is true',
+    async ({ prop, label }) => {
+      await createRender()
+      expect(buttonTexts()).not.toContain(label)
+
+      cleanup()
+      await createRender({ [prop]: true })
+      expect(buttonTexts()).toContain(label)
+    }
+  )
+
+  it('always renders the Comfy button and Input/Output type filter triggers', async () => {
+    await createRender()
+    const texts = buttonTexts()
+    expect(texts).toContain('Comfy')
     expect(texts).toContain('Input')
     expect(texts).toContain('Output')
-  })
-
-  it('should always render Comfy button', async () => {
-    await createRender()
-    const texts = screen
-      .getAllByRole('button')
-      .map((b) => b.textContent?.trim())
-    expect(texts).toContain('Comfy')
-  })
-
-  it('should render conditional category buttons when matching nodes exist', async () => {
-    await createRender({
-      hasFavorites: true,
-      hasEssentialNodes: true,
-      hasBlueprintNodes: true,
-      hasPartnerNodes: true
-    })
-    const texts = screen
-      .getAllByRole('button')
-      .map((b) => b.textContent?.trim())
-    expect(texts).toContain('Bookmarked')
-    expect(texts).toContain('Blueprints')
-    expect(texts).toContain('Partner')
-    expect(texts).toContain('Essentials')
-  })
-
-  it('should not render Extensions button when no custom nodes exist', async () => {
-    await createRender()
-    const texts = screen
-      .getAllByRole('button')
-      .map((b) => b.textContent?.trim())
-    expect(texts).not.toContain('Extensions')
   })
 
   it('should emit selectCategory when category button is clicked', async () => {
