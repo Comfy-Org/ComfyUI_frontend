@@ -239,30 +239,37 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       )
     })
 
-    test('Sidebar collapses on resize to mobile and preserves user state on resize to desktop', async ({
+    test('Sidebar state across mobile/desktop resizes', async ({
       comfyPage
     }) => {
       const { searchBoxV2 } = comfyPage
-      await comfyPage.page.setViewportSize({ width: 1280, height: 800 })
+      const switchToDesktop = () =>
+        comfyPage.page.setViewportSize({ width: 1280, height: 800 })
+      const switchToMobile = () =>
+        comfyPage.page.setViewportSize({ width: 360, height: 800 })
+      const expectExpanded = (value: 'true' | 'false') =>
+        expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+          'aria-expanded',
+          value
+        )
+
+      await switchToDesktop()
       await searchBoxV2.open()
-      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
-        'aria-expanded',
-        'true'
-      )
+      await expectExpanded('true')
 
-      await comfyPage.page.setViewportSize({ width: 360, height: 800 })
-      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
-        'aria-expanded',
-        'false'
-      )
+      await switchToMobile()
+      await expectExpanded('false')
 
-      // Returning to desktop must NOT auto-restore the sidebar — the
-      // user's collapsed state is preserved across breakpoint changes.
-      await comfyPage.page.setViewportSize({ width: 1280, height: 800 })
-      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
-        'aria-expanded',
-        'false'
-      )
+      await searchBoxV2.sidebarToggle.click()
+      await switchToDesktop()
+      await expectExpanded('true')
+
+      await searchBoxV2.sidebarToggle.click()
+      await switchToMobile()
+      await expectExpanded('false')
+
+      await switchToDesktop()
+      await expectExpanded('false')
     })
   })
 })

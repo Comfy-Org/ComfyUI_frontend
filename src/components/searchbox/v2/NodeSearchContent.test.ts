@@ -720,7 +720,7 @@ describe('NodeSearchContent', () => {
       })
     })
 
-    it('should collapse on resize to mobile and preserve user state on resize back to desktop', async () => {
+    it('should preserve user state across mobile/desktop resizes', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'KSampler',
@@ -729,21 +729,27 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      renderComponent()
+      const { user } = renderComponent()
 
       const toggle = screen.getByTestId('toggle-category-sidebar')
-      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      const expectExpanded = (value: 'true' | 'false') =>
+        waitFor(() => expect(toggle).toHaveAttribute('aria-expanded', value))
+
+      await expectExpanded('true')
 
       setViewport(MOBILE_VIEWPORT)
-      await waitFor(() => {
-        expect(toggle).toHaveAttribute('aria-expanded', 'false')
-      })
+      await expectExpanded('false')
 
-      // Returning to desktop should NOT auto-restore — collapsed state is
-      // preserved so a user's earlier explicit toggle isn't undone.
+      await user.click(toggle)
       setViewport(DESKTOP_VIEWPORT)
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      await expectExpanded('true')
+
+      await user.click(toggle)
+      setViewport(MOBILE_VIEWPORT)
+      await expectExpanded('false')
+
+      setViewport(DESKTOP_VIEWPORT)
+      await expectExpanded('false')
     })
   })
 
