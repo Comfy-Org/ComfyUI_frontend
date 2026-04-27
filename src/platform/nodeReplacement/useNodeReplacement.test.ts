@@ -1018,6 +1018,13 @@ describe('useNodeReplacement', () => {
     })
 
     it('does not throw when output_mapping references a new output index that does not exist', () => {
+      // NOTE: The current source skips transfer silently in this case, leaving
+      // the link's origin_slot pointing at a now-missing slot on the new node.
+      // That dangling state is a separate source-level concern; this test only
+      // pins that the missing-slot branch does not crash the replacement loop.
+      // Do not extend this test to assert specific link state on the dangling
+      // path — codifying that as "correct" would block fixing the underlying
+      // cleanup gap in transferOutputConnections.
       const link = createMockLink(20, 1, 0, 5, 0)
       const placeholder = createPlaceholderNode(
         1,
@@ -1047,9 +1054,6 @@ describe('useNodeReplacement', () => {
           })
         ])
       ).not.toThrow()
-
-      // Original link is left untouched because the transfer was skipped.
-      expect(link.origin_id).toBe(1)
     })
 
     it('is a no-op when set_value targets a widget that does not exist on the new node', () => {
