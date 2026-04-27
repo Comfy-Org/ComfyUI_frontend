@@ -472,6 +472,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像です。"
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "最初のフレームとして使用するSeedanceのasset_id。他のfirst_frame画像入力とは排他的です。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像です。"
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "最後のフレームとして使用するSeedanceのasset_id。他のlast_frame画像入力とは排他的です。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0 を使い、リファレンス画像・動画・音声から動画を生成・編集・拡張します。マルチモーダルリファレンス、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.0 リファレンスから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "テキストプロンプトに基づいて Seedance 2.0 モデルで動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Seedance 2.0の個人画像アセットを作成します。入力画像をアップロードし、指定したアセットグループに登録します。group_idが空の場合、実在認証フロー（H5）を実行して新しいグループを作成し、アセットを追加します。",
+    "display_name": "ByteDance 画像アセット作成",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "既存のSeedanceアセットグループIDを再利用して、同一人物の繰り返し認証を省略します。空欄の場合はブラウザで実在認証を実行し、新しいグループを作成します。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "個人アセットとして登録する画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Seedance 2.0の個人動画アセットを作成します。入力動画をアップロードし、指定したアセットグループに登録します。group_idが空の場合、実在認証フロー（H5）を実行して新しいグループを作成し、アセットを追加します。",
+    "display_name": "ByteDance 動画アセット作成",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "既存のSeedanceアセットグループIDを再利用して、同一人物の繰り返し認証を省略します。空欄の場合はブラウザで実在認証を実行し、新しいグループを作成します。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "個人アセットとして登録する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "プロンプトと最初・最後のフレームを使用して動画を生成します。",
     "display_name": "ByteDance 最初-最後フレームから動画生成",
@@ -1358,6 +1548,36 @@
     "outputs": {
       "0": {
         "name": "rgb整数値",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "さまざまなアルゴリズムを使用して、ある画像の色を別の画像に合わせます。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "色を合わせる参照画像。指定しない場合は処理をスキップします。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "色変換を適用する画像。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：各フレームを個別にimage_refに合わせます。uniform：すべてのソースフレームの統計をまとめて基準とし、image_refに合わせます。target_frame：選択した1フレームを変換の基準として使用し、すべてのフレームに均一に適用します（相対的な違いを保持）。"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -3530,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "フレーム補間",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "interp_model": {
+        "name": "補間モデル"
+      },
+      "multiplier": {
+        "name": "倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "フレーム補間モデルを読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "モデル名",
+        "tooltip": "読み込むフレーム補間モデルを選択してください。モデルは「frame_interpolation」フォルダに配置する必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "ガイダンスに周波数依存のスケーリングを適用します",
     "display_name": "FreSca",
@@ -5453,6 +5706,22 @@
       },
       "image": {
         "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "JSONから文字列を抽出",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -13618,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3検出",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "セグメント化するバウンディングボックス"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "CLIPTextEncodeによるテキストコンディショニング"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "オブジェクトごとのマスクを出力（結合ではなく個別）"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negative_coords",
+        "tooltip": "JSON形式のネガティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+      },
+      "positive_coords": {
+        "name": "positive_coords",
+        "tooltip": "JSON形式のポジティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+      },
+      "refine_iterations": {
+        "name": "refine_iterations",
+        "tooltip": "SAMデコーダーのリファインパス数（0=生の検出マスクを使用）"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3トラックプレビュー",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3トラックからマスク",
+    "inputs": {
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "含めるオブジェクトのインデックスをカンマ区切りで指定（例: '0,2,3'）。空欄=全オブジェクト。"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3ビデオトラック",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "追跡中に新しいオブジェクトを検出するためのテキストコンディショニング"
+      },
+      "detect_interval": {
+        "name": "detect_interval",
+        "tooltip": "Nフレームごとに検出を実行（1=毎フレーム）。値が大きいほど計算量を節約。"
+      },
+      "detection_threshold": {
+        "name": "detection_threshold",
+        "tooltip": "テキストプロンプト検出のスコア閾値"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "バッチ化された画像としてのビデオフレーム"
+      },
+      "initial_mask": {
+        "name": "initial_mask",
+        "tooltip": "最初のフレームで追跡するマスク（一つのオブジェクトにつき一つ）"
+      },
+      "max_objects": {
+        "name": "max_objects",
+        "tooltip": "追跡する最大オブジェクト数（0=無制限）。初期マスクもこの制限に含まれます。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -13751,6 +14141,44 @@
       },
       "2": {
         "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "ノイズ除去後の出力を入力のlatentに近づけます。値が高いほど入力への忠実度が強くなります。0で無効化。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "このシグマ閾値未満ではrestore_cfgが無効になります。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "サンプリング終了時（低シグマ）の強度を制御します。開始値から線形補間されます。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "サンプリング開始時（高シグマ）の強度を制御します。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14753,6 +15181,58 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloTextToMusic": {
+    "description": "SoniloのAIモデルを使ってテキストプロンプトから音楽を生成します。継続時間を0にすると、プロンプトから自動的に推定されます。",
+    "display_name": "Sonilo テキストから音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "目標の長さ（秒）。0に設定するとプロンプトから自動的に推定されます。最大：6分。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する音楽を説明するテキストプロンプト。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "SoniloのAIモデルを使って動画コンテンツから音楽を生成します。動画を解析し、マッチする音楽を作成します。",
+    "display_name": "Sonilo 動画から音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "音楽生成をガイドするためのオプションのテキストプロンプト。空欄の場合は最高品質となり、モデルが動画内容を完全に解析します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "音楽を生成する入力動画。最大長：6分。"
       }
     },
     "outputs": {
@@ -16025,6 +16505,10 @@
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
       }
     },
     "outputs": {
@@ -16076,6 +16560,10 @@
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
       }
     },
     "outputs": {
@@ -17231,6 +17719,10 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "ビデオのテキスト説明"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力動画の解像度。4Kはveo-3.1-liteおよびveo-3.0モデルでは利用できません。"
       },
       "seed": {
         "name": "シード",

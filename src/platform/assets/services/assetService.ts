@@ -38,7 +38,7 @@ interface AssetExportOptions {
   asset_ids?: string[]
   naming_strategy?:
     | 'group_by_job_id'
-    | 'prepend_job_id'
+    | 'group_by_job_time'
     | 'preserve'
     | 'asset_id'
   job_asset_name_filters?: Record<string, string[]>

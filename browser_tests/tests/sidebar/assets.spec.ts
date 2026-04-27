@@ -5,7 +5,10 @@ import {
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -61,6 +64,37 @@ const SAMPLE_IMPORTED_FILES = [
   'background.jpg',
   'audio_clip.wav'
 ]
+
+const JOB_GAMMA_DETAIL: JobDetail = {
+  ...SAMPLE_JOBS[2],
+  outputs: {
+    '3': {
+      images: [
+        {
+          filename: 'abstract_art.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'abstract_art_alt.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
+const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
+  mockCloudAssetSidebarData: async ({ comfyPage }, use) => {
+    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+    await comfyPage.assets.mockEmptyCloudAssets()
+
+    await use()
+
+    await comfyPage.assets.clearMocks()
+  }
+})
 
 // ==========================================================================
 // 1. Empty states
@@ -633,6 +667,96 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 })
 
+cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
+  cloudTest(
+    'Single job selection uses preserve naming strategy',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.first().click()
+      await expect(tab.downloadSelectedButton).toBeVisible()
+
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('preserve')
+    }
+  )
+
+  cloudTest(
+    'Multiple selected assets from one job use preserve naming strategy',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+      await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards
+        .first()
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+      await expect(tab.backToAssetsButton).toBeVisible()
+      await expect.poll(() => tab.assetCards.count()).toBe(2)
+
+      await tab.assetCards.first().click()
+      await comfyPage.page.keyboard.down('Control')
+      await tab.assetCards.nth(1).click()
+      await comfyPage.page.keyboard.up('Control')
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_asset_name_filters?.['job-gamma']?.toSorted()).toEqual(
+        ['abstract_art.png', 'abstract_art_alt.png']
+      )
+      expect(payload.naming_strategy).toBe('preserve')
+    }
+  )
+
+  cloudTest(
+    'Multiple selected jobs use job-time naming strategy',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.nth(1).click()
+      await comfyPage.page.keyboard.down('Control')
+      await tab.assetCards.nth(2).click()
+      await comfyPage.page.keyboard.up('Control')
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids?.toSorted()).toEqual(['job-alpha', 'job-beta'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('group_by_job_time')
+    }
+  )
+})
+
 // ==========================================================================
 // 9. Pagination
 // ==========================================================================
@@ -770,5 +894,121 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
+  })
+})
+
+// ==========================================================================
+// 12. Media type filter (cloud-only)
+// ==========================================================================
+
+const MIXED_MEDIA_JOBS: RawJobListItem[] = [
+  createMockJob({
+    id: 'job-image',
+    create_time: 1000,
+    execution_start_time: 1000,
+    execution_end_time: 1010,
+    preview_output: {
+      filename: 'photo.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    },
+    outputs_count: 1
+  }),
+  createMockJob({
+    id: 'job-video',
+    create_time: 2000,
+    execution_start_time: 2000,
+    execution_end_time: 2010,
+    preview_output: {
+      filename: 'clip.mp4',
+      subfolder: '',
+      type: 'output',
+      nodeId: '2',
+      mediaType: 'video'
+    },
+    outputs_count: 1
+  }),
+  createMockJob({
+    id: 'job-audio',
+    create_time: 3000,
+    execution_start_time: 3000,
+    execution_end_time: 3010,
+    preview_output: {
+      filename: 'track.mp3',
+      subfolder: '',
+      type: 'output',
+      nodeId: '3',
+      mediaType: 'audio'
+    },
+    outputs_count: 1
+  })
+]
+
+// Filter button is guarded by isCloud (compile-time). The cloud CI project
+// cannot use comfyPageFixture (auth required). Enable once cloud E2E infra
+// supports authenticated comfyPage setup.
+test.describe('Assets sidebar - media type filter', () => {
+  test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Filter menu shows media type options', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.openFilterMenu()
+
+    await expect(tab.filterCheckbox('Image')).toBeVisible()
+    await expect(tab.filterCheckbox('Video')).toBeVisible()
+    await expect(tab.filterCheckbox('Audio')).toBeVisible()
+    await expect(tab.filterCheckbox('3D')).toBeVisible()
+  })
+
+  test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = tab.assetCards
+    await expect(
+      initialCount,
+      'All three mixed-media jobs should render'
+    ).toHaveCount(3)
+
+    // Open filter menu and enable only image filter (selecting a filter
+    // restricts to that type only, hiding unselected types)
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+
+    // Only the image asset should remain
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+    await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
+  })
+
+  test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    // Enable image filter to restrict to images only
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+
+    // Uncheck image filter to remove all filters (restores all assets)
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
 })

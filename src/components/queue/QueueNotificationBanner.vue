@@ -60,7 +60,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { QueueNotificationBanner } from '@/composables/queue/useQueueNotificationBanners'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { notification } = defineProps<{
   notification: QueueNotificationBanner

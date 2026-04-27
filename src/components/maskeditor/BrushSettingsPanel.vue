@@ -164,7 +164,7 @@ import { useI18n } from 'vue-i18n'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SliderControl from './controls/SliderControl.vue'
 

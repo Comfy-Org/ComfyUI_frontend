@@ -130,7 +130,7 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import type { TopbarBadge } from '@/types/comfy'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   badge,

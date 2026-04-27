@@ -3,6 +3,7 @@ import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
+import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
 import { ComfyTemplates } from '@e2e/helpers/templates'
@@ -30,8 +31,6 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
-import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
-import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
@@ -138,6 +137,7 @@ class ComfyMenu {
 
 export class ComfyPage {
   public readonly url: string
+  public readonly apiUrl: string
   // All canvas position operations are based on default view of canvas.
   public readonly canvas: Locator
   public readonly selectionToolbox: Locator
@@ -179,7 +179,6 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
-  public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
   public readonly visibleToasts: Locator
@@ -197,6 +196,7 @@ export class ComfyPage {
     public readonly request: APIRequestContext
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    this.apiUrl = process.env.PLAYWRIGHT_SETUP_API_URL || this.url
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
@@ -233,13 +233,12 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
-    this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
   }
 
   async setupUser(username: string) {
-    const res = await this.request.get(`${this.url}/api/users`)
+    const res = await this.request.get(`${this.apiUrl}/api/users`)
     if (res.status() !== 200)
       throw new Error(`Failed to retrieve users: ${await res.text()}`)
 
@@ -253,7 +252,7 @@ export class ComfyPage {
   }
 
   async createUser(username: string) {
-    const resp = await this.request.post(`${this.url}/api/users`, {
+    const resp = await this.request.post(`${this.apiUrl}/api/users`, {
       data: { username }
     })
 
@@ -265,7 +264,7 @@ export class ComfyPage {
 
   async setupSettings(settings: Record<string, unknown>) {
     const resp = await this.request.post(
-      `${this.url}/api/devtools/set_settings`,
+      `${this.apiUrl}/api/devtools/set_settings`,
       {
         data: settings
       }
@@ -316,11 +315,20 @@ export class ComfyPage {
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)
+    await this.waitForAppReady()
+  }
+
+  /**
+   * Wait for the app to finish initializing after navigation/reload:
+   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
+   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `WorkflowHelper.reloadAndWaitForApp()`.
+   */
+  async waitForAppReady() {
     await this.page.waitForFunction(
-      () =>
-        // window.app => GraphCanvas ready
-        // window.app.extensionManager => GraphView ready
-        window.app && window.app.extensionManager
+      // window.app => GraphCanvas ready
+      // window.app.extensionManager => GraphView ready
+      () => window.app?.extensionManager
     )
     await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
@@ -420,6 +428,28 @@ export class ComfyPage {
   }
 }
 
+class ComfyFiles {
+  protected teardownCallbacks: (() => Promise<unknown>)[] = []
+
+  constructor(protected readonly comfyPage: ComfyPage) {}
+
+  async teardown() {
+    await Promise.all(this.teardownCallbacks.map((cb) => cb()))
+  }
+
+  deleteAfterTest(file: {
+    filename: string
+    subfolder?: string
+    type?: string
+  }) {
+    this.teardownCallbacks.push(() =>
+      this.comfyPage.request.delete(
+        `${this.comfyPage.url}/api/devtools/view?${new URLSearchParams(file)}`
+      )
+    )
+  }
+}
+
 export const testComfySnapToGridGridSize = 50
 
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
@@ -427,6 +457,7 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
+  comfyFiles: ComfyFiles
 }>({
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -438,7 +469,7 @@ export const comfyPageFixture = base.extend<{
     const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
-      outputDir: './coverage/playwright',
+      outputDir: COVERAGE_OUTPUT_DIR,
       reports: []
     })
     await mcr.add(coverage)
@@ -499,12 +530,16 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
-    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
     await use(comfyMouse)
+  },
+  comfyFiles: async ({ comfyPage }, use) => {
+    const comfyFiles = new ComfyFiles(comfyPage)
+    await use(comfyFiles)
+    await comfyFiles.teardown()
   }
 })
 

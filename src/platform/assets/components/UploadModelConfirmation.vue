@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import SingleSelect from '@/components/input/SingleSelect.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 

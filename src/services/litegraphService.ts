@@ -921,6 +921,16 @@ export const useLitegraphService = () => {
         throw new Error(
           'Subgraph blueprint was added, but failed to resolve a subgraph Node'
         )
+      if (addOptions?.ghost) {
+        node.flags.ghost = true
+        canvas.graph?.trigger('node:property:changed', {
+          nodeId: node.id,
+          property: 'flags.ghost',
+          oldValue: false,
+          newValue: true
+        })
+        canvas.startGhostPlacement(node, addOptions.dragEvent)
+      }
       return node
     }
 
