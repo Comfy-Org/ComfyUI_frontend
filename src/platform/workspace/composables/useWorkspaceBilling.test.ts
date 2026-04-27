@@ -686,4 +686,126 @@ describe('useWorkspaceBilling', () => {
       expect(mockShow).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('initialize free-tier balance refresh', () => {
+    it('does not re-fetch balance when free tier already has a positive balance', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(freeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.initialize()
+
+      // One initial fetch only — the free-tier zero-balance reload branch
+      // must not trigger when amountMicros > 0.
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      expect(billing.isFreeTier.value).toBe(true)
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+  })
+
+  describe('subscribe argument forwarding', () => {
+    it('forwards undefined for return/cancel URLs when called with planSlug only', async () => {
+      mockWorkspaceApi.subscribe.mockResolvedValue({
+        billing_op_id: 'op-x',
+        status: 'subscribed'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.subscribe('pro')
+
+      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith(
+        'pro',
+        undefined,
+        undefined
+      )
+    })
+  })
+
+  describe('previewSubscribe does not refresh state', () => {
+    it('does not call fetchStatus or fetchBalance after a successful preview', async () => {
+      mockWorkspaceApi.previewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new',
+        effective_at: 'now',
+        is_immediate: true,
+        cost_today_cents: 0,
+        cost_next_period_cents: 0,
+        credits_today_cents: 0,
+        credits_next_period_cents: 0,
+        new_plan: {}
+      })
+
+      const billing = setupBilling()
+      await billing.previewSubscribe('pro')
+
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('pollCancelStatus error paths', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('uses a default error message when failed status omits error_message', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-noerr',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
+        id: 'op-noerr',
+        status: 'failed',
+        started_at: '2026-04-01T00:00:00Z'
+        // intentionally no error_message
+      })
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Failed to cancel subscription'
+      )
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('stops polling when getBillingOpStatus rejects on a later scheduled poll', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-mid',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockWorkspaceApi.getBillingOpStatus
+        .mockResolvedValueOnce({
+          id: 'op-mid',
+          status: 'pending',
+          started_at: '2026-04-01T00:00:00Z'
+        })
+        .mockRejectedValueOnce(new Error('network blip'))
+
+      // Silence the unhandled rejection that escapes void-discarded poll().
+      const unhandled = vi.fn()
+      process.on('unhandledRejection', unhandled)
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      // The first sync poll resolves with 'pending'; cancelSubscription returns.
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
+
+      // Trigger the scheduled retry; it rejects and the catch block stops polling.
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+
+      // Polling has stopped — further timer drains do not produce new calls.
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+
+      process.off('unhandledRejection', unhandled)
+    })
+  })
 })
