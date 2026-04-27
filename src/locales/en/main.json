@@ -2794,7 +2794,7 @@
       "steps": {
         "usage": "How do you plan to use ComfyUI?",
         "familiarity": "How familiar are you with ComfyUI?",
-        "intent": "What do you want to do with ComfyUI?",
+        "intent": "What do you want to create with ComfyUI?",
         "source": "Where did you hear about ComfyUI?"
       },
       "options": {
@@ -2804,20 +2804,21 @@
           "education": "Education (student or educator)"
         },
         "familiarity": {
-          "new": "Never used it",
-          "starting": "Following tutorials",
-          "basics": "Comfortable with basics",
-          "advanced": "Build and edit workflows",
+          "new": "New — never used it",
+          "starting": "Beginner — following tutorials",
+          "basics": "Intermediate — comfortable with basics",
+          "advanced": "Advanced — build and edit workflows",
           "expert": "Expert — I help others"
         },
         "intent": {
-          "workflows": "Build custom workflows",
+          "workflows": "Custom workflows or pipelines",
+          "custom_nodes": "Custom nodes",
           "videos": "Videos",
           "images": "Images",
           "3d_game": "3D assets / game assets",
           "audio": "Audio / music",
-          "apps": "Build simplified Apps from workflows",
-          "api": "Run ComfyUI workflows via API",
+          "apps": "Simplified Apps from workflows",
+          "api": "API endpoints to run workflows",
           "not_sure": "Not sure"
         },
         "source": {
@@ -2903,7 +2904,7 @@
   "cloudForgotPassword_passwordResetError": "Failed to send password reset email",
   "cloudSurvey_steps_usage": "How do you plan to use ComfyUI?",
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
-  "cloudSurvey_steps_intent": "What do you want to do with ComfyUI?",
+  "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
   "assetBrowser": {
     "allCategory": "All {category}",

@@ -196,21 +196,22 @@ const usageOptions: Option[] = [
 ]
 
 const familiarityOptions: Option[] = [
-  { value: 'new', label: 'Never used it' },
-  { value: 'starting', label: 'Following tutorials' },
-  { value: 'basics', label: 'Comfortable with basics' },
-  { value: 'advanced', label: 'Build and edit workflows' },
+  { value: 'new', label: 'New — never used it' },
+  { value: 'starting', label: 'Beginner — following tutorials' },
+  { value: 'basics', label: 'Intermediate — comfortable with basics' },
+  { value: 'advanced', label: 'Advanced — build and edit workflows' },
   { value: 'expert', label: 'Expert — I help others' }
 ]
 
 const intentOptions: Option[] = [
-  { value: 'workflows', label: 'Build custom workflows' },
+  { value: 'workflows', label: 'Custom workflows or pipelines' },
+  { value: 'custom_nodes', label: 'Custom nodes' },
   { value: 'videos', label: 'Videos' },
   { value: 'images', label: 'Images' },
   { value: '3d_game', label: '3D assets / game assets' },
   { value: 'audio', label: 'Audio / music' },
-  { value: 'apps', label: 'Build simplified Apps from workflows' },
-  { value: 'api', label: 'Run ComfyUI workflows via API' },
+  { value: 'apps', label: 'Simplified Apps from workflows' },
+  { value: 'api', label: 'API endpoints to run workflows' },
   { value: 'not_sure', label: 'Not sure' }
 ]
 
