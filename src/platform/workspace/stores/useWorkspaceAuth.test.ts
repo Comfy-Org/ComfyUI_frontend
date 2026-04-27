@@ -669,4 +669,216 @@ describe('useWorkspaceAuthStore', () => {
       expect(isLoading.value).toBe(false)
     })
   })
+
+  describe('refreshToken retry/race paths', () => {
+    it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then clears context', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      // Initial successful switchWorkspace establishes context.
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+      expect(currentWorkspace.value).not.toBeNull()
+
+      // Subsequent refresh attempts all fail with 500 (TOKEN_EXCHANGE_FAILED).
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: () => Promise.resolve({ message: 'Server error' })
+      })
+
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const refreshPromise = store.refreshToken()
+
+      // Drain the four attempts (initial + 3 retries) and their backoff delays.
+      await vi.runAllTimersAsync()
+      await refreshPromise
+
+      // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+      // Backoff: 1s + 2s + 4s = 7s of cumulative warn-logged delays.
+      expect(
+        consoleWarnSpy.mock.calls.some((c) =>
+          /retrying in 1000ms/.test(String(c[0]))
+        )
+      ).toBe(true)
+      expect(
+        consoleWarnSpy.mock.calls.some((c) =>
+          /retrying in 2000ms/.test(String(c[0]))
+        )
+      ).toBe(true)
+      expect(
+        consoleWarnSpy.mock.calls.some((c) =>
+          /retrying in 4000ms/.test(String(c[0]))
+        )
+      ).toBe(true)
+
+      // After the final failure the context is cleared.
+      expect(currentWorkspace.value).toBeNull()
+
+      consoleErrorSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('clears context immediately on INVALID_FIREBASE_TOKEN without retrying', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+      expect(currentWorkspace.value).not.toBeNull()
+
+      // Permanent error: 401 → INVALID_FIREBASE_TOKEN.
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: () => Promise.resolve({ message: 'Invalid token' })
+      })
+
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      await store.refreshToken()
+
+      // Initial + exactly one refresh attempt; no retries on permanent errors.
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(currentWorkspace.value).toBeNull()
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('aborts an in-flight refresh when switchWorkspace targets a different workspace', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      // Make the next refresh attempt hang so we can observe the staleness check.
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      const refreshFetchPromise = new Promise((resolve) => {
+        resolveRefreshFetch = resolve
+      })
+      mockFetch.mockReturnValueOnce(refreshFetchPromise)
+
+      const refreshPromise = store.refreshToken()
+
+      // User switches to a different workspace before the in-flight refresh resolves.
+      const newWorkspace = { ...mockWorkspace, id: 'workspace-other' }
+      const newTokenResponse = {
+        ...mockTokenResponse,
+        token: 'new-workspace-token',
+        workspace: newWorkspace
+      }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(newTokenResponse)
+      })
+      const switchPromise = store.switchWorkspace('workspace-other')
+
+      // Resolve the stale refresh fetch with a token tied to the OLD workspace.
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...mockTokenResponse, token: 'stale-token' })
+      })
+
+      await Promise.all([refreshPromise, switchPromise])
+
+      // The new workspace context wins; the stale refresh did not clobber it.
+      expect(currentWorkspace.value?.id).toBe('workspace-other')
+    })
+  })
+
+  describe('persistToSession resilience', () => {
+    it('updates store state even when sessionStorage.setItem throws', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      )
+
+      const setItemSpy = vi
+        .spyOn(sessionStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new Error('QuotaExceededError')
+        })
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const store = useWorkspaceAuthStore()
+      const { workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      expect(workspaceToken.value).toBe('workspace-token-abc')
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to persist workspace context to sessionStorage'
+      )
+
+      setItemSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
+    })
+  })
+
+  describe('Zod validation on token response', () => {
+    it('throws TOKEN_EXCHANGE_FAILED when the response is missing required fields', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              token: 'token-only',
+              // missing expires_at, workspace, role, permissions
+              role: 'owner'
+            })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
+
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
+        WorkspaceAuthError
+      )
+      expect((error.value as WorkspaceAuthError).code).toBe(
+        'TOKEN_EXCHANGE_FAILED'
+      )
+    })
+  })
 })
