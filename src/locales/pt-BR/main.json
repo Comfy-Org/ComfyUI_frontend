@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "App",
+    "blueprint": "Blueprint",
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
@@ -917,6 +918,10 @@
     "showMissingNodes": "Mostrar nós ausentes",
     "showSwapNodes": "Mostrar nós alternativos",
     "swapNodes": "Alguns nós podem ser substituídos por alternativas"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Enviar feedback",
+    "ctaText": "O que achou do novo painel de erros?"
   },
   "essentials": {
     "batchImage": "Imagem em lote",
