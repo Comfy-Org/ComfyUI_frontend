@@ -2,8 +2,6 @@
 
 Shared CSS, tokens, and icon plugins for the ComfyUI Frontend app. This package is a **static CSS bundle** — no components, no runtime. Component-level design decisions (CVA variants, primitives) live under `src/components/ui/` in the main app.
 
-For the higher-level map (where things live, when to reach for which file), see `DESIGN.md` at the repo root.
-
 ## Files
 
 | File                            | Role                                                                                                                                                                                             |
@@ -35,6 +33,5 @@ Rule of thumb: if more than two unrelated features would plausibly use the token
 
 ## See also
 
-- `DESIGN.md` at repo root — entry-point map.
 - `docs/guidance/design-standards.md` — binding rules, Figma mapping, color tiers.
 - `docs/guidance/vue-components.md` — Vue/SFC conventions.
