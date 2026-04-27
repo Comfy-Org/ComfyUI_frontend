@@ -83,7 +83,8 @@ export const TestIds = {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    subscribeToRunButton: 'subscribe-to-run-button'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -199,7 +200,8 @@ export const TestIds = {
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
-    currentUserIndicator: 'current-user-indicator'
+    currentUserIndicator: 'current-user-indicator',
+    currentUserPopover: 'current-user-popover'
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
