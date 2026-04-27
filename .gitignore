@@ -59,6 +59,7 @@ coverage/
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/local/
+browser_tests/tests/_recording-session.spec.ts
 
 .env
 
