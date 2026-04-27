@@ -438,10 +438,12 @@ export class SceneModelManager implements ModelManagerInterface {
     model.name = 'MainModel'
 
     if (!this.getCurrentCapabilities().fitToViewer) {
-      this.scene.add(model)
       const pose = this.getDefaultCameraPose()
-      if (pose) this.setupCamera(pose.size, pose.center)
-      return
+      if (pose) {
+        this.scene.add(model)
+        this.setupCamera(pose.size, pose.center)
+        return
+      }
     }
 
     this.scene.add(model)

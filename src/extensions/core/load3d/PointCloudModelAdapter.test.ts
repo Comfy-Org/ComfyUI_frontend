@@ -65,10 +65,10 @@ describe('PointCloudModelAdapter', () => {
       expect([...adapter.extensions]).toEqual(['ply'])
     })
 
-    it('identifies as pointCloud with rebuild + gizmo/fit disabled', () => {
+    it('identifies as pointCloud with material rebuild + fit-to-viewer + lighting + export, gizmo disabled', () => {
       const adapter = new PointCloudModelAdapter()
       expect(adapter.kind).toBe('pointCloud')
-      expect(adapter.capabilities.fitToViewer).toBe(false)
+      expect(adapter.capabilities.fitToViewer).toBe(true)
       expect(adapter.capabilities.requiresMaterialRebuild).toBe(true)
       expect(adapter.capabilities.gizmoTransform).toBe(false)
       expect(adapter.capabilities.lighting).toBe(true)

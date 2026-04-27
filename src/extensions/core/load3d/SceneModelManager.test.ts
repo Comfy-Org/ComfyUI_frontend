@@ -61,6 +61,37 @@ function createManager(
   }
 }
 
+function createManagerWithPose(opts: {
+  capabilities?: Partial<ModelAdapterCapabilities>
+  pose: { size: THREE.Vector3; center: THREE.Vector3 } | null
+}) {
+  const scene = new THREE.Scene()
+  const renderer = createMockRenderer()
+  const eventManager = createMockEventManager()
+  const camera = new THREE.PerspectiveCamera()
+  const setupCamera = vi.fn()
+  const setupGizmo = vi.fn()
+  const capabilities: ModelAdapterCapabilities = {
+    ...DEFAULT_MODEL_CAPABILITIES,
+    ...opts.capabilities
+  }
+
+  const manager = new SceneModelManager(
+    scene,
+    renderer,
+    eventManager,
+    () => camera,
+    setupCamera,
+    setupGizmo,
+    () => capabilities,
+    () => null,
+    () => {},
+    () => opts.pose
+  )
+
+  return { manager, scene, setupCamera, setupGizmo }
+}
+
 function createMeshModel(name = 'TestModel'): THREE.Group {
   const geometry = new THREE.BoxGeometry(1, 1, 1)
   const material = new THREE.MeshStandardMaterial({ color: 0xff0000 })
@@ -197,6 +228,47 @@ describe('SceneModelManager', () => {
         'upDirectionChange',
         '+z'
       )
+    })
+
+    it('uses the adapter default pose when fitToViewer is disabled and a pose is provided', async () => {
+      const pose = {
+        size: new THREE.Vector3(5, 5, 5),
+        center: new THREE.Vector3(0, 2.5, 0)
+      }
+      const { manager, scene, setupCamera, setupGizmo } = createManagerWithPose(
+        {
+          capabilities: { fitToViewer: false },
+          pose
+        }
+      )
+      const model = createMeshModel()
+
+      await manager.setupModel(model)
+
+      expect(scene.children).toContain(model)
+      expect(setupCamera).toHaveBeenCalledWith(pose.size, pose.center)
+
+      expect(setupGizmo).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the full setup path when fitToViewer is disabled but no default pose is provided', async () => {
+      const { manager, scene, setupCamera, setupGizmo } = createManagerWithPose(
+        {
+          capabilities: { fitToViewer: false },
+          pose: null
+        }
+      )
+      const model = createMeshModel()
+
+      await manager.setupModel(model)
+
+      expect(scene.children).toContain(model)
+
+      expect(setupCamera).toHaveBeenCalled()
+      const callArgs = setupCamera.mock.calls[0]
+      expect(callArgs[0]).toBeInstanceOf(THREE.Vector3)
+      expect(callArgs[1]).toBeInstanceOf(THREE.Vector3)
+      expect(setupGizmo).toHaveBeenCalledWith(model)
     })
   })
 

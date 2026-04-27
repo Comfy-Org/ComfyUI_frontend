@@ -157,7 +157,10 @@ export class LoaderManager implements LoaderManagerInterface {
     const adapter = this.pickAdapter(fileExtension)
     if (!adapter) return null
 
-    this.adapterRef.current = adapter
-    return adapter.load(this.createLoadContext(), path, filename)
+    const model = await adapter.load(this.createLoadContext(), path, filename)
+    if (model) {
+      this.adapterRef.current = adapter
+    }
+    return model
   }
 }

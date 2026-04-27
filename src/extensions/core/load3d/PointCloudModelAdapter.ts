@@ -21,7 +21,7 @@ export class PointCloudModelAdapter implements ModelAdapter {
   readonly kind = 'pointCloud' as const
   readonly extensions = ['ply'] as const
   readonly capabilities: ModelAdapterCapabilities = {
-    fitToViewer: false,
+    fitToViewer: true,
     requiresMaterialRebuild: true,
     gizmoTransform: false,
     lighting: true,
