@@ -159,7 +159,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -319,7 +319,7 @@ function dragStart(e: DragEvent) {
     getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
   if (filename) {
     const outputString = JSON.stringify({ filename, subfolder, type })
-    dataTransfer.items.add(outputString, 'comfy/asset-info')
+    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
   }
 
   const url = URL.parse(asset.preview_url, location.href)

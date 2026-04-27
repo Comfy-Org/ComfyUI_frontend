@@ -1,5 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { zResultItem } from '@/schemas/apiSchema'
 import type { ResultItem } from '@/schemas/apiSchema'
 
@@ -66,7 +67,7 @@ export const useNodeDragAndDrop = <T>(
       await onDrop(files)
       return true
     }
-    const asset = parseAssetInfo(e?.dataTransfer?.getData('comfy/asset-info'))
+    const asset = parseAssetInfo(e?.dataTransfer?.getData(MIME_ASSET_INFO))
     if (asset?.filename && options.onResultItemDrop) {
       await options.onResultItemDrop(asset)
       return true
