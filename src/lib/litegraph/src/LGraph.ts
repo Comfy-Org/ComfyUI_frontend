@@ -27,6 +27,7 @@ import {
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
+import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
@@ -101,11 +102,17 @@ export type {
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
+/**
+ * Unique identifier for a subgraph definition. Structurally a {@link UUID};
+ * provided as a domain-specific alias for clarity at adoption sites.
+ */
+export type SubgraphId = UUID
+
 export interface LGraphState {
-  lastGroupId: number
+  lastGroupId: GroupId
   lastNodeId: number
-  lastLinkId: number
-  lastRerouteId: number
+  lastLinkId: LinkId
+  lastRerouteId: RerouteId
 }
 
 type ParamsArray<T, K extends MethodNames<T>> = Parameters<
@@ -154,7 +161,7 @@ export interface GroupNodeWorkflowData {
 
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
-  linkExtensions?: { id: number; parentId: number | undefined }[]
+  linkExtensions?: { id: LinkId; parentId: LinkId | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
   groupNodes?: Record<string, GroupNodeWorkflowData>
@@ -235,7 +242,7 @@ export class LGraph
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
-  readonly _subgraphs: Map<UUID, Subgraph> = new Map()
+  readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
 
   _nodes: (LGraphNode | SubgraphNode)[] = []
   _nodes_by_id: Record<NodeId, LGraphNode> = {}
@@ -445,7 +452,7 @@ export class LGraph
     this.canvasAction((c) => c.clear())
   }
 
-  get subgraphs(): Map<UUID, Subgraph> {
+  get subgraphs(): Map<SubgraphId, Subgraph> {
     return this.rootGraph._subgraphs
   }
 
