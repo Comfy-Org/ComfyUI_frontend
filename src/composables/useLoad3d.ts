@@ -5,8 +5,9 @@ import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -111,7 +112,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         isPreview.value = true
       }
 
-      load3d = new Load3d(containerRef, {
+      load3d = createLoad3d(containerRef, {
         width: widthWidget?.value as number | undefined,
         height: heightWidget?.value as number | undefined,
         // Provide dynamic dimension getter for reactive updates

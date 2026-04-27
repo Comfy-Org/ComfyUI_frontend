@@ -64,6 +64,16 @@ export const DEFAULT_MODEL_CAPABILITIES: ModelAdapterCapabilities = {
   fitTargetSize: 5
 }
 
+/**
+ * Mutable handle to the currently active ModelAdapter. A single ref is
+ * created in `createLoad3d` and shared between LoaderManager (writer) and
+ * SceneModelManager + Load3d (readers), so capability/bounds/dispose lookups
+ * don't depend on construction order between those collaborators.
+ */
+export type AdapterRef = { current: ModelAdapter | null }
+
+export const createAdapterRef = (): AdapterRef => ({ current: null })
+
 export interface ModelAdapter {
   readonly kind: ModelAdapterKind
   readonly extensions: readonly string[]
@@ -73,6 +83,29 @@ export interface ModelAdapter {
     path: string,
     filename: string
   ): Promise<THREE.Object3D | null>
+  /**
+   * Optional. Return a world-space AABB for the given model. Adapters for
+   * renderers whose geometry is not walked by `Box3.setFromObject` (e.g.
+   * Gaussian splats) implement this; the default path uses
+   * `Box3.setFromObject` when this is absent.
+   */
+  computeBounds?(model: THREE.Object3D): THREE.Box3 | null
+  /**
+   * Optional. Release renderer-owned resources on this model beyond what
+   * THREE's geometry/material.dispose covers (e.g. sparkjs SplatMesh
+   * internal GPU/worker state). Called when the model is removed from the
+   * scene due to a reload or teardown. Missing for adapters whose models
+   * the default traversal already handles.
+   */
+  disposeModel?(model: THREE.Object3D): void
+  /**
+   * Optional. Default camera placement for adapters that opt out of
+   * fit-to-viewer (capabilities.fitToViewer === false). The size/center
+   * pair is forwarded to CameraManager.setupForModel as if the model had
+   * been normalized. Splat geometry is self-sized and uses this to seat
+   * the camera at a known-good distance.
+   */
+  defaultCameraPose?(): { size: THREE.Vector3; center: THREE.Vector3 }
 }
 
 export async function fetchModelData(

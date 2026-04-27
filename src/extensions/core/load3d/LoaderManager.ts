@@ -4,7 +4,12 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
-import type { ModelAdapter, ModelLoadContext } from './ModelAdapter'
+import {
+  type AdapterRef,
+  createAdapterRef,
+  type ModelAdapter,
+  type ModelLoadContext
+} from './ModelAdapter'
 import { PointCloudModelAdapter, getPLYEngine } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 import {
@@ -29,21 +34,23 @@ export class LoaderManager implements LoaderManagerInterface {
   private readonly modelManager: ModelManagerInterface
   private readonly eventManager: EventManagerInterface
   private readonly adapters: ModelAdapter[]
+  private readonly adapterRef: AdapterRef
   private currentLoadId: number = 0
-  private _currentAdapter: ModelAdapter | null = null
 
   constructor(
     modelManager: ModelManagerInterface,
     eventManager: EventManagerInterface,
-    adapters?: readonly ModelAdapter[]
+    adapters?: readonly ModelAdapter[],
+    adapterRef?: AdapterRef
   ) {
     this.modelManager = modelManager
     this.eventManager = eventManager
     this.adapters = adapters ? [...adapters] : defaultAdapters()
+    this.adapterRef = adapterRef ?? createAdapterRef()
   }
 
   getCurrentAdapter(): ModelAdapter | null {
-    return this._currentAdapter
+    return this.adapterRef.current
   }
 
   init(): void {}
@@ -57,7 +64,7 @@ export class LoaderManager implements LoaderManagerInterface {
       this.eventManager.emitEvent('modelLoadingStart', null)
 
       this.modelManager.clearModel()
-      this._currentAdapter = null
+      this.adapterRef.current = null
 
       this.modelManager.originalURL = url
 
@@ -80,21 +87,19 @@ export class LoaderManager implements LoaderManagerInterface {
         return
       }
 
-      const result = await this.loadModelInternal(url, fileExtension)
+      const model = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
         return
       }
 
-      if (result && result.model) {
-        this._currentAdapter = result.adapter
-        await this.modelManager.setupModel(result.model)
+      if (model) {
+        await this.modelManager.setupModel(model)
       }
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
     } catch (error) {
       if (loadId === this.currentLoadId) {
-        this._currentAdapter = null
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
         useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
@@ -135,7 +140,7 @@ export class LoaderManager implements LoaderManagerInterface {
   private async loadModelInternal(
     url: string,
     fileExtension: string
-  ): Promise<{ adapter: ModelAdapter; model: THREE.Object3D | null } | null> {
+  ): Promise<THREE.Object3D | null> {
     const params = new URLSearchParams(url.split('?')[1])
     const filename = params.get('filename')
 
@@ -156,7 +161,7 @@ export class LoaderManager implements LoaderManagerInterface {
     const adapter = this.pickAdapter(fileExtension)
     if (!adapter) return null
 
-    const model = await adapter.load(this.createLoadContext(), path, filename)
-    return { adapter, model }
+    this.adapterRef.current = adapter
+    return adapter.load(this.createLoadContext(), path, filename)
   }
 }

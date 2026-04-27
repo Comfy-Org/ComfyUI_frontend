@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -30,6 +31,10 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
+}))
+
+vi.mock('@/extensions/core/load3d/createLoad3d', () => ({
+  createLoad3d: vi.fn()
 }))
 
 function createMockSceneManager(): Load3d['sceneManager'] {
@@ -148,6 +153,7 @@ describe('useLoad3dViewer', () => {
     vi.mocked(Load3d).mockImplementation(function () {
       Object.assign(this, mockLoad3d)
     })
+    vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
     mockLoad3dService = {
       copyLoad3dState: vi.fn().mockResolvedValue(undefined),
@@ -177,7 +183,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(Load3d).toHaveBeenCalledWith(containerRef, {
+      expect(createLoad3d).toHaveBeenCalledWith(containerRef, {
         width: undefined,
         height: undefined,
         getDimensions: undefined,
@@ -219,7 +225,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle initialization errors', async () => {
-      vi.mocked(Load3d).mockImplementationOnce(function () {
+      vi.mocked(createLoad3d).mockImplementationOnce(() => {
         throw new Error('Load3d creation failed')
       })
 

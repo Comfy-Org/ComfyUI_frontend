@@ -1,8 +1,12 @@
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { EventManagerInterface } from './interfaces'
+import {
+  DEFAULT_MODEL_CAPABILITIES,
+  type ModelAdapterCapabilities
+} from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
+import type { EventManagerInterface } from './interfaces'
 
 function createMockRenderer(): THREE.WebGLRenderer {
   return {
@@ -23,6 +27,7 @@ function createManager(
   overrides: {
     scene?: THREE.Scene
     eventManager?: EventManagerInterface
+    capabilities?: Partial<ModelAdapterCapabilities>
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
@@ -32,6 +37,10 @@ function createManager(
   const getActiveCamera = () => camera
   const setupCamera = vi.fn()
   const setupGizmo = vi.fn()
+  const capabilities: ModelAdapterCapabilities = {
+    ...DEFAULT_MODEL_CAPABILITIES,
+    ...overrides.capabilities
+  }
 
   const manager = new SceneModelManager(
     scene,
@@ -39,7 +48,8 @@ function createManager(
     eventManager,
     getActiveCamera,
     setupCamera,
-    setupGizmo
+    setupGizmo,
+    () => capabilities
   )
 
   return {
@@ -575,29 +585,11 @@ describe('SceneModelManager', () => {
     })
   })
 
-  describe('containsSplatMesh', () => {
-    it('returns false when no model', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh()).toBe(false)
-    })
-
-    it('returns false for regular model', async () => {
-      const { manager } = createManager()
-      const model = createMeshModel()
-      await manager.setupModel(model)
-
-      expect(manager.containsSplatMesh()).toBe(false)
-    })
-
-    it('returns false for explicit null argument', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh(null)).toBe(false)
-    })
-  })
-
   describe('PLY mode switching', () => {
     function createPLYManager() {
-      const ctx = createManager()
+      const ctx = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
@@ -655,7 +647,9 @@ describe('SceneModelManager', () => {
     })
 
     it('uses vertex colors when available', () => {
-      const { manager, scene } = createManager()
+      const { manager, scene } = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
