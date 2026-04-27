@@ -314,14 +314,17 @@ function dragStart(e: DragEvent) {
 
   const { dataTransfer } = e
   if (!dataTransfer) return
+
   const { filename, subfolder, type } =
     getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
-  const outputString = JSON.stringify({ filename, subfolder, type })
+  if (filename) {
+    const outputString = JSON.stringify({ filename, subfolder, type })
+    dataTransfer.items.add(outputString, 'comfy/asset-info')
+  }
 
   const url = URL.parse(asset.preview_url, location.href)
   if (!url) return
 
-  dataTransfer.items.add(outputString, 'comfy/asset-info')
   dataTransfer.items.add(url.toString(), 'text/uri-list')
 }
 </script>

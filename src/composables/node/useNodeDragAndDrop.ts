@@ -67,7 +67,7 @@ export const useNodeDragAndDrop = <T>(
       return true
     }
     const asset = parseAssetInfo(e?.dataTransfer?.getData('comfy/asset-info'))
-    if (asset && options.onResultItemDrop) {
+    if (asset?.filename && options.onResultItemDrop) {
       await options.onResultItemDrop(asset)
       return true
     }

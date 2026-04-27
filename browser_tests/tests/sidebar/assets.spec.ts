@@ -913,16 +913,16 @@ test.describe('Assets sidebar - drag and drop', () => {
 
     await comfyPage.canvas.focus()
     await comfyPage.page.keyboard.press('.')
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-    await expect(tab.assetCards).toHaveCount(1)
+    const { assetsTab } = comfyPage.menu
+    await assetsTab.open()
+    await assetsTab.waitForAssets()
+    await expect(assetsTab.assetCards).toHaveCount(1)
 
     const targetPosition =
       (await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')) ??
       undefined
 
-    await tab.assetCards.dragTo(comfyPage.canvas, { targetPosition })
+    await assetsTab.assetCards.dragTo(comfyPage.canvas, { targetPosition })
 
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const fileComboWidget = await nodes[0].getWidget(0)
