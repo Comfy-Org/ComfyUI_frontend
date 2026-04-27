@@ -46,12 +46,21 @@ function createMockPointerEvent(
   return mockEvent as PointerEvent
 }
 
-function createMockWheelEvent(ctrlKey = false, metaKey = false): WheelEvent {
+function createMockWheelEvent(
+  ctrlKey = false,
+  metaKey = false,
+  deltaY = 0,
+  target?: HTMLElement
+): WheelEvent {
   const mockEvent: Partial<WheelEvent> = {
     ctrlKey,
     metaKey,
+    deltaY,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
+  }
+  if (target) {
+    Object.defineProperty(mockEvent, 'target', { value: target })
   }
   return mockEvent as WheelEvent
 }
@@ -221,6 +230,105 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
 
       document.body.removeChild(captureElement)
+    })
+
+    describe('scrollable capture-wheel elements', () => {
+      function createScrollableElement(): {
+        container: HTMLDivElement
+        inner: HTMLDivElement
+        cleanup: () => void
+      } {
+        const container = document.createElement('div')
+        container.setAttribute('data-capture-wheel', 'true')
+        // Simulate scrollable element with overflow content
+        Object.defineProperties(container, {
+          scrollHeight: { value: 200, configurable: true },
+          clientHeight: { value: 100, configurable: true },
+          scrollTop: { value: 50, writable: true, configurable: true }
+        })
+        const inner = document.createElement('div')
+        container.appendChild(inner)
+        document.body.appendChild(container)
+        return {
+          container,
+          inner,
+          cleanup: () => document.body.removeChild(container)
+        }
+      }
+
+      it('should NOT forward wheel when scrollable element has room to scroll', () => {
+        const { get } = useSettingStore()
+        vi.mocked(get).mockReturnValue('standard')
+
+        const { inner, cleanup } = createScrollableElement()
+        const { handleWheel } = useCanvasInteractions()
+        // scrollTop=50, scrolling down, not at bottom
+        const mockEvent = createMockWheelEvent(false, false, 100, inner)
+
+        handleWheel(mockEvent)
+
+        expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+        expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
+        cleanup()
+      })
+
+      it('should forward wheel when scrollable element is at top boundary scrolling up', () => {
+        const { get } = useSettingStore()
+        vi.mocked(get).mockReturnValue('legacy')
+
+        const { container, inner, cleanup } = createScrollableElement()
+        // At top
+        Object.defineProperty(container, 'scrollTop', {
+          value: 0,
+          configurable: true
+        })
+        const { handleWheel } = useCanvasInteractions()
+        // Scrolling up (deltaY < 0) while at top
+        const mockEvent = createMockWheelEvent(false, false, -100, inner)
+
+        handleWheel(mockEvent)
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled()
+        expect(mockEvent.stopPropagation).toHaveBeenCalled()
+        cleanup()
+      })
+
+      it('should forward wheel when scrollable element is at bottom boundary scrolling down', () => {
+        const { get } = useSettingStore()
+        vi.mocked(get).mockReturnValue('legacy')
+
+        const { container, inner, cleanup } = createScrollableElement()
+        // At bottom: scrollTop + clientHeight >= scrollHeight
+        Object.defineProperty(container, 'scrollTop', {
+          value: 100,
+          configurable: true
+        })
+        const { handleWheel } = useCanvasInteractions()
+        // Scrolling down (deltaY > 0) while at bottom
+        const mockEvent = createMockWheelEvent(false, false, 100, inner)
+
+        handleWheel(mockEvent)
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled()
+        expect(mockEvent.stopPropagation).toHaveBeenCalled()
+        cleanup()
+      })
+
+      it('should forward ctrl+wheel to canvas even when scrollable element has room', () => {
+        const { get } = useSettingStore()
+        vi.mocked(get).mockReturnValue('standard')
+
+        const { inner, cleanup } = createScrollableElement()
+        const { handleWheel } = useCanvasInteractions()
+        // Ctrl+wheel for zoom — should bypass scroll capture
+        const mockEvent = createMockWheelEvent(true, false, 100, inner)
+
+        handleWheel(mockEvent)
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled()
+        expect(mockEvent.stopPropagation).toHaveBeenCalled()
+        cleanup()
+      })
     })
   })
 })
