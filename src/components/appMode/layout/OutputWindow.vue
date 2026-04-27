@@ -182,8 +182,15 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       maximized
         ? { inset: '0px', zIndex: zIndex ?? 30 }
         : {
-            left: `${wx}px`,
-            top: `${wy}px`,
+            // Position via translate3d (compositor-only) instead of
+            // top/left (layout + paint). Updating top/left every
+            // pointermove during a drag shares the main thread with
+            // the latent-preview decode, which is what made dragging
+            // an OutputWindow feel laggy mid-run. transform keeps the
+            // move on the GPU, freeing main-thread budget. The `0`
+            // forces a 3D layer so the browser allocates a composite
+            // layer up-front rather than promoting on first move.
+            transform: `translate3d(${wx}px, ${wy}px, 0)`,
             width: `${width}px`,
             zIndex: zIndex ?? 30,
             // Drop height when collapsed (header-only) or when

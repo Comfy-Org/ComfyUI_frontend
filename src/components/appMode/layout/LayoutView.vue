@@ -44,18 +44,17 @@ watch(
 )
 
 // --- Workspace pan/zoom handlers -----------------------------------
+// Bound to `.layout-view` (always viewport-sized) rather than the
+// inner transformed bgRef, so that zoom-out doesn't shrink the hit
+// area and silently break pan/zoom. The math is rect-invariant under
+// this swap because the transform is around bgRef's center, which
+// coincides with .layout-view's center.
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
 
 function handleWheel(e: WheelEvent) {
-  const el = bgRef.value
-  if (!el) return
   e.preventDefault()
-  appModeStore.zoomAt(
-    e.clientX,
-    e.clientY,
-    e.deltaY,
-    el.getBoundingClientRect()
-  )
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  appModeStore.zoomAt(e.clientX, e.clientY, e.deltaY, rect)
 }
 
 // Defer pointer capture until the pointer actually moves past a
@@ -101,22 +100,37 @@ const workspaceTransform = computed(
     `scale(${viewportScale.value})`
 )
 
-// Dot-grid LOD — the visible grid pitch scales with content while we
-// zoom in (fewer dots per viewport = feels like zooming in), but as
-// we zoom out we double the pitch whenever it would fall below a
-// density threshold so the viewport doesn't fill with visual noise.
-// Doubling keeps alignment with the previous level (every other dot
-// survives), so a "world point" under a dot stays under a dot after
-// the snap. Matches the CSS `--spacing-layout-dot` (24px) at scale=1.
+// Dot-grid LOD via two stacked layers (CSS handles the rendering in
+// `.layout-view`'s `background-image`). Both layers tile linearly with
+// the workspace scale, so they stay locked to the transformed contents
+// at all times — the parallax that the old discrete-doubling LOD
+// produced is gone. Density management is opacity-based instead: the
+// fine 1×-pitch layer fades out as you zoom out, leaving the coarse
+// 2×-pitch layer (whose dot positions are a subset of the fine layer's)
+// to carry the visual at small scales — so the user perceives
+// progressively fewer dots without any of them ever shifting.
 const DOT_SIZE_PX = 24
-const MIN_GRID_SPACING_PX = 16
 
 const gridSpacing = computed(() => {
-  let s = DOT_SIZE_PX * viewportScale.value
-  if (!(s > 0)) return DOT_SIZE_PX
-  while (s < MIN_GRID_SPACING_PX) s *= 2
-  return s
+  const s = DOT_SIZE_PX * viewportScale.value
+  return s > 0 ? s : DOT_SIZE_PX
 })
+
+const gridFineAlpha = computed(() => {
+  const s = viewportScale.value
+  if (s >= 1) return 1
+  if (s <= 0.5) return 0
+  return (s - 0.5) * 2
+})
+
+// Coarse layer is the inverse of fine — fully opaque when fine has
+// faded out, fully transparent when fine carries the grid. Without
+// this, both layers stack at full opacity above scale=1; the fine
+// dots cover the coarse ones, but their anti-aliased edges let the
+// coarse dot underneath bleed through, making every-other dot read
+// slightly darker than the fine-only ones (two visible values where
+// only one was wanted).
+const gridCoarseAlpha = computed(() => 1 - gridFineAlpha.value)
 
 // Per-input resolution + block-layout state is shared with the builder
 // via useAppPanelLayout — both views read the same `panelRows` from the
@@ -148,26 +162,34 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
       '--viewport-scale': viewportScale,
       '--viewport-offset-x': `${viewportOffsetX}px`,
       '--viewport-offset-y': `${viewportOffsetY}px`,
-      '--grid-spacing': `${gridSpacing}px`
+      '--grid-spacing': `${gridSpacing}px`,
+      '--grid-fine-alpha': gridFineAlpha,
+      '--grid-coarse-alpha': gridCoarseAlpha
     }"
+    @wheel="handleWheel"
+    @pointerdown="handlePointerDown"
+    @dragstart.prevent
   >
-    <!-- Workspace layer: the viewport transform lives here, so the
-         LinearPreview contents (welcome, image, arrange) zoom + pan
-         together. Wheel + pointerdown handlers are attached to this
-         wrapper; the chrome + panel are siblings (not descendants),
-         so their events never trigger workspace navigation.
-         The dot grid is painted on `.layout-view` (always viewport-
-         sized) with dynamic background-size + background-position
-         driven by the viewport vars above, so the grid pattern
-         visually matches the transformed content without the
-         element itself needing to be scaled. -->
+    <!-- Workspace layer: the viewport transform lives on this inner
+         div so the LinearPreview contents (welcome, image, arrange)
+         zoom + pan together. Wheel + pointerdown handlers are bound
+         to the OUTER `.layout-view` (always viewport-sized) so pan
+         and zoom work even when the user has zoomed out and the
+         transformed inner div has shrunk to a fraction of the
+         viewport — otherwise clicks in the empty area around the
+         shrunken workspace miss the listener entirely and pan stops
+         responding until a recenter. Chrome + panel are siblings of
+         this inner div but children of `.layout-view`; OutputWindow
+         and panel headers stop pointerdown propagation so their own
+         drags don't double-fire as pans.
+         The dot grid is painted on `.layout-view` itself with a
+         dynamic background-size + background-position driven by the
+         viewport vars above, so the grid pattern visually matches
+         the transformed content without the element needing to scale. -->
     <div
       ref="bgRef"
       class="layout-view__background"
       :style="{ transform: workspaceTransform }"
-      @wheel="handleWheel"
-      @pointerdown="handlePointerDown"
-      @dragstart.prevent
     >
       <LinearPreview hide-chrome />
     </div>
@@ -204,21 +226,61 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
   position: absolute;
   inset: 0;
   background-color: var(--color-layout-canvas);
-  /* Dot grid — stays on the viewport-sized element (never scales
-     itself) but its background-size scales with `--viewport-scale`
-     so the pattern visually matches the transformed content, and
-     background-position shifts with `--viewport-offset-{x,y}` so it
-     pans with the content. That way the grid always covers the
-     viewport regardless of zoom level, and lines up with whatever
-     LinearPreview is rendering inside the transformed workspace. */
-  background-image: radial-gradient(
-    circle,
-    var(--color-layout-grid-dot) 1px,
-    transparent 1.5px
-  );
-  background-size: var(--grid-spacing, var(--spacing-layout-dot))
-    var(--grid-spacing, var(--spacing-layout-dot));
-  background-position: var(--viewport-offset-x, 0) var(--viewport-offset-y, 0);
+  /* Dot grid — two stacked layers tile across the viewport so the
+     grid always covers it regardless of zoom. The fine layer (1×
+     pitch) sits on top and fades with `--grid-fine-alpha` as you zoom
+     out; the coarse layer (2× pitch) is always at full opacity and
+     carries the visual at small scales. The coarse layer's positions
+     are a subset of the fine's, so fading the fine out leaves a
+     subset of the same dots — no jump. Both `background-position`
+     entries use `calc(50% + offset)` so the grid shares the same
+     pivot as the workspace `transform` (which is `transform-origin:
+     center` plus the same offset). With percent-based positioning,
+     CSS auto-compensates for the differing image sizes so each
+     layer's center dot lands at the same viewport point — making the
+     coarse layer's positions perfectly align with every-other fine
+     dot. */
+  /* Dot radii scale with `--viewport-scale` so the dot-to-tile ratio
+     stays constant. Floored at 0.6× so the dots stay visible at
+     extreme zoom-out instead of dissolving into sub-pixel noise. The
+     anti-aliasing ring (the gap between the solid stop and the
+     transparent stop) is pinned to a constant 0.5px regardless of
+     zoom — without that pin, zooming in scaled up the AA halo too,
+     and the dots read as soft/blurry instead of crisp. */
+  --dot-scale: max(0.6, var(--viewport-scale, 1));
+  --dot-radius: calc(1px * var(--dot-scale));
+  --dot-fade-radius: calc(var(--dot-radius) + 0.5px);
+  background-image:
+    radial-gradient(
+      circle,
+      color-mix(
+          in srgb,
+          var(--color-layout-grid-dot) calc(100% * var(--grid-fine-alpha, 1)),
+          transparent
+        )
+        var(--dot-radius),
+      transparent var(--dot-fade-radius)
+    ),
+    radial-gradient(
+      circle,
+      color-mix(
+          in srgb,
+          var(--color-layout-grid-dot) calc(100% * var(--grid-coarse-alpha, 0)),
+          transparent
+        )
+        var(--dot-radius),
+      transparent var(--dot-fade-radius)
+    );
+  background-size:
+    var(--grid-spacing, var(--spacing-layout-dot))
+      var(--grid-spacing, var(--spacing-layout-dot)),
+    calc(var(--grid-spacing, var(--spacing-layout-dot)) * 2)
+      calc(var(--grid-spacing, var(--spacing-layout-dot)) * 2);
+  background-position:
+    calc(50% + var(--viewport-offset-x, 0))
+      calc(50% + var(--viewport-offset-y, 0)),
+    calc(50% + var(--viewport-offset-x, 0))
+      calc(50% + var(--viewport-offset-y, 0));
   /* Clip the transformed workspace (+ any other absolute-positioned
      children) to the viewport box so panning out doesn't paint above
      the top workflow-tabs bar. */

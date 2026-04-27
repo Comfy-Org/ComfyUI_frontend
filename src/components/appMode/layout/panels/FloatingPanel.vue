@@ -26,8 +26,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 
 import PanelDragPreview from './PanelDragPreview.vue'
 import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
-import { isDockPreset, isFloatBottom, panelSide } from './panelTypes';
-import type { PanelPreset } from './panelTypes';
+import { isDockPreset, isFloatBottom, panelSide } from './panelTypes'
+import type { PanelPreset } from './panelTypes'
 import { usePanelDrag } from './usePanelDrag'
 import { usePanelResize } from './usePanelResize'
 
@@ -118,22 +118,24 @@ const sectionClass = computed(() =>
     // presets fall back to the default --panel-dock-width token.
     !isDocked.value && 'w-(--panel-dock-width,440px)',
     'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
-    'rounded-[10px] border border-white/8 bg-layout-cell backdrop-blur-sm',
+    'rounded-[10px] border border-white/8 bg-layout-cell',
+    // Drop backdrop-blur while the panel is being dragged. Backdrop-
+    // filter is the most expensive CSS effect we use, and when the
+    // layer behind the panel is repainting every frame (latent
+    // preview / progress bar during a run), the GPU has to recompose
+    // the blur each frame, which tanks drag framerate. Idle keeps the
+    // glassy look; dragging drops it for smoothness.
+    !isDragging.value && 'backdrop-blur-sm',
     'shadow-[0_2px_4px_rgb(0_0_0/0.4),0_16px_48px_rgb(0_0_0/0.45)]',
     'duration-layout ease-layout',
-    // Split the transition property list by drag state: while dragging,
-    // only opacity tweens (position is driven by pointer, not CSS) so
-    // the multi-property transition below would cause a trailing easing
-    // pop when the commit lands.
-    //
-    // Fade the live panel heavily while dragging so the PanelDragPreview
-    // (which may land at the same preset the panel is already docked
-    // at — e.g., mousing around the right half while docked-right)
-    // reads as the dominant blue outline rather than being masked by
-    // the live panel's own contents.
+    // While dragging only opacity tweens (position is driven by the
+    // pointer, not CSS) so the multi-property transition below would
+    // cause a trailing easing pop when the commit lands. Fade the live
+    // panel heavily so the PanelDragPreview reads as the dominant blue
+    // outline rather than being masked by the live panel's contents.
     movable && isDragging.value
       ? 'opacity-[0.15] transition-opacity'
-      : 'transition-[top,bottom,left,right,max-height,height,opacity]',
+      : 'transition-[top,bottom,left,right,opacity]',
     PANEL_PRESET_CLASSES[preset.value],
     // Collapsed: release the off-corner anchor + any cap so the section
     // shrinks to header-only. Top-anchored presets stay pinned at the

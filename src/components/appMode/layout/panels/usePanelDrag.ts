@@ -170,6 +170,10 @@ export function usePanelDrag(opts: UsePanelDragOptions) {
     // isDragging + snapTarget stay unchanged until the movement
     // threshold is crossed — so a plain click on the header is a no-op.
     e.preventDefault()
+    // Stop bubbling so LayoutView's pan handler (now bound to the
+    // outer `.layout-view`) doesn't also start a workspace pan from
+    // this same press.
+    e.stopPropagation()
   }
 
   return {
