@@ -12,7 +12,8 @@
 import { computed } from 'vue'
 
 import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
-import type { PanelPreset } from './panelTypes'
+import { isDockPreset } from './panelTypes';
+import type { PanelPreset } from './panelTypes';
 
 const props = defineProps<{
   preset: PanelPreset
@@ -24,12 +25,20 @@ const props = defineProps<{
 // `PANEL_PRESET_CLASSES` so the drop preview always lands where the
 // live panel will.
 const presetClass = computed(() => PANEL_PRESET_CLASSES[props.preset])
+const isDocked = computed(() => isDockPreset(props.preset))
 // Match the live panel's rendered dimensions so the preview lands the
 // same size the panel will — important when the user has drag-resized
-// the dock wider than the default.
+// the dock wider than the default. Dock presets span the full slot via
+// `top` + `bottom` CSS anchors, so leave the height out for them; an
+// explicit `height` would override the bottom anchor and shrink the
+// preview to the live panel's content-fit height (which is what was
+// happening when dragging from a float corner toward a dock — the
+// preview rendered as a short rectangle at the top instead of a
+// full-height column).
 const sizeStyle = computed(() => {
   const style: Record<string, string> = {}
-  if (props.panelHeight != null) style.height = `${props.panelHeight}px`
+  if (!isDocked.value && props.panelHeight != null)
+    style.height = `${props.panelHeight}px`
   if (props.panelWidth != null) style.width = `${props.panelWidth}px`
   return Object.keys(style).length > 0 ? style : undefined
 })

@@ -32,8 +32,8 @@ const { isBuilderMode, isArrangeMode } = useAppMode()
 const executionStore = useExecutionStore()
 
 // Drive the multi-window store from `linearOutputStore`'s in-progress
-// lifecycle. One call site per app — anchoring it here keeps the
-// bridge alive whenever the App Mode renderer is mounted.
+// lifecycle. Anchored here so the bridge is alive whenever App Mode
+// is mounted.
 useOutputWindowSync()
 const windowStore = useOutputWindowStore()
 
@@ -49,15 +49,10 @@ const progressPercent = computed(() => {
 })
 
 // Per-node step + ETA, mirroring tqdm's "12/30 [00:08<00:14]" line in
-// the ComfyUI server log. The terminal output is the user's only other
-// signal that long sampling phases are progressing; surfacing the same
-// numbers in-app removes the need to keep that terminal in view.
-//
-// ETA derives from elapsed-since-tracking-started divided by steps
-// completed in that same window — linear extrapolation, matching how
-// tqdm reports its "Xs remaining" estimate. The tracker resets on
-// every (job, node) change so it doesn't average across a fast text-
-// encoder pass and the slow sampler that follows.
+// the ComfyUI server log. ETA = linear extrapolation from elapsed /
+// steps-done; tracker resets on (job, node) change so it doesn't
+// average across a fast text encoder and the slow sampler that
+// follows.
 const stepProgress = ref<{ value: number; max: number } | null>(null)
 const etaSeconds = ref<number | null>(null)
 let samplingStart: { ts: number; firstValue: number; key: string } | null = null
@@ -108,10 +103,9 @@ const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
 
-// Welcome / arrange screens hide as soon as the moodboard has
-// anything to show. We treat an active run as content even before
-// the first window mounts, so the welcome doesn't flash back on
-// during the small Run-click → first-skeleton-event gap.
+// Welcome / arrange screens hide as soon as the moodboard has any
+// content. `isWorkflowActive` covers the Run-click → first-skeleton
+// gap so the welcome doesn't flash back on.
 const hasMoodboardContent = computed(
   () => windowStore.windows.length > 0 || isWorkflowActive.value
 )
@@ -135,7 +129,7 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!workflow) return
 
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
-  //update graph to new version, set old to top of undo queue
+  // Same workflow id — update in-place, push old version onto undo.
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
@@ -213,14 +207,9 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <!--
-    App Mode (hideChrome): each generation lives in its own movable
-    OutputWindow inside the workspace, so multiple runs accumulate as
-    a moodboard rather than a single hero image. Welcome / arrange
-    screens fill the canvas only when no windows are mounted and no
-    run is in flight; once content exists, OutputWindowList paints
-    the windows over an empty workspace background.
-  -->
+  <!-- App Mode (hideChrome): each generation lives in its own movable
+       OutputWindow. Welcome / arrange screens fill the canvas only
+       while there's no content. -->
   <template v-if="hideChrome">
     <OutputWindowList
       :progress-percent="progressPercent"
@@ -253,10 +242,8 @@ async function rerun(e: Event) {
     <LinearArrange v-else-if="isArrangeMode" key="arrange" />
     <LinearWelcome v-else key="welcome" />
   </Transition>
-  <!-- OutputHistory only mounts in standalone linear mode. App Mode
-       drives the multi-window store directly from `linearOutputStore`
-       via `useOutputWindowSync`, so the thumb strip and its
-       selection-emit watchers are dead weight there. -->
+  <!-- OutputHistory only mounts in standalone linear mode — App Mode
+       drives the multi-window store directly from `useOutputWindowSync`. -->
   <div
     v-if="!hideChrome && !mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
@@ -283,14 +270,9 @@ async function rerun(e: Event) {
   />
 </template>
 
-<!--
-  Unscoped because Vue's `<Transition>` applies these classes to the
-  root element of whichever child component is currently mounted
-  (ImagePreview, MediaOutputPreview, etc.). Scoped styles wouldn't
-  reach those roots without `:deep()`, and the hashed selector would
-  add noise for no isolation benefit — `preview-fade-*` is unique to
-  this component's Transition.
--->
+<!-- Unscoped: `<Transition>` applies these classes to the slot
+     children's roots, which scoped styles can't reach without
+     `:deep()`. Class names are unique enough to not need isolation. -->
 <style>
 .preview-fade-enter-active,
 .preview-fade-leave-active {
@@ -300,11 +282,8 @@ async function rerun(e: Event) {
 .preview-fade-leave-to {
   opacity: 0;
 }
-/* Pin the outgoing element to the workspace bounds during its fade
-   so the incoming element can fade in underneath without a layout
-   collapse. The workspace (`.layout-view__background`) is
-   position:absolute inset:0, so the leaving element inherits a
-   stable full-viewport containing block. */
+/* Pin the outgoing element so the incoming one fades in without a
+   layout collapse. */
 .preview-fade-leave-active {
   position: absolute;
   inset: 0;

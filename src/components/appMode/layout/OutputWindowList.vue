@@ -1,16 +1,10 @@
 <script setup lang="ts">
 /**
  * OutputWindowList — renders one OutputWindow per entry in
- * `outputWindowStore`, building the App Mode moodboard.
- *
- * The store is fed by `useOutputWindowSync`, which projects the
- * lifecycle from `linearOutputStore.activeWorkflowInProgressItems`
- * into windows AND resolves each finalized window's owning
- * AssetItem from `outputs.media`. This component only handles the
- * spatial / chrome concerns — position, zIndex on focus, body
- * content per state, hover toolbar (rerun / reuse-params /
- * download), header menu (close / clear-all), and the run-status
- * overlay attached to whichever window is in-flight.
+ * `outputWindowStore`, building the App Mode moodboard. Owns the
+ * spatial / chrome concerns: position, zIndex on focus, body content
+ * per state, hover toolbar, header menu, and the run-status overlay
+ * attached to whichever window is in-flight.
  */
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
@@ -26,7 +20,6 @@ import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import type { OutputWindowEntry } from '@/renderer/extensions/linearMode/outputWindowStore'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
@@ -37,49 +30,38 @@ const { t } = useI18n()
 const windowStore = useOutputWindowStore()
 const { sortedWindows, windows } = storeToRefs(windowStore)
 const commandStore = useCommandStore()
-const appModeStore = useAppModeStore()
 const { toastErrorHandler } = useErrorHandling()
 
 defineProps<{
-  /** Blended progress (0-100) for the run-status overlay attached to
-   *  the in-flight window. LinearPreview owns the math; we just bind. */
+  /** Blended progress (0-100). LinearPreview owns the math. */
   progressPercent: number
-  /** Step counter / ETA copy for the overlay. Both nullable — neither
-   *  exists during cold-load, only step exists between encoder and
-   *  sampler, both exist mid-sampler. */
+  /** Step counter and ETA copy for the run-status overlay. Both
+   *  nullable — neither exists during cold-load, only step exists
+   *  between encoder and sampler, both exist mid-sampler. */
   stepProgress: { value: number; max: number } | null
   etaSeconds: number | null
   formatEta: (s: number) => string
 }>()
 
-// Header label = the asset filename. Doubles as the "what file is
-// this" label and the title bar — drops the redundant "Save Image"
-// node label that every window would otherwise share, and removes
-// the duplicate filename strip that used to live below the body.
-// Skeleton / latent windows return undefined so OutputWindow falls
-// back to its generic "Output" placeholder until a result lands.
 function filenameFor(entry: OutputWindowEntry): string | undefined {
   const out = entry.output
-  if (!out) return undefined
-  return out.display_name?.trim() || out.filename || undefined
+  return out?.display_name?.trim() || out?.filename || undefined
 }
 
-// Cloud-mode URL fix: assets live under `asset.asset_hash`, not the
-// user-facing filename, so the original `output.url` builds
-// `/view?filename=<original>` which 404s in Cloud. Re-clone the
-// ResultItem with the hash as the filename param when we have the
+// Cloud-mode: assets live under `asset.asset_hash`, so the original
+// `output.url` builds `/view?filename=<original>` which 404s. Re-clone
+// the ResultItem with the hash as the filename param when we have the
 // resolved asset; OSS mode passes through unchanged.
 function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   const out = entry.output
   if (!out) return undefined
-  if (!isCloud) return out
-  const hash = entry.asset?.asset_hash
+  const hash = isCloud ? entry.asset?.asset_hash : undefined
   if (!hash) return out
   return new ResultItemImpl({
     filename: hash,
     subfolder: out.subfolder,
-    // ResultItemImpl widens type to string; the zod schema and the
-    // init interface keep it as the narrow union, so cast back.
+    // ResultItemImpl widens type to string; the init interface keeps
+    // it as the narrow union, so cast back.
     type: out.type as 'input' | 'output' | 'temp' | undefined,
     nodeId: out.nodeId,
     mediaType: out.mediaType,
@@ -90,8 +72,10 @@ function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   })
 }
 
-// Body-actions toolbar is overlaid on top of the image so it uses
-// the light-on-dark pill treatment from graph view's image node.
+// Body-actions toolbar reads against the image, not the panel chrome,
+// so it uses graph-view's light-on-dark pill treatment. Header
+// actions sit in the chrome strip, so they take its transparent /
+// hover-tinted style instead.
 const BODY_ACTION_CLASS =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center ' +
   'rounded-lg border-0 bg-base-foreground p-2 text-base-background ' +
@@ -99,44 +83,37 @@ const BODY_ACTION_CLASS =
   'hover:bg-base-foreground/90 focus-visible:outline-none ' +
   'focus-visible:ring-2 focus-visible:ring-base-foreground ' +
   'focus-visible:ring-offset-2'
-
-// Header-actions sit in the chrome strip alongside the chevron, so
-// they take that strip's transparent / hover-tinted style instead
-// of the body-overlay pill style.
 const HEADER_ACTION_CLASS =
   'inline-flex size-8 cursor-pointer items-center justify-center ' +
   'rounded-md border-0 bg-transparent text-layout-text ' +
   'transition-colors duration-layout ease-layout ' +
-  'hover:bg-layout-cell-hover [&>i]:size-[18px]'
+  'hover:bg-layout-cell-hover focus-visible:outline-none ' +
+  'focus-visible:ring-2 focus-visible:ring-base-foreground/40 ' +
+  '[&>i]:size-[18px]'
 
-// Per-window image aspect (naturalWidth / naturalHeight). Drives
-// OutputWindow's body sizing so the rendered media exactly fills
-// the padded box — uniform 8px margin on every side regardless of
-// image dimensions. Captured by preloading the same URL we display;
-// the browser cache makes the second fetch ~free.
-//
-// Keyed by entry id, not URL — a window's URL can swap (latent →
-// final) and we want the most recent natural ratio to win.
+// Per-window image aspect (naturalWidth / naturalHeight) drives
+// OutputWindow's body sizing so the rendered media exactly fills the
+// padded box — uniform 8px margin on every side regardless of image
+// dimensions. Captured by preloading the same URL we display; the
+// browser cache makes the second fetch ~free.
 const imageAspects = ref<Record<string, number>>({})
 function aspectFor(entry: OutputWindowEntry): number | undefined {
   return imageAspects.value[entry.id]
 }
 function aspectSourceUrl(entry: OutputWindowEntry): string | undefined {
-  // Resolve through the Cloud asset_hash fix when applicable so we
-  // measure the same image the user sees.
   return resolvedOutput(entry)?.url ?? entry.latentPreviewUrl
 }
 watch(
-  () =>
-    sortedWindows.value.map((w) => ({
-      id: w.id,
-      url: aspectSourceUrl(w)
-    })),
+  () => sortedWindows.value.map((w) => ({ id: w.id, url: aspectSourceUrl(w) })),
   (entries) => {
     for (const { id, url } of entries) {
       if (!url) continue
       const probe = new Image()
       probe.onload = () => {
+        // Race guard: if the window's URL changed between probe-start
+        // and probe-load (e.g. latent → final), drop the stale aspect.
+        const current = windowStore.windows.find((w) => w.id === id)
+        if (!current || aspectSourceUrl(current) !== url) return
         if (probe.naturalWidth <= 0 || probe.naturalHeight <= 0) return
         const next = probe.naturalWidth / probe.naturalHeight
         if (imageAspects.value[id] === next) return
@@ -148,9 +125,8 @@ watch(
   { immediate: true, deep: true }
 )
 
-// In-flight window: the topmost window still in skeleton/latent
-// state. The run-status overlay (progress + cancel) lives on that
-// window only — once it transitions to `image`, the overlay drops.
+// In-flight = topmost still-pre-image window. Run-status overlay
+// attaches there, drops the moment the window flips to `image`.
 const inFlightWindowId = computed<string | null>(() => {
   for (let i = sortedWindows.value.length - 1; i >= 0; i--) {
     const w = sortedWindows.value[i]
@@ -168,41 +144,32 @@ async function windowInterrupt(): Promise<void> {
 }
 
 function downloadOutput(entry: OutputWindowEntry): void {
-  const out = resolvedOutput(entry)
-  if (out?.url) downloadFile(out.url)
+  const url = resolvedOutput(entry)?.url
+  if (url) downloadFile(url)
 }
 
-// Load the window's source workflow into the graph view. Both rerun
-// and reuse-params funnel through this — the difference is rerun
-// fires QueuePrompt afterwards. Mirrors LinearPreview's existing
-// loadWorkflow but scoped to a single window's asset.
+// Both rerun and reuse-params funnel through this; rerun additionally
+// fires QueuePrompt afterwards. Mirrors LinearPreview's loadWorkflow,
+// scoped to a single window's asset.
 async function loadAssetWorkflow(entry: OutputWindowEntry): Promise<void> {
   const asset = entry.asset
   if (!asset) return
   const { workflow } = await extractWorkflowFromAsset(asset)
   if (!workflow) return
-  if (workflow.id !== app.rootGraph?.id) {
-    await app.loadGraphData(workflow)
-    return
-  }
+  if (workflow.id !== app.rootGraph?.id) return app.loadGraphData(workflow)
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-  if (!changeTracker) {
-    await app.loadGraphData(workflow)
-    return
-  }
+  if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
   await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 
 async function rerunWindow(entry: OutputWindowEntry): Promise<void> {
   await loadAssetWorkflow(entry)
-  appModeStore.markRunPending()
   try {
     await commandStore.execute('Comfy.QueuePrompt', {
       metadata: { subscribe_to_run: false, trigger_source: 'linear' }
     })
   } catch (error) {
-    appModeStore.clearRunPending()
     toastErrorHandler(error)
   }
 }
@@ -215,8 +182,8 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       command: () => windowStore.remove(entry.id)
     }
   ]
-  // "Clear all" only appears when there are other windows to clear —
-  // on a single-window canvas the per-window close already does it.
+  // Clear-all is redundant on a single-window canvas (close already
+  // does it).
   if (windows.value.length > 1) {
     entries.push({ separator: true })
     entries.push({
@@ -241,10 +208,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     @update:position="(pos) => windowStore.move(entry.id, pos)"
     @promote="windowStore.promote(entry.id)"
   >
-    <!-- Always-visible download in the header chrome, sitting at the
-         left edge of the right-side cluster (download → maximize →
-         ellipsis). Hides for skeleton / latent windows that don't
-         have a file to download yet. -->
     <template #header-actions-right>
       <button
         v-if="entry.output"
@@ -259,6 +222,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
         <i class="icon-[lucide--download]" />
       </button>
     </template>
+
     <template v-if="entry.state === 'image' && entry.output">
       <MediaOutputPreview
         :output="resolvedOutput(entry) ?? entry.output"
@@ -267,16 +231,10 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       />
     </template>
     <template v-else-if="entry.state === 'latent' && entry.latentPreviewUrl">
-      <!-- Plain img instead of ImagePreview: ImagePreview's outer div
-           uses `place-content-center contain-size` plus an inner status
-           span that combine to render the latent smaller than the body
-           and leak text outside the bounds. We just want the latent
-           stretched to fill the same bounds the final image will, with
-           the chrome-family border for visual continuity skeleton →
-           latent → final. `object-fill` (rather than contain/cover)
-           stretches the low-res latent to the body — at this resolution
-           the latent is approximate already, so distortion is invisible
-           and we get exact bounds parity with the final. -->
+      <!-- object-fill stretches the low-res latent to the body bounds
+           — at this resolution the latent is approximate already, so
+           distortion is invisible and we get exact bounds parity with
+           the eventual final image. -->
       <img
         :src="entry.latentPreviewUrl"
         class="size-full rounded-lg border border-white/8 object-fill"
@@ -288,10 +246,8 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     </template>
 
     <template #body-actions>
-      <!-- Rerun / reuse-params only when the window has a resolved
-           asset (i.e. the run finalized and landed in `outputs.media`).
-           In-flight or absorption-pending windows hide both. Download
-           lives in the header now, not here. -->
+      <!-- Rerun + reuse-params need an asset (run finalized + landed
+           in `outputs.media`). Download lives in the header. -->
       <button
         v-if="entry.asset"
         type="button"
@@ -315,12 +271,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     </template>
 
     <template #body-overlay>
-      <!-- Single-row layout: progress bar (with step + ETA labels
-           overlaid inside it) and the stop button. Putting the text
-           inside the bar keeps the run-status pill consistent — equal
-           padding around a single row of two equal-height children
-           instead of a label / bar / label / button row that doesn't
-           share margins cleanly. -->
       <div
         v-if="entry.id === inFlightWindowId && entry.state !== 'image'"
         class="pointer-events-auto flex w-[360px] items-center gap-3 rounded-xl bg-black/65 p-3 shadow-2xl backdrop-blur-md"
@@ -334,15 +284,13 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
           aria-valuemin="0"
           aria-valuemax="100"
         >
-          <!-- Green fill, animated. -->
           <div
             class="h-full bg-(--app-mode-go-bg) transition-[width] duration-300 ease-out"
             :style="{ width: `${progressPercent}%` }"
           />
           <!-- Step counter (left) + ETA (right) overlaid on the bar.
-               Both spans always render so `justify-between` keeps the
-               labels pinned to the bar's edges; an empty span just
-               holds its slot when its data isn't ready yet. -->
+               Empty spans hold their slot when their data isn't ready
+               yet so `justify-between` keeps the labels pinned. -->
           <div
             class="pointer-events-none absolute inset-0 flex items-center justify-between px-3 text-xs text-white tabular-nums"
           >
@@ -366,7 +314,8 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
           :class="[
             'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg',
             'border border-(--app-mode-stop-border) bg-(--app-mode-stop-bg) text-white',
-            'transition-colors duration-200 hover:bg-(--app-mode-stop-bg-hover)'
+            'transition-colors duration-200 hover:bg-(--app-mode-stop-bg-hover)',
+            'focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none'
           ]"
           :title="t('linearMode.stop')"
           :aria-label="t('linearMode.stop')"

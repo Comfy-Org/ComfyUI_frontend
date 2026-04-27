@@ -8,28 +8,25 @@ import type { ResultItemImpl } from '@/stores/queueStore'
  * One floating output window in the App Mode workspace.
  *
  * Lifecycle is fed by `linearOutputStore.activeWorkflowInProgressItems`:
- * windows are spawned in `'skeleton'`, transition to `'latent'` /
- * `'image'`, and stay in the store after the source item gets absorbed
- * out of the in-progress list — that's what gives the canvas its
- * moodboard accumulation across runs.
+ * windows spawn in `'skeleton'`, transition to `'latent'` / `'image'`,
+ * and stay in the store after the source item gets absorbed out of
+ * the in-progress list — that's what gives the canvas its moodboard
+ * accumulation across runs.
  */
 export interface OutputWindowEntry {
-  /** Stable ID — derived from the source `InProgressItem.id`. */
   id: string
-  /** Owning prompt; used to bulk-remove pending windows on cancel and
-   *  to match the window back to its `AssetItem` once the run lands
-   *  in `outputs.media`. */
+  /** Used to match the window back to its `AssetItem` once the run
+   *  lands in `outputs.media`. */
   jobId?: string
   state: 'skeleton' | 'latent' | 'image'
   latentPreviewUrl?: string
   output?: ResultItemImpl
-  /** Resolved owning asset, populated by `useOutputWindowSync` once the
-   *  asset shows up in `outputs.media` (matched via `user_metadata.jobId`).
-   *  Unlocks rerun / reuse-params (which need the workflow embedded
-   *  in the asset) and the Cloud `asset_hash` URL fix. */
+  /** Populated by `useOutputWindowSync` once the asset shows up in
+   *  `outputs.media`. Unlocks rerun / reuse-params and the Cloud
+   *  `asset_hash` URL fix. */
   asset?: AssetItem
-  /** Workspace coordinates (pre-transform), matching how OutputWindow
-   *  reads its position — the LayoutView transform handles zoom/pan. */
+  /** Workspace coordinates (pre-transform). LayoutView's transform
+   *  handles zoom/pan. */
   position: { x: number; y: number }
   zIndex: number
 }
@@ -37,8 +34,7 @@ export interface OutputWindowEntry {
 const SPAWN_ANCHOR_X = 80
 const SPAWN_ANCHOR_Y = 60
 const SPAWN_OFFSET = 64
-// Modulo so a long session doesn't cascade a window 200 deep
-// off-screen — wrap back to the anchor after a few steps.
+// Wrap the cascade so a long session doesn't push windows off-screen.
 const CASCADE_LIMIT = 6
 
 export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
@@ -58,7 +54,6 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     }
   }
 
-  /** Insert a new window or patch an existing one in place. */
   function upsert(
     id: string,
     patch: Omit<Partial<OutputWindowEntry>, 'id' | 'position' | 'zIndex'>
@@ -77,9 +72,6 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     })
   }
 
-  /** Stash the resolved AssetItem on a window. Separate from `upsert`
-   *  so the asset-resolution watch doesn't have to re-supply state /
-   *  output / latent URL on every media-list update. */
   function attachAsset(id: string, asset: AssetItem): void {
     const w = windows.value.find((w) => w.id === id)
     if (w && !w.asset) w.asset = asset
@@ -90,13 +82,6 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     if (idx >= 0) windows.value.splice(idx, 1)
   }
 
-  /** Drop every window for a given prompt — used when the user cancels
-   *  a run before any results came back, so empty skeletons don't
-   *  linger as debris on the canvas. */
-  function removeJob(jobId: string): void {
-    windows.value = windows.value.filter((w) => w.jobId !== jobId)
-  }
-
   function move(id: string, position: { x: number; y: number }): void {
     const w = windows.value.find((w) => w.id === id)
     if (w) w.position = position
@@ -105,8 +90,8 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   function promote(id: string): void {
     const w = windows.value.find((w) => w.id === id)
     if (!w) return
-    // Skip the bump if it's already the topmost window — avoids an
-    // unbounded zIndex climb from idle clicks on the focused window.
+    // No-op when already topmost — avoids unbounded zIndex climb from
+    // idle clicks on the focused window.
     const maxZ = windows.value.reduce(
       (m, x) => (x.zIndex > m ? x.zIndex : m),
       0
@@ -126,7 +111,6 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     upsert,
     attachAsset,
     remove,
-    removeJob,
     move,
     promote,
     clear

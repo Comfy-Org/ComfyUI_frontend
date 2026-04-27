@@ -20,6 +20,7 @@ import AppChrome from './AppChrome.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
 import { useAppPanelLayout } from './panels/useAppPanelLayout'
+import { panelSide as resolvePanelSide } from './panels/panelTypes'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
@@ -136,15 +137,7 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 // Which viewport side the panel is docked against. Used to steer the
 // welcome-copy offset so the wordmark + body text stay visible on the
 // opposite side of the panel, regardless of preset.
-const panelSide = computed(() =>
-  panelPreset.value.endsWith('-dock')
-    ? panelPreset.value.startsWith('left')
-      ? 'left'
-      : 'right'
-    : panelPreset.value.endsWith('l')
-      ? 'left'
-      : 'right'
-)
+const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 </script>
 
 <template>

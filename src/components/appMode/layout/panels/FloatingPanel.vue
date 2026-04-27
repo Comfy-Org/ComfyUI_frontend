@@ -1,38 +1,18 @@
 <script setup lang="ts">
 /**
- * FloatingPanel — the unified floating input panel used by both App Mode
- * (runtime) and App Builder (edit). Owns the preset-based absolute
- * positioning, the drag-to-snap interaction, the collapse toggle, and
- * the snap preview so every consumer gets identical behavior without
- * re-implementing it.
+ * FloatingPanel — the unified floating input panel for App Mode and
+ * App Builder. Owns preset-based positioning, drag-to-snap, collapse
+ * toggle, and the snap preview so consumers get identical behavior
+ * without reimplementing it.
  *
- * Header: collapse chevron on the left, title centered against it,
- * 3-dot menu on the right. The header itself is the drag grip; a
- * distinct header-fill signals the grabbable region without a hard
- * divider.
+ * v-model bindings: `preset` (required) for position, `collapsed`
+ * (default false) for header-only mode. `appModeStore.panelPreset`
+ * + `panelCollapsed` are the shared source — LayoutView and
+ * BuilderPanel both bind them so changes propagate WYSIWYG.
  *
- * Props:
- * - `title` — optional title shown in the header.
- * - `movable` (default `false`) — opt-in for drag. When false the
- *   header is static (no grab cursor).
- * - `defaultPreset` (default `right-dock`) — preset restored when the
- *   user picks "Reset layout".
- *
- * Two-way bindings (v-model):
- * - `preset` (required) — panel position. One of right-dock,
- *   left-dock, or float-tr/tl/br/bl. Drag commits flow back via this.
- * - `collapsed` (default `false`) — when true, body and footer are
- *   hidden and the panel shrinks to the header pill.
- *
- * Events:
- * - `reset-layout` — fires when the user picks "Reset layout" from
- *   the header menu. Consumers may re-seed their own state; preset
- *   and collapsed reset internally via the v-model bindings.
- *
- * A single appModeStore.panelPreset + panelCollapsed are the shared
- * source. Both LayoutView and BuilderPanel bind them here, so moving
- * or collapsing the panel in either view updates both (WYSIWYG by
- * construction).
+ * Emits `reset-layout` when the menu's "Reset layout" fires;
+ * consumers may re-seed their own state (preset/collapsed reset
+ * internally via the v-model bindings).
  */
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
@@ -46,7 +26,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 
 import PanelDragPreview from './PanelDragPreview.vue'
 import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
-import type { PanelPreset } from './panelTypes'
+import { isDockPreset, isFloatBottom, panelSide } from './panelTypes';
+import type { PanelPreset } from './panelTypes';
 import { usePanelDrag } from './usePanelDrag'
 import { usePanelResize } from './usePanelResize'
 
@@ -93,16 +74,14 @@ const previewWidth = computed(() => Math.round(panelWidth.value))
 const appModeStore = useAppModeStore()
 const { panelWidthCells } = storeToRefs(appModeStore)
 
-const isDockPreset = computed(
-  () => preset.value === 'right-dock' || preset.value === 'left-dock'
-)
+const isDocked = computed(() => isDockPreset(preset.value))
 
 // Compute the panel's own width in px from cell count. Overrides the
 // global --panel-dock-width token on this instance only so sibling
 // chrome that reads the token (AppChrome cell alignment) isn't
 // affected by the user's resize.
 const widthStyle = computed(() => {
-  if (!isDockPreset.value) return undefined
+  if (!isDocked.value) return undefined
   const cells = panelWidthCells.value
   return {
     width:
@@ -116,7 +95,7 @@ const widthStyle = computed(() => {
 // doesn't clutter the chrome — the cursor change on hover is the
 // signal. Drag direction is determined by which side is inner.
 const { startResize } = usePanelResize({
-  side: computed(() => (preset.value === 'right-dock' ? 'right' : 'left')),
+  side: computed(() => panelSide(preset.value)),
   widthCells: panelWidthCells
 })
 
@@ -137,7 +116,7 @@ const sectionClass = computed(() =>
     // Width: dock presets pull from the reactive panelWidthCells state
     // (applied via :style below) so the user can drag-resize; float
     // presets fall back to the default --panel-dock-width token.
-    !isDockPreset.value && 'w-(--panel-dock-width,440px)',
+    !isDocked.value && 'w-(--panel-dock-width,440px)',
     'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
     'rounded-[10px] border border-white/8 bg-layout-cell backdrop-blur-sm',
     'shadow-[0_2px_4px_rgb(0_0_0/0.4),0_16px_48px_rgb(0_0_0/0.45)]',
@@ -156,10 +135,14 @@ const sectionClass = computed(() =>
       ? 'opacity-[0.15] transition-opacity'
       : 'transition-[top,bottom,left,right,max-height,height,opacity]',
     PANEL_PRESET_CLASSES[preset.value],
-    // Collapsed state: release size constraints (height, max-height) but
-    // NOT positional anchors. Placed last so tw-merge lets h-auto /
-    // max-h-none override the preset's max-h-[calc(...)] cap.
-    collapsed.value && 'h-auto max-h-none'
+    // Collapsed: release the off-corner anchor + any cap so the section
+    // shrinks to header-only. Top-anchored presets stay pinned at the
+    // top; bottom-anchored floats re-pin at the bottom so the header
+    // hugs the lower chrome rail rather than floating mid-screen.
+    collapsed.value && [
+      'h-auto max-h-none',
+      isFloatBottom(preset.value) ? 'top-auto' : 'bottom-auto'
+    ]
   )
 )
 
@@ -224,11 +207,11 @@ const menuEntries = computed<MenuItem[]>(() => [
          affordance. Dock presets only — float panels stay at default
          width. -->
     <div
-      v-if="isDockPreset"
+      v-if="isDocked"
       :class="
         cn(
           'absolute inset-y-0 z-20 w-[6px] cursor-ew-resize',
-          preset === 'right-dock' ? 'left-0' : 'right-0'
+          panelSide(preset) === 'left' ? 'right-0' : 'left-0'
         )
       "
       @pointerdown="startResize"

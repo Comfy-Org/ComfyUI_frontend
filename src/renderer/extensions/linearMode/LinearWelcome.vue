@@ -9,6 +9,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCommandStore } from '@/stores/commandStore'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { panelSide as resolvePanelSide } from '@/components/appMode/layout/panels/panelTypes'
+
 import AppModeWordmark from './AppModeWordmark.vue'
 
 const { t } = useI18n()
@@ -17,14 +19,9 @@ const { toastErrorHandler } = useErrorHandling()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes, panelPreset } = storeToRefs(appModeStore)
 
-// Which viewport side the panel is docked on. Mirror the welcome copy
-// to the opposite side so it stays fully visible — left panel → content
-// aligned right, right panel → content aligned left.
-const panelSide = computed(() => {
-  const p = panelPreset.value
-  if (p === 'left-dock' || p === 'float-tl' || p === 'float-bl') return 'left'
-  return 'right'
-})
+// Mirror the welcome copy to the opposite side of the panel so it stays
+// fully visible — left panel → content aligned right, and vice versa.
+const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
   () => workflowStore.activeWorkflow?.initialMode === 'app'

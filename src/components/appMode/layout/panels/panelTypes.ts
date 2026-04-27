@@ -11,6 +11,21 @@ export type PanelPreset =
   | 'float-tl'
   | 'float-bl'
 
+/**
+ * Preset-shape predicates. Centralized so consumers don't reinvent
+ * `preset === 'right-dock' || preset === 'left-dock'` (or the more
+ * fragile `startsWith` / `endsWith` parses) at every call site — the
+ * `PanelPreset` union stays the single source of truth.
+ */
+export const isDockPreset = (p: PanelPreset): boolean =>
+  p === 'right-dock' || p === 'left-dock'
+
+export const isFloatBottom = (p: PanelPreset): boolean =>
+  p === 'float-bl' || p === 'float-br'
+
+export const panelSide = (p: PanelPreset): 'left' | 'right' =>
+  p === 'left-dock' || p === 'float-tl' || p === 'float-bl' ? 'left' : 'right'
+
 export type BlockRow = BlockConfig[]
 
 export interface BlockPos {

@@ -1,36 +1,19 @@
 <script setup lang="ts">
 /**
- * AppChrome — the chrome rail (mode toggle, feedback, run cluster, share)
- * shared by App Mode and App Builder.
+ * AppChrome — the chrome rail (mode toggle, feedback, run cluster,
+ * share, zoom) shared by App Mode and App Builder.
  *
- * Architecture: four flex zones pinned to the viewport corners. Each
- * zone lays its cells out with fixed gutters using the layout tokens —
- * `calc(span * --spacing-layout-cell + (span - 1) * --spacing-layout-gutter)`
- * for width, so every cell aligns to the same grid math FloatingPanel
- * uses (`--panel-dock-width` is composed from the same tokens). No
- * distributed-gap CSS Grid — a cell in any zone and the dock panel snap
- * to identical pixel positions at every viewport.
+ * Four flex zones pinned to the viewport corners (top/bottom × left/
+ * right). Each zone uses `calc(span * --spacing-layout-cell + (span -
+ * 1) * --spacing-layout-gutter)` for cell widths so every cell aligns
+ * to the same grid math FloatingPanel uses.
  *
- * Zones:
- * - `top-left`  — mode toggle, builder icon. Pinned to top-left outer margin.
- * - `top-right` — share, batch count, job queue, run cluster. Right edge
- *                 is flush with the dock panel's right edge, so the
- *                 cluster's left edge lines up with the panel's left.
- * - `bottom-left` — feedback.
- * - `bottom-right` — workspace zoom cluster.
+ * Run-related output UX (rerun / reuse-params / download / progress /
+ * interrupt) lives inside `OutputWindowList`, not the chrome.
  *
- * Run-related output UX (history, rerun, reuse-params, download,
- * progress, interrupt) lives inside the OutputWindow surface in the
- * workspace, not in the chrome — see `OutputWindowList.vue`. The
- * thumbnail history strip + selection-driven action cells were
- * removed when the multi-window output workspace landed.
- *
- * Variant behavior: both variants emit the same cell logic. The
- * `HIDE_IN_BUILDER` set drops contextually-wrong cells (mode toggle,
- * builder icon) and `DISABLE_IN_BUILDER` tags cells that render but are
- * inert (Run, BatchCount — you can't execute a workflow from the
- * builder). Adding a new chrome cell in App Mode automatically surfaces
- * in the builder too; keep them in sync by construction.
+ * Variant behavior: `HIDE_IN_BUILDER` drops contextually-wrong cells;
+ * `DISABLE_IN_BUILDER` tags cells that render but are inert. Adding a
+ * new chrome cell surfaces in both variants by construction.
  */
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
@@ -98,33 +81,21 @@ const { appScalePercentage } = storeToRefs(canvasStore)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
-// In builder variant the cluster's percent readout reads
-// `appScalePercentage`, which is only kept in sync while something
-// has registered `canvasStore.initScaleSync()` (it wraps
-// `LGraphCanvas.ds.onChanged` to mirror the live scale into the
-// store). GraphCanvasMenu does this for the graph view; in builder
-// that menu isn't mounted, so we register from here instead.
-// Cleanup mirrors GraphCanvasMenu's so a graph→builder→graph swap
-// doesn't pile multiple wrappers on `ds.onChanged`.
+// `appScalePercentage` is only kept in sync while something
+// registers `initScaleSync()` (wraps `LGraphCanvas.ds.onChanged`).
+// GraphCanvasMenu does this for graph view; in builder that menu
+// isn't mounted, so we register from here.
 if (variant === 'builder') {
   onMounted(() => canvasStore.initScaleSync())
   onBeforeUnmount(() => canvasStore.cleanupScaleSync())
 }
 
-// Two zoom systems share one cluster:
-// - App Mode (and builder's arrange step, which renders the App Mode
-//   preview backdrop) drives `appModeStore.viewportScale` — the CSS
-//   transform on the workspace wrapper.
-// - Builder's inputs / outputs steps drive `LGraphCanvas.ds.scale`
-//   via the existing `Comfy.Canvas.*` commands;
-//   `canvasStore.appScalePercentage` is the integer-rounded read-back
-//   of that scale.
-// `isArrangeMode` flips builder-variant handlers over to the App
-// Mode side so the cluster operates whatever surface the user is
-// actually looking at (the graph canvas in inputs/outputs, the
-// preview backdrop in arrange). Keeps the visual cluster consistent
-// across phases — important for the builder→app-mode transition in
-// the demo video.
+// Two zoom systems share one cluster: App Mode + builder/arrange
+// drive `appModeStore.viewportScale` (CSS transform on the workspace);
+// builder/inputs+outputs drive `LGraphCanvas.ds.scale` via
+// `Comfy.Canvas.*` commands. `isArrangeMode` flips builder-variant
+// handlers over to the App Mode side so the cluster operates
+// whatever surface the user is looking at.
 const useAppModeZoom = computed(
   () => variant !== 'builder' || isArrangeMode.value
 )
@@ -196,10 +167,9 @@ const topLeftCells = computed<ChromeCell[]>(() => {
 
 const topRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
-  // Job-queue first so its conditional presence pushes the cluster's
-  // left edge instead of inserting between always-on cells (the
-  // cluster is right-justified, so leftmost adds/removes don't move
-  // share / batch / run visually).
+  // Cluster is right-justified — placing conditional cells leftmost
+  // means their adds/removes push the cluster's left edge instead of
+  // shifting share / batch / run visually.
   if (showJobQueue.value)
     include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
   if (showShare.value)
@@ -219,11 +189,8 @@ const bottomLeftCells = computed<ChromeCell[]>(() => {
   return out
 })
 
-// Bottom-right nav cluster — renders in both variants. The handlers
-// branch on `variant` (App Mode drives the workspace transform;
-// builder dispatches `Comfy.Canvas.*` commands at the LGraphCanvas),
-// so the cluster stays visually consistent across the
-// builder ↔ app-mode transition.
+// Bottom-right nav cluster — same UI in both variants; handlers
+// branch on `variant` to drive whichever zoom system applies.
 const bottomRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
   include(out, { id: 'nav-zoom-out', kind: 'nav-zoom-out', span: 1 })
@@ -243,14 +210,11 @@ function cellTitle(cell: ChromeCell): string | undefined {
   return undefined
 }
 
-// Shared base for the three corner zones. Each zone adds its own
-// top/left/right/bottom offset in the template.
 const ZONE_BASE =
   'pointer-events-none absolute flex h-layout-cell flex-row gap-layout-gutter'
 
-// Run cell hosts a full-bleed colored button directly — it doesn't
-// want the cell's hairline border or layout-cell fill so the accent
-// paint reaches the cell edges cleanly.
+// `system-run` skips the cell border + fill — its full-bleed colored
+// button needs to reach the cell edges cleanly.
 function cellClass(cell: ChromeCell): string {
   const bare = cell.kind === 'system-run'
   return cn(
@@ -262,12 +226,10 @@ function cellClass(cell: ChromeCell): string {
 </script>
 
 <template>
-  <!-- Positioning host. `app-mode` variant anchors absolute-inset to its
-       positioned LayoutView ancestor. `builder` variant has no such
-       ancestor, so it bolts to the viewport (fixed) below the workflow
-       tabs, under FloatingPanel (z-100) and any drag preview. Classname
-       `app-chrome` is kept as an external CSS hook (LayoutView reads
-       it via :deep()). -->
+  <!-- `app-mode` variant anchors absolute-inset to its positioned
+       LayoutView ancestor; `builder` bolts to the viewport (fixed)
+       below the workflow tabs. The `app-chrome` class is an external
+       hook (LayoutView reads it via :deep). -->
   <div
     :class="
       cn(

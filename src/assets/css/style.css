@@ -1,20 +1,16 @@
 @import '@comfyorg/design-system/css/style.css';
 
-/* Panel-header tone for App Mode floating surfaces (FloatingPanel +
-   OutputWindow). The design-system default is a 50/50 mix of
-   layout-cell + layout-canvas, which reads too light against our
-   canvas; the dark-canvas token alone reads too dark. Override to
-   the 25/75 midpoint so both panel surfaces share a single tone for
-   their headers (and FloatingPanel's footer, which uses the same
-   token).
-
-   Also defines the App Mode go/stop palette globally. Two consumers
-   sit in different subtrees of the App Mode view (AppChrome's
-   RunCell vs. OutputWindowList's run-status overlay), so scoping the
-   vars to AppChrome's root would leave the overlay reading
-   `unset` — which is what made the progress bar invisible. Pending
-   a product/design decision on whether "go green" + "stop red" get
-   promoted to proper semantic tokens (`--color-success-*` etc.). */
+/* App Mode chrome tokens.
+   - `--color-layout-header-fill`: design-system default is a 50/50 mix
+     (too light against our canvas), dark-canvas alone is too dark —
+     override to the 25/75 midpoint. Used by FloatingPanel header,
+     OutputWindow header, and FloatingPanel footer.
+   - `--app-mode-go-*` / `--app-mode-stop-*`: Run + run-status palette.
+     Defined globally because the consumers (RunCell in chrome,
+     run-status overlay in OutputWindow) sit in sibling subtrees;
+     scoping these to AppChrome's root left the overlay reading
+     `unset`. Pending a product/design decision on whether to promote
+     to semantic tokens (`--color-success-*` etc.). */
 :root {
   --color-layout-header-fill: color-mix(
     in srgb,
@@ -30,10 +26,8 @@
   --app-mode-stop-border: #b91c1c;
 }
 
-/* Panel chrome — surface treatment shared by FloatingPanel and the App
-   Builder toolbars so both read as the same floating surface. Matches
-   FloatingPanel's scoped values; intentional duplication kept in sync
-   via `--color-secondary-background` + motion tokens above. */
+/* Surface treatment shared by FloatingPanel and the App Builder
+   toolbars. */
 .panel-chrome {
   background-color: var(--color-layout-cell);
   border: 1px solid rgb(255 255 255 / 0.08);
@@ -44,117 +38,68 @@
   backdrop-filter: blur(8px);
 }
 
-/* Shared widget-input treatment — applies in both the floating
-   panel surface (`.floating-panel`, used by FloatingPanel and the
-   App Builder panel) AND the App Mode chrome (`.app-chrome`, the
-   top-right BatchCountCell etc.). Keeps the "Number of runs" pill
-   and the panel's width/height pills visually identical so the
-   user reads them as the same control kind across surfaces.
-   Inputs / textareas: dark-canvas fill so they recess into the
-   surface, plus a uniform `min-height` so the number pill, text
-   input, and textarea all share a baseline. Textarea still grows
-   above this floor when content needs more room. The widget-bg
-   pill (ScrubableNumberInput) gets the outline + forced height
-   treatment below. */
+/* ---------- App Mode widget chrome ----------
+   The rules below scope to `.floating-panel` (FloatingPanel +
+   AppBuilderPanel) and `.app-chrome` (AppChrome's chrome rail). They
+   adapt the design-system widget primitives — text inputs, textareas,
+   and the ScrubableNumberInput pill — into a coherent control
+   surface that reads consistently across both. */
+
+/* Tighten the panel's default text size by overriding the layout-md
+   token in the panel scope only. Tailwind v4 emits `text-layout-md`
+   as `font-size: var(--text-layout-md)`, so the override cascades to
+   the header title, widget labels, value/mute text, and the
+   `!important` input/textarea sizes in InputCell — without touching
+   the same token's use in AppChrome cells (BatchCount, Feedback, etc.). */
+.floating-panel {
+  --text-layout-md: 14px;
+}
+
+/* Dark fill so widgets recess into the surface. `min-height` floors
+   the resting height so the number pill, text input, and textarea
+   share a baseline; textarea still grows above when content needs
+   more room. */
 :is(.floating-panel, .app-chrome) textarea,
 :is(.floating-panel, .app-chrome) input {
   background-color: var(--color-layout-canvas);
   min-height: 2.25rem;
 }
 
-/* Tone down the text-selection highlight. Number inputs auto-
-   select the value on focus (so you can type-to-replace), and the
-   browser's default system-blue against the dark canvas reads as
-   a bright artifact. A subtle white tint keeps the "this is
-   selected" affordance without the harsh color shift. */
+/* Number-input value auto-selects on focus; the browser default
+   system-blue against the dark canvas reads as a bright artifact.
+   A subtle white tint keeps the affordance without the color shift. */
 :is(.floating-panel, .app-chrome) textarea::selection,
 :is(.floating-panel, .app-chrome) input::selection {
   background-color: rgb(255 255 255 / 0.18);
   color: inherit;
 }
 
-/* The ScrubableNumberInput pill (`.bg-component-node-widget-background`
-   wrapper that hosts the −/value/+ trio). Three properties:
-   - `background-color`: dark canvas so the ± buttons, value, and
-     wrapper share one continuous tone instead of a darker center
-     bounded by lighter button cells.
-   - `height`: explicit value (overrides Tailwind's `h-7` from
-     ScrubableNumberInput cleanly) so the pill matches the resting
-     height of the text input + textarea baseline.
-   - The shared border + outline treatment lives in the next rule
-     alongside text inputs / textareas. */
+/* The ScrubableNumberInput pill: dark fill so ±/value/wrapper share
+   one continuous tone, and an explicit `height` to override
+   Tailwind's `h-7` (so the pill matches the inputs/textarea
+   baseline). */
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
   background-color: var(--color-layout-canvas);
   height: 2.25rem;
 }
 
-/* Uniform outline treatment for all widget boxes — text inputs,
-   textareas, and the ScrubableNumberInput pill. One static border
-   so each surface reads as a coherent control surface regardless
-   of widget kind; brighter border on focus instead of a separate
-   focus ring. `:focus-within` on the pill catches focus from its
-   inner input. `outline: none` on the focus state plus the
-   catch-all focus-visible selector kill any browser- or
-   PrimeVue-default outline / box-shadow that would otherwise stack
-   on top of our border. */
+/* Uniform 1px border across all widget boxes — same alpha as the
+   panel-chrome and cell borders so the chrome family reads as one. */
 :is(.floating-panel, .app-chrome) textarea,
 :is(.floating-panel, .app-chrome) input,
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
-  /* Match the panel-chrome + cell borders (both `rgb 255/255/255/0.08`)
-     at rest so widget outlines read as part of the same chrome family
-     instead of competing with the surface they sit on. */
   border: 1px solid rgb(255 255 255 / 0.08);
   outline: none;
   transition: border-color 150ms ease;
 }
 
-/* The number pill's inner `<input>` lives at `inset-0` of a slightly
-   smaller wrapper inside the pill. Imposing the shared `min-height:
-   2.25rem` floor on it pushed the input past the pill's bounds —
-   the input's own border (now visible because it briefly painted
-   past the pill) leaked as the "broken outline" seen at the
-   corners. The pill is the container that owns sizing; the inner
-   input just fills it. */
+/* The pill's inner input fills via `inset-0`; imposing our shared
+   2.25rem floor on it pushed it past the pill bounds, which leaked
+   the input's own border at the corners. Reset both to let the pill
+   own sizing + outline. */
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background input {
   min-height: 0;
 }
-
-/* Tone the ± hover indicator inside number pills. ScrubableNumberInput
-   uses `hover:bg-base-foreground/20` (20% white tint) as its default,
-   which reads bright against our dark canvas pill. Halve it (10%) so
-   the affordance is still legible but not visually noisy. Scoped to
-   our two surfaces so the broader app's number inputs stay
-   unchanged. */
-:is(.floating-panel, .app-chrome)
-  .bg-component-node-widget-background
-  button:hover {
-  background-color: rgb(255 255 255 / 0.1);
-}
-
-:is(.floating-panel, .app-chrome) textarea:focus,
-:is(.floating-panel, .app-chrome) input:focus,
-:is(.floating-panel, .app-chrome)
-  .bg-component-node-widget-background:focus-within {
-  /* Active state lifts to the prior default — perceptible jump from
-     0.08 → 0.18 without screaming. */
-  border-color: rgb(255 255 255 / 0.18);
-  outline: none;
-  box-shadow: none;
-}
-
-:is(.floating-panel, .app-chrome) textarea:focus-visible,
-:is(.floating-panel, .app-chrome) input:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-
-/* The ScrubableNumberInput's inner `<input>` lives at `inset-0`
-   inside the rounded pill, so when our generic input-border rule
-   above fired on it the bright focus rectangle didn't line up with
-   the pill's rounded corners — those leaked as four small
-   "behind-the-widget" artifacts at the corners. Suppress the border
-   on inputs (and any textareas, defensively) that are nested inside
-   a widget-bg pill so only the pill draws the outline. */
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background input,
 :is(.floating-panel, .app-chrome)
   .bg-component-node-widget-background
@@ -162,24 +107,44 @@
   border: none;
 }
 
-/* NodeWidgets wraps each widget in a div with
-   `focus-within:ring focus-within:ring-component-node-widget-background-highlighted`,
-   which paints a Tailwind box-shadow ring on the *outer* wrapper
-   when focus lands inside. The inner pill has its own slightly-
-   inset rounded corners, so the outer ring leaks past those corners
-   as four small "behind-the-widget" highlights. Our 1-px border on
-   the pill itself is the focus signal we want; suppress the
-   leaked ring on both surfaces. Targets only elements that opted
-   into a focus-within ring (the `[class*="focus-within"]` filter)
-   so unrelated focus-within rules stay intact. */
+/* Halve ScrubableNumberInput's `hover:bg-base-foreground/20` (20%
+   white) — too bright on our dark pill. */
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background
+  button:hover {
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+/* Active border lifts from 0.08 → 0.18 — perceptible without
+   screaming. */
+:is(.floating-panel, .app-chrome) textarea:focus,
+:is(.floating-panel, .app-chrome) input:focus,
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background:focus-within {
+  border-color: rgb(255 255 255 / 0.18);
+  outline: none;
+  box-shadow: none;
+}
+:is(.floating-panel, .app-chrome) textarea:focus-visible,
+:is(.floating-panel, .app-chrome) input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* NodeWidgets wraps each widget with `focus-within:ring`. The
+   wrapper's rounded-lg doesn't align with the inner pill's rounded
+   corners, so the ring leaked past as four "behind-the-widget"
+   highlights. Our pill border is the focus signal; kill the ring on
+   both surfaces. The class-name filter limits the override to
+   elements that actually opted in. */
 :is(.floating-panel, .app-chrome) [class*='focus-within']:focus-within {
   box-shadow: none !important;
   --tw-ring-shadow: 0 0 transparent;
   --tw-ring-offset-shadow: 0 0 transparent;
 }
 
-/* Use 0.001ms instead of 0s so transitionend/animationend events still fire
-   and JS listeners aren't broken. */
+/* 0.001ms (not 0s) so transitionend/animationend still fire and JS
+   listeners don't break. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
@@ -188,7 +153,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* List transition animations */
   .list-scale-move,
   .list-scale-enter-active,
   .list-scale-leave-active {

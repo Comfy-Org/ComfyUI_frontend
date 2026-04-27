@@ -57,15 +57,20 @@ const emptyCopy = computed(() => {
 </script>
 
 <template>
-  <!-- Full-viewport positioned ancestor so FloatingPanel's preset-based
-       absolute positioning resolves inside the builder just like it does
-       inside .layout-view. The root is pointer-events-none so clicks on
-       empty chrome areas fall through to the graph canvas; FloatingPanel
-       opts back into pointer-events-auto in its own root class list so
-       the panel itself still captures input. Top offset clears the
-       workflow tabs. -->
+  <!-- Positioned ancestor so FloatingPanel's preset-based absolute
+       positioning resolves inside the builder just like it does inside
+       .layout-view. Left edge is offset by `--sidebar-width` so the
+       wrapper's coordinate system starts after the Comfy sidebar —
+       matching App Mode, where LayoutView is a flex sibling of the
+       sidebar and so already starts past it. With both contexts sharing
+       the same origin, the FloatingPanel preset classes use `left: 0`
+       and land flush against the sidebar in either mode. The root is
+       pointer-events-none so clicks on empty chrome areas fall through
+       to the graph canvas; FloatingPanel opts back into pointer-
+       events-auto in its own root class list so the panel itself still
+       captures input. -->
   <div
-    class="pointer-events-none fixed inset-x-0 top-(--workflow-tabs-height) bottom-0 z-100"
+    class="pointer-events-none fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-100"
   >
     <FloatingPanel
       v-model:preset="panelPreset"
