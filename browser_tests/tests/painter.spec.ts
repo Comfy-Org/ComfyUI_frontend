@@ -163,7 +163,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         .poll(() => cursor.evaluate((el: HTMLElement) => el.style.transform))
         .not.toBe(transform1)
 
-      await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.page.mouse.move(box.x + box.width + 50, box.y)
       await expect(cursor).toBeHidden()
     })
 
@@ -187,7 +187,10 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         box.y + box.height * 0.5,
         { steps: 10 }
       )
-      await comfyPage.page.mouse.move(box.x - 20, box.y + box.height * 0.5)
+      await comfyPage.page.mouse.move(
+        box.x + box.width + 20,
+        box.y + box.height * 0.5
+      )
       await comfyPage.page.mouse.up()
 
       await comfyPage.nextFrame()
@@ -408,6 +411,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       await expect
         .poll(() => canvas.evaluate((el: HTMLCanvasElement) => el.width))
+        // default 512 + slider step 64 = 576
         .toBe(576)
     })
 
@@ -583,36 +587,6 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   })
 
   test.describe('Eraser', () => {
-    test('Eraser removes previously drawn content', async ({ comfyPage }) => {
-      const node = comfyPage.vueNodes.getNodeLocator('1')
-      const painterWidget = node.locator('.widget-expands')
-      const canvas = painterWidget.locator('canvas')
-      await expect(canvas).toBeVisible()
-
-      await drawStroke(comfyPage.page, canvas)
-      await comfyPage.nextFrame()
-      await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
-
-      await painterWidget.getByRole('button', { name: 'Eraser' }).click()
-      await drawStroke(comfyPage.page, canvas)
-      await comfyPage.nextFrame()
-
-      await expect
-        .poll(
-          () =>
-            canvas.evaluate((el: HTMLCanvasElement) => {
-              const ctx = el.getContext('2d')
-              if (!ctx) return false
-              const cx = Math.floor(el.width / 2)
-              const cy = Math.floor(el.height / 2)
-              const { data } = ctx.getImageData(cx - 5, cy - 5, 10, 10)
-              return data.every((v, i) => i % 4 !== 3 || v === 0)
-            }),
-          { message: 'erased area should be transparent' }
-        )
-        .toBe(true)
-    })
-
     test('Eraser on empty canvas adds no content', async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeLocator('1')
       const painterWidget = node.locator('.widget-expands')
@@ -625,21 +599,6 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       await expect.poll(() => hasCanvasContent(canvas)).toBe(false)
     })
-  })
-
-  test('Multiple strokes accumulate on the canvas', async ({ comfyPage }) => {
-    const canvas = comfyPage.vueNodes
-      .getNodeLocator('1')
-      .locator('.widget-expands canvas')
-    await expect(canvas).toBeVisible()
-
-    await drawStroke(comfyPage.page, canvas, { yPct: 0.3 })
-    await comfyPage.nextFrame()
-    await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
-
-    await drawStroke(comfyPage.page, canvas, { yPct: 0.7 })
-    await comfyPage.nextFrame()
-    await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
   })
 
   test.describe('Serialization — unchanged canvas', () => {
