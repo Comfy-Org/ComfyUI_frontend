@@ -47,7 +47,7 @@ import { clamp } from 'es-toolkit'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useAssetIngest } from '../composables/useAssetIngest'
 import { useAgentStore } from '../stores/agentStore'

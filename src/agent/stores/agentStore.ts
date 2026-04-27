@@ -49,16 +49,43 @@ const MAX_PERSISTED_MESSAGES = 300
 export const useAgentStore = defineStore('agent', () => {
   // IndexedDB-backed: survives reloads, larger quota than localStorage,
   // doesn't block the main thread like localStorage sync-writes would.
+  // Note: useIDBKeyval populates `data` asynchronously, so the initial
+  // `data.value` is `[]` until the read resolves. We seed `messages` with
+  // whatever's already there (cheap if it's empty) and then hydrate from
+  // the DB once the read completes — only after that do we enable the
+  // write-back watcher, otherwise an early in-memory mutation would
+  // overwrite real persisted history with the empty seed.
   const persisted = useIDBKeyval<AgentMessage[]>('Comfy.Agent.Messages', [], {
     shallow: false
   })
   const messages = ref<AgentMessage[]>([...(persisted.data.value ?? [])])
 
+  let hydrated = false
+  watch(
+    persisted.isFinished,
+    (done) => {
+      if (!done || hydrated) return
+      hydrated = true
+      const stored = persisted.data.value ?? []
+      // If the user already typed before the IDB read resolved, prepend
+      // stored entries so the new ones come last.
+      if (messages.value.length === 0) {
+        messages.value = [...stored]
+      } else if (stored.length > 0) {
+        messages.value = [...stored, ...messages.value]
+      }
+    },
+    { immediate: true }
+  )
+
   // Sync in-memory → persisted (truncated to the cap). Deep watch so edits
-  // to message text during streaming also flush.
+  // to message text during streaming also flush. Skip writes until the
+  // initial DB read has settled, otherwise a pre-hydration mutation
+  // clobbers the stored history.
   watch(
     messages,
     (next) => {
+      if (!hydrated) return
       persisted.data.value = next.slice(-MAX_PERSISTED_MESSAGES)
     },
     { deep: true }

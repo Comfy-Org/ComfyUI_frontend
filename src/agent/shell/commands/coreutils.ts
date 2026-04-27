@@ -109,17 +109,21 @@ const grep: Command = async (ctx) => {
   const pattern = ctx.argv[1]
   if (!pattern) return err('usage: grep <pattern>')
   const re = new RegExp(pattern)
-  async function* gen(): AsyncIterable<string> {
-    let matched = false
-    for await (const line of lines(ctx.stdin)) {
-      if (re.test(line)) {
-        yield line + '\n'
-        matched = true
-      }
+  // POSIX grep returns 1 when nothing matched. To honour that we have to
+  // drain stdin eagerly — exit codes are set on the Command return, but a
+  // generator can't change them after the fact. The agent relies on this
+  // for `grep ... && ...` / `grep ... || ...` flows; without the right
+  // exit code the LLM would conclude evidence existed when stdout was
+  // actually empty.
+  let matched = false
+  let out = ''
+  for await (const line of lines(ctx.stdin)) {
+    if (re.test(line)) {
+      out += line + '\n'
+      matched = true
     }
-    void matched
   }
-  return ok(gen())
+  return ok(stringIter(out), matched ? 0 : 1)
 }
 
 const trueCmd: Command = async () => ok(emptyIter(), 0)

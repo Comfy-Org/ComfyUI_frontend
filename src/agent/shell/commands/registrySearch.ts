@@ -63,12 +63,12 @@ const nodeSearchRegistry: Command = async (ctx) => {
   }
   const total = res?.total ?? packs.length
   const lines = packs.map(
-    (p) => packLine(p) + (p.id ? '\n  install: install-pack ' + p.id : '')
+    (p) => packLine(p) + (p.id ? '\n  inspect: pack-info ' + p.id : '')
   )
   const header =
     packs.length < total
-      ? `${packs.length} of ${total} pack(s) expose a node matching "${pattern}":\n`
-      : `${packs.length} pack(s) expose a node matching "${pattern}":\n`
+      ? `${packs.length} of ${total} pack(s) expose a node matching "${pattern}". To install one, ask the user to use ComfyUI-Manager (Settings → Extensions) — there is no shell command for pack installs yet.\n`
+      : `${packs.length} pack(s) expose a node matching "${pattern}". To install one, ask the user to use ComfyUI-Manager (Settings → Extensions) — there is no shell command for pack installs yet.\n`
   return {
     stdout: stringIter(header + lines.join('\n') + '\n'),
     exitCode: 0
