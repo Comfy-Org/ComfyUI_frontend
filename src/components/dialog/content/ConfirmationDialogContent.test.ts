@@ -42,4 +42,21 @@ describe('ConfirmationDialogContent', () => {
     renderComponent({ message: longFilename })
     expect(screen.getByText(longFilename)).toBeInTheDocument()
   })
+
+  it('omits the Cancel button when type is dirtyClose', () => {
+    renderComponent({ type: 'dirtyClose' })
+    expect(screen.queryByText('g.cancel')).not.toBeInTheDocument()
+    expect(screen.getByText('g.save')).toBeInTheDocument()
+  })
+
+  it('uses the provided denyLabel for the deny button on dirtyClose', () => {
+    renderComponent({ type: 'dirtyClose', denyLabel: 'Sign out anyway' })
+    expect(screen.getByText('Sign out anyway')).toBeInTheDocument()
+    expect(screen.queryByText('g.no')).not.toBeInTheDocument()
+  })
+
+  it('falls back to "no" label when denyLabel is not provided', () => {
+    renderComponent({ type: 'dirtyClose' })
+    expect(screen.getByText('g.no')).toBeInTheDocument()
+  })
 })
