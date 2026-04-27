@@ -76,6 +76,39 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.data).toBe('{"nodes":[1,2,3]}')
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
+      expect(draft!.updatedAt).toEqual(expect.any(Number))
+    })
+
+    it('keeps payload updatedAt stable when only recency is refreshed', () => {
+      vi.useFakeTimers()
+
+      try {
+        const store = useWorkflowDraftStoreV2()
+
+        vi.setSystemTime(new Date('2026-03-21T10:00:00Z'))
+        store.saveDraft('workflows/a.json', '{"id":"a"}', {
+          name: 'a',
+          isTemporary: true
+        })
+        const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
+
+        vi.setSystemTime(new Date('2026-03-21T10:01:00Z'))
+        store.saveDraft('workflows/b.json', '{"id":"b"}', {
+          name: 'b',
+          isTemporary: true
+        })
+        expect(store.getMostRecentPath()).toBe('workflows/b.json')
+
+        vi.setSystemTime(new Date('2026-03-21T10:02:00Z'))
+        store.markDraftUsed('workflows/a.json')
+
+        const refreshedDraft = store.getDraft('workflows/a.json')
+        expect(refreshedDraft).not.toBeNull()
+        expect(refreshedDraft!.updatedAt).toBe(initialUpdatedAt)
+        expect(store.getMostRecentPath()).toBe('workflows/a.json')
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('evicts oldest when over limit', () => {

@@ -170,6 +170,14 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const hasRestorableTabState = () => {
+    const storedTabState = tabState.getOpenPaths()
+    const paths = storedTabState?.paths ?? []
+    const activeIndex = storedTabState?.activeIndex ?? -1
+
+    return paths.length > 0 && activeIndex >= 0 && activeIndex < paths.length
+  }
+
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
@@ -177,6 +185,11 @@ export function useWorkflowPersistenceV2() {
     }
 
     try {
+      if (hasRestorableTabState()) {
+        return
+      }
+
+      await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
@@ -259,6 +272,8 @@ export function useWorkflowPersistenceV2() {
       tabStateRestored = true
       return
     }
+
+    await workflowStore.loadWorkflows()
 
     // Read storage fresh at restore time, not at composable init,
     // to ensure workspace is properly determined

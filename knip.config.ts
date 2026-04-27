@@ -52,7 +52,11 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Loaded via @plugin directive in CSS, not detected by knip
+    'packages/design-system/src/css/lucideStrokePlugin.js',
+    // Legacy V1 workflow draft store retained during V2 transition/rollback window
+    'src/platform/workflow/persistence/stores/workflowDraftStore.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
