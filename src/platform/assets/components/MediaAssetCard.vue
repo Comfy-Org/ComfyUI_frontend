@@ -122,6 +122,7 @@
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
+            :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             variant="secondary"
             @click.stop="handleOutputCountClick"
           >
