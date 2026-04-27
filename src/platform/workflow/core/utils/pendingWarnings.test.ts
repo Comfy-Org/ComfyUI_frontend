@@ -35,7 +35,7 @@ describe('pendingWarnings utils', () => {
       ]
     } satisfies PendingWarnings
 
-    expect(normalizePendingWarnings(warnings)).toEqual({
+    expect(normalizePendingWarnings(warnings)).toStrictEqual({
       missingNodeTypes: ['CustomNode'],
       missingModelCandidates: undefined,
       missingMediaCandidates: warnings.missingMediaCandidates
@@ -56,14 +56,14 @@ describe('pendingWarnings utils', () => {
             isAssetSupported: true
           }
         ]
-      } satisfies PendingWarnings | null
+      } satisfies PendingWarnings
     }
 
     updatePendingWarnings(workflow, {
       missingModelCandidates: []
     })
 
-    expect(workflow.pendingWarnings).toEqual({
+    expect(workflow.pendingWarnings).toStrictEqual({
       missingNodeTypes: ['CustomNode'],
       missingModelCandidates: undefined,
       missingMediaCandidates: undefined

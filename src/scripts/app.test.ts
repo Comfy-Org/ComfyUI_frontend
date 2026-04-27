@@ -6,7 +6,10 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -115,9 +118,9 @@ function createTestFile(name: string, type: string): File {
 type ComfyAppMissingModelPipelineTarget = {
   runMissingModelPipeline: (
     graphData: ComfyWorkflowJSON,
-    options?: { silent?: boolean; missingNodeTypes?: [] }
+    options?: { silent?: boolean; missingNodeTypes?: string[] }
   ) => Promise<{
-    missingModels: []
+    missingModels: ModelFile[]
     confirmedCandidates: MissingModelCandidate[]
   }>
 }
