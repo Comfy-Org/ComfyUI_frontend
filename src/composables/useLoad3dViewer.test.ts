@@ -116,6 +116,15 @@ describe('useLoad3dViewer', () => {
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getCurrentModelCapabilities: vi.fn().mockReturnValue({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe'],
+        fitTargetSize: 5
+      }),
       setGizmoEnabled: vi.fn(),
       setGizmoMode: vi.fn(),
       setBackgroundRenderMode: vi.fn(),
