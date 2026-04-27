@@ -20,7 +20,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const tabs = [
   ['linearMode.mobileControls', 'icon-[lucide--play]'],

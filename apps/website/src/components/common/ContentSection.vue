@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { hasKey, t } from '../../i18n/translations'
+import { scrollTo } from '../../scripts/smoothScroll'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
+import SectionLabel from './SectionLabel.vue'
 import { deriveSections } from '../../config/contentSections'
 
 const {
@@ -34,40 +38,42 @@ const categories = computed(() =>
 
 const activeSection = ref(sections[0]?.id ?? '')
 
-let observer: IntersectionObserver | null = null
+const sectionRefs = useTemplateRefsList<HTMLElement>()
 let isScrolling = false
 
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (isScrolling) return
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          activeSection.value = entry.target.id
-        }
-      }
-    },
-    { rootMargin: '-20% 0px -60% 0px' }
-  )
+const HEADER_OFFSET = -144
 
-  for (const section of sections) {
-    const el = document.getElementById(section.id)
-    if (el) observer.observe(el)
-  }
-})
-
-onUnmounted(() => {
-  observer?.disconnect()
-})
+useIntersectionObserver(
+  sectionRefs,
+  (entries) => {
+    if (isScrolling) return
+    let best: IntersectionObserverEntry | null = null
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      if (!best || entry.boundingClientRect.top < best.boundingClientRect.top)
+        best = entry
+    }
+    if (best) activeSection.value = best.target.id
+  },
+  { rootMargin: '-20% 0px -60% 0px' }
+)
 
 function scrollToSection(id: string) {
   activeSection.value = id
   isScrolling = true
   const el = document.getElementById(id)
-  el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  setTimeout(() => {
-    isScrolling = false
-  }, 800)
+  if (el) {
+    scrollTo(el, {
+      offset: HEADER_OFFSET,
+      duration: 0.8,
+      immediate: prefersReducedMotion(),
+      onComplete: () => {
+        isScrolling = false
+      }
+    })
+    return
+  }
+  isScrolling = false
 }
 </script>
 
@@ -75,7 +81,7 @@ function scrollToSection(id: string) {
   <section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
     <div class="lg:flex lg:gap-16">
       <!-- Desktop sticky nav -->
-      <aside class="hidden lg:block lg:w-48 lg:shrink-0">
+      <aside class="scrollbar-none hidden lg:block lg:w-48 lg:shrink-0">
         <div class="sticky top-32">
           <CategoryNav
             :categories="categories"
@@ -90,6 +96,7 @@ function scrollToSection(id: string) {
         <div
           v-for="section in sections"
           :id="section.id"
+          :ref="sectionRefs.set"
           :key="section.id"
           class="mb-16 scroll-mt-24 lg:scroll-mt-36"
         >
@@ -195,17 +202,23 @@ function scrollToSection(id: string) {
               v-else-if="block.type === 'author'"
               :class="cn('mt-8 rounded-2xl p-6', 'bg-(--site-bg-soft)')"
             >
-              <span
-                class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
-              >
+              <SectionLabel>
                 {{ t(key(section.id, `block.${i}.label`), locale) }}
-              </span>
+              </SectionLabel>
               <p class="text-primary-comfy-canvas mt-2 text-sm font-semibold">
                 {{ t(key(section.id, `block.${i}.name`), locale) }}
               </p>
               <p class="text-primary-comfy-canvas text-xs">
                 {{ t(key(section.id, `block.${i}.role`), locale) }}
               </p>
+              <template v-if="hasKey(key(section.id, `block.${i}.name2`))">
+                <p class="text-primary-comfy-canvas mt-4 text-sm font-semibold">
+                  {{ t(key(section.id, `block.${i}.name2`), locale) }}
+                </p>
+                <p class="text-primary-comfy-canvas text-xs">
+                  {{ t(key(section.id, `block.${i}.role2`), locale) }}
+                </p>
+              </template>
             </div>
           </template>
         </div>

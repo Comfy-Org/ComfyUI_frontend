@@ -1,41 +1,52 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref, useId } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, ref, useId, watch } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 import { externalLinks } from '../../config/routes'
 import { useParallax } from '../../composables/useParallax'
-import { usePinScrub } from '../../composables/usePinScrub'
+import { usePinScrub, VH_PER_ITEM } from '../../composables/usePinScrub'
 import BrandButton from '../common/BrandButton.vue'
+import BlobMedia from './BlobMedia.vue'
+import BlobRail from './BlobRail.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const categories = [
+interface Category {
+  label: string
+  leftSrc: string
+  rightSrc: string
+  rightObjectPosition?: 'top' | 'bottom' | 'center'
+}
+
+const categories: Category[] = [
   {
     label: t('useCase.vfx', locale),
-    leftImg: '/images/homepage/use-case-left-1.webp',
-    rightImg: '/images/homepage/use-case-right-1.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left1.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right1.webp'
   },
   {
     label: t('useCase.advertising', locale),
-    leftImg: '/images/homepage/use-case-left-2.webp',
-    rightImg: '/images/homepage/use-case-right-2.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left2.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right2.webm'
   },
   {
     label: t('useCase.gaming', locale),
-    leftImg: '/images/homepage/use-case-left-3.webp',
-    rightImg: '/images/homepage/use-case-right-3.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left3.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right3.webp'
   },
   {
     label: t('useCase.ecommerce', locale),
-    leftImg: '/images/homepage/use-case-left-4.webp',
-    rightImg: '/images/homepage/use-case-right-4.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left4.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right4.webm',
+    rightObjectPosition: 'top'
   },
   {
     label: t('useCase.more', locale),
-    leftImg: '/images/homepage/use-case-left-5.webp',
-    rightImg: '/images/homepage/use-case-right-5.webp'
+    leftSrc: 'https://media.comfy.org/website/homepage/use-case/left5.webm',
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right5.webm'
   }
 ]
 
@@ -45,27 +56,77 @@ const navRef = ref<HTMLElement>()
 const leftImgRef = ref<HTMLElement>()
 const rightImgRef = ref<HTMLElement>()
 
-const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
+const {
+  activeIndex: activeCategory,
+  isEnabled,
+  isPinned,
+  scrollToIndex
+} = usePinScrub(
   { section: sectionRef, content: contentRef, nav: navRef },
   { itemCount: categories.length }
 )
 
-const activeLeft = computed(() => categories[activeCategory.value].leftImg)
-const activeRight = computed(() => categories[activeCategory.value].rightImg)
+const activeLeft = computed(() => categories[activeCategory.value].leftSrc)
+const activeRight = computed(() => categories[activeCategory.value].rightSrc)
+const activeRightObjectPosition = computed(
+  () => categories[activeCategory.value].rightObjectPosition
+)
 
 const uid = useId()
 const leftBlobId = `left-blob-${uid}`
 const rightBlobId = `right-blob-${uid}`
 
-const pinScrubEnd = `+=${categories.length * 100}%`
+function navButtons() {
+  return navRef.value?.querySelectorAll<HTMLButtonElement>(':scope > button')
+}
+
+whenever(isPinned, () => {
+  navButtons()?.[activeCategory.value]?.focus({ preventScroll: true })
+})
+
+watch(activeCategory, (index) => {
+  if (!isPinned.value) return
+  navButtons()?.[index]?.focus({ preventScroll: true })
+})
+
+function onNavKeydown(event: KeyboardEvent) {
+  const delta = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+  if (!delta) return
+
+  event.preventDefault()
+  const current = activeCategory.value
+  const next = current + delta
+
+  if (next < 0 || next >= categories.length) {
+    navButtons()?.[current]?.blur()
+    return
+  }
+
+  scrollToIndex(next)
+  navButtons()?.[next]?.focus({ preventScroll: true })
+}
+
+function travelRange(el: HTMLElement) {
+  if (window.matchMedia('(min-width: 1024px)').matches) return 150
+
+  const rail = el.parentElement?.parentElement
+  if (!rail) return 0
+  const pb = parseFloat(getComputedStyle(rail).paddingBottom)
+  return Math.max(0, (rail.clientHeight - pb - el.offsetHeight) / 2)
+}
+
+const pinScrubEnd = `+=${categories.length * VH_PER_ITEM}%`
 useParallax([rightImgRef], {
   trigger: sectionRef,
+  fromY: (el) => -travelRange(el),
+  y: (el) => travelRange(el),
   start: 'top top',
   end: pinScrubEnd
 })
 useParallax([leftImgRef], {
   trigger: sectionRef,
-  y: -60,
+  fromY: (el) => travelRange(el),
+  y: (el) => -travelRange(el),
   start: 'top top',
   end: pinScrubEnd
 })
@@ -74,9 +135,13 @@ useParallax([leftImgRef], {
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative isolate overflow-hidden px-8 py-20 lg:h-[calc(100vh+60px)] lg:px-0 lg:py-24"
+    :class="
+      cn(
+        'bg-primary-comfy-ink relative isolate overflow-x-clip pt-20 lg:py-24',
+        isEnabled && 'lg:h-[calc(100vh+60px)]'
+      )
+    "
   >
-    <!-- Clip-path definitions for shaped images -->
     <svg class="absolute size-0" width="0" height="0" aria-hidden="true">
       <defs>
         <clipPath :id="leftBlobId" clipPathUnits="objectBoundingBox">
@@ -93,52 +158,35 @@ useParallax([leftImgRef], {
     </svg>
 
     <div
-      class="relative mx-auto grid w-full grid-cols-1 grid-rows-[auto_minmax(0,1fr)] lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(24rem,42rem)_minmax(0,1fr)]"
+      class="relative mx-auto grid w-full grid-cols-[minmax(0,5rem)_minmax(18ch,1fr)_minmax(0,5rem)] grid-rows-[auto_minmax(0,1fr)_auto] lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(24rem,42rem)_minmax(0,1fr)] lg:gap-x-0"
     >
-      <!-- Label row spanning all columns -->
-      <div
-        class="from-primary-comfy-ink to-primary-comfy-ink/10 relative z-20 col-span-full bg-linear-to-b py-4"
-      >
+      <!-- Label row -->
+      <div class="relative z-20 col-span-full flex justify-center py-4">
         <p
-          class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase lg:text-base"
+          class="text-primary-comfy-yellow from-primary-comfy-ink to-primary-comfy-ink/10 shrink grow-0 bg-linear-to-b text-center text-sm font-bold tracking-widest uppercase lg:text-base"
         >
           {{ t('useCase.label', locale) }}
         </p>
       </div>
 
-      <!-- Left image -->
-      <div
-        class="pointer-events-none relative hidden min-h-0 lg:flex lg:items-center lg:justify-start"
-      >
-        <div class="w-[115%] -translate-x-[12%]">
-          <div
-            ref="leftImgRef"
-            class="relative h-[72vh] max-h-240 w-full overflow-hidden will-change-transform"
-            :style="`clip-path: url(#${leftBlobId})`"
-          >
-            <Transition name="crossfade">
-              <img
-                :key="activeLeft"
-                :src="activeLeft"
-                alt=""
-                aria-hidden="true"
-                class="absolute inset-0 size-full object-cover"
-              />
-            </Transition>
-          </div>
+      <!-- Left blob rail -->
+      <BlobRail side="left">
+        <div ref="leftImgRef" class="size-full will-change-transform">
+          <BlobMedia :src="activeLeft" :clip-id="leftBlobId" />
         </div>
-      </div>
+      </BlobRail>
 
       <!-- Center content -->
       <div class="relative z-10 min-h-0 overflow-hidden">
         <div
           ref="contentRef"
-          class="flex flex-col items-center will-change-transform"
+          class="flex h-full flex-col items-center will-change-transform"
         >
           <nav
             ref="navRef"
-            class="mt-16 flex w-full max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:max-w-none lg:gap-8"
-            aria-label="Industry categories"
+            class="mt-16 flex w-full max-w-5/6 flex-1 flex-col items-center justify-evenly gap-12 lg:mt-[clamp(0.5rem,3vh,5rem)] lg:max-w-none lg:gap-[clamp(0.25rem,1vh,2rem)]"
+            :aria-label="t('useCase.navLabel', locale)"
+            @keydown="onNavKeydown"
           >
             <button
               v-for="(category, index) in categories"
@@ -146,7 +194,7 @@ useParallax([leftImgRef], {
               type="button"
               :class="
                 cn(
-                  'lg:text-4.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
+                  'cursor-pointer text-center text-2xl font-light whitespace-pre-line transition-colors outline-none lg:text-[clamp(1rem,5vh,3rem)]',
                   index === activeCategory
                     ? 'text-primary-comfy-canvas'
                     : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
@@ -158,43 +206,29 @@ useParallax([leftImgRef], {
               {{ category.label }}
             </button>
           </nav>
-
-          <p
-            class="text-primary-warm-gray mt-20 max-w-md text-center text-base"
-          >
-            {{ t('useCase.body', locale) }}
-          </p>
-
-          <BrandButton
-            :href="externalLinks.workflows"
-            :label="t('useCase.cta', locale)"
-            variant="outline"
-            class-name="mt-8 text-sm"
-          />
         </div>
       </div>
 
-      <!-- Right image -->
-      <div
-        class="pointer-events-none relative hidden min-h-0 lg:flex lg:items-center lg:justify-end"
-      >
-        <div class="w-[115%] translate-x-[12%]">
-          <div
-            ref="rightImgRef"
-            class="relative h-[72vh] max-h-240 w-full overflow-hidden will-change-transform"
-            :style="`clip-path: url(#${rightBlobId})`"
-          >
-            <Transition name="crossfade">
-              <img
-                :key="activeRight"
-                :src="activeRight"
-                alt=""
-                aria-hidden="true"
-                class="absolute inset-0 size-full object-cover"
-              />
-            </Transition>
-          </div>
+      <!-- Right blob rail -->
+      <BlobRail side="right">
+        <div ref="rightImgRef" class="size-full will-change-transform">
+          <BlobMedia
+            :src="activeRight"
+            :clip-id="rightBlobId"
+            :object-position="activeRightObjectPosition"
+          />
         </div>
+      </BlobRail>
+      <div
+        class="col-span-full mt-8 flex flex-col items-center gap-8 px-4 lg:mt-[clamp(0.25rem,1vh,2rem)] lg:gap-[clamp(0.25rem,1vh,2rem)]"
+      >
+        <p class="text-primary-warm-gray max-w-md text-center text-base">
+          {{ t('useCase.body', locale) }}
+        </p>
+
+        <BrandButton :href="externalLinks.workflows" variant="outline">
+          {{ t('useCase.cta', locale) }}
+        </BrandButton>
       </div>
     </div>
   </section>

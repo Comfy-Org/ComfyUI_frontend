@@ -1,4 +1,15 @@
-import { expect, test } from '@playwright/test'
+import { fileURLToPath } from 'node:url'
+
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
+
+const caseStudyVideoPath = fileURLToPath(
+  new URL(
+    '../../../public/assets/images/cloud-subscription.webm',
+    import.meta.url
+  )
+)
 
 test.describe('Homepage @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -83,17 +94,56 @@ test.describe('Product showcase accordion @interaction', () => {
       .first()
 
     await secondFeature.scrollIntoViewIfNeeded()
-
-    await expect(async () => {
-      await secondFeature.click()
-      await expect(
-        page.getByText(/If you are new to ComfyUI/).first()
-      ).toBeVisible({ timeout: 1000 })
-    }).toPass({ timeout: 10000 })
+    await secondFeature.click()
 
     await expect(
-      page.getByText(/Build powerful AI pipelines by connecting nodes/).first()
-    ).toBeHidden()
+      secondFeature.getByText(/If you are new to ComfyUI/)
+    ).toBeVisible()
+
+    const firstFeature = page
+      .getByRole('button', { name: /Full Control with Nodes/i })
+      .first()
+
+    await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
+    await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+  })
+})
+
+test.describe('Video player @interaction', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route(
+      'https://media.comfy.org/website/customers/blackmath/video.webm',
+      (route) =>
+        route.fulfill({
+          contentType: 'video/webm',
+          path: caseStudyVideoPath
+        })
+    )
+
+    await page.goto('/')
+  })
+
+  test('clicking play advances playback', async ({ page }) => {
+    const section = page.locator('section', {
+      has: page.getByText('Customer Stories')
+    })
+    const video = section.locator('video')
+
+    await expect
+      .poll(
+        async () =>
+          video.evaluate((element: HTMLVideoElement) => element.duration),
+        { timeout: 15_000 }
+      )
+      .toBeGreaterThan(0)
+
+    await section.getByRole('button', { name: 'Play' }).click()
+
+    await expect
+      .poll(async () =>
+        video.evaluate((element: HTMLVideoElement) => element.currentTime)
+      )
+      .toBeGreaterThan(0)
   })
 })
 
@@ -125,6 +175,6 @@ test.describe('Get started section links @smoke', () => {
 
     const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
     await expect(cloudLink).toBeVisible()
-    await expect(cloudLink).toHaveAttribute('href', 'https://app.comfy.org')
+    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
   })
 })

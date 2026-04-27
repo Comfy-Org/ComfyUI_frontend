@@ -18,7 +18,9 @@
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
-        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
+        shouldHandleNodePointerEvents &&
+          !nodeData.flags?.ghost &&
+          !isGhostPlacing
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -29,6 +31,7 @@
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
+    :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -307,7 +310,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -341,7 +344,7 @@ const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(String(nodeData.id), 'node')
 
-const { selectedNodeIds } = storeToRefs(useCanvasStore())
+const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
@@ -813,16 +816,12 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop(event: DragEvent) {
+async function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
   if (!node?.onDragDrop) return
 
-  const handled = node.onDragDrop(event)
-  if (handled === true) {
-    event.preventDefault()
-    event.stopPropagation()
-  }
+  await node.onDragDrop(event, true)
 }
 </script>

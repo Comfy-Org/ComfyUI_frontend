@@ -18,7 +18,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   size = 'lg',

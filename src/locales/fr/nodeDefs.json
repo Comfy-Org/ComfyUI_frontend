@@ -483,9 +483,17 @@
         "name": "première image",
         "tooltip": "Image de la première image pour la vidéo."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "ID d’actif Seedance à utiliser comme première image. Mutuellement exclusif avec l’entrée image first_frame."
+      },
       "last_frame": {
         "name": "dernière image",
         "tooltip": "Image de la dernière image pour la vidéo."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "ID d’actif Seedance à utiliser comme dernière image. Mutuellement exclusif avec l’entrée image last_frame."
       },
       "model": {
         "name": "modèle",
@@ -531,6 +539,9 @@
       "model": {
         "name": "modèle",
         "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_duration": {
         "name": "durée"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Créez un actif image personnel Seedance 2.0. Télécharge l’image d’entrée et l’enregistre dans le groupe d’actifs indiqué. Si group_id est vide, lance une authentification H5 de personne réelle pour créer un nouveau groupe avant d’ajouter l’actif.",
+    "display_name": "ByteDance Créer un Actif Image",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Réutilisez un ID de groupe d’actifs Seedance existant pour éviter la vérification humaine répétée pour la même personne. Laissez vide pour lancer l’authentification de personne réelle dans le navigateur et créer un nouveau groupe."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image à enregistrer comme actif personnel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Créez un actif vidéo personnel Seedance 2.0. Télécharge la vidéo d’entrée et l’enregistre dans le groupe d’actifs indiqué. Si group_id est vide, lance une authentification H5 de personne réelle pour créer un nouveau groupe avant d’ajouter l’actif.",
+    "display_name": "ByteDance Créer un Actif Vidéo",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Réutilisez un ID de groupe d’actifs Seedance existant pour éviter la vérification humaine répétée pour la même personne. Laissez vide pour lancer l’authentification de personne réelle dans le navigateur et créer un nouveau groupe."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vidéo à enregistrer comme actif personnel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -3683,6 +3742,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Interpolation d’images",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "multiplicateur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Charger un modèle d’interpolation d’images",
+    "inputs": {
+      "model_name": {
+        "name": "nom_du_modèle",
+        "tooltip": "Sélectionnez un modèle d’interpolation d’images à charger. Les modèles doivent être placés dans le dossier 'frame_interpolation'."
       }
     },
     "outputs": {
@@ -13795,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Détection",
+    "inputs": {
+      "bboxes": {
+        "name": "boîtes_englobantes",
+        "tooltip": "Boîtes englobantes à segmenter"
+      },
+      "conditioning": {
+        "name": "conditionnement",
+        "tooltip": "Conditionnement texte depuis CLIPTextEncode"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "masques_individuels",
+        "tooltip": "Sortir des masques par objet au lieu de l’union"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative_coords": {
+        "name": "coords_négatives",
+        "tooltip": "Points négatifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+      },
+      "positive_coords": {
+        "name": "coords_positives",
+        "tooltip": "Points positifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+      },
+      "refine_iterations": {
+        "name": "itérations_affinage",
+        "tooltip": "Passes d’affinage du décodeur SAM (0 = utiliser les masques bruts du détecteur)"
+      },
+      "threshold": {
+        "name": "seuil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masques",
+        "tooltip": null
+      },
+      "1": {
+        "name": "boîtes_englobantes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "Aperçu du suivi SAM3",
+    "inputs": {
+      "fps": {
+        "name": "ips"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacité"
+      },
+      "track_data": {
+        "name": "données_suivi"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Suivi vers Masque",
+    "inputs": {
+      "object_indices": {
+        "name": "indices_objets",
+        "tooltip": "Indices d’objets séparés par des virgules à inclure (ex : '0,2,3'). Vide = tous les objets."
+      },
+      "track_data": {
+        "name": "données_suivi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masques",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Suivi Vidéo",
+    "inputs": {
+      "conditioning": {
+        "name": "conditionnement",
+        "tooltip": "Conditionnement texte pour détecter de nouveaux objets pendant le suivi"
+      },
+      "detect_interval": {
+        "name": "intervalle_de_détection",
+        "tooltip": "Détecter tous les N frames (1 = chaque frame). Plus élevé = économie de calcul."
+      },
+      "detection_threshold": {
+        "name": "seuil_de_détection",
+        "tooltip": "Seuil de score pour la détection par texte"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images des frames vidéo en lot"
+      },
+      "initial_mask": {
+        "name": "masque_initial",
+        "tooltip": "Masque(s) pour la première frame à suivre (un par objet)"
+      },
+      "max_objects": {
+        "name": "objets_max",
+        "tooltip": "Nombre maximal d’objets suivis (0 = illimité). Les masques initiaux comptent dans cette limite."
+      },
+      "model": {
+        "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "données_suivi",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -17506,6 +17719,10 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Description textuelle de la vidéo"
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution vidéo de sortie. La 4K n’est pas disponible pour les modèles veo-3.1-lite et veo-3.0."
       },
       "seed": {
         "name": "graine",
