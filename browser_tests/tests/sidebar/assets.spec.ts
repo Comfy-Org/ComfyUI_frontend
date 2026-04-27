@@ -1,11 +1,4 @@
 import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
-
-import type {
-  CreateAssetExportData,
-  CreateAssetExportResponse,
-  ListAssetsResponse
-} from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
@@ -72,19 +65,6 @@ const SAMPLE_IMPORTED_FILES = [
   'audio_clip.wav'
 ]
 
-const EMPTY_CLOUD_ASSET_RESPONSE: ListAssetsResponse = {
-  assets: [],
-  total: 0,
-  has_more: false
-}
-
-type AssetExportRequestBody = CreateAssetExportData['body']
-
-const MOCK_ASSET_EXPORT_RESPONSE: CreateAssetExportResponse = {
-  task_id: 'asset-export-task',
-  status: 'created'
-}
-
 const JOB_GAMMA_DETAIL: JobDetail = {
   ...SAMPLE_JOBS[2],
   outputs: {
@@ -105,139 +85,15 @@ const JOB_GAMMA_DETAIL: JobDetail = {
   }
 }
 
-async function captureAssetExportRequests(
-  page: Page
-): Promise<AssetExportRequestBody[]> {
-  const requests: AssetExportRequestBody[] = []
-
-  await page.route('**/api/assets/export', async (route) => {
-    requests.push(route.request().postDataJSON() as AssetExportRequestBody)
-
-    await route.fulfill({
-      status: 202,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_ASSET_EXPORT_RESPONSE)
-    })
-  })
-
-  return requests
-}
-
-async function mockJobDetail(
-  page: Page,
-  jobId: string,
-  detail: JobDetail
-): Promise<void> {
-  await page.route(
-    `**/api/jobs/${encodeURIComponent(jobId)}`,
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(detail)
-      })
-    }
-  )
-}
-
-function parseLimit(url: URL, total: number): number {
-  const value = Number(url.searchParams.get('limit'))
-  if (!Number.isInteger(value) || value <= 0) {
-    return total
-  }
-  return value
-}
-
-function parseOffset(url: URL): number {
-  const value = Number(url.searchParams.get('offset'))
-  if (!Number.isInteger(value) || value < 0) {
-    return 0
-  }
-  return value
-}
-
-function getExecutionDuration(job: RawJobListItem): number {
-  const start = job.execution_start_time ?? 0
-  const end = job.execution_end_time ?? 0
-  return end - start
-}
-
 const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
   mockCloudAssetSidebarData: [
-    async ({ page }, use) => {
-      const jobsRouteHandler = async (route: Route) => {
-        const url = new URL(route.request().url())
-        const statuses = url.searchParams
-          .get('status')
-          ?.split(',')
-          .map((status) => status.trim())
-          .filter(Boolean)
-        const workflowId = url.searchParams.get('workflow_id')
-        const sortBy = url.searchParams.get('sort_by')
-        const sortOrder = url.searchParams.get('sort_order') === 'asc' ? 1 : -1
-
-        let filteredJobs = [...SAMPLE_JOBS]
-
-        if (statuses?.length) {
-          filteredJobs = filteredJobs.filter((job) =>
-            statuses.includes(job.status)
-          )
-        }
-
-        if (workflowId) {
-          filteredJobs = filteredJobs.filter(
-            (job) => job.workflow_id === workflowId
-          )
-        }
-
-        filteredJobs.sort((left, right) => {
-          const leftValue =
-            sortBy === 'execution_duration'
-              ? getExecutionDuration(left)
-              : left.create_time
-          const rightValue =
-            sortBy === 'execution_duration'
-              ? getExecutionDuration(right)
-              : right.create_time
-
-          return (leftValue - rightValue) * sortOrder
-        })
-
-        const offset = parseOffset(url)
-        const total = filteredJobs.length
-        const limit = parseLimit(url, total)
-        const visibleJobs = filteredJobs.slice(offset, offset + limit)
-
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            jobs: visibleJobs,
-            pagination: {
-              offset,
-              limit,
-              total,
-              has_more: offset + visibleJobs.length < total
-            }
-          })
-        })
-      }
-
-      const assetsRouteHandler = async (route: Route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(EMPTY_CLOUD_ASSET_RESPONSE)
-        })
-      }
-
-      await page.route(/\/api\/jobs(?:\?.*)?$/, jobsRouteHandler)
-      await page.route('**/api/assets?*', assetsRouteHandler)
+    async ({ comfyPage }, use) => {
+      await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+      await comfyPage.assets.mockEmptyCloudAssets()
 
       await use()
 
-      await page.unroute(/\/api\/jobs(?:\?.*)?$/, jobsRouteHandler)
-      await page.unroute('**/api/assets?*', assetsRouteHandler)
+      await comfyPage.assets.clearMocks()
     },
     { auto: true }
   ]
@@ -818,7 +674,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   cloudTest(
     'Single selected multi-output job export preserves naming strategy',
     async ({ comfyPage }) => {
-      const exportRequests = await captureAssetExportRequests(comfyPage.page)
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
@@ -841,8 +697,8 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   cloudTest(
     'Multiple selected assets within one job preserve naming strategy',
     async ({ comfyPage }) => {
-      const exportRequests = await captureAssetExportRequests(comfyPage.page)
-      await mockJobDetail(comfyPage.page, 'job-gamma', JOB_GAMMA_DETAIL)
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+      await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
@@ -874,7 +730,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   cloudTest(
     'Multiple selected jobs use job-time naming strategy',
     async ({ comfyPage }) => {
-      const exportRequests = await captureAssetExportRequests(comfyPage.page)
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()

@@ -1,9 +1,19 @@
 import type { Page, Route } from '@playwright/test'
-import type { JobsListResponse } from '@comfyorg/ingest-types'
+import type {
+  CreateAssetExportData,
+  CreateAssetExportResponse,
+  JobsListResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
+const assetsListRoutePattern = '**/api/assets?*'
+const assetExportRoutePattern = '**/api/assets/export'
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
@@ -158,12 +168,23 @@ function getExecutionDuration(job: RawJobListItem): number {
 
 export class AssetsHelper {
   private jobsRouteHandler: ((route: Route) => Promise<void>) | null = null
+  private cloudAssetsRouteHandler: ((route: Route) => Promise<void>) | null =
+    null
+  private assetExportRouteHandler: ((route: Route) => Promise<void>) | null =
+    null
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private deleteHistoryRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private generatedJobs: RawJobListItem[] = []
+  private cloudAssetsResponse: ListAssetsResponse | null = null
+  private assetExportRequests: CreateAssetExportData['body'][] = []
+  private assetExportResponse: CreateAssetExportResponse | null = null
   private importedFiles: string[] = []
+  private readonly jobDetailRouteHandlers = new Map<
+    string,
+    (route: Route) => Promise<void>
+  >()
 
   constructor(private readonly page: Page) {}
 
@@ -240,6 +261,82 @@ export class AssetsHelper {
     await this.page.route(jobsListRoutePattern, this.jobsRouteHandler)
   }
 
+  async mockCloudAssets(response: ListAssetsResponse): Promise<void> {
+    this.cloudAssetsResponse = response
+
+    if (this.cloudAssetsRouteHandler) {
+      return
+    }
+
+    this.cloudAssetsRouteHandler = async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(this.cloudAssetsResponse)
+      })
+    }
+
+    await this.page.route(assetsListRoutePattern, this.cloudAssetsRouteHandler)
+  }
+
+  async mockEmptyCloudAssets(): Promise<void> {
+    await this.mockCloudAssets({
+      assets: [],
+      total: 0,
+      has_more: false
+    })
+  }
+
+  async captureAssetExportRequests(
+    response: CreateAssetExportResponse = {
+      task_id: 'asset-export-task',
+      status: 'created'
+    }
+  ): Promise<CreateAssetExportData['body'][]> {
+    this.assetExportRequests = []
+    this.assetExportResponse = response
+
+    if (this.assetExportRouteHandler) {
+      return this.assetExportRequests
+    }
+
+    this.assetExportRouteHandler = async (route: Route) => {
+      this.assetExportRequests.push(
+        route.request().postDataJSON() as CreateAssetExportData['body']
+      )
+
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify(this.assetExportResponse)
+      })
+    }
+
+    await this.page.route(assetExportRoutePattern, this.assetExportRouteHandler)
+
+    return this.assetExportRequests
+  }
+
+  async mockJobDetail(jobId: string, detail: JobDetail): Promise<void> {
+    const pattern = `**/api/jobs/${encodeURIComponent(jobId)}`
+    const existingHandler = this.jobDetailRouteHandlers.get(pattern)
+
+    if (existingHandler) {
+      await this.page.unroute(pattern, existingHandler)
+    }
+
+    const handler = async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detail)
+      })
+    }
+
+    this.jobDetailRouteHandlers.set(pattern, handler)
+    await this.page.route(pattern, handler)
+  }
+
   async mockInputFiles(files: string[]): Promise<void> {
     this.importedFiles = [...files]
 
@@ -295,11 +392,30 @@ export class AssetsHelper {
 
   async clearMocks(): Promise<void> {
     this.generatedJobs = []
+    this.cloudAssetsResponse = null
+    this.assetExportRequests = []
+    this.assetExportResponse = null
     this.importedFiles = []
 
     if (this.jobsRouteHandler) {
       await this.page.unroute(jobsListRoutePattern, this.jobsRouteHandler)
       this.jobsRouteHandler = null
+    }
+
+    if (this.cloudAssetsRouteHandler) {
+      await this.page.unroute(
+        assetsListRoutePattern,
+        this.cloudAssetsRouteHandler
+      )
+      this.cloudAssetsRouteHandler = null
+    }
+
+    if (this.assetExportRouteHandler) {
+      await this.page.unroute(
+        assetExportRoutePattern,
+        this.assetExportRouteHandler
+      )
+      this.assetExportRouteHandler = null
     }
 
     if (this.inputFilesRouteHandler) {
@@ -317,5 +433,10 @@ export class AssetsHelper {
       )
       this.deleteHistoryRouteHandler = null
     }
+
+    for (const [pattern, handler] of this.jobDetailRouteHandlers) {
+      await this.page.unroute(pattern, handler)
+    }
+    this.jobDetailRouteHandlers.clear()
   }
 }
