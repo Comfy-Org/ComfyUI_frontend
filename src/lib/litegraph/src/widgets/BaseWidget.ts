@@ -20,6 +20,9 @@ import type {
 import { usePromotionStore } from '@/stores/promotionStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { asGraphId } from '@/world/entityIds'
+import { registerWidgetInWorld } from '@/world/widgetWorldBridge'
+import { getWorld } from '@/world/worldInstance'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -149,6 +152,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       value: this.value,
       nodeId
     })
+    registerWidgetInWorld(
+      getWorld(),
+      asGraphId(graphId),
+      this._state as WidgetState
+    )
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

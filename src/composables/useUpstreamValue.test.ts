@@ -1,9 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { reactive } from 'vue'
 
 import type { WidgetState } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { asGraphId } from '@/world/entityIds'
+import { registerWidgetInWorld } from '@/world/widgetWorldBridge'
+import { getWorld, resetWorldInstance } from '@/world/worldInstance'
 
-import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
+import {
+  boundsExtractor,
+  singleValueExtractor,
+  useUpstreamValue
+} from './useUpstreamValue'
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: {
+      graph: { rootGraph: { id: '00000000-0000-0000-0000-000000000001' } }
+    }
+  })
+}))
 
 function widget(name: string, value: unknown): WidgetState {
   return { name, type: 'INPUT', value, nodeId: '1' as NodeId, options: {} }
@@ -114,5 +130,38 @@ describe('boundsExtractor', () => {
       widget('height', 99)
     ]
     expect(extract(widgets, undefined)).toEqual(bounds)
+  })
+})
+
+describe('useUpstreamValue (World-backed read path)', () => {
+  it('reads upstream node widgets via the World, not the Pinia store', () => {
+    resetWorldInstance()
+    const graphId = asGraphId('00000000-0000-0000-0000-000000000001')
+    const state = reactive<WidgetState>({
+      nodeId: 'upstream-1' as NodeId,
+      name: 'value',
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+    registerWidgetInWorld(getWorld(), graphId, state)
+
+    const upstreamValue = useUpstreamValue<number>(
+      () => ({ nodeId: 'upstream-1', outputName: 'value' }),
+      singleValueExtractor((v): v is number => typeof v === 'number')
+    )
+
+    expect(upstreamValue.value).toBe(7)
+    state.value = 11
+    expect(upstreamValue.value).toBe(11)
+  })
+
+  it('returns undefined when no upstream linkage is provided', () => {
+    resetWorldInstance()
+    const upstreamValue = useUpstreamValue(
+      () => undefined,
+      singleValueExtractor((v): v is number => typeof v === 'number')
+    )
+    expect(upstreamValue.value).toBeUndefined()
   })
 })
