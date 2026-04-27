@@ -4,6 +4,8 @@
       <div
         v-for="tool in allTools"
         :key="tool"
+        data-testid="tool-button"
+        :data-tool="tool"
         :class="[
           'maskEditor_toolPanelContainer hover:bg-secondary-background-hover',
           { maskEditor_toolPanelContainerSelected: currentTool === tool }
@@ -23,8 +25,12 @@
       :title="t('maskEditor.clickToResetZoom')"
       @click="onResetZoom"
     >
-      <span class="text-sm text-text-secondary">{{ zoomText }}</span>
-      <span class="text-xs text-text-secondary">{{ dimensionsText }}</span>
+      <span data-testid="zoom-percentage" class="text-sm text-text-secondary">{{
+        zoomText
+      }}</span>
+      <span data-testid="zoom-dimensions" class="text-xs text-text-secondary">{{
+        dimensionsText
+      }}</span>
     </div>
   </div>
 </template>
