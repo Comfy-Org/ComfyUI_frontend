@@ -28,7 +28,9 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
-const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const IS_STORYBOOK =
+  process.env.npm_lifecycle_event === 'storybook' ||
+  process.argv.some((arg) => arg.includes('storybook'))
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
