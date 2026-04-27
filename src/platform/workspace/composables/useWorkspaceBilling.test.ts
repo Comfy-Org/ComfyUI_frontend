@@ -686,4 +686,101 @@ describe('useWorkspaceBilling', () => {
       expect(mockShow).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('initialize free-tier balance refresh', () => {
+    it('does not re-fetch balance when free tier already has a positive balance', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(freeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.initialize()
+
+      // One initial fetch only — the free-tier zero-balance reload branch
+      // must not trigger when amountMicros > 0.
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      expect(billing.isFreeTier.value).toBe(true)
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+  })
+
+  describe('subscribe argument forwarding', () => {
+    it('forwards undefined for return/cancel URLs when called with planSlug only', async () => {
+      mockWorkspaceApi.subscribe.mockResolvedValue({
+        billing_op_id: 'op-x',
+        status: 'subscribed'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.subscribe('pro')
+
+      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith(
+        'pro',
+        undefined,
+        undefined
+      )
+    })
+  })
+
+  describe('previewSubscribe does not refresh state', () => {
+    it('does not call fetchStatus or fetchBalance after a successful preview', async () => {
+      mockWorkspaceApi.previewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new',
+        effective_at: 'now',
+        is_immediate: true,
+        cost_today_cents: 0,
+        cost_next_period_cents: 0,
+        credits_today_cents: 0,
+        credits_next_period_cents: 0,
+        new_plan: {}
+      })
+
+      const billing = setupBilling()
+      await billing.previewSubscribe('pro')
+
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('pollCancelStatus error paths', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('uses a default error message when failed status omits error_message', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-noerr',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
+        id: 'op-noerr',
+        status: 'failed',
+        started_at: '2026-04-01T00:00:00Z'
+        // intentionally no error_message
+      })
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Failed to cancel subscription'
+      )
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    // Intentionally NOT covered: a rejection on a later scheduled poll is
+    // emitted from a void-discarded poll() inside setTimeout, so it surfaces
+    // as an unhandled rejection that cancelSubscription has already returned
+    // from. Codifying that as "polling stops cleanly" requires installing a
+    // process unhandledRejection handler to hide the evidence — which would
+    // bless a real bug: the dialog can already show success while the
+    // backing op silently fails. Fix in the source (retry transient poll
+    // failures or surface a pending/error state) before adding coverage here.
+  })
 })
