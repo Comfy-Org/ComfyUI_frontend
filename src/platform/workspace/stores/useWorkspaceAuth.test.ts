@@ -671,6 +671,13 @@ describe('useWorkspaceAuthStore', () => {
   })
 
   describe('refreshToken retry/race paths', () => {
+    // NOTE: This test documents the CURRENT behavior — exhausted refresh
+    // retries clear the workspace context unconditionally, even when the
+    // existing workspace token is still within its expiry window. That is a
+    // UX gap (transient backend outage manifests as forced logout) and the
+    // store should preserve a still-valid token across transient
+    // TOKEN_EXCHANGE_FAILED errors. Update the assertion alongside any source
+    // change that tracks token expiry to skip the context clear.
     it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then clears context', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
@@ -769,7 +776,16 @@ describe('useWorkspaceAuthStore', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    it('aborts an in-flight refresh when switchWorkspace targets a different workspace', async () => {
+    // KNOWN BUG (.fails): when an in-flight refresh's switchWorkspace call is
+    // already past its requestId-staleness check and awaiting the token-exchange
+    // fetch, switchWorkspace has no post-await commit guard. If the user
+    // switches workspaces and the stale refresh's fetch resolves AFTER the new
+    // switch has committed, the stale response will overwrite the new
+    // workspace's currentWorkspace/workspaceToken/sessionStorage. Mark this
+    // expected-fail until switchWorkspace gains a commit-time staleness check
+    // (e.g. compare captured requestId or expected workspaceId before
+    // assigning state). Removing `.fails` once fixed will catch regressions.
+    it.fails('the new workspace wins when the stale refresh resolves last', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
       const mockFetch = vi.fn().mockResolvedValueOnce({
@@ -779,11 +795,11 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { currentWorkspace } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
 
       await store.switchWorkspace('workspace-123')
 
-      // Make the next refresh attempt hang so we can observe the staleness check.
+      // Hang the next fetch — this is the refresh's switchWorkspace fetch.
       let resolveRefreshFetch: (value: unknown) => void = () => {}
       const refreshFetchPromise = new Promise((resolve) => {
         resolveRefreshFetch = resolve
@@ -792,30 +808,37 @@ describe('useWorkspaceAuthStore', () => {
 
       const refreshPromise = store.refreshToken()
 
-      // User switches to a different workspace before the in-flight refresh resolves.
+      // User switches workspace AND its fetch resolves first.
       const newWorkspace = { ...mockWorkspace, id: 'workspace-other' }
-      const newTokenResponse = {
-        ...mockTokenResponse,
-        token: 'new-workspace-token',
-        workspace: newWorkspace
-      }
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(newTokenResponse)
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'new-workspace-token',
+            workspace: newWorkspace
+          })
       })
-      const switchPromise = store.switchWorkspace('workspace-other')
+      await store.switchWorkspace('workspace-other')
 
-      // Resolve the stale refresh fetch with a token tied to the OLD workspace.
+      // New workspace is committed at this point.
+      expect(currentWorkspace.value?.id).toBe('workspace-other')
+      expect(workspaceToken.value).toBe('new-workspace-token')
+
+      // Now resolve the stale refresh fetch — it carries an OLD-workspace
+      // token, and the source has no commit-time staleness check, so it
+      // clobbers the new workspace state.
       resolveRefreshFetch({
         ok: true,
         json: () =>
           Promise.resolve({ ...mockTokenResponse, token: 'stale-token' })
       })
+      await refreshPromise
 
-      await Promise.all([refreshPromise, switchPromise])
-
-      // The new workspace context wins; the stale refresh did not clobber it.
+      // Once the source-side guard is added, both of these become true
+      // (the test stops failing) and `.fails` should be dropped.
       expect(currentWorkspace.value?.id).toBe('workspace-other')
+      expect(workspaceToken.value).toBe('new-workspace-token')
     })
   })
 
