@@ -121,12 +121,7 @@ function cancelRename() {
       </span>
     </div>
     <div
-      :class="[
-        'min-h-0 flex-1 overflow-hidden',
-        '[&_input]:text-layout-md!',
-        '[&_textarea]:h-full! [&_textarea]:min-h-0!',
-        '[&_textarea]:resize-none! [&_textarea]:text-layout-md!'
-      ]"
+      class="input-cell__body min-h-0 flex-1 overflow-hidden"
       :inert="variant === 'builder' || undefined"
     >
       <DropZone>
@@ -143,3 +138,22 @@ function cancelRename() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Body-scoped overrides for NodeWidgets internals — consolidates what
+   used to be five Tailwind `[&_input]:…!` / `[&_textarea]:…!` arbitrary
+   variants on the wrapper into one place. The `!important` matches the
+   pattern in PanelBlockList: NodeWidgets sets these properties via its
+   own utility classes, and without `!important` the design-system
+   defaults win the cascade. The proper fix is a layout prop/variant on
+   NodeWidgets itself (CR feedback) — out of scope for this PR. */
+.input-cell__body :deep(input) {
+  font-size: var(--text-layout-md) !important;
+}
+.input-cell__body :deep(textarea) {
+  height: 100% !important;
+  min-height: 0 !important;
+  resize: none !important;
+  font-size: var(--text-layout-md) !important;
+}
+</style>

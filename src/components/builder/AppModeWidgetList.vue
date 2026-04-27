@@ -66,7 +66,10 @@ useEventListener(
 )
 
 const mappedSelections = computed((): WidgetEntry[] => {
-  void graphNodes.value
+  // Reading `graphNodes.value` registers the dep so the computed
+  // re-runs when `app.rootGraph` is re-bound. Typed as an array so
+  // the early return is just an explicit no-op guard.
+  if (!graphNodes.value) return []
   const nodeDataByNode = new Map<
     LGraphNode,
     ReturnType<typeof nodeToNodeData>

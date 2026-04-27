@@ -45,7 +45,12 @@ export function useAppPanelLayout() {
   )
 
   const inputEntries = computed<InputEntryWithMeta[]>(() => {
-    void graphNodes.value
+    // Reading `graphNodes.value` registers the dep so the computed
+    // re-runs when `app.rootGraph` is re-bound (configured event). The
+    // typed shape guarantees an array, so the early return is more of
+    // an explicit no-op guard than a real branch — it's just clearer
+    // than `void graphNodes.value` for the same effect.
+    if (!graphNodes.value) return []
     const nodeDataByNode = new Map<
       LGraphNode,
       ReturnType<typeof extractVueNodeData>
