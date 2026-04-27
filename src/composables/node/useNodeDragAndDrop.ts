@@ -13,6 +13,14 @@ interface DragAndDropOptions<T> {
   fileFilter?: (file: File) => boolean
 }
 
+function parseAssetInfo(assetString?: string) {
+  try {
+    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
+  } catch {
+    // output was not parsable, allow fallthrough and return undefined
+  }
+}
+
 /**
  * Adds drag and drop file handling to a node
  * Will also resolve 'text/uri-list' to a file before passing
@@ -55,13 +63,12 @@ export const useNodeDragAndDrop = <T>(
 
     const files = filterFiles(e.dataTransfer!.files)
     if (files.length) {
-      void onDrop(files)
+      await onDrop(files)
       return true
     }
-    const assetString = e?.dataTransfer?.getData('comfy/asset-info') ?? ''
-    const asset = zResultItem.safeParse(JSON.parse(assetString)).data
+    const asset = parseAssetInfo(e?.dataTransfer?.getData('comfy/asset-info'))
     if (asset && options.onResultItemDrop) {
-      void options.onResultItemDrop(asset)
+      await options.onResultItemDrop(asset)
       return true
     }
 
