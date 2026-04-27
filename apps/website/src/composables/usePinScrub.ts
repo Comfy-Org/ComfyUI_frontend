@@ -18,7 +18,7 @@ interface PinScrubOptions {
 }
 
 /** Viewport-height percentage each category occupies in the scroll distance. */
-export const VH_PER_ITEM = 20
+export const VH_PER_ITEM = 60
 
 function interpolateY(
   index: number,
@@ -113,6 +113,13 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
             end: `+=${options.itemCount * vhPerItem}%`,
             pin: true,
             scrub: true,
+            snap: {
+              snapTo: 1 / (options.itemCount - 1),
+              duration: { min: 0.25, max: 0.55 },
+              delay: 0.15,
+              ease: 'power2.out',
+              directional: true
+            },
             onToggle(self) {
               isPinned.value = self.isActive
             },
