@@ -99,5 +99,58 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       )
       await expect(downloadButton.first()).toBeVisible()
     })
+
+    test('Should render Download all and Refresh actions for one downloadable model', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelActions)
+      ).toBeVisible()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelDownloadAll)
+      ).toBeVisible()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelRefresh)
+      ).toBeVisible()
+    })
+
+    test('Should clear resolved missing model when Refresh is clicked', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      await comfyPage.page.route(/\/object_info$/, async (route) => {
+        const response = await route.fetch()
+        const objectInfo = await response.json()
+        const ckptName =
+          objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
+        ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
+        await route.fulfill({ response, json: objectInfo })
+      })
+
+      const objectInfoResponse = comfyPage.page.waitForResponse((response) => {
+        const url = new URL(response.url())
+        return url.pathname.endsWith('/object_info') && response.ok()
+      })
+      const modelFoldersResponse = comfyPage.page.waitForResponse(
+        (response) => {
+          const url = new URL(response.url())
+          return url.pathname.endsWith('/experiment/models') && response.ok()
+        }
+      )
+      const refreshButton = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelRefresh
+      )
+
+      await Promise.all([
+        objectInfoResponse,
+        modelFoldersResponse,
+        refreshButton.click()
+      ])
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeHidden()
+    })
   })
 })
