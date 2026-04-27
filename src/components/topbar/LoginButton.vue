@@ -22,9 +22,10 @@
     @mouseout="hidePopover"
     @mouseover="cancelHidePopover"
   >
-    <div>
+    <div data-testid="login-button-popover">
       <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
       <a
+        data-testid="login-button-popover-learn-more"
         :href="apiNodesOverviewUrl"
         target="_blank"
         class="text-neutral-500 hover:text-primary"

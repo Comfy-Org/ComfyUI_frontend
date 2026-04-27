@@ -73,16 +73,16 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
       await enableLoginButtonFlag(comfyPage.page)
       await comfyPage.page.getByTestId(TestIds.topbar.loginButton).hover()
       await expect(
-        comfyPage.page.getByText('Login to be able to use "API Nodes"')
+        comfyPage.page.getByTestId(TestIds.topbar.loginButtonPopover)
       ).toBeVisible()
     })
 
     test('popover contains a Learn more link', async ({ comfyPage }) => {
       await enableLoginButtonFlag(comfyPage.page)
       await comfyPage.page.getByTestId(TestIds.topbar.loginButton).hover()
-      const learnMoreLink = comfyPage.page.getByRole('link', {
-        name: 'Learn more...'
-      })
+      const learnMoreLink = comfyPage.page.getByTestId(
+        TestIds.topbar.loginButtonPopoverLearnMore
+      )
       await expect(learnMoreLink).toBeVisible()
       await expect(learnMoreLink).toHaveAttribute('href', /api-nodes/)
     })
@@ -94,12 +94,12 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
       const button = comfyPage.page.getByTestId(TestIds.topbar.loginButton)
       await button.hover()
       await expect(
-        comfyPage.page.getByText('Login to be able to use "API Nodes"')
+        comfyPage.page.getByTestId(TestIds.topbar.loginButtonPopover)
       ).toBeVisible()
 
-      await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.canvas.hover()
       await expect(
-        comfyPage.page.getByText('Login to be able to use "API Nodes"')
+        comfyPage.page.getByTestId(TestIds.topbar.loginButtonPopover)
       ).toBeHidden()
     })
   })
