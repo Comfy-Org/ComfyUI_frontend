@@ -301,7 +301,7 @@ describe('useMediaAssetActions', () => {
       })
     }
 
-    it('should preserve single job-level selections (outputCount known)', async () => {
+    it('should use preserve strategy when selection spans a single job', async () => {
       const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
 
       const actions = useMediaAssetActions()

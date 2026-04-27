@@ -669,7 +669,7 @@ test.describe('Assets sidebar - bulk actions', () => {
 
 cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   cloudTest(
-    'Single selected multi-output job export preserves naming strategy',
+    'Single job selection uses preserve naming strategy',
     async ({ comfyPage, mockCloudAssetSidebarData }) => {
       void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
@@ -683,7 +683,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       await tab.downloadSelectedButton.click()
 
-      await expect.poll(() => exportRequests.length).toBe(1)
+      await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
       expect(payload.job_ids).toEqual(['job-gamma'])
@@ -693,7 +693,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   )
 
   cloudTest(
-    'Multiple selected assets within one job preserve naming strategy',
+    'Multiple selected assets from one job use preserve naming strategy',
     async ({ comfyPage, mockCloudAssetSidebarData }) => {
       void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
@@ -715,7 +715,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect(tab.selectedCards).toHaveCount(2)
       await tab.downloadSelectedButton.click()
 
-      await expect.poll(() => exportRequests.length).toBe(1)
+      await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
       expect(payload.job_ids).toEqual(['job-gamma'])
@@ -744,7 +744,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect(tab.selectedCards).toHaveCount(2)
       await tab.downloadSelectedButton.click()
 
-      await expect.poll(() => exportRequests.length).toBe(1)
+      await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
       expect(payload.job_ids?.toSorted()).toEqual(['job-alpha', 'job-beta'])

@@ -12,6 +12,8 @@ function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
 }
 
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, STABLE_CHECKPOINT_2]
+const WAITING_FOR_WIDGET_TYPE = 'waiting:type'
+const WAITING_FOR_WIDGET_VALUE = 'waiting:value'
 
 // Stub /api/assets before the app loads. The local ComfyUI backend has no
 // /api/assets endpoint (returns 503), which poisons the assets store on
@@ -69,16 +71,16 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     await expect
       .poll(
         () =>
-          comfyPage.page.evaluate(() => {
+          comfyPage.page.evaluate((waitingForWidgetType) => {
             const node = window.app!.graph.nodes.find(
               (n: { type: string }) => n.type === 'CheckpointLoaderSimple'
             )
             return (
               node?.widgets?.find(
                 (w: { name: string }) => w.name === 'ckpt_name'
-              )?.type ?? 'waiting:type'
+              )?.type ?? waitingForWidgetType
             )
-          }),
+          }, WAITING_FOR_WIDGET_TYPE),
         { timeout: 10_000 }
       )
       .toBe('asset')
@@ -101,15 +103,22 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     await expect
       .poll(
         () =>
-          comfyPage.page.evaluate((id) => {
-            const node = window.app!.graph.getNodeById(id)
-            const widget = node?.widgets?.find(
-              (w: { name: string }) => w.name === 'ckpt_name'
-            )
-            if (widget?.type !== 'asset') return 'waiting:type'
-            const val = String(widget?.value ?? '')
-            return val === 'Select model' ? 'waiting:value' : val
-          }, nodeId),
+          comfyPage.page.evaluate(
+            ({ id, waitingForWidgetType, waitingForWidgetValue }) => {
+              const node = window.app!.graph.getNodeById(id)
+              const widget = node?.widgets?.find(
+                (w: { name: string }) => w.name === 'ckpt_name'
+              )
+              if (widget?.type !== 'asset') return waitingForWidgetType
+              const val = String(widget?.value ?? '')
+              return val === 'Select model' ? waitingForWidgetValue : val
+            },
+            {
+              id: nodeId,
+              waitingForWidgetType: WAITING_FOR_WIDGET_TYPE,
+              waitingForWidgetValue: WAITING_FOR_WIDGET_VALUE
+            }
+          ),
         { timeout: 15_000 }
       )
       .toBe(CLOUD_ASSETS[0].name)
