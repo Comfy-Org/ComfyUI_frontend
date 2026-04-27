@@ -34,6 +34,10 @@ const i18n = createI18n({
   }
 })
 
+function formatExpectedDate(dateString: string): string {
+  return i18n.global.d(new Date(dateString), { dateStyle: 'medium' })
+}
+
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
 ): SecretMetadata {
@@ -106,9 +110,7 @@ describe('SecretListItem', () => {
       renderComponent({ secret })
 
       expect(
-        screen.getByText(
-          `Created ${new Date(secret.created_at).toLocaleDateString()}`
-        )
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
       ).toBeInTheDocument()
     })
 
@@ -118,7 +120,7 @@ describe('SecretListItem', () => {
 
       expect(
         screen.getByText(
-          `Last used ${new Date(secret.last_used_at!).toLocaleDateString()}`
+          `Last used ${formatExpectedDate(secret.last_used_at!)}`
         )
       ).toBeInTheDocument()
     })
@@ -139,9 +141,7 @@ describe('SecretListItem', () => {
 
       expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument()
       expect(
-        screen.getByText(
-          `Created ${new Date(secret.created_at).toLocaleDateString()}`
-        )
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
       ).toBeInTheDocument()
     })
 
@@ -152,9 +152,7 @@ describe('SecretListItem', () => {
       renderComponent({ secret })
 
       expect(
-        screen.getByText(
-          `Created ${new Date(secret.created_at).toLocaleDateString()}`
-        )
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
       ).toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
@@ -166,9 +164,7 @@ describe('SecretListItem', () => {
       renderComponent({ secret })
 
       expect(
-        screen.getByText(
-          `Created ${new Date(secret.created_at).toLocaleDateString()}`
-        )
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
       ).toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
@@ -177,7 +173,7 @@ describe('SecretListItem', () => {
       const secret = createMockSecret({ created_at: 'not-a-date' })
       renderComponent({ secret })
 
-      expect(screen.queryByText(/secrets\.createdAt/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/^Created /)).not.toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -185,7 +181,7 @@ describe('SecretListItem', () => {
       const secret = createMockSecret({ last_used_at: 'not-a-date' })
       renderComponent({ secret })
 
-      expect(screen.queryByText(/secrets\.lastUsed/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/^Last used /)).not.toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
 
@@ -197,7 +193,7 @@ describe('SecretListItem', () => {
 
       expect(
         screen.getByText(
-          `Last used ${new Date(secret.last_used_at!).toLocaleDateString()}`
+          `Last used ${formatExpectedDate(secret.last_used_at!)}`
         )
       ).toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()

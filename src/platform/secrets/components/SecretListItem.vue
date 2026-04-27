@@ -78,14 +78,14 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const { t } = useI18n()
+const { d, t } = useI18n()
 
 const providerLabel = computed(() => getProviderLabel(secret.provider))
 const providerLogo = computed(() => getProviderLogo(secret.provider))
 
 function formatIsoDate(iso: string | undefined | null): string {
   const date = parseIsoDateSafe(iso)
-  return date ? date.toLocaleDateString() : ''
+  return date ? d(date, { dateStyle: 'medium' }) : ''
 }
 
 const createdDate = computed(() => formatIsoDate(secret.created_at))
