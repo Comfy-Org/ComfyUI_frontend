@@ -4,12 +4,12 @@ const translations = {
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
-    'zh-CN': '视觉 AI 的\n专业控制'
+    'zh-CN': '视觉 AI 的\n最强可控性'
   },
   'hero.subtitle': {
     en: 'Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output.',
     'zh-CN':
-      'Comfy 是面向视觉专业人士的 AI 创作引擎，让您掌控每个模型、每个参数和每个输出。'
+      'Comfy 是面向专业视觉人士的 AI 创作引擎。您可以精确掌控每个模型、每个参数和每个输出。'
   },
 
   // ProductShowcaseSection
@@ -20,11 +20,11 @@ const translations = {
   },
   'showcase.subtitle2': {
     en: 'Start from a community template or build from scratch.',
-    'zh-CN': '从社区模板开始，或从零构建。'
+    'zh-CN': '从工作流模板开始，或从零构建。'
   },
   'showcase.feature1.title': {
     en: 'Full Control with Nodes',
-    'zh-CN': '节点式完全控制'
+    'zh-CN': '节点带来的可控性'
   },
   'showcase.feature1.description': {
     en: 'Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.',
@@ -49,8 +49,8 @@ const translations = {
     'zh-CN':
       '浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。'
   },
-  'showcase.badgeHow': { en: 'HOW', 'zh-CN': '如何' },
-  'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运作' },
+  'showcase.badgeHow': { en: 'HOW', 'zh-CN': '了解' },
+  'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运行方式' },
 
   // UseCaseSection
   'useCase.label': {
@@ -83,8 +83,7 @@ const translations = {
   },
   'useCase.body': {
     en: 'Powered by 60,000+ nodes, thousands of workflows,\nand a community that builds faster than any one company could.',
-    'zh-CN':
-      '由 60,000+ 节点、数千个工作流\n和一个比任何公司都更快构建的社区驱动。'
+    'zh-CN': '60,000+ 节点，数千条工作流，\n一个比任何公司速度都更快的社区。'
   },
   'useCase.cta': {
     en: 'EXPLORE WORKFLOWS',
@@ -164,7 +163,7 @@ const translations = {
   },
   'products.local.cta': {
     en: 'SEE LOCAL FEATURES',
-    'zh-CN': '查看本地版特性'
+    'zh-CN': '查看本地版属性'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -176,7 +175,7 @@ const translations = {
   },
   'products.cloud.cta': {
     en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端特性'
+    'zh-CN': '查看云端属性'
   },
   'products.api.title': {
     en: 'Comfy\nAPI',
@@ -188,7 +187,7 @@ const translations = {
   },
   'products.api.cta': {
     en: 'SEE API FEATURES',
-    'zh-CN': '查看 API 特性'
+    'zh-CN': '查看 API 属性'
   },
   'products.enterprise.title': {
     en: 'Comfy\nEnterprise',
@@ -200,7 +199,7 @@ const translations = {
   },
   'products.enterprise.cta': {
     en: 'SEE ENTERPRISE FEATURES',
-    'zh-CN': '查看企业版特性'
+    'zh-CN': '查看企业版属性'
   },
 
   // CaseStudySpotlightSection
@@ -1215,7 +1214,7 @@ const translations = {
   'pricing.included.feature4.description': {
     en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作节点</a>（如 Nano Banana Pro）。'
+      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',
@@ -1245,12 +1244,12 @@ const translations = {
   },
   'pricing.included.feature8.title': {
     en: 'Partner Nodes',
-    'zh-CN': '合作节点'
+    'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
     en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和本地 ComfyUI 间通用。了解更多关于合作节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和本地 ComfyUI 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -1505,6 +1504,10 @@ const translations = {
 
   // CareersRolesSection
   'careers.roles.heading': { en: 'Roles', 'zh-CN': '职位' },
+  'careers.roles.empty': {
+    en: 'No open roles right now. Check back soon.',
+    'zh-CN': '目前暂无开放职位，请稍后再来查看。'
+  },
 
   // CareersFAQSection
   'careers.faq.heading': { en: 'Q&A', 'zh-CN': 'Q&A' },

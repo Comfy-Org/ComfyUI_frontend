@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Uygulama",
+    "blueprint": "Plan",
     "clearWorkflow": "İş Akışını Temizle",
     "deleteBlueprint": "Taslağı Sil",
     "deleteWorkflow": "İş Akışını Sil",
@@ -917,6 +918,10 @@
     "showMissingNodes": "Eksik düğümleri göster",
     "showSwapNodes": "Değiştirilebilir düğümleri göster",
     "swapNodes": "Bazı düğümler alternatiflerle değiştirilebilir"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Geri bildirim ver",
+    "ctaText": "Yeni hata paneli nasıl?"
   },
   "essentials": {
     "batchImage": "Toplu Görüntü",

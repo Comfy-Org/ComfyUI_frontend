@@ -10,12 +10,12 @@ const cards = [
   {
     titleKey: 'enterprise.byoKey.card1.title' as const,
     descriptionKey: 'enterprise.byoKey.card1.description' as const,
-    image: 'https://media.comfy.org/website/api/logo-purple.webp'
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_1.webp'
   },
   {
     titleKey: 'enterprise.byoKey.card2.title' as const,
     descriptionKey: 'enterprise.byoKey.card2.description' as const,
-    image: 'https://media.comfy.org/website/api/logo-yellow.webp'
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_2.webp'
   }
 ]
 </script>

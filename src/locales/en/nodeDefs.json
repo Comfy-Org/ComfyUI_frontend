@@ -11743,8 +11743,8 @@
     }
   },
   "OpenAIVideoSora2": {
-    "display_name": "OpenAI Sora - Video",
-    "description": "OpenAI video and audio generation.",
+    "display_name": "OpenAI Sora - Video (Deprecated)",
+    "description": "OpenAI video and audio generation.\n\nDEPRECATION NOTICE: OpenAI will stop serving the Sora v2 API in September 2026. This node will be removed from ComfyUI at that time.",
     "inputs": {
       "model": {
         "name": "model"
