@@ -469,6 +469,31 @@ describe('Load3d', () => {
     })
   })
 
+  describe('adapter-driven kind queries', () => {
+    function makeWithAdapter(kind: 'mesh' | 'pointCloud' | 'splat' | null) {
+      const adapter = kind === null ? null : { kind }
+      Object.assign(ctx.load3d, {
+        loaderManager: { getCurrentAdapter: vi.fn(() => adapter) }
+      })
+    }
+
+    it('isSplatModel is true only when the current adapter kind is "splat"', () => {
+      makeWithAdapter('splat')
+      expect(ctx.load3d.isSplatModel()).toBe(true)
+      makeWithAdapter('mesh')
+      expect(ctx.load3d.isSplatModel()).toBe(false)
+      makeWithAdapter(null)
+      expect(ctx.load3d.isSplatModel()).toBe(false)
+    })
+
+    it('isPlyModel is true only when the current adapter kind is "pointCloud"', () => {
+      makeWithAdapter('pointCloud')
+      expect(ctx.load3d.isPlyModel()).toBe(true)
+      makeWithAdapter('mesh')
+      expect(ctx.load3d.isPlyModel()).toBe(false)
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }

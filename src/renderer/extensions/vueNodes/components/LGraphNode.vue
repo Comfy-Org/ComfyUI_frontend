@@ -18,7 +18,9 @@
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
-        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
+        shouldHandleNodePointerEvents &&
+          !nodeData.flags?.ghost &&
+          !isGhostPlacing
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -29,6 +31,7 @@
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
+    :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -341,7 +344,7 @@ const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(String(nodeData.id), 'node')
 
-const { selectedNodeIds } = storeToRefs(useCanvasStore())
+const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
