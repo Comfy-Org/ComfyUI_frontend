@@ -1,4 +1,5 @@
 import { render } from '@testing-library/vue'
+import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
@@ -30,6 +31,7 @@ vi.mock('@/utils/loaderNodeUtil', () => ({
 const mediaAssetActions = {
   addWorkflow: vi.fn(),
   downloadAsset: vi.fn(),
+  downloadMultipleAssets: vi.fn(),
   openWorkflow: vi.fn(),
   exportWorkflow: vi.fn(),
   copyJobId: vi.fn(),
@@ -40,18 +42,32 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 
+let capturedModel: MenuItem[] = []
+
 const contextMenuStub = defineComponent({
   name: 'ContextMenu',
   props: {
     pt: {
       type: Object,
       default: undefined
+    },
+    model: {
+      type: Array as () => MenuItem[],
+      default: () => []
     }
   },
   emits: ['hide'],
   data() {
     return {
       visible: false
+    }
+  },
+  watch: {
+    model: {
+      immediate: true,
+      handler(items: MenuItem[]) {
+        capturedModel = items
+      }
     }
   },
   methods: {
@@ -127,8 +143,21 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 afterEach(() => {
   vi.clearAllMocks()
   capturedRef = null
+  capturedModel = []
   document.body.innerHTML = ''
 })
+
+type MenuCommand = NonNullable<MenuItem['command']>
+
+function findDownloadCommand(): MenuCommand {
+  const downloadItem = capturedModel.find(
+    (item) => item.label === 'mediaAsset.actions.download'
+  )
+  if (!downloadItem?.command) {
+    throw new Error('Download menu item or command was not registered')
+  }
+  return downloadItem.command
+}
 
 describe('MediaAssetContextMenu', () => {
   it('dismisses outside pointerdown using the rendered root id', async () => {
@@ -149,6 +178,21 @@ describe('MediaAssetContextMenu', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.context-menu-stub')).toBeNull()
     expect(onHide).toHaveBeenCalledOnce()
+
+    unmount()
+  })
+
+  it('routes Download through downloadMultipleAssets so multi-output jobs zip', async () => {
+    const { container, unmount } = mountComponent()
+    await showMenu(container)
+
+    const command = findDownloadCommand()
+    command({ originalEvent: new Event('click'), item: {} })
+
+    expect(mediaAssetActions.downloadMultipleAssets).toHaveBeenCalledWith([
+      asset
+    ])
+    expect(mediaAssetActions.downloadAsset).not.toHaveBeenCalled()
 
     unmount()
   })
