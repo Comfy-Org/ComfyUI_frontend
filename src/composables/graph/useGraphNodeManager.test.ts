@@ -246,6 +246,46 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(widgetData?.slotMetadata?.linked).toBe(false)
   })
 
+  it('marks promoted component widgets as component-backed instead of DOM-backed', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('interior')
+    interiorNode.id = 10
+    const componentWidget = interiorNode.addWidget(
+      'custom',
+      'foo',
+      [],
+      () => undefined,
+      {}
+    )
+    Object.defineProperties(componentWidget, {
+      component: { value: {}, enumerable: true },
+      id: { value: 'comp-widget-foo', enumerable: true }
+    })
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
+    const promotedView = createPromotedWidgetView(
+      subgraphNode,
+      '10',
+      'foo',
+      'foo',
+      undefined,
+      'foo'
+    )
+
+    const graph = new LGraph()
+    const hostNode = new LGraphNode('host')
+    hostNode.widgets = [promotedView]
+    graph.add(hostNode)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(hostNode.id))
+    const widgetData = nodeData?.widgets?.find((w) => w.name === 'foo')
+
+    expect(widgetData?.isComponentWidget).toBe(true)
+    expect(widgetData?.isDOMWidget).toBe(false)
+  })
+
   it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [
