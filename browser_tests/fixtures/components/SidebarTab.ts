@@ -283,6 +283,12 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly settingsButton: Locator
   public readonly filterButton: Locator
 
+  // --- Filter menu checkboxes (cloud-only, shown inside filter popover) ---
+  public readonly filterImageCheckbox: Locator
+  public readonly filterVideoCheckbox: Locator
+  public readonly filterAudioCheckbox: Locator
+  public readonly filter3DCheckbox: Locator
+
   // --- View mode ---
   public readonly listViewOption: Locator
   public readonly gridViewOption: Locator
@@ -323,6 +329,10 @@ export class AssetsSidebarTab extends SidebarTab {
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
     this.filterButton = page.getByRole('button', { name: 'Filter by' })
+    this.filterImageCheckbox = page.getByRole('checkbox', { name: 'Image' })
+    this.filterVideoCheckbox = page.getByRole('checkbox', { name: 'Video' })
+    this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
+    this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')
