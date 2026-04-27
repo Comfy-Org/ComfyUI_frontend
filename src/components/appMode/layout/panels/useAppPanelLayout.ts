@@ -1,14 +1,9 @@
 /**
- * useAppPanelLayout — shared panel state for App Mode + App Builder.
- *
- * Owns the resolution from `appModeStore.selectedInputs` to
- * `InputCellEntry` objects (needs the LGraph), the reconciliation
- * `watchEffect` that keeps `panelRows` in sync with the selected inputs,
- * and the `moveBlock` 2D reorder math.
- *
- * Both `LayoutView` (runtime) and `BuilderPanel` (edit) consume this so
- * the block layout is the same state across views — rearranging in
- * either place updates the other by construction.
+ * Shared panel state for App Mode + App Builder. Resolves
+ * `appModeStore.selectedInputs` against the LGraph into
+ * `InputCellEntry`s, keeps `panelRows` reconciled with that, and
+ * exposes 2D reorder. Both LayoutView (runtime) and BuilderPanel
+ * (edit) consume this so the layout is one shared state across views.
  */
 import { useEventListener } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
@@ -32,11 +27,9 @@ interface InputEntryWithMeta extends InputCellEntry {
 export function useAppPanelLayout() {
   const appModeStore = useAppModeStore()
 
-  // Re-resolve on graph reconfigure (e.g. after app.loadGraphData) so
-  // stale selected-input entries get pruned. `app.rootGraph` may be
-  // null during transitions, so seed with an empty array and subscribe
-  // via a getter — VueUse re-binds the listener when the target
-  // becomes available.
+  // Re-resolve on graph reconfigure (after app.loadGraphData) so
+  // stale entries get pruned. rootGraph may be null in transitions —
+  // VueUse re-binds the listener when the getter target appears.
   const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph?.nodes ?? [])
   useEventListener(
     () => app.rootGraph?.events,
@@ -45,11 +38,9 @@ export function useAppPanelLayout() {
   )
 
   const inputEntries = computed<InputEntryWithMeta[]>(() => {
-    // Reading `graphNodes.value` registers the dep so the computed
-    // re-runs when `app.rootGraph` is re-bound (configured event). The
-    // typed shape guarantees an array, so the early return is more of
-    // an explicit no-op guard than a real branch — it's just clearer
-    // than `void graphNodes.value` for the same effect.
+    // Touching `graphNodes.value` registers the dep so the computed
+    // re-runs on rootGraph rebind; the typed shape guarantees an
+    // array so this is an explicit no-op guard.
     if (!graphNodes.value) return []
     const nodeDataByNode = new Map<
       LGraphNode,
@@ -81,10 +72,8 @@ export function useAppPanelLayout() {
       matchingWidget.slotMetadata = undefined
       matchingWidget.nodeId = String(node.id)
 
-      // widget.options is a generic TOptions at the IBaseWidget boundary,
-      // so narrow via an in-check before reading `multiline`. After the
-      // narrow TS knows `opts.multiline` is `unknown`, which Boolean()
-      // consumes without a further cast.
+      // widget.options is a generic TOptions at the IBaseWidget
+      // boundary; narrow via in-check before reading `multiline`.
       const opts: unknown = widget.options
       const isMultiline =
         (typeof opts === 'object' &&
@@ -126,9 +115,7 @@ export function useAppPanelLayout() {
       }
     }
 
-    // Drop blocks whose entry is gone (entry-missing check replaces
-    // the separate desiredInputIds set — entryByBlockId is built from
-    // the same source, so "no entry" == "no longer desired").
+    // Drop blocks whose entry is gone (entry-missing == undesired).
     const preserved: BlockRow[] = appModeStore.panelRows
       .map(
         (row): BlockRow =>
@@ -162,11 +149,8 @@ export function useAppPanelLayout() {
       ])
     }
 
-    // Structural-equality guard: `watchEffect` re-reads `panelRows`, so
-    // an unconditional assignment would create a new array reference on
-    // every tick (including after a moveBlock write) and retrigger the
-    // effect. isEqual short-circuits the common no-op case cheaply —
-    // panelRows stays small (one row per input).
+    // Equality guard: an unconditional assignment would re-trigger
+    // this watchEffect on every tick (even after a moveBlock write).
     if (!isEqual(preserved, appModeStore.panelRows)) {
       appModeStore.panelRows = preserved
     }
@@ -184,15 +168,11 @@ export function useAppPanelLayout() {
 }
 
 /**
- * Pure reorder: return what `panelRows` would be after moving the block
- * at `from` to `target`, without mutating inputs or writing to the
- * store. Returns the original `rows` reference when the move is a noop
- * (column-at-self-position or solo-row-to-own-row-boundary) so callers
- * can identity-check for bail-outs.
- *
- * Shared between `moveBlock` (commit path) and `PanelBlockList`'s drag
- * preview — reproduces the same math so the live preview users see
- * during drag matches exactly what will land on release.
+ * Pure reorder of `panelRows`. Returns the original `rows` reference
+ * for noop moves (column-at-self, solo-row-to-own-row-boundary) so
+ * callers can identity-check. Shared between the commit path and
+ * PanelBlockList's drag preview so what users see during drag matches
+ * what lands on release.
  */
 export function applyMove(
   rows: BlockRow[],

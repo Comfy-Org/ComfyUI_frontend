@@ -1,18 +1,10 @@
 /**
- * usePanelDrag — pointer-driven drag for FloatingPanel.
- *
- * Panels move between 6 preset positions only (no free positioning).
- * During drag, `snapTarget` tracks the closest preset under the
- * pointer. On release, the caller commits the preset.
- *
- * Drag contract:
- * - Starts on header pointerdown; only activates (`isDragging` flips
- *   true) once the pointer moves past `DRAG_THRESHOLD_PX`, so a plain
- *   click on the header doesn't silently re-snap the panel.
- * - Only responds to the pointer that started the drag (activePointerId
- *   filter), so a stray second touch on a multi-touch device can't
- *   hijack or cancel it.
- * - Ends on pointerup / pointercancel / window blur.
+ * Pointer-driven drag for FloatingPanel between 6 fixed presets (no
+ * free positioning). `snapTarget` tracks the nearest preset under the
+ * pointer; the caller commits on release. Drag activates only after
+ * the pointer moves past `DRAG_THRESHOLD_PX` so a plain click on the
+ * header is a no-op. Window blur abandons the drag so it can't get
+ * stuck waiting for a pointerup that never arrives.
  */
 import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { ref, watch } from 'vue'
@@ -20,13 +12,12 @@ import type { Ref } from 'vue'
 
 import type { PanelPreset } from './panelTypes'
 
-// Half of the dock panel's width (see --panel-dock-width: 440px in
-// FloatingPanel.vue). Drives preset-center anchor math; keep in sync
-// with the CSS variable.
+// Half the dock panel width (matches --panel-dock-width: 440px).
+// Drives preset-center anchor math; keep in sync with the CSS var.
 const PANEL_HALF_WIDTH = 220
 const DOCK_V_CENTER = 0.5 // fraction of viewport height
 const FLOAT_V_OFFSET = 200 // px from top/bottom for float corners
-/** Pointer must move at least this far (px) to count as a drag, not a click. */
+/** Pointer must move this far before a press counts as a drag. */
 const DRAG_THRESHOLD_PX = 5
 
 interface PresetAnchor {
@@ -35,12 +26,8 @@ interface PresetAnchor {
   y: number
 }
 
-// Left-anchored presets clear the Comfy sidebar via `--sidebar-width`
-// (see FloatingPanel's PRESET_CLASSES). Mirror that in the snap-target
-// math so hovering near the panel's future landing point actually
-// snaps there — otherwise the anchor sits 25–50px left of where the
-// panel ends up, and a user who hovers over the icon strip "just
-// right" misses the target.
+// Snap-target math mirrors the CSS sidebar offset (see panelPresetClasses)
+// so hovering near a left-anchored landing point actually snaps to it.
 function readSidebarWidth(): number {
   if (typeof document === 'undefined') return 0
   const raw = getComputedStyle(document.documentElement)
@@ -90,8 +77,7 @@ export function usePanelDrag(opts: UsePanelDragOptions) {
   const isDragging = ref(false)
   const snapTarget = ref<PanelPreset>(opts.currentPreset.value)
 
-  // Non-reactive drag state. These gate handler behavior but don't drive
-  // UI, so plain refs would only add re-render churn.
+  // Non-reactive — these gate handler behavior, not UI.
   let activePointerId: number | null = null
   let capturedEl: HTMLElement | null = null
   let startX = 0
@@ -116,10 +102,7 @@ export function usePanelDrag(opts: UsePanelDragOptions) {
     movedFarEnough = false
   }
 
-  // Always-on window listeners; bail in O(1) if the pointerId doesn't
-  // match an active drag. useEventListener auto-removes on scope
-  // dispose, replacing the manual addEventListener/removeEventListener
-  // bookkeeping in the previous implementation.
+  // Always-on; bails O(1) on non-matching pointers.
   useEventListener(window, 'pointermove', (e: PointerEvent) => {
     if (!isOurPointer(e)) return
     if (!movedFarEnough) {
@@ -145,9 +128,6 @@ export function usePanelDrag(opts: UsePanelDragOptions) {
     reset()
   })
 
-  // If the window loses focus mid-drag (alt-tab, lock screen, OS-level
-  // modal), abandon the drag so we don't leave the panel stuck in drag
-  // state waiting for a pointerup that never arrives.
   const focused = useWindowFocus()
   watch(focused, (nowFocused) => {
     if (!nowFocused && activePointerId !== null) reset()
@@ -167,12 +147,8 @@ export function usePanelDrag(opts: UsePanelDragOptions) {
     } catch {
       // ignore — some browsers restrict capture on non-touch
     }
-    // isDragging + snapTarget stay unchanged until the movement
-    // threshold is crossed — so a plain click on the header is a no-op.
     e.preventDefault()
-    // Stop bubbling so LayoutView's pan handler (now bound to the
-    // outer `.layout-view`) doesn't also start a workspace pan from
-    // this same press.
+    // Stop bubbling so LayoutView's pan handler doesn't also fire.
     e.stopPropagation()
   }
 

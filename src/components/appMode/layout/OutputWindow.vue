@@ -1,23 +1,11 @@
 <script setup lang="ts">
 /**
- * OutputWindow — movable card containing one generation's output.
- * Visually mirrors FloatingPanel's panel-chrome surface but with
- * freeform drag instead of snap-to-preset. Lives inside LayoutView's
- * workspace transform so zoom scales the window with the canvas.
- *
- * Header layout: chevron · title · `header-actions-right` slot ·
- * ellipsis. The ellipsis Popover combines an internal Maximize /
- * Restore entry with the parent-supplied `menuEntries`.
- *
- * Body slots:
- * - default: media (skeleton / latent / image) — wrapped in `p-2`
- *   for uniform 8px margin against the window edges.
- * - `body-actions`: hover-revealed action toolbar (top-right of the
- *   body, light-on-dark style) for actions that read against image
- *   content.
- * - `body-overlay`: centered, host-driven status UI (progress /
- *   cancel). Wrapper is pointer-events-none; consumers turn events
- *   back on for the interactive card.
+ * Movable card containing one generation's output. Mirrors
+ * FloatingPanel's panel-chrome surface but with freeform drag
+ * instead of snap-to-preset, and lives inside LayoutView's workspace
+ * transform so zoom scales the window with the canvas. Body slots:
+ * default media, `body-actions` (hover toolbar), `body-overlay`
+ * (status UI like progress + cancel).
  */
 import { useEventListener } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
@@ -31,8 +19,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const {
   width = 512,
-  // Used only as a fallback before an image lands. Once `bodyAspect`
-  // is supplied the section auto-sizes to header + body.
+  // Fallback before an image lands. Once `bodyAspect` is supplied,
+  // the section auto-sizes from header + body.
   height = 560,
   title,
   menuEntries = [],
@@ -42,21 +30,16 @@ const {
 } = defineProps<{
   width?: number
   height?: number
-  /** Header label. Falls back to a generic i18n default when
-   *  undefined (skeleton / latent windows that don't yet have a
-   *  file). */
+  /** Header label; falls back to an i18n default for skeleton windows. */
   title?: string
-  /** Extra entries for the header ellipsis Popover, appended below
-   *  the internal Maximize / Restore entry. */
+  /** Appended below the internal Maximize / Restore entry. */
   menuEntries?: MenuItem[]
-  /** Workspace-coord starting position. When omitted the window
-   *  centers itself (single-window legacy). Drag is local; parents
-   *  that need final position listen for `update:position`. */
+  /** Workspace-coord starting position. Drag is local; parents that
+   *  need committed position listen for `update:position`. */
   initialPosition?: { x: number; y: number }
   zIndex?: number
-  /** Image aspect ratio (`naturalWidth / naturalHeight`). When set,
-   *  the body wrapper uses CSS `aspect-ratio` and the section
-   *  auto-sizes vertically — uniform 8px margin on every side
+  /** `naturalWidth / naturalHeight`. When set, the body uses CSS
+   *  `aspect-ratio` and the section auto-sizes — uniform 8px margin
    *  regardless of image dimensions. */
   bodyAspect?: number
 }>()
@@ -78,8 +61,7 @@ function toggleMaximized() {
 const appModeStore = useAppModeStore()
 const { viewportScale } = storeToRefs(appModeStore)
 
-// Snap pitch — finer than the visible dot grid (24px) so even small
-// drags snap cleanly while staying coarse enough to feel intentional.
+// Snap pitch — finer than the dot grid so small drags still snap.
 const GRID = 8
 const snap = (v: number) => Math.round(v / GRID) * GRID
 
@@ -116,8 +98,7 @@ function handleHeaderPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
   emit('promote')
   if (maximized.value) return
-  // Stop bubbling so LayoutView's bgRef pan handler doesn't also
-  // start a workspace pan from this same press.
+  // Stop bubbling so LayoutView's pan handler doesn't also fire.
   e.stopPropagation()
   e.preventDefault()
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -127,9 +108,8 @@ function handleHeaderPointerDown(e: PointerEvent) {
 
 useEventListener(window, 'pointermove', (e: PointerEvent) => {
   if (!dragStart) return
-  // Pointer moves are screen px; window position is workspace px.
-  // Divide by scale so the cursor stays "stuck" to the header at
-  // any zoom.
+  // Divide by scale so the cursor stays stuck to the header at any
+  // zoom (pointer is screen px; window position is workspace px).
   const s = viewportScale.value || 1
   wx.value = dragStart.bx + (e.clientX - dragStart.px) / s
   wy.value = dragStart.by + (e.clientY - dragStart.py) / s
@@ -155,9 +135,8 @@ const HEADER_CONTROL_CLASS =
   'focus-visible:ring-2 focus-visible:ring-base-foreground/40 ' +
   '[&>i]:size-[18px]'
 
-// Maximize / Restore is OutputWindow-owned (state lives here) and
-// merged with parent's `menuEntries` so the ellipsis is a single
-// menu rather than two competing UIs.
+// Maximize / Restore is OutputWindow-owned and merged with the
+// parent's menuEntries so the ellipsis is one menu, not two.
 const combinedMenuEntries = computed<MenuItem[]>(() => {
   const own: MenuItem[] = [
     {
@@ -182,20 +161,16 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       maximized
         ? { inset: '0px', zIndex: zIndex ?? 30 }
         : {
-            // Position via translate3d (compositor-only) instead of
-            // top/left (layout + paint). Updating top/left every
-            // pointermove during a drag shares the main thread with
-            // the latent-preview decode, which is what made dragging
-            // an OutputWindow feel laggy mid-run. transform keeps the
-            // move on the GPU, freeing main-thread budget. The `0`
-            // forces a 3D layer so the browser allocates a composite
+            // translate3d keeps drag on the compositor instead of
+            // running through layout + paint each pointermove —
+            // matters mid-run when the latent preview is also
+            // repainting on the main thread. The `0` forces a 3D
             // layer up-front rather than promoting on first move.
             transform: `translate3d(${wx}px, ${wy}px, 0)`,
             width: `${width}px`,
             zIndex: zIndex ?? 30,
-            // Drop height when collapsed (header-only) or when
-            // bodyAspect is set (section auto-sizes from header +
-            // aspect-driven body). Otherwise use the fixed fallback.
+            // Drop fixed height when collapsed or when bodyAspect
+            // drives the body via CSS aspect-ratio.
             ...(collapsed || bodyAspect != null
               ? {}
               : { height: `${height}px` })
@@ -256,10 +231,8 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       v-show="!collapsed"
       class="group/output relative flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <!-- p-2 wrapper gives the slotted media a uniform 8px margin
-           against the window edges. With `bodyAspect` set, the
-           wrapper sizes itself via CSS aspect-ratio (and drops
-           flex-1) so the slot fills exactly — no letterbox. -->
+      <!-- p-2 = uniform 8px media margin. With `bodyAspect`, the
+           wrapper sizes via aspect-ratio (drops flex-1) for no letterbox. -->
       <div
         class="flex min-h-0 p-2"
         :class="bodyAspect == null && !maximized ? 'flex-1' : ''"

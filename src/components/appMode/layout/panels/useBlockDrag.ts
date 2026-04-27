@@ -1,41 +1,21 @@
 /**
- * useBlockDrag — pointer-driven reorder for blocks inside a panel,
- * with multi-column row support.
+ * Pointer-driven reorder for blocks inside a panel, multi-column.
  *
- * Architecture:
- * - **Snapshot hit-testing.** At drag start we capture each block's
- *   `{rect, rowIndex, colIndex}`. Every subsequent hit-test runs
- *   against that snapshot, never the live DOM. Without this, the
- *   reshuffle preview (`displayRows = applyMove(...)`) and its FLIP
- *   animation change rects during the drag, creating a feedback
- *   loop — a target change reshuffles the DOM, which changes
- *   `getBoundingClientRect()`, which changes the target again.
- *   Snapshot makes hit zones static and immune to mid-drag DOM
- *   mutation.
- * - **Target-shape equality.** `computeDropTarget()` returns a fresh
- *   object per call; writing it straight to the ref would re-trigger
- *   `displayRows` + FLIP every single pointermove even when the
- *   logical target is unchanged. A deep equality guard before the
- *   assignment keeps the reactive graph quiet unless the zone
- *   actually changes.
- * - **Hysteresis on zone boundaries.** Once a zone is active, we
- *   expand its effective boundary by `HYSTERESIS_PX` so the cursor
- *   has to move meaningfully past the edge before switching. Kills
- *   the jittery flip-flop when the pointer hovers exactly on a
- *   column-edge or the row midline.
+ * Three load-bearing decisions that aren't obvious from the code:
+ * - Hit-testing reads a SNAPSHOT of block rects taken at drag start,
+ *   never the live DOM. Without this, the reshuffle preview's FLIP
+ *   animation moves rects during the drag and creates a feedback
+ *   loop (target change → DOM change → target change).
+ * - `computeDropTarget` returns a fresh object per call; an equality
+ *   guard before assigning to `dropTarget` keeps `displayRows` + FLIP
+ *   from re-firing every pointermove when the zone is unchanged.
+ * - Once a zone is active, its boundary widens by `HYSTERESIS_PX` so
+ *   the pointer has to move past the edge before switching — kills
+ *   jitter when hovering exactly on a column edge or row midline.
  *
- * Drop-target detection: find the block whose (snapshot) center is
- * closest to the pointer, then classify the pointer's position
- * inside that block's snapshot rect into one of four zones — left
- * edge → columnBefore, right edge → columnAfter, upper middle →
- * newRowBefore, lower middle → newRowAfter.
- *
- * Drag contract:
- * - Starts on pointerdown; only activates (`draggingPos` set) once
- *   the pointer moves past `DRAG_THRESHOLD_PX`, so a plain click on
- *   the block doesn't count as a drag.
- * - Only responds to the pointer that started the drag.
- * - Ends on pointerup / pointercancel / window blur.
+ * Drop-target detection: nearest block by snapshot center, then
+ * classify pointer position into columnBefore / columnAfter (edge
+ * zones) or newRowBefore / newRowAfter (upper / lower mid).
  */
 import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
@@ -124,10 +104,9 @@ function computeDropTarget(
     EDGE_MAX_PX
   )
 
-  // Hysteresis — stickiness only applies when the nearest is the
-  // same block/row we were targeting last. A target switch that
-  // crosses to a different block uses the fresh boundaries; only
-  // *staying put* gets the extra grace space.
+  // Hysteresis stickiness only applies when nearest === last target.
+  // Crossing to a different block uses fresh boundaries; only
+  // *staying put* gets the grace space.
   let stickyKind: DropTarget['kind'] | null = null
   if (currentTarget && currentTarget.rowIndex === rowIndex) {
     if (
@@ -136,8 +115,8 @@ function computeDropTarget(
     ) {
       if (currentTarget.colIndex === colIndex) stickyKind = currentTarget.kind
     } else {
-      // newRowBefore / newRowAfter are per-row, not per-column — any
-      // block in the same row keeps the stickiness alive.
+      // newRow* is per-row, not per-column — any block in the same
+      // row keeps the stickiness alive.
       stickyKind = currentTarget.kind
     }
   }
@@ -211,7 +190,6 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
       const dy = e.clientY - startY
       if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
       movedFarEnough = true
-      // Promote the pending position into the live drag state.
       if (pendingPos) draggingPos.value = { ...pendingPos }
     }
     if (!pendingPos) return
@@ -222,9 +200,6 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
       e.clientY,
       dropTarget.value
     )
-    // Equality guard: a fresh `computeDropTarget` object every frame
-    // would re-fire displayRows + FLIP even when logically nothing
-    // changed. Only write when the zone shape actually differs.
     if (!targetsEqual(dropTarget.value, next)) {
       dropTarget.value = next
     }
@@ -235,8 +210,8 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     const from = draggingPos.value
     const target = dropTarget.value
     reset()
-    // If we never crossed the threshold, draggingPos is null and we
-    // skip the commit — a click on the block is a no-op.
+    // draggingPos is null if the threshold never crossed — skipping
+    // commit there makes a plain click a no-op.
     if (from && target) opts.onCommit(from, target)
   })
 
@@ -260,8 +235,8 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     startY = e.clientY
     movedFarEnough = false
     pendingPos = pos
-    // Capture rects from the pre-drag layout — no reshuffle or FLIP
-    // has run yet, so the DOM is in its stable original state.
+    // Snapshot the pre-drag layout — no reshuffle or FLIP has run yet,
+    // so the DOM is in its stable original state.
     const container = opts.listEl.value
     snapshot = container ? captureSnapshot(container) : []
     try {
@@ -269,8 +244,6 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     } catch {
       // ignore
     }
-    // draggingPos + dropTarget stay null until the threshold crosses —
-    // so a click on the block is a no-op.
     e.preventDefault()
     e.stopPropagation()
   }

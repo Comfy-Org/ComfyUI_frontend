@@ -1,16 +1,10 @@
 @import '@comfyorg/design-system/css/style.css';
 
-/* App Mode chrome tokens.
-   - `--color-layout-header-fill`: design-system default is a 50/50 mix
-     (too light against our canvas), dark-canvas alone is too dark —
-     override to the 25/75 midpoint. Used by FloatingPanel header,
-     OutputWindow header, and FloatingPanel footer.
-   - `--app-mode-go-*` / `--app-mode-stop-*`: Run + run-status palette.
-     Defined globally because the consumers (RunCell in chrome,
-     run-status overlay in OutputWindow) sit in sibling subtrees;
-     scoping these to AppChrome's root left the overlay reading
-     `unset`. Pending a product/design decision on whether to promote
-     to semantic tokens (`--color-success-*` etc.). */
+/* App Mode chrome tokens. `header-fill` overrides the design-system
+   default (50/50 mix is too light against our dark canvas) to a
+   25/75 midpoint. `--app-mode-go-*` / `--app-mode-stop-*` are global
+   because RunCell and OutputWindow's overlay sit in sibling subtrees;
+   pending a product/design call on promoting to semantic tokens. */
 :root {
   --color-layout-header-fill: color-mix(
     in srgb,
@@ -39,52 +33,42 @@
 }
 
 /* ---------- App Mode widget chrome ----------
-   The rules below scope to `.floating-panel` (FloatingPanel +
-   AppBuilderPanel) and `.app-chrome` (AppChrome's chrome rail). They
-   adapt the design-system widget primitives — text inputs, textareas,
-   and the ScrubableNumberInput pill — into a coherent control
-   surface that reads consistently across both. */
+   Adapts design-system widget primitives (input, textarea, the
+   ScrubableNumberInput pill) into a control surface consistent across
+   `.floating-panel` (panels) and `.app-chrome` (chrome rail). */
 
-/* Tighten the panel's default text size by overriding the layout-md
-   token in the panel scope only. Tailwind v4 emits `text-layout-md`
-   as `font-size: var(--text-layout-md)`, so the override cascades to
-   the header title, widget labels, value/mute text, and the
-   `!important` input/textarea sizes in InputCell — without touching
-   the same token's use in AppChrome cells (BatchCount, Feedback, etc.). */
+/* Panel-scope override of the layout-md text token — Tailwind v4
+   emits `text-layout-md` as `font-size: var(--text-layout-md)`, so
+   this cascades to header / labels / inputs / textareas without
+   affecting AppChrome cells. */
 .floating-panel {
   --text-layout-md: 14px;
 }
 
-/* Dark fill so widgets recess into the surface. `min-height` floors
-   the resting height so the number pill, text input, and textarea
-   share a baseline; textarea still grows above when content needs
-   more room. */
+/* Dark widget fill + shared height baseline so the pill, text input,
+   and textarea start at the same height. Textareas still grow. */
 :is(.floating-panel, .app-chrome) textarea,
 :is(.floating-panel, .app-chrome) input {
   background-color: var(--color-layout-canvas);
   min-height: 2.25rem;
 }
 
-/* Number-input value auto-selects on focus; the browser default
-   system-blue against the dark canvas reads as a bright artifact.
-   A subtle white tint keeps the affordance without the color shift. */
+/* Subtle white selection tint — the browser default system-blue
+   reads as a bright artifact on the dark canvas. */
 :is(.floating-panel, .app-chrome) textarea::selection,
 :is(.floating-panel, .app-chrome) input::selection {
   background-color: rgb(255 255 255 / 0.18);
   color: inherit;
 }
 
-/* The ScrubableNumberInput pill: dark fill so ±/value/wrapper share
-   one continuous tone, and an explicit `height` to override
-   Tailwind's `h-7` (so the pill matches the inputs/textarea
-   baseline). */
+/* ScrubableNumberInput pill: dark fill + explicit height to match
+   the input/textarea baseline (overrides Tailwind's `h-7`). */
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
   background-color: var(--color-layout-canvas);
   height: 2.25rem;
 }
 
-/* Uniform 1px border across all widget boxes — same alpha as the
-   panel-chrome and cell borders so the chrome family reads as one. */
+/* Uniform 1px border at the same alpha as panel-chrome + cells. */
 :is(.floating-panel, .app-chrome) textarea,
 :is(.floating-panel, .app-chrome) input,
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
@@ -93,10 +77,9 @@
   transition: border-color 150ms ease;
 }
 
-/* The pill's inner input fills via `inset-0`; imposing our shared
-   2.25rem floor on it pushed it past the pill bounds, which leaked
-   the input's own border at the corners. Reset both to let the pill
-   own sizing + outline. */
+/* The pill's inner input fills via `inset-0`; the shared 2.25rem
+   floor pushed it past the pill bounds and leaked the input's
+   border at the corners. Reset both. */
 :is(.floating-panel, .app-chrome) .bg-component-node-widget-background input {
   min-height: 0;
 }
@@ -107,16 +90,14 @@
   border: none;
 }
 
-/* Halve ScrubableNumberInput's `hover:bg-base-foreground/20` (20%
-   white) — too bright on our dark pill. */
+/* Halve ScrubableNumberInput's hover bg — 20% white was too bright. */
 :is(.floating-panel, .app-chrome)
   .bg-component-node-widget-background
   button:hover {
   background-color: rgb(255 255 255 / 0.1);
 }
 
-/* Active border lifts from 0.08 → 0.18 — perceptible without
-   screaming. */
+/* Active border lifts from 0.08 → 0.18 (perceptible, not loud). */
 :is(.floating-panel, .app-chrome) textarea:focus,
 :is(.floating-panel, .app-chrome) input:focus,
 :is(.floating-panel, .app-chrome)
@@ -131,20 +112,16 @@
   box-shadow: none;
 }
 
-/* NodeWidgets wraps each widget with `focus-within:ring`. The
-   wrapper's rounded-lg doesn't align with the inner pill's rounded
-   corners, so the ring leaked past as four "behind-the-widget"
-   highlights. Our pill border is the focus signal; kill the ring on
-   both surfaces. The class-name filter limits the override to
-   elements that actually opted in. */
+/* NodeWidgets' wrapper-level focus-within:ring leaked past the inner
+   pill's rounded corners as four highlights. Our pill border is the
+   focus signal — kill the ring on widgets that opted in. */
 :is(.floating-panel, .app-chrome) [class*='focus-within']:focus-within {
   box-shadow: none !important;
   --tw-ring-shadow: 0 0 transparent;
   --tw-ring-offset-shadow: 0 0 transparent;
 }
 
-/* 0.001ms (not 0s) so transitionend/animationend still fire and JS
-   listeners don't break. */
+/* 0.001ms (not 0s) so transitionend/animationend still fire. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
