@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 /**
@@ -15,11 +16,18 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 export interface OutputWindowEntry {
   /** Stable ID — derived from the source `InProgressItem.id`. */
   id: string
-  /** Owning prompt; used to bulk-remove pending windows on cancel. */
+  /** Owning prompt; used to bulk-remove pending windows on cancel and
+   *  to match the window back to its `AssetItem` once the run lands
+   *  in `outputs.media`. */
   jobId?: string
   state: 'skeleton' | 'latent' | 'image'
   latentPreviewUrl?: string
   output?: ResultItemImpl
+  /** Resolved owning asset, populated by `useOutputWindowSync` once the
+   *  asset shows up in `outputs.media` (matched via `user_metadata.jobId`).
+   *  Unlocks rerun / reuse-params (which need the workflow embedded
+   *  in the asset) and the Cloud `asset_hash` URL fix. */
+  asset?: AssetItem
   /** Workspace coordinates (pre-transform), matching how OutputWindow
    *  reads its position — the LayoutView transform handles zoom/pan. */
   position: { x: number; y: number }
@@ -69,6 +77,14 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     })
   }
 
+  /** Stash the resolved AssetItem on a window. Separate from `upsert`
+   *  so the asset-resolution watch doesn't have to re-supply state /
+   *  output / latent URL on every media-list update. */
+  function attachAsset(id: string, asset: AssetItem): void {
+    const w = windows.value.find((w) => w.id === id)
+    if (w && !w.asset) w.asset = asset
+  }
+
   function remove(id: string): void {
     const idx = windows.value.findIndex((w) => w.id === id)
     if (idx >= 0) windows.value.splice(idx, 1)
@@ -108,6 +124,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     windows,
     sortedWindows,
     upsert,
+    attachAsset,
     remove,
     removeJob,
     move,

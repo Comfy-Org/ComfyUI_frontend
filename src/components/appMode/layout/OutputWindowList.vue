@@ -5,30 +5,41 @@
  *
  * The store is fed by `useOutputWindowSync`, which projects the
  * lifecycle from `linearOutputStore.activeWorkflowInProgressItems`
- * into windows. This component only handles the spatial / chrome
- * concerns — position, zIndex on focus, body content per state, and
- * the run-status overlay attached to whichever window is in-flight.
+ * into windows AND resolves each finalized window's owning
+ * AssetItem from `outputs.media`. This component only handles the
+ * spatial / chrome concerns — position, zIndex on focus, body
+ * content per state, hover toolbar (rerun / reuse-params /
+ * download), header menu (close / clear-all), and the run-status
+ * overlay attached to whichever window is in-flight.
  */
 import { storeToRefs } from 'pinia'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { isCloud } from '@/platform/distribution/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import type { OutputWindowEntry } from '@/renderer/extensions/linearMode/outputWindowStore'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useErrorHandling } from '@/composables/useErrorHandling'
+import { ResultItemImpl } from '@/stores/queueStore'
+import { app } from '@/scripts/app'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import OutputWindow from './OutputWindow.vue'
 
 const { t } = useI18n()
 const windowStore = useOutputWindowStore()
-const { sortedWindows } = storeToRefs(windowStore)
+const { sortedWindows, windows } = storeToRefs(windowStore)
 const commandStore = useCommandStore()
+const appModeStore = useAppModeStore()
 const { toastErrorHandler } = useErrorHandling()
 
 defineProps<{
@@ -58,12 +69,31 @@ function filenameFor(entry: OutputWindowEntry): string | undefined {
   return out.display_name?.trim() || out.filename || undefined
 }
 
-// NOTE: Cloud-mode URL fix (re-clone with `asset.asset_hash` as
-// filename) lived on the single-window path. In-progress items don't
-// carry the asset hash, so the fix moves to the asset-resolution
-// step in commit 3 where we look up the AssetItem from the window's
-// output. Until then Cloud mode 404s on these previews — the local-
-// mode flow we're testing against doesn't hit this.
+// Cloud-mode URL fix: assets live under `asset.asset_hash`, not the
+// user-facing filename, so the original `output.url` builds
+// `/view?filename=<original>` which 404s in Cloud. Re-clone the
+// ResultItem with the hash as the filename param when we have the
+// resolved asset; OSS mode passes through unchanged.
+function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
+  const out = entry.output
+  if (!out) return undefined
+  if (!isCloud) return out
+  const hash = entry.asset?.asset_hash
+  if (!hash) return out
+  return new ResultItemImpl({
+    filename: hash,
+    subfolder: out.subfolder,
+    // ResultItemImpl widens type to string; the zod schema and the
+    // init interface keep it as the narrow union, so cast back.
+    type: out.type as 'input' | 'output' | 'temp' | undefined,
+    nodeId: out.nodeId,
+    mediaType: out.mediaType,
+    format: out.format,
+    frame_rate: out.frame_rate,
+    display_name: out.display_name,
+    content: out.content
+  })
+}
 
 const BODY_ACTION_CLASS =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center ' +
@@ -93,8 +123,64 @@ async function windowInterrupt(): Promise<void> {
 }
 
 function downloadOutput(entry: OutputWindowEntry): void {
-  const url = entry.output?.url
-  if (url) downloadFile(url)
+  const out = resolvedOutput(entry)
+  if (out?.url) downloadFile(out.url)
+}
+
+// Load the window's source workflow into the graph view. Both rerun
+// and reuse-params funnel through this — the difference is rerun
+// fires QueuePrompt afterwards. Mirrors LinearPreview's existing
+// loadWorkflow but scoped to a single window's asset.
+async function loadAssetWorkflow(entry: OutputWindowEntry): Promise<void> {
+  const asset = entry.asset
+  if (!asset) return
+  const { workflow } = await extractWorkflowFromAsset(asset)
+  if (!workflow) return
+  if (workflow.id !== app.rootGraph?.id) {
+    await app.loadGraphData(workflow)
+    return
+  }
+  const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+  if (!changeTracker) {
+    await app.loadGraphData(workflow)
+    return
+  }
+  changeTracker.redoQueue = []
+  await changeTracker.updateState([workflow], changeTracker.undoQueue)
+}
+
+async function rerunWindow(entry: OutputWindowEntry): Promise<void> {
+  await loadAssetWorkflow(entry)
+  appModeStore.markRunPending()
+  try {
+    await commandStore.execute('Comfy.QueuePrompt', {
+      metadata: { subscribe_to_run: false, trigger_source: 'linear' }
+    })
+  } catch (error) {
+    appModeStore.clearRunPending()
+    toastErrorHandler(error)
+  }
+}
+
+function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
+  const entries: MenuItem[] = [
+    {
+      icon: 'icon-[lucide--x] size-[18px]',
+      label: t('linearMode.outputs.closeWindow'),
+      command: () => windowStore.remove(entry.id)
+    }
+  ]
+  // "Clear all" only appears when there are other windows to clear —
+  // on a single-window canvas the per-window close already does it.
+  if (windows.value.length > 1) {
+    entries.push({ separator: true })
+    entries.push({
+      icon: 'icon-[lucide--trash-2] size-[18px]',
+      label: t('linearMode.outputs.clearAll'),
+      command: () => windowStore.clear()
+    })
+  }
+  return entries
 }
 </script>
 
@@ -104,17 +190,15 @@ function downloadOutput(entry: OutputWindowEntry): void {
     :key="entry.id"
     :title="titleFor(entry)"
     :filename="filenameFor(entry)"
+    :menu-entries="menuEntriesFor(entry)"
     :initial-position="entry.position"
     :z-index="entry.zIndex"
     @update:position="(pos) => windowStore.move(entry.id, pos)"
     @promote="windowStore.promote(entry.id)"
   >
-    <!-- Body content selects on lifecycle state. `key` is stable per
-         (entry, state) so Transition crossfades cleanly when an item
-         walks skeleton → latent → image. -->
     <template v-if="entry.state === 'image' && entry.output">
       <MediaOutputPreview
-        :output="entry.output"
+        :output="resolvedOutput(entry) ?? entry.output"
         :hide-info="true"
         class="size-full"
       />
@@ -131,6 +215,29 @@ function downloadOutput(entry: OutputWindowEntry): void {
     </template>
 
     <template #body-actions>
+      <!-- Rerun / reuse-params only when the window has a resolved
+           asset (i.e. the run finalized and landed in `outputs.media`).
+           In-flight or absorption-pending windows hide both. -->
+      <button
+        v-if="entry.asset"
+        type="button"
+        :class="BODY_ACTION_CLASS"
+        :title="t('linearMode.rerun')"
+        :aria-label="t('linearMode.rerun')"
+        @click="rerunWindow(entry)"
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </button>
+      <button
+        v-if="entry.asset"
+        type="button"
+        :class="BODY_ACTION_CLASS"
+        :title="t('linearMode.reuseParameters')"
+        :aria-label="t('linearMode.reuseParameters')"
+        @click="loadAssetWorkflow(entry)"
+      >
+        <i class="icon-[lucide--list-restart] size-4" />
+      </button>
       <button
         v-if="entry.output"
         type="button"
