@@ -13,11 +13,13 @@
         @navigate-down="navigateResults(1)"
         @navigate-up="navigateResults(-1)"
         @select-current="selectCurrentResult"
+        @focusin="onSearchFocus"
       />
 
       <!-- Filter header row -->
       <div class="flex items-center">
         <NodeSearchFilterBar
+          v-model:is-sidebar-open="isSidebarOpen"
           class="flex-1"
           :filters="filters"
           :active-category="rootFilter"
@@ -34,17 +36,27 @@
       </div>
 
       <!-- Content area -->
-      <div class="flex min-h-0 flex-1 overflow-hidden">
-        <!-- Category sidebar -->
+      <div class="relative flex min-h-0 flex-1 overflow-hidden">
         <NodeSearchCategorySidebar
+          v-show="isSidebarOpen"
+          id="node-search-category-sidebar"
           v-model:selected-category="sidebarCategory"
-          class="w-52 shrink-0"
+          :aria-label="isMobile ? t('g.categories') : undefined"
+          class="w-52 shrink-0 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:bg-base-background max-md:shadow-interface"
           :hide-chevrons="!anyTreeCategoryHasChildren"
           :hide-presets="rootFilter !== null"
           :node-defs="rootFilteredNodeDefs"
           :root-label="rootFilterLabel"
           :root-key="rootFilter ?? undefined"
           @auto-expand="selectedCategory = $event"
+        />
+
+        <!-- Mobile overlay backdrop to close sidebar on outside click -->
+        <div
+          v-if="isMobile && isSidebarOpen"
+          data-testid="sidebar-backdrop"
+          class="absolute inset-0 z-10 md:hidden"
+          @click="isSidebarOpen = false"
         />
 
         <!-- Results list -->
@@ -96,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -166,6 +179,17 @@ const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()
 const searchQuery = ref('')
 const selectedCategory = ref(DEFAULT_CATEGORY)
 const selectedIndex = ref(0)
+
+const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
+const isSidebarOpen = ref(!isMobile.value)
+watch(isMobile, (mobile) => {
+  // On transitioning to mobile state, close the sidebar
+  if (mobile) isSidebarOpen.value = false
+})
+
+function onSearchFocus() {
+  if (isMobile.value) isSidebarOpen.value = false
+}
 
 // Root filter from filter bar category buttons (radio toggle)
 const rootFilter = ref<string | null>(null)

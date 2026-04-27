@@ -5,9 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
+  setViewport,
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+
+const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
+const MOBILE_VIEWPORT = { width: 360, height: 800 }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -19,6 +23,7 @@ describe('NodeSearchContent', () => {
   beforeEach(() => {
     setupTestPinia()
     vi.restoreAllMocks()
+    setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
     settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
@@ -656,6 +661,89 @@ describe('NodeSearchContent', () => {
       })
       const removedValues = onRemoveFilter.mock.calls.map(([f]) => f.value)
       expect(removedValues).toEqual(expect.arrayContaining(['IMAGE', 'LATENT']))
+    })
+  })
+
+  describe('sidebar toggle', () => {
+    it('should hide and show the category sidebar when the toggle is clicked', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'KSampler',
+          display_name: 'KSampler',
+          category: 'sampling'
+        })
+      ])
+
+      const { user } = renderComponent()
+
+      const sidebar = await screen.findByTestId('category-sampling')
+      expect(sidebar).toBeVisible()
+
+      const toggle = screen.getByTestId('toggle-category-sidebar')
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      await user.click(toggle)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'false')
+        expect(screen.getByTestId('category-sampling')).not.toBeVisible()
+      })
+
+      await user.click(toggle)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'true')
+        expect(screen.getByTestId('category-sampling')).toBeVisible()
+      })
+    })
+
+    it('should close the sidebar when the search input gains focus on mobile', async () => {
+      setViewport(MOBILE_VIEWPORT)
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'KSampler',
+          display_name: 'KSampler',
+          category: 'sampling'
+        })
+      ])
+
+      const { user } = renderComponent()
+
+      const toggle = screen.getByTestId('toggle-category-sidebar')
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+      await user.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      await user.click(screen.getByRole('combobox'))
+
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      })
+    })
+
+    it('should collapse on resize to mobile and preserve user state on resize back to desktop', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'KSampler',
+          display_name: 'KSampler',
+          category: 'sampling'
+        })
+      ])
+
+      renderComponent()
+
+      const toggle = screen.getByTestId('toggle-category-sidebar')
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      setViewport(MOBILE_VIEWPORT)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      })
+
+      // Returning to desktop should NOT auto-restore — collapsed state is
+      // preserved so a user's earlier explicit toggle isn't undone.
+      setViewport(DESKTOP_VIEWPORT)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
     })
   })
 

@@ -38,8 +38,13 @@ describe(NodeSearchFilterBar, () => {
   async function createRender(props = {}) {
     const user = userEvent.setup()
     const onSelectCategory = vi.fn()
+    const onUpdateIsSidebarOpen = vi.fn()
     render(NodeSearchFilterBar, {
-      props: { onSelectCategory, ...props },
+      props: {
+        onSelectCategory,
+        'onUpdate:isSidebarOpen': onUpdateIsSidebarOpen,
+        ...props
+      },
       global: {
         plugins: [testI18n],
         stubs: {
@@ -51,7 +56,7 @@ describe(NodeSearchFilterBar, () => {
       }
     })
     await nextTick()
-    return { user, onSelectCategory }
+    return { user, onSelectCategory, onUpdateIsSidebarOpen }
   }
 
   it('should render Extensions button and Input/Output popover triggers', async () => {
@@ -111,6 +116,26 @@ describe(NodeSearchFilterBar, () => {
 
     expect(screen.getByRole('button', { name: 'Extensions' })).toHaveAttribute(
       'aria-pressed',
+      'true'
+    )
+  })
+
+  it('should expose aria-expanded=false and emit update:isSidebarOpen=true when toggled from collapsed', async () => {
+    const { user, onUpdateIsSidebarOpen } = await createRender({
+      isSidebarOpen: false
+    })
+    const toggle = screen.getByTestId('toggle-category-sidebar')
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(toggle)
+    expect(onUpdateIsSidebarOpen).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
+  it('should expose aria-expanded=true when isSidebarOpen prop is true', async () => {
+    await createRender({ isSidebarOpen: true })
+    expect(screen.getByTestId('toggle-category-sidebar')).toHaveAttribute(
+      'aria-expanded',
       'true'
     )
   })
