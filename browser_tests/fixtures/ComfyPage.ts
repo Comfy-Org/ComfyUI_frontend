@@ -453,10 +453,15 @@ export const testComfySnapToGridGridSize = 50
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
+  initialFeatureFlags: Record<string, unknown>
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
 }>({
+  // Allows configuring feature flags for tests with before initial setup:
+  // `test.use({ initialFeatureFlags: { my_flag: true } })`.
+  initialFeatureFlags: [{}, { option: true }],
+
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
       return use(page)
@@ -473,7 +478,7 @@ export const comfyPageFixture = base.extend<{
     await mcr.add(coverage)
   },
 
-  comfyPage: async ({ page, request }, use, testInfo) => {
+  comfyPage: async ({ page, request, initialFeatureFlags }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
@@ -514,6 +519,10 @@ export const comfyPageFixture = base.extend<{
 
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
+    }
+
+    if (Object.keys(initialFeatureFlags).length > 0) {
+      await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
     }
 
     await comfyPage.setup()
