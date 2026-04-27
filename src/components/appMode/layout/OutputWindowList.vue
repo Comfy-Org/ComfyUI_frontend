@@ -22,7 +22,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
-import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import type { OutputWindowEntry } from '@/renderer/extensions/linearMode/outputWindowStore'
@@ -268,10 +267,20 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       />
     </template>
     <template v-else-if="entry.state === 'latent' && entry.latentPreviewUrl">
-      <ImagePreview
+      <!-- Plain img instead of ImagePreview: ImagePreview's outer div
+           uses `place-content-center contain-size` plus an inner status
+           span that combine to render the latent smaller than the body
+           and leak text outside the bounds. We just want the latent
+           stretched to fill the same bounds the final image will, with
+           the chrome-family border for visual continuity skeleton →
+           latent → final. `object-fill` (rather than contain/cover)
+           stretches the low-res latent to the body — at this resolution
+           the latent is approximate already, so distortion is invisible
+           and we get exact bounds parity with the final. -->
+      <img
         :src="entry.latentPreviewUrl"
-        :show-size="false"
-        class="size-full"
+        class="size-full rounded-lg border border-white/8 object-fill"
+        alt=""
       />
     </template>
     <template v-else>
@@ -306,44 +315,56 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     </template>
 
     <template #body-overlay>
+      <!-- Single-row layout: progress bar (with step + ETA labels
+           overlaid inside it) and the stop button. Putting the text
+           inside the bar keeps the run-status pill consistent — equal
+           padding around a single row of two equal-height children
+           instead of a label / bar / label / button row that doesn't
+           share margins cleanly. -->
       <div
         v-if="entry.id === inFlightWindowId && entry.state !== 'image'"
-        class="pointer-events-auto flex w-72 flex-col items-stretch gap-3 rounded-xl bg-black/65 p-4 shadow-2xl backdrop-blur-md"
+        class="pointer-events-auto flex w-[360px] items-center gap-3 rounded-xl bg-black/65 p-3 shadow-2xl backdrop-blur-md"
         data-testid="output-window-run-status"
       >
         <div
-          class="h-2 overflow-hidden rounded-full bg-white/10"
+          class="relative h-8 flex-1 overflow-hidden rounded-lg border border-white/8 bg-white/5"
           role="progressbar"
           :aria-label="t('linearMode.runProgress')"
           :aria-valuenow="progressPercent"
           aria-valuemin="0"
           aria-valuemax="100"
         >
+          <!-- Green fill, animated. -->
           <div
-            class="h-full bg-(--app-mode-go-bg-hover) transition-[width] duration-300 ease-out"
+            class="h-full bg-(--app-mode-go-bg) transition-[width] duration-300 ease-out"
             :style="{ width: `${progressPercent}%` }"
           />
-        </div>
-        <div
-          v-if="stepProgress"
-          class="flex items-baseline justify-between gap-3 text-xs text-white/85 tabular-nums"
-        >
-          <span>{{
-            t('linearMode.outputs.step', {
-              value: stepProgress.value,
-              max: stepProgress.max
-            })
-          }}</span>
-          <span v-if="etaSeconds !== null">{{
-            t('linearMode.outputs.etaRemaining', {
-              eta: formatEta(etaSeconds)
-            })
-          }}</span>
+          <!-- Step counter (left) + ETA (right) overlaid on the bar.
+               Both spans always render so `justify-between` keeps the
+               labels pinned to the bar's edges; an empty span just
+               holds its slot when its data isn't ready yet. -->
+          <div
+            class="pointer-events-none absolute inset-0 flex items-center justify-between px-3 text-xs text-white tabular-nums"
+          >
+            <span>
+              <template v-if="stepProgress">{{
+                t('linearMode.outputs.step', {
+                  value: stepProgress.value,
+                  max: stepProgress.max
+                })
+              }}</template>
+            </span>
+            <span>
+              <template v-if="etaSeconds !== null">{{
+                formatEta(etaSeconds)
+              }}</template>
+            </span>
+          </div>
         </div>
         <button
           type="button"
           :class="[
-            'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg',
+            'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg',
             'border border-(--app-mode-stop-border) bg-(--app-mode-stop-bg) text-white',
             'transition-colors duration-200 hover:bg-(--app-mode-stop-bg-hover)'
           ]"
@@ -353,7 +374,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
           @click="windowInterrupt"
         >
           <i class="icon-[lucide--x] size-4" />
-          {{ t('linearMode.stop') }}
         </button>
       </div>
     </template>

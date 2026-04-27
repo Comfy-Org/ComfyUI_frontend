@@ -9,7 +9,7 @@
  * so zoom scales the window with the rest of the canvas.
  *
  * Header layout (left → right):
- *   chevron · title · `header-actions-right` slot · maximize · ellipsis
+ *   chevron · title · `header-actions-right` slot · ellipsis
  *
  * - Chevron collapses the body (header-only when collapsed).
  * - Title is a freeform string (consumers typically pass the asset
@@ -22,8 +22,11 @@
  *   the secondary actions (rerun / reuse-params) — only visible
  *   while hovering or focusing the body, so the image surface
  *   stays clean.
- * - Ellipsis menu wires a Popover from `menuEntries` for tertiary
- *   actions (close, clear all, etc).
+ * - Ellipsis menu wires a Popover that combines OutputWindow's own
+ *   Maximize / Restore entry with the parent-supplied `menuEntries`
+ *   (close, clear all, etc). Keeps the header chrome cluster
+ *   tighter by routing window-state actions through the menu
+ *   instead of a dedicated button.
  *
  * Body content gets a uniform 8px margin via `p-2` on the slot
  * wrapper, so the image breathes against the panel edges
@@ -34,7 +37,7 @@
 import { useEventListener } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -190,6 +193,27 @@ const HEADER_CONTROL_CLASS =
   'rounded-md border-0 bg-transparent text-layout-text ' +
   'transition-colors duration-layout ease-layout ' +
   'hover:bg-layout-cell-hover [&>i]:size-[18px]'
+
+// OutputWindow contributes a Maximize / Restore entry into the
+// header menu so the dedicated header button can come out — keeps
+// the chrome cluster (download · ellipsis) tighter. Parent's
+// `menuEntries` prop is appended below a separator so this window
+// state action stays grouped with itself.
+const combinedMenuEntries = computed<MenuItem[]>(() => {
+  const own: MenuItem[] = [
+    {
+      icon: maximized.value
+        ? 'icon-[lucide--minimize] size-[18px]'
+        : 'icon-[lucide--maximize] size-[18px]',
+      label: maximized.value
+        ? t('linearMode.outputs.restore')
+        : t('linearMode.outputs.maximize'),
+      command: toggleMaximized
+    }
+  ]
+  if (menuEntries.length === 0) return own
+  return [...own, { separator: true }, ...menuEntries]
+})
 </script>
 
 <template>
@@ -252,33 +276,8 @@ const HEADER_CONTROL_CLASS =
       </span>
       <div class="min-w-0 flex-1" />
       <slot name="header-actions-right" />
-      <button
-        type="button"
-        data-header-control
-        :class="HEADER_CONTROL_CLASS"
-        :aria-pressed="maximized"
-        :title="
-          maximized
-            ? t('linearMode.outputs.restore')
-            : t('linearMode.outputs.maximize')
-        "
-        :aria-label="
-          maximized
-            ? t('linearMode.outputs.restore')
-            : t('linearMode.outputs.maximize')
-        "
-        @pointerdown.stop
-        @click="toggleMaximized"
-      >
-        <i
-          :class="
-            maximized ? 'icon-[lucide--minimize]' : 'icon-[lucide--maximize]'
-          "
-        />
-      </button>
       <Popover
-        v-if="menuEntries.length > 0"
-        :entries="menuEntries"
+        :entries="combinedMenuEntries"
         :show-arrow="false"
         to="body"
         class="min-w-44 p-1"

@@ -20,8 +20,29 @@ import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown
 
 <template>
   <div
-    class="flex size-full items-center [&_.bg-layout-cell]:w-full [&_.bg-layout-cell]:rounded-none! [&_.bg-layout-cell]:bg-transparent! [&_.bg-layout-cell]:p-0! [&_button.m-1>i]:size-5"
+    class="mode-toggle-cell flex size-full items-center [&_.bg-layout-cell]:w-full [&_.bg-layout-cell]:rounded-none! [&_.bg-layout-cell]:bg-transparent! [&_.bg-layout-cell]:p-0! [&_button.m-1>i]:size-5"
   >
     <WorkflowActionsDropdown source="app_mode_toolbar" />
   </div>
 </template>
+
+<!--
+  WorkflowActionsDropdown wraps its mode-toggle-icon Button + the
+  "App / Graph" dropdown trigger in an `inline-flex` container with
+  no explicit horizontal-distribution rule. Inside our chrome cell
+  (a fixed-width box) the children clustered with awkward spacing —
+  tight side margins, oversized middle gap. Force the inner wrapper
+  to fill the cell and use `space-evenly` so left-margin =
+  middle-gap = right-margin, matching the BatchCountCell treatment.
+  Also flatten the wrapper's own rounded-lg + secondary-background
+  so the chrome cell's surface owns the visual bounds.
+-->
+<style scoped>
+.mode-toggle-cell :deep(.bg-secondary-background) {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+  background-color: transparent;
+  border-radius: 0;
+}
+</style>

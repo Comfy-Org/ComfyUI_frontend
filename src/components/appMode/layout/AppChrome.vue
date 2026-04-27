@@ -248,22 +248,6 @@ function cellTitle(cell: ChromeCell): string | undefined {
 const ZONE_BASE =
   'pointer-events-none absolute flex h-layout-cell flex-row gap-layout-gutter'
 
-// Placeholder go/stop fill colors used by RunCell + the in-window
-// run-status overlay (LinearPreview). Set on the chrome root so
-// descendants read them via `var(--app-mode-*)`. Kept local here so
-// the rest of the app's design-system tokens stay untouched —
-// pending a product/design decision on whether "go green" + "stop
-// red" get promoted to proper semantic tokens. When that lands,
-// swap the call sites to the real tokens and delete this block.
-const goStopVars = {
-  '--app-mode-go-bg': '#19af69', // emerald (RGB 25/175/105 from design swatch)
-  '--app-mode-go-bg-hover': '#2dc37d', // ~10% brighter for hover
-  '--app-mode-go-border': '#0f6941', // forest green (deeper shade of bg)
-  '--app-mode-stop-bg': '#ef4444', // tw red-500
-  '--app-mode-stop-bg-hover': '#f87171', // tw red-400
-  '--app-mode-stop-border': '#b91c1c' // tw red-700
-} as const
-
 // Run cell hosts a full-bleed colored button directly — it doesn't
 // want the cell's hairline border or layout-cell fill so the accent
 // paint reaches the cell edges cleanly.
@@ -295,7 +279,6 @@ function cellClass(cell: ChromeCell): string {
       )
     "
     :data-variant="variant"
-    :style="goStopVars"
   >
     <div
       :class="[
