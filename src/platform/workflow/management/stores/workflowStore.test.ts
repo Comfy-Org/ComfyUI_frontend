@@ -16,6 +16,7 @@ import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/wo
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { useExecutionStore } from '@/stores/executionStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
@@ -434,6 +435,38 @@ describe('useWorkflowStore', () => {
       // Check that no bookmarks were affected
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
+    })
+
+    it('renameWorkflow updates executionStore session path map scoped by workflowId', async () => {
+      const workflow = store.createTemporary('app-to-save.json')
+      const loaded = await workflow.load()
+      const executionStore = useExecutionStore()
+      const workflowId = String(
+        loaded.activeState?.id ?? loaded.initialState?.id
+      )
+
+      executionStore.ensureSessionWorkflowPath('job-1', workflow.path)
+      executionStore.registerJobWorkflowIdMapping('job-1', workflowId)
+      executionStore.ensureSessionWorkflowPath('job-other', workflow.path)
+      executionStore.registerJobWorkflowIdMapping('job-other', 'different-wf')
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          const renamedPath = args[0] as string
+          ;(this as typeof workflow).path = renamedPath
+          return this as typeof workflow
+        }
+      )
+
+      const newPath = 'workflows/saved-app.app.json'
+      await store.renameWorkflow(workflow, newPath)
+
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        newPath
+      )
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-other')).toBe(
+        'workflows/app-to-save.json'
+      )
     })
   })
 
