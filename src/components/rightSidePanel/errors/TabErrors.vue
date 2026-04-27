@@ -183,6 +183,8 @@
       </TransitionGroup>
     </div>
 
+    <ErrorPanelSurveyCta v-if="ErrorPanelSurveyCta" />
+
     <!-- Fixed Footer: Help Links -->
     <div class="min-w-0 shrink-0 border-t border-interface-stroke p-4">
       <i18n-t
@@ -216,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
@@ -235,7 +237,7 @@ import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import {
   downloadModel,
   isModelDownloadable
@@ -251,6 +253,13 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+
+const ErrorPanelSurveyCta =
+  isNightly && !isCloud && !isDesktop
+    ? defineAsyncComponent(
+        () => import('@/platform/surveys/ErrorPanelSurveyCta.vue')
+      )
+    : undefined
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()

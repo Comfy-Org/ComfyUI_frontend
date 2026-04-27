@@ -1,8 +1,38 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import ComingSoon from '../components/common/ComingSoon.astro'
+import HeroSection from '../components/careers/HeroSection.vue'
+import RolesSection from '../components/careers/RolesSection.vue'
+import WhyJoinSection from '../components/careers/WhyJoinSection.vue'
+import TeamPhotosSection from '../components/careers/TeamPhotosSection.vue'
+import FAQSection from '../components/common/FAQSection.vue'
+import { fetchRolesForBuild } from '../utils/ashby'
+import { reportAshbyOutcome } from '../utils/ashby.ci'
+
+const outcome = await fetchRolesForBuild()
+reportAshbyOutcome(outcome)
+
+if (outcome.status === 'failed') {
+  throw new Error(
+    `Ashby fetch failed and no snapshot is available. Reason: ${outcome.reason}. ` +
+      'Run `pnpm --filter @comfyorg/website ashby:refresh-snapshot` locally and commit the snapshot.'
+  )
+}
+
+const departments = outcome.snapshot.departments
 ---
 
-<BaseLayout title="Careers — Comfy">
-  <ComingSoon />
+<BaseLayout
+  title="Careers — Comfy"
+  description="Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more."
+>
+  <HeroSection />
+  <RolesSection departments={departments} client:visible />
+  <WhyJoinSection client:visible />
+  <TeamPhotosSection client:visible />
+  <FAQSection
+    headingKey="careers.faq.heading"
+    faqPrefix="careers.faq"
+    faqCount={8}
+    client:visible
+  />
 </BaseLayout>

@@ -20,6 +20,32 @@ export const zHubAssetUploadUrlRequest = z.object({
   content_type: z.string()
 })
 
+/**
+ * Partial update for a published hub workflow (admin moderation). All fields are optional. Semantics match UpdateHubProfileRequest / avatar_token:
+ *
+ * * field omitted or null — leave unchanged
+ * * string field = ""     — clear (for clearable string fields)
+ * * array field  = []     — clear the list
+ * * any other value       — set to the provided value
+ *
+ * Array fields use full-replacement (PUT) semantics when a value is supplied. The two single-value thumbnail token fields accept only upload tokens (not existing URLs) since omitting them already expresses "keep the current value".
+ * Backend note: cleared string columns are persisted as the empty string "" in the Ent schema (description, thumbnail_url, thumbnail_comparison_url, tutorial_url). thumbnail_type is the only true SQL-nullable column but is not clearable via this endpoint.
+ *
+ */
+export const zUpdateHubWorkflowRequest = z.object({
+  name: z.string().min(1).nullish(),
+  description: z.string().nullish(),
+  tags: z.array(z.string()).nullish(),
+  models: z.array(z.string()).nullish(),
+  custom_nodes: z.array(z.string()).nullish(),
+  tutorial_url: z.string().nullish(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
+  thumbnail_token: z.string().nullish(),
+  thumbnail_comparison_token: z.string().nullish(),
+  sample_image_tokens_or_urls: z.array(z.string()).nullish(),
+  metadata: z.record(z.unknown()).nullish()
+})
+
 export const zPublishHubWorkflowRequest = z.object({
   username: z.string(),
   name: z.string(),
@@ -134,8 +160,43 @@ export const zHubWorkflowTemplateEntry = z.object({
   thumbnailVariant: z.string().optional(),
   mediaType: z.string().optional(),
   mediaSubtype: z.string().optional(),
-  size: z.number().optional(),
-  vram: z.number().optional(),
+  size: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  vram: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  usage: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  searchRank: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  isEssential: z.boolean().optional(),
   openSource: z.boolean().optional(),
   profile: zHubProfileSummary.optional(),
   tutorialUrl: z.string().optional(),
@@ -641,6 +702,53 @@ export const zJwksResponse = z.object({
   keys: z.array(zJwkKey)
 })
 
+export const zVerifyApiKeyResponse = z.object({
+  user_id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  is_admin: z.boolean(),
+  workspace_id: z.string(),
+  workspace_type: z.enum(['personal', 'team']),
+  role: z.enum(['owner', 'member']),
+  has_funds: z.boolean(),
+  is_active: z.boolean(),
+  permissions: z.array(z.string())
+})
+
+export const zVerifyApiKeyRequest = z.object({
+  api_key: z.string()
+})
+
+export const zWorkspaceApiKeyInfo = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string(),
+  user_id: z.string(),
+  name: z.string(),
+  key_prefix: z.string(),
+  expires_at: z.string().datetime().optional(),
+  last_used_at: z.string().datetime().optional(),
+  revoked_at: z.string().datetime().optional(),
+  created_at: z.string().datetime()
+})
+
+export const zListWorkspaceApiKeysResponse = z.object({
+  api_keys: z.array(zWorkspaceApiKeyInfo)
+})
+
+export const zCreateWorkspaceApiKeyResponse = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  key: z.string(),
+  key_prefix: z.string(),
+  expires_at: z.string().datetime().optional(),
+  created_at: z.string().datetime()
+})
+
+export const zCreateWorkspaceApiKeyRequest = z.object({
+  name: z.string(),
+  expires_at: z.string().datetime().optional()
+})
+
 export const zAcceptInviteResponse = z.object({
   workspace_id: z.string(),
   workspace_name: z.string()
@@ -979,22 +1087,6 @@ export const zAssetCreated = zAsset.and(
   })
 )
 
-/**
- * Response after sending an invite email
- */
-export const zSendUserInviteEmailResponse = z.object({
-  success: z.boolean(),
-  message: z.string()
-})
-
-/**
- * Request to send an invite email to a user
- */
-export const zSendUserInviteEmailRequest = z.object({
-  email: z.string(),
-  force: z.boolean().optional().default(false)
-})
-
 export const zSetReviewStatusResponse = z.object({
   share_ids: z.array(z.string()),
   status: z.enum(['approved', 'rejected'])
@@ -1003,22 +1095,6 @@ export const zSetReviewStatusResponse = z.object({
 export const zSetReviewStatusRequest = z.object({
   share_ids: z.array(z.string()).min(1),
   status: z.enum(['approved', 'rejected'])
-})
-
-/**
- * Response after successfully claiming an invite code
- */
-export const zInviteCodeClaimResponse = z.object({
-  success: z.boolean(),
-  message: z.string()
-})
-
-/**
- * Invite code status response
- */
-export const zInviteCodeStatusResponse = z.object({
-  claimed: z.boolean(),
-  expired: z.boolean()
 })
 
 /**
@@ -1040,6 +1116,7 @@ export const zCreateSessionResponse = z.object({
  * User information response
  */
 export const zUserResponse = z.object({
+  id: z.string(),
   status: z.string()
 })
 
@@ -1194,8 +1271,16 @@ export const zQueueManageRequest = z.object({
  * Queue information with pending and running jobs
  */
 export const zQueueInfo = z.object({
-  queue_running: z.array(z.array(z.unknown())).optional(),
-  queue_pending: z.array(z.array(z.unknown())).optional()
+  queue_running: z
+    .array(
+      z.tuple([z.unknown(), z.unknown(), z.unknown(), z.unknown(), z.unknown()])
+    )
+    .optional(),
+  queue_pending: z
+    .array(
+      z.tuple([z.unknown(), z.unknown(), z.unknown(), z.unknown(), z.unknown()])
+    )
+    .optional()
 })
 
 /**
@@ -1315,6 +1400,10 @@ export const zExportDownloadUrlResponse = z.object({
   expires_at: z.string().datetime().optional()
 })
 
+export const zBindingErrorResponse = z.object({
+  message: z.string()
+})
+
 export const zErrorResponse = z.object({
   code: z.string(),
   message: z.string()
@@ -1426,6 +1515,17 @@ export const zGetFeaturesResponse = z.object({
   supports_preview_metadata: z.boolean().optional(),
   max_upload_size: z.number().int().optional()
 })
+
+export const zGetNodeReplacementsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Node replacement mappings
+ */
+export const zGetNodeReplacementsResponse = z.record(z.unknown())
 
 export const zGetWorkflowTemplatesData = z.object({
   body: z.never().optional(),
@@ -1588,7 +1688,7 @@ export const zViewFileData = z.object({
 })
 
 /**
- * Success - File content returned (used when channel or res parameter is present)
+ * Processed PNG image with extracted channel
  */
 export const zViewFileResponse = z.string()
 
@@ -2429,6 +2529,56 @@ export const zRemoveWorkspaceMemberData = z.object({
  */
 export const zRemoveWorkspaceMemberResponse = z.void()
 
+export const zListWorkspaceApiKeysData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * List of API keys
+ */
+export const zListWorkspaceApiKeysResponse2 = zListWorkspaceApiKeysResponse
+
+export const zCreateWorkspaceApiKeyData = z.object({
+  body: zCreateWorkspaceApiKeyRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * API key created (plaintext returned once)
+ */
+export const zCreateWorkspaceApiKeyResponse2 = zCreateWorkspaceApiKeyResponse
+
+export const zRevokeWorkspaceApiKeyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    id: z.string().uuid()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * API key revoked
+ */
+export const zRevokeWorkspaceApiKeyResponse = z.void()
+
+export const zVerifyWorkspaceApiKeyData = z.object({
+  body: zVerifyApiKeyRequest,
+  path: z.never().optional(),
+  query: z
+    .object({
+      include_billing: z.boolean().optional().default(false)
+    })
+    .optional()
+})
+
+/**
+ * Key is valid
+ */
+export const zVerifyWorkspaceApiKeyResponse = zVerifyApiKeyResponse
+
 export const zGetUserData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -2440,43 +2590,6 @@ export const zGetUserData = z.object({
  */
 export const zGetUserResponse = zUserResponse
 
-export const zGetInviteCodeStatusData = z.object({
-  body: z.never().optional(),
-  path: z.object({
-    code: z.string()
-  }),
-  query: z.never().optional()
-})
-
-/**
- * Success - invite code exists
- */
-export const zGetInviteCodeStatusResponse = zInviteCodeStatusResponse
-
-export const zClaimInviteCodeData = z.object({
-  body: z.never().optional(),
-  path: z.object({
-    code: z.string()
-  }),
-  query: z.never().optional()
-})
-
-/**
- * Success - invite code claimed successfully
- */
-export const zClaimInviteCodeResponse = zInviteCodeClaimResponse
-
-export const zSendUserInviteEmailData = z.object({
-  body: zSendUserInviteEmailRequest,
-  path: z.never().optional(),
-  query: z.never().optional()
-})
-
-/**
- * Success - invite email sent successfully
- */
-export const zSendUserInviteEmailResponse2 = zSendUserInviteEmailResponse
-
 export const zSetReviewStatusData = z.object({
   body: zSetReviewStatusRequest,
   path: z.never().optional(),
@@ -2487,6 +2600,19 @@ export const zSetReviewStatusData = z.object({
  * Status updated successfully
  */
 export const zSetReviewStatusResponse2 = zSetReviewStatusResponse
+
+export const zUpdateHubWorkflowData = z.object({
+  body: zUpdateHubWorkflowRequest,
+  path: z.object({
+    share_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Updated hub workflow detail
+ */
+export const zUpdateHubWorkflowResponse = zHubWorkflowDetail
 
 export const zGetDeletionRequestData = z.object({
   body: z.never().optional(),
@@ -2526,6 +2652,23 @@ export const zReportPartnerUsageData = z.object({
  * Usage reported successfully
  */
 export const zReportPartnerUsageResponse = zPartnerUsageResponse
+
+export const zUpdateSubscriptionCacheData = z.object({
+  body: z.object({
+    user_id: z.string(),
+    is_active: z.boolean(),
+    tier: z.string().optional()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Cache updated successfully
+ */
+export const zUpdateSubscriptionCacheResponse = z.object({
+  status: z.string().optional()
+})
 
 export const zGetJobStatusData = z.object({
   body: z.never().optional(),
@@ -2991,6 +3134,25 @@ export const zGetExtensionsData = z.object({
   query: z.never().optional()
 })
 
+/**
+ * URL paths (relative to web root) of available extension JS files
+ */
+export const zGetExtensionsResponse = z.array(z.string())
+
+export const zGetNodeInfoSchemaData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetNodeByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    id: z.string()
+  }),
+  query: z.never().optional()
+})
+
 export const zGetVhsViewVideoData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -3019,10 +3181,30 @@ export const zGetVhsQueryVideoData = z.object({
   })
 })
 
-export const zGetUsersRawData = z.object({
+/**
+ * Video metadata
+ */
+export const zGetVhsQueryVideoResponse = z.object({
+  source: z.object({
+    size: z.tuple([z.number().int(), z.number().int()]),
+    fps: z.number(),
+    frames: z.number().int(),
+    duration: z.number()
+  })
+})
+
+export const zGetUsersInfoData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
   query: z.never().optional()
+})
+
+/**
+ * Userdata storage information
+ */
+export const zGetUsersInfoResponse = z.object({
+  storage: z.string(),
+  migrated: z.boolean()
 })
 
 export const zGetApiViewVideoAliasData = z.object({
@@ -3064,6 +3246,11 @@ export const zGetHealthData = z.object({
   path: z.never().optional(),
   query: z.never().optional()
 })
+
+/**
+ * Service is healthy
+ */
+export const zGetHealthResponse = z.string()
 
 export const zGetOpenapiSpecData = z.object({
   body: z.never().optional(),
@@ -3128,6 +3315,22 @@ export const zPostPprofSymbolData = z.object({
 })
 
 export const zGetStaticExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetCustomNodeProxyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zPostCustomNodeProxyData = z.object({
   body: z.never().optional(),
   path: z.object({
     path: z.string()

@@ -44,6 +44,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 ## Build, Test, and Development Commands
 
 - `pnpm dev`: Start Vite dev server.
+- `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
 - `pnpm dev:electron`: Dev server with Electron API mocks
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
@@ -311,7 +312,7 @@ When referencing Comfy-Org repos:
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
 - NEVER use `:class="[]"` to merge class names
-  - Always use `import { cn } from '@/utils/tailwindUtil'`
+  - Always use `import { cn } from '@comfyorg/tailwind-utils'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
 - NEVER use `!important` or the `!` important prefix for tailwind classes
