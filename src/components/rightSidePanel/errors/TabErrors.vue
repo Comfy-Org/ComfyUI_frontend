@@ -102,18 +102,6 @@
                 }}
               </Button>
               <Button
-                v-else-if="
-                  group.type === 'missing_model' &&
-                  downloadableModels.length > 1
-                "
-                variant="secondary"
-                size="sm"
-                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
-                @click.stop="downloadAllModels"
-              >
-                {{ downloadAllLabel }}
-              </Button>
-              <Button
                 v-else-if="group.type === 'swap_nodes'"
                 v-tooltip.top="
                   t(
@@ -128,6 +116,47 @@
               >
                 {{ t('nodeReplacement.replaceAll', 'Replace All') }}
               </Button>
+              <Button
+                v-else-if="
+                  group.type === 'missing_model' &&
+                  showMissingModelHeaderRefresh
+                "
+                data-testid="missing-model-header-refresh"
+                variant="secondary"
+                size="sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
+                :aria-busy="missingModelStore.isRefreshingMissingModels"
+                :aria-disabled="missingModelStore.isRefreshingMissingModels"
+                @click.stop="handleMissingModelRefresh"
+              >
+                <DotSpinner
+                  v-if="missingModelStore.isRefreshingMissingModels"
+                  aria-hidden="true"
+                  duration="1s"
+                  :size="12"
+                />
+                <i
+                  v-else
+                  aria-hidden="true"
+                  class="icon-[lucide--refresh-cw] size-4 shrink-0"
+                />
+                {{ t('rightSidePanel.missingModels.refresh') }}
+              </Button>
+              <span
+                v-if="
+                  group.type === 'missing_model' &&
+                  showMissingModelHeaderRefresh
+                "
+                role="status"
+                aria-live="polite"
+                class="sr-only"
+              >
+                {{
+                  missingModelStore.isRefreshingMissingModels
+                    ? t('rightSidePanel.missingModels.refreshing')
+                    : ''
+                }}
+              </span>
             </div>
           </template>
 
@@ -238,14 +267,10 @@ import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.v
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import {
-  downloadModel,
-  isModelDownloadable
-} from '@/platform/missingModel/missingModelDownload'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { formatSize } from '@/utils/formatUtil'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorActions } from './useErrorActions'
@@ -267,6 +292,7 @@ const { focusNode, enterSubgraph } = useFocusNode()
 const { openGitHubIssues, contactSupport } = useErrorActions()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const missingModelStore = useMissingModelStore()
 const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
   useManagerState()
 const { missingNodePacks } = useMissingNodes()
@@ -307,6 +333,23 @@ const {
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
+const missingModelDownloadableModels = computed(() => {
+  if (isCloud) return []
+
+  return getDownloadableModels(missingModelGroups.value)
+})
+
+const showMissingModelHeaderRefresh = computed(
+  () =>
+    !isCloud &&
+    missingModelGroups.value.length > 0 &&
+    missingModelDownloadableModels.value.length === 0
+)
+
+function handleMissingModelRefresh() {
+  void missingModelStore.refreshMissingModels()
+}
+
 const singleRuntimeErrorGroup = computed(() => {
   if (filteredGroups.value.length !== 1) return null
   const group = filteredGroups.value[0]
@@ -320,45 +363,6 @@ const singleRuntimeErrorGroup = computed(() => {
 const singleRuntimeErrorCard = computed(
   () => singleRuntimeErrorGroup.value?.cards[0] ?? null
 )
-
-const missingModelStore = useMissingModelStore()
-
-const downloadableModels = computed(() => {
-  if (isCloud) return []
-  return missingModelGroups.value.flatMap((group) =>
-    group.models
-      .filter(
-        (m) =>
-          m.representative.url &&
-          m.representative.directory &&
-          isModelDownloadable({
-            name: m.representative.name,
-            url: m.representative.url,
-            directory: m.representative.directory
-          })
-      )
-      .map((m) => ({
-        name: m.representative.name,
-        url: m.representative.url!,
-        directory: m.representative.directory!
-      }))
-  )
-})
-
-const downloadAllLabel = computed(() => {
-  const base = t('rightSidePanel.missingModels.downloadAll')
-  const total = downloadableModels.value.reduce(
-    (sum, m) => sum + (missingModelStore.fileSizes[m.url] ?? 0),
-    0
-  )
-  return total > 0 ? `${base} (${formatSize(total)})` : base
-})
-
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
-  }
-}
 
 const isAllCollapsed = computed({
   get() {

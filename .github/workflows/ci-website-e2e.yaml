@@ -2,7 +2,7 @@ name: 'CI: Website E2E'
 
 on:
   push:
-    branches: [main, website/*]
+    branches: [main]
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
@@ -17,7 +17,7 @@ on:
       - 'pnpm-lock.yaml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:

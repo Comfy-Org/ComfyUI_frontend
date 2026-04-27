@@ -313,8 +313,7 @@
     "tooltip": "Only applies to the default implementation"
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
-    "name": "Show node category in search results",
-    "tooltip": "Only applies to v1 (legacy)"
+    "name": "Show node category in search results"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "Show node id name in search results",
