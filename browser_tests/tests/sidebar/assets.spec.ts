@@ -703,7 +703,10 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await tab.open()
       await tab.waitForAssets()
 
-      await tab.assetCards.first().locator('button').first().click()
+      await tab.assetCards
+        .first()
+        .getByRole('button', { name: 'More options' })
+        .click()
       await expect(tab.backToAssetsButton).toBeVisible()
       await expect.poll(() => tab.assetCards.count()).toBe(2)
 

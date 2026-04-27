@@ -12,7 +12,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const jobsListRoutePattern = '**/api/jobs?*'
-const assetsListRoutePattern = '**/api/assets?*'
+const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
 const assetExportRoutePattern = '**/api/assets/export'
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/

@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -29,17 +30,18 @@ const test = comfyPageFixture.extend<{
   },
   stubCloudAssets: [
     async ({ cloudAssetRequests, page }, use) => {
-      const pattern = '**/api/assets?*'
-      await page.route(pattern, (route) => {
+      const pattern = /\/api\/assets(?:\?.*)?$/
+      const assetsRouteHandler = (route: Route) => {
         cloudAssetRequests.push(route.request().url())
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(makeAssetsResponse(CLOUD_ASSETS))
         })
-      })
+      }
+      await page.route(pattern, assetsRouteHandler)
       await use()
-      await page.unroute(pattern)
+      await page.unroute(pattern, assetsRouteHandler)
     },
     { auto: true }
   ]
