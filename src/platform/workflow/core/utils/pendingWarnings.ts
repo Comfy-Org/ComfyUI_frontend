@@ -3,30 +3,21 @@ import type {
   PendingWarnings
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-function hasPendingWarnings(warnings: PendingWarnings | null | undefined) {
-  return (
-    !!warnings?.missingNodeTypes?.length ||
-    !!warnings?.missingModelCandidates?.length ||
-    !!warnings?.missingMediaCandidates?.length
-  )
-}
+const emptyToUndefined = <T>(arr: T[] | undefined): T[] | undefined =>
+  arr?.length ? arr : undefined
 
 export function normalizePendingWarnings(
   warnings: PendingWarnings | null | undefined
 ): PendingWarnings | null {
-  if (!hasPendingWarnings(warnings)) return null
+  if (!warnings) return null
 
-  return {
-    missingNodeTypes: warnings?.missingNodeTypes?.length
-      ? warnings.missingNodeTypes
-      : undefined,
-    missingModelCandidates: warnings?.missingModelCandidates?.length
-      ? warnings.missingModelCandidates
-      : undefined,
-    missingMediaCandidates: warnings?.missingMediaCandidates?.length
-      ? warnings.missingMediaCandidates
-      : undefined
+  const normalized: PendingWarnings = {
+    missingNodeTypes: emptyToUndefined(warnings.missingNodeTypes),
+    missingModelCandidates: emptyToUndefined(warnings.missingModelCandidates),
+    missingMediaCandidates: emptyToUndefined(warnings.missingMediaCandidates)
   }
+
+  return Object.values(normalized).some(Boolean) ? normalized : null
 }
 
 export function updatePendingWarnings(

@@ -182,6 +182,16 @@ describe('MissingModelCard', () => {
       expect(container.querySelectorAll('.model-row')).toHaveLength(0)
     })
 
+    it('hides bulk actions in cloud', () => {
+      mountCard({
+        missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+      })
+
+      expect(
+        screen.queryByTestId('missing-model-actions')
+      ).not.toBeInTheDocument()
+    })
+
     it('passes props correctly to MissingModelRow children', () => {
       const { container } = mountCard({ showNodeIdBadge: true })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -278,15 +288,13 @@ describe('MissingModelCard (OSS)', () => {
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 
-  it('hides bulk actions when no model is downloadable', () => {
+  it('shows Refresh but hides Download all when no model is downloadable', () => {
     mountCard()
 
     expect(
       screen.queryByRole('button', { name: /Download all/ })
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Refresh' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 
   it('refreshes missing models from the action bar', async () => {

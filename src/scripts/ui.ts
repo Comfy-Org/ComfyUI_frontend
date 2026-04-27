@@ -647,7 +647,7 @@ export class ComfyUI {
           id: 'comfy-refresh-button',
           textContent: 'Refresh',
           onclick: () => {
-            void app.refreshComboInNodes().catch(() => undefined)
+            void app.refreshComboInNodes().catch(() => {})
           }
         }),
         $el('button', {

@@ -1,11 +1,12 @@
 <template>
   <div class="px-4 pb-2">
     <div
-      v-if="downloadableModels.length > 0"
+      v-if="showActions"
       data-testid="missing-model-actions"
       class="flex items-center gap-2 border-b border-interface-stroke py-2"
     >
       <Button
+        v-if="downloadableModels.length > 0"
         data-testid="missing-model-download-all"
         variant="secondary"
         size="sm"
@@ -15,6 +16,7 @@
         <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
         <span class="truncate">{{ downloadAllLabel }}</span>
       </Button>
+      <!-- Keep this focusable while refreshing so the live status remains discoverable. -->
       <Button
         data-testid="missing-model-refresh"
         variant="secondary"
@@ -22,7 +24,7 @@
         class="h-8 w-28 shrink-0 rounded-lg text-sm"
         :aria-busy="missingModelStore.isRefreshingMissingModels"
         :aria-disabled="missingModelStore.isRefreshingMissingModels"
-        @click="refreshMissingModels"
+        @click="handleRefreshClick"
       >
         <DotSpinner
           v-if="missingModelStore.isRefreshingMissingModels"
@@ -158,6 +160,8 @@ const downloadableModels = computed(() => {
   )
 })
 
+const showActions = computed(() => !isCloud && missingModelGroups.length > 0)
+
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
@@ -173,8 +177,7 @@ function downloadAllModels() {
   }
 }
 
-function refreshMissingModels() {
-  if (missingModelStore.isRefreshingMissingModels) return
+function handleRefreshClick() {
   void missingModelStore.refreshMissingModels()
 }
 </script>
