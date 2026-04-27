@@ -33,6 +33,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { createRafCoalescer } from '@/utils/rafBatch'
 
 interface QueuedJob {
   /**
@@ -242,6 +243,8 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
+
+    cancelPendingProgressUpdates()
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -290,6 +293,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
+    // Cancel any pending progress RAF before clearing state to prevent
+    // stale data from being written back on the next frame.
+    progressCoalescer.cancel()
+
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -332,8 +339,15 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
+  const progressStateCoalescer =
+    createRafCoalescer<ProgressStateWsMessage>(_applyProgressState)
+
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes, prompt_id: jobId } = e.detail
+    progressStateCoalescer.push(e.detail)
+  }
+
+  function _applyProgressState(detail: ProgressStateWsMessage) {
+    const { nodes, prompt_id: jobId } = detail
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
@@ -369,8 +383,17 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
+    _executingNodeProgress.value = detail
+  })
+
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _executingNodeProgress.value = e.detail
+    progressCoalescer.push(e.detail)
+  }
+
+  function cancelPendingProgressUpdates() {
+    progressCoalescer.cancel()
+    progressStateCoalescer.cancel()
   }
 
   function handleStatus() {
@@ -492,6 +515,8 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
+    cancelPendingProgressUpdates()
+
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
