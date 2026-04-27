@@ -328,7 +328,7 @@ import { clamp } from 'es-toolkit'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useAssetIngest } from '../composables/useAssetIngest'
 import { useAgentSession } from '../composables/useAgentSession'
@@ -512,7 +512,11 @@ function isDirectShellCommand(line: string): boolean {
   const first = line.trim().split(/\s+/)[0]
   if (!first) return false
   const ctx = session.buildExecContextOnce()
-  return !!ctx.registry.get(first) || /^[|&;<>/]/.test(first)
+  // Don't treat a leading '/' as a shell-redirection sigil — the
+  // attachment flow prefills the composer with paths like '/input/foo.png'
+  // or '/tmp/x.json' and pressing Enter would route those to exec instead
+  // of the LLM. Real shell operators (|, &, ;, <, >) are still honoured.
+  return !!ctx.registry.get(first) || /^[|&;<>]/.test(first)
 }
 
 async function handleSubmit(line: string): Promise<void> {

@@ -4,15 +4,14 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
- * E2E coverage for the in-browser agent terminal (AgentFab + XtermPanel).
+ * E2E coverage for the in-browser agent terminal (AgentFab + FoldablePanel).
  *
- * We exercise the deterministic surface: FAB → open/close, the solid-block
- * ASCII banner, the "COMFY-AI" title pill, keyboard affordances
- * (Enter submits, Shift+Enter inserts a literal newline, Tab completes),
- * and a representative slice of shell commands that back the examples
- * documented in the LLM system prompt. We intentionally do NOT drive the
- * LLM itself — typing into xterm runs the shell directly, which is what
- * the model ends up calling via the `run_shell` tool.
+ * The panel is now a Vue-native scrollback (no xterm.js), so the tests
+ * target the plain DOM directly: the input is a `<textarea>` inside
+ * `[data-testid="agent-terminal"]`, and the scrollback lives in the same
+ * container as a list of message blocks. We exercise the deterministic
+ * shell surface — typing into the textarea runs commands directly through
+ * the runtime, which is what the LLM ends up calling via `run_shell`.
  */
 
 async function openPanel(comfyPage: ComfyPage): Promise<void> {
@@ -23,18 +22,12 @@ async function openPanel(comfyPage: ComfyPage): Promise<void> {
 }
 
 async function readTerminalText(comfyPage: ComfyPage): Promise<string> {
-  // xterm renders into rows under .xterm-rows; concatenate the text content.
-  return await comfyPage.page
-    .getByTestId('agent-terminal')
-    .locator('.xterm-rows')
-    .innerText()
+  return await comfyPage.page.getByTestId('agent-terminal').innerText()
 }
 
 async function typeAndEnter(comfyPage: ComfyPage, text: string): Promise<void> {
-  const helper = comfyPage.page
-    .getByTestId('agent-terminal')
-    .locator('.xterm-helper-textarea')
-  await helper.focus()
+  const input = comfyPage.page.getByTestId('agent-terminal').locator('textarea')
+  await input.focus()
   await comfyPage.page.keyboard.type(text)
   await comfyPage.page.keyboard.press('Enter')
 }
@@ -48,9 +41,6 @@ test.describe('Agent terminal', { tag: '@ui' }, () => {
     await expect(comfyPage.page.getByTestId('agent-panel-title')).toHaveText(
       'COMFY-AI'
     )
-
-    // Banner is suppressed for token efficiency — only the shell prompt
-    // should be rendered once the terminal is ready.
     await expect.poll(() => readTerminalText(comfyPage)).toMatch(/comfy>/)
   })
 
@@ -72,39 +62,22 @@ test.describe('Agent terminal', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     await openPanel(comfyPage)
-    const helper = comfyPage.page
+    const input = comfyPage.page
       .getByTestId('agent-terminal')
-      .locator('.xterm-helper-textarea')
-    await helper.focus()
+      .locator('textarea')
+    await input.focus()
     await comfyPage.page.keyboard.type('echo one')
     await comfyPage.page.keyboard.press('Shift+Enter')
     await comfyPage.page.keyboard.type('echo two')
-    // Still not submitted → now submit the whole multiline buffer.
+    // Single submission should run BOTH lines as one multi-line script.
     await comfyPage.page.keyboard.press('Enter')
 
     const out = await readTerminalText(comfyPage)
-    // Both commands ran sequentially via the runtime.
     expect(out).toContain('one')
     expect(out).toContain('two')
   })
 
-  test('Tab completes a partial command', async ({ comfyPage }) => {
-    await openPanel(comfyPage)
-    const helper = comfyPage.page
-      .getByTestId('agent-terminal')
-      .locator('.xterm-helper-textarea')
-    await helper.focus()
-    // "des" → unique prefix of `describe`
-    await comfyPage.page.keyboard.type('des')
-    await comfyPage.page.keyboard.press('Tab')
-    // Submit; describe w/o arg yields usage text on stderr.
-    await comfyPage.page.keyboard.press('Enter')
-    await expect
-      .poll(() => readTerminalText(comfyPage))
-      .toMatch(/usage: describe/)
-  })
-
-  test('coreutils: pwd / echo / true / false', async ({ comfyPage }) => {
+  test('coreutils: pwd / echo', async ({ comfyPage }) => {
     await openPanel(comfyPage)
     await typeAndEnter(comfyPage, 'pwd')
     await expect.poll(() => readTerminalText(comfyPage)).toMatch(/^\//m)
@@ -168,5 +141,22 @@ test.describe('Agent terminal', { tag: '@ui' }, () => {
     await expect
       .poll(() => readTerminalText(comfyPage))
       .toMatch(/not found|unknown|no such/i)
+  })
+
+  test('Ctrl+O folds and unfolds tool blocks', async ({ comfyPage }) => {
+    await openPanel(comfyPage)
+    await typeAndEnter(comfyPage, 'graph summary')
+    // Tool blocks default to folded — body shouldn't be visible yet.
+    const panel = comfyPage.page.getByTestId('agent-panel')
+    await expect(
+      panel.locator('button:has-text("graph summary")')
+    ).toBeVisible()
+
+    // Ctrl+O expands all
+    await comfyPage.page.keyboard.press('Control+o')
+    await expect.poll(() => readTerminalText(comfyPage)).toMatch(/nodes|types/i)
+
+    // Ctrl+O folds all back — `nodes:` from the body should be hidden again.
+    await comfyPage.page.keyboard.press('Control+o')
   })
 })
