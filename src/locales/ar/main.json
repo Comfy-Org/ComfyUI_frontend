@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "التطبيق",
+    "blueprint": "المخطط",
     "clearWorkflow": "مسح سير العمل",
     "deleteBlueprint": "حذف المخطط",
     "deleteWorkflow": "حذف سير العمل",
@@ -917,6 +918,10 @@
     "showMissingNodes": "عرض العقد المفقودة",
     "showSwapNodes": "عرض العقد البديلة",
     "swapNodes": "يمكن استبدال بعض العقد ببدائل"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "أعطِ ملاحظاتك",
+    "ctaText": "ما رأيك في لوحة الأخطاء الجديدة؟"
   },
   "essentials": {
     "batchImage": "معالجة صور دفعة واحدة",

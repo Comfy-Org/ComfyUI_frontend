@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "アプリ",
+    "blueprint": "ブループリント",
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
     "deleteWorkflow": "ワークフローを削除",
@@ -917,6 +918,10 @@
     "showMissingNodes": "不足しているノードを表示",
     "showSwapNodes": "代替可能なノードを表示",
     "swapNodes": "いくつかのノードは代替可能です"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "フィードバックを送る",
+    "ctaText": "新しいエラーパネルはいかがですか？"
   },
   "essentials": {
     "batchImage": "バッチ画像処理",

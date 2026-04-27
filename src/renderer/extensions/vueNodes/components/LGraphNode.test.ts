@@ -306,8 +306,8 @@ describe('LGraphNode', () => {
   })
 
   describe('handleDrop', () => {
-    it('should stop propagation when onDragDrop returns true', async () => {
-      const onDragDrop = vi.fn().mockReturnValue(true)
+    it('should call onDragDrop with claimEvent=true so the handler can claim the event sync', async () => {
+      const onDragDrop = vi.fn().mockResolvedValue(true)
       mockData.mockLgraphNode = {
         onDragDrop,
         onDragOver: vi.fn(),
@@ -316,25 +316,15 @@ describe('LGraphNode', () => {
 
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
-      const parent = nodeEl.parentElement!
 
-      const parentListener = vi.fn()
-      expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
+      const dropEvent = new Event('drop', { bubbles: true, cancelable: true })
+      nodeEl.dispatchEvent(dropEvent)
 
-      nodeEl.dispatchEvent(
-        new Event('drop', { bubbles: true, cancelable: true })
-      )
-
-      expect(onDragDrop).toHaveBeenCalled()
-      expect(parentListener).not.toHaveBeenCalled()
+      expect(onDragDrop).toHaveBeenCalledWith(dropEvent, true)
     })
 
-    it('should not stop propagation when onDragDrop returns false', async () => {
-      const onDragDrop = vi.fn().mockReturnValue(false)
+    it('should not stop propagation when node has no onDragDrop handler', async () => {
       mockData.mockLgraphNode = {
-        onDragDrop,
         onDragOver: vi.fn(),
         isSubgraphNode: () => false
       }
@@ -352,7 +342,6 @@ describe('LGraphNode', () => {
         new Event('drop', { bubbles: true, cancelable: true })
       )
 
-      expect(onDragDrop).toHaveBeenCalled()
       expect(parentListener).toHaveBeenCalled()
     })
   })
