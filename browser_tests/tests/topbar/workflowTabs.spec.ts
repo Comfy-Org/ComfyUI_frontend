@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -145,5 +146,77 @@ test.describe('Workflow tabs', () => {
     // Close the middle tab
     await topbar.closeWorkflowTab('Unsaved Workflow (2)')
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+  })
+
+  test.describe('Closing a modified workflow tab (FE-419)', () => {
+    async function modifyActiveWorkflow(page: Page) {
+      await page.evaluate(() => {
+        const graph = window.app?.graph
+        const node = window.LiteGraph?.createNode('Note')
+        if (graph && node) graph.add(node)
+      })
+    }
+
+    test('shows "Close anyway" label and no Cancel button on dirtyClose dialog', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+      await modifyActiveWorkflow(comfyPage.page)
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      const dialog = comfyPage.page.getByRole('dialog')
+      await expect(dialog).toBeVisible()
+      await expect(
+        dialog.getByRole('button', { name: 'Close anyway' })
+      ).toBeVisible()
+      await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
+      await expect(dialog.getByRole('button', { name: 'Cancel' })).toHaveCount(
+        0
+      )
+    })
+
+    test('clicking "Close anyway" closes the tab without saving', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+      await modifyActiveWorkflow(comfyPage.page)
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      await comfyPage.page
+        .getByRole('dialog')
+        .getByRole('button', { name: 'Close anyway' })
+        .click()
+
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
+      await expect
+        .poll(() => topbar.getActiveTabName())
+        .toContain('Unsaved Workflow')
+    })
+
+    test('dismissing the dialog keeps the modified tab open', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+      await modifyActiveWorkflow(comfyPage.page)
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(comfyPage.page.getByRole('dialog')).toBeHidden()
+
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+    })
   })
 })
