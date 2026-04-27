@@ -736,6 +736,8 @@ export class ComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
+      if (!useExecutionStore().isJobForActiveWorkflow(detail.prompt_id)) return
+
       const nodeOutputStore = useNodeOutputStore()
       const executionId = String(detail.display_node || detail.node)
 
@@ -778,6 +780,8 @@ export class ComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
+      if (!useExecutionStore().isJobForActiveWorkflow(detail.jobId)) return
+
       // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =

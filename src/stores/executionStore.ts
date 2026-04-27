@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -33,6 +33,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { createSessionTabMap } from '@/utils/sessionTabMap'
 
 interface QueuedJob {
   /**
@@ -72,11 +73,8 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   const jobIdToWorkflowId = ref<Map<string, string>>(new Map())
 
-  /**
-   * Map of job ID to workflow file path in the current session.
-   * Only populated for jobs that are queued in this browser tab.
-   */
-  const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
+  const sessionJobPaths = createSessionTabMap('Comfy.Execution.JobPaths')
+  const jobIdToSessionWorkflowPath = sessionJobPaths.map
 
   const initializingJobIds = ref<Set<string>>(new Set())
 
@@ -255,11 +253,12 @@ export const useExecutionStore = defineStore('execution', () => {
     // before the HTTP response from queuePrompt triggers storeJob.
     if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
       const path = queuedJobs.value[activeJobId.value]?.workflow?.path
-      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+      if (path) sessionJobPaths.set(activeJobId.value, path)
     }
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
+    if (!isJobForActiveWorkflow(e.detail.prompt_id)) return
     if (!activeJob.value) return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
@@ -275,6 +274,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
+    if (!isJobForActiveWorkflow(e.detail.prompt_id)) return
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
   }
@@ -335,26 +335,28 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: jobId } = e.detail
 
-    // Revoke previews for nodes that are starting to execute
+    // Update the per-job progress map (always, regardless of active tab)
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
-    for (const nodeId in nodes) {
-      const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !previousForJob[nodeId]) {
-        // This node just started executing, revoke its previews
-        // Note that we're doing the *actual* node id instead of the display node id
-        // here intentionally. That way, we don't clear the preview every time a new node
-        // within an expanded graph starts executing.
-        const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
-      }
-    }
-
-    // Update the progress states for all nodes
     nodeProgressStatesByJob.value = {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
     evictOldProgressJobs()
+
+    // Only update the "current view" progress if this job belongs to the active workflow tab
+    if (!isJobForActiveWorkflow(jobId)) return
+
+    // Revoke previews for nodes that are starting to execute.
+    // Gated behind isJobForActiveWorkflow so background jobs with overlapping
+    // node IDs don't clear previews in the currently viewed workflow.
+    for (const nodeId in nodes) {
+      const nodeState = nodes[nodeId]
+      if (nodeState.state === 'running' && !previousForJob[nodeId]) {
+        const { revokePreviewsByExecutionId } = useNodeOutputStore()
+        revokePreviewsByExecutionId(nodeId)
+      }
+    }
+
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
@@ -370,6 +372,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    if (!isJobForActiveWorkflow(e.detail.prompt_id)) return
     _executingNodeProgress.value = e.detail
   }
 
@@ -557,23 +560,8 @@ export const useExecutionStore = defineStore('execution', () => {
       jobIdToWorkflowId.value.set(String(id), String(wid))
     }
     if (workflow?.path) {
-      ensureSessionWorkflowPath(String(id), workflow.path)
+      sessionJobPaths.set(String(id), workflow.path)
     }
-  }
-
-  // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
-  const MAX_SESSION_PATH_ENTRIES = 4000
-
-  function ensureSessionWorkflowPath(jobId: string, path: string) {
-    if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
-    const next = new Map(jobIdToSessionWorkflowPath.value)
-    next.set(jobId, path)
-    while (next.size > MAX_SESSION_PATH_ENTRIES) {
-      const oldest = next.keys().next().value
-      if (oldest !== undefined) next.delete(oldest)
-      else break
-    }
-    jobIdToSessionWorkflowPath.value = next
   }
 
   /**
@@ -617,6 +605,63 @@ export const useExecutionStore = defineStore('execution', () => {
     return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
   })
 
+  /**
+   * Check whether a job (by prompt_id) was initiated from the currently
+   * active workflow tab. Used to filter incoming WS messages so that
+   * visual state (node outputs, previews, progress indicators) only
+   * applies to the workflow the user is looking at.
+   *
+   * Returns `true` (permissive) when:
+   * - promptId is null/undefined (legacy message without prompt_id)
+   * - promptId is not in the session map (job from before this session
+   *   or from another browser tab — graceful degradation)
+   * - No active workflow is open
+   */
+  function isJobForActiveWorkflow(
+    promptId: string | null | undefined
+  ): boolean {
+    if (!promptId) return true
+    const jobPath = jobIdToSessionWorkflowPath.value.get(promptId)
+    if (!jobPath) return true
+    const activePath = workflowStore.activeWorkflow?.path
+    if (!activePath) return true
+    return jobPath === activePath
+  }
+
+  // Rehydrate the "current view" progress when the user switches workflow tabs
+  // so stale progress from the previous tab is not displayed.
+  watch(
+    () => workflowStore.activeWorkflow?.path,
+    (newPath) => {
+      _executingNodeProgress.value = null
+      if (!newPath) {
+        nodeProgressStates.value = {}
+        return
+      }
+      // Find the most recent job that belongs to the new active workflow
+      const jobEntries = Object.entries(nodeProgressStatesByJob.value)
+      for (let i = jobEntries.length - 1; i >= 0; i--) {
+        const [jobId, states] = jobEntries[i]
+        if (jobIdToSessionWorkflowPath.value.get(jobId) === newPath) {
+          nodeProgressStates.value = states
+          const firstRunning = Object.values(states).find(
+            (state) => state.state === 'running'
+          )
+          if (firstRunning) {
+            _executingNodeProgress.value = {
+              value: firstRunning.value,
+              max: firstRunning.max,
+              prompt_id: firstRunning.prompt_id,
+              node: firstRunning.display_node_id || firstRunning.node_id
+            }
+          }
+          return
+        }
+      }
+      nodeProgressStates.value = {}
+    }
+  )
+
   return {
     isIdle,
     clientId,
@@ -637,6 +682,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningWorkflowCount,
     initializingJobIds,
     isActiveWorkflowRunning,
+    isJobForActiveWorkflow,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,
@@ -652,6 +698,6 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocatorIdToExecutionId,
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
-    ensureSessionWorkflowPath
+    ensureSessionWorkflowPath: sessionJobPaths.set
   }
 })
