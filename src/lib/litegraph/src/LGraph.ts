@@ -3043,6 +3043,54 @@ export class Subgraph
   }
 
   /**
+   * Moves a subgraph input from one position to another, updating
+   * link origin_slot indices to keep connections intact.
+   */
+  reorderInput(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return
+    if (fromIndex < 0 || fromIndex >= this.inputs.length) return
+    if (toIndex < 0 || toIndex >= this.inputs.length) return
+
+    const [moved] = this.inputs.splice(fromIndex, 1)
+    this.inputs.splice(toIndex, 0, moved)
+
+    // Fix link origin_slot for all links from SubgraphInputNode
+    for (const [i, input] of this.inputs.entries()) {
+      for (const linkId of input.linkIds) {
+        const link = this._links.get(linkId)
+        if (link) link.origin_slot = i
+      }
+    }
+
+    this.events.dispatch('input-reordered', { fromIndex, toIndex })
+    this.setDirtyCanvas(true, true)
+  }
+
+  /**
+   * Moves a subgraph output from one position to another, updating
+   * link target_slot indices to keep connections intact.
+   */
+  reorderOutput(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return
+    if (fromIndex < 0 || fromIndex >= this.outputs.length) return
+    if (toIndex < 0 || toIndex >= this.outputs.length) return
+
+    const [moved] = this.outputs.splice(fromIndex, 1)
+    this.outputs.splice(toIndex, 0, moved)
+
+    // Fix link target_slot for all links to SubgraphOutputNode
+    for (const [i, output] of this.outputs.entries()) {
+      for (const linkId of output.linkIds) {
+        const link = this._links.get(linkId)
+        if (link) link.target_slot = i
+      }
+    }
+
+    this.events.dispatch('output-reordered', { fromIndex, toIndex })
+    this.setDirtyCanvas(true, true)
+  }
+
+  /**
    * Renames an input slot in the subgraph.
    * @param input The input slot to rename.
    * @param name The new name for the input slot.
