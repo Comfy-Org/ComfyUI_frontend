@@ -11,6 +11,7 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
+  getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -180,6 +181,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const annotatedPath = `${asset.name} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:
@@ -187,7 +189,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
             ? ''
             : asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(annotatedPath, labelFn)
+        label: getDisplayLabel(displayLabel, labelFn)
       })
     }
 
