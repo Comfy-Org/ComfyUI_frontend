@@ -11,14 +11,18 @@ type MockStore = {
   canvasHistory: MockCanvasHistory
 }
 
-const mockCanvasHistory: MockCanvasHistory = {
-  undo: vi.fn(),
-  redo: vi.fn()
-}
+const { mockStore, mockCanvasHistory } = vi.hoisted(() => {
+  const mockCanvasHistory: MockCanvasHistory = {
+    undo: vi.fn(),
+    redo: vi.fn()
+  }
 
-const mockStore: MockStore = {
-  canvasHistory: mockCanvasHistory
-}
+  const mockStore: MockStore = {
+    canvasHistory: mockCanvasHistory
+  }
+
+  return { mockStore, mockCanvasHistory }
+})
 
 vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
@@ -111,9 +115,11 @@ describe('useKeyboard', () => {
         configurable: true
       })
 
-      expect(() => dispatchKeyDown({ key: ' ' })).not.toThrow()
-
-      Reflect.deleteProperty(document, 'activeElement')
+      try {
+        expect(() => dispatchKeyDown({ key: ' ' })).not.toThrow()
+      } finally {
+        Reflect.deleteProperty(document, 'activeElement')
+      }
     })
 
     it('should call undo on Ctrl+Z without shift', () => {
