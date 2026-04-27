@@ -204,6 +204,29 @@ describe('Load3d', () => {
       expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
+    it('clearModel nulls adapterRef.current so capability queries fall back to defaults', () => {
+      Object.assign(ctx.load3d, {
+        adapterRef: { current: { kind: 'splat' } }
+      })
+      let adapterDuringModelManagerClear:
+        | { kind: string; current?: unknown }
+        | null
+        | undefined
+      ctx.modelManager.clearModel.mockImplementation(() => {
+        adapterDuringModelManagerClear = (
+          ctx.load3d as unknown as { adapterRef: { current: unknown } }
+        ).adapterRef.current as { kind: string } | null
+      })
+
+      ctx.load3d.clearModel()
+
+      expect(adapterDuringModelManagerClear).toEqual({ kind: 'splat' })
+      expect(
+        (ctx.load3d as unknown as { adapterRef: { current: unknown } })
+          .adapterRef.current
+      ).toBeNull()
+    })
+
     it('toggleCamera updates both controls and gizmo with the active camera', () => {
       ctx.load3d.toggleCamera('orthographic')
 

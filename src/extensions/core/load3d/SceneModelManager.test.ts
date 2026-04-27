@@ -1,10 +1,8 @@
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  DEFAULT_MODEL_CAPABILITIES,
-  type ModelAdapterCapabilities
-} from './ModelAdapter'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
 import type { EventManagerInterface } from './interfaces'
 

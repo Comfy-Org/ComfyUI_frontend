@@ -1,16 +1,14 @@
 import * as THREE from 'three'
-import { type GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
-import {
-  DEFAULT_MODEL_CAPABILITIES,
-  type ModelAdapterCapabilities
-} from './ModelAdapter'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { buildPointCloudForMaterialMode } from './PointCloudModelAdapter'
-import {
-  type EventManagerInterface,
-  type MaterialMode,
-  type ModelManagerInterface,
-  type UpDirection
+import type {
+  EventManagerInterface,
+  MaterialMode,
+  ModelManagerInterface,
+  UpDirection
 } from './interfaces'
 
 export class SceneModelManager implements ModelManagerInterface {

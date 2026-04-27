@@ -4,18 +4,14 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
-import {
-  type AdapterRef,
-  createAdapterRef,
-  type ModelAdapter,
-  type ModelLoadContext
-} from './ModelAdapter'
+import { createAdapterRef } from './ModelAdapter'
+import type { AdapterRef, ModelAdapter, ModelLoadContext } from './ModelAdapter'
 import { PointCloudModelAdapter, getPLYEngine } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
-import {
-  type EventManagerInterface,
-  type LoaderManagerInterface,
-  type ModelManagerInterface
+import type {
+  EventManagerInterface,
+  LoaderManagerInterface,
+  ModelManagerInterface
 } from './interfaces'
 
 /**

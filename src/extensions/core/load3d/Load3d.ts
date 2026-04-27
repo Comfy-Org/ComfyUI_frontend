@@ -9,11 +9,8 @@ import type { HDRIManager } from './HDRIManager'
 import type { LightingManager } from './LightingManager'
 import type { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
-import {
-  type AdapterRef,
-  DEFAULT_MODEL_CAPABILITIES,
-  type ModelAdapterCapabilities
-} from './ModelAdapter'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { AdapterRef, ModelAdapterCapabilities } from './ModelAdapter'
 import type { RecordingManager } from './RecordingManager'
 import type { SceneManager } from './SceneManager'
 import type { SceneModelManager } from './SceneModelManager'
@@ -523,6 +520,7 @@ class Load3d {
     this.animationManager.dispose()
     this.gizmoManager.detach()
     this.modelManager.clearModel()
+    this.adapterRef.current = null
     this.forceRender()
   }
 
@@ -825,6 +823,7 @@ class Load3d {
     this.viewHelperManager.dispose()
     this.loaderManager.dispose()
     this.modelManager.dispose()
+    this.adapterRef.current = null
     this.recordingManager.dispose()
     this.animationManager.dispose()
     this.gizmoManager.dispose()
