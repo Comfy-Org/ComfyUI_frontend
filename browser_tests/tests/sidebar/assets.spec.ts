@@ -86,17 +86,14 @@ const JOB_GAMMA_DETAIL: JobDetail = {
 }
 
 const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
-  mockCloudAssetSidebarData: [
-    async ({ comfyPage }, use) => {
-      await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-      await comfyPage.assets.mockEmptyCloudAssets()
+  mockCloudAssetSidebarData: async ({ comfyPage }, use) => {
+    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+    await comfyPage.assets.mockEmptyCloudAssets()
 
-      await use()
+    await use()
 
-      await comfyPage.assets.clearMocks()
-    },
-    { auto: true }
-  ]
+    await comfyPage.assets.clearMocks()
+  }
 })
 
 // ==========================================================================
@@ -673,7 +670,8 @@ test.describe('Assets sidebar - bulk actions', () => {
 cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   cloudTest(
     'Single selected multi-output job export preserves naming strategy',
-    async ({ comfyPage }) => {
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
       const tab = comfyPage.menu.assetsTab
@@ -696,7 +694,8 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
   cloudTest(
     'Multiple selected assets within one job preserve naming strategy',
-    async ({ comfyPage }) => {
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
       await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
 
@@ -729,7 +728,8 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
   cloudTest(
     'Multiple selected jobs use job-time naming strategy',
-    async ({ comfyPage }) => {
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
       const tab = comfyPage.menu.assetsTab
