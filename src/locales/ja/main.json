@@ -99,6 +99,7 @@
     "findInLibrary": "モデルライブラリの{type}セクションで見つけることができます。",
     "finish": "完了",
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
+    "gridView": "グリッド表示",
     "importAnother": "別のファイルをインポート",
     "imported": "インポート済み",
     "invalidAsset": "無効なアセット",
@@ -106,6 +107,7 @@
     "invalidFilename": "無効なファイル名",
     "invalidFilenameDetail": "アセットのファイル名を特定できませんでした。もう一度お試しください。",
     "jobId": "ジョブID",
+    "listView": "リスト表示",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
     "maxFileSizeValue": "1 GB",
@@ -333,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "アプリ",
+    "blueprint": "ブループリント",
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
     "deleteWorkflow": "ワークフローを削除",
@@ -808,6 +811,7 @@
     "IMAGE": "画像",
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
+    "INTERP_MODEL": "補間モデル",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -835,6 +839,7 @@
     "RECRAFT_V3_STYLE": "Recraft V3スタイル",
     "RETARGET_TASK_ID": "リターゲットタスクID",
     "RIG_TASK_ID": "リグタスクID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "サンプラー",
     "SIGMAS": "シグマ",
     "STRING": "文字列",
@@ -913,6 +918,10 @@
     "showMissingNodes": "不足しているノードを表示",
     "showSwapNodes": "代替可能なノードを表示",
     "swapNodes": "いくつかのノードは代替可能です"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "フィードバックを送る",
+    "ctaText": "新しいエラーパネルはいかがですか？"
   },
   "essentials": {
     "batchImage": "バッチ画像処理",
@@ -1822,6 +1831,10 @@
     "gettingInfo": "情報を取得中...",
     "importFailedGenericError": "パッケージのインポートに失敗しました。詳細はコンソールを確認してください。",
     "inWorkflow": "ワークフロー内",
+    "incompatibleVersion": {
+      "message": "ComfyUI-Manager をバージョン 4.2.1 以上にアップグレードしてください。\n• デスクトップ: ComfyUI デスクトップアプリを更新してください\n• スタンドアロン: pip install -U comfyui-manager を実行し、再起動してください\n詳細はこちら: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "ComfyUI-Manager のアップグレードが必要です"
+    },
     "infoPanelEmpty": "アイテムをクリックして情報を表示します",
     "installAllMissingNodes": "すべての不足しているノードをインストール",
     "installError": "インストールエラー",

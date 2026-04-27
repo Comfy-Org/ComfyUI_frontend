@@ -483,9 +483,17 @@
         "name": "primer_fotograma",
         "tooltip": "Imagen del primer fotograma para el video."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "ID de asset de Seedance para usar como primer fotograma. Es excluyente con la entrada de imagen first_frame."
+      },
       "last_frame": {
         "name": "último_fotograma",
         "tooltip": "Imagen del último fotograma para el video."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "ID de asset de Seedance para usar como último fotograma. Es excluyente con la entrada de imagen last_frame."
       },
       "model": {
         "name": "modelo",
@@ -531,6 +539,9 @@
       "model": {
         "name": "modelo",
         "tooltip": "Seedance 2.0 para máxima calidad; Seedance 2.0 Fast para optimización de velocidad."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_duration": {
         "name": "duración"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Crea un asset de imagen personal de Seedance 2.0. Sube la imagen de entrada y la registra en el grupo de assets indicado. Si group_id está vacío, ejecuta un flujo de autenticación H5 de persona real para crear un nuevo grupo antes de añadir el asset.",
+    "display_name": "ByteDance Crear Asset de Imagen",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutiliza un ID de grupo de assets de Seedance existente para omitir la verificación humana repetida para la misma persona. Déjalo vacío para ejecutar la autenticación de persona real en el navegador y crear un nuevo grupo."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Imagen para registrar como asset personal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Crea un asset de video personal de Seedance 2.0. Sube el video de entrada y lo registra en el grupo de assets indicado. Si group_id está vacío, ejecuta un flujo de autenticación H5 de persona real para crear un nuevo grupo antes de añadir el asset.",
+    "display_name": "ByteDance Crear Asset de Video",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutiliza un ID de grupo de assets de Seedance existente para omitir la verificación humana repetida para la misma persona. Déjalo vacío para ejecutar la autenticación de persona real en el navegador y crear un nuevo grupo."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video para registrar como asset personal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -3683,6 +3742,39 @@
       "seed": {
         "name": "seed",
         "tooltip": "La semilla aleatoria utilizada para crear el ruido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolate": {
+    "display_name": "Interpolar fotogramas",
+    "inputs": {
+      "images": {
+        "name": "imágenes"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "multiplicador"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Cargar modelo de interpolación de fotogramas",
+    "inputs": {
+      "model_name": {
+        "name": "nombre del modelo",
+        "tooltip": "Selecciona un modelo de interpolación de fotogramas para cargar. Los modelos deben colocarse en la carpeta 'frame_interpolation'."
       }
     },
     "outputs": {
@@ -13795,6 +13887,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Detect",
+    "inputs": {
+      "bboxes": {
+        "name": "cajas_delimitadoras",
+        "tooltip": "Cajas delimitadoras dentro de las cuales segmentar"
+      },
+      "conditioning": {
+        "name": "condicionamiento",
+        "tooltip": "Condicionamiento de texto desde CLIPTextEncode"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "individual_masks": {
+        "name": "máscaras_individuales",
+        "tooltip": "Generar máscaras por objeto en lugar de una unión"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative_coords": {
+        "name": "coordenadas_negativas",
+        "tooltip": "Puntos negativos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de píxeles)"
+      },
+      "positive_coords": {
+        "name": "coordenadas_positivas",
+        "tooltip": "Puntos positivos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de píxeles)"
+      },
+      "refine_iterations": {
+        "name": "iteraciones_de_refinamiento",
+        "tooltip": "Pasadas de refinamiento del decodificador SAM (0=usar máscaras del detector sin procesar)"
+      },
+      "threshold": {
+        "name": "umbral"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      },
+      "1": {
+        "name": "cajas_delimitadoras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 Track Preview",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "imágenes"
+      },
+      "opacity": {
+        "name": "opacidad"
+      },
+      "track_data": {
+        "name": "datos_de_rastreo"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Track to Mask",
+    "inputs": {
+      "object_indices": {
+        "name": "índices_de_objeto",
+        "tooltip": "Índices de objetos separados por comas para incluir (ej. '0,2,3'). Vacío = todos los objetos."
+      },
+      "track_data": {
+        "name": "datos_de_rastreo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video Track",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamiento",
+        "tooltip": "Condicionamiento de texto para detectar nuevos objetos durante el rastreo"
+      },
+      "detect_interval": {
+        "name": "intervalo_de_detección",
+        "tooltip": "Ejecutar detección cada N fotogramas (1=cada fotograma). Valores mayores ahorran recursos."
+      },
+      "detection_threshold": {
+        "name": "umbral_de_detección",
+        "tooltip": "Umbral de puntuación para la detección por texto"
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Fotogramas de video como imágenes por lote"
+      },
+      "initial_mask": {
+        "name": "máscara_inicial",
+        "tooltip": "Máscara(s) para el primer fotograma a rastrear (una por objeto)"
+      },
+      "max_objects": {
+        "name": "máx_objetos",
+        "tooltip": "Máximo de objetos rastreados (0=ilimitado). Las máscaras iniciales cuentan para este límite."
+      },
+      "model": {
+        "name": "modelo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "datos_de_rastreo",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -17506,6 +17719,10 @@
       "prompt": {
         "name": "promoción",
         "tooltip": "Descripción de texto del video"
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "Resolución de salida del video. 4K no está disponible para los modelos veo-3.1-lite y veo-3.0."
       },
       "seed": {
         "name": "semilla",
