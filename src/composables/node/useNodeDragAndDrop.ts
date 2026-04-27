@@ -50,32 +50,23 @@ export const useNodeDragAndDrop = <T>(
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
-  const installedDragDrop = async function (e: DragEvent, claimEvent = false) {
+  const installedDragDrop = async function (e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
     if (files.length) {
-      if (claimEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
-      await onDrop(files)
+      void onDrop(files)
       return true
     }
     const assetString = e?.dataTransfer?.getData('comfy/asset-info') ?? ''
     const asset = zResultItem.safeParse(JSON.parse(assetString)).data
     if (asset && options.onResultItemDrop) {
-      await options.onResultItemDrop(asset)
+      void options.onResultItemDrop(asset)
       return true
     }
 
     const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
     if (!uri || uri.origin !== location.origin) return false
-
-    if (claimEvent) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
 
     try {
       const resp = await fetch(uri)
