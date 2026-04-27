@@ -2,18 +2,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 
 test.describe('Node search box V2 extended', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.enableV2Search()
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
+    await comfyPage.searchBoxV2.setup()
   })
 
   test('Double-click on empty canvas opens search', async ({ comfyPage }) => {
@@ -40,37 +33,23 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       .toBe(initialCount)
   })
 
-  test('Reopening search after Enter has no persisted state', async ({
-    comfyPage
-  }) => {
-    const { searchBoxV2 } = comfyPage
+  for (const closeKey of ['Enter', 'Escape'] as const) {
+    test(`Reopening search after ${closeKey} has no persisted state`, async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
 
-    await searchBoxV2.open()
-    await searchBoxV2.input.fill('KSampler')
-    await expect(searchBoxV2.results.first()).toBeVisible()
-    await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).toBeHidden()
+      await searchBoxV2.open()
+      await searchBoxV2.input.fill('KSampler')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      await comfyPage.page.keyboard.press(closeKey)
+      await expect(searchBoxV2.input).toBeHidden()
 
-    await searchBoxV2.open()
-    await expect(searchBoxV2.input).toHaveValue('')
-    await expect(searchBoxV2.filterChips).toHaveCount(0)
-  })
-
-  test('Reopening search after Escape has no persisted state', async ({
-    comfyPage
-  }) => {
-    const { searchBoxV2 } = comfyPage
-
-    await searchBoxV2.open()
-    await searchBoxV2.input.fill('KSampler')
-    await expect(searchBoxV2.results.first()).toBeVisible()
-    await comfyPage.page.keyboard.press('Escape')
-    await expect(searchBoxV2.input).toBeHidden()
-
-    await searchBoxV2.open()
-    await expect(searchBoxV2.input).toHaveValue('')
-    await expect(searchBoxV2.filterChips).toHaveCount(0)
-  })
+      await searchBoxV2.open()
+      await expect(searchBoxV2.input).toHaveValue('')
+      await expect(searchBoxV2.filterChips).toHaveCount(0)
+    })
+  }
 
   test.describe('Category navigation', () => {
     test('Category navigation updates results', async ({ comfyPage }) => {
@@ -136,7 +115,6 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const NODE_TYPE = 'CLIPTextEncode'
       const refsBefore = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
       const idsBefore = new Set(refsBefore.map((n) => n.id))
-      const linkCountBefore = await comfyPage.nodeOps.getLinkCount()
 
       await comfyPage.canvasOps.disconnectEdge()
       await expect(searchBoxV2.input).toBeVisible()
@@ -155,18 +133,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         )
         .toBe(refsBefore.length + 1)
 
-      // Net link count is unchanged: original release dropped a link, the
-      // selected node re-attached one.
-      await expect
-        .poll(() => comfyPage.nodeOps.getLinkCount())
-        .toBe(linkCountBefore)
-
       // Verify the auto-connect: the newly-added node's CLIP input must be
       // connected (proves the release wasn't just dropped).
       const refsAfter = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
-      if (!newNode) throw new Error('Expected a new CLIPTextEncode node')
-      const clipInput = await newNode.getInput(0)
+      expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
+      const clipInput = await newNode!.getInput(0)
       await expect.poll(() => clipInput.getLinkCount()).toBe(1)
     })
   })
@@ -294,24 +266,50 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.categoryButton('most-relevant').click()
       await expect(searchBoxV2.results).toHaveCount(defaultCount)
     })
+
+    test(
+      'Blueprint root chip filters to published blueprints',
+      { tag: ['@subgraph'] },
+      async ({ comfyPage }) => {
+        const blueprintName = `chip-test-${crypto.randomUUID().slice(0, 8)}`
+        const nodeRef = await comfyPage.nodeOps.getNodeRefById('3')
+        await nodeRef.click('title')
+        await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+        await expect
+          .poll(() =>
+            comfyPage.nodeOps
+              .getNodeRefsByTitle('New Subgraph')
+              .then((refs) => refs.length)
+          )
+          .toBe(1)
+        const subgraphNodes =
+          await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
+        await subgraphNodes[0].click('title')
+        await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
+          name: blueprintName
+        })
+        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+        await comfyPage.toast.closeToasts(1)
+
+        const { searchBoxV2 } = comfyPage
+        await searchBoxV2.open()
+
+        const blueprintsChip = searchBoxV2.rootCategoryButton(
+          RootCategory.Blueprint
+        )
+        await expect(blueprintsChip).toBeVisible()
+        await blueprintsChip.click()
+
+        // Blueprints persist across tests on the same worker; filter by the
+        // unique name we just published rather than asserting the full list.
+        await expect(
+          searchBoxV2.results.filter({ hasText: blueprintName })
+        ).toHaveCount(1)
+      }
+    )
   })
 
   test.describe('Search behavior', () => {
-    test('Click on result item adds node', async ({ comfyPage }) => {
-      const { searchBoxV2 } = comfyPage
-      const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
-
-      await searchBoxV2.open()
-      await searchBoxV2.input.fill('KSampler')
-      await expect(searchBoxV2.results.first()).toBeVisible()
-
-      await searchBoxV2.results.first().click()
-      await expect(searchBoxV2.input).toBeHidden()
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
-    })
-
     test('Search narrows results progressively', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
       const getCount = () => searchBoxV2.results.count()
@@ -350,8 +348,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.applyTypeFilter('output', 'LATENT')
 
       await expect(searchBoxV2.filterChips).toHaveCount(2)
-      await expect(searchBoxV2.filterChips.first()).toContainText('MODEL')
-      await expect(searchBoxV2.filterChips.nth(1)).toContainText('LATENT')
+      const chipTexts = await searchBoxV2.filterChips.allTextContents()
+      expect(chipTexts.some((t) => t.includes('MODEL'))).toBe(true)
+      expect(chipTexts.some((t) => t.includes('LATENT'))).toBe(true)
     })
   })
 

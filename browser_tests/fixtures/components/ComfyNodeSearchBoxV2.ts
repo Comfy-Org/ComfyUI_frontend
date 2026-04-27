@@ -1,17 +1,12 @@
 import type { Locator } from '@playwright/test'
 
+import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const { searchBoxV2 } = TestIds
 
-export type RootCategoryId =
-  | 'favorites'
-  | 'comfy'
-  | 'custom'
-  | 'essentials'
-  | 'partner-nodes'
-  | 'blueprints'
+export type { RootCategoryId }
 
 export class ComfyNodeSearchBoxV2 {
   readonly dialog: Locator
@@ -64,15 +59,20 @@ export class ComfyNodeSearchBoxV2 {
     await this.filterOptions.first().waitFor({ state: 'hidden' })
   }
 
-  async removeFilterChip(index: number = 0): Promise<void> {
+  async removeFilterChip(index = 0): Promise<void> {
     await this.filterChips
       .nth(index)
       .getByTestId(searchBoxV2.chipDelete)
       .click()
   }
 
-  async open(): Promise<void> {
+  async toggle(): Promise<void> {
     await this.comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
+  }
+
+  async open(): Promise<void> {
+    if (await this.input.isVisible()) return
+    await this.toggle()
     await this.input.waitFor({ state: 'visible' })
   }
 
@@ -81,13 +81,24 @@ export class ComfyNodeSearchBoxV2 {
     // does not intercept; coords target a viewport spot that is on the canvas
     // and clear of both the side toolbar and any default-graph nodes.
     await this.comfyPage.page.mouse.dblclick(200, 200, { delay: 5 })
-    await this.input.waitFor({ state: 'visible' })
   }
 
-  async enableV2Search(): Promise<void> {
+  async ensureV2Search(): Promise<void> {
     await this.comfyPage.settings.setSetting(
       'Comfy.NodeSearchBoxImpl',
       'default'
+    )
+  }
+
+  async setup(): Promise<void> {
+    await this.ensureV2Search()
+    await this.comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.Action',
+      'search box'
+    )
+    await this.comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.ActionShift',
+      'search box'
     )
   }
 }

@@ -5,15 +5,7 @@ import {
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.enableV2Search()
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
+    await comfyPage.searchBoxV2.setup()
   })
 
   test('Can open search and add node', async ({ comfyPage }) => {
