@@ -261,15 +261,17 @@ onUpdated(() => {
 }
 
 /* Multiline textareas grow with content via field-sizing:content
-   (Chrome 123+, Safari 17+), capped at 50vh so a long prompt can't
-   push the Run button off-screen. Side-by-side textareas with
-   different content lengths don't align to a shared height today;
-   tracked as a known issue for a follow-up pass. */
+   (Chrome 123+, Safari 17+). No max-height cap here — the panel's
+   own `max-h-*` (panelPresetClasses) is the single ceiling. The
+   textarea grows freely with content; once total widget height
+   exceeds the panel cap, the panel body's `overflow-y-auto` is
+   what scrolls, not the textarea internally. Side-by-side
+   textareas with different content lengths still don't align to a
+   shared height — tracked as a follow-up. */
 .panel-block__input[data-multiline='true'] :deep(textarea) {
   field-sizing: content;
   height: auto !important;
   min-height: 2.5em !important;
-  max-height: 50vh !important;
   resize: none !important;
 }
 </style>

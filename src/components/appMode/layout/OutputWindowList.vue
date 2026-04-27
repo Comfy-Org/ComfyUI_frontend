@@ -14,7 +14,7 @@
  */
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -31,7 +31,6 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
-import { resolveNode } from '@/utils/litegraphUtil'
 
 import OutputWindow from './OutputWindow.vue'
 
@@ -54,15 +53,12 @@ defineProps<{
   formatEta: (s: number) => string
 }>()
 
-// Title from the source output node — same label graph view shows
-// on its image-output node ("Save Image" / "Save Video" / user-renamed).
-function titleFor(entry: OutputWindowEntry): string | undefined {
-  const nodeId = entry.output?.nodeId
-  if (nodeId === undefined) return undefined
-  const node = resolveNode(nodeId)
-  return node?.title || undefined
-}
-
+// Header label = the asset filename. Doubles as the "what file is
+// this" label and the title bar — drops the redundant "Save Image"
+// node label that every window would otherwise share, and removes
+// the duplicate filename strip that used to live below the body.
+// Skeleton / latent windows return undefined so OutputWindow falls
+// back to its generic "Output" placeholder until a result lands.
 function filenameFor(entry: OutputWindowEntry): string | undefined {
   const out = entry.output
   if (!out) return undefined
@@ -95,6 +91,8 @@ function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   })
 }
 
+// Body-actions toolbar is overlaid on top of the image so it uses
+// the light-on-dark pill treatment from graph view's image node.
 const BODY_ACTION_CLASS =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center ' +
   'rounded-lg border-0 bg-base-foreground p-2 text-base-background ' +
@@ -102,6 +100,54 @@ const BODY_ACTION_CLASS =
   'hover:bg-base-foreground/90 focus-visible:outline-none ' +
   'focus-visible:ring-2 focus-visible:ring-base-foreground ' +
   'focus-visible:ring-offset-2'
+
+// Header-actions sit in the chrome strip alongside the chevron, so
+// they take that strip's transparent / hover-tinted style instead
+// of the body-overlay pill style.
+const HEADER_ACTION_CLASS =
+  'inline-flex size-8 cursor-pointer items-center justify-center ' +
+  'rounded-md border-0 bg-transparent text-layout-text ' +
+  'transition-colors duration-layout ease-layout ' +
+  'hover:bg-layout-cell-hover [&>i]:size-[18px]'
+
+// Per-window image aspect (naturalWidth / naturalHeight). Drives
+// OutputWindow's body sizing so the rendered media exactly fills
+// the padded box — uniform 8px margin on every side regardless of
+// image dimensions. Captured by preloading the same URL we display;
+// the browser cache makes the second fetch ~free.
+//
+// Keyed by entry id, not URL — a window's URL can swap (latent →
+// final) and we want the most recent natural ratio to win.
+const imageAspects = ref<Record<string, number>>({})
+function aspectFor(entry: OutputWindowEntry): number | undefined {
+  return imageAspects.value[entry.id]
+}
+function aspectSourceUrl(entry: OutputWindowEntry): string | undefined {
+  // Resolve through the Cloud asset_hash fix when applicable so we
+  // measure the same image the user sees.
+  return resolvedOutput(entry)?.url ?? entry.latentPreviewUrl
+}
+watch(
+  () =>
+    sortedWindows.value.map((w) => ({
+      id: w.id,
+      url: aspectSourceUrl(w)
+    })),
+  (entries) => {
+    for (const { id, url } of entries) {
+      if (!url) continue
+      const probe = new Image()
+      probe.onload = () => {
+        if (probe.naturalWidth <= 0 || probe.naturalHeight <= 0) return
+        const next = probe.naturalWidth / probe.naturalHeight
+        if (imageAspects.value[id] === next) return
+        imageAspects.value = { ...imageAspects.value, [id]: next }
+      }
+      probe.src = url
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // In-flight window: the topmost window still in skeleton/latent
 // state. The run-status overlay (progress + cancel) lives on that
@@ -188,14 +234,32 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
   <OutputWindow
     v-for="entry in sortedWindows"
     :key="entry.id"
-    :title="titleFor(entry)"
-    :filename="filenameFor(entry)"
+    :title="filenameFor(entry)"
     :menu-entries="menuEntriesFor(entry)"
     :initial-position="entry.position"
     :z-index="entry.zIndex"
+    :body-aspect="aspectFor(entry)"
     @update:position="(pos) => windowStore.move(entry.id, pos)"
     @promote="windowStore.promote(entry.id)"
   >
+    <!-- Always-visible download in the header chrome, sitting at the
+         left edge of the right-side cluster (download → maximize →
+         ellipsis). Hides for skeleton / latent windows that don't
+         have a file to download yet. -->
+    <template #header-actions-right>
+      <button
+        v-if="entry.output"
+        type="button"
+        data-header-control
+        :class="HEADER_ACTION_CLASS"
+        :title="t('g.download')"
+        :aria-label="t('g.download')"
+        @pointerdown.stop
+        @click="downloadOutput(entry)"
+      >
+        <i class="icon-[lucide--download]" />
+      </button>
+    </template>
     <template v-if="entry.state === 'image' && entry.output">
       <MediaOutputPreview
         :output="resolvedOutput(entry) ?? entry.output"
@@ -217,7 +281,8 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     <template #body-actions>
       <!-- Rerun / reuse-params only when the window has a resolved
            asset (i.e. the run finalized and landed in `outputs.media`).
-           In-flight or absorption-pending windows hide both. -->
+           In-flight or absorption-pending windows hide both. Download
+           lives in the header now, not here. -->
       <button
         v-if="entry.asset"
         type="button"
@@ -237,16 +302,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
         @click="loadAssetWorkflow(entry)"
       >
         <i class="icon-[lucide--list-restart] size-4" />
-      </button>
-      <button
-        v-if="entry.output"
-        type="button"
-        :class="BODY_ACTION_CLASS"
-        :title="t('g.download')"
-        :aria-label="t('g.download')"
-        @click="downloadOutput(entry)"
-      >
-        <i class="icon-[lucide--download] size-4" />
       </button>
     </template>
 

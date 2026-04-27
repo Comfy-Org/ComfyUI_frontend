@@ -209,7 +209,7 @@ const topRightCells = computed<ChromeCell[]>(() => {
     kind: 'system-batch-count',
     span: 5
   })
-  include(out, { id: 'system-run', kind: 'system-run', span: 3 })
+  include(out, { id: 'system-run', kind: 'system-run', span: 2 })
   return out
 })
 
@@ -256,9 +256,9 @@ const ZONE_BASE =
 // red" get promoted to proper semantic tokens. When that lands,
 // swap the call sites to the real tokens and delete this block.
 const goStopVars = {
-  '--app-mode-go-bg': '#16a34a', // tw green-600
-  '--app-mode-go-bg-hover': '#22c55e', // tw green-500
-  '--app-mode-go-border': '#166534', // tw green-800
+  '--app-mode-go-bg': '#19af69', // emerald (RGB 25/175/105 from design swatch)
+  '--app-mode-go-bg-hover': '#2dc37d', // ~10% brighter for hover
+  '--app-mode-go-border': '#0f6941', // forest green (deeper shade of bg)
   '--app-mode-stop-bg': '#ef4444', // tw red-500
   '--app-mode-stop-bg-hover': '#f87171', // tw red-400
   '--app-mode-stop-border': '#b91c1c' // tw red-700

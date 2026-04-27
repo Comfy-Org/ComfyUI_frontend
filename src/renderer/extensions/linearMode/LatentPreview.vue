@@ -4,18 +4,17 @@ import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutio
 const { executionStatusMessage } = useExecutionStatus()
 </script>
 <template>
-  <div
-    class="sz-full flex min-h-0 flex-1 flex-col items-center justify-center gap-3"
-  >
-    <div class="flex h-full items-center justify-center">
-      <div
-        class="skeleton-shimmer aspect-square size-[min(50vw,50vh)] rounded-lg"
-      />
-    </div>
-
+  <!-- The shimmer fills its container so the loading state lines up
+       pixel-for-pixel with the eventual finalized image — same margins,
+       same outer bounds. Border matches the chrome-family hairline
+       (rgb 255/255/255/0.08). The status message is absolutely
+       positioned so it overlays the bottom of the shimmer instead of
+       pushing the shimmer up out of the body box. -->
+  <div class="relative flex size-full min-h-0 flex-1">
+    <div class="skeleton-shimmer size-full rounded-lg border border-white/8" />
     <span
       v-if="executionStatusMessage"
-      class="animate-pulse text-sm text-muted"
+      class="absolute bottom-3 left-1/2 -translate-x-1/2 animate-pulse text-sm text-muted"
     >
       {{ executionStatusMessage }}
     </span>

@@ -8,15 +8,28 @@
  * of snap-to-preset. Lives inside LayoutView's workspace transform
  * so zoom scales the window with the rest of the canvas.
  *
- * Chrome layout mirrors graph view's image-output node:
+ * Header layout (left → right):
+ *   chevron · title · `header-actions-right` slot · maximize · ellipsis
+ *
  * - Chevron collapses the body (header-only when collapsed).
+ * - Title is a freeform string (consumers typically pass the asset
+ *   filename so it doubles as the file label).
+ * - `header-actions-right` slot — always-visible per-window actions
+ *   that read against the panel chrome (e.g. download). Sits at the
+ *   left of the right-side cluster. Use the transparent /
+ *   hover-tinted style of the other header controls.
  * - Hover toolbar at body's top-right (slot `body-actions`) holds
- *   the primary actions (rerun / reuse-params / download) — only
- *   visible while hovering or focusing the body, so the image
- *   surface stays clean.
- * - Ellipsis menu wires a Popover from `menuEntries` for secondary
- *   actions (download all, delete all, etc).
- * - Optional filename strip below the body for the asset label.
+ *   the secondary actions (rerun / reuse-params) — only visible
+ *   while hovering or focusing the body, so the image surface
+ *   stays clean.
+ * - Ellipsis menu wires a Popover from `menuEntries` for tertiary
+ *   actions (close, clear all, etc).
+ *
+ * Body content gets a uniform 8px margin via `p-2` on the slot
+ * wrapper, so the image breathes against the panel edges
+ * regardless of its dimensions. The `body-actions` /
+ * `body-overlay` slots intentionally sit outside that wrapper so
+ * they stay anchored 8px from the panel's corners (not 16px).
  */
 import { useEventListener } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
@@ -30,24 +43,23 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const {
   width = 512,
-  height = 568,
+  // Default height applies before an image lands (skeleton / latent
+  // previews). Once `bodyAspect` is supplied the section auto-sizes
+  // to header + body and this value isn't used.
+  height = 560,
   title,
-  filename,
   menuEntries = [],
   initialPosition,
-  zIndex
+  zIndex,
+  bodyAspect
 } = defineProps<{
   width?: number
   height?: number
-  /** Header label. Pass the source output node's title (e.g. "Save
-   *  Image", "Save Video", or a user-renamed node) so the window
-   *  reads as the same surface as the graph-view image-output node.
-   *  Falls back to a generic i18n default when undefined. */
+  /** Header label. Free-form — for App Mode windows we pass the
+   *  asset filename so the header doubles as the file label. Falls
+   *  back to a generic i18n default when undefined (skeleton /
+   *  latent windows that don't yet have a file). */
   title?: string
-  /** Asset filename rendered in the small footer strip below the body
-   *  (mirrors graph view's gallery-mode label). Strip hides when
-   *  undefined. */
-  filename?: string
   /** Entries for the header ellipsis Popover. When empty the ellipsis
    *  button is hidden so the header reads as "no extra actions" rather
    *  than "menu with nothing in it". */
@@ -61,6 +73,13 @@ const {
    *  layer; multi-window callers pass per-window values from a
    *  promote-on-focus store. */
   zIndex?: number
+  /** Image aspect ratio (`naturalWidth / naturalHeight`). When
+   *  supplied, the body wrapper uses CSS `aspect-ratio` so the
+   *  rendered media exactly fills the padded box — no
+   *  object-contain letterbox — and the section auto-sizes
+   *  vertically to header + body. Uniform 8px margin on every
+   *  side regardless of image dimensions. */
+  bodyAspect?: number
 }>()
 
 const emit = defineEmits<{
@@ -184,10 +203,14 @@ const HEADER_CONTROL_CLASS =
             top: `${wy}px`,
             width: `${width}px`,
             zIndex: zIndex ?? 30,
-            // When collapsed the body / footer hide and the section
-            // auto-sizes to header height. Drop the explicit height
-            // so the box doesn't keep its full 568px and stay empty.
-            ...(collapsed ? {} : { height: `${height}px` })
+            // - Collapsed: drop height so section shrinks to header.
+            // - bodyAspect set: drop height so section auto-sizes to
+            //   header + body (body sizes itself via aspect-ratio).
+            // - Otherwise (skeleton/latent without aspect): fixed
+            //   height fallback.
+            ...(collapsed || bodyAspect != null
+              ? {}
+              : { height: `${height}px` })
           }
     "
   >
@@ -198,6 +221,10 @@ const HEADER_CONTROL_CLASS =
       :class="[
         'flex min-h-layout-cell items-center gap-2 select-none',
         'bg-(--color-layout-header-fill) px-[10px] py-2',
+        // 1px hairline at the header→body seam, matching the chrome
+        // family alpha (panel chrome + cells + widget outlines all at
+        // rgb 255/255/255/0.08).
+        'border-b border-white/8',
         maximized ? 'cursor-default' : 'cursor-grab touch-none',
         !maximized && dragging && 'cursor-grabbing'
       ]"
@@ -224,6 +251,7 @@ const HEADER_CONTROL_CLASS =
         {{ title || t('linearMode.outputs.title') }}
       </span>
       <div class="min-w-0 flex-1" />
+      <slot name="header-actions-right" />
       <button
         type="button"
         data-header-control
@@ -271,7 +299,26 @@ const HEADER_CONTROL_CLASS =
       v-show="!collapsed"
       class="group/output relative flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <slot />
+      <!-- Padded inner wrapper gives the slotted media a uniform 8px
+           margin against the window edges. When `bodyAspect` is set
+           the wrapper sizes itself via CSS `aspect-ratio` (and
+           drops `flex-1` so it doesn't fight the section's auto
+           height). With aspect = image's natural ratio, `size-full`
+           children fill the padded box exactly — no letterbox, equal
+           margins on every side regardless of image dimensions. -->
+      <div
+        class="flex min-h-0 p-2"
+        :class="bodyAspect == null && !maximized ? 'flex-1' : ''"
+        :style="
+          bodyAspect != null && !maximized
+            ? { width: '100%', aspectRatio: String(bodyAspect) }
+            : maximized
+              ? { flex: '1' }
+              : undefined
+        "
+      >
+        <slot />
+      </div>
       <!-- Hover-revealed action toolbar — graph-view style: top-right
            inside the body, light pill buttons against image content,
            hidden by default to keep the surface clean. Slot empty by
@@ -293,12 +340,6 @@ const HEADER_CONTROL_CLASS =
       >
         <slot name="body-overlay" />
       </div>
-    </div>
-    <div
-      v-if="!collapsed && filename"
-      class="shrink-0 truncate px-3 py-2 text-center text-xs text-base-foreground"
-    >
-      {{ filename }}
     </div>
   </section>
 </template>

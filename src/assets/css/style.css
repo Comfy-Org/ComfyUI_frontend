@@ -1,5 +1,20 @@
 @import '@comfyorg/design-system/css/style.css';
 
+/* Panel-header tone for App Mode floating surfaces (FloatingPanel +
+   OutputWindow). The design-system default is a 50/50 mix of
+   layout-cell + layout-canvas, which reads too light against our
+   canvas; the dark-canvas token alone reads too dark. Override to
+   the 25/75 midpoint so both panel surfaces share a single tone for
+   their headers (and FloatingPanel's footer, which uses the same
+   token). */
+:root {
+  --color-layout-header-fill: color-mix(
+    in srgb,
+    var(--color-layout-cell) 25%,
+    var(--color-layout-canvas) 75%
+  );
+}
+
 /* Panel chrome — surface treatment shared by FloatingPanel and the App
    Builder toolbars so both read as the same floating surface. Matches
    FloatingPanel's scoped values; intentional duplication kept in sync
@@ -14,23 +29,109 @@
   backdrop-filter: blur(8px);
 }
 
-/* Widget inputs inside floating panels read as recessed into the panel
-   surface, not popping out of it. Uses --color-base-background (the same
-   dark the output-canvas background uses) so widgets + canvas share a
-   visual "depth layer" distinct from the panel chrome. Applies to both
-   App Mode (LayoutView → PanelBlockList → InputCell) and App Builder
-   (BuilderPanel → AppModeWidgetList) without either component opting
-   in — keeps the two surfaces WYSIWYG-coherent by default. */
-.floating-panel textarea,
-.floating-panel input {
+/* Shared widget-input treatment — applies in both the floating
+   panel surface (`.floating-panel`, used by FloatingPanel and the
+   App Builder panel) AND the App Mode chrome (`.app-chrome`, the
+   top-right BatchCountCell etc.). Keeps the "Number of runs" pill
+   and the panel's width/height pills visually identical so the
+   user reads them as the same control kind across surfaces.
+   Inputs / textareas: dark-canvas fill so they recess into the
+   surface. The widget-bg pill (ScrubableNumberInput) gets the
+   outline treatment below. */
+:is(.floating-panel, .app-chrome) textarea,
+:is(.floating-panel, .app-chrome) input {
   background-color: var(--color-layout-canvas);
+}
+
+/* Tone down the text-selection highlight. Number inputs auto-
+   select the value on focus (so you can type-to-replace), and the
+   browser's default system-blue against the dark canvas reads as
+   a bright artifact. A subtle white tint keeps the "this is
+   selected" affordance without the harsh color shift. */
+:is(.floating-panel, .app-chrome) textarea::selection,
+:is(.floating-panel, .app-chrome) input::selection {
+  background-color: rgb(255 255 255 / 0.18);
+  color: inherit;
+}
+
+/* Uniform outline treatment for all widget boxes — text inputs,
+   textareas, and the ScrubableNumberInput pill (the
+   `.bg-component-node-widget-background` container that hosts the
+   −/value/+ trio). One static border so each surface reads as a
+   coherent control surface regardless of widget kind; brighter
+   border on focus instead of a separate focus ring.
+   `:focus-within` on the pill catches focus from its inner input.
+   `outline: none` on the focus state plus the catch-all focus-
+   visible selector kill any browser- or PrimeVue-default outline/
+   box-shadow that would otherwise stack on top of our border. */
+:is(.floating-panel, .app-chrome) textarea,
+:is(.floating-panel, .app-chrome) input,
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
+  /* Match the panel-chrome + cell borders (both `rgb 255/255/255/0.08`)
+     at rest so widget outlines read as part of the same chrome family
+     instead of competing with the surface they sit on. */
+  border: 1px solid rgb(255 255 255 / 0.08);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+:is(.floating-panel, .app-chrome) textarea:focus,
+:is(.floating-panel, .app-chrome) input:focus,
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background:focus-within {
+  /* Active state lifts to the prior default — perceptible jump from
+     0.08 → 0.18 without screaming. */
+  border-color: rgb(255 255 255 / 0.18);
+  outline: none;
+  box-shadow: none;
+}
+
+:is(.floating-panel, .app-chrome) textarea:focus-visible,
+:is(.floating-panel, .app-chrome) input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* The ScrubableNumberInput's inner `<input>` lives at `inset-0`
+   inside the rounded pill, so when our generic input-border rule
+   above fired on it the bright focus rectangle didn't line up with
+   the pill's rounded corners — those leaked as four small
+   "behind-the-widget" artifacts at the corners. Suppress the border
+   on inputs (and any textareas, defensively) that are nested inside
+   a widget-bg pill so only the pill draws the outline. */
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background input,
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background
+  textarea {
+  border: none;
+}
+
+/* NodeWidgets wraps each widget in a div with
+   `focus-within:ring focus-within:ring-component-node-widget-background-highlighted`,
+   which paints a Tailwind box-shadow ring on the *outer* wrapper
+   when focus lands inside. The inner pill has its own slightly-
+   inset rounded corners, so the outer ring leaks past those corners
+   as four small "behind-the-widget" highlights. Our 1-px border on
+   the pill itself is the focus signal we want; suppress the
+   leaked ring on both surfaces. Targets only elements that opted
+   into a focus-within ring (the `[class*="focus-within"]` filter)
+   so unrelated focus-within rules stay intact. */
+:is(.floating-panel, .app-chrome) [class*='focus-within']:focus-within {
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 transparent;
+  --tw-ring-offset-shadow: 0 0 transparent;
 }
 /* ScrubableNumberInput and other widget containers use the
    component-node-widget-background token for their shell. Override
-   inside a panel so the ± buttons, center value, and container share
-   one continuous canvas-dark pill instead of a darker center bounded
-   by a lighter button strip. */
-.floating-panel .bg-component-node-widget-background {
+   inside the floating panel AND the App Mode chrome (top-right
+   "Number of runs" cluster) so the ± buttons, center value, and
+   container share one continuous canvas-dark pill instead of a
+   darker center bounded by a lighter button strip. Without the
+   chrome half of this override, the input element gets the
+   canvas-dark fill via our shared input rule but the button areas
+   keep the lighter widget-bg token — visible as a darker "value"
+   stripe between two lighter button cells. */
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
   background-color: var(--color-layout-canvas);
 }
 

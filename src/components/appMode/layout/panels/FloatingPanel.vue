@@ -242,6 +242,10 @@ const menuEntries = computed<MenuItem[]>(() => [
         cn(
           'flex min-h-layout-cell items-center gap-2 select-none',
           'bg-(--color-layout-header-fill) px-[10px] py-2',
+          // 1px hairline at the header→body seam, matching the chrome
+          // family alpha (panel chrome + cells + widget outlines all at
+          // rgb 255/255/255/0.08).
+          'border-b border-white/8',
           movable && 'cursor-grab touch-none',
           movable && isDragging && 'cursor-grabbing'
         )
@@ -297,7 +301,14 @@ const menuEntries = computed<MenuItem[]>(() => [
       </Popover>
     </header>
 
-    <div v-show="!collapsed" class="min-h-0 flex-1 overflow-y-auto p-4">
+    <!-- Body sizes to its widget content rather than `flex-1`-stretching
+         to fill the section. With the section using `max-h-*` (capped
+         content-driven height), the body's natural height pushes the
+         section to fit when there's headroom; when content overflows
+         the cap, `min-h-0` lets flex-shrink kick in so `overflow-y-auto`
+         engages the scrollbar. Net effect: short widget lists shrink
+         the panel; tall ones cap-and-scroll. -->
+    <div v-show="!collapsed" class="min-h-0 overflow-y-auto p-4">
       <slot />
     </div>
     <div

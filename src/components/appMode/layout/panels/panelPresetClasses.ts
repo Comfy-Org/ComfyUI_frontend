@@ -29,19 +29,21 @@ const RIGHT_EDGE = 'right-(--spacing-layout-outer)'
 const LEFT_WITH_SIDEBAR =
   'left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))]'
 
-// Vertical size. Dock presets stretch to fill the slot between the
-// top and bottom chrome rails; float presets stay content-driven
-// under a half-viewport cap. Both docks use the same height now that
-// the bottom chrome has cells on both sides (feedback on the left,
-// zoom cluster on the right) — the panel has to clear either one
-// regardless of which side it's docked against.
-const DOCK_H =
-  'h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]'
+// Vertical size. All presets are content-driven under a cap so the
+// panel shrinks to fit its widget list when there's headroom and
+// only engages the body's scrollbar when the widget list is taller
+// than the cap. Dock cap = the slot between the top and bottom
+// chrome rails; float cap = a half-viewport. Both docks use the
+// same cap now that the bottom chrome has cells on both sides
+// (feedback left, zoom cluster right) — the panel has to clear
+// either one regardless of which side it's docked against.
+const DOCK_MAX_H =
+  'max-h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]'
 const FLOAT_MAX_H = 'max-h-[calc(50%-var(--spacing-layout-outer)-4px)]'
 
 export const PANEL_PRESET_CLASSES: Record<PanelPreset, string> = {
-  'right-dock': `${TOP_BELOW_CHROME} ${RIGHT_EDGE} ${DOCK_H}`,
-  'left-dock': `${TOP_BELOW_CHROME} ${LEFT_WITH_SIDEBAR} ${DOCK_H}`,
+  'right-dock': `${TOP_BELOW_CHROME} ${RIGHT_EDGE} ${DOCK_MAX_H}`,
+  'left-dock': `${TOP_BELOW_CHROME} ${LEFT_WITH_SIDEBAR} ${DOCK_MAX_H}`,
   'float-tr': `${TOP_BELOW_CHROME} ${RIGHT_EDGE} ${FLOAT_MAX_H}`,
   'float-br': `${BOTTOM_ABOVE_CHROME} ${RIGHT_EDGE} ${FLOAT_MAX_H}`,
   'float-tl': `${TOP_BELOW_CHROME} ${LEFT_WITH_SIDEBAR} ${FLOAT_MAX_H}`,
