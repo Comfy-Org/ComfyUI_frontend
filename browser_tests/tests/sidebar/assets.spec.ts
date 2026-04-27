@@ -705,7 +705,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       await tab.assetCards
         .first()
-        .getByRole('button', { name: 'More options' })
+        .getByRole('button', { name: 'See more outputs' })
         .click()
       await expect(tab.backToAssetsButton).toBeVisible()
       await expect.poll(() => tab.assetCards.count()).toBe(2)
