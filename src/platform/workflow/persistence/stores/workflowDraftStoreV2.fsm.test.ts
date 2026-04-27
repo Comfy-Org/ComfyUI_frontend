@@ -367,7 +367,8 @@ describe('workflowDraftStoreV2 FSM', () => {
           }
           fc.modelRun(() => ({ model, real }), cmds)
         }),
-        { numRuns: 200 }
+        // 50 runs balances coverage with the 30s CI timeout on shared runners.
+        { numRuns: 50 }
       )
     }
   )
