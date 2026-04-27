@@ -80,6 +80,64 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
+const SUBGRAPH_INPUT_ID = -10
+
+/**
+ * Checks if a widget's value is externally driven via a link chain,
+ * meaning its control_after_generate should not run.
+ */
+export function isControlExternallyDriven(
+  node: LGraphNode,
+  targetWidget: IBaseWidget
+): boolean {
+  const input = node.inputs?.find(
+    (inp) =>
+      inp.link != null &&
+      (inp._widget === targetWidget || inp.widget?.name === targetWidget.name)
+  )
+  if (!input?.link) return false
+
+  const graph = node.graph
+  if (!graph) return false
+
+  // Check if the link originates from a SubgraphInputNode
+  const link = graph._links?.get(input.link) ?? graph.links?.[input.link]
+  if (!link || link.origin_id !== SUBGRAPH_INPUT_ID) {
+    // Regular node with a direct external link — externally driven
+    return true
+  }
+
+  // Interior node linked to SubgraphInput — check whether the
+  // SubgraphNode's corresponding input has an external link.
+  if (!graph.isRootGraph && 'inputs' in graph) {
+    // graph is a Subgraph; find SubgraphInput slot index from link
+    const subgraphInputs = (graph as { inputs?: Array<{ linkIds?: number[] }> })
+      .inputs
+    if (subgraphInputs) {
+      for (let i = 0; i < subgraphInputs.length; i++) {
+        const sgInput = subgraphInputs[i]
+        if (sgInput.linkIds?.includes(link.id)) {
+          // Found the SubgraphInput slot — check parent SubgraphNode instances
+          const rootGraph = graph.rootGraph
+          if (!rootGraph) break
+          for (const parentNode of rootGraph._nodes) {
+            if (
+              parentNode.isSubgraphNode?.() &&
+              parentNode.subgraph === graph
+            ) {
+              const sgNodeInput = parentNode.inputs?.[i]
+              if (sgNodeInput?.link != null) return true
+            }
+          }
+          break
+        }
+      }
+    }
+  }
+
+  return false
+}
+
 export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
@@ -175,6 +233,12 @@ export function addValueControlWidgets(
   }
 
   const applyWidgetControl = () => {
+    // Skip when the widget's value is driven by an external link.
+    // For regular nodes: input has a non-subgraph link.
+    // For subgraph interior nodes: trace up to the SubgraphNode and
+    // check if its corresponding input has an external link.
+    if (isControlExternallyDriven(node, targetWidget)) return
+
     var v = valueControl.value
 
     if (isCombo && v !== 'fixed') {
