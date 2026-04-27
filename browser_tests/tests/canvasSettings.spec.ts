@@ -8,11 +8,6 @@ import { sleep } from '@e2e/fixtures/utils/timing'
 
 const CLIP_NODE_COUNT = 2
 
-/**
- * Canvas-relative drag coordinates that tightly enclose both CLIPTextEncode
- * nodes in the default workflow. Kept here because the math depends on the
- * workflow layout, not on generic canvas behaviour.
- */
 const getClipNodesDragBox = async (comfyPage: ComfyPage) => {
   const clipNodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
   expect(
@@ -22,16 +17,15 @@ const getClipNodesDragBox = async (comfyPage: ComfyPage) => {
   const p1 = await clipNodes[0].getPosition()
   const p2 = await clipNodes[1].getPosition()
   const margin = 64
-  return {
-    from: {
-      x: Math.min(p1.x, p2.x) - margin,
-      y: Math.min(p1.y, p2.y) - margin
-    },
-    to: {
-      x: Math.max(p1.x, p2.x) + margin,
-      y: Math.max(p1.y, p2.y) + margin
-    }
-  }
+  const from = await comfyPage.canvasOps.toAbsolute({
+    x: Math.min(p1.x, p2.x) - margin,
+    y: Math.min(p1.y, p2.y) - margin
+  })
+  const to = await comfyPage.canvasOps.toAbsolute({
+    x: Math.max(p1.x, p2.x) + margin,
+    y: Math.max(p1.y, p2.y) + margin
+  })
+  return { from, to }
 }
 
 test.describe('Canvas settings', { tag: '@canvas' }, () => {
