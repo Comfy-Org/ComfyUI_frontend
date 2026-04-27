@@ -774,38 +774,13 @@ describe('useWorkspaceBilling', () => {
       expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
     })
 
-    it('stops polling when getBillingOpStatus rejects on a later scheduled poll', async () => {
-      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-mid',
-        cancel_at: '2026-06-01T00:00:00Z'
-      })
-      mockWorkspaceApi.getBillingOpStatus
-        .mockResolvedValueOnce({
-          id: 'op-mid',
-          status: 'pending',
-          started_at: '2026-04-01T00:00:00Z'
-        })
-        .mockRejectedValueOnce(new Error('network blip'))
-
-      // Silence the unhandled rejection that escapes void-discarded poll().
-      const unhandled = vi.fn()
-      process.on('unhandledRejection', unhandled)
-
-      const billing = setupBilling()
-      await billing.cancelSubscription()
-
-      // The first sync poll resolves with 'pending'; cancelSubscription returns.
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
-
-      // Trigger the scheduled retry; it rejects and the catch block stops polling.
-      await vi.advanceTimersByTimeAsync(2000)
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
-
-      // Polling has stopped — further timer drains do not produce new calls.
-      await vi.advanceTimersByTimeAsync(20_000)
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
-
-      process.off('unhandledRejection', unhandled)
-    })
+    // Intentionally NOT covered: a rejection on a later scheduled poll is
+    // emitted from a void-discarded poll() inside setTimeout, so it surfaces
+    // as an unhandled rejection that cancelSubscription has already returned
+    // from. Codifying that as "polling stops cleanly" requires installing a
+    // process unhandledRejection handler to hide the evidence — which would
+    // bless a real bug: the dialog can already show success while the
+    // backing op silently fails. Fix in the source (retry transient poll
+    // failures or surface a pending/error state) before adding coverage here.
   })
 })
