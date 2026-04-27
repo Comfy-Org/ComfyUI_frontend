@@ -24,10 +24,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -139,13 +136,16 @@ export function fixBadLinks(
         return false
       }
       const linkIdToSet = op === 'REMOVE' ? null : linkId
+      const inputSlot = node.inputs?.[slot]
+      if (fix && !inputSlot) {
+        logger.log(
+          ` > Cannot patch ${node.id}.inputs[${slot}] because the input slot is missing.`
+        )
+        return false
+      }
       patchedNode['inputs']![slot] = linkIdToSet
       if (fix) {
-        node.inputs = node.inputs || []
-        node.inputs[slot] =
-          node.inputs[slot] ||
-          ({} satisfies Partial<INodeInputSlot> as INodeInputSlot)
-        node.inputs[slot]!.link = linkIdToSet
+        inputSlot!.link = linkIdToSet
       }
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}

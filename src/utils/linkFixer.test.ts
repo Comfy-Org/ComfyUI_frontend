@@ -157,6 +157,28 @@ describe('fixBadLinks', () => {
     expect(graph.nodes[1]?.inputs?.[0]?.link).toBe(1)
   })
 
+  it('removes the origin reference when the target input slot is missing', () => {
+    const graph = createGraph({
+      nodes: [
+        createNode({ id: 1, outputs: [createOutput([1])] }),
+        createNode({ id: 2 })
+      ],
+      links: [[1, 1, 0, 2, 0, '*']]
+    })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 1,
+      deleted: 1
+    })
+    expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([])
+    expect(graph.nodes[1]?.inputs).toEqual([])
+    expect(graph.links).toEqual([])
+  })
+
   it('removes a stale origin reference instead of overwriting another target link', () => {
     const graph = createGraph({
       nodes: [
