@@ -2794,10 +2794,7 @@
       "steps": {
         "usage": "How do you plan to use ComfyUI?",
         "familiarity": "How familiar are you with ComfyUI?",
-        "role": "What's your role?",
-        "teamSize": "How big is your team?",
-        "industry": "What industry are you in?",
-        "making": "What are you making?",
+        "intent": "What do you want to do with ComfyUI?",
         "source": "Where did you hear about ComfyUI?"
       },
       "options": {
@@ -2813,20 +2810,15 @@
           "advanced": "Build and edit workflows",
           "expert": "Expert — I help others"
         },
-        "role": {
-          "creative_technologist": "Creative Technologist",
-          "creative_director": "Creative Director",
-          "ai_researcher": "AI Researcher",
-          "concept_artist": "Concept Artist / Illustrator",
-          "pipeline_td": "Pipeline TD / Technical Artist",
-          "producer": "Producer",
-          "engineer": "Engineer",
-          "student": "Student",
-          "leadership": "Leadership",
-          "content_creator": "Content Creator",
-          "educator": "Educator",
-          "marketing": "Marketing",
-          "other": "Other"
+        "intent": {
+          "workflows": "Build custom workflows",
+          "videos": "Videos",
+          "images": "Images",
+          "3d_game": "3D assets / game assets",
+          "audio": "Audio / music",
+          "apps": "Build simplified Apps from workflows",
+          "api": "Run ComfyUI workflows via API",
+          "not_sure": "Not sure"
         },
         "source": {
           "youtube": "YouTube",
@@ -2840,31 +2832,6 @@
           "discord": "Discord / community",
           "github": "GitHub",
           "other": "Other"
-        },
-        "teamSize": {
-          "solo": "Just me",
-          "small": "2–5",
-          "studio": "6–20",
-          "midsize": "21–100",
-          "enterprise": "100+"
-        },
-        "industry": {
-          "film_tv": "Film, TV & animation",
-          "vfx_post": "VFX & post-production",
-          "advertising": "Advertising & marketing",
-          "gaming": "Gaming",
-          "fashion": "Fashion",
-          "design": "Design (product / graphic / architectural / industrial)",
-          "software": "Software / AI / tech",
-          "other": "Other",
-          "otherPlaceholder": "Please specify"
-        },
-        "making": {
-          "video": "Video",
-          "images": "Images",
-          "3d": "3D assets",
-          "custom_nodes": "Custom Nodes",
-          "audio": "Audio / music"
         }
       }
     },
@@ -2936,10 +2903,7 @@
   "cloudForgotPassword_passwordResetError": "Failed to send password reset email",
   "cloudSurvey_steps_usage": "How do you plan to use ComfyUI?",
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
-  "cloudSurvey_steps_role": "What's your role?",
-  "cloudSurvey_steps_teamSize": "How big is your team?",
-  "cloudSurvey_steps_industry": "What industry are you in?",
-  "cloudSurvey_steps_making": "What are you making?",
+  "cloudSurvey_steps_intent": "What do you want to do with ComfyUI?",
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
   "assetBrowser": {
     "allCategory": "All {category}",

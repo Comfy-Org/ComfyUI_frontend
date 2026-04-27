@@ -45,6 +45,7 @@ export interface SurveyResponses {
   teamSize?: string
   source?: string
   usage?: string
+  intent?: string[]
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {

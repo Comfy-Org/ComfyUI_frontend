@@ -44,20 +44,6 @@
                     >{{ opt.label }}</label
                   >
                 </div>
-                <div
-                  v-if="step.allowOther && surveyData[step.field] === 'other'"
-                  class="mt-2 ml-8"
-                >
-                  <InputText
-                    v-model="surveyData[step.otherField!]"
-                    class="w-full"
-                    :placeholder="
-                      $t(
-                        'cloudOnboarding.survey.options.industry.otherPlaceholder'
-                      )
-                    "
-                  />
-                </div>
               </template>
               <template v-else>
                 <div
@@ -120,13 +106,12 @@
 <script setup lang="ts">
 import { shuffle } from 'es-toolkit'
 import Checkbox from 'primevue/checkbox'
-import InputText from 'primevue/inputtext'
 import ProgressBar from 'primevue/progressbar'
 import RadioButton from 'primevue/radiobutton'
 import StepPanel from 'primevue/steppanel'
 import StepPanels from 'primevue/steppanels'
 import Stepper from 'primevue/stepper'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -166,55 +151,38 @@ onMounted(async () => {
 type SurveyData = {
   usage: string
   familiarity: string
-  role: string
-  teamSize: string
-  industry: string
-  industryOther: string
-  making: string[]
+  intent: string[]
   source: string
 }
 
 const surveyData = ref<SurveyData>({
   usage: '',
   familiarity: '',
-  role: '',
-  teamSize: '',
-  industry: '',
-  industryOther: '',
-  making: [],
+  intent: [],
   source: ''
 })
 
 type Option = { value: string; label: string }
 
+const PIN_LAST_VALUES = new Set(['other', 'not_sure'])
 const randomize = (options: Option[]): Option[] => {
-  const other = options.find((o) => o.value === 'other')
-  const rest = options.filter((o) => o.value !== 'other')
-  return other ? [...shuffle(rest), other] : shuffle(rest)
+  const pinned = options.filter((o) => PIN_LAST_VALUES.has(o.value))
+  const rest = options.filter((o) => !PIN_LAST_VALUES.has(o.value))
+  return [...shuffle(rest), ...pinned]
 }
 
-type SingleField =
-  | 'usage'
-  | 'familiarity'
-  | 'role'
-  | 'teamSize'
-  | 'industry'
-  | 'source'
+type SingleField = 'usage' | 'familiarity' | 'source'
 
-type MultiField = 'making'
+type MultiField = 'intent'
 
 type StepDef = {
   type: 'single' | 'multi'
   labelKey: string
   field: SingleField | MultiField
-  options: Option[] | (() => Option[])
-  allowOther?: boolean
-  otherField?: 'industryOther'
-  showWhen?: () => boolean
+  options: Option[]
 }
 
-type Step = Omit<StepDef, 'options'> & {
-  options: Option[]
+type Step = StepDef & {
   value: string
   index: number
   isFirst: boolean
@@ -235,29 +203,16 @@ const familiarityOptions: Option[] = [
   { value: 'expert', label: 'Expert — I help others' }
 ]
 
-const roleOptions: Option[] = [
-  { value: 'creative_technologist', label: 'Creative Technologist' },
-  { value: 'creative_director', label: 'Creative Director' },
-  { value: 'ai_researcher', label: 'AI Researcher' },
-  { value: 'concept_artist', label: 'Concept Artist / Illustrator' },
-  { value: 'pipeline_td', label: 'Pipeline TD / Technical Artist' },
-  { value: 'producer', label: 'Producer' },
-  { value: 'engineer', label: 'Engineer' },
-  { value: 'student', label: 'Student' },
-  { value: 'leadership', label: 'Leadership' },
-  { value: 'content_creator', label: 'Content Creator' },
-  { value: 'educator', label: 'Educator' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'other', label: 'Other' }
+const intentOptions: Option[] = [
+  { value: 'workflows', label: 'Build custom workflows' },
+  { value: 'videos', label: 'Videos' },
+  { value: 'images', label: 'Images' },
+  { value: '3d_game', label: '3D assets / game assets' },
+  { value: 'audio', label: 'Audio / music' },
+  { value: 'apps', label: 'Build simplified Apps from workflows' },
+  { value: 'api', label: 'Run ComfyUI workflows via API' },
+  { value: 'not_sure', label: 'Not sure' }
 ]
-
-const educationRoleValues = new Set(['student', 'educator'])
-const workRoleOptions = randomize(
-  roleOptions.filter((o) => !educationRoleValues.has(o.value))
-)
-const educationRoleOptions = roleOptions.filter((o) =>
-  educationRoleValues.has(o.value)
-)
 
 const sourceOptions: Option[] = [
   { value: 'youtube', label: 'YouTube' },
@@ -271,36 +226,6 @@ const sourceOptions: Option[] = [
   { value: 'discord', label: 'Discord / community' },
   { value: 'github', label: 'GitHub' },
   { value: 'other', label: 'Other' }
-]
-
-const teamSizeOptions: Option[] = [
-  { value: 'solo', label: 'Just me' },
-  { value: 'small', label: '2–5' },
-  { value: 'studio', label: '6–20' },
-  { value: 'midsize', label: '21–100' },
-  { value: 'enterprise', label: '100+' }
-]
-
-const industryOptions: Option[] = [
-  { value: 'film_tv', label: 'Film, TV & animation' },
-  { value: 'vfx_post', label: 'VFX & post-production' },
-  { value: 'advertising', label: 'Advertising & marketing' },
-  { value: 'gaming', label: 'Gaming' },
-  { value: 'fashion', label: 'Fashion' },
-  {
-    value: 'design',
-    label: 'Design (product / graphic / architectural / industrial)'
-  },
-  { value: 'software', label: 'Software / AI / tech' },
-  { value: 'other', label: 'Other' }
-]
-
-const makingOptions: Option[] = [
-  { value: 'video', label: 'Video' },
-  { value: 'images', label: 'Images' },
-  { value: '3d', label: '3D assets' },
-  { value: 'custom_nodes', label: 'Custom Nodes' },
-  { value: 'audio', label: 'Audio / music' }
 ]
 
 const stepDefs: StepDef[] = [
@@ -317,38 +242,10 @@ const stepDefs: StepDef[] = [
     options: familiarityOptions
   },
   {
-    type: 'single',
-    labelKey: 'cloudSurvey_steps_role',
-    field: 'role',
-    options: () =>
-      surveyData.value.usage === 'education'
-        ? educationRoleOptions
-        : workRoleOptions,
-    showWhen: () =>
-      surveyData.value.usage === 'work' ||
-      surveyData.value.usage === 'education'
-  },
-  {
-    type: 'single',
-    labelKey: 'cloudSurvey_steps_teamSize',
-    field: 'teamSize',
-    options: teamSizeOptions,
-    showWhen: () => surveyData.value.usage === 'work'
-  },
-  {
-    type: 'single',
-    labelKey: 'cloudSurvey_steps_industry',
-    field: 'industry',
-    options: randomize(industryOptions),
-    allowOther: true,
-    otherField: 'industryOther',
-    showWhen: () => surveyData.value.usage === 'work'
-  },
-  {
     type: 'multi',
-    labelKey: 'cloudSurvey_steps_making',
-    field: 'making',
-    options: randomize(makingOptions)
+    labelKey: 'cloudSurvey_steps_intent',
+    field: 'intent',
+    options: randomize(intentOptions)
   },
   {
     type: 'single',
@@ -358,30 +255,22 @@ const stepDefs: StepDef[] = [
   }
 ]
 
-const steps = computed<Step[]>(() => {
-  const visible = stepDefs.filter((def) => !def.showWhen || def.showWhen())
-  return visible.map((def, i) => ({
-    ...def,
-    options: typeof def.options === 'function' ? def.options() : def.options,
-    value: String(i + 1),
-    index: i + 1,
-    isFirst: i === 0,
-    isLast: i === visible.length - 1
-  }))
-})
-
-watch(
-  () => surveyData.value.usage,
-  () => {
-    surveyData.value.role = ''
-  }
-)
+const steps: Step[] = stepDefs.map((def, i) => ({
+  ...def,
+  value: String(i + 1),
+  index: i + 1,
+  isFirst: i === 0,
+  isLast: i === stepDefs.length - 1
+}))
 
 const activeStep = ref(1)
-const progressPercent = computed(() => {
-  const total = steps.value.length
-  return Math.max(100 / total, Math.min(100, (activeStep.value / total) * 100))
-})
+const totalSteps = steps.length
+const progressPercent = computed(() =>
+  Math.max(
+    100 / totalSteps,
+    Math.min(100, (activeStep.value / totalSteps) * 100)
+  )
+)
 
 const isSubmitting = ref(false)
 
@@ -390,11 +279,7 @@ const isStepValid = (step: Step): boolean => {
     return surveyData.value[step.field as MultiField].length > 0
   }
   const value = surveyData.value[step.field as SingleField]
-  if (!value) return false
-  if (step.allowOther && step.otherField && value === 'other') {
-    return !!surveyData.value[step.otherField]?.trim()
-  }
-  return true
+  return !!value
 }
 
 const goTo = (step: number, activate: (val: string | number) => void) => {
@@ -409,20 +294,10 @@ const onSubmitSurvey = async () => {
       return
     }
     isSubmitting.value = true
-    const usage = surveyData.value.usage
-    const isWork = usage === 'work'
-    const hasRole = usage === 'work' || usage === 'education'
     const payload = {
-      usage,
+      usage: surveyData.value.usage,
       familiarity: surveyData.value.familiarity,
-      role: hasRole ? surveyData.value.role : '',
-      teamSize: isWork ? surveyData.value.teamSize : '',
-      industry: isWork
-        ? surveyData.value.industry === 'other'
-          ? surveyData.value.industryOther?.trim() || 'other'
-          : surveyData.value.industry
-        : '',
-      making: surveyData.value.making,
+      intent: surveyData.value.intent,
       source: surveyData.value.source
     }
 
@@ -432,10 +307,7 @@ const onSubmitSurvey = async () => {
       useTelemetry()?.trackSurvey('submitted', {
         usage: payload.usage,
         familiarity: payload.familiarity,
-        role: payload.role,
-        teamSize: payload.teamSize,
-        industry: payload.industry,
-        making: payload.making,
+        intent: payload.intent,
         source: payload.source
       })
     }
