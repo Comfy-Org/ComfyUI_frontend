@@ -1,3 +1,13 @@
+/**
+ * Entity IDs are deterministic, content-addressed, and string-prefix
+ * encoded — NOT opaque numeric IDs (cf. bitECS, koota, miniplex).
+ *
+ * `widgetEntityId(rootGraphId, nodeId, name)` is load-bearing:
+ * consumers consistently pass `rootGraph.id` so widgets viewed at
+ * different subgraph depths share identity. Migrating to numeric IDs
+ * would break cross-subgraph value sharing. See ADR 0008 and
+ * widgetValueStore for the canonical keying contract.
+ */
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 

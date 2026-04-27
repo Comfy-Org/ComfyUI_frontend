@@ -1,9 +1,11 @@
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { WidgetValue } from '@/stores/widgetComponents'
+import {
+  WidgetContainerComponent,
+  WidgetValueComponent
+} from '@/stores/widgetComponents'
 import type { WidgetState } from '@/stores/widgetValueStore'
 
-import { WidgetContainerComponent } from './components/WidgetContainer'
-import type { WidgetValue } from './components/WidgetValue'
-import { WidgetValueComponent } from './components/WidgetValue'
 import type { GraphId } from './entityIds'
 import { nodeEntityId, widgetEntityId } from './entityIds'
 import type { World } from './world'
@@ -37,22 +39,6 @@ export function registerWidgetInWorld(
   if (!container.widgetIds.includes(widgetId)) {
     container.widgetIds.push(widgetId)
   }
-}
-
-export function unregisterWidgetInWorld(
-  world: World,
-  graphId: GraphId,
-  nodeId: NodeId,
-  name: string
-): void {
-  const widgetId = widgetEntityId(graphId, nodeId, name)
-  world.removeComponent(widgetId, WidgetValueComponent)
-
-  const owner = nodeEntityId(graphId, nodeId)
-  const container = world.getComponent(owner, WidgetContainerComponent)
-  if (!container) return
-  const idx = container.widgetIds.indexOf(widgetId)
-  if (idx >= 0) container.widgetIds.splice(idx, 1)
 }
 
 /**

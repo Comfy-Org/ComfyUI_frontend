@@ -4,6 +4,18 @@ import type { ComponentKey } from './componentKey'
 import type { EntityId } from './entityIds'
 
 /**
+ * Storage strategy: AoS (per-entity reactive object reference) backed by
+ * `reactive(Map)`. Component values are stored by reference; mutating a
+ * value's fields propagates to all readers through Vue's reactive proxy.
+ * `setComponent(id, key, ref)` is intentionally identity-preserving.
+ *
+ * NOT a sparse-set / archetype store. A future SoA migration would break
+ * the shared-reactive-identity contract that BaseWidget._state and the
+ * widgetValueStore facade rely on; do not refactor without revisiting
+ * those consumers. See temp/plans/world-consolidation.md §C.
+ */
+
+/**
  * Minimal ECS world surface for slice 1. Exposes plain
  * `getComponent`/`setComponent`/`removeComponent` plumbing only.
  *
@@ -15,10 +27,6 @@ export interface World {
     id: TEntity,
     key: ComponentKey<TData, TEntity>
   ): TData | undefined
-  hasComponent<TData, TEntity extends EntityId>(
-    id: TEntity,
-    key: ComponentKey<TData, TEntity>
-  ): boolean
   setComponent<TData, TEntity extends EntityId>(
     id: TEntity,
     key: ComponentKey<TData, TEntity>,
@@ -30,52 +38,39 @@ export interface World {
   ): void
   entitiesWith<TData, TEntity extends EntityId>(
     key: ComponentKey<TData, TEntity>
-  ): IterableIterator<TEntity>
-}
-
-interface InternalStore {
-  store: Map<string, Map<EntityId, unknown>>
-}
-
-function getOrCreateMap(
-  internal: InternalStore,
-  keyName: string
-): Map<EntityId, unknown> {
-  const existing = internal.store.get(keyName)
-  if (existing) return existing
-  const next = reactive(new Map<EntityId, unknown>()) as Map<EntityId, unknown>
-  internal.store.set(keyName, next)
-  return next
+  ): TEntity[]
 }
 
 export function createWorld(): World {
-  const internal: InternalStore = { store: new Map() }
+  const store = new Map<string, Map<EntityId, unknown>>()
 
   return {
     getComponent<TData, TEntity extends EntityId>(
       id: TEntity,
       key: ComponentKey<TData, TEntity>
     ): TData | undefined {
-      const map = internal.store.get(key.name)
+      const map = store.get(key.name)
       if (!map) return undefined
       return map.get(id) as TData | undefined
     },
-    hasComponent(id, key) {
-      const map = internal.store.get(key.name)
-      return map ? map.has(id) : false
-    },
     setComponent(id, key, data) {
-      const map = getOrCreateMap(internal, key.name)
+      let map = store.get(key.name)
+      if (!map) {
+        map = reactive(new Map<EntityId, unknown>()) as Map<EntityId, unknown>
+        store.set(key.name, map)
+      }
       map.set(id, data)
     },
     removeComponent(id, key) {
-      const map = internal.store.get(key.name)
+      const map = store.get(key.name)
       if (map) map.delete(id)
     },
-    *entitiesWith(key) {
-      const map = internal.store.get(key.name)
-      if (!map) return
-      for (const id of map.keys()) yield id as never
+    entitiesWith<TData, TEntity extends EntityId>(
+      key: ComponentKey<TData, TEntity>
+    ): TEntity[] {
+      const map = store.get(key.name)
+      if (!map) return []
+      return Array.from(map.keys()) as TEntity[]
     }
   }
 }

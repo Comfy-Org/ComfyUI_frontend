@@ -16,19 +16,17 @@ const TestNodeThing = defineComponentKey<{ tag: string }, NodeEntityId>(
 describe('createWorld', () => {
   const graphId = asGraphId('00000000-0000-0000-0000-000000000001')
 
-  it('round-trips set / get / has / remove', () => {
+  it('round-trips set / get / remove', () => {
     const world = createWorld()
     const widgetId = widgetEntityId(graphId, 1, 'seed')
 
-    expect(world.hasComponent(widgetId, TestWidgetThing)).toBe(false)
     expect(world.getComponent(widgetId, TestWidgetThing)).toBeUndefined()
 
     world.setComponent(widgetId, TestWidgetThing, { value: 42 })
-    expect(world.hasComponent(widgetId, TestWidgetThing)).toBe(true)
     expect(world.getComponent(widgetId, TestWidgetThing)?.value).toBe(42)
 
     world.removeComponent(widgetId, TestWidgetThing)
-    expect(world.hasComponent(widgetId, TestWidgetThing)).toBe(false)
+    expect(world.getComponent(widgetId, TestWidgetThing)).toBeUndefined()
   })
 
   it('preserves shared object identity (reactive bridging)', () => {
@@ -47,7 +45,7 @@ describe('createWorld', () => {
     world.setComponent(a, TestWidgetThing, { value: 1 })
     world.setComponent(b, TestWidgetThing, { value: 2 })
 
-    const ids = [...world.entitiesWith(TestWidgetThing)]
+    const ids = world.entitiesWith(TestWidgetThing)
     expect(ids.sort()).toEqual([a, b].sort())
   })
 
