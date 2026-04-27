@@ -604,11 +604,13 @@ export const useAssetsStore = defineStore('assets', () => {
 
         updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
 
+        let removedTagsOnServer: string[] = []
         try {
           const removeResult =
             tagsToRemove.length > 0
               ? await assetService.removeAssetTags(asset.id, tagsToRemove)
               : undefined
+          if (removeResult) removedTagsOnServer = tagsToRemove
 
           const addResult =
             tagsToAdd.length > 0
@@ -622,6 +624,19 @@ export const useAssetsStore = defineStore('assets', () => {
         } catch (error) {
           console.error('Failed to update asset tags:', error)
           updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+
+          if (removedTagsOnServer.length > 0) {
+            try {
+              await assetService.addAssetTags(asset.id, removedTagsOnServer)
+            } catch (compensationError) {
+              console.error(
+                'Failed to restore tags after partial failure; invalidating cache to force refetch:',
+                compensationError
+              )
+              const category = cacheKey ? resolveCategory(cacheKey) : undefined
+              if (category) invalidateCategory(category)
+            }
+          }
         }
       }
 

@@ -24,7 +24,9 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
-    getAssetsForNodeType: vi.fn()
+    getAssetsForNodeType: vi.fn(),
+    addAssetTags: vi.fn(),
+    removeAssetTags: vi.fn()
   }
 }))
 
@@ -1032,6 +1034,113 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(() =>
         store.invalidateModelsForCategory('unknown-category')
       ).not.toThrow()
+    })
+  })
+
+  describe('updateAssetTags partial-failure compensation', () => {
+    let consoleSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      consoleSpy.mockRestore()
+    })
+
+    it('re-adds removed tags when add fails so cache and server converge', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockResolvedValueOnce({
+          added: ['loras'],
+          total_tags: ['models', 'loras']
+        })
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+        1,
+        'tags-partial-fail',
+        ['checkpoints']
+      )
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+        2,
+        'tags-partial-fail',
+        ['loras']
+      )
+      expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
+    })
+
+    it('invalidates the category cache when compensation also fails', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-compensation-fail', [
+        'models',
+        'loras'
+      ])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not attempt compensation when only the add was attempted', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-add-only-fail', ['models'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'featured'],
+        'CheckpointLoaderSimple'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
+        'models'
+      ])
     })
   })
 })
