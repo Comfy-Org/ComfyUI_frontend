@@ -37,15 +37,21 @@ const executionStore = useExecutionStore()
 useOutputWindowSync()
 const windowStore = useOutputWindowStore()
 
-// Blended progress: completed-node count + the executing node's
-// internal step progress, so the bar moves during long single-node
-// phases (KSampler etc.) instead of freezing between node events.
+// Bar tracks the active node's own step ratio (read straight from
+// the execution store, not from `stepProgress` below — that ref
+// lags by one tick). Most workflows have one heavy node (KSampler)
+// sandwiched between near-instant loaders/encoders, so a graph-
+// level fallback (completed/total nodes) over-credits the fast
+// ones: by the time the sampler reports step 1, the bar would sit
+// at 75%+ and visibly animate backwards to 3%. Default to 0 outside
+// the sampler phase instead — the pre-sampler window is fast
+// enough that "0% briefly" is the right read.
 const progressPercent = computed(() => {
-  const total = executionStore.totalNodesToExecute
-  if (total <= 0) return 0
-  const completed = executionStore.nodesExecuted ?? 0
-  const inFlight = executionStore.executingNodeProgress ?? 0
-  return Math.max(0, Math.min(100, ((completed + inFlight) / total) * 100))
+  const p = executionStore._executingNodeProgress
+  if (p && p.max > 0) {
+    return Math.max(0, Math.min(100, (p.value / p.max) * 100))
+  }
+  return 0
 })
 
 // Per-node step + ETA, mirroring tqdm's "12/30 [00:08<00:14]" line in

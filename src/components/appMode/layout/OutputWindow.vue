@@ -61,8 +61,10 @@ function toggleMaximized() {
 const appModeStore = useAppModeStore()
 const { viewportScale } = storeToRefs(appModeStore)
 
-// Snap pitch — finer than the dot grid so small drags still snap.
-const GRID = 8
+// Drag snap pitch. Independent of the chrome's outer margin (handled
+// in CSS via --spacing-layout-outer); just controls how committal the
+// drag feel is in the workspace.
+const GRID = 16
 const snap = (v: number) => Math.round(v / GRID) * GRID
 
 const wx = ref(0)
@@ -110,9 +112,12 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
   if (!dragStart) return
   // Divide by scale so the cursor stays stuck to the header at any
   // zoom (pointer is screen px; window position is workspace px).
+  // Snap during the drag (not just on release) so the window steps
+  // visibly in GRID increments — matches the chrome's gutter between
+  // buttons, so adjacent windows can be aligned cleanly by eye.
   const s = viewportScale.value || 1
-  wx.value = dragStart.bx + (e.clientX - dragStart.px) / s
-  wy.value = dragStart.by + (e.clientY - dragStart.py) / s
+  wx.value = snap(dragStart.bx + (e.clientX - dragStart.px) / s)
+  wy.value = snap(dragStart.by + (e.clientY - dragStart.py) / s)
 })
 
 function endDrag() {
