@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
@@ -43,22 +44,25 @@ vi.mock('@/i18n', () => ({
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
-const buildResponse = (
+function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
-): Response =>
-  ({
+): Response {
+  return {
     ok: init.ok ?? true,
     status: init.status ?? 200,
     json: vi.fn().mockResolvedValue(body)
-  }) as unknown as Response
+  } as unknown as Response
+}
 
-const validAsset = (overrides: Record<string, unknown> = {}) => ({
-  id: 'asset-1',
-  name: 'model.safetensors',
-  tags: ['models'],
-  ...overrides
-})
+function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
+  return {
+    id: 'asset-1',
+    name: 'model.safetensors',
+    tags: ['models'],
+    ...overrides
+  }
+}
 
 describe(assetService.shouldUseAssetBrowser, () => {
   beforeEach(() => {
@@ -244,6 +248,17 @@ describe(assetService.deleteAsset, () => {
 
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
+
+  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteAsset('asset-1')
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/asset-1',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
 })
 
 describe(assetService.getAssetModelFolders, () => {
@@ -272,7 +287,8 @@ describe(assetService.getAssetModelFolders, () => {
     ])
 
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
-    expect(requestedUrl).not.toContain('include_public')
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.has('include_public')).toBe(false)
   })
 })
 
@@ -289,6 +305,28 @@ describe(assetService.updateAsset, () => {
     await expect(
       assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
     ).rejects.toThrow(/Invalid response/)
+  })
+
+  it('PUTs the JSON payload and returns the parsed asset', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(validAsset({ id: 'asset-1', name: 'renamed.safetensors' }))
+    )
+
+    const result = await assetService.updateAsset('asset-1', {
+      name: 'renamed.safetensors'
+    })
+
+    expect(result).toEqual(
+      expect.objectContaining({ id: 'asset-1', name: 'renamed.safetensors' })
+    )
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/asset-1',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'renamed.safetensors' })
+      })
+    )
   })
 })
 
@@ -312,6 +350,7 @@ describe(assetService.getAssetsByTag, () => {
     expect(assets.map((a) => a.id)).toEqual(['visible'])
 
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
-    expect(requestedUrl).toContain('include_public=true')
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('true')
   })
 })
