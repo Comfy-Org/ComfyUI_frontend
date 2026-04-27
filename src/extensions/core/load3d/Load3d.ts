@@ -71,6 +71,7 @@ class Load3d {
   protected clock: THREE.Clock
   private renderLoop: RenderLoopHandle | null = null
   private loadingPromise: Promise<void> | null = null
+  private _loadGeneration: number = 0
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
 
@@ -487,7 +488,21 @@ class Load3d {
     this.forceRender()
   }
 
+  /**
+   * Monotonic counter that ticks once per loadModel call, **before** any
+   * await. Callers can capture this immediately after triggering a load and
+   * later compare against `currentLoadGeneration` to verify their load is
+   * still the latest one — useful when chaining post-load work
+   * (e.g. applying camera matrices) through `whenLoadIdle()`, which would
+   * otherwise wait for any newer queued load and apply stale state to it.
+   */
+  get currentLoadGeneration(): number {
+    return this._loadGeneration
+  }
+
   async loadModel(url: string, originalFileName?: string): Promise<void> {
+    this._loadGeneration += 1
+
     if (this.loadingPromise) {
       try {
         await this.loadingPromise

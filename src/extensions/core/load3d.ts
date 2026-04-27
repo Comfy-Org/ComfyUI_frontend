@@ -538,9 +538,18 @@ useExtensionService().registerExtension({
           }
 
           if (filePath && extrinsics && intrinsics) {
+            // configure(settings) above triggered loadModel for this
+            // execution; capture its generation so that if a newer
+            // execution queues another load before whenLoadIdle resolves,
+            // we don't apply this execution's matrices on top of that
+            // newer model.
+            const targetGeneration = load3d.currentLoadGeneration
             void load3d
               .whenLoadIdle()
-              .then(() => load3d.setCameraFromMatrices(extrinsics, intrinsics))
+              .then(() => {
+                if (load3d.currentLoadGeneration !== targetGeneration) return
+                load3d.setCameraFromMatrices(extrinsics, intrinsics)
+              })
               .catch((error) => {
                 console.error(
                   'Failed to apply camera matrices from Preview3D output:',

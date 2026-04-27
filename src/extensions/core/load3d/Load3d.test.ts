@@ -624,6 +624,57 @@ describe('Load3d', () => {
     })
   })
 
+  describe('currentLoadGeneration', () => {
+    it('starts at 0', () => {
+      const fresh = Object.create(Load3d.prototype) as Load3d
+      Object.assign(fresh, {
+        _loadGeneration: 0
+      })
+      expect(fresh.currentLoadGeneration).toBe(0)
+    })
+
+    it('ticks synchronously on every loadModel call, before any await', async () => {
+      const internal = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        _loadModelInternal: internal
+      })
+
+      const baseline = ctx.load3d.currentLoadGeneration
+
+      const p1 = ctx.load3d.loadModel('api/view?filename=a.glb')
+      expect(ctx.load3d.currentLoadGeneration).toBe(baseline + 1)
+      const p2 = ctx.load3d.loadModel('api/view?filename=b.glb')
+      expect(ctx.load3d.currentLoadGeneration).toBe(baseline + 2)
+
+      await Promise.all([p1, p2])
+    })
+
+    it('lets a chained whenLoadIdle continuation skip when a newer load was queued in between', async () => {
+      const internal = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        _loadModelInternal: internal
+      })
+
+      const aGeneration = ctx.load3d.currentLoadGeneration
+      const aPromise = ctx.load3d.loadModel('api/view?filename=a.glb')
+      const aTarget = ctx.load3d.currentLoadGeneration
+      expect(aTarget).toBe(aGeneration + 1)
+
+      const bPromise = ctx.load3d.loadModel('api/view?filename=b.glb')
+      expect(ctx.load3d.currentLoadGeneration).toBe(aGeneration + 2)
+
+      await Promise.all([aPromise, bPromise])
+
+      const apply = vi.fn()
+      if (ctx.load3d.currentLoadGeneration === aTarget) apply()
+      expect(apply).not.toHaveBeenCalled()
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }
