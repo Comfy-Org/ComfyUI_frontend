@@ -83,14 +83,21 @@ export class LoaderManager implements LoaderManagerInterface {
         return
       }
 
-      const model = await this.loadModelInternal(url, fileExtension)
+      const result = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
+        // A newer loadModel has superseded us — do not publish our adapter
+        // and do not setup the model. Whichever load is current owns the
+        // shared state.
         return
       }
 
-      if (model) {
-        await this.modelManager.setupModel(model)
+      if (result) {
+        // Publish only after the staleness check so a slow older load
+        // can't clobber adapterRef.current that a newer load already
+        // wrote (or cleared).
+        this.adapterRef.current = result.adapter
+        await this.modelManager.setupModel(result.model)
       }
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
@@ -136,7 +143,7 @@ export class LoaderManager implements LoaderManagerInterface {
   private async loadModelInternal(
     url: string,
     fileExtension: string
-  ): Promise<THREE.Object3D | null> {
+  ): Promise<{ model: THREE.Object3D; adapter: ModelAdapter } | null> {
     const params = new URLSearchParams(url.split('?')[1])
     const filename = params.get('filename')
 
@@ -158,9 +165,6 @@ export class LoaderManager implements LoaderManagerInterface {
     if (!adapter) return null
 
     const model = await adapter.load(this.createLoadContext(), path, filename)
-    if (model) {
-      this.adapterRef.current = adapter
-    }
-    return model
+    return model ? { model, adapter } : null
   }
 }
