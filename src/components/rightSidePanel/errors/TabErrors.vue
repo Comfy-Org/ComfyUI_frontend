@@ -116,6 +116,47 @@
               >
                 {{ t('nodeReplacement.replaceAll', 'Replace All') }}
               </Button>
+              <Button
+                v-else-if="
+                  group.type === 'missing_model' &&
+                  showMissingModelHeaderRefresh
+                "
+                data-testid="missing-model-header-refresh"
+                variant="secondary"
+                size="sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
+                :aria-busy="missingModelStore.isRefreshingMissingModels"
+                :aria-disabled="missingModelStore.isRefreshingMissingModels"
+                @click.stop="handleMissingModelRefresh"
+              >
+                <DotSpinner
+                  v-if="missingModelStore.isRefreshingMissingModels"
+                  aria-hidden="true"
+                  duration="1s"
+                  :size="12"
+                />
+                <i
+                  v-else
+                  aria-hidden="true"
+                  class="icon-[lucide--refresh-cw] size-4 shrink-0"
+                />
+                {{ t('rightSidePanel.missingModels.refresh') }}
+              </Button>
+              <span
+                v-if="
+                  group.type === 'missing_model' &&
+                  showMissingModelHeaderRefresh
+                "
+                role="status"
+                aria-live="polite"
+                class="sr-only"
+              >
+                {{
+                  missingModelStore.isRefreshingMissingModels
+                    ? t('rightSidePanel.missingModels.refreshing')
+                    : ''
+                }}
+              </span>
             </div>
           </template>
 
@@ -228,6 +269,8 @@ import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCar
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorActions } from './useErrorActions'
@@ -249,6 +292,7 @@ const { focusNode, enterSubgraph } = useFocusNode()
 const { openGitHubIssues, contactSupport } = useErrorActions()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const missingModelStore = useMissingModelStore()
 const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
   useManagerState()
 const { missingNodePacks } = useMissingNodes()
@@ -288,6 +332,23 @@ const {
   filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
+
+const missingModelDownloadableModels = computed(() => {
+  if (isCloud) return []
+
+  return getDownloadableModels(missingModelGroups.value)
+})
+
+const showMissingModelHeaderRefresh = computed(
+  () =>
+    !isCloud &&
+    missingModelGroups.value.length > 0 &&
+    missingModelDownloadableModels.value.length === 0
+)
+
+function handleMissingModelRefresh() {
+  void missingModelStore.refreshMissingModels()
+}
 
 const singleRuntimeErrorGroup = computed(() => {
   if (filteredGroups.value.length !== 1) return null

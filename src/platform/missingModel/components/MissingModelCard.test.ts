@@ -288,13 +288,15 @@ describe('MissingModelCard (OSS)', () => {
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 
-  it('shows Refresh but hides Download all when no model is downloadable', () => {
+  it('hides bulk actions when no model is downloadable', () => {
     mountCard()
 
     expect(
       screen.queryByRole('button', { name: /Download all/ })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' })
+    ).not.toBeInTheDocument()
   })
 
   it('refreshes missing models from the action bar', async () => {

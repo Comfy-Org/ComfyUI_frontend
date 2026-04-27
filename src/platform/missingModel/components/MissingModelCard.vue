@@ -1,12 +1,11 @@
 <template>
   <div class="px-4 pb-2">
     <div
-      v-if="showActions"
+      v-if="downloadableModels.length > 0"
       data-testid="missing-model-actions"
       class="flex items-center gap-2 border-b border-interface-stroke py-2"
     >
       <Button
-        v-if="downloadableModels.length > 0"
         data-testid="missing-model-download-all"
         variant="secondary"
         size="sm"
@@ -122,11 +121,8 @@ import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import {
-  downloadModel,
-  isModelDownloadable
-} from '@/platform/missingModel/missingModelDownload'
-import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
+import { downloadModel } from '@/platform/missingModel/missingModelDownload'
+import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -142,25 +138,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const missingModelStore = useMissingModelStore()
 
-function toDownloadableModel(
-  model: MissingModelGroup['models'][number]
-): ModelWithUrl | null {
-  const { name, url, directory } = model.representative
-  if (!url || !directory) return null
-
-  const downloadableModel = { name, url, directory }
-  return isModelDownloadable(downloadableModel) ? downloadableModel : null
-}
-
 const downloadableModels = computed(() => {
   if (isCloud) return []
 
-  return missingModelGroups.flatMap((group) =>
-    group.models.flatMap((model) => toDownloadableModel(model) ?? [])
-  )
+  return getDownloadableModels(missingModelGroups)
 })
-
-const showActions = computed(() => !isCloud && missingModelGroups.length > 0)
 
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')
