@@ -22,7 +22,7 @@
         class="h-8 w-28 shrink-0 rounded-lg text-sm"
         :aria-busy="missingModelStore.isRefreshingMissingModels"
         :aria-disabled="missingModelStore.isRefreshingMissingModels"
-        @click="() => refreshMissingModels()"
+        @click="refreshMissingModels"
       >
         <DotSpinner
           v-if="missingModelStore.isRefreshingMissingModels"
