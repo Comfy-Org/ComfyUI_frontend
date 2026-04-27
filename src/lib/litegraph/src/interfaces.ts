@@ -218,7 +218,7 @@ export interface LinkSegment {
   /** Output node ID */
   readonly origin_id: NodeId | undefined
   /** Output slot index */
-  readonly origin_slot: number | undefined
+  readonly origin_slot: SlotIndex | undefined
 }
 
 interface IInputOrOutput {
@@ -230,10 +230,13 @@ interface IInputOrOutput {
 
 export interface IFoundSlot extends IInputOrOutput {
   // Slot index
-  slot: number
+  slot: SlotIndex
   // Centre point of the rendered slot connection
   link_pos: Point
 }
+
+/** Index of an input or output slot on a node. */
+export type SlotIndex = number
 
 /** A point represented as `[x, y]` co-ordinates */
 export type Point = [x: number, y: number]
@@ -396,7 +399,7 @@ export interface CreateNodeOptions {
 /** Links */
 export interface ConnectingLink extends IInputOrOutput {
   node: LGraphNode
-  slot: number
+  slot: SlotIndex
   pos: Point
   direction?: LinkDirection
   afterRerouteId?: RerouteId

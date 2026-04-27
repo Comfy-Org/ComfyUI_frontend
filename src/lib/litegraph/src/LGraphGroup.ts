@@ -25,6 +25,8 @@ import {
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
 
+export type GroupId = number
+
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }
@@ -36,7 +38,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static padding = 4
   static defaultColour = '#335'
 
-  id: number
+  id: GroupId
   color?: string
   title: string
   font?: string
@@ -52,7 +54,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   flags: IGraphGroupFlags = {}
   selected?: boolean
 
-  constructor(title?: string, id?: number) {
+  constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = id ?? -1
     this.title = title || 'Group'
