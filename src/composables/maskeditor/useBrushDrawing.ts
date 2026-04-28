@@ -752,7 +752,6 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-
   /**
    * Reads back the GPU textures to CPU ImageDatas.
    * @returns Object containing mask and rgb ImageDatas.
