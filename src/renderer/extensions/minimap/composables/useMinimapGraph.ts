@@ -161,16 +161,17 @@ export function useMinimapGraph(
     // the chain. Leave those slots alone; the chain-wrapper still
     // forwards through `record.original` because our wrapper closure
     // captured it.
-    const unhookedAdded = g.onNodeAdded === record.installed.onNodeAdded
-    const unhookedRemoved = g.onNodeRemoved === record.installed.onNodeRemoved
-    const unhookedConn =
+    const canRestoreAdded = g.onNodeAdded === record.installed.onNodeAdded
+    const canRestoreRemoved = g.onNodeRemoved === record.installed.onNodeRemoved
+    const canRestoreConn =
       g.onConnectionChange === record.installed.onConnectionChange
-    const unhookedTrigger = g.onTrigger === record.installed.onTrigger
+    const canRestoreTrigger = g.onTrigger === record.installed.onTrigger
 
-    if (unhookedAdded) g.onNodeAdded = record.original.onNodeAdded
-    if (unhookedRemoved) g.onNodeRemoved = record.original.onNodeRemoved
-    if (unhookedConn) g.onConnectionChange = record.original.onConnectionChange
-    if (unhookedTrigger) g.onTrigger = record.original.onTrigger
+    if (canRestoreAdded) g.onNodeAdded = record.original.onNodeAdded
+    if (canRestoreRemoved) g.onNodeRemoved = record.original.onNodeRemoved
+    if (canRestoreConn)
+      g.onConnectionChange = record.original.onConnectionChange
+    if (canRestoreTrigger) g.onTrigger = record.original.onTrigger
 
     // Only drop the record once every slot is back to the captured
     // original. A chain-wrapped slot still calls our wrapper internally
@@ -180,7 +181,12 @@ export function useMinimapGraph(
     // second minimap wrapper underneath it. Keep the record alive so
     // setupEventListeners' resubscribe path can repair the restored
     // slots without re-stacking.
-    if (unhookedAdded && unhookedRemoved && unhookedConn && unhookedTrigger) {
+    if (
+      canRestoreAdded &&
+      canRestoreRemoved &&
+      canRestoreConn &&
+      canRestoreTrigger
+    ) {
       originalCallbacksMap.delete(g.id)
     }
   }
