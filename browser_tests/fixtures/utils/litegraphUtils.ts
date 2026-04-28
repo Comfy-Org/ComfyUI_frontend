@@ -1,9 +1,10 @@
 import { expect } from '@playwright/test'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '@e2e/helpers/manageGroupNode'
+import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {
@@ -170,7 +171,7 @@ class NodeSlotReference {
   }
 }
 
-class NodeWidgetReference {
+export class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference
@@ -331,6 +332,22 @@ export class NodeReference {
   async isCollapsed() {
     return !!(await this.getFlags()).collapsed
   }
+  /**
+   * Toggle the node's collapsed state by simulating the same user interaction
+   * the runtime uses: DOM collapse button click in Vue mode, canvas icon click
+   * in legacy mode. Mode is detected by the presence of a Vue-rendered DOM
+   * element with `data-node-id`.
+   */
+  async toggleCollapse() {
+    const vueLocator = this.comfyPage.page.locator(
+      `[data-node-id="${this.id}"]`
+    )
+    if ((await vueLocator.count()) > 0) {
+      await new VueNodeFixture(vueLocator).toggleCollapse()
+      return
+    }
+    await this.click('collapse')
+  }
   async isBypassed() {
     return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
@@ -351,6 +368,25 @@ export class NodeReference {
     return new NodeSlotReference('input', index, this)
   }
   async getWidget(index: number) {
+    return new NodeWidgetReference(index, this)
+  }
+  async getWidgetByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, widgetName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const widgetIndex =
+          node.widgets?.findIndex((widget) => widget.name === widgetName) ?? -1
+        if (widgetIndex < 0) {
+          throw new Error(`Widget "${widgetName}" not found on node ${id}`)
+        }
+
+        return widgetIndex
+      },
+      [this.id, name] as const
+    )
+
     return new NodeWidgetReference(index, this)
   }
   async click(
@@ -486,11 +522,15 @@ export class NodeReference {
       y: nodePos.y - titleHeight / 2
     }
 
-    const checkIsInSubgraph = async () => {
-      return this.comfyPage.page.evaluate(() => {
+    const graphIdBefore = await this.comfyPage.page.evaluate(
+      () => window.app!.canvas.graph?.id ?? null
+    )
+
+    const checkEnteredNewSubgraph = async () => {
+      return this.comfyPage.page.evaluate((prevId) => {
         const graph = window.app!.canvas.graph
-        return !!graph && 'inputNode' in graph
-      })
+        return !!graph && 'inputNode' in graph && graph.id !== prevId
+      }, graphIdBefore)
     }
 
     await expect(async () => {
@@ -499,7 +539,7 @@ export class NodeReference {
 
       await this.comfyPage.canvasOps.mouseClickAt(subgraphButtonPos)
 
-      if (await checkIsInSubgraph()) return
+      if (await checkEnteredNewSubgraph()) return
 
       for (const position of clickPositions) {
         // Clear any selection first
@@ -508,7 +548,7 @@ export class NodeReference {
         // Double-click to enter subgraph
         await this.comfyPage.canvasOps.mouseDblclickAt(position)
 
-        if (await checkIsInSubgraph()) return
+        if (await checkEnteredNewSubgraph()) return
       }
       throw new Error('Not in subgraph yet')
     }).toPass({ timeout: 5000, intervals: [100, 200, 500] })

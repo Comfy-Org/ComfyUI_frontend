@@ -830,7 +830,7 @@ export class LGraphNode
    */
   configure(info: ISerialisedNode): void {
     if (this.graph) {
-      this.graph._version++
+      this.graph.incrementVersion()
     }
     if (info.id === -1) info.id = this.id
     for (const j in info) {
@@ -2088,7 +2088,10 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    if (!this.flags?.collapsed) {
+    // In Vue mode, `this.size` is kept in sync with the DOM-measured
+    // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
+    // so the expanded branch produces correct bounds for collapsed nodes too.
+    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
@@ -2986,7 +2989,7 @@ export class LGraphNode
         }
       }
     }
-    graph._version++
+    graph.incrementVersion()
 
     // link has been created now, so its updated
     this.onConnectionsChange?.(
@@ -3135,7 +3138,7 @@ export class LGraphNode
 
         // remove the link from the links pool
         link_info.disconnect(graph, 'input')
-        graph._version++
+        graph.incrementVersion()
 
         // link_info hasn't been modified so its ok
         target.onConnectionsChange?.(
@@ -3173,7 +3176,7 @@ export class LGraphNode
         }
 
         const target = graph.getNodeById(link_info.target_id)
-        graph._version++
+        graph.incrementVersion()
 
         if (target) {
           const input = target.inputs[link_info.target_slot]
@@ -3301,7 +3304,7 @@ export class LGraphNode
         }
 
         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
-        if (graph) graph._version++
+        if (graph) graph.incrementVersion()
 
         this.onConnectionsChange?.(
           NodeSlotType.INPUT,
@@ -3536,7 +3539,7 @@ export class LGraphNode
   collapse(force?: boolean): void {
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
-    this.graph._version++
+    this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
   }
@@ -3547,7 +3550,7 @@ export class LGraphNode
   toggleAdvanced() {
     if (!this.hasAdvancedWidgets()) return
     if (!this.graph) throw new NullGraphError()
-    this.graph._version++
+    this.graph.incrementVersion()
     this.showAdvanced = !this.showAdvanced
     this.expandToFitContent()
     this.setDirtyCanvas(true, true)
@@ -3564,7 +3567,7 @@ export class LGraphNode
   pin(v?: boolean): void {
     if (!this.graph) throw new NullGraphError()
 
-    this.graph._version++
+    this.graph.incrementVersion()
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined

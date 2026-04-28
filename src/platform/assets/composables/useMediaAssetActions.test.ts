@@ -301,12 +301,8 @@ describe('useMediaAssetActions', () => {
       })
     }
 
-    it('should omit name filters for job-level selections (outputCount known)', async () => {
-      const assets = [
-        createOutputAsset('a1', 'img1.png', 'job1', 3),
-        createOutputAsset('a2', 'img2.png', 'job1', 3),
-        createOutputAsset('a3', 'img3.png', 'job1', 3)
-      ]
+    it('should use preserve strategy when selection spans a single job', async () => {
+      const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
 
       const actions = useMediaAssetActions()
       actions.downloadMultipleAssets(assets)
@@ -318,6 +314,7 @@ describe('useMediaAssetActions', () => {
       const payload = mockCreateAssetExport.mock.calls[0][0]
       expect(payload.job_ids).toEqual(['job1'])
       expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('preserve')
     })
 
     it('should omit name filters for multiple job-level selections', async () => {
@@ -335,6 +332,7 @@ describe('useMediaAssetActions', () => {
       const payload = mockCreateAssetExport.mock.calls[0][0]
       expect(payload.job_ids).toEqual(['job1', 'job2'])
       expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('group_by_job_time')
     })
 
     it('should include name filters when outputCount is unknown', async () => {
@@ -353,6 +351,7 @@ describe('useMediaAssetActions', () => {
         job1: ['img1.png'],
         job2: ['img2.png']
       })
+      expect(payload.naming_strategy).toBe('group_by_job_time')
     })
 
     it('should mix: omit filters for known outputCount, keep for unknown', async () => {
@@ -372,6 +371,26 @@ describe('useMediaAssetActions', () => {
       expect(payload.job_asset_name_filters).toEqual({
         job2: ['img2.png']
       })
+      expect(payload.naming_strategy).toBe('group_by_job_time')
+    })
+
+    it('should preserve multiple selected outputs from one job', async () => {
+      const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
+      const asset2 = createOutputAsset('a2', 'img2.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([asset1, asset2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.job_ids).toEqual(['job1'])
+      expect(payload.job_asset_name_filters).toEqual({
+        job1: ['img1.png', 'img2.png']
+      })
+      expect(payload.naming_strategy).toBe('preserve')
     })
   })
 
@@ -482,6 +501,58 @@ describe('useMediaAssetActions', () => {
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
       )
+    })
+  })
+
+  describe('deleteAssets - confirmation dialog item names', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('output')
+      mockShowDialog.mockReset()
+    })
+
+    it('should show user_metadata display names instead of hash filenames', () => {
+      const actions = useMediaAssetActions()
+
+      const assets = [
+        createMockAsset({
+          id: 'asset-1',
+          name: 'c885097ab185ced82f017bcbc98948918499f7480315fd5b928b5bb8d4951efc.png',
+          user_metadata: { name: 'My Sunset Render' }
+        }),
+        createMockAsset({
+          id: 'asset-2',
+          name: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2.png',
+          display_name: 'Portrait Variation'
+        })
+      ]
+
+      void actions.deleteAssets(assets)
+
+      expect(mockShowDialog).toHaveBeenCalledTimes(1)
+      const dialogProps = mockShowDialog.mock.calls[0][0].props as {
+        itemList: string[]
+      }
+      expect(dialogProps.itemList).toEqual([
+        'My Sunset Render',
+        'Portrait Variation'
+      ])
+    })
+
+    it('should fall back to asset.name when no display name is available', () => {
+      const actions = useMediaAssetActions()
+
+      const asset = createMockAsset({
+        id: 'asset-3',
+        name: 'fallback-image.png'
+      })
+
+      void actions.deleteAssets(asset)
+
+      const dialogProps = mockShowDialog.mock.calls[0][0].props as {
+        itemList: string[]
+      }
+      expect(dialogProps.itemList).toEqual(['fallback-image.png'])
     })
   })
 })

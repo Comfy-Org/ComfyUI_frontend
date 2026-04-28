@@ -334,6 +334,18 @@ export class SubgraphHelper {
     })
   }
 
+  /** ID of the graph currently shown on the canvas (root graph or subgraph). */
+  async getActiveGraphId(): Promise<string | null> {
+    return this.page.evaluate(() => window.app!.canvas.graph?.id ?? null)
+  }
+
+  /** ID of the root graph of the active workflow. */
+  async getRootGraphId(): Promise<string | null> {
+    return this.page.evaluate(
+      () => window.app!.canvas.graph?.rootGraph?.id ?? null
+    )
+  }
+
   async exitViaBreadcrumb(): Promise<void> {
     const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
     const parentLink = breadcrumb.getByRole('link').first()
