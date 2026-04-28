@@ -1146,13 +1146,20 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'featured'
       ])
     })
+  })
 
-    it('rolls back the cache when removeAssetTags succeeds but addAssetTags rejects', async () => {
-      // Documents the known recovery gap on partial-failure during a
-      // "change category" mutation: remove succeeds server-side, add fails,
-      // and the cache is restored to the original tags. The server now has
-      // the old category tag removed, so the cache and backend diverge until
-      // the next refetch — surface that gap here rather than papering over it.
+  describe('updateAssetTags partial-failure compensation', () => {
+    let consoleSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      consoleSpy.mockRestore()
+    })
+
+    it('re-adds removed tags when add fails so cache and server converge', async () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
 
@@ -1165,10 +1172,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         removed: ['loras'],
         total_tags: ['models']
       })
-      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
-        new Error('500 add failed')
-      )
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockResolvedValueOnce({
+          added: ['loras'],
+          total_tags: ['models', 'loras']
+        })
 
       await store.updateAssetTags(
         asset,
@@ -1176,20 +1185,73 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'LoraLoader'
       )
 
-      expect(vi.mocked(assetService.removeAssetTags)).toHaveBeenCalledWith(
-        'tags-partial-fail',
-        ['loras']
-      )
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledWith(
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+        1,
         'tags-partial-fail',
         ['checkpoints']
       )
-      // Cache restored to original tags even though the server has already
-      // removed 'loras'. This codifies a known divergence — fix the recovery
-      // semantics in updateAssetTags to address it (e.g. invalidate the
-      // category cache, or reconcile against the last confirmed total_tags).
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+        2,
+        'tags-partial-fail',
+        ['loras']
+      )
       expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
-      consoleSpy.mockRestore()
+    })
+
+    it('invalidates the category cache when compensation also fails', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-compensation-fail', [
+        'models',
+        'loras'
+      ])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not attempt compensation when only the add was attempted', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-add-only-fail', ['models'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'featured'],
+        'CheckpointLoaderSimple'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
+        'models'
+      ])
     })
   })
 })
