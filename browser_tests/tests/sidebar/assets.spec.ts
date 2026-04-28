@@ -902,8 +902,6 @@ test.describe('Assets sidebar - drag and drop', () => {
         }
       })
     ])
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
     await comfyPage.page.route('**/upload/image', (route) => {
       expect(true, 'file is not uploaded').toBe(false)
       return route.fulfill({ status: 405 })
