@@ -24,6 +24,7 @@ import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
 import {
   AssetsSidebarTab,
+  JobHistorySidebarTab,
   ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
@@ -64,6 +65,7 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
+  private _jobHistoryTab: JobHistorySidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
@@ -80,6 +82,11 @@ class ComfyMenu {
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
     this.buttons = this.sideToolbar.locator('.side-bar-button')
+  }
+
+  get jobHistoryTab() {
+    this._jobHistoryTab ??= new JobHistorySidebarTab(this.page)
+    return this._jobHistoryTab
   }
 
   get modelLibraryTab() {

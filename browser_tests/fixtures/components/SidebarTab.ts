@@ -30,6 +30,17 @@ class SidebarTab {
     }
     await this.tabButton.click()
   }
+
+  async dismissToasts() {
+    const closeButtons = this.page.locator('.p-toast-close-button')
+    for (const button of await closeButtons.all()) {
+      await button.click().catch(() => {})
+    }
+
+    await expect(this.page.locator('.p-toast-message'))
+      .toHaveCount(0, { timeout: 5000 })
+      .catch(() => {})
+  }
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
@@ -203,6 +214,64 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
       .click()
+  }
+}
+
+export class JobHistorySidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'job-history')
+  }
+
+  /** Scope all locators to the sidebar root to avoid collision
+   *  with QueueOverlayExpanded which renders the same controls. */
+  get root() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  get allTab() {
+    return this.root.getByRole('button', { name: 'All', exact: true })
+  }
+
+  get completedTab() {
+    return this.root.getByRole('button', { name: 'Completed', exact: true })
+  }
+
+  get failedTab() {
+    return this.root.getByRole('button', { name: 'Failed', exact: true })
+  }
+
+  get searchInput() {
+    return this.root.getByPlaceholder('Search...')
+  }
+
+  get filterButton() {
+    return this.root.getByRole('button', { name: /Filter/i })
+  }
+
+  get sortButton() {
+    return this.root.getByRole('button', { name: /Sort/i })
+  }
+
+  get jobItems() {
+    return this.root.locator('[data-job-id]')
+  }
+
+  get noActiveJobsText() {
+    return this.root.getByText('No active jobs')
+  }
+
+  async waitForJobsLoad() {
+    await expect(this.jobItems.first()).toBeVisible({ timeout: 5000 })
+  }
+
+  getJobById(id: string) {
+    return this.root.locator(`[data-job-id="${id}"]`)
+  }
+
+  override async open() {
+    await this.dismissToasts()
+    await super.open()
+    await this.allTab.waitFor({ state: 'visible', timeout: 5000 })
   }
 }
 
@@ -389,18 +458,6 @@ export class AssetsSidebarTab extends SidebarTab {
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
-  }
-
-  /** Dismiss all visible toast notifications by clicking their close buttons. */
-  async dismissToasts() {
-    const closeButtons = this.page.locator('.p-toast-close-button')
-    for (const btn of await closeButtons.all()) {
-      await btn.click().catch(() => {})
-    }
-    // Wait for all toast elements to fully animate out and detach from DOM
-    await expect(this.page.locator('.p-toast-message'))
-      .toHaveCount(0)
-      .catch(() => {})
   }
 
   async switchToImported() {
