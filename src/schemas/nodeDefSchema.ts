@@ -313,6 +313,11 @@ export const zComfyNodeDef = z.object({
   essentials_category: z.string().optional(),
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
   isGlobal: z.boolean().optional(),
+  /**
+   * An optional ordered list of widget names to be used when migrating a
+   * workflow that lacks widgets_values_named. Only useful if the order of
+   * widgets is changed after the introduction of widgets_values_named.
+   */
   fallbackWidgetsValuesNames: z.array(z.string()).optional()
 })
 

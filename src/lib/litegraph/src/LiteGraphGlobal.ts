@@ -344,7 +344,7 @@ export class LiteGraphGlobal {
   saveViewportWithGraph: boolean = true
 
   /**
-   * If `true`, widgets values are deserialised using by a map of widget names to values instead of an list
+   * If `true`, widgets values are deserialised using a map of widget names to values instead of a list.
    * This is intended as a temporary setting. It is planned to be made the default and eventually removed.
    * @default false
    */

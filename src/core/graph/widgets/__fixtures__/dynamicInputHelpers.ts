@@ -5,7 +5,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 
-export function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
+export function addDynamicCombo(node: LGraphNode, testInputs: DynamicInputs) {
   const namePrefix = `${node.widgets?.length ?? 0}`
   function getSpec(
     inputs: DynamicInputs,
@@ -26,7 +26,7 @@ export function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
   }
   const inputSpec: Required<InputSpec> = [
     'COMFY_DYNAMICCOMBO_V3',
-    { options: getSpec(inputs) }
+    { options: getSpec(testInputs) }
   ]
   useLitegraphService().addNodeInput(
     node,

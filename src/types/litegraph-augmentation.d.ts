@@ -205,6 +205,9 @@ declare module '@/lib/litegraph/src/litegraph' {
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
     pasteFiles?(files: File[]): void
+
+    /** Used internally for sizing the node during creation */
+    _initialMinSize?: { width: number; height: number }
   }
   /**
    * Only used by the Primitive node. Primitive node is using the widget property

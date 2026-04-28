@@ -919,15 +919,15 @@ export class LGraphNode
 
         const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
         if (!info.widgets_values || !map) return
-        const namedValues: Record<string, TWidgetValue> = {}
-        info.widgets_values.forEach((val, i) => {
-          if (map[i]) namedValues[map[i]] = val
-        })
-        return namedValues
+
+        return Object.fromEntries(
+          info.widgets_values.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
+        )
       }
+
       const namedValues = getNamedValues()
       if (namedValues && LiteGraph.namedValuesRestore) {
-        for (const widget of this.widgets ?? []) {
+        for (const widget of this.widgets) {
           if (widget.serialize === false || !(widget.name in namedValues))
             continue
 
