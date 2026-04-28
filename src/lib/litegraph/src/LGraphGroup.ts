@@ -252,7 +252,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    */
   recomputeInsideNodes(
     maxDepth: number = 100,
-    visited: Set<number> = new Set()
+    visited: Set<GroupId> = new Set()
   ): void {
     if (!this.graph) throw new NullGraphError()
     if (maxDepth <= 0 || visited.has(this.id)) return

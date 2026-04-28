@@ -178,7 +178,7 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly links: Map<LinkId, LLink>
   readonly reroutes: Map<RerouteId, Reroute>
   addFloatingLink(link: LLink): LLink
-  removeReroute(id: number): unknown
+  removeReroute(id: RerouteId): unknown
   removeFloatingLink(link: LLink): void
 }
 
@@ -377,7 +377,7 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
-  slot_index?: number
+  slot_index?: SlotIndex
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
