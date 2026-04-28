@@ -131,47 +131,49 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test('Falls back to English templates when locale file not found', async ({
     comfyPage
   }) => {
-    // Set locale to a language that doesn't have a template file
-    await comfyPage.settings.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
+    // Pick a shipped locale and simulate its template index returning 404.
+    // (Previously this test used 'de', but unsupported locales are now
+    // clamped to 'en' at boot so they never hit the template fallback path.)
+    const locale = 'fa'
 
-    // Wait for the German request (expected to 404)
-    const germanRequestPromise = comfyPage.page.waitForRequest(
-      '**/templates/index.de.json'
+    await comfyPage.settings.setSetting('Comfy.Locale', locale)
+
+    const localeRequestPromise = comfyPage.page.waitForRequest(
+      `**/templates/index.${locale}.json`
     )
-
-    // Wait for the fallback English request
     const englishRequestPromise = comfyPage.page.waitForRequest(
       '**/templates/index.json'
     )
 
-    // Intercept the German file to simulate a 404
-    await comfyPage.page.route('**/templates/index.de.json', async (route) => {
-      await route.fulfill({
-        status: 404,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Not Found'
-      })
-    })
+    await comfyPage.page.route(
+      `**/templates/index.${locale}.json`,
+      async (route) => {
+        await route.fulfill({
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' },
+          body: 'Not Found'
+        })
+      }
+    )
 
-    // Allow the English index to load normally
     await comfyPage.page.route('**/templates/index.json', (route) =>
       route.continue()
     )
 
-    // Load the templates dialog
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    // Verify German was requested first, then English as fallback
-    const germanRequest = await germanRequestPromise
+    const localeRequest = await localeRequestPromise
     const englishRequest = await englishRequestPromise
 
-    expect(germanRequest.url()).toContain('templates/index.de.json')
+    expect(localeRequest.url()).toContain(`templates/index.${locale}.json`)
     expect(englishRequest.url()).toContain('templates/index.json')
 
-    // Verify English titles are shown as fallback
+    // The English categories from index.json should be rendered.
+    // Use a stable testid rather than a language-specific string, since the
+    // dialog header is i18n'd to the locale we set above.
     await expect(
-      comfyPage.page.getByRole('main').getByText('All Templates')
+      comfyPage.page.getByTestId('template-workflows-content')
     ).toBeVisible()
   })
 
