@@ -83,6 +83,25 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }, delay)
   }
 
+  function scheduleTokenRefreshRetry(delayMs: number): void {
+    if (workspaceTokenExpiresAt.value === null) {
+      return
+    }
+
+    const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
+    if (timeUntilExpiry <= 0) {
+      return
+    }
+
+    stopRefreshTimer()
+    refreshTimerId = setTimeout(
+      () => {
+        void refreshToken()
+      },
+      Math.min(delayMs, timeUntilExpiry)
+    )
+  }
+
   function persistToSession(
     workspace: WorkspaceWithRole,
     token: string,
@@ -346,6 +365,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         // Only clear context if this refresh is still for the current workspace
         if (capturedRequestId === refreshRequestId) {
           if (isTransientError && hasValidWorkspaceToken()) {
+            error.value = null
+            scheduleTokenRefreshRetry(baseDelayMs * Math.pow(2, maxRetries))
             console.warn(
               'Failed to refresh workspace token after retries; preserving existing valid token:',
               err

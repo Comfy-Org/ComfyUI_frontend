@@ -682,7 +682,7 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken, error } = storeToRefs(store)
 
       await store.switchWorkspace('workspace-123')
       expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
@@ -740,7 +740,23 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
         'workspace-token-abc'
       )
+      expect(error.value).toBeNull()
       expect(consoleErrorSpy).not.toHaveBeenCalled()
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
+      })
+
+      await vi.advanceTimersByTimeAsync(7999)
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockFetch).toHaveBeenCalledTimes(6)
+      await vi.waitFor(() => {
+        expect(workspaceToken.value).toBe('retry-token')
+      })
 
       consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()
