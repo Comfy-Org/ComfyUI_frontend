@@ -7,7 +7,7 @@ import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/promotionUtils'
-import { isPreviewPseudoWidget } from '@/core/graph/subgraph/widgetClassification'
+import { isPreviewPseudoWidget } from '@/core/graph/subgraph/promotionPolicy'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {

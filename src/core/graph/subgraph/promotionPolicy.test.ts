@@ -1,18 +1,16 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/composables/node/canvasImagePreviewTypes'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import type { WidgetItem } from './widgetClassification'
+import type { WidgetItem } from './promotionPolicy'
 import {
-  CANVAS_IMAGE_PREVIEW_WIDGET,
   getPromotableWidgets,
   isPreviewPseudoWidget,
   isRecommendedWidget
-} from './widgetClassification'
+} from './promotionPolicy'
 
 function widget(
   overrides: Partial<
@@ -37,11 +35,6 @@ function widgetItem(
 }
 
 describe('isPreviewPseudoWidget', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
   it('returns true for $$-prefixed widget names', () => {
     expect(
       isPreviewPseudoWidget(widget({ name: '$$canvas-image-preview' }))

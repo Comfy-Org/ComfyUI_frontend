@@ -5,9 +5,7 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 
-export { CANVAS_IMAGE_PREVIEW_WIDGET }
-
-type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+export type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
 
@@ -45,10 +43,6 @@ export function isRecommendedWidget([node, widget]: WidgetItem) {
   )
 }
 
-function supportsVirtualPreviewWidget(node: LGraphNode): boolean {
-  return supportsVirtualCanvasImagePreview(node)
-}
-
 function createVirtualCanvasImagePreviewWidget(): IBaseWidget {
   return {
     name: CANVAS_IMAGE_PREVIEW_WIDGET,
@@ -66,7 +60,7 @@ export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
   const hasCanvasPreviewWidget = widgets.some(
     (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
   )
-  const supportsVirtualPreview = supportsVirtualPreviewWidget(node)
+  const supportsVirtualPreview = supportsVirtualCanvasImagePreview(node)
   if (!hasCanvasPreviewWidget && supportsVirtualPreview) {
     widgets.push(createVirtualCanvasImagePreviewWidget())
   }

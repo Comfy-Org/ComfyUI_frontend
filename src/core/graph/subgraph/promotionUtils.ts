@@ -1,13 +1,15 @@
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type {
+  PartialNode,
+  WidgetItem
+} from '@/core/graph/subgraph/promotionPolicy'
 import {
-  CANVAS_IMAGE_PREVIEW_WIDGET,
   getPromotableWidgets,
   isPreviewPseudoWidget,
   isRecommendedWidget
-} from '@/core/graph/subgraph/widgetClassification'
-import type { WidgetItem } from '@/core/graph/subgraph/widgetClassification'
+} from '@/core/graph/subgraph/promotionPolicy'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -16,13 +18,14 @@ import type {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { supportsVirtualCanvasImagePreview } from '@/composables/node/canvasImagePreviewTypes'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  supportsVirtualCanvasImagePreview
+} from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-
-type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
