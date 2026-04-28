@@ -127,6 +127,21 @@ describe('useElectronDownloadStore', () => {
 
       expect(store.findByUrl(url)?.status).toBe(DownloadStatus.ERROR)
     })
+
+    it('lets a later ERROR surface as ERROR after cancel dispatch fails', async () => {
+      const store = await loadStore()
+      const url = 'https://civitai.com/api/download/models/23'
+      downloadManager.cancelDownload.mockRejectedValueOnce(
+        new Error('bridge down')
+      )
+
+      await expect(store.cancel(url)).rejects.toThrow('bridge down')
+
+      expect(downloadManager.cancelDownload).toHaveBeenCalledWith(url)
+
+      emitProgress({ url, status: DownloadStatus.ERROR, progress: 0 })
+      expect(store.findByUrl(url)?.status).toBe(DownloadStatus.ERROR)
+    })
   })
 
   describe('retry state', () => {

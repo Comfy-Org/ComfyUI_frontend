@@ -145,11 +145,16 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   }
   const pause = (url: string) => DownloadManager?.pauseDownload(url)
   const resume = (url: string) => DownloadManager?.resumeDownload(url)
-  const cancel = (url: string) => {
+  const cancel = async (url: string) => {
     if (!DownloadManager) return
 
     userCancelledUrls.add(url)
-    return DownloadManager.cancelDownload(url)
+    try {
+      return await DownloadManager.cancelDownload(url)
+    } catch (error) {
+      userCancelledUrls.delete(url)
+      throw error
+    }
   }
   const remove = (url: string) => {
     userCancelledUrls.delete(url)
