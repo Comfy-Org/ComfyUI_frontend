@@ -25,7 +25,10 @@ test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
     })
 
     const createNode = async (comfyPage: ComfyPage) => {
-      const note = await comfyPage.nodeOps.addNode('Note')
+      const note = await comfyPage.nodeOps.addNode('Note', undefined, {
+        x: 0,
+        y: 0
+      })
       await note.centerOnNode()
       return note
     }
@@ -38,7 +41,7 @@ test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
 
       await note.dragBy(DRAG_DELTA, { modifiers: ['Shift'] })
 
-      // raw final world pos = (560, 340); rounded to nearest 100 = (600, 300)
+      // raw final world pos = (550, 330); rounded to nearest 100 = (600, 300)
       const after = await note.getProperty<[number, number]>('pos')
       expect(after[0]).toBe(600)
       expect(after[1]).toBe(300)
@@ -50,7 +53,7 @@ test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
 
       await note.dragBy(DRAG_DELTA, { modifiers: ['Shift'] })
 
-      // raw final world pos = (560, 340); rounded to nearest 50 = (550, 350)
+      // raw final world pos = (550, 330); rounded to nearest 50 = (550, 350)
       const after = await note.getProperty<[number, number]>('pos')
       expect(after[0]).toBe(550)
       expect(after[1]).toBe(350)
