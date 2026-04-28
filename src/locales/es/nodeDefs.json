@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "Genera un video a partir de una imagen del primer fotograma usando el modelo HappyHorse.",
+    "display_name": "HappyHorse Imagen a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "first_frame": {
+        "name": "primer fotograma",
+        "tooltip": "Imagen del primer fotograma. La relación de aspecto de salida se deriva de esta imagen."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Genera un video con una persona u objeto a partir de materiales de referencia usando el modelo HappyHorse. Soporta actuaciones de un solo personaje e interacciones entre varios personajes.",
+    "display_name": "HappyHorse Referencia a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Genera un video basado en un prompt de texto usando el modelo HappyHorse.",
+    "display_name": "HappyHorse Texto a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Edita un video usando instrucciones de texto o imágenes de referencia con el modelo HappyHorse. La duración de salida es de 3 a 15 segundos y coincide con el video de entrada; las entradas de más de 15 segundos se recortan.",
+    "display_name": "HappyHorse Edición de Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "El video a editar."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Aumenta la resolución de imágenes de baja calidad a superresolución, elimina artefactos y ruido. Salida máxima: 32 megapíxeles.",
     "display_name": "HitPaw General Image Enhance",
