@@ -8,6 +8,9 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
+const DEPRECATED_NODE_TYPE = 'ImageBatch'
+const API_NODE_TYPE = 'FluxProUltraImageNode'
+
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
@@ -141,3 +144,71 @@ test.describe(
     })
   }
 )
+
+for (const vueEnabled of [false, true] as const) {
+  const renderer = vueEnabled ? 'vue' : 'classic'
+  const tag = vueEnabled
+    ? ['@vue-nodes', '@screenshot', '@node']
+    : ['@screenshot', '@node']
+
+  test.describe(`Node lifecycle badge (${renderer})`, { tag }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
+    })
+
+    for (const mode of [NodeBadgeMode.ShowAll, NodeBadgeMode.None] as const) {
+      test(`renders deprecated node with mode=${mode}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+          mode
+        )
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE, {
+          pos: { x: 100, y: 100 }
+        })
+        await comfyPage.canvasOps.resetView()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          `node-lifecycle-${mode}-${renderer}.png`
+        )
+      })
+    }
+  })
+
+  test.describe(`API pricing badge (${renderer})`, { tag }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
+      await comfyPage.page.evaluate((type) => {
+        const registered = window.LiteGraph!.registered_node_types[type] as {
+          nodeData?: { price_badge?: unknown }
+        }
+        if (!registered?.nodeData) throw new Error(`No nodeData for ${type}`)
+        registered.nodeData.price_badge = {
+          engine: 'jsonata',
+          expr: "{'type': 'text', 'text': '99.9 credits/Run'}",
+          depends_on: { widgets: [], inputs: [], input_groups: [] }
+        }
+      }, API_NODE_TYPE)
+    })
+
+    for (const enabled of [true, false] as const) {
+      test(`renders api node with showApiPricing=${enabled}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          enabled
+        )
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.nodeOps.addNode(API_NODE_TYPE, {
+          pos: { x: 100, y: 100 }
+        })
+        await comfyPage.canvasOps.resetView()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          `api-pricing-${enabled ? 'on' : 'off'}-${renderer}.png`
+        )
+      })
+    }
+  })
+}

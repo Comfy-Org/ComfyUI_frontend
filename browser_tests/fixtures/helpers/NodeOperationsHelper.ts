@@ -88,6 +88,23 @@ export class NodeOperationsHelper {
     await this.comfyPage.command.executeCommand('Comfy.ClearWorkflow')
   }
 
+  async addNode(
+    type: string,
+    options: { pos?: Position } = {}
+  ): Promise<string> {
+    const { pos } = options
+    return this.page.evaluate(
+      ({ nodeType, position }) => {
+        const node = window.LiteGraph!.createNode(nodeType)
+        if (!node) throw new Error(`createNode returned null for ${nodeType}`)
+        if (position) node.pos = [position.x, position.y]
+        window.app!.rootGraph.add(node)
+        return String(node.id)
+      },
+      { nodeType: type, position: pos }
+    )
+  }
+
   /** Reads from `window.app.graph` (the root workflow graph). */
   async getNodeCount(): Promise<number> {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
