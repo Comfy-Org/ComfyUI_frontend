@@ -1,16 +1,15 @@
 <script setup lang="ts">
 /**
- * AppBuilder — graph-canvas click-to-select overlay for the builder's
- * inputs/outputs steps. The panel UI (accordion lists, arrange draggable
- * list) lives in BuilderPanel.vue; this component now only renders the
- * full-screen Teleport that sits over the graph canvas and routes widget
- * / output-node clicks into appModeStore.
+ * AppBuilder — graph-canvas selection overlay for the builder's
+ * inputs/outputs steps. Renders the same SelectionChrome we use for
+ * Vue-nodes mode, computing each ring's viewport rect from canvas
+ * pan/zoom state on RAF. Sizes stay constant in screen pixels.
  *
- * Gated on `isSelectMode` (only inputs + outputs) and skipped when Vue
- * nodes are enabled — Vue nodes handle their own click selection.
+ * Gated on `isSelectMode` and skipped when Vue nodes are enabled —
+ * Vue nodes render their own AppInput/AppOutput rings via LGraphNode.
  */
-import { computed, ref, toValue } from 'vue'
-import type { MaybeRef } from 'vue'
+import { useRafFn } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -27,13 +26,16 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import SelectionChrome from '@/renderer/extensions/linearMode/SelectionChrome.vue'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
-type BoundStyle = { top: string; left: string; width: string; height: string }
+type Bounds = { top: number; left: number; width: number; height: number }
+type Candidate = Bounds & {
+  key: string
+  isSelected: boolean
+  onToggle: () => void
+}
 
 const appModeStore = useAppModeStore()
 const canvasInteractions = useCanvasInteractions()
@@ -43,241 +45,148 @@ const workflowStore = useWorkflowStore()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
 const { isSelectMode, isSelectInputsMode, isSelectOutputsMode } = useAppMode()
-const hoveringSelectable = ref(false)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
-function getHovered(
-  e: MouseEvent
-): undefined | [LGraphNode, undefined] | [LGraphNode, IBaseWidget] {
-  const { graph } = canvas
-  if (!canvas || !graph) return
+const active = computed(
+  () => isSelectMode.value && !settingStore.get('Comfy.VueNodes.Enabled')
+)
 
-  if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  if (!e) return
+// Canvas pan/zoom is applied via 2D-context transforms — no DOM events
+// fire when the user pans/zooms, so we sample DragAndScale + the canvas
+// element rect each frame to derive viewport-space bounds.
+const viewport = ref({ rectLeft: 0, rectTop: 0, scale: 1, ox: 0, oy: 0 })
+const { pause, resume } = useRafFn(
+  () => {
+    const r = canvas.canvas.getBoundingClientRect()
+    viewport.value = {
+      rectLeft: r.left,
+      rectTop: r.top,
+      scale: canvas.ds?.scale ?? 1,
+      ox: canvas.ds?.offset?.[0] ?? 0,
+      oy: canvas.ds?.offset?.[1] ?? 0
+    }
+  },
+  { immediate: false }
+)
+watch(active, (a) => (a ? resume() : pause()), { immediate: true })
 
-  canvas.adjustMouseEvent(e)
-  const node = graph.getNodeOnPos(e.canvasX, e.canvasY)
-  if (!node) return
-
-  const widget = node.getWidgetOnPos(e.canvasX, e.canvasY, false)
-
-  if (widget || node.constructor.nodeData?.output_node) return [node, widget]
+function toViewport(cx: number, cy: number, cw: number, ch: number): Bounds {
+  const { rectLeft, rectTop, scale, ox, oy } = viewport.value
+  return {
+    left: (cx + ox) * scale + rectLeft,
+    top: (cy + oy) * scale + rectTop,
+    width: cw * scale,
+    height: ch * scale
+  }
 }
 
-function getBounding(nodeId: NodeId, widgetName?: string) {
-  if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-  if (!node) return
-
+function nodeBounds(node: LGraphNode): Bounds {
   const titleOffset =
     node.title_mode === TitleMode.NORMAL_TITLE ? LiteGraph.NODE_TITLE_HEIGHT : 0
+  return toViewport(
+    node.pos[0],
+    node.pos[1] - titleOffset,
+    node.size[0],
+    node.size[1] + titleOffset
+  )
+}
 
-  if (!widgetName)
-    return {
-      width: `${node.size[0]}px`,
-      height: `${node.size[1] + titleOffset}px`,
-      left: `${node.pos[0]}px`,
-      top: `${node.pos[1] - titleOffset}px`
-    }
-  if (!widget) return
-
+function widgetBounds(node: LGraphNode, widget: IBaseWidget): Bounds {
   const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
   const marginX = margin ?? BaseWidget.margin
-  const height =
+  const heightCanvas =
     (widget.computedHeight !== undefined
       ? widget.computedHeight - 4
       : LiteGraph.NODE_WIDGET_HEIGHT) - (margin ? 2 * margin - 4 : 0)
-  return {
-    width: `${node.size[0] - marginX * 2}px`,
-    height: `${height}px`,
-    left: `${node.pos[0] + marginX}px`,
-    top: `${node.pos[1] + widget.y + (margin ?? 0)}px`
-  }
-}
-
-function handleDown(e: MouseEvent) {
-  const [node] = getHovered(e) ?? []
-  if (!node || e.button > 0) canvasInteractions.forwardEventToCanvas(e)
-}
-function handleClick(e: MouseEvent) {
-  const [node, widget] = getHovered(e) ?? []
-  if (
-    node?.mode !== LGraphEventMode.ALWAYS ||
-    !nodeTypeValidForApp(node.type) ||
-    node.has_errors
+  return toViewport(
+    node.pos[0] + marginX,
+    node.pos[1] + widget.y + (margin ?? 0),
+    node.size[0] - marginX * 2,
+    heightCanvas
   )
-    return canvasInteractions.forwardEventToCanvas(e)
-
-  if (!widget) {
-    if (!isSelectOutputsMode.value) return
-    if (!node.constructor.nodeData?.output_node)
-      return canvasInteractions.forwardEventToCanvas(e)
-    appModeStore.toggleSelectedOutput(node.id)
-    return
-  }
-  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
-
-  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  const storeName = isPromotedWidgetView(widget)
-    ? widget.sourceWidgetName
-    : widget.name
-  appModeStore.toggleSelectedInput(storeId, storeName)
 }
 
-function nodeToDisplayTuple(
-  n: LGraphNode
-): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
-  // String-normalize both sides — NodeId is `string | number` and the
-  // same logical ID can flip primitive type across save/load (the
-  // reason handleClick + the remove handler also do this).
-  const sid = String(n.id)
-  return [
-    n.id,
-    getBounding(n.id),
-    appModeStore.selectedOutputs.some((id) => String(id) === sid)
-  ]
-}
-
-const renderedOutputs = computed(() => {
-  void appModeStore.selectedOutputs.length
-  return canvas
-    .graph!.nodes.filter(
-      (n) =>
-        n.constructor.nodeData?.output_node &&
-        n.mode === LGraphEventMode.ALWAYS &&
-        !n.has_errors
-    )
-    .map(nodeToDisplayTuple)
-})
-
-// All selectable input-widget candidates on the graph. Renders both
-// unselected (faint ring) and selected (filled + thick ring) so the user
-// can see what's clickable the moment they enter builder:inputs — the
-// previous implementation only drew already-selected rows, which left
-// discoverability to luck.
-const renderedInputCandidates = computed(() => {
-  if (!isSelectInputsMode.value) return []
-  void appModeStore.selectedInputs.length
-  if (settingStore.get('Comfy.VueNodes.Enabled')) return []
+const candidates = computed<Candidate[]>(() => {
+  if (!active.value) return []
   const g = canvas.graph
   if (!g) return []
+  // Read viewport so the computed re-runs each frame as canvas state
+  // updates (the iteration over g.nodes itself isn't reactive).
+  void viewport.value
 
-  const out: { key: string; style: BoundStyle; isSelected: boolean }[] = []
-  for (const node of g.nodes) {
-    if (node.mode !== LGraphEventMode.ALWAYS) continue
-    if (!nodeTypeValidForApp(node.type)) continue
-    if (node.has_errors) continue
-    if (node.flags?.collapsed) continue
-    if (!node.widgets) continue
-
-    for (const widget of node.widgets) {
-      if (widget.options?.canvasOnly) continue
-      const style = getBounding(node.id, widget.name)
-      if (!style) continue
-
-      const storeId = isPromotedWidgetView(widget)
-        ? widget.sourceNodeId
-        : node.id
-      const storeName = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
-      const isSelected = appModeStore.selectedInputs.some(
-        ([nid, wn]) => String(storeId) === String(nid) && storeName === wn
-      )
-
-      out.push({ key: `${node.id}:${widget.name}`, style, isSelected })
+  if (isSelectInputsMode.value) {
+    const out: Candidate[] = []
+    for (const node of g.nodes) {
+      if (node.mode !== LGraphEventMode.ALWAYS) continue
+      if (!nodeTypeValidForApp(node.type)) continue
+      if (node.has_errors) continue
+      if (node.flags?.collapsed) continue
+      if (!node.widgets) continue
+      for (const widget of node.widgets) {
+        if (widget.options?.canvasOnly) continue
+        const storeId = isPromotedWidgetView(widget)
+          ? widget.sourceNodeId
+          : node.id
+        const storeName = isPromotedWidgetView(widget)
+          ? widget.sourceWidgetName
+          : widget.name
+        out.push({
+          key: `${node.id}:${widget.name}`,
+          ...widgetBounds(node, widget),
+          isSelected: appModeStore.selectedInputs.some(
+            ([nid, wn]) => String(storeId) === String(nid) && storeName === wn
+          ),
+          onToggle: () => appModeStore.toggleSelectedInput(storeId, storeName)
+        })
+      }
     }
+    return out
   }
-  return out
+
+  if (isSelectOutputsMode.value) {
+    return g.nodes
+      .filter(
+        (n) =>
+          n.constructor.nodeData?.output_node &&
+          n.mode === LGraphEventMode.ALWAYS &&
+          !n.has_errors
+      )
+      .map((node) => {
+        const sid = String(node.id)
+        return {
+          key: sid,
+          ...nodeBounds(node),
+          isSelected: appModeStore.selectedOutputs.some(
+            (id) => String(id) === sid
+          ),
+          onToggle: () => appModeStore.toggleSelectedOutput(node.id as NodeId)
+        }
+      })
+  }
+  return []
 })
 </script>
 
 <template>
-  <Teleport
-    v-if="isSelectMode && !settingStore.get('Comfy.VueNodes.Enabled')"
-    to="body"
-  >
-    <div
-      :class="
-        cn(
-          'pointer-events-auto absolute size-full bg-black/40',
-          hoveringSelectable ? 'cursor-pointer' : 'cursor-grab'
-        )
-      "
-      @pointerdown="handleDown"
-      @pointermove="hoveringSelectable = !!getHovered($event)"
-      @click="handleClick"
-      @wheel="canvasInteractions.forwardEventToCanvas"
-    >
-      <TransformPane :canvas="canvasStore.getCanvas()">
-        <template v-if="isSelectInputsMode">
-          <div
-            v-for="candidate in renderedInputCandidates"
-            :key="candidate.key"
-            :style="candidate.style"
-            :class="
-              cn(
-                'fixed rounded-lg ring-2 ring-primary-background/60',
-                candidate.isSelected &&
-                  'bg-warning-background/10 ring-3 ring-warning-background'
-              )
-            "
-          />
-        </template>
-        <template v-else>
-          <div
-            v-for="[key, style, isSelected] in renderedOutputs"
-            :key
-            :style="toValue(style)"
-            :class="
-              cn(
-                'fixed rounded-2xl ring-5 ring-warning-background',
-                !isSelected && 'ring-warning-background/50'
-              )
-            "
-          >
-            <div class="absolute top-0 right-0 size-8">
-              <div
-                v-if="isSelected"
-                :class="[
-                  'pointer-events-auto absolute -top-1/2 -right-1/2',
-                  'size-full cursor-pointer rounded-lg p-2',
-                  'bg-warning-background'
-                ]"
-                @click.stop="appModeStore.removeSelectedOutput(key)"
-                @pointerdown.stop
-              >
-                <!-- Inline SVG (see AppInput.vue for rationale) so we
-                     can set `stroke-width="3"` directly. -->
-                <svg
-                  class="size-full text-base-background"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <div
-                v-else
-                :class="[
-                  'pointer-events-auto absolute -top-1/2 -right-1/2',
-                  'size-full cursor-pointer rounded-lg',
-                  'bg-component-node-background',
-                  'ring-4 ring-warning-background/50 ring-inset'
-                ]"
-                @click.stop="appModeStore.toggleSelectedOutput(key)"
-                @pointerdown.stop
-              />
-            </div>
-          </div>
-        </template>
-      </TransformPane>
-    </div>
-  </Teleport>
+  <template v-if="active">
+    <Teleport to="body">
+      <div
+        class="pointer-events-auto fixed inset-0 cursor-grab bg-black/40"
+        @pointerdown="canvasInteractions.forwardEventToCanvas"
+        @click="canvasInteractions.forwardEventToCanvas"
+        @wheel="canvasInteractions.forwardEventToCanvas"
+      />
+    </Teleport>
+    <SelectionChrome
+      v-for="c in candidates"
+      :key="c.key"
+      :is-selected="c.isSelected"
+      :top="c.top"
+      :left="c.left"
+      :width="c.width"
+      :height="c.height"
+      @toggle="c.onToggle"
+    />
+  </template>
 </template>
