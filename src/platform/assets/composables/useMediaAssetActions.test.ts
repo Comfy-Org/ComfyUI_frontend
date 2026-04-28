@@ -275,7 +275,7 @@ describe('useMediaAssetActions', () => {
     })
   })
 
-  describe('downloadMultipleAssets - job_asset_name_filters', () => {
+  describe('downloadAssets - job_asset_name_filters', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockCreateAssetExport.mockClear()
@@ -305,7 +305,7 @@ describe('useMediaAssetActions', () => {
       const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets(assets)
+      actions.downloadAssets(assets)
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
@@ -323,7 +323,7 @@ describe('useMediaAssetActions', () => {
       const j2 = createOutputAsset('a3', 'out2.png', 'job2', 1)
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([j1a, j1b, j2])
+      actions.downloadAssets([j1a, j1b, j2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
@@ -340,7 +340,7 @@ describe('useMediaAssetActions', () => {
       const asset2 = createOutputAsset('a2', 'img2.png', 'job2')
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([asset1, asset2])
+      actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
@@ -360,7 +360,7 @@ describe('useMediaAssetActions', () => {
       const j2 = createOutputAsset('a3', 'img2.png', 'job2')
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([j1a, j1b, j2])
+      actions.downloadAssets([j1a, j1b, j2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
@@ -379,7 +379,7 @@ describe('useMediaAssetActions', () => {
       const asset2 = createOutputAsset('a2', 'img2.png', 'job1')
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([asset1, asset2])
+      actions.downloadAssets([asset1, asset2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
