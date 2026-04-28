@@ -2,9 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -12,6 +15,11 @@ const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 // Track the filename passed to createAnnotatedPath
 const capturedFilenames = vi.hoisted(() => ({ values: [] as string[] }))
+
+const mockDownloadFile = vi.hoisted(() => vi.fn())
+vi.mock('@/base/common/downloadUtil', () => ({
+  downloadFile: mockDownloadFile
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -168,6 +176,49 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
+function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
+  return {
+    ...createMockAsset(overrides),
+    kind: 'image',
+    src: 'https://example.com/default-preview.png',
+    ...overrides
+  }
+}
+
+function mountMediaActions(asset?: AssetMeta) {
+  let actions: ReturnType<typeof useMediaAssetActions> | undefined
+
+  const ChildComponent = defineComponent({
+    setup() {
+      actions = useMediaAssetActions()
+      return () => null
+    }
+  })
+
+  const HostComponent = defineComponent({
+    setup() {
+      provide(MediaAssetKey, {
+        asset: ref(asset),
+        context: ref({ type: 'input' as const }),
+        isVideoPlaying: ref(false),
+        showVideoControls: ref(false)
+      })
+      return () => h(ChildComponent)
+    }
+  })
+
+  const host = document.createElement('div')
+  const app = createApp(HostComponent)
+  app.mount(host)
+
+  if (!actions) throw new Error('media asset actions not initialized')
+
+  return {
+    actions,
+    unmount: () => app.unmount()
+  }
+}
+
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -175,6 +226,9 @@ describe('useMediaAssetActions', () => {
     vi.clearAllMocks()
     capturedFilenames.values = []
     mockIsCloud.value = false
+    mockGetOutputAssetMetadata.mockReset()
+    mockGetOutputAssetMetadata.mockReturnValue(null)
+    mockGetAssetType.mockReset()
   })
 
   describe('addWorkflow', () => {
@@ -272,6 +326,101 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).not.toContain('file1.jpeg')
         expect(capturedFilenames.values).not.toContain('file2.jpeg')
       })
+    })
+  })
+
+  describe('downloadAssets', () => {
+    it('downloads the injected media asset when called without explicit assets', () => {
+      const mediaAsset = createMockMediaAsset({
+        id: 'context-asset',
+        name: 'context-name.png',
+        display_name: 'Context image.png',
+        preview_url: 'https://example.com/context-preview.png'
+      })
+
+      const { actions, unmount } = mountMediaActions(mediaAsset)
+      actions.downloadAssets()
+
+      expect(mockDownloadFile).toHaveBeenCalledOnce()
+      expect(mockDownloadFile).toHaveBeenCalledWith(
+        'https://example.com/context-preview.png',
+        'Context image.png'
+      )
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+      expect(mockTrackExport).not.toHaveBeenCalled()
+
+      unmount()
+    })
+
+    it('does nothing when called without explicit assets and no media context asset', () => {
+      const { actions, unmount } = mountMediaActions()
+      actions.downloadAssets()
+
+      expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+      expect(mockTrackExport).not.toHaveBeenCalled()
+
+      unmount()
+    })
+
+    it('keeps single explicit assets on the direct download path in cloud', () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 1
+      })
+
+      const asset = createMockAsset({
+        id: 'single-output',
+        name: 'single-output.png',
+        preview_url: 'https://example.com/single-output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job1', outputCount: 1 }
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([asset])
+
+      expect(mockDownloadFile).toHaveBeenCalledOnce()
+      expect(mockDownloadFile).toHaveBeenCalledWith(
+        'https://example.com/single-output.png',
+        'single-output.png'
+      )
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+      expect(mockTrackExport).not.toHaveBeenCalled()
+    })
+
+    it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 3
+      })
+
+      const mediaAsset = createMockMediaAsset({
+        id: 'multi-output',
+        name: 'multi-output.png',
+        preview_url: 'https://example.com/multi-output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job1', outputCount: 3 }
+      })
+
+      const { actions, unmount } = mountMediaActions(mediaAsset)
+      actions.downloadAssets()
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['job1'],
+        naming_strategy: 'preserve'
+      })
+      expect(mockTrackExport).toHaveBeenCalledWith('test-task-id')
+
+      unmount()
     })
   })
 
