@@ -89,7 +89,7 @@ import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
