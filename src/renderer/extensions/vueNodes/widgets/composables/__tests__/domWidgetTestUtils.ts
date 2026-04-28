@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-export interface FakeDOMWidget {
+interface FakeDOMWidget {
   name: string
   type: string
   element: HTMLElement
@@ -15,7 +15,7 @@ export interface FakeDOMWidget {
   serializeValue?: () => unknown
 }
 
-export interface FakeMediaWidget {
+interface FakeMediaWidget {
   name: string
   element: HTMLElement
   onRemove?: () => void
