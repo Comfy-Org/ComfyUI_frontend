@@ -141,6 +141,15 @@ describe('useLoad3d', () => {
       exportModel: vi.fn().mockResolvedValue(undefined),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getCurrentModelCapabilities: vi.fn().mockReturnValue({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe'],
+        fitTargetSize: 5
+      }),
       hasSkeleton: vi.fn().mockReturnValue(false),
       setShowSkeleton: vi.fn(),
       loadHDRI: vi.fn().mockResolvedValue(undefined),
