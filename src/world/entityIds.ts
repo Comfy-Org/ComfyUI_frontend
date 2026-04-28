@@ -13,7 +13,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { Brand } from './brand'
 
-export type GraphId = Brand<UUID, 'GraphId'>
+type GraphId = Brand<UUID, 'GraphId'>
 export type NodeEntityId = Brand<string, 'NodeEntityId'>
 export type WidgetEntityId = Brand<string, 'WidgetEntityId'>
 
