@@ -296,6 +296,58 @@ describe('Load3DControls', () => {
     })
   })
 
+  describe('capability desync handling', () => {
+    it('hides the active panel and resets to scene when its capability is dropped at runtime', async () => {
+      const { user, rerender } = renderControls()
+
+      await openMenu(user)
+      await user.click(screen.getByRole('button', { name: 'Light' }))
+      expect(screen.getByTestId('light-controls')).toBeInTheDocument()
+
+      await rerender({ canUseLighting: false })
+
+      expect(screen.queryByTestId('light-controls')).not.toBeInTheDocument()
+      expect(screen.getByTestId('scene-controls')).toBeInTheDocument()
+
+      await openMenu(user)
+      expect(
+        screen.queryByRole('button', { name: 'Light' })
+      ).not.toBeInTheDocument()
+    })
+
+    it.each([
+      ['Gizmo', 'gizmo-controls', 'canUseGizmo' as const],
+      ['Export', 'export-controls', 'canExport' as const]
+    ])(
+      'hides the %s panel when its capability flips off at runtime',
+      async (label, testId, capabilityProp) => {
+        const { user, rerender } = renderControls()
+
+        await openMenu(user)
+        await user.click(screen.getByRole('button', { name: label }))
+        expect(screen.getByTestId(testId)).toBeInTheDocument()
+
+        await rerender({ [capabilityProp]: false })
+
+        expect(screen.queryByTestId(testId)).not.toBeInTheDocument()
+        expect(screen.getByTestId('scene-controls')).toBeInTheDocument()
+      }
+    )
+
+    it('does not reset activeCategory when capabilities change but the active one is still available', async () => {
+      const { user, rerender } = renderControls()
+
+      await openMenu(user)
+      await user.click(screen.getByRole('button', { name: 'Camera' }))
+      expect(screen.getByTestId('camera-controls')).toBeInTheDocument()
+
+      await rerender({ canUseLighting: false, canUseGizmo: false })
+
+      expect(screen.getByTestId('camera-controls')).toBeInTheDocument()
+      expect(screen.queryByTestId('scene-controls')).not.toBeInTheDocument()
+    })
+  })
+
   describe('event forwarding', () => {
     it('forwards updateBackgroundImage from SceneControls', async () => {
       const onUpdateBackgroundImage = vi.fn()
