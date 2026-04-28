@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   HubspotSubmissionError,
@@ -242,23 +242,16 @@ describe('submitHubspotForm', () => {
 })
 
 describe('readHubspotTrackingCookie', () => {
-  it('reads the hubspotutk cookie value with spaces after semicolons', () => {
-    expect(
-      readHubspotTrackingCookie('foo=bar; hubspotutk=abc123; baz=qux')
-    ).toBe('abc123')
-  })
-
-  it('reads the hubspotutk cookie value when separators have no spaces', () => {
-    expect(readHubspotTrackingCookie('foo=bar;hubspotutk=abc123;baz=qux')).toBe(
-      'abc123'
-    )
-  })
-
-  it('reads the hubspotutk cookie value when separators are mixed', () => {
-    expect(
-      readHubspotTrackingCookie('foo=bar; hubspotutk=abc123;baz=qux')
-    ).toBe('abc123')
-  })
+  it.each([
+    'foo=bar; hubspotutk=abc123; baz=qux',
+    'foo=bar;hubspotutk=abc123;baz=qux',
+    'foo=bar; hubspotutk=abc123;baz=qux'
+  ])(
+    'reads the hubspotutk cookie value across separator variants: %s',
+    (cookie) => {
+      expect(readHubspotTrackingCookie(cookie)).toBe('abc123')
+    }
+  )
 
   it('returns null when the cookie is missing', () => {
     expect(readHubspotTrackingCookie('foo=bar; baz=qux')).toBeNull()
@@ -279,6 +272,10 @@ describe('resolveHubspotRegion', () => {
 
   afterEach(() => {
     warnSpy.mockClear()
+  })
+
+  afterAll(() => {
+    warnSpy.mockRestore()
   })
 
   it('falls back to "na1" when the value is undefined or empty', () => {

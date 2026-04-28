@@ -190,6 +190,18 @@ describe('FormSection', () => {
     expect(submitMock).not.toHaveBeenCalled()
   })
 
+  it('renders the locale-aware privacy-policy link for non-default locales', () => {
+    render(FormSection, { props: { locale: 'zh-CN' } })
+    const link = screen.getByRole('link', { name: /隐私政策/i })
+    expect(link.getAttribute('href')).toBe('/zh-CN/privacy-policy')
+  })
+
+  it('renders the default privacy-policy link for English', () => {
+    render(FormSection)
+    const link = screen.getByRole('link', { name: /privacy policy/i })
+    expect(link.getAttribute('href')).toBe('/privacy-policy')
+  })
+
   it('surfaces HubSpot validation messages on failure', async () => {
     submitMock.mockReset()
     submitMock.mockRejectedValue(

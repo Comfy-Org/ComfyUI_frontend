@@ -3403,10 +3403,18 @@ const translations = {
     en: 'Please fill in all required fields.',
     'zh-CN': '请填写所有必填字段。'
   },
-  'contact.form.privacyDisclosure': {
-    en: 'By submitting this form, your information is sent to our CRM provider, HubSpot, so our team can follow up. See our <a href="/privacy-policy" class="underline">Privacy Policy</a> for details.',
+  'contact.form.privacyDisclosureBefore': {
+    en: 'By submitting this form, your information is sent to our CRM provider, HubSpot, so our team can follow up. See our ',
     'zh-CN':
-      '提交此表单即表示您的信息将发送至我们的 CRM 服务商 HubSpot，以便团队与您联系。详情请参阅我们的<a href="/privacy-policy" class="underline">隐私政策</a>。'
+      '提交此表单即表示您的信息将发送至我们的 CRM 服务商 HubSpot，以便团队与您联系。详情请参阅我们的'
+  },
+  'contact.form.privacyDisclosureLinkLabel': {
+    en: 'Privacy Policy',
+    'zh-CN': '隐私政策'
+  },
+  'contact.form.privacyDisclosureAfter': {
+    en: ' for details.',
+    'zh-CN': '。'
   },
   'contact.form.firstNamePlaceholder': {
     en: 'Jane',

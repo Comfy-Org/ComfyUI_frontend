@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
+import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import {
   HubspotSubmissionError,
@@ -18,6 +19,8 @@ import SectionLabel from '../common/SectionLabel.vue'
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+
+const privacyPolicyHref = getRoutes(locale).privacyPolicy
 
 function tk(suffix: string): TranslationKey {
   return `contact.form.${suffix}` as TranslationKey
@@ -443,10 +446,13 @@ async function handleSubmit() {
           >
             {{ submitButtonLabel }}
           </BrandButton>
-          <p
-            class="text-primary-comfy-canvas/60 mt-4 text-xs"
-            v-html="t(tk('privacyDisclosure'), locale)"
-          />
+          <p class="text-primary-comfy-canvas/60 mt-4 text-xs">
+            {{ t(tk('privacyDisclosureBefore'), locale)
+            }}<a :href="privacyPolicyHref" class="underline">{{
+              t(tk('privacyDisclosureLinkLabel'), locale)
+            }}</a
+            >{{ t(tk('privacyDisclosureAfter'), locale) }}
+          </p>
           <p
             v-if="status === 'success'"
             role="status"
