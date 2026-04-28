@@ -6,9 +6,9 @@
  * Shares `appModeStore.viewport*` with App Mode so zoom level
  * survives a round trip.
  */
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, useTemplateRef } from 'vue'
+import { computed, useTemplateRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
@@ -40,6 +40,7 @@ let dragging = false
 
 function handlePointerDown(e: PointerEvent) {
   if (e.button !== 0 && e.button !== 1) return
+  e.preventDefault()
   dragStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId }
 }
 
@@ -49,18 +50,36 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
     const dx = e.clientX - dragStart.x
     const dy = e.clientY - dragStart.y
     if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
-    bgRef.value?.setPointerCapture(dragStart.pointerId)
+    try {
+      bgRef.value?.setPointerCapture(dragStart.pointerId)
+    } catch {
+      // Some browsers reject capture on non-primary pointers.
+    }
     dragging = true
   }
   appModeStore.panBy(e.movementX, e.movementY)
 })
 
 function endDrag() {
+  if (dragStart && dragging) {
+    try {
+      bgRef.value?.releasePointerCapture(dragStart.pointerId)
+    } catch {
+      // pointer may already be released
+    }
+  }
   dragStart = null
   dragging = false
 }
 useEventListener(window, 'pointerup', endDrag)
 useEventListener(window, 'pointercancel', endDrag)
+
+// Abandon on window blur so a pan can't get stuck waiting for a
+// pointerup that never arrives (alt-tab, OS modal).
+const focused = useWindowFocus()
+watch(focused, (nowFocused) => {
+  if (!nowFocused && dragStart !== null) endDrag()
+})
 
 const workspaceTransform = computed(
   () =>

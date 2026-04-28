@@ -97,7 +97,9 @@
   background-color: rgb(255 255 255 / 0.1);
 }
 
-/* Active border lifts from 0.08 → 0.18 (perceptible, not loud). */
+/* Active border lifts from 0.08 → 0.18 (perceptible, not loud). The
+   `outline: none` is mouse-focus only — keyboard focus restores a
+   high-contrast outline below (WCAG 2.4.7 / a11y). */
 :is(.floating-panel, .app-chrome) textarea:focus,
 :is(.floating-panel, .app-chrome) input:focus,
 :is(.floating-panel, .app-chrome)
@@ -106,10 +108,14 @@
   outline: none;
   box-shadow: none;
 }
+
+/* Restore a visible focus indicator for keyboard navigation. */
 :is(.floating-panel, .app-chrome) textarea:focus-visible,
-:is(.floating-panel, .app-chrome) input:focus-visible {
-  outline: none;
-  box-shadow: none;
+:is(.floating-panel, .app-chrome) input:focus-visible,
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background:has(:focus-visible) {
+  outline: 2px solid rgb(255 255 255 / 0.7);
+  outline-offset: 1px;
 }
 
 /* NodeWidgets' wrapper-level focus-within:ring leaked past the inner

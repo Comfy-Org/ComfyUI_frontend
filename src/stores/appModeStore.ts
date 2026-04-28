@@ -283,6 +283,34 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
+  // Toggle helpers — single entry points for selection mutations so
+  // callers (AppBuilder click handlers, AppInput / AppOutput overlays)
+  // don't manipulate the arrays directly. Keeps the surface aligned
+  // with the repo's command-pattern guidance and gives us a single
+  // place to add undo / replay later.
+  function toggleSelectedOutput(id: NodeId) {
+    const index = selectedOutputs.value.findIndex(
+      (k) => String(k) === String(id)
+    )
+    if (index === -1) selectedOutputs.value.push(id)
+    else selectedOutputs.value.splice(index, 1)
+  }
+
+  function removeSelectedOutput(id: NodeId) {
+    const index = selectedOutputs.value.findIndex(
+      (k) => String(k) === String(id)
+    )
+    if (index !== -1) selectedOutputs.value.splice(index, 1)
+  }
+
+  function toggleSelectedInput(nodeId: NodeId, widgetName: string) {
+    const index = selectedInputs.value.findIndex(
+      ([id, name]) => String(id) === String(nodeId) && name === widgetName
+    )
+    if (index === -1) selectedInputs.value.push([nodeId, widgetName])
+    else selectedInputs.value.splice(index, 1)
+  }
+
   function updateInputConfig(
     nodeId: NodeId,
     widgetName: string,
@@ -308,11 +336,14 @@ export const useAppModeStore = defineStore('appMode', () => {
     panBy,
     pruneLinearData,
     removeSelectedInput,
+    removeSelectedOutput,
     resetSelectedToWorkflow,
     resetView,
     selectedInputs,
     selectedOutputs,
     showVueNodeSwitchPopup,
+    toggleSelectedInput,
+    toggleSelectedOutput,
     updateInputConfig,
     viewportOffsetX,
     viewportOffsetY,

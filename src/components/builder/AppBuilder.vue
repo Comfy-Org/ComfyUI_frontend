@@ -9,7 +9,6 @@
  * Gated on `isSelectMode` (only inputs + outputs) and skipped when Vue
  * nodes are enabled — Vue nodes handle their own click selection.
  */
-import { remove } from 'es-toolkit'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 
@@ -114,11 +113,7 @@ function handleClick(e: MouseEvent) {
     if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex(
-      (id) => String(id) === String(node.id)
-    )
-    if (index === -1) appModeStore.selectedOutputs.push(node.id)
-    else appModeStore.selectedOutputs.splice(index, 1)
+    appModeStore.toggleSelectedOutput(node.id)
     return
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
@@ -127,21 +122,20 @@ function handleClick(e: MouseEvent) {
   const storeName = isPromotedWidgetView(widget)
     ? widget.sourceWidgetName
     : widget.name
-  const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) =>
-      String(storeId) === String(nodeId) && storeName === widgetName
-  )
-  if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
-  else appModeStore.selectedInputs.splice(index, 1)
+  appModeStore.toggleSelectedInput(storeId, storeName)
 }
 
 function nodeToDisplayTuple(
   n: LGraphNode
 ): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
+  // String-normalize both sides — NodeId is `string | number` and the
+  // same logical ID can flip primitive type across save/load (the
+  // reason handleClick + the remove handler also do this).
+  const sid = String(n.id)
   return [
     n.id,
     getBounding(n.id),
-    appModeStore.selectedOutputs.some((id) => n.id === id)
+    appModeStore.selectedOutputs.some((id) => String(id) === sid)
   ]
 }
 
@@ -251,12 +245,7 @@ const renderedInputCandidates = computed(() => {
                   'size-full cursor-pointer rounded-lg p-2',
                   'bg-(--color-app-mode-active-temp)'
                 ]"
-                @click.stop="
-                  remove(
-                    appModeStore.selectedOutputs,
-                    (k) => String(k) === String(key)
-                  )
-                "
+                @click.stop="appModeStore.removeSelectedOutput(key)"
                 @pointerdown.stop
               >
                 <!-- Inline SVG (see AppInput.vue for rationale) so we
@@ -282,7 +271,7 @@ const renderedInputCandidates = computed(() => {
                   'bg-component-node-background',
                   'ring-4 ring-(--color-app-mode-active-temp-half) ring-inset'
                 ]"
-                @click.stop="appModeStore.selectedOutputs.push(key)"
+                @click.stop="appModeStore.toggleSelectedOutput(key)"
                 @pointerdown.stop
               />
             </div>

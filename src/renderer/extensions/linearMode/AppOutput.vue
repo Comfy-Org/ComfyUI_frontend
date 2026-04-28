@@ -18,6 +18,15 @@ const isPromoted = computed(() =>
 // applied as a CSS transform on TransformPane and doesn't fire the
 // built-in resize/scroll/mutation observers, so a RAF loop keeps the
 // teleported ring glued to the node as the canvas transforms.
+//
+// Bounded by mount: AppOutput only renders while `isSelectOutputsMode`
+// is true (see LGraphNode.vue), so the loop is scoped to the outputs-
+// selection step rather than running for the lifetime of the page.
+//
+// Known follow-up (CR): with many output nodes visible at once, every
+// instance runs its own RAF callback. Centralizing into a shared
+// dispatcher (one loop driving all AppInput/AppOutput updates) would
+// reduce per-frame work — out of scope for this PR.
 const wrapperRef = useTemplateRef<HTMLElement>('wrapper')
 const { top, left, width, height, update } = useElementBounding(wrapperRef)
 useRafFn(update, { immediate: true })
