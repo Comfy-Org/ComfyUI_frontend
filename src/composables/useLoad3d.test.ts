@@ -4,6 +4,7 @@ import { nextTick, ref, shallowRef } from 'vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -17,6 +18,10 @@ import {
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
+}))
+
+vi.mock('@/extensions/core/load3d/createLoad3d', () => ({
+  createLoad3d: vi.fn()
 }))
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
@@ -161,6 +166,7 @@ describe('useLoad3d', () => {
       Object.assign(this, mockLoad3d)
       return this
     })
+    vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
     mockToastStore = {
       addAlert: vi.fn()
@@ -181,7 +187,7 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(Load3d).toHaveBeenCalledWith(
+      expect(createLoad3d).toHaveBeenCalledWith(
         containerRef,
         expect.objectContaining({
           width: 512,
@@ -291,7 +297,7 @@ describe('useLoad3d', () => {
     })
 
     it('should handle initialization errors', async () => {
-      vi.mocked(Load3d).mockImplementationOnce(function () {
+      vi.mocked(createLoad3d).mockImplementationOnce(() => {
         throw new Error('Load3d creation failed')
       })
 
@@ -310,7 +316,7 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(null!)
 
-      expect(Load3d).not.toHaveBeenCalled()
+      expect(createLoad3d).not.toHaveBeenCalled()
     })
 
     it('should accept ref as parameter', () => {
@@ -1029,7 +1035,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
 
       // Should not throw and should use defaults
-      expect(Load3d).toHaveBeenCalled()
+      expect(createLoad3d).toHaveBeenCalled()
     })
 
     it('should handle background image with existing config', async () => {
