@@ -31,6 +31,13 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get the inner wrapper element of a Vue node.
+   */
+  getNodeInnerWrapper(nodeId: string): Locator {
+    return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.

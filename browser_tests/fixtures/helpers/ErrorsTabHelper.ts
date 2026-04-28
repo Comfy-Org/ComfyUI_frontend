@@ -4,6 +4,21 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
+export async function enableErrorsOverlay(comfyPage: ComfyPage) {
+  await comfyPage.settings.setSetting(
+    'Comfy.RightSidePanel.ShowErrorsTab',
+    true
+  )
+}
+
+/** Dismiss the error overlay (the floating dialog with the dismiss button). */
+export async function dismissErrorOverlay(comfyPage: ComfyPage): Promise<void> {
+  const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  await expect(overlay).toBeVisible()
+  await overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
+  await expect(overlay).toBeHidden()
+}
+
 export async function loadWorkflowAndOpenErrorsTab(
   comfyPage: ComfyPage,
   workflow: string
