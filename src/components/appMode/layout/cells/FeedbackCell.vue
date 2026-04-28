@@ -28,7 +28,7 @@ const { t } = useI18n()
 
 <template>
   <div
-    class="flex size-full items-center gap-2 px-1 [&_a_i,&_button_i]:size-5 [&_a,&_button]:bg-transparent! [&_a,&_button]:text-layout-mute! [&_a:hover,&_button:hover]:bg-layout-cell-hover! [&_a:hover,&_button:hover]:text-layout-text!"
+    class="feedback-cell flex size-full items-center gap-2 px-1 [&_a_i,&_button_i]:size-5"
   >
     <TypeformPopoverButton :data-tf-widget="WIDGET_ID" />
     <div
@@ -39,3 +39,18 @@ const { t } = useI18n()
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Mute TypeformPopoverButton's `variant="inverted"` (loud white) so
+   it blends into the dark chrome. `!important` matches the pattern
+   in PanelBlockList — needed to win against the design-system
+   utilities baked into the primitive. */
+.feedback-cell :deep(:is(a, button)) {
+  background-color: transparent !important;
+  color: var(--color-layout-mute) !important;
+}
+.feedback-cell :deep(:is(a, button):hover) {
+  background-color: var(--color-layout-cell-hover) !important;
+  color: var(--color-layout-text) !important;
+}
+</style>
