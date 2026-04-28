@@ -6,7 +6,13 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
+import {
+  asGraphId,
+  graphNodePrefix,
+  graphWidgetPrefix,
+  nodeEntityId,
+  widgetEntityId
+} from '@/world/entityIds'
 import { getWorld } from '@/world/worldInstance'
 
 import type { WidgetValue } from './widgetComponents'
@@ -87,9 +93,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function clearGraph(graphId: UUID): void {
     const world = getWorld()
-    // Branded IDs ARE strings at runtime; bare interpolation is intentional.
-    const widgetPrefix = `widget:${graphId}:`
-    const nodePrefix = `node:${graphId}:`
+    const branded = asGraphId(graphId)
+    const widgetPrefix = graphWidgetPrefix(branded)
+    const nodePrefix = graphNodePrefix(branded)
     for (const widgetId of world.entitiesWith(WidgetValueComponent)) {
       if ((widgetId as string).startsWith(widgetPrefix)) {
         world.removeComponent(widgetId, WidgetValueComponent)
