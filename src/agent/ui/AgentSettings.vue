@@ -53,6 +53,22 @@
       />
       <p class="text-xs text-muted-foreground">
         {{ t('agent.settings.apiKeyHint') }}
+        <a
+          href="https://platform.openai.com/api-keys"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-azure-400 underline hover:text-azure-300"
+          >{{ t('agent.settings.apiKeyLinkOpenAI') }}</a
+        >
+        {{ t('agent.settings.apiKeyOr') }}
+        <a
+          href="https://openrouter.ai/workspaces/default/keys"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-azure-400 underline hover:text-azure-300"
+          >{{ t('agent.settings.apiKeyLinkOpenRouter') }}</a
+        >
+        {{ t('agent.settings.apiKeyOrAny') }}
       </p>
 
       <label

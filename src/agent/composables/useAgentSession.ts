@@ -36,7 +36,7 @@ import type { IngestedAsset } from '../stores/agentStore'
 import { useAgentStore } from '../stores/agentStore'
 
 // User's preferred smartest-available model. Override via settings.
-const DEFAULT_MODEL = 'gpt-5.4'
+const DEFAULT_MODEL = 'gpt-5.5'
 const DEFAULT_REASONING_EFFORT = 'high'
 const DEFAULT_SYSTEM_APPEND = ''
 // Empty by default — the OpenAI SDK falls back to https://api.openai.com.
