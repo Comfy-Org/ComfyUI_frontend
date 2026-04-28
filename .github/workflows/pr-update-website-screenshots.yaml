@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      issues: write
       pull-requests: read
     # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
     # ⚠️ This condition is duplicated on `post-starting-comment` — keep them in sync.
@@ -137,7 +138,10 @@ jobs:
                 name: 'Update Website Screenshots'
               })
             } catch (e) {
-              // Label may already be removed
+              if (e.status !== 404) {
+                throw e
+              }
+              core.info('Label "Update Website Screenshots" was already removed')
             }
 
   post-starting-comment:
