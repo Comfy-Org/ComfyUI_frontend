@@ -60,8 +60,7 @@ ECSY convention by default.
 Our substrate follows the same shape: `src/world/` contains entity-ID
 brands, the `ComponentKey` definition primitive, and the `World`
 interface, but no domain-specific component types. Slice 1 places
-`WidgetValueComponent`, `WidgetContainerComponent`, and the `widgetParent`
-reverse-lookup in
+`WidgetValueComponent` and `WidgetContainerComponent` in
 [src/stores/widgetComponents.ts](../../src/stores/widgetComponents.ts),
 next to [widgetValueStore.ts](../../src/stores/widgetValueStore.ts) — the
 module that already owns widget value state.
@@ -215,14 +214,18 @@ Bevy ships `Parent` / `Children` components at the substrate layer; Flecs
 ships first-class relations. These are useful when many subsystems need
 hierarchical traversal at storage-near speeds.
 
-We treat parent lookup as a query over a domain component instead.
-`widgetParent(world, widgetId)` is a **query over `WidgetContainer`**,
-defined alongside the component in
-[src/stores/widgetComponents.ts](../../src/stores/widgetComponents.ts). It
-runs in the domain layer because today only one subsystem (the widget
-domain) needs parent lookup. We may revisit this if multiple slices need
-a shared traversal API; until then, keeping parent lookup domain-local
-preserves the substrate's "no domain knowledge" property.
+We treat hierarchical traversal as a domain-layer concern instead. The
+only structural relation slice 1 needs is `node → widgets` forward
+lookup, expressed as a domain component (`WidgetContainer.widgetIds` in
+[src/stores/widgetComponents.ts](../../src/stores/widgetComponents.ts))
+and surfaced through `getNodeWidgets()` on the
+[widget value store](../../src/stores/widgetValueStore.ts). Reverse
+`widget → node` lookup is not modeled in the World at all today —
+existing call sites already hold a widget object and read `widget.node`
+directly via the `BaseWidget` back-reference, so no substrate-side
+parent component earns its keep yet. We may revisit this if multiple
+slices need a shared traversal API; until then, keeping hierarchy
+domain-local preserves the substrate's "no domain knowledge" property.
 
 ---
 
