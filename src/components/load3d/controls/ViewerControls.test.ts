@@ -72,6 +72,9 @@ describe('ViewerControls', () => {
     const callArgs = showDialog.mock.calls[0][0]
     expect(callArgs.key).toBe('global-load3d-viewer')
     expect(callArgs.title).toBe('3D viewer')
+    expect(callArgs.component).toMatchObject({
+      name: 'Load3DViewerContentStub'
+    })
     expect(callArgs.props).toEqual({ node: mockNode })
     expect(callArgs.dialogComponentProps.maximizable).toBe(true)
   })
