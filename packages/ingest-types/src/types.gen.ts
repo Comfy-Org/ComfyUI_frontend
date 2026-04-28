@@ -469,6 +469,10 @@ export type ImportPublishedAssetsRequest = {
    * IDs of published assets (inputs and models) to import.
    */
   published_asset_ids: Array<string>
+  /**
+   * The share ID of the published workflow these assets belong to. Required for authorization.
+   */
+  share_id: string
 }
 
 export type PublishedWorkflowDetail = {
@@ -1193,6 +1197,43 @@ export type JwksResponse = {
   keys: Array<JwkKey>
 }
 
+export type SyncApiKeyResponse = {
+  /**
+   * `revoked` — matching row found, was active, now revoked.
+   * `already_revoked` — matching row found, already revoked.
+   * `no_op` — no row matches the supplied hash.
+   *
+   */
+  result: 'revoked' | 'already_revoked' | 'no_op'
+}
+
+export type SyncApiKeyRequest = {
+  /**
+   * Lifecycle event type. Only `delete` is supported in Phase 1.
+   */
+  event: 'delete'
+  /**
+   * SHA-256 hex digest of the plaintext API key (64 hex characters).
+   * Case-insensitive: the server lowercases the value before lookup, so
+   * producers may emit lowercase or uppercase hex. The lowercase form
+   * is recommended for consistency with the rest of the codebase, which
+   * computes hashes via `hex.EncodeToString`.
+   *
+   */
+  key_hash: string
+  /**
+   * Firebase UID of the key's owner according to comfy-api. Required on
+   * the request so cloud can detect drift between the two systems, but
+   * **advisory only**: `key_hash` is the sole authoritative identifier
+   * for the revocation. A mismatch against cloud's stored `user_id` is
+   * logged and emits `admin.api_key_sync.delete.customer_mismatch`, but
+   * does not change the outcome — the matching row is still revoked so
+   * a subsequent sync call can repair drift.
+   *
+   */
+  customer_id: string
+}
+
 export type VerifyApiKeyResponse = {
   /**
    * Firebase UID of the key creator
@@ -1247,6 +1288,13 @@ export type VerifyApiKeyRequest = {
    * The full plaintext API key to verify
    */
   api_key: string
+}
+
+export type BulkRevokeApiKeysResponse = {
+  /**
+   * Number of API keys that were revoked
+   */
+  revoked_count: number
 }
 
 export type ListWorkspaceApiKeysResponse = {
@@ -1699,6 +1747,19 @@ export type JobDetailResponse = {
   execution_meta?: {
     [key: string]: unknown
   }
+}
+
+/**
+ * Response for POST /api/jobs/{job_id}/cancel. Returned on both fresh cancels and idempotent no-ops.
+ */
+export type JobCancelResponse = {
+  /**
+   * True when a cancel event was successfully dispatched by this call.
+   * False when the job was already in a terminal or cancelling state,
+   * in which case the call is a no-op (still 200 — idempotent).
+   *
+   */
+  cancelled: boolean
 }
 
 /**
@@ -3112,6 +3173,20 @@ export type GetModelPreviewResponses = {
 export type GetModelPreviewResponse =
   GetModelPreviewResponses[keyof GetModelPreviewResponses]
 
+export type GetLegacyHistoryData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/history'
+}
+
+export type GetLegacyHistoryErrors = {
+  /**
+   * Not Found — use /api/history_v2 instead
+   */
+  404: unknown
+}
+
 export type ManageHistoryData = {
   body: HistoryManageRequest
   path?: never
@@ -3321,6 +3396,48 @@ export type GetJobDetailResponses = {
 
 export type GetJobDetailResponse =
   GetJobDetailResponses[keyof GetJobDetailResponses]
+
+export type CancelJobData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: never
+  url: '/api/jobs/{job_id}/cancel'
+}
+
+export type CancelJobErrors = {
+  /**
+   * Bad Request - job_id is not a valid UUID (emitted by request validation before the handler runs)
+   */
+  400: BindingErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Job not found for this user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error - cancellation failed
+   */
+  500: ErrorResponse
+}
+
+export type CancelJobError = CancelJobErrors[keyof CancelJobErrors]
+
+export type CancelJobResponses = {
+  /**
+   * Success - Cancel request accepted (or job was already terminal)
+   */
+  200: JobCancelResponse
+}
+
+export type CancelJobResponse = CancelJobResponses[keyof CancelJobResponses]
 
 export type ViewFileData = {
   body?: never
@@ -3753,7 +3870,7 @@ export type GetRemoteAssetMetadataResponse =
 export type CreateAssetDownloadData = {
   body: {
     /**
-     * URL of the file to download (must be from huggingface.co or civitai.com)
+     * URL of the file to download (must be from huggingface.co, civitai.com, or civitai.red)
      */
     source_url: string
     /**
@@ -3825,16 +3942,16 @@ export type CreateAssetExportData = {
     /**
      * Strategy for naming files in the ZIP:
      * - group_by_job_id: Group assets by job ID as a parent directory (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4/ComfyUI_00001_.png")
-     * - group_by_job_time: Group assets by job execution time as parent directories
      * - preserve: Use original asset names, skip duplicates (first one wins)
      * - asset_id: Use the asset ID as the filename (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4.png")
+     * - group_by_job_time: Group by job creation timestamp (e.g., "2026-03-26T16-13-00/ComfyUI_00001_.png")
      *
      */
     naming_strategy?:
       | 'group_by_job_id'
-      | 'group_by_job_time'
       | 'preserve'
       | 'asset_id'
+      | 'group_by_job_time'
     /**
      * Optional per-job asset name filters. When provided for a job ID,
      * only assets whose name matches one of the specified names are included.
@@ -5028,6 +5145,9 @@ export type GetUserdataResponse =
 export type GetUserdataFilePublishData = {
   body?: never
   path: {
+    /**
+     * The workflow file path within the user's data directory (URL encoded if necessary).
+     */
     file: string
   }
   query?: never
@@ -5065,6 +5185,9 @@ export type GetUserdataFilePublishResponse =
 export type PostUserdataFilePublishData = {
   body: PublishWorkflowAssetsRequest
   path: {
+    /**
+     * The workflow file path within the user's data directory (URL encoded if necessary).
+     */
     file: string
   }
   query?: never
@@ -6256,6 +6379,50 @@ export type RevokeWorkspaceApiKeyResponses = {
 export type RevokeWorkspaceApiKeyResponse =
   RevokeWorkspaceApiKeyResponses[keyof RevokeWorkspaceApiKeyResponses]
 
+export type BulkRevokeWorkspaceMemberApiKeysData = {
+  body?: never
+  path: {
+    /**
+     * Firebase UID of the member whose keys to revoke (must be non-empty)
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/workspace/members/{user_id}/api-keys'
+}
+
+export type BulkRevokeWorkspaceMemberApiKeysErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not authorized (must be workspace owner)
+   */
+  403: ErrorResponse
+  /**
+   * Validation error (e.g. empty user_id)
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type BulkRevokeWorkspaceMemberApiKeysError =
+  BulkRevokeWorkspaceMemberApiKeysErrors[keyof BulkRevokeWorkspaceMemberApiKeysErrors]
+
+export type BulkRevokeWorkspaceMemberApiKeysResponses = {
+  /**
+   * Keys revoked successfully
+   */
+  200: BulkRevokeApiKeysResponse
+}
+
+export type BulkRevokeWorkspaceMemberApiKeysResponse =
+  BulkRevokeWorkspaceMemberApiKeysResponses[keyof BulkRevokeWorkspaceMemberApiKeysResponses]
+
 export type VerifyWorkspaceApiKeyData = {
   body: VerifyApiKeyRequest
   path?: never
@@ -6359,6 +6526,9 @@ export type SetReviewStatusResponse2 =
 export type UpdateHubWorkflowData = {
   body: UpdateHubWorkflowRequest
   path: {
+    /**
+     * The share ID of the hub workflow to update.
+     */
     share_id: string
   }
   query?: never
@@ -6591,6 +6761,39 @@ export type UpdateSubscriptionCacheResponses = {
 
 export type UpdateSubscriptionCacheResponse =
   UpdateSubscriptionCacheResponses[keyof UpdateSubscriptionCacheResponses]
+
+export type SyncApiKeyData = {
+  body: SyncApiKeyRequest
+  path?: never
+  query?: never
+  url: '/admin/api/keys/sync'
+}
+
+export type SyncApiKeyErrors = {
+  /**
+   * Malformed request or unsupported event
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type SyncApiKeyError = SyncApiKeyErrors[keyof SyncApiKeyErrors]
+
+export type SyncApiKeyResponses = {
+  /**
+   * Sync processed — see `result` field
+   */
+  200: SyncApiKeyResponse
+}
+
+export type SyncApiKeyResponse2 = SyncApiKeyResponses[keyof SyncApiKeyResponses]
 
 export type GetJobStatusData = {
   body?: never
@@ -7209,6 +7412,9 @@ export type CreateWorkflowResponse =
 export type DeleteWorkflowData = {
   body?: never
   path: {
+    /**
+     * The UUID of the workflow to delete.
+     */
     workflow_id: string
   }
   query?: never
@@ -7246,6 +7452,9 @@ export type DeleteWorkflowResponse =
 export type GetWorkflowData = {
   body?: never
   path: {
+    /**
+     * The UUID of the workflow.
+     */
     workflow_id: string
   }
   query?: never
@@ -7286,6 +7495,9 @@ export type GetWorkflowResponse =
 export type UpdateWorkflowData = {
   body: UpdateWorkflowRequest
   path: {
+    /**
+     * The UUID of the workflow to update.
+     */
     workflow_id: string
   }
   query?: never
@@ -7327,6 +7539,9 @@ export type UpdateWorkflowResponse =
 export type CreateWorkflowVersionData = {
   body: CreateWorkflowVersionRequest
   path: {
+    /**
+     * The UUID of the workflow to create a new version for.
+     */
     workflow_id: string
   }
   query?: never
@@ -7376,6 +7591,9 @@ export type CreateWorkflowVersionResponse =
 export type GetWorkflowContentData = {
   body?: never
   path: {
+    /**
+     * The UUID of the workflow whose content should be retrieved.
+     */
     workflow_id: string
   }
   query?: never
@@ -7417,6 +7635,9 @@ export type GetWorkflowContentResponse =
 export type ForkWorkflowData = {
   body: ForkWorkflowRequest
   path: {
+    /**
+     * The UUID of the source workflow to fork from.
+     */
     workflow_id: string
   }
   query?: never
@@ -7576,6 +7797,9 @@ export type CheckHubUsernameResponse =
 export type GetHubProfileByUsernameData = {
   body?: never
   path: {
+    /**
+     * The hub profile username.
+     */
     username: string
   }
   query?: never
@@ -7609,6 +7833,9 @@ export type GetHubProfileByUsernameResponse =
 export type UpdateHubProfileData = {
   body: UpdateHubProfileRequest
   path: {
+    /**
+     * The hub profile username to update.
+     */
     username: string
   }
   query?: never
@@ -7853,6 +8080,9 @@ export type ListHubWorkflowIndexResponse =
 export type DeleteHubWorkflowData = {
   body?: never
   path: {
+    /**
+     * The share ID of the hub workflow to unpublish.
+     */
     share_id: string
   }
   query?: never
@@ -7890,6 +8120,9 @@ export type DeleteHubWorkflowResponse =
 export type GetHubWorkflowData = {
   body?: never
   path: {
+    /**
+     * The share ID of the hub workflow.
+     */
     share_id: string
   }
   query?: never
@@ -7927,6 +8160,9 @@ export type GetHubWorkflowResponse =
 export type GetPublishedWorkflowData = {
   body?: never
   path: {
+    /**
+     * The share ID of the published workflow.
+     */
     share_id: string
   }
   query?: never
@@ -8263,6 +8499,9 @@ export type GetWebsocketErrors = {
 export type GetTemplateProxyData = {
   body?: never
   path: {
+    /**
+     * Template subpath within the versioned GCS bucket.
+     */
     path: string
   }
   query?: never
@@ -8343,6 +8582,9 @@ export type GetMonitoringTasksResponses = {
 export type DeleteMonitoringTasksSubpathData = {
   body?: never
   path: {
+    /**
+     * Asynqmon deletion subpath (e.g. delete task).
+     */
     path: string
   }
   query?: never
@@ -8370,6 +8612,9 @@ export type DeleteMonitoringTasksSubpathResponses = {
 export type GetMonitoringTasksSubpathData = {
   body?: never
   path: {
+    /**
+     * Asynqmon UI subpath (HTML page, SPA XHR, or static asset).
+     */
     path: string
   }
   query?: never
@@ -8397,6 +8642,9 @@ export type GetMonitoringTasksSubpathResponses = {
 export type PostMonitoringTasksSubpathData = {
   body?: never
   path: {
+    /**
+     * Asynqmon action subpath (e.g. retry, archive).
+     */
     path: string
   }
   query?: never
@@ -8424,6 +8672,9 @@ export type PostMonitoringTasksSubpathResponses = {
 export type GetPprofData = {
   body?: never
   path: {
+    /**
+     * pprof endpoint name (e.g. heap, goroutine, allocs, block, mutex, threadcreate).
+     */
     path: string
   }
   query?: never
@@ -8482,6 +8733,9 @@ export type PostPprofSymbolResponses = {
 export type GetStaticExtensionsData = {
   body?: never
   path: {
+    /**
+     * Extension file path relative to /static/extensions on disk.
+     */
     path: string
   }
   query?: never
@@ -8505,6 +8759,9 @@ export type GetStaticExtensionsResponses = {
 export type GetCustomNodeProxyData = {
   body?: never
   path: {
+    /**
+     * Custom node HTTP endpoint path being proxied to the CPU-backed worker.
+     */
     path: string
   }
   query?: never
@@ -8532,6 +8789,9 @@ export type GetCustomNodeProxyResponses = {
 export type PostCustomNodeProxyData = {
   body?: never
   path: {
+    /**
+     * Custom node HTTP endpoint path being proxied to the CPU-backed worker.
+     */
     path: string
   }
   query?: never
@@ -8554,4 +8814,160 @@ export type PostCustomNodeProxyResponses = {
    * Proxied response
    */
   200: unknown
+}
+
+export type GetLegacyPromptByIdData = {
+  body?: never
+  path: {
+    prompt_id: string
+  }
+  query?: never
+  url: '/api/prompt/{prompt_id}'
+}
+
+export type GetLegacyPromptByIdErrors = {
+  /**
+   * Not Found — use /api/jobs/{prompt_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyHistoryByIdData = {
+  body?: never
+  path: {
+    prompt_id: string
+  }
+  query?: never
+  url: '/api/history/{prompt_id}'
+}
+
+export type GetLegacyHistoryByIdErrors = {
+  /**
+   * Not Found — use /api/jobs/{prompt_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyJobByIdData = {
+  body?: never
+  path: {
+    job_id: string
+  }
+  query?: never
+  url: '/api/job/{job_id}'
+}
+
+export type GetLegacyJobByIdErrors = {
+  /**
+   * Not Found — use /api/jobs/{job_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyJobOutputsData = {
+  body?: never
+  path: {
+    job_id: string
+  }
+  query?: never
+  url: '/api/job/{job_id}/outputs'
+}
+
+export type GetLegacyJobOutputsErrors = {
+  /**
+   * Not Found — use /api/jobs/{job_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyModelsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/models'
+}
+
+export type GetLegacyModelsErrors = {
+  /**
+   * Not Found — use /api/experiment/models instead
+   */
+  404: unknown
+}
+
+export type GetLegacyModelsByFolderData = {
+  body?: never
+  path: {
+    folder: string
+  }
+  query?: never
+  url: '/api/models/{folder}'
+}
+
+export type GetLegacyModelsByFolderErrors = {
+  /**
+   * Not Found — use /api/experiment/models/{folder} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyObjectInfoByNodeClassData = {
+  body?: never
+  path: {
+    node_class: string
+  }
+  query?: never
+  url: '/api/object_info/{node_class}'
+}
+
+export type GetLegacyObjectInfoByNodeClassErrors = {
+  /**
+   * Not Found — use /api/object_info instead
+   */
+  404: unknown
+}
+
+export type GetLegacyUserdataV2Data = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v2/userdata'
+}
+
+export type GetLegacyUserdataV2Errors = {
+  /**
+   * Not Found — use /api/userdata instead
+   */
+  404: unknown
+}
+
+export type GetLegacyAssetContentData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/assets/{id}/content'
+}
+
+export type GetLegacyAssetContentErrors = {
+  /**
+   * Not Found — use /api/assets/download instead
+   */
+  404: unknown
+}
+
+export type GetLegacyViewMetadataData = {
+  body?: never
+  path: {
+    folder_name: string
+  }
+  query?: never
+  url: '/api/view_metadata/{folder_name}'
+}
+
+export type GetLegacyViewMetadataErrors = {
+  /**
+   * Not Found — use /api/experiment/models instead
+   */
+  404: unknown
 }

@@ -256,7 +256,8 @@ export const zImportPublishedAssetsResponse = z.object({
 })
 
 export const zImportPublishedAssetsRequest = z.object({
-  published_asset_ids: z.array(z.string())
+  published_asset_ids: z.array(z.string().min(1).max(64)).max(1000),
+  share_id: z.string().min(1).max(64)
 })
 
 export const zPublishedWorkflowDetail = z.object({
@@ -702,6 +703,16 @@ export const zJwksResponse = z.object({
   keys: z.array(zJwkKey)
 })
 
+export const zSyncApiKeyResponse = z.object({
+  result: z.enum(['revoked', 'already_revoked', 'no_op'])
+})
+
+export const zSyncApiKeyRequest = z.object({
+  event: z.enum(['delete']),
+  key_hash: z.string().regex(/^[0-9a-fA-F]{64}$/),
+  customer_id: z.string().min(1)
+})
+
 export const zVerifyApiKeyResponse = z.object({
   user_id: z.string(),
   email: z.string(),
@@ -717,6 +728,10 @@ export const zVerifyApiKeyResponse = z.object({
 
 export const zVerifyApiKeyRequest = z.object({
   api_key: z.string()
+})
+
+export const zBulkRevokeApiKeysResponse = z.object({
+  revoked_count: z.number().int().gte(0)
 })
 
 export const zWorkspaceApiKeyInfo = z.object({
@@ -925,6 +940,13 @@ export const zJobDetailResponse = z.object({
   workflow_id: z.string().optional(),
   execution_status: z.record(z.unknown()).optional(),
   execution_meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Response for POST /api/jobs/{job_id}/cancel. Returned on both fresh cancels and idempotent no-ops.
+ */
+export const zJobCancelResponse = z.object({
+  cancelled: z.boolean()
 })
 
 /**
@@ -1601,6 +1623,12 @@ export const zGetModelPreviewData = z.object({
  */
 export const zGetModelPreviewResponse = z.string()
 
+export const zGetLegacyHistoryData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
 export const zManageHistoryData = z.object({
   body: zHistoryManageRequest,
   path: z.never().optional(),
@@ -1669,6 +1697,19 @@ export const zGetJobDetailData = z.object({
  * Success - Job details retrieved
  */
 export const zGetJobDetailResponse = zJobDetailResponse
+
+export const zCancelJobData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string().uuid()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Cancel request accepted (or job was already terminal)
+ */
+export const zCancelJobResponse = zJobCancelResponse
 
 export const zViewFileData = z.object({
   body: z.never().optional(),
@@ -1818,7 +1859,7 @@ export const zCreateAssetExportData = z.object({
     job_ids: z.array(z.string()).optional(),
     asset_ids: z.array(z.string()).optional(),
     naming_strategy: z
-      .enum(['group_by_job_id', 'group_by_job_time', 'preserve', 'asset_id'])
+      .enum(['group_by_job_id', 'preserve', 'asset_id', 'group_by_job_time'])
       .optional(),
     job_asset_name_filters: z.record(z.array(z.string()).min(1)).optional()
   }),
@@ -2564,6 +2605,20 @@ export const zRevokeWorkspaceApiKeyData = z.object({
  */
 export const zRevokeWorkspaceApiKeyResponse = z.void()
 
+export const zBulkRevokeWorkspaceMemberApiKeysData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    user_id: z.string().min(1)
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Keys revoked successfully
+ */
+export const zBulkRevokeWorkspaceMemberApiKeysResponse =
+  zBulkRevokeApiKeysResponse
+
 export const zVerifyWorkspaceApiKeyData = z.object({
   body: zVerifyApiKeyRequest,
   path: z.never().optional(),
@@ -2669,6 +2724,17 @@ export const zUpdateSubscriptionCacheData = z.object({
 export const zUpdateSubscriptionCacheResponse = z.object({
   status: z.string().optional()
 })
+
+export const zSyncApiKeyData = z.object({
+  body: zSyncApiKeyRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Sync processed — see `result` field
+ */
+export const zSyncApiKeyResponse2 = zSyncApiKeyResponse
 
 export const zGetJobStatusData = z.object({
   body: z.never().optional(),
@@ -3334,6 +3400,82 @@ export const zPostCustomNodeProxyData = z.object({
   body: z.never().optional(),
   path: z.object({
     path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyPromptByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    prompt_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyHistoryByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    prompt_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyJobByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyJobOutputsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyModelsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetLegacyModelsByFolderData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    folder: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyObjectInfoByNodeClassData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    node_class: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyUserdataV2Data = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetLegacyAssetContentData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyViewMetadataData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    folder_name: z.string()
   }),
   query: z.never().optional()
 })
