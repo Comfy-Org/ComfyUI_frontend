@@ -132,9 +132,9 @@ Without ref counting, this query would require scanning all SubgraphNodes in the
 graph LR
     PS["PromotionStore
 (data)"] -->|"entries"| VM["PromotedWidgetViewManager
-(reconciliation)"] -->|"stable views"| PV["PromotedWidgetView
+(reconciliation)"] -->|"reconcile() / getOrCreate()"| PV["PromotedWidgetView
 (proxy widget)"]
-    PV -->|"resolveDeepest()"| CW["Concrete Widget
+    PV --> CW["Concrete Widget
 (leaf node)"]
     PV -->|"reads value"| WVS["WidgetValueStore"]
 ```

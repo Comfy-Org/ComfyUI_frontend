@@ -14,14 +14,14 @@ The three largest classes carry far too many responsibilities:
 | `LGraphNode`   | ~4,300 | Domain model, connectivity, serialization, rendering (slots, widgets, badges, title), layout, execution, property management |
 | `LGraph`       | ~3,100 | Container management, serialization, canvas notification, subgraph lifecycle, execution ordering, link deduplication         |
 
-`LGraphNode` alone has ~539 method/property definitions. A sampling of the concerns it mixes:
+`LGraphNode` alone has ~848 method/property definitions. A sampling of the concerns it mixes:
 
 | Concern       | Examples                                                                                                               |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Rendering     | `renderingColor` (line 328), `renderingBgColor` (line 335), `drawSlots()`, `drawWidgets()`, `measure(ctx)` (line 2074) |
-| Serialization | `serialize()` (line 943), `configure()` (line 831), `toJSON()` (line 1033)                                             |
+| Serialization | `serialize()` (line 943), `configure()` (line 831), `toString()` (line 1036)                                           |
 | Connectivity  | `connect()`, `connectSlots()`, `disconnectInput()`, `disconnectOutput()`                                               |
-| Execution     | `execute()` (line 1418), `triggerSlot()`                                                                               |
+| Execution     | `doExecute()` (line 1412), `triggerSlot()`                                                                             |
 | Layout        | `arrange()`, `_arrangeWidgets()`, `computeSize()`                                                                      |
 | State mgmt    | `setProperty()`, `onWidgetChanged()`, direct `graph._version++`                                                        |
 
@@ -68,7 +68,7 @@ Similarly, `LGraph` (lines 10-13) imports `useLayoutMutations`, `usePromotionSto
 
 ### Serialization Interleaved with Container Logic
 
-`LGraph.configure()` (line 2400) mixes deserialization, event dispatch, store clearing, and container state setup in a single 180-line method. A change to serialization format risks breaking container lifecycle, and vice versa.
+`LGraph.configure()` (line 2519) mixes deserialization, event dispatch, store clearing, and container state setup in a single ~240-line method. A change to serialization format risks breaking container lifecycle, and vice versa.
 
 ## 4. Inconsistent ID Systems
 
