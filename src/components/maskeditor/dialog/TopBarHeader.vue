@@ -211,15 +211,3 @@ const imageMenuItems = [
   }
 ]
 </script>
-
-<!--
-  TODO: The following style rule targets WorkflowActionsList internal elements.
-  Consider removing it and passing appropriate classes via WorkflowActionsList
-  props if the component exposes such an API.
--->
-<style scoped>
-:deep(.workflow-actions-list-item span) {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-</style>
