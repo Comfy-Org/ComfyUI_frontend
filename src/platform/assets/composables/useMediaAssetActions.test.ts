@@ -178,7 +178,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   return {
-    ...createMockAsset(overrides),
+    ...createMockAsset(),
     kind: 'image',
     src: 'https://example.com/default-preview.png',
     ...overrides
@@ -221,7 +221,6 @@ function mountMediaActions(asset?: AssetMeta) {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
-    vi.resetModules()
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     capturedFilenames.values = []
@@ -424,7 +423,7 @@ describe('useMediaAssetActions', () => {
     })
   })
 
-  describe('downloadAssets - job_asset_name_filters', () => {
+  describe('downloadAssets - cloud zip filters', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockCreateAssetExport.mockClear()

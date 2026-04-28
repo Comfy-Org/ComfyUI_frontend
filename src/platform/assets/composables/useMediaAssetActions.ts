@@ -66,11 +66,13 @@ export function useMediaAssetActions() {
 
   /**
    * Download one or more assets.
-   * In cloud mode with 2+ assets, creates a ZIP export via the backend.
-   * Falls back to individual downloads in OSS mode or for single assets.
+   * In cloud mode, creates a ZIP export via the backend when called with
+   * 2+ assets or with any asset whose job has `outputCount > 1`.
+   * Falls back to direct downloads in OSS mode and for single single-output
+   * assets. With no argument, uses the asset from `MediaAssetKey` context.
    */
   const downloadAssets = (assets?: AssetItem[]) => {
-    const targetAssets: AssetItem[] =
+    const targetAssets =
       assets ?? (mediaContext?.asset.value ? [mediaContext.asset.value] : [])
     if (targetAssets.length === 0) return
 
