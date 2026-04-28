@@ -4,23 +4,10 @@ import type { ComponentKey } from './componentKey'
 import type { EntityId } from './entityIds'
 
 /**
- * Storage strategy: AoS (per-entity reactive object reference) backed by
- * `reactive(Map)`. Component values are stored by reference; mutating a
- * value's fields propagates to all readers through Vue's reactive proxy.
- * `setComponent(id, key, ref)` is intentionally identity-preserving.
- *
- * NOT a sparse-set / archetype store. A future SoA migration would break
- * the shared-reactive-identity contract that BaseWidget._state and the
- * widgetValueStore facade rely on; do not refactor without revisiting
- * those consumers. See temp/plans/world-consolidation.md §C.
- */
-
-/**
- * Minimal ECS world surface for slice 1. Exposes plain
- * `getComponent`/`setComponent`/`removeComponent` plumbing only.
- *
- * Deferred (later slices): commands, transactions, undo, scope filtering,
- * iteration helpers beyond `entitiesWith`.
+ * `setComponent` is identity-preserving — `BaseWidget._state` and
+ * `widgetValueStore` rely on the shared reactive object reference.
+ * Storage changes that break this contract require revisiting both
+ * consumers first.
  */
 export interface World {
   getComponent<TData, TEntity extends EntityId>(

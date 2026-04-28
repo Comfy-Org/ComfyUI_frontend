@@ -1,10 +1,7 @@
 import type { World } from './world'
 import { createWorld } from './world'
 
-/**
- * Module-singleton `World` for the editor process. Tests can call
- * `resetWorldInstance()` to start clean.
- */
+/** Module-singleton `World` for the editor process. */
 let instance: World | undefined
 
 export function getWorld(): World {
