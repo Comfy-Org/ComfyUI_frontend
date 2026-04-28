@@ -1536,6 +1536,8 @@ audio.comfy-audio.empty-audio-widget {
   position: relative;
   transition: background-color 0.2s;
   border-radius: 8px;
+  border: none;
+  background: none;
 }
 .maskEditor_toolPanelContainerSelected svg {
   fill: var(--p-button-text-primary-color) !important;

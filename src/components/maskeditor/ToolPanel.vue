@@ -1,7 +1,7 @@
 <template>
   <div class="z-8888 flex h-full flex-col bg-comfy-menu-bg">
     <div class="flex flex-col">
-      <div
+      <button
         v-for="tool in allTools"
         :key="tool"
         v-tooltip.right="{
@@ -9,6 +9,8 @@
           showDelay: 300,
           hideDelay: 300
         }"
+        type="button"
+        :aria-label="tooltips[tool]"
         :class="
           cn(
             'maskEditor_toolPanelContainer',
@@ -21,7 +23,7 @@
           class="flex items-center justify-center"
           v-html="iconsHtml[tool]"
         ></div>
-      </div>
+      </button>
     </div>
 
     <div class="mt-auto flex flex-col items-center">
@@ -56,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
@@ -98,14 +100,13 @@ const onResetZoom = () => {
   store.resetZoom()
 }
 
-onMounted(() => {
-  if (colorInputRef.value) {
-    store.colorInput = colorInputRef.value
+watchEffect(() => {
+  if (currentTool.value === Tools.MaskPen) {
+    store.colorInput = null
+    return
   }
-})
 
-onBeforeUnmount(() => {
-  store.colorInput = null
+  store.colorInput = colorInputRef.value ?? null
 })
 </script>
 
