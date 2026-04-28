@@ -448,11 +448,33 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(state?.value).toBe(99)
   })
 
+  it('uses widget value fallback when scoped store entry is missing', () => {
+    const widget = createMockWidget({
+      name: 'seed',
+      nodeId: NODE_ID,
+      storeInstanceId: 'subgraph-1',
+      value: 1024
+    })
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: NODE_ID,
+      name: 'seed',
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
+
+    const [processed] = processWidgets([widget])
+
+    expect(processed.simplified.value).toBe(1024)
+  })
+
   it('uses storeInstanceId to resolve and update scoped widget state', () => {
     const widget = createMockWidget({
       name: 'seed',
       nodeId: NODE_ID,
-      storeInstanceId: 'subgraph-1'
+      storeInstanceId: 'subgraph-1',
+      value: 1024
     })
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(GRAPH_ID, {

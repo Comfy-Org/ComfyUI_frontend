@@ -177,7 +177,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   /**
    * Execution-time serialization follows the runtime getter: scoped promoted
-   * state first, then legacy shared/source fallbacks for unedited workflows.
+   * state first, then source/legacy fallbacks for unedited workflows.
    */
   serializeValue(): IBaseWidget['value'] {
     return this.getStoreBackedValue()
@@ -384,9 +384,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
       return isWidgetValue(scopedState.value) ? scopedState.value : undefined
     }
 
+    const resolved = this.resolveAtHost()
+    if (resolved) {
+      return isWidgetValue(resolved.widget.value)
+        ? resolved.widget.value
+        : undefined
+    }
+
     const state = this.getLegacyWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
-    return this.resolveAtHost()?.widget.value
+    return undefined
   }
 
   private getWidgetState() {

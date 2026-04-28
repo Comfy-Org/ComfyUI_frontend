@@ -268,7 +268,9 @@ export function computeProcessedWidgets({
 
     const { slotMetadata } = widget
 
-    const value = widgetState?.value as WidgetValue
+    const value = (
+      widgetState ? widgetState.value : widget.value
+    ) as WidgetValue
 
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled

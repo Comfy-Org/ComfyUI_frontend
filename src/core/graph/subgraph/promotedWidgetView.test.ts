@@ -317,6 +317,34 @@ describe(createPromotedWidgetView, () => {
     expect(fallbackWidget.value).toBe('initial')
   })
 
+  test('value prefers source widget over stale unscoped store fallback', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const fallbackWidget = fromPartial<IBaseWidget>({
+      name: 'myWidget',
+      type: 'text',
+      value: 'source-value',
+      options: {}
+    })
+    innerNode.widgets = [fallbackWidget]
+
+    useWidgetValueStore().registerWidget(subgraphNode.rootGraph.id, {
+      nodeId: String(innerNode.id),
+      name: 'myWidget',
+      type: 'text',
+      value: 'stale-shared-value',
+      options: {}
+    })
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myWidget'
+    )
+
+    expect(view.value).toBe('source-value')
+  })
+
   test('value setter creates scoped state when linked states are unavailable', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'string_a', type: '*' }]

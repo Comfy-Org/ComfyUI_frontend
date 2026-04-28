@@ -229,6 +229,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
     expect(widgetData).toBeDefined()
     expect(widgetData?.slotName).toBe('value')
+    expect(widgetData?.value).toBe('hello')
     expect(widgetData?.slotMetadata?.linked).toBe(true)
 
     // Disconnect
