@@ -1,19 +1,19 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
+import { getWorld } from '@/world/worldInstance'
 
-/**
- * Widget state is keyed by `nodeId:widgetName` without graph context.
- * This is intentional: nodes viewed at different subgraph depths share
- * the same widget state, enabling synchronized values across the hierarchy.
- */
-type WidgetKey = `${NodeId}:${string}`
+import type { WidgetValue } from './widgetComponents'
+import {
+  WidgetContainerComponent,
+  WidgetValueComponent
+} from './widgetComponents'
 
 /**
  * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
@@ -35,47 +35,36 @@ export interface WidgetState<
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const graphWidgetStates = ref(new Map<UUID, Map<WidgetKey, WidgetState>>())
-
-  function getWidgetStateMap(graphId: UUID): Map<WidgetKey, WidgetState> {
-    const widgetStates = graphWidgetStates.value.get(graphId)
-    if (widgetStates) return widgetStates
-
-    const nextWidgetStates = reactive(new Map<WidgetKey, WidgetState>())
-    graphWidgetStates.value.set(graphId, nextWidgetStates)
-    return nextWidgetStates
-  }
-
-  function makeKey(nodeId: NodeId, widgetName: string): WidgetKey {
-    return `${nodeId}:${widgetName}`
-  }
-
   function registerWidget<TValue = unknown>(
     graphId: UUID,
     state: WidgetState<TValue>
   ): WidgetState<TValue> {
-    const widgetStates = getWidgetStateMap(graphId)
-    const key = makeKey(state.nodeId, state.name)
-    widgetStates.set(key, state)
-    return widgetStates.get(key) as WidgetState<TValue>
+    const world = getWorld()
+    const branded = asGraphId(graphId)
+    const widgetId = widgetEntityId(branded, state.nodeId, state.name)
+    world.setComponent(widgetId, WidgetValueComponent, state as WidgetValue)
+
+    const ownerId = nodeEntityId(branded, state.nodeId)
+    const container = world.getComponent(ownerId, WidgetContainerComponent)
+    if (!container) {
+      world.setComponent(ownerId, WidgetContainerComponent, {
+        widgetIds: [widgetId]
+      })
+    } else if (!container.widgetIds.includes(widgetId)) {
+      container.widgetIds.push(widgetId)
+    }
+
+    return world.getComponent(
+      widgetId,
+      WidgetValueComponent
+    ) as WidgetState<TValue>
   }
 
   /** First registration wins; later `state` seeds are discarded. */
   function getOrRegister(graphId: UUID, state: WidgetState): WidgetState {
-    const widgetStates = getWidgetStateMap(graphId)
-    const key = makeKey(state.nodeId, state.name)
-    const existing = widgetStates.get(key)
+    const existing = getWidget(graphId, state.nodeId, state.name)
     if (existing) return existing
-    widgetStates.set(key, state)
-    return state
-  }
-
-  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
-    const widgetStates = getWidgetStateMap(graphId)
-    const prefix = `${nodeId}:`
-    return [...widgetStates]
-      .filter(([key]) => key.startsWith(prefix))
-      .map(([, state]) => state)
+    return registerWidget(graphId, state)
   }
 
   function getWidget(
@@ -83,11 +72,41 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     nodeId: NodeId,
     widgetName: string
   ): WidgetState | undefined {
-    return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+    const world = getWorld()
+    const widgetId = widgetEntityId(asGraphId(graphId), nodeId, widgetName)
+    return world.getComponent(widgetId, WidgetValueComponent) as
+      | WidgetState
+      | undefined
+  }
+
+  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
+    const world = getWorld()
+    const ownerId = nodeEntityId(asGraphId(graphId), nodeId)
+    const container = world.getComponent(ownerId, WidgetContainerComponent)
+    if (!container) return []
+    const widgets: WidgetState[] = []
+    for (const widgetId of container.widgetIds) {
+      const value = world.getComponent(widgetId, WidgetValueComponent)
+      if (value) widgets.push(value as WidgetState)
+    }
+    return widgets
   }
 
   function clearGraph(graphId: UUID): void {
-    graphWidgetStates.value.delete(graphId)
+    const world = getWorld()
+    // Branded IDs ARE strings at runtime; bare interpolation is intentional.
+    const widgetPrefix = `widget:${graphId}:`
+    const nodePrefix = `node:${graphId}:`
+    for (const widgetId of world.entitiesWith(WidgetValueComponent)) {
+      if ((widgetId as string).startsWith(widgetPrefix)) {
+        world.removeComponent(widgetId, WidgetValueComponent)
+      }
+    }
+    for (const nodeId of world.entitiesWith(WidgetContainerComponent)) {
+      if ((nodeId as string).startsWith(nodePrefix)) {
+        world.removeComponent(nodeId, WidgetContainerComponent)
+      }
+    }
   }
 
   return {
