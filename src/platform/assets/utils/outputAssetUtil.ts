@@ -59,12 +59,17 @@ function mapOutputsToAssetItems({
   excludeOutputKey
 }: OutputAssetMapOptions): AssetItem[] {
   const createdAtValue = createdAt ?? new Date().toISOString()
+  const seenOutputKeys = new Set<string>()
 
   return outputs.reduce<AssetItem[]>((items, output) => {
     const outputKey = getOutputKey(output)
     if (!output.filename || !outputKey || outputKey === excludeOutputKey) {
       return items
     }
+    if (seenOutputKeys.has(outputKey)) {
+      return items
+    }
+    seenOutputKeys.add(outputKey)
 
     items.push({
       id: `${jobId}-${outputKey}`,
