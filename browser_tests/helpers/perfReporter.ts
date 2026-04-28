@@ -56,7 +56,13 @@ export function writePerfReport(
   gitSha = process.env.GITHUB_SHA ?? 'local',
   branch = process.env.GITHUB_HEAD_REF ?? 'local'
 ) {
-  if (!readdirSync('test-results', { withFileTypes: true }).length) return
+  let entries
+  try {
+    entries = readdirSync('test-results', { withFileTypes: true })
+  } catch {
+    return
+  }
+  if (!entries.length) return
 
   let tempFiles: string[]
   try {

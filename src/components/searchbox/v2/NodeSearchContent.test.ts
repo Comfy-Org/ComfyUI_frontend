@@ -1,7 +1,6 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
@@ -9,33 +8,28 @@ import {
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
-      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
-      return undefined
-    }),
-    set: vi.fn()
-  }))
-}))
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 describe('NodeSearchContent', () => {
   beforeEach(() => {
     setupTestPinia()
     vi.restoreAllMocks()
+    const settings = useSettingStore()
+    settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
+    settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
   })
 
-  async function renderComponent(props = {}) {
+  function renderComponent(props = {}) {
     const user = userEvent.setup()
     const onAddNode = vi.fn()
     const onHoverNode = vi.fn()
-    const onRemoveFilter = vi.fn()
+    const onRemoveFilter =
+      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void>()
     const onAddFilter = vi.fn()
     render(NodeSearchContent, {
       props: {
@@ -63,18 +57,40 @@ describe('NodeSearchContent', () => {
         }
       }
     })
-    await nextTick()
     return { user, onAddNode, onHoverNode, onRemoveFilter, onAddFilter }
+  }
+
+  function mockBookmarks(
+    isBookmarked: boolean | ((node: ComfyNodeDefImpl) => boolean) = true,
+    bookmarkList: string[] = []
+  ) {
+    const bookmarkStore = useNodeBookmarkStore()
+    if (typeof isBookmarked === 'function') {
+      vi.spyOn(bookmarkStore, 'isBookmarked').mockImplementation(isBookmarked)
+    } else {
+      vi.spyOn(bookmarkStore, 'isBookmarked').mockReturnValue(isBookmarked)
+    }
+    vi.spyOn(bookmarkStore, 'bookmarks', 'get').mockReturnValue(bookmarkList)
+  }
+
+  function clickFilterBarButton(
+    user: ReturnType<typeof userEvent.setup>,
+    text: string
+  ) {
+    const btn = screen
+      .getAllByRole('button')
+      .find((b) => b.textContent?.trim() === text)
+    expect(btn, `Expected filter button "${text}"`).toBeDefined()
+    return user.click(btn!)
   }
 
   async function setupFavorites(
     nodes: Parameters<typeof createMockNodeDef>[0][]
   ) {
     useNodeDefStore().updateNodeDefs(nodes.map(createMockNodeDef))
-    vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(true)
-    const result = await renderComponent()
-    await result.user.click(screen.getByTestId('category-favorites'))
-    await nextTick()
+    mockBookmarks(true, ['placeholder'])
+    const result = renderComponent()
+    await clickFilterBarButton(result.user, 'Bookmarked')
     return result
   }
 
@@ -92,11 +108,13 @@ describe('NodeSearchContent', () => {
         useNodeDefStore().nodeDefsByName['FrequentNode']
       ])
 
-      await renderComponent()
+      renderComponent()
 
-      const items = screen.getAllByTestId('node-item')
-      expect(items).toHaveLength(1)
-      expect(items[0]).toHaveTextContent('Frequent Node')
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('Frequent Node')
+      })
     })
 
     it('should show only bookmarked nodes when Favorites is selected', async () => {
@@ -110,30 +128,31 @@ describe('NodeSearchContent', () => {
           display_name: 'Regular Node'
         })
       ])
-      vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockImplementation(
-        (node: ComfyNodeDefImpl) => node.name === 'BookmarkedNode'
+      mockBookmarks(
+        (node: ComfyNodeDefImpl) => node.name === 'BookmarkedNode',
+        ['BookmarkedNode']
       )
 
-      const { user } = await renderComponent()
-      await user.click(screen.getByTestId('category-favorites'))
-      await nextTick()
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Bookmarked')
 
-      const items = screen.getAllByTestId('node-item')
-      expect(items).toHaveLength(1)
-      expect(items[0]).toHaveTextContent('Bookmarked')
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('Bookmarked')
+      })
     })
 
     it('should show empty state when no bookmarks exist', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', display_name: 'Node One' })
       ])
-      vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(false)
+      mockBookmarks(false, ['placeholder'])
 
-      const { user } = await renderComponent()
-      await user.click(screen.getByTestId('category-favorites'))
-      await nextTick()
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Bookmarked')
 
-      expect(screen.getByText('No results')).toBeInTheDocument()
+      expect(await screen.findByText('No Results')).toBeInTheDocument()
     })
 
     it('should show only CustomNodes when Extensions is selected', async () => {
@@ -149,7 +168,6 @@ describe('NodeSearchContent', () => {
           python_module: 'custom_nodes.my_extension'
         })
       ])
-      await nextTick()
 
       expect(useNodeDefStore().nodeDefsByName['CoreNode'].nodeSource.type).toBe(
         NodeSourceType.Core
@@ -158,16 +176,17 @@ describe('NodeSearchContent', () => {
         useNodeDefStore().nodeDefsByName['CustomNode'].nodeSource.type
       ).toBe(NodeSourceType.CustomNodes)
 
-      const { user } = await renderComponent()
-      await user.click(screen.getByTestId('category-extensions'))
-      await nextTick()
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Extensions')
 
-      const items = screen.getAllByTestId('node-item')
-      expect(items).toHaveLength(1)
-      expect(items[0]).toHaveTextContent('Custom Node')
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('Custom Node')
+      })
     })
 
-    it('should hide Essentials category when no essential nodes exist', async () => {
+    it('should hide Essentials filter button when no essential nodes exist', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'RegularNode',
@@ -175,10 +194,11 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      await renderComponent()
-      expect(
-        screen.queryByTestId('category-essentials')
-      ).not.toBeInTheDocument()
+      renderComponent()
+      const texts = screen
+        .getAllByRole('button')
+        .map((b) => b.textContent?.trim())
+      expect(texts).not.toContain('Essentials')
     })
 
     it('should show only essential nodes when Essentials is selected', async () => {
@@ -193,15 +213,70 @@ describe('NodeSearchContent', () => {
           display_name: 'Regular Node'
         })
       ])
-      await nextTick()
 
-      const { user } = await renderComponent()
-      await user.click(screen.getByTestId('category-essentials'))
-      await nextTick()
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Essentials')
 
-      const items = screen.getAllByTestId('node-item')
-      expect(items).toHaveLength(1)
-      expect(items[0]).toHaveTextContent('Essential Node')
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('Essential Node')
+      })
+    })
+
+    it('should show only API nodes when Partner Nodes filter is active', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'ApiNode',
+          display_name: 'API Node',
+          api_node: true
+        }),
+        createMockNodeDef({
+          name: 'RegularNode',
+          display_name: 'Regular Node'
+        })
+      ])
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Partner')
+
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('API Node')
+      })
+    })
+
+    it('should toggle filter off when clicking the active filter button again', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CoreNode',
+          display_name: 'Core Node',
+          python_module: 'nodes'
+        }),
+        createMockNodeDef({
+          name: 'CustomNode',
+          display_name: 'Custom Node',
+          python_module: 'custom_nodes.my_extension'
+        })
+      ])
+
+      vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+        useNodeDefStore().nodeDefsByName['CoreNode'],
+        useNodeDefStore().nodeDefsByName['CustomNode']
+      ])
+
+      const { user } = renderComponent()
+
+      await clickFilterBarButton(user, 'Extensions')
+      await waitFor(() => {
+        expect(screen.getAllByTestId('node-item')).toHaveLength(1)
+      })
+
+      await clickFilterBarButton(user, 'Extensions')
+      await waitFor(() => {
+        expect(screen.getAllByTestId('node-item')).toHaveLength(2)
+      })
     })
 
     it('should include subcategory nodes when parent category is selected', async () => {
@@ -223,19 +298,20 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      const { user } = await renderComponent()
-      await user.click(screen.getByTestId('category-sampling'))
-      await nextTick()
+      const { user } = renderComponent()
+      await user.click(await screen.findByTestId('category-sampling'))
 
+      await waitFor(() => {
+        expect(screen.getAllByTestId('node-item')).toHaveLength(2)
+      })
       const texts = screen.getAllByTestId('node-item').map((i) => i.textContent)
-      expect(texts).toHaveLength(2)
       expect(texts).toContain('KSampler')
       expect(texts).toContain('KSampler Advanced')
     })
   })
 
   describe('search and category interaction', () => {
-    it('should override category to most-relevant when search query is active', async () => {
+    it('should search within selected category', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'KSampler',
@@ -249,35 +325,38 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      const { user } = await renderComponent()
-      await user.click(screen.getByTestId('category-sampling'))
-      await nextTick()
+      const { user } = renderComponent()
+      await user.click(await screen.findByTestId('category-sampling'))
 
-      expect(screen.getAllByTestId('node-item')).toHaveLength(1)
+      await waitFor(() => {
+        expect(screen.getAllByTestId('node-item')).toHaveLength(1)
+      })
 
       const input = screen.getByRole('combobox')
       await user.type(input, 'Load')
-      await nextTick()
 
-      const texts = screen.getAllByTestId('node-item').map((i) => i.textContent)
-      expect(texts.some((t) => t?.includes('Load Checkpoint'))).toBe(true)
+      await waitFor(() => {
+        const texts = screen
+          .queryAllByTestId('node-item')
+          .map((i) => i.textContent)
+        expect(texts.some((t) => t?.includes('Load Checkpoint'))).toBe(false)
+      })
     })
 
-    it('should clear search query when category changes', async () => {
+    it('should preserve search query when category changes', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'TestNode', display_name: 'Test Node' })
       ])
+      mockBookmarks(true, ['placeholder'])
 
-      const { user } = await renderComponent()
+      const { user } = renderComponent()
 
       const input = screen.getByRole('combobox')
       await user.type(input, 'test query')
-      await nextTick()
       expect(input).toHaveValue('test query')
 
-      await user.click(screen.getByTestId('category-favorites'))
-      await nextTick()
-      expect(input).toHaveValue('')
+      await clickFilterBarButton(user, 'Bookmarked')
+      expect(input).toHaveValue('test query')
     })
 
     it('should reset selected index when search query changes', async () => {
@@ -289,18 +368,20 @@ describe('NodeSearchContent', () => {
       const input = screen.getByRole('combobox')
       await user.click(input)
       await user.keyboard('{ArrowDown}')
-      await nextTick()
-      expect(screen.getAllByTestId('result-item')[1]).toHaveAttribute(
-        'aria-selected',
-        'true'
-      )
+      await waitFor(() => {
+        expect(screen.getAllByTestId('result-item')[1]).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      })
 
       await user.type(input, 'Node')
-      await nextTick()
-      expect(screen.getAllByTestId('result-item')[0]).toHaveAttribute(
-        'aria-selected',
-        'true'
-      )
+      await waitFor(() => {
+        expect(screen.getAllByTestId('result-item')[0]).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      })
     })
 
     it('should reset selected index when category changes', async () => {
@@ -311,17 +392,16 @@ describe('NodeSearchContent', () => {
 
       await user.click(screen.getByRole('combobox'))
       await user.keyboard('{ArrowDown}')
-      await nextTick()
 
-      await user.click(screen.getByTestId('category-most-relevant'))
-      await nextTick()
-      await user.click(screen.getByTestId('category-favorites'))
-      await nextTick()
+      await clickFilterBarButton(user, 'Bookmarked')
+      await clickFilterBarButton(user, 'Bookmarked')
 
-      expect(screen.getAllByTestId('result-item')[0]).toHaveAttribute(
-        'aria-selected',
-        'true'
-      )
+      await waitFor(() => {
+        expect(screen.getAllByTestId('result-item')[0]).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      })
     })
   })
 
@@ -342,24 +422,19 @@ describe('NodeSearchContent', () => {
       expect(selectedIndex()).toBe(0)
 
       await user.keyboard('{ArrowDown}')
-      await nextTick()
-      expect(selectedIndex()).toBe(1)
+      await waitFor(() => expect(selectedIndex()).toBe(1))
 
       await user.keyboard('{ArrowDown}')
-      await nextTick()
-      expect(selectedIndex()).toBe(2)
+      await waitFor(() => expect(selectedIndex()).toBe(2))
 
       await user.keyboard('{ArrowUp}')
-      await nextTick()
-      expect(selectedIndex()).toBe(1)
+      await waitFor(() => expect(selectedIndex()).toBe(1))
 
       // Navigate to first, then try going above — should clamp
       await user.keyboard('{ArrowUp}')
-      await nextTick()
-      expect(selectedIndex()).toBe(0)
+      await waitFor(() => expect(selectedIndex()).toBe(0))
 
       await user.keyboard('{ArrowUp}')
-      await nextTick()
       expect(selectedIndex()).toBe(0)
     })
 
@@ -370,7 +445,6 @@ describe('NodeSearchContent', () => {
 
       await user.click(screen.getByRole('combobox'))
       await user.keyboard('{Enter}')
-      await nextTick()
 
       expect(onAddNode).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'TestNode' })
@@ -385,9 +459,10 @@ describe('NodeSearchContent', () => {
 
       const results = screen.getAllByTestId('result-item')
       await user.hover(results[1])
-      await nextTick()
 
-      expect(results[1]).toHaveAttribute('aria-selected', 'true')
+      await waitFor(() => {
+        expect(results[1]).toHaveAttribute('aria-selected', 'true')
+      })
     })
 
     it('should add node on click', async () => {
@@ -396,11 +471,52 @@ describe('NodeSearchContent', () => {
       ])
 
       await user.click(screen.getAllByTestId('result-item')[0])
-      await nextTick()
 
       expect(onAddNode).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'TestNode' }),
         expect.any(PointerEvent)
+      )
+    })
+
+    it('should navigate results with ArrowDown/ArrowUp from a focused result item', async () => {
+      const { user } = await setupFavorites([
+        { name: 'Node1', display_name: 'Node One' },
+        { name: 'Node2', display_name: 'Node Two' },
+        { name: 'Node3', display_name: 'Node Three' }
+      ])
+
+      const results = screen.getAllByTestId('result-item')
+      results[0].focus()
+      await user.keyboard('{ArrowDown}')
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('result-item')[1]).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      })
+
+      screen.getAllByTestId('result-item')[1].focus()
+      await user.keyboard('{ArrowDown}')
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('result-item')[2]).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      })
+    })
+
+    it('should select node with Enter from a focused result item', async () => {
+      const { user, onAddNode } = await setupFavorites([
+        { name: 'TestNode', display_name: 'Test Node' }
+      ])
+
+      screen.getAllByTestId('result-item')[0].focus()
+      await user.keyboard('{Enter}')
+
+      expect(onAddNode).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'TestNode' })
       )
     })
   })
@@ -411,26 +527,27 @@ describe('NodeSearchContent', () => {
         { name: 'HoverNode', display_name: 'Hover Node' }
       ])
 
-      const calls = onHoverNode.mock.calls
-      expect(calls[calls.length - 1][0]).toMatchObject({
-        name: 'HoverNode'
+      await waitFor(() => {
+        const calls = onHoverNode.mock.calls
+        expect(calls[calls.length - 1][0]).toMatchObject({ name: 'HoverNode' })
       })
     })
 
     it('should emit null hoverNode when no results', async () => {
-      const { user, onHoverNode } = await renderComponent()
+      mockBookmarks(false, ['placeholder'])
+      const { user, onHoverNode } = renderComponent()
 
-      vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(false)
-      await user.click(screen.getByTestId('category-favorites'))
-      await nextTick()
+      await clickFilterBarButton(user, 'Bookmarked')
 
-      const calls = onHoverNode.mock.calls
-      expect(calls[calls.length - 1][0]).toBeNull()
+      await waitFor(() => {
+        const calls = onHoverNode.mock.calls
+        expect(calls[calls.length - 1][0]).toBeNull()
+      })
     })
   })
 
   describe('filter integration', () => {
-    it('should display active filters in the input area', async () => {
+    it('should display active filters in the input area', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'ImageNode',
@@ -439,7 +556,7 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      await renderComponent({
+      renderComponent({
         filters: [
           {
             filterDef: useNodeDefStore().nodeSearchService.inputTypeFilter,
@@ -474,13 +591,11 @@ describe('NodeSearchContent', () => {
 
     it('should emit removeFilter on backspace', async () => {
       const filters = createFilters(1)
-      const { user, onRemoveFilter } = await renderComponent({ filters })
+      const { user, onRemoveFilter } = renderComponent({ filters })
 
       await user.click(screen.getByRole('combobox'))
       await user.keyboard('{Backspace}')
-      await nextTick()
       await user.keyboard('{Backspace}')
-      await nextTick()
 
       expect(onRemoveFilter).toHaveBeenCalledTimes(1)
       expect(onRemoveFilter).toHaveBeenCalledWith(
@@ -489,247 +604,102 @@ describe('NodeSearchContent', () => {
     })
 
     it('should not interact with chips when no filters exist', async () => {
-      const { user, onRemoveFilter } = await renderComponent({ filters: [] })
+      const { user, onRemoveFilter } = renderComponent({ filters: [] })
 
       await user.click(screen.getByRole('combobox'))
       await user.keyboard('{Backspace}')
-      await nextTick()
 
       expect(onRemoveFilter).not.toHaveBeenCalled()
     })
 
     it('should remove chip when clicking its delete button', async () => {
       const filters = createFilters(1)
-      const { user, onRemoveFilter } = await renderComponent({ filters })
+      const { user, onRemoveFilter } = renderComponent({ filters })
 
       await user.click(screen.getByTestId('chip-delete'))
-      await nextTick()
 
       expect(onRemoveFilter).toHaveBeenCalledTimes(1)
       expect(onRemoveFilter).toHaveBeenCalledWith(
         expect.objectContaining({ value: 'IMAGE' })
       )
     })
-  })
 
-  describe('filter selection mode', () => {
-    function setupNodesWithTypes() {
+    it('should emit removeFilter for every filter in a group when cleared', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'ImageNode',
           display_name: 'Image Node',
-          input: { required: { image: ['IMAGE', {}] } },
-          output: ['IMAGE']
+          input: { required: { image: ['IMAGE', {}] } }
         }),
         createMockNodeDef({
           name: 'LatentNode',
           display_name: 'Latent Node',
-          input: { required: { latent: ['LATENT', {}] } },
-          output: ['LATENT']
-        }),
-        createMockNodeDef({
-          name: 'ModelNode',
-          display_name: 'Model Node',
-          input: { required: { model: ['MODEL', {}] } },
-          output: ['MODEL']
+          input: { required: { latent: ['LATENT', {}] } }
         })
       ])
-    }
+      const inputFilter = useNodeDefStore().nodeSearchService.inputTypeFilter
+      const filters = [
+        { filterDef: inputFilter, value: 'IMAGE' },
+        { filterDef: inputFilter, value: 'LATENT' }
+      ]
 
-    function findFilterBarButton(label: string) {
-      return screen.getAllByRole('button').find((b) => b.textContent === label)
-    }
+      const { user, onRemoveFilter } = renderComponent({ filters })
 
-    async function enterFilterMode(user: ReturnType<typeof userEvent.setup>) {
-      const btn = findFilterBarButton('Input')
-      expect(btn).toBeDefined()
-      await user.click(btn!)
-      await nextTick()
-    }
+      const inputBtn = screen.getByRole('button', { name: /Input/ })
+      await user.click(inputBtn)
 
-    function hasSidebar() {
-      return screen.queryByTestId('category-most-relevant') !== null
-    }
+      const clearBtn = await screen.findByRole('button', { name: 'Clear all' })
+      await user.click(clearBtn)
 
-    it('should enter filter mode when a filter chip is selected', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-
-      expect(hasSidebar()).toBe(true)
-
-      await enterFilterMode(user)
-
-      expect(hasSidebar()).toBe(false)
-      expect(screen.getAllByTestId('filter-option').length).toBeGreaterThan(0)
+      await waitFor(() => {
+        expect(onRemoveFilter).toHaveBeenCalledTimes(2)
+      })
+      const removedValues = onRemoveFilter.mock.calls.map(([f]) => f.value)
+      expect(removedValues).toEqual(expect.arrayContaining(['IMAGE', 'LATENT']))
     })
+  })
 
-    it('should show available filter options sorted alphabetically', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
-
-      const texts = screen.getAllByTestId('filter-option').map(
-        (o) =>
-          /* eslint-disable testing-library/no-node-access */
-          (o.querySelectorAll('span')[0] as HTMLElement)?.textContent
-            ?.replace(/^[•·]\s*/, '')
-            .trim() ?? ''
-        /* eslint-enable testing-library/no-node-access */
-      )
-      expect(texts).toContain('IMAGE')
-      expect(texts).toContain('LATENT')
-      expect(texts).toContain('MODEL')
-      expect(texts).toEqual([...texts].sort())
-    })
-
-    it('should filter options when typing in filter mode', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
-
-      await user.type(screen.getByRole('combobox'), 'IMAGE')
-      await nextTick()
-
-      const texts = screen.getAllByTestId('filter-option').map(
-        (o) =>
-          /* eslint-disable testing-library/no-node-access */
-          (o.querySelectorAll('span')[0] as HTMLElement)?.textContent
-            ?.replace(/^[•·]\s*/, '')
-            .trim() ?? ''
-        /* eslint-enable testing-library/no-node-access */
-      )
-      expect(texts).toContain('IMAGE')
-      expect(texts).not.toContain('MODEL')
-    })
-
-    it('should show no results when filter query has no matches', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
-
-      await user.type(screen.getByRole('combobox'), 'NONEXISTENT_TYPE')
-      await nextTick()
-
-      expect(screen.getByText('No results')).toBeInTheDocument()
-    })
-
-    it('should emit addFilter when a filter option is clicked', async () => {
-      setupNodesWithTypes()
-      const { user, onAddFilter } = await renderComponent()
-      await enterFilterMode(user)
-
-      const imageOption = screen
-        .getAllByTestId('filter-option')
-        .find((o) => o.textContent?.includes('IMAGE'))
-      await user.click(imageOption!)
-      await nextTick()
-
-      expect(onAddFilter).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filterDef: expect.objectContaining({ id: 'input' }),
-          value: 'IMAGE'
+  describe('rootFilter + category + search combination', () => {
+    it('should intersect rootFilter, selected category, and search query', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CustomSampler',
+          display_name: 'Custom Sampler',
+          category: 'sampling',
+          python_module: 'custom_nodes.my_extension'
+        }),
+        createMockNodeDef({
+          name: 'CustomLoader',
+          display_name: 'Custom Loader',
+          category: 'loaders',
+          python_module: 'custom_nodes.my_extension'
+        }),
+        createMockNodeDef({
+          name: 'CoreSampler',
+          display_name: 'Core Sampler',
+          category: 'sampling',
+          python_module: 'nodes'
         })
-      )
-    })
+      ])
 
-    it('should exit filter mode after applying a filter', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
+      const { user } = renderComponent()
 
-      await user.click(screen.getAllByTestId('filter-option')[0])
-      await nextTick()
-      await nextTick()
-
-      expect(hasSidebar()).toBe(true)
-    })
-
-    it('should emit addFilter when Enter is pressed on selected option', async () => {
-      setupNodesWithTypes()
-      const { user, onAddFilter } = await renderComponent()
-      await enterFilterMode(user)
-
-      await user.click(screen.getByRole('combobox'))
-      await user.keyboard('{Enter}')
-      await nextTick()
-
-      expect(onAddFilter).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filterDef: expect.objectContaining({ id: 'input' }),
-          value: 'IMAGE'
-        })
-      )
-    })
-
-    it('should navigate filter options with ArrowDown/ArrowUp', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
-
-      await user.click(screen.getByRole('combobox'))
-
-      expect(screen.getAllByTestId('filter-option')[0]).toHaveAttribute(
-        'aria-selected',
-        'true'
-      )
-
-      await user.keyboard('{ArrowDown}')
-      await nextTick()
-      expect(screen.getAllByTestId('filter-option')[1]).toHaveAttribute(
-        'aria-selected',
-        'true'
-      )
-
-      await user.keyboard('{ArrowUp}')
-      await nextTick()
-      expect(screen.getAllByTestId('filter-option')[0]).toHaveAttribute(
-        'aria-selected',
-        'true'
-      )
-    })
-
-    it('should toggle filter mode off when same chip is clicked again', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
-
-      await user.click(findFilterBarButton('Input')!)
-      await nextTick()
-      await nextTick()
-
-      expect(hasSidebar()).toBe(true)
-    })
-
-    it('should reset filter query when re-entering filter mode', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
+      await clickFilterBarButton(user, 'Extensions')
+      const samplingBtn = await screen.findByTestId('category-custom/sampling')
+      await user.click(samplingBtn)
 
       const input = screen.getByRole('combobox')
-      await user.type(input, 'IMAGE')
-      await nextTick()
+      await user.type(input, 'Custom')
 
-      await user.click(findFilterBarButton('Input')!)
-      await nextTick()
-      await nextTick()
-
-      await enterFilterMode(user)
-
-      expect(input).toHaveValue('')
-    })
-
-    it('should exit filter mode when cancel button is clicked', async () => {
-      setupNodesWithTypes()
-      const { user } = await renderComponent()
-      await enterFilterMode(user)
-
-      expect(hasSidebar()).toBe(false)
-
-      await user.click(screen.getByTestId('cancel-filter'))
-      await nextTick()
-      await nextTick()
-
-      expect(hasSidebar()).toBe(true)
+      await waitFor(() => {
+        expect(screen.queryAllByTestId('node-item')).toHaveLength(1)
+      })
+      const texts = screen
+        .queryAllByTestId('node-item')
+        .map((i) => i.textContent)
+      expect(texts).toContain('Custom Sampler')
+      expect(texts).not.toContain('Core Sampler')
+      expect(texts).not.toContain('Custom Loader')
     })
   })
 })

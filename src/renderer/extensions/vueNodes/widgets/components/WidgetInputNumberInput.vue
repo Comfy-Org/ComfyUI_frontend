@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

@@ -1,5 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
-/* eslint-disable vue/no-reserved-component-names */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -101,7 +99,7 @@ const WidgetBoundingBoxStub = defineComponent({
     modelValue: { type: Object, default: () => ({}) },
     disabled: { type: Boolean, default: false }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
+
   emits: ['update:modelValue'],
   template: `<div data-testid="bbox-child"
     :data-disabled="String(disabled)"

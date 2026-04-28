@@ -11,7 +11,7 @@ const {
 </script>
 
 <template>
-  <div class="font-formula-condensed flex items-stretch font-semibold">
+  <div class="font-formula-narrow flex items-stretch font-semibold">
     <img
       src="/icons/node-left.svg"
       alt=""

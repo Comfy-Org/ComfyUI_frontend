@@ -171,7 +171,7 @@ class NodeSlotReference {
   }
 }
 
-class NodeWidgetReference {
+export class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference
@@ -370,6 +370,25 @@ export class NodeReference {
   async getWidget(index: number) {
     return new NodeWidgetReference(index, this)
   }
+  async getWidgetByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, widgetName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const widgetIndex =
+          node.widgets?.findIndex((widget) => widget.name === widgetName) ?? -1
+        if (widgetIndex < 0) {
+          throw new Error(`Widget "${widgetName}" not found on node ${id}`)
+        }
+
+        return widgetIndex
+      },
+      [this.id, name] as const
+    )
+
+    return new NodeWidgetReference(index, this)
+  }
   async click(
     position: 'title' | 'collapse',
     options?: {
@@ -503,11 +522,15 @@ export class NodeReference {
       y: nodePos.y - titleHeight / 2
     }
 
-    const checkIsInSubgraph = async () => {
-      return this.comfyPage.page.evaluate(() => {
+    const graphIdBefore = await this.comfyPage.page.evaluate(
+      () => window.app!.canvas.graph?.id ?? null
+    )
+
+    const checkEnteredNewSubgraph = async () => {
+      return this.comfyPage.page.evaluate((prevId) => {
         const graph = window.app!.canvas.graph
-        return !!graph && 'inputNode' in graph
-      })
+        return !!graph && 'inputNode' in graph && graph.id !== prevId
+      }, graphIdBefore)
     }
 
     await expect(async () => {
@@ -516,7 +539,7 @@ export class NodeReference {
 
       await this.comfyPage.canvasOps.mouseClickAt(subgraphButtonPos)
 
-      if (await checkIsInSubgraph()) return
+      if (await checkEnteredNewSubgraph()) return
 
       for (const position of clickPositions) {
         // Clear any selection first
@@ -525,7 +548,7 @@ export class NodeReference {
         // Double-click to enter subgraph
         await this.comfyPage.canvasOps.mouseDblclickAt(position)
 
-        if (await checkIsInSubgraph()) return
+        if (await checkEnteredNewSubgraph()) return
       }
       throw new Error('Not in subgraph yet')
     }).toPass({ timeout: 5000, intervals: [100, 200, 500] })

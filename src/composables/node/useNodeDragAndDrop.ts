@@ -47,17 +47,26 @@ export const useNodeDragAndDrop = <T>(
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
-  const installedDragDrop = async function (e: DragEvent) {
+  const installedDragDrop = async function (e: DragEvent, claimEvent = false) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
     if (files.length) {
+      if (claimEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
       await onDrop(files)
       return true
     }
 
     const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
     if (!uri || uri.origin !== location.origin) return false
+
+    if (claimEvent) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
 
     try {
       const resp = await fetch(uri)

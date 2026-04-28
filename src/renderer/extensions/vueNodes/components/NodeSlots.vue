@@ -9,7 +9,7 @@
     >
       <InputSlot
         v-for="(input, index) in filteredInputs"
-        :key="`input-${input.name}`"
+        :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
@@ -23,7 +23,7 @@
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
-        :key="`output-${output.name}`"
+        :key="`output-${output.name}-${index}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
@@ -44,7 +44,7 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
