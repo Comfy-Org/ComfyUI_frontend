@@ -39,9 +39,8 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
       new MouseEvent('click', {
         clientX: x.value,
         clientY: y.value,
-        // @ts-expect-error layerY is a nonstandard property
         layerY: y.value
-      }) as unknown as CanvasPointerEvent
+      } as MouseEventInit & { layerY: number }) as unknown as CanvasPointerEvent
     )
   }
 

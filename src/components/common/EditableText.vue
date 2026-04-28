@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { nextTick, ref, watch } from 'vue'
+import { type ComponentPublicInstance, nextTick, ref, watch } from 'vue'
 
 const {
   modelValue,
@@ -48,11 +48,10 @@ const {
 
 const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
-const inputRef = ref<InstanceType<typeof InputText> | undefined>()
+const inputRef = ref<ComponentPublicInstance | undefined>()
 const isCanceling = ref(false)
 
 const blurInputElement = () => {
-  // @ts-expect-error - $el is an internal property of the InputText component
   inputRef.value?.$el.blur()
 }
 const finishEditing = () => {
@@ -84,7 +83,6 @@ watch(
           : inputValue.value
         const start = 0
         const end = fileName.length
-        // @ts-expect-error - $el is an internal property of the InputText component
         const inputElement = inputRef.value.$el
         inputElement.setSelectionRange?.(start, end)
       })

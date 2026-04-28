@@ -129,12 +129,11 @@ export const graphToPrompt = async (
 
       inputs[input.name] = [
         String(resolvedInput.origin_id),
-        // @ts-expect-error link.origin_slot is already number.
-        parseInt(resolvedInput.origin_slot)
+        resolvedInput.origin_slot
       ]
     }
 
-    output[String(node.id)] = {
+
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.

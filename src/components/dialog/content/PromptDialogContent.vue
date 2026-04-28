@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
-import { ref } from 'vue'
+import { type ComponentPublicInstance, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -39,10 +39,9 @@ const onConfirm = () => {
   useDialogStore().closeDialog()
 }
 
-const inputRef = ref<InstanceType<typeof InputText> | undefined>()
+const inputRef = ref<ComponentPublicInstance | undefined>()
 const selectAllText = () => {
   if (!inputRef.value) return
-  // @ts-expect-error - $el is an internal property of the InputText component
   const inputElement = inputRef.value.$el
   inputElement.setSelectionRange(0, inputElement.value.length)
 }
