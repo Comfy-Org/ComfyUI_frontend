@@ -9,6 +9,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 type ProgressHandler = (data: DownloadProgressUpdate) => void
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+
+  return { promise, resolve, reject }
+}
+
 const progressHandler = vi.hoisted(() => {
   const state: { current: ProgressHandler | null } = { current: null }
   return state
@@ -184,6 +195,63 @@ describe('useElectronDownloadStore', () => {
       ])
 
       const store = await loadStore()
+      await store.initialize()
+
+      expect(store.downloads).toHaveLength(1)
+      expect(downloadManager.onDownloadProgress).toHaveBeenCalledTimes(1)
+    })
+
+    it('shares in-flight initialization across repeated initialize calls', async () => {
+      const hydration = createDeferred<DownloadState[]>()
+      downloadManager.getAllDownloads.mockReturnValue(hydration.promise)
+
+      const store = useElectronDownloadStore()
+      const firstInitialize = store.initialize()
+      const secondInitialize = store.initialize()
+
+      expect(downloadManager.getAllDownloads).toHaveBeenCalledTimes(1)
+
+      hydration.resolve([
+        {
+          url: 'https://civitai.com/api/download/models/21',
+          filename: 'persisted.safetensors',
+          state: DownloadStatus.IN_PROGRESS,
+          receivedBytes: 25,
+          totalBytes: 100,
+          isPaused: false
+        }
+      ])
+
+      await Promise.all([firstInitialize, secondInitialize])
+
+      expect(store.downloads).toHaveLength(1)
+      expect(downloadManager.onDownloadProgress).toHaveBeenCalledTimes(1)
+    })
+
+    it('allows initialization retry after Electron bridge failure', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      downloadManager.getAllDownloads
+        .mockRejectedValueOnce(new Error('bridge down'))
+        .mockResolvedValueOnce([
+          {
+            url: 'https://civitai.com/api/download/models/22',
+            filename: 'persisted.safetensors',
+            state: DownloadStatus.IN_PROGRESS,
+            receivedBytes: 25,
+            totalBytes: 100,
+            isPaused: false
+          }
+        ])
+
+      const store = useElectronDownloadStore()
+      await expect(store.initialize()).rejects.toThrow('bridge down')
+      await Promise.resolve()
+
+      expect(warn).toHaveBeenCalledWith(
+        'Failed to initialize Electron downloads',
+        expect.any(Error)
+      )
+
       await store.initialize()
 
       expect(store.downloads).toHaveLength(1)

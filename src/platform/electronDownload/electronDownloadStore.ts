@@ -21,6 +21,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
   const DownloadManager = isDesktop ? electronAPI().DownloadManager : undefined
   let initialized = false
+  let initializePromise: Promise<void> | null = null
 
   // Electron reports user-initiated cancels as status=ERROR (not CANCELLED), so
   // we remember URLs whose cancel we dispatched and translate the next error
@@ -43,50 +44,68 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   const initialize = async () => {
     if (!isDesktop || !DownloadManager || initialized) return
-    initialized = true
 
-    const allDownloads = await DownloadManager.getAllDownloads()
-
-    for (const download of allDownloads) {
-      if (!findByUrl(download.url)) {
-        downloads.value.push(normalizeDownloadState(download))
-      }
+    if (initializePromise) {
+      return initializePromise
     }
 
-    DownloadManager.onDownloadProgress((data) => {
-      // Translate the error event that Electron emits on user cancel into
-      // CANCELLED so the UI can visually differentiate intentional stops.
-      const userCancelled =
-        userCancelledUrls.has(data.url) && data.status === DownloadStatus.ERROR
+    initializePromise = (async () => {
+      const allDownloads = await DownloadManager.getAllDownloads()
 
-      let download = findByUrl(data.url)
-      if (!download) {
-        downloads.value.push(data)
-        download = data
+      for (const download of allDownloads) {
+        if (!findByUrl(download.url)) {
+          downloads.value.push(normalizeDownloadState(download))
+        }
       }
 
-      download.progress = data.progress
-      download.status = userCancelled ? DownloadStatus.CANCELLED : data.status
-      download.filename = data.filename
-      download.savePath = data.savePath
-      download.message = data.message
+      DownloadManager.onDownloadProgress((data) => {
+        // Translate the error event that Electron emits on user cancel into
+        // CANCELLED so the UI can visually differentiate intentional stops.
+        const userCancelled =
+          userCancelledUrls.has(data.url) &&
+          data.status === DownloadStatus.ERROR
 
-      // The cancel flag is single-shot: consume it on the first matching
-      // ERROR event so later genuine ERRORs for the same URL aren't silently
-      // masked as CANCELLED.
-      if (userCancelled) {
-        userCancelledUrls.delete(data.url)
+        let download = findByUrl(data.url)
+        if (!download) {
+          downloads.value.push(data)
+          download = data
+        }
+
+        download.progress = data.progress
+        download.status = userCancelled ? DownloadStatus.CANCELLED : data.status
+        download.filename = data.filename
+        download.savePath = data.savePath
+        download.message = data.message
+
+        // The cancel flag is single-shot: consume it on the first matching
+        // ERROR event so later genuine ERRORs for the same URL aren't silently
+        // masked as CANCELLED.
+        if (userCancelled) {
+          userCancelledUrls.delete(data.url)
+        }
+        if (
+          data.status === DownloadStatus.COMPLETED ||
+          data.status === DownloadStatus.CANCELLED
+        ) {
+          userCancelledUrls.delete(data.url)
+        }
+      })
+
+      initialized = true
+    })()
+
+    try {
+      await initializePromise
+    } finally {
+      if (!initialized) {
+        initializePromise = null
       }
-      if (
-        data.status === DownloadStatus.COMPLETED ||
-        data.status === DownloadStatus.CANCELLED
-      ) {
-        userCancelledUrls.delete(data.url)
-      }
-    })
+    }
   }
 
-  void initialize()
+  void initialize().catch((error) => {
+    console.warn('Failed to initialize Electron downloads', error)
+  })
 
   const start = async ({
     url,
