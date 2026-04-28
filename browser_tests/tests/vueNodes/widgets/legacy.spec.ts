@@ -15,20 +15,36 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     await comfyPage.appMode.enterAppModeWithInputs([['10', 'legacy_widget']])
   })
 
-  const getWidth = () => comfyPage.page.evaluate(
-    () => graph!.getNodeById(10)!.widgets![0].width ?? 0
-  )
-  console.error(await comfyPage.page.evaluate(() => graph.nodes.map(n => n.serialize())))
-  const initialWidth = await getWidth()
-  expect(initialWidth).toBeGreaterThan(0)
+  const getWidth = () =>
+    comfyPage.page.evaluate(
+      () => graph!.getNodeById(10)!.widgets![0].width ?? 0
+    )
 
-  const gutter = comfyPage.page.getByRole('separator')
+  await test.step('Mouse clicks resolve to button regions', async () => {
+    const legacyWidget = comfyPage.appMode.linearWidgets.locator('canvas')
+    const { width, height } = (await legacyWidget.boundingBox())!
 
-  await expect(gutter).toBeVisible()
-  await comfyMouse.resizeByDragging(gutter, { x: -200 })
-  await expect.poll(getWidth).toBeGreaterThan(initialWidth)
-  const intermediateWidth = await getWidth()
+    const nodeRef = await comfyPage.nodeOps.getNodeRefById(10)
+    const legacyWidgetRef = await nodeRef.getWidget(0)
+    expect(await legacyWidgetRef.getValue()).toBe(0)
+    await legacyWidget.click({ position: { x: 20, y: height / 2 } })
+    await expect.poll(() => legacyWidgetRef.getValue()).toBe(-1)
+    await legacyWidget.click({ position: { x: width - 20, y: height / 2 } })
+    await expect.poll(() => legacyWidgetRef.getValue()).toBe(0)
+  })
 
-  await comfyMouse.resizeByDragging(gutter, { x: 100 })
-  await expect.poll(getWidth).toBeLessThan(intermediateWidth)
+  await test.step('Resize to update width', async () => {
+    const initialWidth = await getWidth()
+    expect(initialWidth).toBeGreaterThan(0)
+
+    const gutter = comfyPage.page.getByRole('separator')
+
+    await expect(gutter).toBeVisible()
+    await comfyMouse.resizeByDragging(gutter, { x: -200 })
+    await expect.poll(getWidth).toBeGreaterThan(initialWidth)
+    const intermediateWidth = await getWidth()
+
+    await comfyMouse.resizeByDragging(gutter, { x: 100 })
+    await expect.poll(getWidth).toBeLessThan(intermediateWidth)
+  })
 })

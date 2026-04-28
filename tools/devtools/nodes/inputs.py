@@ -306,7 +306,7 @@ class NodeWithLegacyWidget:
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": { "legacy_widget": ("STRING", { "widgetType":  "DEVTOOLSLEGACYWIDGET" }) }
+            "required": { "legacy_widget": ("INT", { "widgetType":  "DEVTOOLSLEGACYWIDGET" }) }
         }
 
     RETURN_TYPES = ()
