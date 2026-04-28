@@ -50,6 +50,14 @@ export function getOutputKey({
   return `${nodeId}-${subfolder}-${filename}`
 }
 
+/**
+ * Maps a job's outputs to AssetItems with synthetic ids derived from the
+ * composite `<nodeId>-<subfolder>-<filename>` key. Records that share a
+ * composite key are dropped after the first one so each rendered row keeps
+ * a unique `:key` in VirtualGrid; without this, colliding ids cause Vue to
+ * reuse one DOM node for many rows and visibly duplicate one asset on
+ * scroll (FE-297).
+ */
 function mapOutputsToAssetItems({
   jobId,
   outputs,

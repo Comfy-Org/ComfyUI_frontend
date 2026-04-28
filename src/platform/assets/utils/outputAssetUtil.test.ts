@@ -223,16 +223,14 @@ describe('resolveOutputAssetItems', () => {
     expect(results[0].display_name).toBeUndefined()
   })
 
+  /**
+   * Regression for FE-297. When two output records share the composite
+   * `<nodeId>-<subfolder>-<filename>` key, the synthetic AssetItem ids
+   * collide, the keyed v-for in VirtualGrid reuses one DOM node for the
+   * colliding rows, and the asset visibly duplicates while scrolling. A
+   * resolved job's asset list must contain each composite key at most once.
+   */
   it('FE-297: deduplicates outputs that share the same composite output key', async () => {
-    // Regression for FE-297: cloud media asset panel duplicates one asset
-    // while scrolling expanded large jobs.
-    //
-    // When the backend returns two output records that resolve to the same
-    // composite outputKey (`<nodeId>-<subfolder>-<filename>`), the synthetic
-    // AssetItem ids collide, Vue's keyed v-for in VirtualGrid reuses a single
-    // DOM node for the colliding rows, and the same asset visibly replaces
-    // distinct neighbours as the list scrolls. Defensive contract: a single
-    // job's resolved asset list must contain each composite key at most once.
     const first = createOutput({
       filename: 'ComfyUI_00001_.png',
       nodeId: '9',
