@@ -7,7 +7,6 @@
  * default media, `body-actions` (hover toolbar), `body-overlay`
  * (status UI like progress + cancel).
  */
-import { useEventListener } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -15,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useAppModeStore } from '@/stores/appModeStore'
 
+import { usePointerDrag } from './panels/usePointerDrag'
 import PanelHeader from './PanelHeader.vue'
 
 const { t } = useI18n()
@@ -67,7 +67,6 @@ const snap = (v: number) => Math.round(v / GRID) * GRID
 
 const wx = ref(0)
 const wy = ref(0)
-const dragging = ref(false)
 
 onMounted(() => {
   if (initialPosition) {
@@ -94,41 +93,36 @@ watch(
 
 let dragStart: { px: number; py: number; bx: number; by: number } | null = null
 
-function handleHeaderPointerDown(e: PointerEvent) {
-  if (e.button !== 0) return
-  emit('promote')
-  if (maximized.value) return
-  // Stop bubbling so LayoutView's pan handler doesn't also fire.
-  e.stopPropagation()
-  e.preventDefault()
-  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  dragStart = { px: e.clientX, py: e.clientY, bx: wx.value, by: wy.value }
-  dragging.value = true
-}
-
-useEventListener(window, 'pointermove', (e: PointerEvent) => {
-  if (!dragStart) return
-  // Divide by scale so the cursor stays stuck to the header at any
-  // zoom (pointer is screen px; window position is workspace px).
-  // Snap during the drag (not just on release) so the window steps
-  // visibly in GRID increments — matches the chrome's gutter between
-  // buttons, so adjacent windows can be aligned cleanly by eye.
-  const s = viewportScale.value || 1
-  wx.value = snap(dragStart.bx + (e.clientX - dragStart.px) / s)
-  wy.value = snap(dragStart.by + (e.clientY - dragStart.py) / s)
-})
-
-function endDrag() {
-  if (dragStart) {
-    wx.value = snap(wx.value)
-    wy.value = snap(wy.value)
-    emit('update:position', { x: wx.value, y: wy.value })
+const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
+  {
+    stopPropagation: true,
+    onStart: (e) => {
+      if (e.button !== 0) return false
+      // Promote runs even when maximized so clicking a maximized
+      // window still brings it to front; only the drag is gated.
+      emit('promote')
+      if (maximized.value) return false
+      dragStart = { px: e.clientX, py: e.clientY, bx: wx.value, by: wy.value }
+    },
+    onMove: (e) => {
+      if (!dragStart) return
+      // Divide by scale so the cursor stays stuck to the header at
+      // any zoom (pointer is screen px; window position is workspace
+      // px). Snap during the drag so the window steps visibly in
+      // GRID increments — matches the chrome's gutter between
+      // buttons, so adjacent windows can be aligned by eye.
+      const s = viewportScale.value || 1
+      wx.value = snap(dragStart.bx + (e.clientX - dragStart.px) / s)
+      wy.value = snap(dragStart.by + (e.clientY - dragStart.py) / s)
+    },
+    onCommit: () => {
+      emit('update:position', { x: wx.value, y: wy.value })
+    },
+    onReset: () => {
+      dragStart = null
+    }
   }
-  dragStart = null
-  dragging.value = false
-}
-useEventListener(window, 'pointerup', endDrag)
-useEventListener(window, 'pointercancel', endDrag)
+)
 
 // Maximize / Restore is OutputWindow-owned and merged with the
 // parent's menuEntries so the ellipsis is one menu, not two.
