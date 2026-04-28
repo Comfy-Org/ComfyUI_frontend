@@ -6,6 +6,10 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  normalizePendingWarnings,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import {
   ComfyWorkflow,
@@ -141,7 +145,8 @@ export const useWorkflowService = () => {
 
     if (isSelfOverwrite) {
       workflow.changeTracker?.prepareForSave()
-      await saveWorkflow(workflow)
+      // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
+      await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
@@ -395,22 +400,11 @@ export const useWorkflowService = () => {
       const modelCandidates = useMissingModelStore().missingModelCandidates
       const mediaCandidates = useMissingMediaStore().missingMediaCandidates
       const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
-      activeWorkflow.pendingWarnings = {
+      updatePendingWarnings(activeWorkflow, {
         missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
-        missingModelCandidates: modelCandidates?.length
-          ? modelCandidates
-          : undefined,
-        missingMediaCandidates: mediaCandidates?.length
-          ? mediaCandidates
-          : undefined
-      }
-      if (
-        !activeWorkflow.pendingWarnings.missingNodeTypes &&
-        !activeWorkflow.pendingWarnings.missingModelCandidates &&
-        !activeWorkflow.pendingWarnings.missingMediaCandidates
-      ) {
-        activeWorkflow.pendingWarnings = null
-      }
+        missingModelCandidates: modelCandidates ?? undefined,
+        missingMediaCandidates: mediaCandidates ?? undefined
+      })
 
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
@@ -603,11 +597,11 @@ export const useWorkflowService = () => {
       missingModelCandidates?.length ||
       missingMediaCandidates?.length
     ) {
-      wf.pendingWarnings = {
+      wf.pendingWarnings = normalizePendingWarnings({
         missingNodeTypes,
         missingModelCandidates,
         missingMediaCandidates
-      }
+      })
     } else {
       wf.pendingWarnings = null
     }

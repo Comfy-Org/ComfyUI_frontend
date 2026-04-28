@@ -2,7 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { useTemplateRef } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

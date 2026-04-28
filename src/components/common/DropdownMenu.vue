@@ -11,7 +11,7 @@ import { computed, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '../ui/button/button.variants'
 
 defineOptions({

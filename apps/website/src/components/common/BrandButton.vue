@@ -1,32 +1,35 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { HTMLAttributes } from 'vue'
+
+import type { BrandButtonVariants } from './brandButton.variants'
+import { brandButtonVariants } from './brandButton.variants'
+
 const {
   href,
-  label,
-  variant = 'solid',
-  className = ''
+  target,
+  variant,
+  size,
+  class: customClass = ''
 } = defineProps<{
-  href: string
-  label: string
-  variant?: 'solid' | 'outline'
-  className?: string
+  href?: string
+  target?: string
+  variant?: BrandButtonVariants['variant']
+  size?: BrandButtonVariants['size']
+  class?: HTMLAttributes['class']
 }>()
 </script>
 
 <template>
-  <a
-    :href="href"
-    :class="
-      cn(
-        'rounded-2xl px-4 py-2 text-sm font-semibold',
-        className,
-        variant === 'solid'
-          ? 'bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity hover:opacity-90'
-          : 'border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink border transition-colors'
-      )
-    "
+  <component
+    :is="href ? 'a' : 'button'"
+    :href
+    :target
+    :class="cn(brandButtonVariants({ variant, size }), customClass)"
   >
-    {{ label }}
-  </a>
+    <span class="ppformula-text-center">
+      <slot />
+    </span>
+  </component>
 </template>

@@ -242,7 +242,7 @@ import {
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelInfoField from './ModelInfoField.vue'
 

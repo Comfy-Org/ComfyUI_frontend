@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -12,25 +13,35 @@ function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
 }
 
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, STABLE_CHECKPOINT_2]
+const WAITING_FOR_WIDGET_TYPE = 'waiting:type'
+const WAITING_FOR_WIDGET_VALUE = 'waiting:value'
 
 // Stub /api/assets before the app loads. The local ComfyUI backend has no
 // /api/assets endpoint (returns 503), which poisons the assets store on
 // first load. Narrow pattern avoids intercepting static /assets/*.js bundles.
 //
 // TODO: Consider moving this stub into ComfyPage fixture for all @cloud tests.
-const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
+const test = comfyPageFixture.extend<{
+  cloudAssetRequests: string[]
+  stubCloudAssets: void
+}>({
+  cloudAssetRequests: async ({ page: _page }, use) => {
+    await use([])
+  },
   stubCloudAssets: [
-    async ({ page }, use) => {
-      const pattern = '**/api/assets?*'
-      await page.route(pattern, (route) =>
-        route.fulfill({
+    async ({ cloudAssetRequests, page }, use) => {
+      const pattern = /\/api\/assets(?:\?.*)?$/
+      const assetsRouteHandler = (route: Route) => {
+        cloudAssetRequests.push(route.request().url())
+        return route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(makeAssetsResponse(CLOUD_ASSETS))
         })
-      )
+      }
+      await page.route(pattern, assetsRouteHandler)
       await use()
-      await page.unroute(pattern)
+      await page.unroute(pattern, assetsRouteHandler)
     },
     { auto: true }
   ]
@@ -42,23 +53,36 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
   })
 
   test('should use first cloud asset when server default is not in assets', async ({
+    cloudAssetRequests,
     comfyPage
   }) => {
-    // The default workflow contains a CheckpointLoaderSimple node whose
-    // server default (from object_info) is a local file not in cloud assets.
-    // Wait for the existing node's asset widget to mount, confirming the
-    // assets store has been populated from the stub before adding a new node.
+    // Wait for the checkpoint asset query to complete and the existing widget
+    // to upgrade into asset mode before creating a fresh node. The current
+    // default node may keep a previously resolved value; what matters is that
+    // new nodes resolve against the cloud asset list after the fetch.
+    await expect
+      .poll(() =>
+        cloudAssetRequests.some((url) => {
+          const includeTags =
+            new URL(url).searchParams.get('include_tags') ?? ''
+          return includeTags.split(',').includes('checkpoints')
+        })
+      )
+      .toBe(true)
+
     await expect
       .poll(
         () =>
-          comfyPage.page.evaluate(() => {
+          comfyPage.page.evaluate((waitingForWidgetType) => {
             const node = window.app!.graph.nodes.find(
               (n: { type: string }) => n.type === 'CheckpointLoaderSimple'
             )
-            return node?.widgets?.find(
-              (w: { name: string }) => w.name === 'ckpt_name'
-            )?.type
-          }),
+            return (
+              node?.widgets?.find(
+                (w: { name: string }) => w.name === 'ckpt_name'
+              )?.type ?? waitingForWidgetType
+            )
+          }, WAITING_FOR_WIDGET_TYPE),
         { timeout: 10_000 }
       )
       .toBe('asset')
@@ -81,15 +105,22 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     await expect
       .poll(
         () =>
-          comfyPage.page.evaluate((id) => {
-            const node = window.app!.graph.getNodeById(id)
-            const widget = node?.widgets?.find(
-              (w: { name: string }) => w.name === 'ckpt_name'
-            )
-            if (widget?.type !== 'asset') return 'waiting:type'
-            const val = String(widget?.value ?? '')
-            return val === 'Select model' ? 'waiting:value' : val
-          }, nodeId),
+          comfyPage.page.evaluate(
+            ({ id, waitingForWidgetType, waitingForWidgetValue }) => {
+              const node = window.app!.graph.getNodeById(id)
+              const widget = node?.widgets?.find(
+                (w: { name: string }) => w.name === 'ckpt_name'
+              )
+              if (widget?.type !== 'asset') return waitingForWidgetType
+              const val = String(widget?.value ?? '')
+              return val === 'Select model' ? waitingForWidgetValue : val
+            },
+            {
+              id: nodeId,
+              waitingForWidgetType: WAITING_FOR_WIDGET_TYPE,
+              waitingForWidgetValue: WAITING_FOR_WIDGET_VALUE
+            }
+          ),
         { timeout: 15_000 }
       )
       .toBe(CLOUD_ASSETS[0].name)
