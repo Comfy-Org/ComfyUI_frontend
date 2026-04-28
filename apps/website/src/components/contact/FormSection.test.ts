@@ -225,16 +225,18 @@ describe('FormSection', () => {
   })
 })
 
-describe('FormSection without HubSpot env vars (preview/dev fail-safe)', () => {
+describe('FormSection without HubSpot env vars (fail-safe)', () => {
   beforeAll(() => {
     vi.unstubAllEnvs()
   })
 
-  it('disables the submit button when neither env nor production defaults provide IDs', () => {
+  it('disables the submit button when the HubSpot env vars are unset', () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     render(FormSection)
     const button = screen.getByRole('button', {
       name: /submit/i
     }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
+    consoleSpy.mockRestore()
   })
 })

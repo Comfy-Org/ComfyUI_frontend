@@ -26,22 +26,19 @@ function tk(suffix: string): TranslationKey {
   return `contact.form.${suffix}` as TranslationKey
 }
 
-const PROD_HUBSPOT_PORTAL_ID = '244637579'
-const PROD_HUBSPOT_FORM_ID_CONTACT_SALES =
-  '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
-
 const hubspotConfig = {
-  portalId:
-    import.meta.env.PUBLIC_HUBSPOT_PORTAL_ID ??
-    (import.meta.env.PROD ? PROD_HUBSPOT_PORTAL_ID : ''),
-  formGuid:
-    import.meta.env.PUBLIC_HUBSPOT_FORM_ID_CONTACT_SALES ??
-    (import.meta.env.PROD ? PROD_HUBSPOT_FORM_ID_CONTACT_SALES : ''),
+  portalId: import.meta.env.PUBLIC_HUBSPOT_PORTAL_ID ?? '',
+  formGuid: import.meta.env.PUBLIC_HUBSPOT_FORM_ID_CONTACT_SALES ?? '',
   region: resolveHubspotRegion(import.meta.env.PUBLIC_HUBSPOT_REGION)
 }
 const isFormConfigured = Boolean(
   hubspotConfig.portalId && hubspotConfig.formGuid
 )
+if (typeof window !== 'undefined' && !isFormConfigured) {
+  console.warn(
+    '[contact-form] HubSpot form is not configured. Set PUBLIC_HUBSPOT_PORTAL_ID and PUBLIC_HUBSPOT_FORM_ID_CONTACT_SALES to enable submissions.'
+  )
+}
 
 const HUBSPOT_FIELD_NAMES = {
   firstName: 'firstname',
