@@ -4,6 +4,7 @@
       v-if="visible"
       role="status"
       aria-live="polite"
+      data-testid="canvas-snackbar-toast"
       class="fixed bottom-16 left-1/2 z-1000 flex -translate-x-1/2 items-center gap-4 rounded-lg bg-base-foreground py-1 pr-2 pl-3 text-sm text-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
       @mouseenter="pause"
       @mouseleave="startTimer"

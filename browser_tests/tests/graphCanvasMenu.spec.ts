@@ -23,7 +23,9 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const button = comfyPage.page.getByTestId(
         TestIds.canvas.toggleLinkVisibilityButton
       )
+      const toast = comfyPage.page.getByTestId(TestIds.canvas.snackbarToast)
       await button.click()
+      await expect(toast).toBeHidden({ timeout: 3000 })
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'canvas-with-hidden-links.png'
@@ -36,6 +38,7 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         .toBe(hiddenLinkRenderMode)
 
       await button.click()
+      await expect(toast).toBeHidden({ timeout: 3000 })
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'canvas-with-visible-links.png'

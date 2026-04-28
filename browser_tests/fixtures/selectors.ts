@@ -26,6 +26,7 @@ export const TestIds = {
     minimapViewport: 'minimap-viewport',
     minimapInteractionOverlay: 'minimap-interaction-overlay',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
+    snackbarToast: 'canvas-snackbar-toast',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',
     zoomOutAction: 'zoom-out-action',
