@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 
@@ -16,10 +16,6 @@ const HUBSPOT_CONTACT_SCRIPT_ID = 'hubspot-contact-form-embed'
 const HUBSPOT_CONTACT_SCRIPT_SRC = `https://js-${HUBSPOT_CONTACT_REGION}.hsforms.net/forms/embed/${HUBSPOT_CONTACT_PORTAL_ID}.js`
 
 const hasEmbedLoadError = ref(false)
-
-function tk(suffix: string): TranslationKey {
-  return `contact.form.${suffix}` as TranslationKey
-}
 
 onMounted(() => {
   if (document.getElementById(HUBSPOT_CONTACT_SCRIPT_ID)) return
@@ -48,14 +44,14 @@ onMounted(() => {
       class="text-primary-comfy-canvas text-sm/6"
       role="status"
     >
-      {{ t(tk('embedLoadErrorPrefix'), locale) }}
+      {{ t('contact.form.embedLoadErrorPrefix', locale) }}
       <a
         class="text-primary-comfy-yellow underline"
         href="mailto:hello@comfy.org"
       >
         hello@comfy.org
       </a>
-      {{ t(tk('embedLoadErrorSuffix'), locale) }}
+      {{ t('contact.form.embedLoadErrorSuffix', locale) }}
     </p>
     <div
       v-else
