@@ -45,6 +45,7 @@ export interface WidgetSlotMetadata {
   linked: boolean
   originNodeId?: string
   originOutputName?: string
+  type: string
 }
 
 /**
@@ -92,6 +93,10 @@ export interface SafeWidgetData {
    * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
    */
   sourceExecutionId?: string
+  /** Tooltip text from the resolved widget. */
+  tooltip?: string
+  /** For promoted widgets, the display label from the subgraph input slot. */
+  promotedLabel?: string
 }
 
 export interface VueNodeData {
@@ -352,7 +357,8 @@ function safeWidgetMapper(
           sourceNode && app.rootGraph
             ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
             : undefined,
-        tooltip: widget.tooltip
+        tooltip: widget.tooltip,
+        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
       }
     } catch (error) {
       console.warn(
@@ -390,7 +396,8 @@ function buildSlotMetadata(
       index,
       linked: input.link != null,
       originNodeId,
-      originOutputName
+      originOutputName,
+      type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
     if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
@@ -803,6 +810,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
+        // Re-extract widget data so promotedLabel reflects the rename
+        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }
 

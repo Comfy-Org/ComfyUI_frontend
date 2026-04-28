@@ -56,8 +56,8 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/platform/settings/settingStore')
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({}))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({}))
 }))
 
 vi.mock('@/composables/auth/useFirebaseAuth', () => ({
@@ -94,7 +94,7 @@ vi.mock('@/stores/toastStore', () => ({
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  checkState: vi.fn()
+  captureCanvasState: vi.fn()
 }))
 const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: {
@@ -123,8 +123,8 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: vi.fn(() => ({}))
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: vi.fn(() => ({}))
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
@@ -382,7 +382,7 @@ describe('useCoreCommands', () => {
 
         expect(mockDialogService.prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
-        expect(mockChangeTracker.checkState).toHaveBeenCalled()
+        expect(mockChangeTracker.captureCanvasState).toHaveBeenCalled()
       })
 
       it('should not set description when user cancels', async () => {
@@ -397,7 +397,7 @@ describe('useCoreCommands', () => {
         await setDescCommand.function()
 
         expect(mockSubgraph.extra.BlueprintDescription).toBeUndefined()
-        expect(mockChangeTracker.checkState).not.toHaveBeenCalled()
+        expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
       })
     })
 
@@ -432,7 +432,7 @@ describe('useCoreCommands', () => {
           'alias2',
           'alias3'
         ])
-        expect(mockChangeTracker.checkState).toHaveBeenCalled()
+        expect(mockChangeTracker.captureCanvasState).toHaveBeenCalled()
       })
 
       it('should trim whitespace and filter empty strings', async () => {
@@ -478,7 +478,7 @@ describe('useCoreCommands', () => {
         await setAliasesCommand.function()
 
         expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
-        expect(mockChangeTracker.checkState).not.toHaveBeenCalled()
+        expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
       })
     })
   })

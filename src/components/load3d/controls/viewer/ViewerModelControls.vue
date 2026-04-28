@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div>
+    <div class="flex flex-col gap-2">
       <label>{{ $t('load3d.upDirection') }}</label>
       <Select
         v-model="upDirection"
@@ -10,7 +10,7 @@
       />
     </div>
 
-    <div v-if="!hideMaterialMode">
+    <div v-if="!hideMaterialMode" class="flex flex-col gap-2">
       <label>{{ $t('load3d.materialMode') }}</label>
       <Select
         v-model="materialMode"

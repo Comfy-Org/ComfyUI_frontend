@@ -30,6 +30,8 @@ const lazyComfyOrgHeader = () =>
   import('@/components/dialog/header/ComfyOrgHeader.vue')
 const lazyCloudNotificationContent = () =>
   import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
+const lazyPublishDialog = () =>
+  import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
 
 export type ConfirmationDialogType =
   | 'default'
@@ -125,6 +127,7 @@ export const useDialogService = () => {
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
+        extensionFile: errorProps.extensionFile,
         traceback: errorProps.stackTrace ?? t('errorDialog.noStackTrace'),
         reportType: options.reportType
       }
@@ -454,6 +457,25 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Show the team workspaces dialog for creating or switching workspaces.
+   * Optionally calls `onConfirm` after a workspace is successfully created.
+   */
+  async function showTeamWorkspacesDialog(
+    onConfirm?: (name: string) => void | Promise<void>
+  ) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'team-workspaces',
+      component,
+      props: { onConfirm },
+      dialogComponentProps: {
+        ...workspaceDialogPt
+      }
+    })
+  }
+
   async function showLeaveWorkspaceDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
@@ -572,10 +594,28 @@ export const useDialogService = () => {
     })
   }
 
+  async function showPublishDialog(): Promise<void> {
+    const { default: ComfyHubPublishDialog } = await lazyPublishDialog()
+    const key = 'global-comfyhub-publish'
+    showLayoutDialog({
+      key,
+      component: ComfyHubPublishDialog,
+      props: {
+        onClose: () => dialogStore.closeDialog({ key })
+      },
+      dialogComponentProps: {
+        pt: {
+          root: { 'data-testid': 'publish-dialog' }
+        }
+      }
+    })
+  }
+
   return {
     showExecutionErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
+    showPublishDialog,
     showSubscriptionRequiredDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
@@ -588,6 +628,7 @@ export const useDialogService = () => {
     showSmallLayoutDialog,
     showDeleteWorkspaceDialog,
     showCreateWorkspaceDialog,
+    showTeamWorkspacesDialog,
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,

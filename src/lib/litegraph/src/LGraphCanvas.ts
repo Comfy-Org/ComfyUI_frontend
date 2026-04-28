@@ -7,6 +7,7 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -16,7 +17,7 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
-import type { LGraph } from './LGraph'
+import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId, NodeProperty } from './LGraphNode'
@@ -111,7 +112,6 @@ import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from './utils/uuid'
-import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
@@ -227,7 +227,7 @@ interface ClipboardPasteResult {
   /** Map: original reroute IDs to newly created reroutes */
   reroutes: Map<RerouteId, Reroute>
   /** Map: original subgraph IDs to newly created subgraphs */
-  subgraphs: Map<UUID, Subgraph>
+  subgraphs: Map<SubgraphId, Subgraph>
 }
 
 /** Options for {@link LGraphCanvas.pasteFromClipboard}. */
@@ -2222,6 +2222,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.state.ghostNodeId != null) {
       if (e.button === 0) this.finalizeGhostPlacement(false)
       if (e.button === 2) this.finalizeGhostPlacement(true)
+      this.canvas.focus()
       e.stopPropagation()
       e.preventDefault()
       return
@@ -2616,8 +2617,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
           pointer.finally = () => (this.resizingGroup = null)
         } else {
-          const f = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
-          const headerHeight = f * 1.4
+          const headerHeight = LiteGraph.NODE_TITLE_HEIGHT
           if (
             isInRectangle(
               x,
@@ -3081,7 +3081,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (oldValue != widget.value) {
       node.onWidgetChanged?.(widget.name, widget.value, oldValue, widget)
       if (!node.graph) throw new NullGraphError()
-      node.graph._version++
+      node.graph.incrementVersion()
     }
 
     // Clean up state var
@@ -3679,6 +3679,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.state.ghostNodeId = node.id
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: true,
+      nodeId: node.id
+    })
 
     this.deselectAll()
     this.select(node)
@@ -3709,6 +3713,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
     this._autoPan?.stop()
     this._autoPan = null
 
@@ -4130,7 +4138,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodes: new Map<NodeId, LGraphNode>(),
       links: new Map<LinkId, LLink>(),
       reroutes: new Map<RerouteId, Reroute>(),
-      subgraphs: new Map<UUID, Subgraph>()
+      subgraphs: new Map<SubgraphId, Subgraph>()
     }
     const { created, nodes, links, reroutes } = results
 
@@ -4270,6 +4278,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(newPositions)
+
+    // Bring cloned/pasted nodes to front so they render above the originals
+    const allNodes = layoutStore.getAllNodes().value
+    let maxZIndex = 0
+    for (const [, layout] of allNodes) {
+      if (layout.zIndex > maxZIndex) maxZIndex = layout.zIndex
+    }
+    const { setNodeZIndex } = useLayoutMutations()
+    for (let i = 0; i < newPositions.length; i++) {
+      setNodeZIndex(newPositions[i].nodeId, maxZIndex + i + 1)
+    }
 
     this.selectItems(created)
     forEachNode(graph, (n) => n.onGraphConfigured?.())
@@ -5882,7 +5901,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawSnapGuide(
     ctx: CanvasRenderingContext2D,
     item: Positionable,
-    shape = RenderShape.ROUND
+    shape = RenderShape.ROUND,
+    { offsetToSlot }: { offsetToSlot?: boolean } = {}
   ) {
     const snapGuide = temp
     snapGuide.set(item.boundingRect)
@@ -5890,7 +5910,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Not all items have pos equal to top-left of bounds
     const { pos } = item
     const offsetX = pos[0] - snapGuide[0]
-    const offsetY = pos[1] - snapGuide[1]
+    const offsetY =
+      pos[1] -
+      snapGuide[1] -
+      (offsetToSlot ? LiteGraph.NODE_SLOT_HEIGHT * 0.7 : 0)
 
     // Normalise boundingRect to pos to snap
     snapGuide[0] += offsetX
@@ -5950,6 +5973,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.globalAlpha = this.editor_alpha
     // for every node
     const nodes = graph._nodes
+
+    // Ensure widget-input slot positions are computed before rendering links.
+    // arrange() sets input.pos for widget-backed slots, but is normally called
+    // in drawNode (foreground canvas). drawConnections runs on the background
+    // canvas, which may render before drawNode has executed for this frame.
+    // The dirty flag avoids a per-frame O(N) scan of all inputs.
+    for (const node of nodes) {
+      if (node.flags.collapsed || !node._widgetSlotsDirty) continue
+
+      node._setConcreteSlots()
+      node.arrange()
+    }
+
     for (const node of nodes) {
       // for every input (we render just inputs because it is easier as every slot can only have one input)
       const { inputs } = node
@@ -6067,7 +6103,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.isDragging &&
         this.selectedItems.has(reroute)
       ) {
-        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
+        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE, {
+          offsetToSlot: true
+        })
       }
       reroute.draw(ctx, this._pattern)
 
@@ -7858,7 +7896,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       node.properties[property] = value
       if (node.graph) {
-        node.graph._version++
+        node.graph.incrementVersion()
       }
       node.onPropertyChanged?.(property, value)
       options.onclose?.()
@@ -9036,7 +9074,7 @@ export function remapClipboardSubgraphNodeIds(
     return nextId
   }
 
-  const subgraphNodeIdMap = new Map<UUID, Map<NodeId, NodeId>>()
+  const subgraphNodeIdMap = new Map<SubgraphId, Map<NodeId, NodeId>>()
   for (const subgraphInfo of parsed.subgraphs ?? []) {
     const remappedIds = new Map<NodeId, NodeId>()
     const interiorNodes = subgraphInfo.nodes ?? []

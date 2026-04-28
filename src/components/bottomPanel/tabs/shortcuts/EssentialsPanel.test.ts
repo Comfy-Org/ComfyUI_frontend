@@ -1,9 +1,7 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import EssentialsPanel from '@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue'
-import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 // Mock ShortcutsList component
@@ -12,7 +10,7 @@ vi.mock('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue', () => ({
     name: 'ShortcutsList',
     props: ['commands', 'subcategories', 'columns'],
     template:
-      '<div class="shortcuts-list-mock">{{ commands.length }} commands</div>'
+      '<div data-testid="shortcuts-list">{{ JSON.stringify(subcategories) }}</div>'
   }
 }))
 
@@ -56,25 +54,34 @@ describe('EssentialsPanel', () => {
     setActivePinia(createPinia())
   })
 
-  it('should render ShortcutsList with essentials commands', () => {
-    const wrapper = mount(EssentialsPanel)
+  it('should render ShortcutsList with essentials commands', async () => {
+    const { default: EssentialsPanel } =
+      await import('@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue')
+    render(EssentialsPanel)
 
-    const shortcutsList = wrapper.findComponent(ShortcutsList)
-    expect(shortcutsList.exists()).toBe(true)
+    expect(screen.getByTestId('shortcuts-list')).toBeTruthy()
   })
 
-  it('should categorize commands into subcategories', () => {
-    const wrapper = mount(EssentialsPanel)
+  it('should categorize commands into subcategories', async () => {
+    const { default: EssentialsPanel } =
+      await import('@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue')
+    render(EssentialsPanel)
 
-    const shortcutsList = wrapper.findComponent(ShortcutsList)
-    const subcategories = shortcutsList.props('subcategories')
+    const el = screen.getByTestId('shortcuts-list')
+    const subcategories = JSON.parse(el.textContent ?? '{}')
 
     expect(subcategories).toHaveProperty('workflow')
     expect(subcategories).toHaveProperty('node')
     expect(subcategories).toHaveProperty('queue')
 
-    expect(subcategories.workflow).toContain(mockCommands[0])
-    expect(subcategories.node).toContain(mockCommands[1])
-    expect(subcategories.queue).toContain(mockCommands[2])
+    expect(subcategories.workflow).toContainEqual(
+      expect.objectContaining({ id: 'Workflow.New' })
+    )
+    expect(subcategories.node).toContainEqual(
+      expect.objectContaining({ id: 'Node.Add' })
+    )
+    expect(subcategories.queue).toContainEqual(
+      expect.objectContaining({ id: 'Queue.Clear' })
+    )
   })
 })

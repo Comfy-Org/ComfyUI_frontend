@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
@@ -38,10 +39,10 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
   })
 }
 
-const mountComponent = (
+function renderComponent(
   runningTasks: TaskItemImpl[],
   pendingTasks: TaskItemImpl[]
-) => {
+) {
   const pinia = createTestingPinia({
     createSpy: vi.fn,
     stubActions: false
@@ -51,7 +52,9 @@ const mountComponent = (
   queueStore.runningTasks = runningTasks
   queueStore.pendingTasks = pendingTasks
 
-  const wrapper = mount(QueueProgressOverlay, {
+  const user = userEvent.setup()
+
+  render(QueueProgressOverlay, {
     props: {
       expanded: true
     },
@@ -68,7 +71,7 @@ const mountComponent = (
     }
   })
 
-  return { wrapper, sidebarTabStore }
+  return { sidebarTabStore, user }
 }
 
 describe('QueueProgressOverlay', () => {
@@ -77,7 +80,7 @@ describe('QueueProgressOverlay', () => {
   })
 
   it('shows expanded header with running and queued labels', () => {
-    const { wrapper } = mountComponent(
+    renderComponent(
       [
         createTask('running-1', 'in_progress'),
         createTask('running-2', 'in_progress')
@@ -85,39 +88,32 @@ describe('QueueProgressOverlay', () => {
       [createTask('pending-1', 'pending')]
     )
 
-    expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
+    expect(screen.getByTestId('expanded-title')).toHaveTextContent(
       '2 running, 1 queued'
     )
   })
 
   it('shows only running label when queued count is zero', () => {
-    const { wrapper } = mountComponent(
-      [createTask('running-1', 'in_progress')],
-      []
-    )
+    renderComponent([createTask('running-1', 'in_progress')], [])
 
-    expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
-      '1 running'
-    )
+    expect(screen.getByTestId('expanded-title')).toHaveTextContent('1 running')
   })
 
   it('shows job queue title when there are no active jobs', () => {
-    const { wrapper } = mountComponent([], [])
+    renderComponent([], [])
 
-    expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
-      'Job Queue'
-    )
+    expect(screen.getByTestId('expanded-title')).toHaveTextContent('Job Queue')
   })
 
   it('toggles the assets sidebar tab when show-assets is clicked', async () => {
-    const { wrapper, sidebarTabStore } = mountComponent([], [])
+    const { sidebarTabStore, user } = renderComponent([], [])
 
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
 
-    await wrapper.get('[data-testid="show-assets-button"]').trigger('click')
+    await user.click(screen.getByTestId('show-assets-button'))
     expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
 
-    await wrapper.get('[data-testid="show-assets-button"]').trigger('click')
+    await user.click(screen.getByTestId('show-assets-button'))
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
   })
 })

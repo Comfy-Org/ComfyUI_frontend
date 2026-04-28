@@ -1,11 +1,13 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
-// Mock dependencies
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: {
@@ -50,6 +52,12 @@ describe('TabErrors.vue', () => {
           rightSidePanel: {
             noErrors: 'No errors',
             noneSearchDesc: 'No results found',
+            missingModels: {
+              missingModelsTitle: 'Missing Models',
+              downloadAll: 'Download all',
+              refresh: 'Refresh',
+              refreshing: 'Refreshing missing models.'
+            },
             promptErrors: {
               prompt_no_outputs: {
                 desc: 'Prompt has no outputs'
@@ -61,8 +69,9 @@ describe('TabErrors.vue', () => {
     })
   })
 
-  function mountComponent(initialState = {}) {
-    return mount(TabErrors, {
+  function renderComponent(initialState = {}) {
+    const user = userEvent.setup()
+    render(TabErrors, {
       global: {
         plugins: [
           PrimeVue,
@@ -81,20 +90,21 @@ describe('TabErrors.vue', () => {
             template: '<div><slot name="label" /><slot /></div>'
           },
           Button: {
-            template: '<button><slot /></button>'
+            template: '<button v-bind="$attrs"><slot /></button>'
           }
         }
       }
     })
+    return { user }
   }
 
   it('renders "no errors" state when store is empty', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.text()).toContain('No errors')
+    renderComponent()
+    expect(screen.getByText('No errors')).toBeInTheDocument()
   })
 
   it('renders prompt-level errors (Group title = error message)', async () => {
-    const wrapper = mountComponent({
+    renderComponent({
       executionError: {
         lastPromptError: {
           type: 'prompt_no_outputs',
@@ -104,12 +114,9 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    // Group title should be the raw message from store
-    expect(wrapper.text()).toContain('Server Error: No outputs')
-    // Item message should be localized desc
-    expect(wrapper.text()).toContain('Prompt has no outputs')
-    // Details should not be rendered for prompt errors
-    expect(wrapper.text()).not.toContain('Error details')
+    expect(screen.getByText('Server Error: No outputs')).toBeInTheDocument()
+    expect(screen.getByText('Prompt has no outputs')).toBeInTheDocument()
+    expect(screen.queryByText('Error details')).not.toBeInTheDocument()
   })
 
   it('renders node validation errors grouped by class_type', async () => {
@@ -118,7 +125,7 @@ describe('TabErrors.vue', () => {
       title: 'CLIP Text Encode'
     } as ReturnType<typeof getNodeByExecutionId>)
 
-    const wrapper = mountComponent({
+    renderComponent({
       executionError: {
         lastNodeErrors: {
           '6': {
@@ -131,10 +138,10 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('CLIPTextEncode')
-    expect(wrapper.text()).toContain('#6')
-    expect(wrapper.text()).toContain('CLIP Text Encode')
-    expect(wrapper.text()).toContain('Required input is missing')
+    expect(screen.getByText('CLIPTextEncode')).toBeInTheDocument()
+    expect(screen.getByText('#6')).toBeInTheDocument()
+    expect(screen.getByText('CLIP Text Encode')).toBeInTheDocument()
+    expect(screen.getByText('Required input is missing')).toBeInTheDocument()
   })
 
   it('renders runtime execution errors from WebSocket', async () => {
@@ -143,7 +150,7 @@ describe('TabErrors.vue', () => {
       title: 'KSampler'
     } as ReturnType<typeof getNodeByExecutionId>)
 
-    const wrapper = mountComponent({
+    renderComponent({
       executionError: {
         lastExecutionError: {
           prompt_id: 'abc',
@@ -157,17 +164,17 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('KSampler')
-    expect(wrapper.text()).toContain('#10')
-    expect(wrapper.text()).toContain('RuntimeError: Out of memory')
-    expect(wrapper.text()).toContain('Line 1')
+    expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('#10')).toBeInTheDocument()
+    expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
+    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
   })
 
   it('filters errors based on search query', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(null)
 
-    const wrapper = mountComponent({
+    const { user } = renderComponent({
       executionError: {
         lastNodeErrors: {
           '1': {
@@ -182,14 +189,17 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('CLIPTextEncode')
-    expect(wrapper.text()).toContain('KSampler')
+    expect(screen.getAllByText('CLIPTextEncode').length).toBeGreaterThanOrEqual(
+      1
+    )
+    expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
 
-    const searchInput = wrapper.find('input')
-    await searchInput.setValue('Missing text input')
+    await user.type(screen.getByRole('textbox'), 'Missing text input')
 
-    expect(wrapper.text()).toContain('CLIPTextEncode')
-    expect(wrapper.text()).not.toContain('KSampler')
+    expect(screen.getAllByText('CLIPTextEncode').length).toBeGreaterThanOrEqual(
+      1
+    )
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 
   it('calls copyToClipboard when copy button is clicked', async () => {
@@ -198,7 +208,7 @@ describe('TabErrors.vue', () => {
     const mockCopy = vi.fn()
     vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
 
-    const wrapper = mountComponent({
+    const { user } = renderComponent({
       executionError: {
         lastNodeErrors: {
           '1': {
@@ -209,12 +219,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    // Find the copy button by text (rendered inside ErrorNodeCard)
-    const copyButton = wrapper
-      .findAll('button')
-      .find((btn) => btn.text().includes('Copy'))
-    expect(copyButton).toBeTruthy()
-    await copyButton!.trigger('click')
+    await user.click(screen.getByTestId('error-card-copy'))
 
     expect(mockCopy).toHaveBeenCalledWith('Test message\n\nTest details')
   })
@@ -225,7 +230,7 @@ describe('TabErrors.vue', () => {
       title: 'KSampler'
     } as ReturnType<typeof getNodeByExecutionId>)
 
-    const wrapper = mountComponent({
+    renderComponent({
       executionError: {
         lastExecutionError: {
           prompt_id: 'abc',
@@ -239,11 +244,63 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    // Runtime error panel title should show class type
-    expect(wrapper.text()).toContain('KSampler')
-    expect(wrapper.text()).toContain('RuntimeError: Out of memory')
-    // Should render in the dedicated runtime error panel, not inside accordion
-    const runtimePanel = wrapper.find('[data-testid="runtime-error-panel"]')
-    expect(runtimePanel.exists()).toBe(true)
+    expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
+    expect(screen.getByTestId('runtime-error-panel')).toBeInTheDocument()
+    expect(screen.getAllByText('RuntimeError: Out of memory')).toHaveLength(1)
+  })
+
+  it('shows missing model Refresh in the section header when no model is downloadable', async () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    const { user } = renderComponent({
+      missingModel: {
+        missingModelCandidates: [missingModel]
+      }
+    })
+    const missingModelStore = useMissingModelStore()
+
+    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('missing-model-actions')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('missing-model-header-refresh'))
+
+    expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('keeps missing model Refresh in the card actions when models are downloadable', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'downloadable.safetensors',
+      url: 'https://huggingface.co/comfy/test/resolve/main/downloadable.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent({
+      missingModel: {
+        missingModelCandidates: [missingModel]
+      }
+    })
+
+    expect(
+      screen.queryByTestId('missing-model-header-refresh')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 })

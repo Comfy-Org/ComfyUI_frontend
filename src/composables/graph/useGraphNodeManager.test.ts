@@ -1,5 +1,6 @@
-import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
@@ -11,10 +12,10 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -197,14 +198,16 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
 
-    // Create a PromotedWidgetView with displayName="value" (subgraph input
+    // Create a PromotedWidgetView with identityName="value" (subgraph input
     // slot name) and sourceWidgetName="prompt" (interior widget name).
-    // PromotedWidgetView.name returns "value", but safeWidgetMapper sets
-    // SafeWidgetData.name to sourceWidgetName ("prompt").
+    // PromotedWidgetView.name returns "value" (identity), safeWidgetMapper
+    // sets SafeWidgetData.name to sourceWidgetName ("prompt").
     const promotedView = createPromotedWidgetView(
       subgraphNode,
       '10',
       'prompt',
+      'value',
+      undefined,
       'value'
     )
 
@@ -275,18 +278,20 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const secondPromotedView = promotedViews[1]
     if (!secondPromotedView) throw new Error('Expected second promoted view')
 
-    ;(
-      secondPromotedView as unknown as {
+    fromAny<
+      {
         sourceNodeId: string
         sourceWidgetName: string
-      }
-    ).sourceNodeId = '9999'
-    ;(
-      secondPromotedView as unknown as {
+      },
+      unknown
+    >(secondPromotedView).sourceNodeId = '9999'
+    fromAny<
+      {
         sourceNodeId: string
         sourceWidgetName: string
-      }
-    ).sourceWidgetName = 'stale_widget'
+      },
+      unknown
+    >(secondPromotedView).sourceWidgetName = 'stale_widget'
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))

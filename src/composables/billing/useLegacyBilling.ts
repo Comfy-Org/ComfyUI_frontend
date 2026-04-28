@@ -5,7 +5,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   BalanceInfo,
@@ -33,7 +33,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
 
-  const firebaseAuthStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -55,12 +55,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
       renewalDate: formattedRenewalDate.value || null,
       endDate: formattedEndDate.value || null,
       isCancelled: isCancelled.value,
-      hasFunds: (firebaseAuthStore.balance?.amount_micros ?? 0) > 0
+      hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }
   })
 
   const balance = computed<BalanceInfo | null>(() => {
-    const legacyBalance = firebaseAuthStore.balance
+    const legacyBalance = authStore.balance
     if (!legacyBalance) return null
 
     return {
@@ -118,7 +118,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await firebaseAuthStore.fetchBalance()
+      await authStore.fetchBalance()
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch balance'

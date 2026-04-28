@@ -5,7 +5,7 @@ import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
@@ -23,7 +23,7 @@ interface CacheEntry<T> {
 
 async function getAuthHeaders() {
   if (isCloud) {
-    const authStore = useFirebaseAuthStore()
+    const authStore = useAuthStore()
     const authHeader = await authStore.getAuthHeader()
     return {
       ...(authHeader && { headers: authHeader })

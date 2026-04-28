@@ -41,7 +41,7 @@ export const WithLabel: Story = {
     },
     template: `
       <div class="relative max-w-sm rounded-lg bg-component-node-widget-background">
-        <label class="pointer-events-none absolute left-3 top-1.5 text-xxs text-muted-foreground z-10">
+        <label class="pointer-events-none absolute left-3 top-1.5 text-2xs text-muted-foreground z-10">
           Prompt
         </label>
         <Textarea

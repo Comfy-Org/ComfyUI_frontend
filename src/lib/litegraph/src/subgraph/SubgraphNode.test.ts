@@ -4,12 +4,14 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
-import { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -195,6 +197,258 @@ describe('SubgraphNode Synchronization', () => {
     })
 
     expect(subgraphNode.outputs[0].label).toBe('newOutput')
+  })
+
+  it('should keep input.widget.name stable after rename (onGraphConfigured safety)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', '', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    expect(promotedInput.widget).toBeDefined()
+
+    const originalWidgetName = promotedInput.widget!.name
+
+    // Rename the subgraph input label
+    subgraph.inputs[0].label = 'my_custom_prompt'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'text',
+      newName: 'my_custom_prompt'
+    })
+
+    // widget.name stays as the internal name — NOT the display label
+    expect(promotedInput.widget!.name).toBe(originalWidgetName)
+
+    // The display label is on input.label (live-read via PromotedWidgetView.label)
+    expect(promotedInput.label).toBe('my_custom_prompt')
+
+    // input.widget.name should still match a widget in node.widgets
+    const matchingWidget = subgraphNode.widgets?.find(
+      (w) => w.name === promotedInput.widget!.name
+    )
+    expect(matchingWidget).toBeDefined()
+  })
+
+  it('should preserve renamed label through serialize/configure round-trip', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'INT')
+    interiorNode.addWidget('number', 'value', 0, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedWidget = subgraphNode.widgets?.[0]
+    expect(promotedWidget).toBeDefined()
+
+    // Rename via the subgraph slot (simulates right-click rename)
+    subgraph.inputs[0].label = 'My Seed'
+    subgraphNode.inputs[0].label = 'My Seed'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'seed',
+      newName: 'My Seed'
+    })
+
+    // Label should be visible before round-trip
+    const widgetBeforeRoundTrip = subgraphNode.widgets?.[0]
+    expect(widgetBeforeRoundTrip!.label || widgetBeforeRoundTrip!.name).toBe(
+      'My Seed'
+    )
+
+    // Serialize and reconfigure (simulates save/reload)
+    const serialized = subgraphNode.serialize()
+    subgraphNode.configure(serialized)
+
+    // Label should survive the round-trip
+    const widgetAfterRoundTrip = subgraphNode.widgets?.[0]
+    expect(widgetAfterRoundTrip).toBeDefined()
+    expect(widgetAfterRoundTrip!.label || widgetAfterRoundTrip!.name).toBe(
+      'My Seed'
+    )
+  })
+})
+
+describe('SubgraphNode widget name collision on rename', () => {
+  it('should not collapse two inputs when renamed to the same label', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'prompt_a', type: 'STRING' },
+        { name: 'prompt_b', type: 'STRING' }
+      ]
+    })
+
+    // Create two interior nodes with widgets
+    const nodeA = new LGraphNode('NodeA')
+    nodeA.addInput('value', 'STRING')
+    nodeA.inputs[0].widget = { name: 'value' }
+    nodeA.addOutput('out', 'STRING')
+    nodeA.addWidget('text', 'value', '', () => {})
+    subgraph.add(nodeA)
+    subgraph.inputNode.slots[0].connect(nodeA.inputs[0], nodeA)
+
+    const nodeB = new LGraphNode('NodeB')
+    nodeB.addInput('value', 'STRING')
+    nodeB.inputs[0].widget = { name: 'value' }
+    nodeB.addOutput('out', 'STRING')
+    nodeB.addWidget('text', 'value', '', () => {})
+    subgraph.add(nodeB)
+    subgraph.inputNode.slots[1].connect(nodeB.inputs[0], nodeB)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.inputs).toHaveLength(2)
+    // widget.name is now nodeId:widgetName (stable composite key)
+    const key0 = subgraphNode.inputs[0].widget?.name
+    const key1 = subgraphNode.inputs[1].widget?.name
+    expect(key0).toBeDefined()
+    expect(key1).toBeDefined()
+    expect(key0).not.toBe(key1)
+
+    // Rename prompt_b to same LABEL as prompt_a
+    subgraph.inputs[1].label = 'prompt_a'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[1],
+      index: 1,
+      oldName: 'prompt_b',
+      newName: 'prompt_a'
+    })
+
+    // Both inputs survive — widget.name stays as composite key, no collision
+    expect(subgraphNode.inputs).toHaveLength(2)
+    expect(subgraphNode.inputs[0].widget?.name).toBe(key0)
+    expect(subgraphNode.inputs[1].widget?.name).toBe(key1)
+
+    // Display labels: input[1] was renamed
+    expect(subgraphNode.inputs[1].label).toBe('prompt_a')
+
+    // Distinct _widget bindings
+    expect(subgraphNode.inputs[0]._widget).toBeDefined()
+    expect(subgraphNode.inputs[1]._widget).toBeDefined()
+    expect(subgraphNode.inputs[0]._widget).not.toBe(
+      subgraphNode.inputs[1]._widget
+    )
+  })
+
+  it('should keep unique widget.name keys even with duplicate labels', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: 'INT' },
+        { name: 'seed2', type: 'INT' }
+      ]
+    })
+
+    const nodeA = new LGraphNode('NodeA')
+    nodeA.addInput('value', 'INT')
+    nodeA.inputs[0].widget = { name: 'value' }
+    nodeA.addOutput('out', 'INT')
+    nodeA.addWidget('number', 'value', 0, () => {})
+    subgraph.add(nodeA)
+    subgraph.inputNode.slots[0].connect(nodeA.inputs[0], nodeA)
+
+    const nodeB = new LGraphNode('NodeB')
+    nodeB.addInput('value', 'INT')
+    nodeB.inputs[0].widget = { name: 'value' }
+    nodeB.addOutput('out', 'INT')
+    nodeB.addWidget('number', 'value', 0, () => {})
+    subgraph.add(nodeB)
+    subgraph.inputNode.slots[1].connect(nodeB.inputs[0], nodeB)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    const key0 = subgraphNode.inputs[0].widget?.name
+    const key1 = subgraphNode.inputs[1].widget?.name
+
+    // Keys should be unique composite identifiers (nodeId:widgetName)
+    expect(key0).toBeDefined()
+    expect(key1).toBeDefined()
+    expect(key0).not.toBe(key1)
+
+    // Rename seed2 to "seed" — duplicate display label
+    subgraph.inputs[1].label = 'seed'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[1],
+      index: 1,
+      oldName: 'seed2',
+      newName: 'seed'
+    })
+
+    // Widget keys remain stable — rename only affects display label
+    expect(subgraphNode.inputs[0].widget?.name).toBe(key0)
+    expect(subgraphNode.inputs[1].widget?.name).toBe(key1)
+
+    // Distinct _widget bindings survive the rename
+    expect(subgraphNode.inputs[0]._widget).toBeDefined()
+    expect(subgraphNode.inputs[1]._widget).toBeDefined()
+    expect(subgraphNode.inputs[0]._widget).not.toBe(
+      subgraphNode.inputs[1]._widget
+    )
+  })
+
+  it('should not lose input when onGraphConfigured runs after duplicate rename', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'alpha', type: 'STRING' },
+        { name: 'beta', type: 'STRING' }
+      ]
+    })
+
+    const nodeA = new LGraphNode('NodeA')
+    nodeA.addInput('value', 'STRING')
+    nodeA.inputs[0].widget = { name: 'value' }
+    nodeA.addOutput('out', 'STRING')
+    nodeA.addWidget('text', 'value', '', () => {})
+    subgraph.add(nodeA)
+    subgraph.inputNode.slots[0].connect(nodeA.inputs[0], nodeA)
+
+    const nodeB = new LGraphNode('NodeB')
+    nodeB.addInput('value', 'STRING')
+    nodeB.inputs[0].widget = { name: 'value' }
+    nodeB.addOutput('out', 'STRING')
+    nodeB.addWidget('text', 'value', '', () => {})
+    subgraph.add(nodeB)
+    subgraph.inputNode.slots[1].connect(nodeB.inputs[0], nodeB)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    // Rename beta to "alpha" — collision
+    subgraph.inputs[1].label = 'alpha'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[1],
+      index: 1,
+      oldName: 'beta',
+      newName: 'alpha'
+    })
+
+    // Simulate onGraphConfigured check: for each input with widget,
+    // find a matching widget by name. If not found, the input gets removed.
+    for (const input of subgraphNode.inputs) {
+      if (!input.widget) continue
+      const name = input.widget.name
+      const w = subgraphNode.widgets?.find((w) => w.name === name)
+      // Every input should find at least one matching widget
+      expect(w).toBeDefined()
+    }
+
+    // Both inputs should survive
+    expect(subgraphNode.inputs).toHaveLength(2)
   })
 })
 
@@ -681,14 +935,17 @@ describe('SubgraphNode promotion view keys', () => {
 
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const nodeWithKeyBuilder = subgraphNode as unknown as {
-      _makePromotionViewKey: (
-        inputKey: string,
-        interiorNodeId: string,
-        widgetName: string,
-        inputName?: string
-      ) => string
-    }
+    const nodeWithKeyBuilder = fromAny<
+      {
+        _makePromotionViewKey: (
+          inputKey: string,
+          interiorNodeId: string,
+          widgetName: string,
+          inputName?: string
+        ) => string
+      },
+      unknown
+    >(subgraphNode)
 
     const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
       '65',
@@ -704,5 +961,97 @@ describe('SubgraphNode promotion view keys', () => {
     )
 
     expect(firstKey).not.toBe(secondKey)
+  })
+})
+
+describe('SubgraphNode label propagation', () => {
+  it('should preserve input labels from configure path', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    subgraph.inputs[0].label = 'Steps Count'
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.inputs[0].label).toBe('Steps Count')
+    expect(subgraphNode.inputs[0].name).toBe('steps')
+  })
+
+  it('should preserve output labels from configure path', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'result', type: 'number' }]
+    })
+    subgraph.outputs[0].label = 'Final Result'
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.outputs[0].label).toBe('Final Result')
+    expect(subgraphNode.outputs[0].name).toBe('result')
+  })
+
+  it('should propagate label via renaming-input event', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'number')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'number')
+    interiorNode.addWidget('number', 'value', 0, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const originalWidgetName = promotedInput.widget?.name
+    const labelChangedSpy = vi.spyOn(subgraphNode.graph!, 'trigger')
+
+    expect(promotedInput.label).toBeUndefined()
+    expect(promotedInput._widget).toBeDefined()
+
+    subgraph.renameInput(subgraph.inputs[0], 'Steps Count')
+
+    expect(promotedInput.label).toBe('Steps Count')
+    expect(promotedInput.name).toBe('steps')
+    expect(promotedInput.widget?.name).toBe(originalWidgetName)
+    expect(promotedInput._widget?.label).toBe('Steps Count')
+    expect(subgraphNode.widgets?.[0].label).toBe('Steps Count')
+    expect(labelChangedSpy).toHaveBeenCalledWith('node:slot-label:changed', {
+      nodeId: subgraphNode.id,
+      slotType: NodeSlotType.INPUT
+    })
+  })
+
+  it('should propagate label via renaming-output event', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const labelChangedSpy = vi.spyOn(subgraphNode.graph!, 'trigger')
+
+    subgraph.addOutput('result', 'number')
+    expect(subgraphNode.outputs[0].label).toBeUndefined()
+
+    subgraph.renameOutput(subgraph.outputs[0], 'Final Result')
+
+    expect(subgraphNode.outputs[0].label).toBe('Final Result')
+    expect(subgraphNode.outputs[0].name).toBe('result')
+    expect(labelChangedSpy).toHaveBeenCalledWith('node:slot-label:changed', {
+      nodeId: subgraphNode.id,
+      slotType: NodeSlotType.OUTPUT
+    })
+  })
+
+  it('should preserve localized_name from configure path', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'steps', type: 'number' }],
+      outputs: [{ name: 'result', type: 'number' }]
+    })
+    subgraph.inputs[0].localized_name = 'ステップ'
+    subgraph.outputs[0].localized_name = '結果'
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.inputs[0].localized_name).toBe('ステップ')
+    expect(subgraphNode.outputs[0].localized_name).toBe('結果')
   })
 })

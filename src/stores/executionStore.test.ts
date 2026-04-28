@@ -3,15 +3,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
-const mockNodeExecutionIdToNodeLocatorId = vi.fn()
-const mockNodeIdToNodeLocatorId = vi.fn()
-const mockNodeLocatorIdToNodeExecutionId = vi.fn()
+const {
+  mockNodeExecutionIdToNodeLocatorId,
+  mockNodeIdToNodeLocatorId,
+  mockNodeLocatorIdToNodeExecutionId,
+  mockShowTextPreview
+} = vi.hoisted(() => ({
+  mockNodeExecutionIdToNodeLocatorId: vi.fn(),
+  mockNodeIdToNodeLocatorId: vi.fn(),
+  mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+  mockShowTextPreview: vi.fn()
+}))
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -37,7 +47,7 @@ declare global {
 
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
-    showTextPreview: vi.fn()
+    showTextPreview: mockShowTextPreview
   })
 }))
 
@@ -430,6 +440,56 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   })
 })
 
+describe('useExecutionStore - progress_text startup guard', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function fireProgressText(detail: {
+    nodeId: string
+    text: string
+    prompt_id?: string
+  }) {
+    const handler = apiEventHandlers.get('progress_text')
+    if (!handler) throw new Error('progress_text handler not bound')
+    handler(new CustomEvent('progress_text', { detail }))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('should ignore progress_text before the canvas is initialized', async () => {
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = null
+
+    expect(() =>
+      fireProgressText({
+        nodeId: '1',
+        text: 'warming up'
+      })
+    ).not.toThrow()
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('should call showTextPreview when canvas is available', async () => {
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({ nodeId: '1', text: 'warming up' })
+
+    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
+  })
+})
+
 describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
@@ -598,13 +658,13 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   })
 })
 
-describe('useExecutionErrorStore - setMissingNodeTypes', () => {
-  let store: ReturnType<typeof useExecutionErrorStore>
+describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
+  let store: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useExecutionErrorStore()
+    store = useMissingNodesErrorStore()
   })
 
   it('clears missingNodesError when called with an empty array', () => {

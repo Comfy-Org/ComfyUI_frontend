@@ -1,16 +1,18 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class ComfyNodeSearchBoxV2 {
   readonly dialog: Locator
   readonly input: Locator
+  readonly filterSearch: Locator
   readonly results: Locator
   readonly filterOptions: Locator
 
   constructor(readonly page: Page) {
     this.dialog = page.getByRole('search')
-    this.input = this.dialog.locator('input[type="text"]')
+    this.input = this.dialog.getByRole('combobox')
+    this.filterSearch = this.dialog.getByRole('textbox', { name: 'Search' })
     this.results = this.dialog.getByTestId('result-item')
     this.filterOptions = this.dialog.getByTestId('filter-option')
   }

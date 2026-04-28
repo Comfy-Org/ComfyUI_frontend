@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyApp } from '../../src/scripts/app'
-import { NodeBadgeMode } from '../../src/types/nodeSource'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyApp } from '@/scripts/app'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -82,7 +82,13 @@ test.describe(
           'Comfy.NodeBadge.NodeIdBadgeMode',
           mode
         )
-        await comfyPage.nextFrame()
+        await expect
+          .poll(
+            () =>
+              comfyPage.settings.getSetting('Comfy.NodeBadge.NodeIdBadgeMode'),
+            { message: 'NodeIdBadgeMode setting should be applied' }
+          )
+          .toBe(mode)
         await comfyPage.canvasOps.resetView()
         await expect(comfyPage.canvas).toHaveScreenshot(
           `node-badge-${mode}.png`
@@ -104,8 +110,11 @@ test.describe(
         NodeBadgeMode.ShowAll
       )
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'unknown')
-      await comfyPage.nextFrame()
-      // Click empty space to trigger canvas re-render.
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'), {
+          message: 'ColorPalette setting should be applied'
+        })
+        .toBe('unknown')
       await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-unknown-color-palette.png'
@@ -120,8 +129,11 @@ test.describe(
         NodeBadgeMode.ShowAll
       )
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.nextFrame()
-      // Click empty space to trigger canvas re-render.
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'), {
+          message: 'ColorPalette setting should be applied'
+        })
+        .toBe('light')
       await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-light-color-palette.png'

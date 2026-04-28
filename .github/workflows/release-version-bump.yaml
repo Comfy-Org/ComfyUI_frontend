@@ -30,6 +30,7 @@ concurrency:
 
 jobs:
   bump-version:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -141,10 +142,22 @@ jobs:
           fi
           echo "✅ Branch '$BRANCH' exists"
 
+      - name: Ensure packageManager field exists
+        run: |
+          if ! grep -q '"packageManager"' package.json; then
+            # Old branches (e.g. core/1.42) predate the packageManager field.
+            # Inject it so pnpm/action-setup can resolve the version.
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
+              pkg.packageManager = 'pnpm@10.33.0';
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
+            echo "Injected packageManager into package.json for legacy branch"
+          fi
+
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-        with:
-          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

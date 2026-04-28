@@ -245,6 +245,7 @@ const renderPreview = (
   }
   // Draw individual
   const img = imgs[imageIndex]
+  if (!img) return
   let w = img.naturalWidth
   let h = img.naturalHeight
 

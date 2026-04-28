@@ -8,6 +8,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
+const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export type SubscriptionDialogReason =
   | 'subscription_required'
@@ -42,13 +43,20 @@ export const useSubscriptionDialog = () => {
             import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue')
         )
 
+    const personalProps = {
+      onClose: hide,
+      reason: options?.reason,
+      onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
+    }
+    const workspaceProps = {
+      onClose: hide,
+      reason: options?.reason
+    }
+
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component,
-      props: {
-        onClose: hide,
-        reason: options?.reason
-      },
+      props: useWorkspaceVariant ? workspaceProps : personalProps,
       dialogComponentProps: {
         style: 'width: min(1328px, 95vw); max-height: 958px;',
         pt: {
@@ -101,9 +109,58 @@ export const useSubscriptionDialog = () => {
     showPricingTable(options)
   }
 
+  /**
+   * Start the two-stage team workspace upgrade flow:
+   * 1. Close the current pricing dialog
+   * 2. Open the create workspace dialog
+   * 3. On successful creation, persist a resume intent so the team pricing
+   *    dialog reopens automatically after the page reload
+   *
+   * Uses sessionStorage (not a store) because the intent must survive
+   * a full page reload triggered by workspace switching.
+   */
+  function startTeamWorkspaceUpgradeFlow() {
+    hide()
+    dialogService
+      .showTeamWorkspacesDialog(() => {
+        try {
+          sessionStorage.setItem(RESUME_PRICING_KEY, '1')
+        } catch {
+          // sessionStorage may be unavailable
+        }
+      })
+      .catch((error) => {
+        console.error(
+          '[useSubscriptionDialog] Failed to open team workspaces dialog:',
+          error
+        )
+        showPricingTable()
+      })
+  }
+
+  /**
+   * Check for and consume a pending team pricing resume intent.
+   * Call once after workspace initialization on app boot.
+   */
+  function resumePendingPricingFlow() {
+    try {
+      const pending = sessionStorage.getItem(RESUME_PRICING_KEY)
+      if (!pending) return
+      sessionStorage.removeItem(RESUME_PRICING_KEY)
+
+      if (!workspaceStore.isInPersonalWorkspace) {
+        showPricingTable()
+      }
+    } catch {
+      // sessionStorage may be unavailable
+    }
+  }
+
   return {
     show,
     showPricingTable,
-    hide
+    hide,
+    startTeamWorkspaceUpgradeFlow,
+    resumePendingPricingFlow
   }
 }

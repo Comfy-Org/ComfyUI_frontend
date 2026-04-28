@@ -1,5 +1,8 @@
 <template>
-  <div class="relative grid h-full grid-cols-5">
+  <div
+    data-testid="cloud-notification-dialog"
+    class="relative grid h-full grid-cols-5"
+  >
     <Button
       size="unset"
       variant="muted-textonly"

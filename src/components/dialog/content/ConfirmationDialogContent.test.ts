@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,8 +22,8 @@ describe('ConfirmationDialogContent', () => {
     setActivePinia(createPinia())
   })
 
-  function mountComponent(props: Partial<Props> = {}) {
-    return mount(ConfirmationDialogContent, {
+  function renderComponent(props: Partial<Props> = {}) {
+    return render(ConfirmationDialogContent, {
       global: {
         plugins: [PrimeVue, i18n]
       },
@@ -39,7 +39,7 @@ describe('ConfirmationDialogContent', () => {
   it('renders long messages without breaking layout', () => {
     const longFilename =
       'workflow_checkpoint_' + 'a'.repeat(200) + '.safetensors'
-    const wrapper = mountComponent({ message: longFilename })
-    expect(wrapper.text()).toContain(longFilename)
+    renderComponent({ message: longFilename })
+    expect(screen.getByText(longFilename)).toBeInTheDocument()
   })
 })

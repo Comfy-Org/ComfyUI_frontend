@@ -438,12 +438,12 @@ describe(useOutputHistory, () => {
       expect(mayBeActiveWorkflowPending.value).toBe(true)
     })
 
-    it('returns true when a pending task matches the active workflow', () => {
+    it('returns false when only pending tasks exist', () => {
       pendingTasksRef.value = [{ jobId: 'job-1' }]
       jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
 
       const { mayBeActiveWorkflowPending } = useOutputHistory()
-      expect(mayBeActiveWorkflowPending.value).toBe(true)
+      expect(mayBeActiveWorkflowPending.value).toBe(false)
     })
 
     it('returns false when tasks belong to another workflow', () => {

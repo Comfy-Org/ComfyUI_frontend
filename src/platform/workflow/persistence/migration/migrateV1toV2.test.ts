@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { hashPath } from '../base/hashUtil'
+import { readOpenPaths } from '../base/storageIO'
 import {
   cleanupV1Data,
   getMigrationStatus,
@@ -209,6 +210,85 @@ describe('migrateV1toV2', () => {
       expect(
         localStorage.getItem(`Comfy.Workflow.DraftOrder:${workspaceId}`)
       ).toBeNull()
+    })
+  })
+
+  describe('V1 tab state migration', () => {
+    it('migrates V1 tab state pointers to V2 format', () => {
+      // Simulate V1 state: user had 3 workflows open, 2nd was active
+      const v1Drafts = {
+        'workflows/a.json': {
+          data: '{"nodes":[1]}',
+          updatedAt: 1000,
+          name: 'a',
+          isTemporary: true
+        },
+        'workflows/b.json': {
+          data: '{"nodes":[2]}',
+          updatedAt: 2000,
+          name: 'b',
+          isTemporary: true
+        },
+        'workflows/c.json': {
+          data: '{"nodes":[3]}',
+          updatedAt: 3000,
+          name: 'c',
+          isTemporary: false
+        }
+      }
+      setV1Data(v1Drafts, [
+        'workflows/a.json',
+        'workflows/b.json',
+        'workflows/c.json'
+      ])
+
+      // V1 tab state stored by setStorageValue (localStorage fallback keys)
+      localStorage.setItem(
+        'Comfy.OpenWorkflowsPaths',
+        JSON.stringify([
+          'workflows/a.json',
+          'workflows/b.json',
+          'workflows/c.json'
+        ])
+      )
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', JSON.stringify(1))
+
+      // Run migration (simulating upgrade from pre-V2 to V2)
+      const clientId = 'client-123'
+      const result = migrateV1toV2(workspaceId, clientId)
+      expect(result).toBe(3)
+
+      // V2 tab state should be readable via the V2 API
+      const openPaths = readOpenPaths(clientId, workspaceId)
+
+      // This is the bug: V1 tab state is NOT migrated, so openPaths is null
+      expect(openPaths).not.toBeNull()
+      expect(openPaths!.paths).toEqual([
+        'workflows/a.json',
+        'workflows/b.json',
+        'workflows/c.json'
+      ])
+      expect(openPaths!.activeIndex).toBe(1)
+    })
+
+    it('does not migrate tab state when V1 tab state keys are absent', () => {
+      const v1Drafts = {
+        'workflows/a.json': {
+          data: '{}',
+          updatedAt: 1000,
+          name: 'a',
+          isTemporary: true
+        }
+      }
+      setV1Data(v1Drafts, ['workflows/a.json'])
+
+      // No V1 tab state keys in localStorage
+      migrateV1toV2(workspaceId)
+
+      const openPaths = readOpenPaths('any-client-id', workspaceId)
+
+      // No tab state to migrate — should remain null
+      expect(openPaths).toBeNull()
     })
   })
 

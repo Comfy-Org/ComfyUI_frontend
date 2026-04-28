@@ -1,6 +1,7 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
+  treatConfigHintsAsErrors: true,
   workspaces: {
     '.': {
       entry: [
@@ -16,6 +17,9 @@ const config: KnipConfig = {
       entry: ['src/i18n.ts'],
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/design-system': {
+      project: ['src/**/*.{css,js,ts}']
+    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -27,6 +31,9 @@ const config: KnipConfig = {
     },
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
+    },
+    'apps/website': {
+      entry: ['src/scripts/**/*.ts']
     }
   },
   ignoreBinaries: ['python3'],
@@ -43,8 +50,6 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Used by stacked PR (feat/glsl-live-preview)
-    'src/renderer/glsl/useGLSLRenderer.ts',
     // Workflow files contain license names that knip misinterprets as binaries
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR

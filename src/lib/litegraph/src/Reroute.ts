@@ -16,6 +16,7 @@ import type {
   ReadOnlyRect,
   ReadonlyLinkNetwork
 } from './interfaces'
+import { LiteGraph } from './litegraph'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
@@ -428,9 +429,10 @@ export class Reroute
   snapToGrid(snapTo: number): boolean {
     if (!snapTo) return false
 
+    const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
     const { pos } = this
     pos[0] = snapTo * Math.round(pos[0] / snapTo)
-    pos[1] = snapTo * Math.round(pos[1] / snapTo)
+    pos[1] = snapTo * Math.round((pos[1] - offsetY) / snapTo) + offsetY
     return true
   }
 

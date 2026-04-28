@@ -25,6 +25,10 @@
     },
     "tooltip": "システムタイトルバーを非表示にするにはカスタムオプションを選択してください"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "アニメーションを無効化",
+    "tooltip": "ほとんどのCSSアニメーションとトランジションをオフにします。表示用GPUが生成にも使われている場合、推論速度が向上します。"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "キャンバス背景画像",
     "tooltip": "キャンバスの背景画像のURLです。出力パネルで画像を右クリックし、「背景として設定」を選択すると使用できます。"
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "浮動小数点ウィジェットの丸め小数点数 [0 = 自動]。",
     "tooltip": "(ページの再読み込みが必要)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "自動パン速度",
+    "tooltip": "キャンバス端にドラッグしたときの自動パンの最大速度。0に設定すると自動パンが無効になります。"
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "左下隅にキャンバス情報を表示する（fpsなど）"
@@ -453,9 +461,6 @@
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "欠落しているモデルの警告を表示"
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "欠落しているノードの警告を表示"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"

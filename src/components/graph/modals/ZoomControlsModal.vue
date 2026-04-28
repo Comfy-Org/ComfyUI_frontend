@@ -11,6 +11,7 @@
       <div class="flex flex-col gap-1">
         <div
           class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          data-testid="zoom-in-action"
           @mousedown="startRepeat('Comfy.Canvas.ZoomIn')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
@@ -23,6 +24,7 @@
 
         <div
           class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          data-testid="zoom-out-action"
           @mousedown="startRepeat('Comfy.Canvas.ZoomOut')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
@@ -35,6 +37,7 @@
 
         <div
           class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          data-testid="zoom-to-fit-action"
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
@@ -46,6 +49,7 @@
         <div
           ref="zoomInputContainer"
           class="zoomInputContainer flex items-center gap-1 rounded-sm bg-input-surface p-2"
+          data-testid="zoom-percentage-input"
         >
           <InputNumber
             :default-value="canvasStore.appScalePercentage"
