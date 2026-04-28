@@ -76,7 +76,7 @@ useHeroAnimation({
 
     <!-- Right column: form -->
     <div ref="formRef" class="mt-12 lg:mt-0 lg:w-1/2">
-      <HubspotFormEmbed />
+      <HubspotFormEmbed :locale />
     </div>
   </section>
 </template>
