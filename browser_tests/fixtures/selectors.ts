@@ -89,7 +89,8 @@ export const TestIds = {
     subscribeButton: 'topbar-subscribe-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
-    loginButtonPopoverLearnMore: 'login-button-popover-learn-more'
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
