@@ -18,7 +18,7 @@
         pt:root:name="email"
         pt:root:autocomplete="email"
         class="h-10"
-        type="text"
+        type="email"
         :placeholder="t('auth.signup.emailPlaceholder')"
         :invalid="$field.invalid"
       />
