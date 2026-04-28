@@ -4,7 +4,7 @@
 
 ## Why this matters
 
-The repo has a strong design system, but it's optimized for humans reading prose, not for AI agents (Claude Code, CodeRabbit, custom tooling) that need to enumerate available tokens and primitives quickly. Today an agent asked "what tokens are available?" has to read three CSS files by hand (`_palette.css`, `layout.css`, `style.css`) and infer naming patterns; an agent asked "what UI primitives can I use?" has to glob `src/components/ui/*/` and read CVA variant files. There's no single "look here first" entry point, and the `.agents/checks/` infrastructure (which has 25 checks, including `pattern-compliance.md` flagging hex values, `dark:` modifiers, and `withDefaults` anti-patterns) doesn't link to where the right answers live.
+The repo has a strong design system, but it's optimized for humans reading prose, not for AI agents (Claude Code, CodeRabbit, custom tooling) that need to enumerate available tokens and primitives quickly. Today an agent asked "what tokens are available?" has to read three CSS files by hand (`_palette.css`, `layout.css`, `style.css`) and infer naming patterns; an agent asked "what UI primitives can I use?" has to glob `src/components/ui/*/` and read CVA variant files. There's no single "look here first" entry point, and the `.agents/checks/` infrastructure (`pattern-compliance.md` flagging hex values, `dark:` modifiers, `withDefaults` anti-patterns and more) doesn't link to where the right answers live.
 
 This is solvable with cheap, hand-maintained docs. It's also the kind of thing that's easy to do badly — a botched first draft (premature, partly wrong, in the wrong place) makes the system _less_ discoverable, not more.
 
