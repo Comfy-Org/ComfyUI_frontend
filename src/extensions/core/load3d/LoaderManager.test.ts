@@ -141,10 +141,9 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()).toBeNull()
     })
 
-    it('stays null when the adapter rejects', async () => {
+    it('stays null when the adapter rejects (does not publish stale adapter)', async () => {
       const { lm } = makeLoaderManager()
-      // Seed with a previously-successful mesh load so we can prove a later
-      // failed splat load does not leave the splat adapter published.
+
       meshLoad.mockResolvedValueOnce(new THREE.Object3D())
       await lm.loadModel('api/view?filename=cube.glb')
       expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
@@ -196,10 +195,13 @@ describe('LoaderManager', () => {
       }
 
       let adapterDuringClear: ModelAdapter | null | undefined
-      const lm = new LoaderManager(modelManager, eventManager, [oldAdapter])
-      // Prime the loader with an active adapter, then trigger a new load.
-      ;(lm as unknown as { _currentAdapter: ModelAdapter })._currentAdapter =
-        oldAdapter
+      const adapterRef = { current: oldAdapter as ModelAdapter | null }
+      const lm = new LoaderManager(
+        modelManager,
+        eventManager,
+        [oldAdapter],
+        adapterRef
+      )
       ;(modelManager.clearModel as ReturnType<typeof vi.fn>).mockImplementation(
         () => {
           adapterDuringClear = lm.getCurrentAdapter()
@@ -212,6 +214,29 @@ describe('LoaderManager', () => {
       )
 
       expect(adapterDuringClear).toBe(oldAdapter)
+    })
+
+    it('does not let a slow stale load clobber adapterRef after a newer load took over', async () => {
+      const { lm } = makeLoaderManager()
+
+      let resolveSplatLoad!: (model: THREE.Object3D) => void
+      const slowSplatLoad = new Promise<THREE.Object3D>((resolve) => {
+        resolveSplatLoad = resolve
+      })
+      splatLoad.mockReturnValueOnce(slowSplatLoad)
+      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+
+      const aPromise = lm.loadModel('api/view?filename=a.splat')
+
+      await Promise.resolve()
+
+      await lm.loadModel('api/view?filename=b.glb')
+      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
+
+      resolveSplatLoad(new THREE.Object3D())
+      await aPromise
+
+      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
     })
   })
 

@@ -1706,6 +1706,7 @@
     "gligen": "gligen",
     "shader": "shader",
     "Grok": "Grok",
+    "Wan": "Wan",
     "HitPaw": "HitPaw",
     "sd": "sd",
     "Ideogram": "Ideogram",
@@ -1755,7 +1756,6 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "Wan": "Wan",
     "camera": "camera",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
