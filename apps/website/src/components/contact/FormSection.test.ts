@@ -1,11 +1,19 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type * as SubmitModule from '../../utils/submitHubspotForm'
 
 import { HubspotSubmissionError } from '../../utils/submitHubspotForm'
+
+beforeAll(() => {
+  vi.stubEnv('PUBLIC_HUBSPOT_PORTAL_ID', '244637579')
+  vi.stubEnv(
+    'PUBLIC_HUBSPOT_FORM_ID_CONTACT_SALES',
+    '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
+  )
+})
 
 afterEach(() => {
   cleanup()
@@ -27,6 +35,8 @@ vi.mock('../../utils/submitHubspotForm', async () => {
     readHubspotTrackingCookie: () => 'test-hutk'
   }
 })
+
+type SubmitArgs = Parameters<typeof SubmitModule.submitHubspotForm>[0]
 
 import FormSection from './FormSection.vue'
 
@@ -62,15 +72,11 @@ describe('FormSection', () => {
     await user.click(screen.getByRole('button', { name: /submit/i }))
 
     expect(submitMock).toHaveBeenCalledTimes(1)
-    const args = submitMock.mock.calls[0][0] as {
-      config: { portalId: string; formGuid: string }
-      fields: { objectTypeId: string; name: string; value: string }[]
-      context: { hutk?: string | null }
-    }
+    const args = submitMock.mock.calls[0][0] as SubmitArgs
 
     expect(args.config.portalId).toBe('244637579')
     expect(args.config.formGuid).toBe('94e05eab-1373-47f7-ab5e-d84f9e6aa262')
-    expect(args.context.hutk).toBe('test-hutk')
+    expect(args.context?.hutk).toBe('test-hutk')
 
     const fieldByName = Object.fromEntries(args.fields.map((f) => [f.name, f]))
     expect(fieldByName.firstname).toEqual({
@@ -138,9 +144,7 @@ describe('FormSection', () => {
     await user.click(screen.getByRole('button', { name: /submit/i }))
 
     expect(submitMock).toHaveBeenCalledTimes(1)
-    const args = submitMock.mock.calls[0][0] as {
-      fields: { name: string; value: string }[]
-    }
+    const args = submitMock.mock.calls[0][0] as SubmitArgs
     const builds = args.fields.find(
       (f) => f.name === 'who_primarily_builds_workflows'
     )
@@ -206,5 +210,19 @@ describe('FormSection', () => {
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('Email is required.')
     consoleSpy.mockRestore()
+  })
+})
+
+describe('FormSection without HubSpot env vars (preview/dev fail-safe)', () => {
+  beforeAll(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('disables the submit button when neither env nor production defaults provide IDs', () => {
+    render(FormSection)
+    const button = screen.getByRole('button', {
+      name: /submit/i
+    }) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
   })
 })

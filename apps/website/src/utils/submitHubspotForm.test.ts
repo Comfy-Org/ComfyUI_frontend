@@ -144,6 +144,18 @@ describe('submitHubspotForm', () => {
     })
   })
 
+  it('returns an empty object when a 200 response body is an array', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse([1, 2, 3]))
+
+    const result = await submitHubspotForm({
+      config: { portalId: PORTAL, formGuid: FORM },
+      fields: [field('firstname', 'Jane')],
+      fetchImpl
+    })
+
+    expect(result).toEqual({})
+  })
+
   it('throws a HubspotSubmissionError carrying the API errors on 400', async () => {
     const errorBody = {
       errors: [

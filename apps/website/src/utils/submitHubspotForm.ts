@@ -11,7 +11,7 @@
  * Docs: https://developers.hubspot.com/docs/api-reference/legacy/marketing/forms/v3-legacy/submit-data-unauthenticated
  */
 
-export type HubspotRegion = 'na1' | 'eu1'
+type HubspotRegion = 'na1' | 'eu1'
 
 const HUBSPOT_REGIONS: readonly HubspotRegion[] = ['na1', 'eu1']
 
@@ -179,5 +179,5 @@ function isHubspotErrorBody(
 function isHubspotSuccessBody(
   value: unknown
 ): value is HubspotSubmissionResult {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
