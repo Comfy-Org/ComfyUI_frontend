@@ -59,13 +59,11 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
       const userCancelled =
         userCancelledUrls.has(data.url) && data.status === DownloadStatus.ERROR
 
-      const existing = findByUrl(data.url)
-      if (!existing) {
+      let download = findByUrl(data.url)
+      if (!download) {
         downloads.value.push(data)
+        download = data
       }
-
-      const download = findByUrl(data.url)
-      if (!download) return
 
       download.progress = data.progress
       download.status = userCancelled ? DownloadStatus.CANCELLED : data.status

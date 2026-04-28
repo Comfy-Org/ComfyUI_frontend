@@ -225,17 +225,22 @@ describe('downloadModel', () => {
       .mockReturnValue({ click } as unknown as HTMLAnchorElement)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    downloadModel(
-      {
-        name: 'model.safetensors',
-        url: 'https://example.com/model.safetensors?token=secret',
-        directory: 'checkpoints'
-      },
-      { checkpoints: ['/tmp/checkpoints'] }
-    )
+    try {
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model.safetensors?token=secret',
+          directory: 'checkpoints'
+        },
+        { checkpoints: ['/tmp/checkpoints'] }
+      )
 
-    expect(click).not.toHaveBeenCalled()
-    expect(createElement).not.toHaveBeenCalled()
-    expect(warn).toHaveBeenCalledWith('Skipping untrusted model download URL')
+      expect(click).not.toHaveBeenCalled()
+      expect(createElement).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledWith('Skipping untrusted model download URL')
+    } finally {
+      createElement.mockRestore()
+      warn.mockRestore()
+    }
   })
 })

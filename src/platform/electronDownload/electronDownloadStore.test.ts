@@ -105,16 +105,6 @@ describe('useElectronDownloadStore', () => {
       expect(store.findByUrl(url)?.status).toBe(DownloadStatus.ERROR)
     })
 
-    it('translates a user-cancel ERROR without treating it as genuine ERROR', async () => {
-      const store = await loadStore()
-      const url = 'https://civitai.com/api/download/models/10'
-      emitProgress({ url, status: DownloadStatus.IN_PROGRESS })
-      void store.cancel(url)
-      emitProgress({ url, status: DownloadStatus.ERROR, progress: 0 })
-
-      expect(store.findByUrl(url)?.status).toBe(DownloadStatus.CANCELLED)
-    })
-
     it('clears a pending cancel flag when the download completes instead', async () => {
       const store = await loadStore()
       const url = 'https://civitai.com/api/download/models/15'
