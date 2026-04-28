@@ -202,6 +202,28 @@ describe('formatUtil', () => {
         '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
       )
     })
+
+    it('should highlight cross-word matches', () => {
+      const result = highlightQuery('convert image to mask', 'geto', false)
+      expect(result).toBe(
+        'convert ima<span class="highlight">ge to</span> mask'
+      )
+    })
+
+    it('should not match across line breaks', () => {
+      const result = highlightQuery('ge\nto', 'geto', false)
+      expect(result).toBe('ge\nto')
+    })
+
+    it('should not match across tabs', () => {
+      const result = highlightQuery('ge\tto', 'geto', false)
+      expect(result).toBe('ge\tto')
+    })
+
+    it('should not match across multiple spaces', () => {
+      const result = highlightQuery('ge  to', 'geto', false)
+      expect(result).toBe('ge  to')
+    })
   })
 
   describe('getFilenameDetails', () => {

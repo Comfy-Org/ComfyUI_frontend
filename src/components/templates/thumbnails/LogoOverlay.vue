@@ -40,7 +40,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, locale } = useI18n()
 

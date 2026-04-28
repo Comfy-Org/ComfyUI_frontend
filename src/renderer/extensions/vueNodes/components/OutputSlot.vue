@@ -37,7 +37,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 

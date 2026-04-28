@@ -2223,6 +2223,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.state.ghostNodeId != null) {
       if (e.button === 0) this.finalizeGhostPlacement(false)
       if (e.button === 2) this.finalizeGhostPlacement(true)
+      this.canvas.focus()
       e.stopPropagation()
       e.preventDefault()
       return
@@ -3081,7 +3082,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (oldValue != widget.value) {
       node.onWidgetChanged?.(widget.name, widget.value, oldValue, widget)
       if (!node.graph) throw new NullGraphError()
-      node.graph._version++
+      node.graph.incrementVersion()
     }
 
     // Clean up state var
@@ -3679,6 +3680,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.state.ghostNodeId = node.id
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: true,
+      nodeId: node.id
+    })
 
     this.deselectAll()
     this.select(node)
@@ -3709,6 +3714,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
     this._autoPan?.stop()
     this._autoPan = null
 
@@ -7888,7 +7897,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       node.properties[property] = value
       if (node.graph) {
-        node.graph._version++
+        node.graph.incrementVersion()
       }
       node.onPropertyChanged?.(property, value)
       options.onclose?.()
