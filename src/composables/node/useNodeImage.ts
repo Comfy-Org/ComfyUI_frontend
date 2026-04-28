@@ -1,3 +1,4 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -133,6 +134,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   let minWidth = DEFAULT_VIDEO_SIZE
 
   const { handleWheel, handlePointer } = useCanvasInteractions()
+  const controller = new AbortController()
+  const { signal } = controller
 
   const setMinDimensions = (video: HTMLVideoElement) => {
     const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
@@ -152,9 +155,9 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
       // Add event listeners for canvas interactions
-      video.addEventListener('wheel', handleWheel)
-      video.addEventListener('pointermove', handlePointer)
-      video.addEventListener('pointerdown', handlePointer)
+      video.addEventListener('wheel', handleWheel, { signal })
+      video.addEventListener('pointermove', handlePointer, { signal })
+      video.addEventListener('pointerdown', handlePointer, { signal })
 
       video.onloadeddata = () => {
         setMinDimensions(video)
@@ -175,6 +178,9 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       widget.computeLayoutSize = () => ({
         minHeight,
         minWidth
+      })
+      widget.onRemove = useChainCallback(widget.onRemove, () => {
+        controller.abort()
       })
     }
   }
