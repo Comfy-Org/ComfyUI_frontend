@@ -1,6 +1,7 @@
 import { render } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { PropType } from 'vue'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
@@ -52,7 +53,7 @@ const contextMenuStub = defineComponent({
       default: undefined
     },
     model: {
-      type: Array as () => MenuItem[],
+      type: Array as PropType<MenuItem[]>,
       default: () => []
     }
   },
