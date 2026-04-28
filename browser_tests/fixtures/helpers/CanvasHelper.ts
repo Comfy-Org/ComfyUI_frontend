@@ -281,7 +281,7 @@ export class CanvasHelper {
 
   async dblclickGroupTitle(title: string): Promise<void> {
     const clientPos = await this.page.evaluate((targetTitle) => {
-      const groups = window.app!.rootGraph.groups
+      const groups = window.app!.canvas.graph?.groups ?? []
       const group = groups.find(
         (g: { title: string }) => g.title === targetTitle
       )

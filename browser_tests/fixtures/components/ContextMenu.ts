@@ -41,7 +41,10 @@ export class ContextMenu {
     const litegraphVisible = await this.litegraphMenu
       .isVisible()
       .catch(() => false)
-    return primeVueVisible || litegraphVisible
+    const litegraphContextVisible = await this.litegraphContextMenu
+      .isVisible()
+      .catch(() => false)
+    return primeVueVisible || litegraphVisible || litegraphContextVisible
   }
 
   async assertHasItems(items: string[]): Promise<void> {
@@ -73,7 +76,8 @@ export class ContextMenu {
   async waitForHidden(): Promise<void> {
     await Promise.all([
       this.primeVueMenu.waitFor({ state: 'hidden' }),
-      this.litegraphMenu.waitFor({ state: 'hidden' })
+      this.litegraphMenu.waitFor({ state: 'hidden' }),
+      this.litegraphContextMenu.waitFor({ state: 'hidden' })
     ])
   }
 }
