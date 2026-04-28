@@ -5,6 +5,7 @@
       v-for="btn in categoryButtons"
       :key="btn.id"
       type="button"
+      :data-testid="`search-category-${btn.id}`"
       :aria-pressed="activeCategory === btn.id"
       :class="chipClass(activeCategory === btn.id)"
       @click="emit('selectCategory', btn.id)"
@@ -24,7 +25,11 @@
       @clear="emit('clearFilterGroup', tf.chip.filter.id)"
       @escape-close="emit('focusSearch')"
     >
-      <button type="button" :class="chipClass(false, tf.values.length > 0)">
+      <button
+        type="button"
+        :data-testid="`search-filter-${tf.chip.key}`"
+        :class="chipClass(false, tf.values.length > 0)"
+      >
         <span v-if="tf.values.length > 0" class="flex items-center">
           <span
             v-for="val in tf.values.slice(0, MAX_VISIBLE_DOTS)"
@@ -57,8 +62,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
+import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { BLUEPRINT_CATEGORY } from '@/types/nodeSource'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -96,20 +101,20 @@ const MAX_VISIBLE_DOTS = 4
 const categoryButtons = computed(() => {
   const buttons: { id: string; label: string }[] = []
   if (hasFavorites) {
-    buttons.push({ id: 'favorites', label: t('g.bookmarked') })
+    buttons.push({ id: RootCategory.Favorites, label: t('g.bookmarked') })
   }
   if (hasBlueprintNodes) {
-    buttons.push({ id: BLUEPRINT_CATEGORY, label: t('g.blueprints') })
+    buttons.push({ id: RootCategory.Blueprint, label: t('g.blueprints') })
   }
   if (hasPartnerNodes) {
-    buttons.push({ id: 'partner-nodes', label: t('g.partner') })
+    buttons.push({ id: RootCategory.PartnerNodes, label: t('g.partner') })
   }
   if (hasEssentialNodes) {
-    buttons.push({ id: 'essentials', label: t('g.essentials') })
+    buttons.push({ id: RootCategory.Essentials, label: t('g.essentials') })
   }
-  buttons.push({ id: 'comfy', label: t('g.comfy') })
+  buttons.push({ id: RootCategory.Comfy, label: t('g.comfy') })
   if (hasCustomNodes) {
-    buttons.push({ id: 'custom', label: t('g.extensions') })
+    buttons.push({ id: RootCategory.Custom, label: t('g.extensions') })
   }
   return buttons
 })

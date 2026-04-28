@@ -206,7 +206,7 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
-    this.searchBoxV2 = new ComfyNodeSearchBoxV2(page)
+    this.searchBoxV2 = new ComfyNodeSearchBoxV2(this)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
