@@ -3082,7 +3082,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (oldValue != widget.value) {
       node.onWidgetChanged?.(widget.name, widget.value, oldValue, widget)
       if (!node.graph) throw new NullGraphError()
-      node.graph._version++
+      node.graph.incrementVersion()
     }
 
     // Clean up state var
@@ -7897,7 +7897,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       node.properties[property] = value
       if (node.graph) {
-        node.graph._version++
+        node.graph.incrementVersion()
       }
       node.onPropertyChanged?.(property, value)
       options.onclose?.()
