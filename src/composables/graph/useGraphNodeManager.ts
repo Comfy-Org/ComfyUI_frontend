@@ -55,6 +55,7 @@ export interface WidgetSlotMetadata {
 export interface SafeWidgetData {
   nodeId?: NodeId
   storeNodeId?: NodeId
+  storeInstanceId?: NodeId
   name: string
   storeName?: string
   type: string
@@ -336,6 +337,9 @@ function safeWidgetMapper(
       return {
         nodeId,
         storeNodeId: nodeId,
+        storeInstanceId: isPromotedWidgetView(widget)
+          ? String(node.id)
+          : undefined,
         name,
         storeName,
         type: effectiveWidget.type,

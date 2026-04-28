@@ -54,6 +54,7 @@ import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -1051,15 +1052,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /**
-   * Per-instance promoted widget values keyed by `${sourceNodeId}:${sourceWidgetName}[:${disambiguator}]`.
-   * Multiple SubgraphNode instances share the same inner nodes, so
-   * promoted widget values must be stored per-instance to avoid collisions.
-   */
-  readonly _instanceWidgetValues = new Map<string, unknown>()
-
   override configure(info: ExportedSubgraphInstance): void {
-    this._instanceWidgetValues.clear()
+    useWidgetValueStore().clearInstanceWidgets(this.rootGraph.id, this.id)
 
     for (const input of this.inputs) {
       if (
@@ -1239,9 +1233,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!view.sourceSerialize) continue
         const key = view.instanceKey
         if (!pendingValues.has(key)) continue
-        view.restorePerInstanceValue(
-          pendingValues.get(key) as typeof view.value
-        )
+        view.value = cloneWidgetValue(
+          pendingValues.get(key)
+        ) as typeof view.value
       }
     }
   }
@@ -1638,7 +1632,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onRemoved(): void {
     this._eventAbortController.abort()
     this._invalidatePromotedViewsCache()
-    this._instanceWidgetValues.clear()
+    useWidgetValueStore().clearInstanceWidgets(this.rootGraph.id, this.id)
 
     for (const widget of this.widgets) {
       if (isPromotedWidgetView(widget)) {
@@ -1706,9 +1700,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.properties.proxyWidgets = this._serializeEntries(entries, (key) => {
       const view = viewByInstanceKey.get(key)
       if (!view?.sourceSerialize) return undefined
-      const raw = view.serializeValue
-        ? view.serializeValue(this, -1)
-        : view.value
+      const raw = view.getScopedStoreValue()
       if (raw === undefined) return undefined
       return cloneWidgetValue(raw)
     })

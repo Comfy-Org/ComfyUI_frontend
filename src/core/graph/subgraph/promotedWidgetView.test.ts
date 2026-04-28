@@ -280,8 +280,17 @@ describe(createPromotedWidgetView, () => {
     view.value = 'updated'
     expect(view.value).toBe('updated')
 
-    // The interior widget reads from the same store
-    expect(innerNode.widgets![0].value).toBe('updated')
+    // The promoted view owns its runtime value in an instance-scoped store
+    // entry; the shared interior widget value stays untouched.
+    expect(innerNode.widgets![0].value).toBe('initial')
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNode.rootGraph.id,
+        String(innerNode.id),
+        'myWidget',
+        subgraphNode.id
+      )?.value
+    ).toBe('updated')
   })
 
   test('value falls back to interior widget when store entry is missing', () => {
@@ -296,9 +305,6 @@ describe(createPromotedWidgetView, () => {
     const fallbackWidget = fromPartial<IBaseWidget>(fallbackWidgetShape)
     innerNode.widgets = [fallbackWidget]
 
-    const widgetValueStore = useWidgetValueStore()
-    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
-
     const view = createPromotedWidgetView(
       subgraphNode,
       String(innerNode.id),
@@ -307,10 +313,11 @@ describe(createPromotedWidgetView, () => {
 
     expect(view.value).toBe('initial')
     view.value = 'updated'
-    expect(fallbackWidget.value).toBe('updated')
+    expect(view.value).toBe('updated')
+    expect(fallbackWidget.value).toBe('initial')
   })
 
-  test('value setter falls back to host widget when linked states are unavailable', () => {
+  test('value setter creates scoped state when linked states are unavailable', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'string_a', type: '*' }]
     })
@@ -327,12 +334,18 @@ describe(createPromotedWidgetView, () => {
     const linkedView = promotedWidgets(subgraphNode)[0]
     if (!linkedView) throw new Error('Expected a linked promoted widget')
 
-    const widgetValueStore = useWidgetValueStore()
-    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
-
     linkedView.value = 'updated'
 
-    expect(linkedNode.widgets?.[0].value).toBe('updated')
+    expect(linkedView.value).toBe('updated')
+    expect(linkedNode.widgets?.[0].value).toBe('initial')
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNode.rootGraph.id,
+        String(linkedNode.id),
+        'string_a',
+        subgraphNode.id
+      )?.value
+    ).toBe('updated')
   })
 
   test('label falls back to displayName then widgetName', () => {
@@ -523,9 +536,6 @@ describe(createPromotedWidgetView, () => {
     } as unknown as IBaseWidget
     innerNode.widgets = [fallbackWidget]
 
-    const widgetValueStore = useWidgetValueStore()
-    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
-
     const view = createPromotedWidgetView(
       subgraphNode,
       String(innerNode.id),
@@ -534,7 +544,8 @@ describe(createPromotedWidgetView, () => {
 
     const objValue = { key: 'data' }
     view.value = objValue
-    expect(fallbackWidget.value).toBe(objValue)
+    expect(view.value).toEqual(objValue)
+    expect(fallbackWidget.value).toBe('old')
   })
 
   test('onPointerDown returns true when interior widget onPointerDown handles it', () => {
@@ -876,17 +887,34 @@ describe('SubgraphNode.widgets getter', () => {
 
     linkedView.value = 'shared-value'
 
-    // Both linked nodes share the same SubgraphInput slot, so the value
-    // propagates to all connected widgets via getLinkedInputWidgets().
-    expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
-    expect(linkedNodeB.widgets?.[0]?.value).toBe('shared-value')
+    // Both linked nodes share the same SubgraphInput slot, so the scoped store
+    // records the same per-instance value for every connected source widget.
+    const widgetStore = useWidgetValueStore()
+    expect(
+      widgetStore.getWidget(
+        subgraphNode.rootGraph.id,
+        String(linkedNodeA.id),
+        'string_a',
+        subgraphNode.id
+      )?.value
+    ).toBe('shared-value')
+    expect(
+      widgetStore.getWidget(
+        subgraphNode.rootGraph.id,
+        String(linkedNodeB.id),
+        'string_a',
+        subgraphNode.id
+      )?.value
+    ).toBe('shared-value')
+    expect(linkedNodeA.widgets?.[0]?.value).toBe('a')
+    expect(linkedNodeB.widgets?.[0]?.value).toBe('b')
     expect(promotedNode.widgets?.[0]?.value).toBe('independent')
 
     promotedView.value = 'independent-updated'
 
-    expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
-    expect(linkedNodeB.widgets?.[0]?.value).toBe('shared-value')
-    expect(promotedNode.widgets?.[0]?.value).toBe('independent-updated')
+    expect(linkedView.value).toBe('shared-value')
+    expect(promotedView.value).toBe('independent-updated')
+    expect(promotedNode.widgets?.[0]?.value).toBe('independent')
   })
 
   test('duplicate-name promoted views map slot linkage by view identity', () => {
@@ -1223,13 +1251,28 @@ describe('SubgraphNode.widgets getter', () => {
     firstView.value = 'first-updated'
     secondView.value = 'second-updated'
 
-    expect(firstNode.widgets?.[0].value).toBe('first-updated')
-    expect(secondNode.widgets?.[0].value).toBe('second-updated')
+    const widgetStore = useWidgetValueStore()
+    expect(
+      widgetStore.getWidget(
+        subgraphNode.rootGraph.id,
+        String(firstNode.id),
+        'seed',
+        subgraphNode.id
+      )?.value
+    ).toBe('first-updated')
+    expect(
+      widgetStore.getWidget(
+        subgraphNode.rootGraph.id,
+        String(secondNode.id),
+        'seed',
+        subgraphNode.id
+      )?.value
+    ).toBe('second-updated')
 
     subgraphNode.serialize()
 
-    expect(firstNode.widgets?.[0].value).toBe('first-updated')
-    expect(secondNode.widgets?.[0].value).toBe('second-updated')
+    expect(firstView.value).toBe('first-updated')
+    expect(secondView.value).toBe('second-updated')
   })
 
   test('renaming an input updates linked promoted view display names', () => {
@@ -1550,8 +1593,12 @@ describe('SubgraphNode.widgets getter', () => {
 
     const widgetStore = useWidgetValueStore()
     const getValue = (nodeId: string) =>
-      widgetStore.getWidget(graph.id, stripGraphPrefix(nodeId), 'string_a')
-        ?.value
+      widgetStore.getWidget(
+        graph.id,
+        stripGraphPrefix(nodeId),
+        'string_a',
+        hostNode.id
+      )?.value
 
     expect(getValue('20')).toBe('shared-linked')
     expect(getValue('18')).toBe('shared-linked')
@@ -1640,6 +1687,7 @@ describe('SubgraphNode.widgets getter', () => {
     innerNode.addWidget('text', 'widgetA', 'a', () => {})
 
     setPromotions(subgraphNode, [[String(innerNode.id), 'widgetA']])
+    subgraphNode.widgets[0].value = 'edited'
 
     const createNodeSpy = vi
       .spyOn(LiteGraph, 'createNode')
@@ -1654,7 +1702,7 @@ describe('SubgraphNode.widgets getter', () => {
 
     const clonedSerialized = clonedNode.serialize()
     expect(clonedSerialized.properties?.proxyWidgets).toStrictEqual([
-      [String(innerNode.id), 'widgetA', null, { value: 'a' }]
+      [String(innerNode.id), 'widgetA', null, { value: 'edited' }]
     ])
 
     const hydratedClone = createTestSubgraphNode(subgraphNode.subgraph, {
@@ -2022,14 +2070,23 @@ describe('three-level nested value propagation', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  test('value set at outermost level propagates to concrete widget', () => {
+  test('value set at outermost level writes scoped store state', () => {
     const { concreteNode, subgraphNodeA } = createThreeLevelNestedSubgraph()
 
     expect(subgraphNodeA.widgets).toHaveLength(1)
     expect(subgraphNodeA.widgets[0].value).toBe(100)
 
     subgraphNodeA.widgets[0].value = 200
-    expect(concreteNode.widgets![0].value).toBe(200)
+    expect(subgraphNodeA.widgets[0].value).toBe(200)
+    expect(concreteNode.widgets![0].value).toBe(100)
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNodeA.rootGraph.id,
+        String(concreteNode.id),
+        'c_input',
+        subgraphNodeA.id
+      )?.value
+    ).toBe(200)
   })
 
   test('type resolves correctly through all three layers', () => {
@@ -2109,7 +2166,7 @@ describe('three-level nested value propagation', () => {
     widgets[1].value = 'updated-second'
 
     expect(firstTextNode.widgets?.[0]?.value).toBe('11111111111')
-    expect(secondTextNode.widgets?.[0]?.value).toBe('updated-second')
+    expect(secondTextNode.widgets?.[0]?.value).toBe('22222222222')
     expect(widgets[0].value).toBe('11111111111')
     expect(widgets[1].value).toBe('updated-second')
   })
@@ -2156,11 +2213,20 @@ describe('multi-link representative determinism for input-based promotion', () =
     // Read returns the first link's value
     expect(widgets[0].value).toBe('first-val')
 
-    // Write propagates to all linked nodes
+    // Write scopes the same runtime value to every linked source node.
     widgets[0].value = 'updated'
-    expect(firstNode.widgets![0].value).toBe('updated')
-    expect(secondNode.widgets![0].value).toBe('updated')
-    expect(thirdNode.widgets![0].value).toBe('updated')
+    const widgetStore = useWidgetValueStore()
+    for (const node of [firstNode, secondNode, thirdNode]) {
+      expect(
+        widgetStore.getWidget(
+          subgraphNode.rootGraph.id,
+          String(node.id),
+          'shared',
+          subgraphNode.id
+        )?.value
+      ).toBe('updated')
+      expect(node.widgets![0].value).not.toBe('updated')
+    }
 
     // Repeated reads are still deterministic
     expect(widgets[0].value).toBe('updated')
@@ -2284,7 +2350,8 @@ describe('promoted combo rendering', () => {
 
     expect(promotedWidget.value).toBe('a')
     promotedWidget.value = 'b'
-    expect(comboWidget.value).toBe('b')
+    expect(comboWidget.value).toBe('a')
+    expect(promotedWidget.value).toBe('b')
 
     const fillText = vi.fn()
     const ctx = createInspectableCanvasContext(fillText)

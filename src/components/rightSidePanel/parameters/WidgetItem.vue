@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -76,8 +77,15 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   const { node: sourceNode, widget: sourceWidget } = resolveSourceWidget()
   const graphId = node.graph?.rootGraph?.id
   const bareNodeId = stripGraphPrefix(String(sourceNode.id))
+  const storeInstanceId =
+    node.isSubgraphNode() && isPromotedWidgetView(widget) ? node.id : undefined
   const widgetState = graphId
-    ? widgetValueStore.getWidget(graphId, bareNodeId, sourceWidget.name)
+    ? widgetValueStore.getWidget(
+        graphId,
+        bareNodeId,
+        sourceWidget.name,
+        storeInstanceId
+      )
     : undefined
 
   return {

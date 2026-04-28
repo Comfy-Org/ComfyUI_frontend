@@ -171,7 +171,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(widget2?.serializeValue?.(instance2, 0)).toBe(7)
   })
 
-  it('syncs restored promoted widgets when the inner source widget changes directly', () => {
+  it('keeps restored scoped value when the inner source widget changes directly', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
@@ -210,13 +210,13 @@ describe('SubgraphNode multi-instance widget isolation', () => {
 
     widget.value = 45
 
-    expect(restoredInstance.widgets?.[0].value).toBe(45)
+    expect(restoredInstance.widgets?.[0].value).toBe(33)
     expect(
       restoredInstance.widgets?.[0].serializeValue?.(restoredInstance, 0)
-    ).toBe(45)
+    ).toBe(33)
   })
 
-  it('clears stale per-instance values when reconfigured without widgets_values', () => {
+  it('clears stale scoped values when reconfigured without inline value state', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
@@ -227,6 +227,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
 
     const instance = createTestSubgraphNode(subgraph, { id: 701 })
     instance.graph!.add(instance)
+    const innerNodeId = String(node.id)
 
     const promotedWidget = instance.widgets?.[0]
     promotedWidget!.value = 11
@@ -234,6 +235,10 @@ describe('SubgraphNode multi-instance widget isolation', () => {
 
     const serialized = instance.serialize()
     delete serialized.widgets_values
+    serialized.properties = {
+      ...serialized.properties,
+      proxyWidgets: [[innerNodeId, 'widget']]
+    }
 
     instance.configure({
       ...serialized,

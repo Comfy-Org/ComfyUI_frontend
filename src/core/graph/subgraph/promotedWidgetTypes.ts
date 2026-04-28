@@ -28,11 +28,8 @@ export interface PromotedWidgetView extends IBaseWidget {
   readonly sourceSerialize: boolean
   /** Stable identity key for this promotion on its host instance. */
   readonly instanceKey: string
-  /**
-   * Restore a per-instance value during configure without triggering the
-   * setter's sibling-fallback capture.
-   */
-  restorePerInstanceValue(value: IBaseWidget['value']): void
+  /** Return the instance-scoped store value, if this view has one. */
+  getScopedStoreValue(): IBaseWidget['value'] | undefined
 }
 
 export function isPromotedWidgetView(
