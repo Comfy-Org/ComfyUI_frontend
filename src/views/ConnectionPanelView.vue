@@ -89,48 +89,6 @@
         </div>
       </section>
 
-      <!-- API Key input (optional) — hidden when backend has --disable-api-nodes -->
-      <section v-if="!isApiNodeDisabled" class="flex flex-col gap-2">
-        <label for="api-key" class="text-sm font-medium text-neutral-300">
-          {{ t('connectionPanel.apiKey') }}
-          <span class="ml-1 text-xs font-normal text-neutral-500">{{
-            t('connectionPanel.apiKeyOptional')
-          }}</span>
-        </label>
-        <div class="flex gap-2">
-          <input
-            id="api-key"
-            v-model="apiKeyInput"
-            type="password"
-            :placeholder="t('connectionPanel.apiKeyPlaceholder')"
-            autocomplete="current-password"
-            class="flex h-10 w-full min-w-0 appearance-none rounded-lg border-none bg-neutral-800 px-4 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
-            @keyup.enter="testApiKey"
-          />
-          <Button
-            variant="secondary"
-            size="lg"
-            :loading="isTestingApiKey"
-            :disabled="isTestingApiKey || !apiKeyInput.trim()"
-            @click="testApiKey"
-          >
-            {{ t('connectionPanel.test') }}
-          </Button>
-        </div>
-        <p v-if="apiKeyStatus === 'ok'" class="text-xs text-green-400">
-          {{ t('connectionPanel.apiKeyTestOk') }}
-        </p>
-        <p v-else-if="apiKeyStatus === 'error'" class="text-xs text-red-400">
-          {{ t('connectionPanel.apiKeyTestError') }}
-        </p>
-        <p v-else class="text-xs text-neutral-500">
-          {{ t('connectionPanel.apiKeyHint') }}
-        </p>
-      </section>
-      <p v-else class="text-xs text-neutral-500">
-        {{ t('connectionPanel.apiKeyDisabledNotice') }}
-      </p>
-
       <!-- Connection status -->
       <section
         v-if="httpStatus !== null || wsStatus !== null"
@@ -183,12 +141,12 @@
           {{ t('connectionPanel.connected') }}
         </p>
 
-        <!-- Backend cloud-API base + mismatch warning -->
+        <!-- Backend cloud-API base + API key -->
         <div
           v-if="backendCloudBase"
-          class="flex flex-col gap-1 border-t border-neutral-700 pt-2 text-xs"
+          class="flex flex-col gap-3 border-t border-neutral-700 pt-2"
         >
-          <p class="text-neutral-400">
+          <p class="text-xs text-neutral-400">
             <span class="text-neutral-500"
               >{{ t('connectionPanel.backendCloud') }}
             </span>
@@ -197,22 +155,67 @@
               >{{ backendCloudBase }}</code
             >
           </p>
-          <p v-if="cloudMismatch" class="text-amber-400">
+          <p v-if="cloudMismatch" class="text-xs text-amber-400">
             {{
               t('connectionPanel.cloudMismatch', {
                 frontend: frontendCloudBase
               })
             }}
           </p>
-          <a
-            v-if="apiKeyPageUrl"
-            :href="apiKeyPageUrl"
-            target="_blank"
-            rel="noopener"
-            class="text-neutral-300 underline decoration-dotted hover:text-neutral-100"
-          >
-            {{ t('connectionPanel.getApiKeyLink') }}
-          </a>
+
+          <!-- API key input — hidden when --disable-api-nodes -->
+          <div v-if="!isApiNodeDisabled" class="flex flex-col gap-1.5">
+            <label for="api-key" class="text-xs font-medium text-neutral-300">
+              {{ t('connectionPanel.apiKey') }}
+              <span class="ml-1 font-normal text-neutral-500">{{
+                t('connectionPanel.apiKeyOptional')
+              }}</span>
+            </label>
+            <div class="flex gap-2">
+              <input
+                id="api-key"
+                v-model="apiKeyInput"
+                type="password"
+                :placeholder="t('connectionPanel.apiKeyPlaceholder')"
+                autocomplete="current-password"
+                class="flex h-8 w-full min-w-0 appearance-none rounded-md border-none bg-neutral-900 px-3 py-1.5 text-xs text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
+                @keyup.enter="testApiKey"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                :loading="isTestingApiKey"
+                :disabled="isTestingApiKey || !apiKeyInput.trim()"
+                @click="testApiKey"
+              >
+                {{ t('connectionPanel.test') }}
+              </Button>
+            </div>
+            <p v-if="apiKeyStatus === 'ok'" class="text-xs text-green-400">
+              {{ t('connectionPanel.apiKeyTestOk') }}
+            </p>
+            <p
+              v-else-if="apiKeyStatus === 'error'"
+              class="text-xs text-red-400"
+            >
+              {{ t('connectionPanel.apiKeyTestError') }}
+            </p>
+            <p v-else class="text-xs text-neutral-500">
+              {{ t('connectionPanel.apiKeyHint') }}
+              <a
+                v-if="apiKeyPageUrl"
+                :href="apiKeyPageUrl"
+                target="_blank"
+                rel="noopener"
+                class="ml-1 text-neutral-400 underline decoration-dotted hover:text-neutral-200"
+              >
+                {{ t('connectionPanel.getApiKeyLink') }}
+              </a>
+            </p>
+          </div>
+          <p v-else class="text-xs text-neutral-500">
+            {{ t('connectionPanel.apiKeyDisabledNotice') }}
+          </p>
         </div>
 
         <!-- Connect & Go button -->
