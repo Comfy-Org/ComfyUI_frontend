@@ -1,5 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
@@ -47,7 +48,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
 
-  inputs: { linkId: number | null; name: string; type: ISlotType }[]
+  inputs: { linkId: LinkId | null; name: string; type: ISlotType }[]
 
   /** Backing field for {@link id}. */
   private _id: ExecutionId
@@ -209,7 +210,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
           `No outer link found for slot [${link.origin_slot}] ${input.name}`
         )
 
-      const subgraphNodeExecutionId = this.subgraphNodePath.join(':')
+      const subgraphNodeExecutionId: ExecutionId =
+        this.subgraphNodePath.join(':')
       const subgraphNodeDto = this.nodesByExecutionId.get(
         subgraphNodeExecutionId
       )
@@ -228,7 +230,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No input node found for id [${this.id}] slot [${slot}] ${input.name}`
       )
 
-    const outputNodeExecutionId = [
+    const outputNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       outputNode.id
     ].join(':')
@@ -318,7 +320,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
             `Virtual node failed to resolve parent [${this.id}] slot [${slot}]`
           )
 
-        const inputNodeExecutionId = [
+        const inputNodeExecutionId: ExecutionId = [
           ...this.subgraphNodePath,
           inputNode.id
         ].join(':')
@@ -410,7 +412,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       )
 
     // Recurse into the subgraph
-    const innerNodeExecutionId = [
+    const innerNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       node.id,
       innerNode.id
