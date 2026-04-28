@@ -280,7 +280,7 @@ describe('Load3d', () => {
       const sceneResize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize },
+        renderer: { domElement: canvas, setSize, setPixelRatio: vi.fn() },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,

@@ -338,14 +338,18 @@ export class SceneManager implements SceneManagerInterface {
   ): Promise<{ scene: string; mask: string; normal: string }> {
     return new Promise(async (resolve, reject) => {
       try {
-        const originalWidth = this.renderer.domElement.width
-        const originalHeight = this.renderer.domElement.height
+        const originalSize = new THREE.Vector2()
+        this.renderer.getSize(originalSize)
+        const originalPixelRatio = this.renderer.getPixelRatio()
         const originalClearColor = this.renderer.getClearColor(
           new THREE.Color()
         )
         const originalClearAlpha = this.renderer.getClearAlpha()
         const originalOutputColorSpace = this.renderer.outputColorSpace
 
+        // Capture at exactly the requested pixel dimensions, independent of
+        // the current zoom-driven pixel ratio.
+        this.renderer.setPixelRatio(1)
         this.renderer.setSize(width, height)
 
         if (this.getActiveCamera() instanceof THREE.PerspectiveCamera) {
@@ -432,10 +436,11 @@ export class SceneManager implements SceneManagerInterface {
         this.gridHelper.visible = gridVisible
 
         this.renderer.setClearColor(originalClearColor, originalClearAlpha)
-        this.renderer.setSize(originalWidth, originalHeight)
+        this.renderer.setPixelRatio(originalPixelRatio)
+        this.renderer.setSize(originalSize.x, originalSize.y)
         this.renderer.outputColorSpace = originalOutputColorSpace
 
-        this.handleResize(originalWidth, originalHeight)
+        this.handleResize(originalSize.x, originalSize.y)
 
         resolve({
           scene: sceneData,

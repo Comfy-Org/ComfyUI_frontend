@@ -31,6 +31,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
@@ -43,6 +44,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let isFirstModelLoad = true
+
+  watch(
+    () => (getActivePinia() ? useCanvasStore().appScalePercentage : 0),
+    () => {
+      load3d?.handleResize()
+    }
+  )
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
@@ -132,6 +140,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
+        getZoomScale: () => app.canvas?.ds?.scale ?? 1,
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
