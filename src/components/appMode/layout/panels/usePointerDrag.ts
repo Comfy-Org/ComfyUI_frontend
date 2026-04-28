@@ -13,10 +13,10 @@
  * computed-target state — this hook only orchestrates the lifecycle.
  */
 import { useEventListener, useWindowFocus } from '@vueuse/core'
-import { ref, watch } from 'vue';
-import type { Ref } from 'vue';
+import { ref, watch } from 'vue'
+import type { Ref } from 'vue'
 
-export interface UsePointerDragOptions {
+interface UsePointerDragOptions {
   /** Pixel movement past pointerdown before `isDragging` flips true.
    *  0 (default) activates immediately on press. */
   threshold?: number
@@ -37,7 +37,7 @@ export interface UsePointerDragOptions {
   onReset?: () => void
 }
 
-export interface UsePointerDragResult {
+interface UsePointerDragResult {
   isDragging: Ref<boolean>
   /** Bind to the drag target's `@pointerdown`. */
   start: (e: PointerEvent) => void

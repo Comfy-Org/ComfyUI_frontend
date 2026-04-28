@@ -37,15 +37,11 @@ const executionStore = useExecutionStore()
 useOutputWindowSync()
 const windowStore = useOutputWindowStore()
 
-// Bar tracks the active node's own step ratio (read straight from
-// the execution store, not from `stepProgress` below — that ref
-// lags by one tick). Most workflows have one heavy node (KSampler)
-// sandwiched between near-instant loaders/encoders, so a graph-
-// level fallback (completed/total nodes) over-credits the fast
-// ones: by the time the sampler reports step 1, the bar would sit
-// at 75%+ and visibly animate backwards to 3%. Default to 0 outside
-// the sampler phase instead — the pre-sampler window is fast
-// enough that "0% briefly" is the right read.
+// Track the active node's step ratio (read direct from the execution
+// store — `stepProgress` below lags by a tick). Graph-level fallback
+// (completed/total nodes) over-credits fast loaders/encoders, making
+// the bar jump to 75% then animate backwards when the sampler starts;
+// 0 outside the sampler phase reads better than that.
 const progressPercent = computed(() => {
   const p = executionStore._executingNodeProgress
   if (p && p.max > 0) {
@@ -54,11 +50,9 @@ const progressPercent = computed(() => {
   return 0
 })
 
-// Per-node step + ETA, mirroring tqdm's "12/30 [00:08<00:14]" line in
-// the ComfyUI server log. ETA = linear extrapolation from elapsed /
-// steps-done; tracker resets on (job, node) change so it doesn't
-// average across a fast text encoder and the slow sampler that
-// follows.
+// Per-node step + ETA, mirroring tqdm's "12/30 [00:08<00:14]" line.
+// Tracker resets on (job, node) change so the linear extrapolation
+// doesn't average across a fast encoder and the slow sampler.
 const stepProgress = ref<{ value: number; max: number } | null>(null)
 const etaSeconds = ref<number | null>(null)
 let samplingStart: { ts: number; firstValue: number; key: string } | null = null

@@ -18,30 +18,26 @@ const { id, enable, name } = defineProps<{
 const appModeStore = useAppModeStore()
 const canvasStore = useCanvasStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
-// Ancestors (InputCell in the App Mode / App Builder floating panel) can
-// opt out of the selection checkbox so the panel preview matches App Mode
-// runtime 1:1. Selection + deselection in that context runs through the
-// graph canvas or the ⋯ Remove menu on each cell's header.
+// Ancestors (InputCell in the panel) can opt out of the selection
+// checkbox so the panel preview matches App Mode 1:1; selection
+// happens via the graph canvas there.
 const hideInputSelection = useHideInputSelection()
 const showSelection = computed(() => enable && !hideInputSelection)
 
 const wrapperRef = useTemplateRef<HTMLElement>('wrapper')
 const { top, left, width, height, update } = useElementBounding(wrapperRef)
-// Track canvas zoom so the checkbox cap scales with the rest of the
-// widget — without this, a 32px cap stays a fixed screen size while the
-// widgets around it shrink at low zoom, making capped checkboxes look
-// disproportionately large.
+// Track canvas zoom so the checkbox cap scales with the widget;
+// without this a 32px cap looks oversized at low zoom.
 const canvasScale = ref(1)
 
 function tick() {
   update()
   canvasScale.value = canvasStore.canvas?.ds?.scale ?? 1
 }
-// Pan/zoom is applied as a CSS transform on TransformPane; the built-in
-// resize/scroll/mutation observers never fire for it, so the bounds would
-// drift away from the widget. A RAF loop (active only while the selection
-// overlay is rendered) keeps the teleported ring glued on without having
-// to subscribe to canvas transform state.
+// TransformPane uses a CSS transform that resize/scroll/mutation
+// observers don't fire for, so bounds drift. A RAF loop (only while
+// the selection overlay is rendered) keeps the teleported ring glued
+// on without subscribing to canvas transform state.
 const { pause, resume } = useRafFn(tick, { immediate: false })
 watch(showSelection, (show) => (show ? resume() : pause()), { immediate: true })
 
