@@ -2,12 +2,14 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 export function createMockNodeDef(
   overrides: Partial<ComfyNodeDef> = {}
-): ComfyNodeDef {
-  return {
+): ComfyNodeDefImpl {
+  return new ComfyNodeDefImpl({
     name: 'TestNode',
     display_name: 'Test Node',
     category: 'test',
@@ -21,7 +23,7 @@ export function createMockNodeDef(
     deprecated: false,
     experimental: false,
     ...overrides
-  }
+  })
 }
 
 export function setupTestPinia() {
@@ -31,34 +33,5 @@ export function setupTestPinia() {
 export const testI18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: {
-        addNode: 'Add a node...',
-        filterBy: 'Filter by:',
-        mostRelevant: 'Most relevant',
-        recents: 'Recents',
-        favorites: 'Favorites',
-        essentials: 'Essentials',
-        custom: 'Custom',
-        comfy: 'Comfy',
-        partner: 'Partner',
-        extensions: 'Extensions',
-        noResults: 'No results',
-        filterByType: 'Filter by {type}...',
-        input: 'Input',
-        output: 'Output',
-        source: 'Source',
-        search: 'Search'
-      },
-      sideToolbar: {
-        nodeLibraryTab: {
-          filterOptions: {
-            blueprints: 'Blueprints',
-            partnerNodes: 'Partner Nodes'
-          }
-        }
-      }
-    }
-  }
+  messages: { en: enMessages }
 })

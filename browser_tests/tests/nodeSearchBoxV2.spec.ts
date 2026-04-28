@@ -56,7 +56,9 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
   })
 
   test.describe('Category navigation', () => {
-    test('Favorites shows only bookmarked nodes', async ({ comfyPage }) => {
+    test('Bookmarked filter shows only bookmarked nodes', async ({
+      comfyPage
+    }) => {
       const { searchBoxV2 } = comfyPage
       await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [
         'KSampler'
@@ -66,7 +68,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
-      await searchBoxV2.categoryButton('favorites').click()
+      await searchBoxV2.filterBarButton('Bookmarked').click()
 
       await expect(searchBoxV2.results).toHaveCount(1)
       await expect(searchBoxV2.results.first()).toContainText('KSampler')
@@ -101,7 +103,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await expect(searchBoxV2.filterOptions.first()).toBeVisible()
 
       // Type to narrow and select MODEL
-      await searchBoxV2.input.fill('MODEL')
+      await searchBoxV2.filterSearch.fill('MODEL')
       await searchBoxV2.filterOptions
         .filter({ hasText: 'MODEL' })
         .first()

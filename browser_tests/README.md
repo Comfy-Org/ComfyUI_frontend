@@ -51,6 +51,7 @@ DISABLE_VUE_PLUGINS=true
 # Test against dev server (recommended) or backend directly
 PLAYWRIGHT_TEST_URL=http://localhost:5173  # Dev server
 # PLAYWRIGHT_TEST_URL=http://localhost:8188  # Direct backend
+PLAYWRIGHT_SETUP_API_URL=http://localhost:8188  # Setup/auth API when using the dev server URL above
 
 # Path to ComfyUI for backing up user data/settings before tests
 TEST_COMFYUI_DIR=/path/to/your/ComfyUI
@@ -202,7 +203,7 @@ Most common testing needs are already addressed by these helpers, which will mak
    await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None')
 
    // Clean up uploaded files if needed
-   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`)
+   comfyPage.deleteFileAfterTest({ filename: 'image.png' })
    ```
 
 6. **Prefer functional assertions over screenshots**:

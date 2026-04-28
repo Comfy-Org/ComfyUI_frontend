@@ -29,11 +29,8 @@
       </span>
     </div>
 
-    <!-- Credits Section (cloud only) -->
-    <div
-      v-if="isCloud && isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2"
-    >
+    <!-- Credits Section -->
+    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--component] text-sm text-amber-400" />
       <Skeleton
         v-if="authStore.isFetchingBalance"
@@ -49,7 +46,7 @@
         class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
       />
       <Button
-        v-if="isFreeTier"
+        v-if="isCloud && isFreeTier"
         variant="gradient"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
@@ -82,7 +79,7 @@
     <Divider class="mx-0 my-2" />
 
     <div
-      v-if="isCloud && isActiveSubscription"
+      v-if="isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -112,7 +109,7 @@
     </div>
 
     <div
-      v-if="isCloud && isActiveSubscription"
+      v-if="isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"

@@ -18,6 +18,12 @@ on:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
+  VERCEL_SCOPE: comfyui
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy-preview:
@@ -25,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      ALIAS_HOST: comfy-website-preview-pr-${{ github.event.pull_request.number }}.vercel.app
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -32,28 +40,83 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel pull --yes --environment=preview
 
       - name: Build project artifacts
-        run: vercel build --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel build
+
+      - name: Fetch head commit metadata
+        id: head-commit
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha,
+            })
+            const author = data.author?.login || data.commit.author?.name || ''
+            const message = (data.commit.message || '').split('\n', 1)[0]
+            core.setOutput('author', author)
+            core.setOutput('message', message)
 
       - name: Deploy project artifacts to Vercel
         id: deploy
+        env:
+          GIT_COMMIT_REF: ${{ github.event.pull_request.head.ref }}
+          GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_AUTHOR_LOGIN: ${{ steps.head-commit.outputs.author }}
+          GIT_COMMIT_MESSAGE: ${{ steps.head-commit.outputs.message }}
+          GIT_PR_ID: ${{ github.event.pull_request.number }}
+          GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_WEBSITE_TOKEN }})
+          URL=$(vercel deploy --prebuilt \
+            --meta githubCommitRef="$GIT_COMMIT_REF" \
+            --meta githubCommitSha="$GIT_COMMIT_SHA" \
+            --meta githubCommitAuthorLogin="$GIT_AUTHOR_LOGIN" \
+            --meta githubCommitMessage="$GIT_COMMIT_MESSAGE" \
+            --meta githubPrId="$GIT_PR_ID" \
+            --meta githubRepo="$GIT_REPO")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Add deployment URL to summary
-        run: echo "**Preview:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Save PR metadata
+      - name: Alias deployment to stable PR hostname
+        id: alias-set
+        continue-on-error: true
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
+          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST" --scope="$VERCEL_SCOPE"
+
+      - name: Publish preview outputs
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          ALIAS_OK: ${{ steps.alias-set.outcome == 'success' }}
+        run: |
+          if [[ "$ALIAS_OK" == "true" ]]; then
+            STABLE_URL="https://$ALIAS_HOST"
+          else
+            STABLE_URL="$DEPLOY_URL"
+          fi
           mkdir -p temp/vercel-preview
-          echo "${{ steps.deploy.outputs.url }}" > temp/vercel-preview/url.txt
+          echo "$DEPLOY_URL" > temp/vercel-preview/url.txt
+          echo "$STABLE_URL" > temp/vercel-preview/stable-url.txt
+          {
+            echo "**Preview:** $STABLE_URL"
+            if [[ "$ALIAS_OK" == "true" ]]; then
+              echo "**This commit:** $DEPLOY_URL"
+            else
+              echo "_Stable alias update failed — URL reflects this commit only._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload preview metadata
         uses: actions/upload-artifact@v6
@@ -71,19 +134,24 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel pull --yes --environment=production
 
       - name: Build project artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: vercel build --prod
 
       - name: Deploy project artifacts to Vercel
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_WEBSITE_TOKEN }})
+          URL=$(vercel deploy --prebuilt --prod)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Add deployment URL to summary

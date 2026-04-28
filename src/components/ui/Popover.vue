@@ -9,7 +9,7 @@ import {
 } from 'reka-ui'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
