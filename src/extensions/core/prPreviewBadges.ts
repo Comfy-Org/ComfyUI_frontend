@@ -37,10 +37,12 @@ const popoverLinks = [
   { label: t('prPreview.badge.configureBackend'), url: '/connect' }
 ]
 
+const badgeText = commitShort ? `#${prNumber} · ${commitShort}` : `#${prNumber}`
+
 const topbarBadges: TopbarBadge[] = [
   {
     label: t('prPreview.badge.label'),
-    text: `#${prNumber}`,
+    text: badgeText,
     variant: 'warning',
     tooltip: tooltipLines,
     popoverLinks
