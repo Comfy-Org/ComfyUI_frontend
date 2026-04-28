@@ -1,12 +1,10 @@
 import { computed } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { WidgetState } from '@/stores/widgetValueStore'
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { WidgetState } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
-import { asGraphId } from '@/world/entityIds'
-import { getNodeWidgetsThroughWorld } from '@/world/widgetWorldBridge'
-import { getWorld } from '@/world/worldInstance'
 
 type ValueExtractor<T = unknown> = (
   widgets: WidgetState[],
@@ -18,17 +16,14 @@ export function useUpstreamValue<T>(
   extractValue: ValueExtractor<T>
 ) {
   const canvasStore = useCanvasStore()
+  const widgetValueStore = useWidgetValueStore()
 
   return computed(() => {
     const upstream = getLinkedUpstream()
     if (!upstream) return undefined
     const graphId = canvasStore.canvas?.graph?.rootGraph.id
     if (!graphId) return undefined
-    const widgets = getNodeWidgetsThroughWorld(
-      getWorld(),
-      asGraphId(graphId),
-      upstream.nodeId
-    )
+    const widgets = widgetValueStore.getNodeWidgets(graphId, upstream.nodeId)
     return extractValue(widgets, upstream.outputName)
   })
 }

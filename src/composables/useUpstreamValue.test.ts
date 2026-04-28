@@ -1,11 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { asGraphId } from '@/world/entityIds'
-import { registerWidgetInWorld } from '@/world/widgetWorldBridge'
-import { getWorld, resetWorldInstance } from '@/world/worldInstance'
+import { resetWorldInstance } from '@/world/worldInstance'
 
 import {
   boundsExtractor,
@@ -133,18 +134,21 @@ describe('boundsExtractor', () => {
   })
 })
 
-describe('useUpstreamValue (World-backed read path)', () => {
-  it('reads upstream node widgets via the World, not the Pinia store', () => {
+describe('useUpstreamValue (store-backed read path)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     resetWorldInstance()
-    const graphId = asGraphId('00000000-0000-0000-0000-000000000001')
-    const state = reactive<WidgetState>({
+  })
+
+  it('reads upstream node widgets via the widget value store', () => {
+    const graphId = '00000000-0000-0000-0000-000000000001' as UUID
+    const state = useWidgetValueStore().registerWidget(graphId, {
       nodeId: 'upstream-1' as NodeId,
       name: 'value',
       type: 'number',
       value: 7,
       options: {}
     })
-    registerWidgetInWorld(getWorld(), graphId, state)
 
     const upstreamValue = useUpstreamValue<number>(
       () => ({ nodeId: 'upstream-1', outputName: 'value' }),
@@ -157,7 +161,6 @@ describe('useUpstreamValue (World-backed read path)', () => {
   })
 
   it('returns undefined when no upstream linkage is provided', () => {
-    resetWorldInstance()
     const upstreamValue = useUpstreamValue(
       () => undefined,
       singleValueExtractor((v): v is number => typeof v === 'number')
