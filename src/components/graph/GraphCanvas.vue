@@ -156,6 +156,7 @@ import { useContextMenuTranslation } from '@/composables/useContextMenuTranslati
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
+import { useSnackbarToast } from '@/composables/useSnackbarToast'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
@@ -541,6 +542,16 @@ onMounted(async () => {
     window.graph = comfyApp.graph
 
     comfyAppReady.value = true
+
+    if (settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK) {
+      useSnackbarToast().show(t('g.linksHidden'), {
+        actionLabel: t('g.undo'),
+        onAction: () => {
+          void settingStore.set('Comfy.LinkRenderMode', LiteGraph.SPLINE_LINK)
+          useSnackbarToast().show(t('g.linksVisible'))
+        }
+      })
+    }
 
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {

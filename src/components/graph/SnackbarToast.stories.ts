@@ -29,7 +29,7 @@ export const Default: Story = {
     setup() {
       const toast = useSnackbarToast()
       function trigger() {
-        toast.show('Links visible')
+        toast.show('Toast message')
       }
       return { trigger }
     },
@@ -49,7 +49,7 @@ export const WithShortcut: Story = {
     setup() {
       const toast = useSnackbarToast()
       function trigger() {
-        toast.show('Links hidden', { shortcut: 'L' })
+        toast.show('Links hidden', { shortcut: 'Ctrl+A' })
       }
       return { trigger }
     },
@@ -80,27 +80,7 @@ export const WithUndoAction: Story = {
     },
     template: `
       <div class="flex flex-col gap-2">
-        <p class="text-base-foreground">No assigned shortcut: shows an action button (e.g. Undo).</p>
-        <Button class="w-fit" @click="trigger">Show toast</Button>
-        <SnackbarToast />
-      </div>
-    `
-  })
-}
-
-export const WithHint: Story = {
-  render: () => ({
-    components: { SnackbarToast, Button },
-    setup() {
-      const toast = useSnackbarToast()
-      function trigger() {
-        toast.show('Links hidden', { hint: 'Toggle in canvas menu' })
-      }
-      return { trigger }
-    },
-    template: `
-      <div class="flex flex-col gap-2">
-        <p class="text-base-foreground">Toast with a secondary hint.</p>
+        <p class="text-base-foreground">No assigned shortcut: shows an Undo action button.</p>
         <Button class="w-fit" @click="trigger">Show toast</Button>
         <SnackbarToast />
       </div>

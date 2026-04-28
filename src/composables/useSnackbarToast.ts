@@ -2,7 +2,6 @@ import { ref } from 'vue'
 
 const message = ref('')
 const shortcut = ref('')
-const hint = ref('')
 const visible = ref(false)
 const actionLabel = ref('')
 const onAction = ref<(() => void) | null>(null)
@@ -14,7 +13,6 @@ export function useSnackbarToast() {
     msg: string,
     options?: {
       shortcut?: string
-      hint?: string
       duration?: number
       actionLabel?: string
       onAction?: () => void
@@ -23,7 +21,6 @@ export function useSnackbarToast() {
     if (timeout) clearTimeout(timeout)
     message.value = msg
     shortcut.value = options?.shortcut ?? ''
-    hint.value = options?.hint ?? ''
     actionLabel.value = options?.actionLabel ?? ''
     onAction.value = options?.onAction ?? null
     duration = options?.duration ?? 2000
@@ -50,7 +47,6 @@ export function useSnackbarToast() {
   return {
     message,
     shortcut,
-    hint,
     visible,
     actionLabel,
     onAction,
