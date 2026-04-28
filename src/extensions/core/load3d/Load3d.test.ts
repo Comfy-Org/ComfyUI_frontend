@@ -37,11 +37,6 @@ type SceneManagerStub = {
   dispose: ReturnType<typeof vi.fn>
 }
 
-type Load3dPrivate = {
-  setGizmo(model: THREE.Object3D): void
-  setupCamera(size: THREE.Vector3, center: THREE.Vector3): void
-}
-
 function makeGizmoStub(): GizmoStub {
   return {
     setEnabled: vi.fn(),
@@ -97,6 +92,7 @@ function makeInstance() {
     controlsManager,
     viewHelperManager,
     animationManager,
+    adapterRef: { current: null },
     forceRender: vi.fn(),
     handleResize: vi.fn()
   })
@@ -208,6 +204,29 @@ describe('Load3d', () => {
       expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
+    it('clearModel nulls adapterRef.current so capability queries fall back to defaults', () => {
+      Object.assign(ctx.load3d, {
+        adapterRef: { current: { kind: 'splat' } }
+      })
+      let adapterDuringModelManagerClear:
+        | { kind: string; current?: unknown }
+        | null
+        | undefined
+      ctx.modelManager.clearModel.mockImplementation(() => {
+        adapterDuringModelManagerClear = (
+          ctx.load3d as unknown as { adapterRef: { current: unknown } }
+        ).adapterRef.current as { kind: string } | null
+      })
+
+      ctx.load3d.clearModel()
+
+      expect(adapterDuringModelManagerClear).toEqual({ kind: 'splat' })
+      expect(
+        (ctx.load3d as unknown as { adapterRef: { current: unknown } })
+          .adapterRef.current
+      ).toBeNull()
+    })
+
     it('toggleCamera updates both controls and gizmo with the active camera', () => {
       ctx.load3d.toggleCamera('orthographic')
 
@@ -221,23 +240,6 @@ describe('Load3d', () => {
         ctx.cameraManager.activeCamera
       )
       expect(ctx.viewHelperManager.recreateViewHelper).toHaveBeenCalledOnce()
-    })
-
-    it('setGizmo (private) forwards the model to gizmoManager.setupForModel', () => {
-      const model = new THREE.Object3D()
-
-      ;(ctx.load3d as unknown as Load3dPrivate).setGizmo(model)
-
-      expect(ctx.gizmo.setupForModel).toHaveBeenCalledWith(model)
-    })
-
-    it('setupCamera (private) forwards size and center to cameraManager', () => {
-      const size = new THREE.Vector3(1, 2, 3)
-      const center = new THREE.Vector3(4, 5, 6)
-
-      ;(ctx.load3d as unknown as Load3dPrivate).setupCamera(size, center)
-
-      expect(ctx.cameraManager.setupForModel).toHaveBeenCalledWith(size, center)
     })
   })
 
@@ -473,7 +475,7 @@ describe('Load3d', () => {
     function makeWithAdapter(kind: 'mesh' | 'pointCloud' | 'splat' | null) {
       const adapter = kind === null ? null : { kind }
       Object.assign(ctx.load3d, {
-        loaderManager: { getCurrentAdapter: vi.fn(() => adapter) }
+        adapterRef: { current: adapter }
       })
     }
 

@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { EventManagerInterface } from './interfaces'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
+import type { EventManagerInterface } from './interfaces'
 
 function createMockRenderer(): THREE.WebGLRenderer {
   return {
@@ -23,6 +25,7 @@ function createManager(
   overrides: {
     scene?: THREE.Scene
     eventManager?: EventManagerInterface
+    capabilities?: Partial<ModelAdapterCapabilities>
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
@@ -32,6 +35,10 @@ function createManager(
   const getActiveCamera = () => camera
   const setupCamera = vi.fn()
   const setupGizmo = vi.fn()
+  const capabilities: ModelAdapterCapabilities = {
+    ...DEFAULT_MODEL_CAPABILITIES,
+    ...overrides.capabilities
+  }
 
   const manager = new SceneModelManager(
     scene,
@@ -39,7 +46,8 @@ function createManager(
     eventManager,
     getActiveCamera,
     setupCamera,
-    setupGizmo
+    setupGizmo,
+    () => capabilities
   )
 
   return {
@@ -51,6 +59,37 @@ function createManager(
     setupCamera,
     setupGizmo
   }
+}
+
+function createManagerWithPose(opts: {
+  capabilities?: Partial<ModelAdapterCapabilities>
+  pose: { size: THREE.Vector3; center: THREE.Vector3 } | null
+}) {
+  const scene = new THREE.Scene()
+  const renderer = createMockRenderer()
+  const eventManager = createMockEventManager()
+  const camera = new THREE.PerspectiveCamera()
+  const setupCamera = vi.fn()
+  const setupGizmo = vi.fn()
+  const capabilities: ModelAdapterCapabilities = {
+    ...DEFAULT_MODEL_CAPABILITIES,
+    ...opts.capabilities
+  }
+
+  const manager = new SceneModelManager(
+    scene,
+    renderer,
+    eventManager,
+    () => camera,
+    setupCamera,
+    setupGizmo,
+    () => capabilities,
+    () => null,
+    () => {},
+    () => opts.pose
+  )
+
+  return { manager, scene, setupCamera, setupGizmo }
 }
 
 function createMeshModel(name = 'TestModel'): THREE.Group {
@@ -189,6 +228,47 @@ describe('SceneModelManager', () => {
         'upDirectionChange',
         '+z'
       )
+    })
+
+    it('uses the adapter default pose when fitToViewer is disabled and a pose is provided', async () => {
+      const pose = {
+        size: new THREE.Vector3(5, 5, 5),
+        center: new THREE.Vector3(0, 2.5, 0)
+      }
+      const { manager, scene, setupCamera, setupGizmo } = createManagerWithPose(
+        {
+          capabilities: { fitToViewer: false },
+          pose
+        }
+      )
+      const model = createMeshModel()
+
+      await manager.setupModel(model)
+
+      expect(scene.children).toContain(model)
+      expect(setupCamera).toHaveBeenCalledWith(pose.size, pose.center)
+
+      expect(setupGizmo).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the full setup path when fitToViewer is disabled but no default pose is provided', async () => {
+      const { manager, scene, setupCamera, setupGizmo } = createManagerWithPose(
+        {
+          capabilities: { fitToViewer: false },
+          pose: null
+        }
+      )
+      const model = createMeshModel()
+
+      await manager.setupModel(model)
+
+      expect(scene.children).toContain(model)
+
+      expect(setupCamera).toHaveBeenCalled()
+      const callArgs = setupCamera.mock.calls[0]
+      expect(callArgs[0]).toBeInstanceOf(THREE.Vector3)
+      expect(callArgs[1]).toBeInstanceOf(THREE.Vector3)
+      expect(setupGizmo).toHaveBeenCalledWith(model)
     })
   })
 
@@ -575,29 +655,11 @@ describe('SceneModelManager', () => {
     })
   })
 
-  describe('containsSplatMesh', () => {
-    it('returns false when no model', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh()).toBe(false)
-    })
-
-    it('returns false for regular model', async () => {
-      const { manager } = createManager()
-      const model = createMeshModel()
-      await manager.setupModel(model)
-
-      expect(manager.containsSplatMesh()).toBe(false)
-    })
-
-    it('returns false for explicit null argument', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh(null)).toBe(false)
-    })
-  })
-
   describe('PLY mode switching', () => {
     function createPLYManager() {
-      const ctx = createManager()
+      const ctx = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
@@ -655,7 +717,9 @@ describe('SceneModelManager', () => {
     })
 
     it('uses vertex colors when available', () => {
-      const { manager, scene } = createManager()
+      const { manager, scene } = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
