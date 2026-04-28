@@ -5,18 +5,23 @@ import { createI18n } from 'vue-i18n'
 
 import LinearWelcome from './LinearWelcome.vue'
 
-const { hasNodes, hasOutputs, enterBuilder } = vi.hoisted(() => {
+const { hasNodes, hasOutputs, enterBuilder, panelPreset } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref } = require('vue')
   return {
     hasNodes: ref(false),
     hasOutputs: ref(false),
-    enterBuilder: vi.fn()
+    enterBuilder: vi.fn(),
+    panelPreset: ref('right-dock' as const)
   }
 })
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ setMode: vi.fn() })
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
 }))
 
 vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
@@ -27,7 +32,8 @@ vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: () => ({
     hasNodes,
     hasOutputs,
-    enterBuilder
+    enterBuilder,
+    panelPreset
   })
 }))
 
