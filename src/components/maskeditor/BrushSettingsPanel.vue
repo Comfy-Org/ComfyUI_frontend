@@ -72,7 +72,7 @@
         <div class="relative">
           <input
             id="brush-thickness-input"
-            :value="brushSize"
+            :value="Math.round(brushSize)"
             type="number"
             class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
             min="1"
