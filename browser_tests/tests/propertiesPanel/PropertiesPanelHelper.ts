@@ -85,6 +85,7 @@ export class PropertiesPanelHelper {
 
   async editTitle(newTitle: string): Promise<void> {
     await this.titleEditIcon.click()
+    await this.titleEditor.expectVisible()
     await this.titleEditor.setTitle(newTitle)
   }
 
