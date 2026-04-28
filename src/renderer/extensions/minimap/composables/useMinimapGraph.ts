@@ -117,7 +117,7 @@ export function useMinimapGraph(
       onNodeRemoved: function (this: LGraph, node: LGraphNode) {
         original.onNodeRemoved?.call(this, node)
         if (disposed) return
-        nodeStatesCache.delete(node.id)
+        nodeStatesCache.delete(String(node.id))
         void handleGraphChangedThrottled()
       },
       onConnectionChange: function (this: LGraph, node: LGraphNode) {
@@ -136,10 +136,7 @@ export function useMinimapGraph(
             event.property === 'bgcolor' ||
             event.property === 'color')
         ) {
-          // Invalidate cache for this node to force redraw. Match
-          // the write site's NodeId key (number | string) — String()
-          // would miss numeric keys.
-          nodeStatesCache.delete(event.nodeId)
+          nodeStatesCache.delete(String(event.nodeId))
           void handleGraphChangedThrottled()
         }
       }

@@ -156,6 +156,7 @@ describe('useMinimapGraph', () => {
   it.each([
     { slot: 'onNodeAdded' as const, fireArg: { id: '99' } },
     { slot: 'onNodeRemoved' as const, fireArg: { id: '99' } },
+    { slot: 'onNodeRemoved' as const, fireArg: { id: 99 } },
     { slot: 'onConnectionChange' as const, fireArg: { id: '99' } },
     {
       slot: 'onTrigger' as const,
@@ -163,6 +164,14 @@ describe('useMinimapGraph', () => {
         type: 'node:property:changed',
         property: 'mode',
         nodeId: '99'
+      }
+    },
+    {
+      slot: 'onTrigger' as const,
+      fireArg: {
+        type: 'node:property:changed',
+        property: 'mode',
+        nodeId: 99
       }
     }
   ])(
@@ -193,6 +202,33 @@ describe('useMinimapGraph', () => {
       expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
     }
   )
+
+  it('invalidates cache when onTrigger fires with a numeric nodeId', () => {
+    // Regression: LiteGraphDataSource.getNodes() stores cache keys as
+    // String(node.id), so onTrigger must stringify nodeId before deletion
+    // or the entry survives and stale state is reported as unchanged.
+    mockGraph._nodes = [
+      {
+        id: 99,
+        pos: [100, 100],
+        size: [150, 80]
+      } as Partial<LGraphNode> as LGraphNode
+    ]
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.checkForChanges()).toBe(false)
+    ;(mockGraph.onTrigger as unknown as (event: unknown) => void)({
+      type: 'node:property:changed',
+      property: 'mode',
+      nodeId: 99
+    })
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
 
   it('should handle cleanup for never-setup graph', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
