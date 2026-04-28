@@ -1,13 +1,4 @@
 <script setup lang="ts">
-/**
- * 2D grid of blocks inside a FloatingPanel — rows stack vertically,
- * blocks within a row sit side-by-side. Drag-to-reorder is gated to
- * the `builder` variant (whole block is the drag target; widget
- * bodies are inert there) and disabled in `app-mode` so widgets stay
- * fully interactive without reorder risk. Reorders animate via FLIP;
- * the dragging block is excluded so its lift treatment doesn't
- * compete with the slide.
- */
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUpdate, onUpdated, useTemplateRef } from 'vue'
 
@@ -20,9 +11,7 @@ import { useBlockDrag } from './useBlockDrag'
 const { rows, variant = 'app-mode' } = defineProps<{
   rows: BlockRow[]
   inputEntryMap: Map<string, InputCellEntry>
-  /** Forwarded to InputCell — `builder` adds the ⋯ Rename/Remove menu
-   *  and makes the widget body inert, and is also the only variant
-   *  where drag-to-reorder is active. */
+  /** `builder` enables drag-to-reorder + makes widget bodies inert. */
   variant?: InputCellVariant
 }>()
 
@@ -43,10 +32,9 @@ const draggingBlockId = computed<string | null>(() => {
   return rows[pos.row]?.[pos.col]?.id ?? null
 })
 
-// During drag, render the layout as it would look after the drop (via
-// `applyMove` — the same math the commit uses). `data-block-row/col`
-// attributes below stay in ORIGINAL coords so useBlockDrag's hit
-// math returns drop targets in the space applyMove expects.
+// During drag, preview the post-drop layout via the same applyMove
+// the commit uses. `data-block-row/col` stay in ORIGINAL coords so
+// hit-testing returns drop targets in the space applyMove expects.
 const displayRows = computed<BlockRow[]>(() => {
   const pos = draggingPos.value
   const target = dropTarget.value
@@ -63,17 +51,15 @@ const originalById = computed(() => {
 })
 
 function beginDrag(blockId: string, event: PointerEvent) {
-  // Short-circuit in app-mode so startDrag's preventDefault doesn't
-  // suppress native widget text-selection / focus.
+  // app-mode: skip so startDrag's preventDefault doesn't suppress
+  // widget text-selection / focus.
   if (variant !== 'builder') return
   const pos = originalById.value.get(blockId)
   if (pos) startDrag(pos, event)
 }
 
-// --- FLIP reorder animation --------------------------------------
-// `onBeforeUpdate` fires on every reactive update (drag-preview
-// reshuffles + committed reorders), so we re-sample rects each time
-// and only animate blocks whose positions actually changed.
+// FLIP reorder animation. Re-samples rects on each reactive update
+// (drag-preview reshuffles + committed reorders).
 const FLIP_DURATION_MS = 200
 const prevRects = new Map<string, DOMRect>()
 
@@ -99,12 +85,10 @@ onUpdated(() => {
     const next = el.getBoundingClientRect()
     const dx = prev.left - next.left
     const dy = prev.top - next.top
-    // Skip sub-pixel deltas — they'd animate a jiggle every keystroke.
+    // Skip sub-pixel deltas — would animate a jiggle every keystroke.
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue
-    // FLIP: jump to the old position with no transition, then on the
-    // next frame re-enable the transition and clear the transform so
-    // the browser interpolates back. Double-RAF prevents the browser
-    // from batching both style writes and skipping the animation.
+    // Double-RAF: write the inverse transform, then re-enable transition
+    // on the next frame so the browser doesn't batch and skip.
     el.style.transform = `translate(${dx}px, ${dy}px)`
     el.style.transition = 'none'
     requestAnimationFrame(() => {
@@ -118,8 +102,6 @@ onUpdated(() => {
 </script>
 
 <template>
-  <!-- 10px list gap matches InputCell's header→body gap so the
-       vertical rhythm stays uniform. -->
   <ul
     ref="listEl"
     class="m-0 flex list-none flex-col gap-[10px] p-0"
@@ -156,8 +138,8 @@ onUpdated(() => {
         @pointerdown="beginDrag(block.id, $event)"
       >
         <div class="w-full min-w-0 overflow-hidden">
-          <!-- 1-item v-for binds the Map lookup into `entry`, then v-if
-               narrows it so InputCell's :entry is typed without `!`. -->
+          <!-- 1-item v-for + v-if narrows the Map lookup so :entry is
+               typed without `!`. -->
           <template
             v-for="entry in [inputEntryMap.get(block.entryKey)]"
             :key="entry?.key ?? block.entryKey"
@@ -171,9 +153,8 @@ onUpdated(() => {
             </div>
           </template>
         </div>
-        <!-- Drag-tint overlay: child widgets paint opaque backgrounds,
-             so a bg class on the block bleeds through only in gaps.
-             pointer-events-none lets the drag machinery still see clicks. -->
+        <!-- Tint paints in the gaps between widgets (which paint
+             opaque); pointer-events-none keeps drag tracking. -->
         <div
           v-if="block.id === draggingBlockId"
           class="pointer-events-none absolute -inset-1.5 z-10 rounded-layout-cell bg-warning-background/10"
@@ -184,23 +165,15 @@ onUpdated(() => {
   </ul>
 </template>
 
-<!--
-  Documented exception (docs/guidance/vue-components.md §Styling):
-  these rules reach into NodeWidgets' internal grid + textarea via
-  :deep() because this component doesn't render NodeWidgets' DOM
-  directly. The `!important` flags can't be won by selector
-  specificity from this scope. Prefer a props-based hook on
-  NodeWidgets if more overrides accumulate.
--->
+<!-- :deep() into NodeWidgets internals; documented exception in
+     docs/guidance/vue-components.md §Styling. -->
 <style scoped>
-/* Center scrubable-number values to match BatchCountCell. */
 .panel-block__input :deep(input:not(textarea)) {
   text-align: center;
 }
 
-/* NodeWidgets is a 3-col grid (slot-dot | label | widget). The dot
-   is empty and the label is hidden via HideLayoutFieldKey here —
-   collapse to a single column so widgets align flush. */
+/* Collapse NodeWidgets' 3-col grid (slot-dot | label | widget) to
+   a single column — dot is empty, label is hidden via HideLayoutFieldKey. */
 .panel-block__input :deep([data-testid='node-widgets']) {
   grid-template-columns: 1fr !important;
   padding: 0 !important;
@@ -213,11 +186,8 @@ onUpdated(() => {
   display: none !important;
 }
 
-/* Multiline textareas auto-grow via field-sizing:content; the panel's
-   own max-h-* is the single height ceiling so the panel body scrolls
-   instead of the textarea internally. Side-by-side textareas with
-   different content lengths don't align to a shared height yet —
-   tracked as a follow-up. */
+/* Auto-grow via field-sizing:content; panel's max-h is the single
+   height ceiling so the panel body scrolls, not the textarea. */
 .panel-block__input[data-multiline='true'] :deep(textarea) {
   field-sizing: content;
   height: auto !important;

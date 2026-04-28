@@ -1,20 +1,11 @@
 <script setup lang="ts">
-/**
- * IconCell — generic icon-button layout cell.
- *
- * Used for system-pinned utility cells: Builder (hammer), Share (send),
- * Assets (image-ai-edit), Apps (panels-top-left), Help (question).
- */
 defineProps<{
   /** Lucide / comfy icon class, e.g. 'icon-[lucide--hammer]' */
   icon: string
-  /** Accessible label and tooltip text (already-translated string) */
+  /** Already-translated accessible label / tooltip text. */
   label: string
-  /** Render the label inline next to the icon (for multi-col cells). */
   inlineLabel?: boolean
-  /** Whether the cell shows an active/selected visual state */
   active?: boolean
-  /** Whether the cell is disabled */
   disabled?: boolean
 }>()
 

@@ -1,45 +1,27 @@
 /**
- * Pointer-drag scaffolding shared by every drag/pan/resize handler in
- * App Mode (panel snap-drag, block reorder, panel resize, output-window
- * drag, workspace pan). Owns:
- *
- * - active-pointer tracking (so a stray second touch can't hijack)
- * - threshold gate (a click never counts as a drag)
- * - `setPointerCapture` / `releasePointerCapture` lifecycle
- * - pointerup / pointercancel reset
- * - window-blur abandon (alt-tab, OS modal) so a drag can't get stuck
- *
- * Consumers wire `onMove` / `onCommit` and keep their own snapshot or
- * computed-target state — this hook only orchestrates the lifecycle.
+ * Shared pointer-drag lifecycle: pointer-id tracking, threshold gate,
+ * setPointerCapture, pointerup/cancel reset, blur abandon. Consumers
+ * wire `onMove` / `onCommit` and own their own snapshot state.
  */
 import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 interface UsePointerDragOptions {
-  /** Pixel movement past pointerdown before `isDragging` flips true.
-   *  0 (default) activates immediately on press. */
+  /** Pixels of movement before `isDragging` flips true. 0 = immediate. */
   threshold?: number
-  /** Stop pointerdown propagation. Set when nested inside a parent
-   *  with its own drag/pan handler. */
   stopPropagation?: boolean
-  /** Optional gate. Return false to skip the drag (e.g. wrong button). */
+  /** Return false to abort (e.g. wrong button). */
   onStart?: (e: PointerEvent) => boolean | void
-  /** Called on every pointermove past the threshold. */
   onMove: (e: PointerEvent) => void
-  /** Called once when `isDragging` flips true. */
   onActivate?: () => void
-  /** Called on pointerup if `isDragging` was true. */
   onCommit?: (e: PointerEvent) => void
-  /** Called on pointerup, pointercancel, or blur — for cleanup of
-   *  consumer-side state regardless of whether a drag actually
-   *  activated. */
+  /** Cleanup hook — fires on commit, cancel, and blur. */
   onReset?: () => void
 }
 
 interface UsePointerDragResult {
   isDragging: Ref<boolean>
-  /** Bind to the drag target's `@pointerdown`. */
   start: (e: PointerEvent) => void
 }
 
@@ -79,8 +61,7 @@ export function usePointerDrag(
   }
 
   function start(e: PointerEvent): void {
-    // Re-entrance guard: a second pointerdown before the first session
-    // ends would leak the prior pointer capture. Drop the new press.
+    // Re-entrance guard — prevents leaked pointer capture.
     if (activePointerId !== null) return
     if (opts.onStart?.(e) === false) return
     activePointerId = e.pointerId
@@ -119,7 +100,7 @@ export function usePointerDrag(
     reset()
   })
 
-  // Abandon on window blur so a drag can't survive alt-tab / OS modals.
+  // Abandon on blur so a drag doesn't survive alt-tab / OS modals.
   const focused = useWindowFocus()
   watch(focused, (nowFocused) => {
     if (!nowFocused && activePointerId !== null) reset()

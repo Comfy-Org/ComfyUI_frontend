@@ -31,17 +31,13 @@ const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const executionStore = useExecutionStore()
 
-// Drive the multi-window store from `linearOutputStore`'s in-progress
-// lifecycle. Anchored here so the bridge is alive whenever App Mode
-// is mounted.
+// Bridges linearOutputStore's in-progress lifecycle into windowStore.
 useOutputWindowSync()
 const windowStore = useOutputWindowStore()
 
-// Track the active node's step ratio (read direct from the execution
-// store — `stepProgress` below lags by a tick). Graph-level fallback
-// (completed/total nodes) over-credits fast loaders/encoders, making
-// the bar jump to 75% then animate backwards when the sampler starts;
-// 0 outside the sampler phase reads better than that.
+// Read the active node's step ratio directly. Graph-level fallback
+// (completed/total nodes) over-credits encoders and bounces the bar
+// when the sampler starts; 0 outside sampler reads better.
 const progressPercent = computed(() => {
   const p = executionStore._executingNodeProgress
   if (p && p.max > 0) {
@@ -50,9 +46,8 @@ const progressPercent = computed(() => {
   return 0
 })
 
-// Per-node step + ETA, mirroring tqdm's "12/30 [00:08<00:14]" line.
-// Tracker resets on (job, node) change so the linear extrapolation
-// doesn't average across a fast encoder and the slow sampler.
+// Per-node step + ETA (tqdm-style). Resets on (job, node) change so
+// linear extrapolation doesn't average across encoder + sampler.
 const stepProgress = ref<{ value: number; max: number } | null>(null)
 const etaSeconds = ref<number | null>(null)
 let samplingStart: { ts: number; firstValue: number; key: string } | null = null
@@ -91,9 +86,8 @@ const { runButtonClick, mobile, typeformWidgetId, hideChrome } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
   typeformWidgetId?: string
-  /** App Mode layout renders its own history + action chrome in the grid;
-   *  this suppresses both LinearPreview's top action bar and the bottom
-   *  history/feedback strip so we don't double up. */
+  /** App Mode renders its own history + action chrome; suppresses
+   *  the standalone top bar + bottom history/feedback strip. */
   hideChrome?: boolean
 }>()
 
@@ -103,9 +97,8 @@ const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
 
-// Welcome / arrange screens hide as soon as the moodboard has any
-// content. `isWorkflowActive` covers the Run-click → first-skeleton
-// gap so the welcome doesn't flash back on.
+// `isWorkflowActive` covers the Run-click → first-skeleton gap so
+// the welcome doesn't flash back on.
 const hasMoodboardContent = computed(
   () => windowStore.windows.length > 0 || isWorkflowActive.value
 )
@@ -129,7 +122,7 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!workflow) return
 
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
-  // Same workflow id — update in-place, push old version onto undo.
+  // Same id — update in-place, push old version onto undo.
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
@@ -207,9 +200,8 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <!-- App Mode (hideChrome): each generation lives in its own movable
-       OutputWindow. Welcome / arrange screens fill the canvas only
-       while there's no content. -->
+  <!-- App Mode (hideChrome): one OutputWindow per generation;
+       welcome / arrange fill the canvas while empty. -->
   <template v-if="hideChrome">
     <OutputWindowList
       :progress-percent="progressPercent"
@@ -242,8 +234,7 @@ async function rerun(e: Event) {
     <LinearArrange v-else-if="isArrangeMode" key="arrange" />
     <LinearWelcome v-else key="welcome" />
   </Transition>
-  <!-- OutputHistory only mounts in standalone linear mode — App Mode
-       drives the multi-window store directly from `useOutputWindowSync`. -->
+  <!-- Standalone linear mode only; App Mode uses useOutputWindowSync. -->
   <div
     v-if="!hideChrome && !mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
@@ -270,9 +261,8 @@ async function rerun(e: Event) {
   />
 </template>
 
-<!-- Unscoped: `<Transition>` applies these classes to the slot
-     children's roots, which scoped styles can't reach without
-     `:deep()`. Class names are unique enough to not need isolation. -->
+<!-- Unscoped: <Transition> classes apply to slot-child roots, which
+     scoped styles can't reach without :deep(). -->
 <style>
 .preview-fade-enter-active,
 .preview-fade-leave-active {

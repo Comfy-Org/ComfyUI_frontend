@@ -44,11 +44,8 @@ const existingOutput = computed(() => {
     class="mx-auto flex size-full flex-col items-center justify-center gap-4 p-8"
     style="transform: translateX(calc(-0.5 * var(--sidebar-width, 0px)))"
   >
-    <!-- Two preview cards mirror the runtime's visual language — an
-         OutputWindow-style card on top for results, an AppPanel-
-         style card below for the inputs/blocks demo. The center
-         translateX nudges the stack onto the toolbar's viewport-
-         centered axis (backdrop is sidebar-offset). -->
+    <!-- translateX recenters onto the toolbar's viewport-centered
+         axis (the backdrop is sidebar-offset). -->
     <PreviewCard :title="t('linearMode.arrange.outputs')" class="w-132">
       <p
         class="m-0 max-w-prose px-6 py-8 text-left text-lg text-base-foreground"
@@ -62,9 +59,8 @@ const existingOutput = computed(() => {
         <p class="m-0 max-w-prose text-left text-lg text-base-foreground">
           {{ t('linearMode.arrange.dragHint') }}
         </p>
-        <!-- Drag-to-reorder demo: bottom block lifts up beside the middle
-             block (1-col → 2-col) and back. Timeline reads as pause →
-             drag-up → hold → drag-back → pause. -->
+        <!-- Drag-to-reorder demo: bottom block lifts beside the middle
+             block (1-col → 2-col) and back. -->
         <svg
           class="drag-demo mx-auto w-3/4 max-w-sm text-warning-background"
           viewBox="0 0 240 144"
@@ -118,9 +114,6 @@ const existingOutput = computed(() => {
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
     <div class="flex flex-row gap-2">
-      <!-- Color override matches the Save button (BuilderFooterToolbar)
-           — uses the temp App Mode accent purple instead of the brand
-           blue `variant="primary"` token. -->
       <Button
         size="lg"
         :class="[
@@ -138,9 +131,8 @@ const existingOutput = computed(() => {
 </template>
 
 <style scoped>
-/* Easing is cubic-bezier(0.83, 0, 0.17, 1) (easeInOutQuint) — the
-   pronounced curve makes the pause→drag→pause rhythm legible. The
-   mover layers two animations via the comma-separated list. */
+/* easeInOutQuint — the pronounced curve makes the pause→drag→pause
+   rhythm legible. */
 .drag-demo rect {
   fill: currentColor;
 }
@@ -165,9 +157,8 @@ const existingOutput = computed(() => {
 .drag-demo .cursor {
   fill: currentColor;
   stroke: var(--color-layout-canvas, #0a0a0a);
-  /* Doubled to match the frame's visible 1.5: paint-order paints stroke
-     under fill, so the fill covers the inner half — only the outer 1.5
-     ends up visible, matching the wireframe outline. */
+  /* paint-order: stroke under fill — fill covers the inner half so
+     only the outer 1.5px shows, matching the frame outline. */
   stroke-width: 3;
   stroke-linejoin: round;
   stroke-linecap: round;

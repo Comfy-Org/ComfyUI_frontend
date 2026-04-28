@@ -1,21 +1,13 @@
 /**
- * Pointer-driven reorder for blocks inside a panel, multi-column.
+ * Pointer-driven multi-column block reorder.
  *
- * Three load-bearing decisions that aren't obvious from the code:
- * - Hit-testing reads a SNAPSHOT of block rects taken at drag start,
- *   never the live DOM. Without this, the reshuffle preview's FLIP
- *   animation moves rects during the drag and creates a feedback
- *   loop (target change → DOM change → target change).
- * - `computeDropTarget` returns a fresh object per call; an equality
- *   guard before assigning to `dropTarget` keeps `displayRows` + FLIP
- *   from re-firing every pointermove when the zone is unchanged.
- * - Once a zone is active, its boundary widens by `HYSTERESIS_PX` so
- *   the pointer has to move past the edge before switching — kills
- *   jitter when hovering exactly on a column edge or row midline.
- *
- * Drop-target detection: nearest block by snapshot center, then
- * classify pointer position into columnBefore / columnAfter (edge
- * zones) or newRowBefore / newRowAfter (upper / lower mid).
+ * Hit-testing reads a snapshot of block rects taken at drag start —
+ * never the live DOM — so the FLIP-animated preview can't feed back
+ * into target detection. Equality guard before writing dropTarget
+ * keeps the display layout from re-running every pointermove.
+ * HYSTERESIS_PX widens the active zone's boundary so the pointer
+ * has to move past the edge before switching — kills jitter at
+ * column edges and row midlines.
  */
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -24,9 +16,7 @@ import type { BlockPos, DropTarget } from './panelTypes'
 import { usePointerDrag } from './usePointerDrag'
 
 interface UseBlockDragOptions {
-  /** Container element holding block elements (with `data-block-row` + `data-block-col`). */
   listEl: Ref<HTMLElement | null>
-  /** Called on pointerup with the committed reorder target. */
   onCommit: (from: BlockPos, target: DropTarget) => void
 }
 
@@ -36,12 +26,10 @@ interface BlockSnapshot {
   colIndex: number
 }
 
-/** Fraction of a block's width that counts as "edge zone" for side-drop. */
 const EDGE_FRACTION = 0.3
 const EDGE_MIN_PX = 40
 const EDGE_MAX_PX = 140
 const DRAG_THRESHOLD_PX = 5
-/** Active zone sticks by this much past its edge before switching. */
 const HYSTERESIS_PX = 8
 
 function captureSnapshot(container: HTMLElement): BlockSnapshot[] {
@@ -75,8 +63,7 @@ function computeDropTarget(
   pointerY: number,
   currentTarget: DropTarget | null
 ): DropTarget | null {
-  // Exclude the dragged block by its ORIGINAL row/col so the nearest
-  // search doesn't snap to the block the user is currently holding.
+  // Exclude the dragged block from the nearest-search.
   const candidates: BlockSnapshot[] = []
   for (const s of snapshot) {
     if (s.rowIndex === dragFrom.row && s.colIndex === dragFrom.col) continue
@@ -103,9 +90,8 @@ function computeDropTarget(
     EDGE_MAX_PX
   )
 
-  // Hysteresis stickiness only applies when nearest === last target.
-  // Crossing to a different block uses fresh boundaries; only
-  // *staying put* gets the grace space.
+  // Hysteresis only when nearest === last target; crossing to a
+  // different block uses fresh boundaries.
   let stickyKind: DropTarget['kind'] | null = null
   if (currentTarget && currentTarget.rowIndex === rowIndex) {
     if (
@@ -114,8 +100,7 @@ function computeDropTarget(
     ) {
       if (currentTarget.colIndex === colIndex) stickyKind = currentTarget.kind
     } else {
-      // newRow* is per-row, not per-column — any block in the same
-      // row keeps the stickiness alive.
+      // newRow* is per-row, so any block in this row keeps it sticky.
       stickyKind = currentTarget.kind
     }
   }
@@ -183,18 +168,13 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
     }
   })
 
-  // Re-export under the name consumers know — the underlying hook's
-  // `isDragging` flips when the threshold crosses, which matches our
-  // semantics (pre-threshold press is not yet a drag).
   const isDragging = computed(() => isPastThreshold.value)
 
   function startDrag(pos: BlockPos, e: PointerEvent) {
-    // Gate before writing pendingPos / snapshot so a rejected press
-    // doesn't leak state into the next valid drag.
+    // Gate before writing state so a rejected press can't leak into
+    // the next valid drag.
     if (e.button !== 0 && e.pointerType === 'mouse') return
     pendingPos = pos
-    // Snapshot the pre-drag layout — no reshuffle or FLIP has run yet,
-    // so the DOM is in its stable original state.
     const container = opts.listEl.value
     snapshot = container ? captureSnapshot(container) : []
     startGen(e)

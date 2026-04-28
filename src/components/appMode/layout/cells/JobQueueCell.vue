@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * JobQueueCell — active-jobs indicator that mirrors the graph-view
- * "N active" button. Rendered in App Mode's top-right cluster only
- * while `activeJobsCount > 0`; clicking opens the job history sidebar
- * (or the legacy queue overlay, depending on feature flag).
- */
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 

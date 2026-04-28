@@ -1,11 +1,4 @@
 <script setup lang="ts">
-/**
- * Unified floating input panel for App Mode and App Builder. Owns
- * preset-based positioning, drag-to-snap, resize, collapse, and the
- * snap preview so both consumers get identical behavior. Position +
- * collapse + width are bound to `appModeStore` so changes propagate
- * WYSIWYG between modes.
- */
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
@@ -48,8 +41,7 @@ const { isDragging, snapTarget, onHeaderPointerDown } = usePanelDrag({
   onCommit: (next) => (preset.value = next)
 })
 
-// Measure the live panel so the drag preview lands at its content-fit
-// dimensions. Rounded to int to avoid subpixel jitter on the outline.
+// Round to int — subpixel size jitters the drag-preview outline.
 const panelRef = useTemplateRef<HTMLElement>('panelRef')
 const { width: panelWidth, height: panelHeight } = useElementSize(panelRef)
 const previewHeight = computed(() => Math.round(panelHeight.value))
@@ -60,9 +52,8 @@ const { panelWidthCells } = storeToRefs(appModeStore)
 
 const isDocked = computed(() => isDockPreset(preset.value))
 
-// Per-instance width override: overrides the global `--panel-dock-width`
-// token on this element only, so sibling chrome (AppChrome cell
-// alignment) isn't affected by the user's resize.
+// Per-instance override of `--panel-dock-width` — sibling chrome
+// alignment stays anchored to the token's default.
 const widthStyle = computed(() => {
   if (!isDocked.value) return undefined
   const cells = panelWidthCells.value
@@ -73,8 +64,6 @@ const widthStyle = computed(() => {
   }
 })
 
-// Resize is dock-only — the handle is an invisible hit-strip on the
-// panel's inner edge; cursor change on hover is the only affordance.
 const { startResize } = usePanelResize({
   side: computed(() => panelSide(preset.value)),
   widthCells: panelWidthCells
@@ -82,28 +71,25 @@ const { startResize } = usePanelResize({
 
 const sectionClass = computed(() =>
   cn(
-    // pointer-events-auto keeps the panel interactive even though the
-    // parent surface is pointer-events-none (so canvas clicks fall
-    // through empty chrome space).
+    // pointer-events-auto so canvas clicks still fall through empty
+    // chrome (the parent surface is pointer-events-none).
     'floating-panel pointer-events-auto absolute z-10 flex flex-col overflow-hidden',
     !isDocked.value && 'w-(--panel-dock-width,440px)',
     'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
     'rounded-[10px] border border-white/8 bg-layout-cell',
-    // backdrop-blur off while dragging: the GPU recomposes the blur
-    // every frame against the layer behind, which tanks framerate
-    // when a run is repainting the latent preview at the same time.
+    // Drop blur while dragging — recomputing it every frame tanks
+    // framerate when a run is repainting in parallel.
     !isDragging.value && 'backdrop-blur-sm',
     'shadow-[0_2px_4px_rgb(0_0_0/0.4),0_16px_48px_rgb(0_0_0/0.45)]',
     'duration-layout ease-layout',
-    // While dragging, only opacity tweens — position is pointer-driven,
-    // not CSS, and a multi-property transition would pop on commit.
+    // Drag tweens opacity only; position is pointer-driven, so a
+    // position transition would pop on commit.
     movable && isDragging.value
       ? 'opacity-[0.15] transition-opacity'
       : 'transition-[top,bottom,left,right,opacity]',
     PANEL_PRESET_CLASSES[preset.value],
-    // Collapsed: release the off-corner anchor so the section shrinks
-    // to header-only. Bottom-anchored floats re-pin at the bottom so
-    // the header hugs the lower chrome rail.
+    // Collapsed: release the off-corner anchor; bottom floats re-pin
+    // at the bottom so the header hugs the lower chrome rail.
     collapsed.value && [
       'h-auto max-h-none',
       isFloatBottom(preset.value) ? 'top-auto' : 'bottom-auto'
@@ -113,9 +99,6 @@ const sectionClass = computed(() =>
 
 function handleHeaderPointerDown(e: PointerEvent) {
   if (!movable) return
-  // PanelHeader's chevron + menu buttons already `@pointerdown.stop`,
-  // so they won't bubble here — anywhere else on the header is fair
-  // game for the drag.
   onHeaderPointerDown(e)
 }
 
@@ -135,7 +118,6 @@ const menuEntries = computed<MenuItem[]>(() => [
     command: () => {
       preset.value = defaultPreset
       collapsed.value = false
-      // Reset drag-resized width back to the default 8-cell dock.
       panelWidthCells.value = 8
       emit('reset-layout')
     }
@@ -145,9 +127,8 @@ const menuEntries = computed<MenuItem[]>(() => [
 
 <template>
   <section ref="panelRef" :class="sectionClass" :style="widthStyle">
-    <!-- Resize hit-strip on the dock's inner edge (left for right-dock
-         and vice versa). 6px wide so it's grabbable without a visible
-         handle; the ew-resize cursor is the only affordance. -->
+    <!-- Invisible 6px hit-strip on the dock's inner edge — cursor is
+         the only affordance. -->
     <div
       v-if="isDocked"
       :class="
@@ -170,9 +151,8 @@ const menuEntries = computed<MenuItem[]>(() => [
       @pointerdown="handleHeaderPointerDown"
     />
 
-    <!-- Body is content-driven, not flex-1: short widget lists shrink
-         the panel; `min-h-0` lets flex-shrink engage scroll when
-         content exceeds the section's max-height cap. -->
+    <!-- Content-driven height; `min-h-0` lets flex-shrink scroll
+         once content exceeds the section's max-height cap. -->
     <div v-show="!collapsed" class="min-h-0 overflow-y-auto p-4">
       <slot />
     </div>

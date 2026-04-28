@@ -19,8 +19,7 @@ const { toastErrorHandler } = useErrorHandling()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes, panelPreset } = storeToRefs(appModeStore)
 
-// Mirror the welcome copy to the opposite side of the panel so it stays
-// fully visible — left panel → content aligned right, and vice versa.
+// Pin the copy to the panel-free edge.
 const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
@@ -28,8 +27,7 @@ const isAppDefault = computed(
 )
 const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 
-// Same command the corner RunCell dispatches. Shift-click queues to
-// the front of the line; plain click appends.
+// Same command RunCell dispatches; shift = priority queue.
 const commandStore = useCommandStore()
 async function runFromPill(e: MouseEvent) {
   const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
@@ -84,16 +82,7 @@ async function runFromPill(e: MouseEvent) {
         <p class="mt-0 text-base-foreground">
           <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
             <template #runButton>
-              <!--
-                Go-green hexes mirror the RunCell treatment in
-                AppChrome. They're tw green-600/500/800 literals
-                because the same "placeholder pending design tokens"
-                comment in AppChrome.vue's `goStopVars` applies here
-                — when those get promoted to proper semantic tokens
-                (`--color-success-*`), update both call sites.
-                The `!` suffixes override the PrimeVue `primary`
-                variant's blue background at the utility level.
-              -->
+              <!-- Hexes match RunCell — same temp tokens pending design. -->
               <Button
                 variant="primary"
                 size="unset"

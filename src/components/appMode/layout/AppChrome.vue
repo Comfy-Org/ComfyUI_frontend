@@ -1,13 +1,4 @@
 <script setup lang="ts">
-/**
- * Chrome rail (mode toggle, feedback, run, share, zoom) shared by
- * App Mode and App Builder. Four flex zones pinned to the viewport
- * corners; cell widths use the same span math as FloatingPanel so
- * everything aligns to the same grid. Variant gates: HIDE_IN_BUILDER
- * drops contextually-wrong cells, DISABLE_IN_BUILDER renders them
- * inert. Run-related output UX (rerun / progress / interrupt) lives
- * inside OutputWindowList, not here.
- */
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
@@ -49,11 +40,8 @@ type ChromeCellKind =
 interface ChromeCell {
   id: string
   kind: ChromeCellKind
-  /** Cell count this item spans horizontally. Width =
-   *  span × cell + (span - 1) × gutter. */
+  /** Width = span × cell + (span - 1) × gutter. */
   span: number
-  /** Visual inert state — used by the builder variant to tag cells that
-   *  render identically to App Mode but can't be interacted with. */
   disabled?: boolean
 }
 
@@ -74,18 +62,16 @@ const { appScalePercentage } = storeToRefs(canvasStore)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
-// `appScalePercentage` syncs only while initScaleSync() is active.
-// GraphCanvasMenu registers it for graph view; builder doesn't mount
-// that menu so we register from here.
+// GraphCanvasMenu registers initScaleSync() for graph view; builder
+// doesn't mount that menu so we register from here.
 if (variant === 'builder') {
   onMounted(() => canvasStore.initScaleSync())
   onBeforeUnmount(() => canvasStore.cleanupScaleSync())
 }
 
-// One nav cluster, two underlying zoom systems: App Mode + builder/
-// arrange drive `appModeStore.viewportScale` (CSS transform); builder/
-// inputs+outputs drive `LGraphCanvas.ds.scale` via Comfy.Canvas.*
-// commands. `isArrangeMode` switches the cluster over per surface.
+// Two zoom systems behind one nav cluster: App Mode + builder/arrange
+// drive `appModeStore.viewportScale` (CSS transform); builder/inputs+
+// outputs drive `LGraphCanvas.ds.scale` via Comfy.Canvas.* commands.
 const useAppModeZoom = computed(
   () => variant !== 'builder' || isArrangeMode.value
 )
@@ -124,7 +110,6 @@ function openShare() {
   openShareDialog().catch(toastErrorHandler)
 }
 
-// --- Variant-specific overrides -----------------------------------------
 const HIDE_IN_BUILDER = new Set<ChromeCellKind>([
   'system-mode-toggle',
   'system-builder'
@@ -144,8 +129,6 @@ function include(out: ChromeCell[], cell: ChromeCell) {
   out.push(cell)
 }
 
-// --- Zone cell lists ----------------------------------------------------
-
 const topLeftCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
   include(out, { id: 'mode-toggle', kind: 'system-mode-toggle', span: 2 })
@@ -157,8 +140,8 @@ const topLeftCells = computed<ChromeCell[]>(() => {
 
 const topRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
-  // Conditional cells go leftmost so their show/hide pushes the
-  // cluster's left edge instead of shifting share/batch/run visually.
+  // Conditional cells go leftmost so show/hide pushes the cluster's
+  // left edge instead of shifting share/batch/run.
   if (showJobQueue.value)
     include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
   if (showShare.value)
@@ -187,7 +170,6 @@ const bottomRightCells = computed<ChromeCell[]>(() => {
   return out
 })
 
-// --- Helpers ------------------------------------------------------------
 function cellWidth(span: number): string {
   return `calc(${span} * var(--spacing-layout-cell) + ${span - 1} * var(--spacing-layout-gutter))`
 }
@@ -200,9 +182,8 @@ function cellTitle(cell: ChromeCell): string | undefined {
 const ZONE_BASE =
   'pointer-events-none absolute flex h-layout-cell flex-row gap-layout-gutter'
 
-// `system-run` skips border+fill so its colored button reaches the
-// cell edges cleanly.
 function cellClass(cell: ChromeCell): string {
+  // `system-run` skips border+fill so its colored button reaches the edges.
   const bare = cell.kind === 'system-run'
   return cn(
     'pointer-events-auto flex h-full overflow-hidden',
@@ -213,9 +194,8 @@ function cellClass(cell: ChromeCell): string {
 </script>
 
 <template>
-  <!-- `app-mode` anchors absolute-inset inside LayoutView; `builder`
-       is fixed to the viewport below the workflow tabs. `app-chrome`
-       is an external CSS hook. -->
+  <!-- `app-mode` anchors absolute-inset inside LayoutView;
+       `builder` is fixed to the viewport below the workflow tabs. -->
   <div
     :class="
       cn(

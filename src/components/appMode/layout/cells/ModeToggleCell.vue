@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * ModeToggleCell — wraps WorkflowActionsDropdown (App ↔ Graph
- * toggle) for the chrome cell grid. The arbitrary variants on the
- * outer div neutralize the dropdown's own pill background and
- * sizing so the cell's surface owns the visual bounds.
- */
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 </script>
 
@@ -17,9 +11,8 @@ import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown
 </template>
 
 <style scoped>
-/* Adapt WorkflowActionsDropdown's pill-shaped wrapper to the cell:
-   space-around fills the cell width (matches BatchCountCell), and
-   the bg + radius reset lets the cell surface own the visuals. */
+/* Reset WorkflowActionsDropdown's pill chrome so the cell surface
+   owns the visuals. */
 .mode-toggle-cell :deep(.bg-secondary-background) {
   display: flex;
   width: 100%;

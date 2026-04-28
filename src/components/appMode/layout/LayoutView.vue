@@ -1,11 +1,4 @@
 <script setup lang="ts">
-/**
- * App Mode runtime view. Three compositing layers: the zoom/pan
- * workspace (`.layout-view__background`, holds LinearPreview), the
- * grid-anchored AppChrome cells, and the FloatingPanel overlay.
- * Workspace transform lives on the inner div so LinearPreview content
- * scales + pans as one unit; chrome + panel stay put.
- */
 import { computed, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useEventListener } from '@vueuse/core'
@@ -35,10 +28,8 @@ watch(
   () => appModeStore.resetView()
 )
 
-// Pan/zoom handlers bind to the always-full-viewport `.layout-view`,
-// not the transformed bgRef — otherwise zoom-out shrinks the hit
-// area and pan stops working until a recenter. The zoom math is
-// rect-invariant under this swap (same center pivot).
+// Pan/zoom handlers bind to `.layout-view` (always full viewport), not
+// the transformed bgRef — otherwise zoom-out shrinks the hit area.
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
 
 function handleWheel(e: WheelEvent) {
@@ -47,8 +38,8 @@ function handleWheel(e: WheelEvent) {
   appModeStore.zoomAt(e.clientX, e.clientY, e.deltaY, rect)
 }
 
-// Defer pointer capture until past threshold — otherwise a click on
-// an in-workspace control (welcome Run pill, etc.) gets swallowed.
+// Defer capture until past threshold so clicks on in-workspace
+// controls (welcome Run pill, etc.) aren't swallowed.
 const DRAG_THRESHOLD_PX = 5
 let dragStart: { x: number; y: number; pointerId: number } | null = null
 let dragging = false
@@ -65,13 +56,11 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
     const dx = e.clientX - dragStart.x
     const dy = e.clientY - dragStart.y
     if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
-    // Capture before flipping `dragging` so a thrown capture doesn't
-    // leave the handler in a half-state.
     try {
       bgRef.value?.setPointerCapture(dragStart.pointerId)
     } catch {
-      // Some browsers reject capture on non-primary pointers; carry
-      // on without it — window listeners still see the events.
+      // Some browsers reject capture on non-primary pointers; window
+      // listeners still see the events, so carry on.
     }
     dragging = true
   }
@@ -86,18 +75,16 @@ useEventListener(window, 'pointerup', endDrag)
 useEventListener(window, 'pointercancel', endDrag)
 
 // translate-before-scale keeps offsets in screen px regardless of
-// scale (matches zoomAt/panBy math); reversed would shrink pan speed
-// as zoom grows.
+// scale (matches zoomAt/panBy math).
 const workspaceTransform = computed(
   () =>
     `translate(${viewportOffsetX.value}px, ${viewportOffsetY.value}px) ` +
     `scale(${viewportScale.value})`
 )
 
-// Dot-grid LOD: two CSS layers tile linearly with workspace scale
-// (no parallax). Density is opacity-driven — the fine 1× layer fades
-// out as you zoom out and the coarse 2× layer (a subset of fine
-// positions) carries through, so dots disappear without shifting.
+// Dot-grid LOD: two opacity-cross-faded CSS layers (fine 1×, coarse
+// 2×). Coarse positions are a subset of fine, so dots disappear at
+// zoom-out without shifting.
 const DOT_SIZE_PX = 24
 
 const gridSpacing = computed(() => {
@@ -112,9 +99,8 @@ const gridFineAlpha = computed(() => {
   return (s - 0.5) * 2
 })
 
-// Coarse alpha is inverse of fine — without this, the layers stack
-// above scale=1 and the fine dots' AA edges let the coarse dots bleed
-// through at every-other position, producing two visible values.
+// Inverse of fine — without this, AA edges leak the coarse layer
+// through at every-other position above scale=1.
 const gridCoarseAlpha = computed(() => 1 - gridFineAlpha.value)
 
 const { inputEntryMap, moveBlock } = useAppPanelLayout()
@@ -127,8 +113,7 @@ const panelTitle = computed(() => {
 
 const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 
-// Panel side steers the welcome-copy offset to the opposite edge so
-// the wordmark + body text stay visible regardless of preset.
+// Steers the welcome-copy offset to the panel-free edge.
 const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 </script>
 
@@ -148,11 +133,9 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
     @pointerdown="handlePointerDown"
     @dragstart.prevent
   >
-    <!-- Workspace transform lives on this inner div so LinearPreview
-         contents (welcome, image, arrange) zoom + pan together. Pan
-         handlers are on the outer `.layout-view` so they keep working
-         when this div shrinks under zoom-out (OutputWindow + panel
-         headers stop propagation so their drags don't double-fire). -->
+    <!-- Transform on the inner div so LinearPreview contents zoom +
+         pan together while pan handlers (on the outer .layout-view)
+         keep working under zoom-out. -->
     <div
       ref="bgRef"
       class="layout-view__background"
@@ -163,8 +146,8 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 
     <AppChrome variant="app-mode" />
 
-    <!-- `<Transition appear>` runs only on first mount — preset swaps
-         and collapse toggles bypass it. Soft entry for cold-start. -->
+    <!-- `appear` so cold-start gets a soft entry; preset swaps + collapse
+         toggles bypass this transition. -->
     <Transition name="panel-enter" appear>
       <FloatingPanel
         v-model:preset="panelPreset"
@@ -187,16 +170,9 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
   position: absolute;
   inset: 0;
   background-color: var(--color-layout-canvas);
-  /* Dot grid: two stacked layers (fine 1×, coarse 2×) tile across
-     the viewport. `calc(50% + offset)` on background-position shares
-     the pivot with the workspace `transform-origin: center` so the
-     grid stays locked to the contents — and CSS percent-based
-     positioning auto-compensates for the differing image sizes, so
-     each layer's center dot lands at the same viewport point.
-     Dot radii scale with viewport (constant tile ratio) but floor at
-     0.6× to stay visible at extreme zoom-out; the AA ring is pinned
-     to a constant 0.5px so dots stay crisp instead of blooming when
-     zoomed in. */
+  /* Dot grid shares the workspace pivot via `calc(50% + offset)`. Dot
+     radii scale with viewport but floor at 0.6× for legibility at
+     extreme zoom-out; the AA ring stays at 0.5px so dots don't bloom. */
   --dot-scale: max(0.6, var(--viewport-scale, 1));
   --dot-radius: calc(1px * var(--dot-scale));
   --dot-fade-radius: calc(var(--dot-radius) + 0.5px);
@@ -231,13 +207,10 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
       calc(50% + var(--viewport-offset-y, 0)),
     calc(50% + var(--viewport-offset-x, 0))
       calc(50% + var(--viewport-offset-y, 0));
-  /* Clip the transformed workspace so panning doesn't paint above
-     the top workflow-tabs bar. */
   overflow: hidden;
-  /* Own stacking context for z-indexed children. */
   isolation: isolate;
-  /* LinearWelcome reads both offsets and shifts its copy to the panel-
-     free side. Default to right-dock when --data-panel-side is unset. */
+  /* LinearWelcome reads these to shift its copy to the panel-free
+     side; defaults assume the right-dock preset. */
   --welcome-panel-offset-left: 0;
   --welcome-panel-offset-right: calc(
     var(--panel-dock-width, 440px) + var(--spacing-layout-outer, 8px)
@@ -259,26 +232,22 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
   flex-direction: column;
   /* Center origin so zoomAt's cursor-offset math lines up with scale. */
   transform-origin: center;
-  /* Suppress native image-drag and text-selection so left-click pan
-     doesn't fight the browser (dragging an <img> to the tab bar
-     opens it as a new tab — the main UX regression we hit). */
+  /* Suppress native drag/selection so left-click pan doesn't fight
+     the browser (dragging an <img> opens it as a new tab). */
   user-select: none;
   -webkit-user-drag: none;
 }
 
-/* Belt-and-suspenders for descendants — some browsers fire drag
-   before bubbling, so @dragstart.prevent on the wrapper isn't enough. */
+/* Some browsers fire drag before bubbling, so @dragstart.prevent on
+   the wrapper isn't enough — repeat on descendants. */
 .layout-view__background :is(img, a) {
   -webkit-user-drag: none;
   user-select: none;
 }
 </style>
 
-<!--
-  Unscoped: Vue's `<Transition appear>` applies `panel-enter-*` to
-  the child component's root, which a scoped selector can't reach
-  without :deep(). The class prefix is unique to this transition.
--->
+<!-- Unscoped: <Transition appear> applies these classes to the child
+     component's root, which scoped selectors can't reach. -->
 <style>
 .panel-enter-enter-active {
   transition:
@@ -287,8 +256,6 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 }
 .panel-enter-enter-from {
   opacity: 0;
-  /* Slide from right edge to match the default right-dock preset —
-     reads as "settling into position" rather than materializing. */
   transform: translateX(16px);
 }
 </style>

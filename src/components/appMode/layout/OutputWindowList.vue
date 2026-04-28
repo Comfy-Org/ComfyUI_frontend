@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * Renders one OutputWindow per entry in `outputWindowStore`. Owns
- * position, zIndex on focus, per-state body content, header/hover
- * actions, and the run-status overlay attached to the in-flight
- * window.
- */
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref, watch } from 'vue'
@@ -32,11 +26,9 @@ const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
 defineProps<{
-  /** Blended progress (0-100). LinearPreview owns the math. */
+  /** Blended 0–100; LinearPreview owns the math. */
   progressPercent: number
-  /** Run-status overlay copy. Both nullable — neither exists during
-   *  cold-load, only step exists between encoder + sampler, both
-   *  exist mid-sampler. */
+  /** Both nullable — only `step` between encoder+sampler, both mid-sampler. */
   stepProgress: { value: number; max: number } | null
   etaSeconds: number | null
   formatEta: (s: number) => string
@@ -47,9 +39,8 @@ function filenameFor(entry: OutputWindowEntry): string | undefined {
   return out?.display_name?.trim() || out?.filename || undefined
 }
 
-// Cloud-mode: assets live under `asset.asset_hash`, so the original
-// `output.url` 404s — re-clone the ResultItem with the hash. OSS
-// mode passes through unchanged.
+// Cloud-mode: re-clone with `asset_hash` so we hit the right URL.
+// OSS-mode passes through unchanged.
 function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   const out = entry.output
   if (!out) return undefined
@@ -58,8 +49,7 @@ function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   return new ResultItemImpl({
     filename: hash,
     subfolder: out.subfolder,
-    // ResultItemImpl widens `type` to string; the init interface keeps
-    // the narrow union, so cast back.
+    // ResultItemImpl widens `type` to string; init interface stays narrow.
     type: out.type as 'input' | 'output' | 'temp' | undefined,
     nodeId: out.nodeId,
     mediaType: out.mediaType,
@@ -70,8 +60,8 @@ function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   })
 }
 
-// Body actions read against the image (light-on-dark pill); header
-// actions sit in the chrome strip (transparent + hover-tinted).
+// Body actions: light-on-dark pill over the image. Header actions:
+// transparent + hover-tinted in the chrome strip.
 const BODY_ACTION_CLASS =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center ' +
   'rounded-lg border-0 bg-base-foreground p-2 text-base-background ' +
@@ -87,10 +77,7 @@ const HEADER_ACTION_CLASS =
   'focus-visible:ring-2 focus-visible:ring-base-foreground/40 ' +
   '[&>i]:size-[18px]'
 
-// Per-window image aspect drives OutputWindow's body sizing for
-// uniform 8px margin regardless of image dimensions. Probed by
-// preloading the same URL we display; the browser cache makes the
-// second fetch ~free.
+// Probed via preload (browser cache makes the second fetch ~free).
 const imageAspects = ref<Record<string, number>>({})
 function aspectFor(entry: OutputWindowEntry): number | undefined {
   return imageAspects.value[entry.id]
@@ -105,8 +92,7 @@ watch(
       if (!url) continue
       const probe = new Image()
       probe.onload = () => {
-        // Race guard: if the window's URL changed between probe-start
-        // and probe-load (e.g. latent → final), drop the stale aspect.
+        // Race guard: drop stale aspect if URL changed (latent → final).
         const current = windowStore.windows.find((w) => w.id === id)
         if (!current || aspectSourceUrl(current) !== url) return
         if (probe.naturalWidth <= 0 || probe.naturalHeight <= 0) return
@@ -120,8 +106,7 @@ watch(
   { immediate: true, deep: true }
 )
 
-// Topmost still-pre-image window — the run-status overlay attaches
-// there and drops when the window flips to `image`.
+// Topmost not-yet-image window owns the run-status overlay.
 const inFlightWindowId = computed<string | null>(() => {
   for (let i = sortedWindows.value.length - 1; i >= 0; i--) {
     const w = sortedWindows.value[i]
@@ -143,9 +128,7 @@ function downloadOutput(entry: OutputWindowEntry): void {
   if (url) downloadFile(url)
 }
 
-// Shared by rerun + reuse-params; rerun additionally fires
-// QueuePrompt afterwards. Single-window mirror of
-// LinearPreview's loadWorkflow.
+// Shared by rerun + reuse-params (rerun also fires QueuePrompt).
 async function loadAssetWorkflow(entry: OutputWindowEntry): Promise<void> {
   const asset = entry.asset
   if (!asset) return
@@ -162,8 +145,7 @@ async function rerunWindow(entry: OutputWindowEntry): Promise<void> {
   try {
     await loadAssetWorkflow(entry)
   } catch (error) {
-    // Don't fall through to QueuePrompt against a stale graph if the
-    // asset's workflow couldn't be loaded.
+    // Don't fall through to QueuePrompt against a stale graph.
     toastErrorHandler(error)
     return
   }
@@ -192,7 +174,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       command: () => windowStore.remove(entry.id)
     }
   ]
-  // Clear-all redundant on one window — close already does it.
+  // Clear-all redundant on one window.
   if (windows.value.length > 1) {
     entries.push({ separator: true })
     entries.push({
@@ -240,9 +222,8 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       />
     </template>
     <template v-else-if="entry.state === 'latent' && entry.latentPreviewUrl">
-      <!-- object-fill stretches the low-res latent to body bounds; at
-           this resolution distortion is invisible and we get bounds
-           parity with the eventual final image. -->
+      <!-- object-fill stretches the latent to bounds — distortion is
+           invisible at this resolution and matches the final image's box. -->
       <img
         :src="entry.latentPreviewUrl"
         class="size-full rounded-lg border border-white/8 object-fill"
@@ -254,7 +235,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     </template>
 
     <template #body-actions>
-      <!-- Rerun + reuse-params need a finalized asset; download is in the header. -->
+      <!-- Rerun + reuse-params require a finalized asset. -->
       <button
         v-if="entry.asset"
         type="button"
@@ -295,8 +276,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
             class="h-full bg-(--app-mode-go-bg) transition-[width] duration-300 ease-out"
             :style="{ width: `${progressPercent}%` }"
           />
-          <!-- Step (left) + ETA (right) overlaid; empty spans hold
-               slots so justify-between keeps labels pinned. -->
+          <!-- Empty spans pin Step / ETA via justify-between. -->
           <div
             class="pointer-events-none absolute inset-0 flex items-center justify-between px-3 text-xs text-white tabular-nums"
           >

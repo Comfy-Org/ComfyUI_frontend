@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * Shared header strip for FloatingPanel + OutputWindow. Owns the
- * chevron / title / spacer / ellipsis-menu skeleton both panels need;
- * consumers attach `@pointerdown` to the root for drag and bind
- * `draggable` / `dragging` to drive cursor state.
- */
 import { cn } from '@comfyorg/tailwind-utils'
 import type { MenuItem } from 'primevue/menuitem'
 
@@ -21,10 +15,8 @@ const {
   menuLabel
 } = defineProps<{
   title?: string
-  /** Adds cursor-grab + touch-none and (when `dragging`) cursor-grabbing. */
   draggable?: boolean
   dragging?: boolean
-  /** Whether to render the chevron toggle. */
   collapsible?: boolean
   menuEntries: MenuItem[]
   /** Required so icon-only buttons always have accessible names. */
@@ -39,8 +31,6 @@ function toggleCollapsed() {
   collapsed.value = !collapsed.value
 }
 
-// Shared between the chevron + ellipsis buttons. Kept inline since
-// both buttons live in this single component now.
 const CONTROL_CLASS =
   'inline-flex size-8 cursor-pointer items-center justify-center ' +
   'rounded-md border-0 bg-transparent text-layout-text ' +

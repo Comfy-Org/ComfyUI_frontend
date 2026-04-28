@@ -1,12 +1,4 @@
 <script setup lang="ts">
-/**
- * Movable card containing one generation's output. Mirrors
- * FloatingPanel's panel-chrome surface but with freeform drag
- * instead of snap-to-preset, and lives inside LayoutView's workspace
- * transform so zoom scales the window with the canvas. Body slots:
- * default media, `body-actions` (hover toolbar), `body-overlay`
- * (status UI like progress + cancel).
- */
 import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -20,8 +12,7 @@ import PanelHeader from './PanelHeader.vue'
 const { t } = useI18n()
 const {
   width = 512,
-  // Fallback before an image lands. Once `bodyAspect` is supplied,
-  // the section auto-sizes from header + body.
+  // Fallback before an image lands; bodyAspect takes over once known.
   height = 560,
   title,
   menuEntries = [],
@@ -31,17 +22,13 @@ const {
 } = defineProps<{
   width?: number
   height?: number
-  /** Header label; falls back to an i18n default for skeleton windows. */
   title?: string
   /** Appended below the internal Maximize / Restore entry. */
   menuEntries?: MenuItem[]
-  /** Workspace-coord starting position. Drag is local; parents that
-   *  need committed position listen for `update:position`. */
+  /** Workspace-coord starting position. Listen for `update:position` for committed values. */
   initialPosition?: { x: number; y: number }
   zIndex?: number
-  /** `naturalWidth / naturalHeight`. When set, the body uses CSS
-   *  `aspect-ratio` and the section auto-sizes — uniform 8px margin
-   *  regardless of image dimensions. */
+  /** `naturalWidth / naturalHeight`; when set, body uses CSS aspect-ratio. */
   bodyAspect?: number
 }>()
 
@@ -59,9 +46,6 @@ function toggleMaximized() {
 const appModeStore = useAppModeStore()
 const { viewportScale } = storeToRefs(appModeStore)
 
-// Drag snap pitch. Independent of the chrome's outer margin (handled
-// in CSS via --spacing-layout-outer); just controls how committal the
-// drag feel is in the workspace.
 const GRID = 16
 const snap = (v: number) => Math.round(v / GRID) * GRID
 
@@ -79,8 +63,7 @@ onMounted(() => {
   wy.value = snap(Math.max(0, (window.innerHeight - height) / 2 - 32))
 })
 
-// External position updates sync into local refs, but skipped while
-// dragging so we don't fight the user's pointer with stale values.
+// Skipped while dragging so we don't fight the pointer with stale values.
 watch(
   () => initialPosition,
   (next) => {
@@ -98,8 +81,7 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
     stopPropagation: true,
     onStart: (e) => {
       if (e.button !== 0) return false
-      // Promote runs even when maximized so clicking a maximized
-      // window still brings it to front; only the drag is gated.
+      // Promote even when maximized — only the drag is gated.
       emit('promote')
       if (maximized.value) return false
       dragStart = { px: e.clientX, py: e.clientY, bx: wx.value, by: wy.value }
@@ -107,10 +89,7 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
     onMove: (e) => {
       if (!dragStart) return
       // Divide by scale so the cursor stays stuck to the header at
-      // any zoom (pointer is screen px; window position is workspace
-      // px). Snap during the drag so the window steps visibly in
-      // GRID increments — matches the chrome's gutter between
-      // buttons, so adjacent windows can be aligned by eye.
+      // any zoom (pointer is screen px; position is workspace px).
       const s = viewportScale.value || 1
       wx.value = snap(dragStart.bx + (e.clientX - dragStart.px) / s)
       wy.value = snap(dragStart.by + (e.clientY - dragStart.py) / s)
@@ -124,8 +103,6 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
   }
 )
 
-// Maximize / Restore is OutputWindow-owned and merged with the
-// parent's menuEntries so the ellipsis is one menu, not two.
 const combinedMenuEntries = computed<MenuItem[]>(() => {
   const own: MenuItem[] = [
     {
@@ -150,16 +127,11 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       maximized
         ? { inset: '0px', zIndex: zIndex ?? 30 }
         : {
-            // translate3d keeps drag on the compositor instead of
-            // running through layout + paint each pointermove —
-            // matters mid-run when the latent preview is also
-            // repainting on the main thread. The `0` forces a 3D
-            // layer up-front rather than promoting on first move.
+            // translate3d keeps drag on the compositor; the trailing 0
+            // forces an upfront 3D layer instead of first-move promotion.
             transform: `translate3d(${wx}px, ${wy}px, 0)`,
             width: `${width}px`,
             zIndex: zIndex ?? 30,
-            // Drop fixed height when collapsed or when bodyAspect
-            // drives the body via CSS aspect-ratio.
             ...(collapsed || bodyAspect != null
               ? {}
               : { height: `${height}px` })
@@ -186,8 +158,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       v-show="!collapsed"
       class="group/output relative flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <!-- p-2 = uniform 8px media margin. With `bodyAspect`, the
-           wrapper sizes via aspect-ratio (drops flex-1) for no letterbox. -->
+      <!-- bodyAspect: aspect-ratio sizing drops flex-1 to avoid letterbox. -->
       <div
         class="flex min-h-0 p-2"
         :class="bodyAspect == null && !maximized ? 'flex-1' : ''"
