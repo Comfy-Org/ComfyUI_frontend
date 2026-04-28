@@ -107,6 +107,7 @@
           :show-node-id-badge="showNodeIdBadge"
           :is-asset-supported="group.isAssetSupported"
           @locate-model="emit('locateModel', $event)"
+          @refresh-missing-models="handleRefreshClick"
         />
       </div>
     </div>

@@ -17,9 +17,9 @@ vi.mock('./MissingModelRow.vue', () => ({
   default: {
     name: 'MissingModelRow',
     template:
-      '<div class="model-row" :data-show-node-id-badge="showNodeIdBadge" :data-is-asset-supported="isAssetSupported" :data-directory="directory"><button class="locate-trigger" @click="$emit(\'locate-model\', model?.representative?.nodeId)">Locate</button></div>',
+      '<div class="model-row" :data-show-node-id-badge="showNodeIdBadge" :data-is-asset-supported="isAssetSupported" :data-directory="directory"><button class="locate-trigger" @click="$emit(\'locate-model\', model?.representative?.nodeId)">Locate</button><button class="refresh-trigger" @click="$emit(\'refresh-missing-models\')">Refresh row</button></div>',
     props: ['model', 'directory', 'showNodeIdBadge', 'isAssetSupported'],
-    emits: ['locate-model']
+    emits: ['locate-model', 'refresh-missing-models']
   }
 }))
 
@@ -306,6 +306,17 @@ describe('MissingModelCard (OSS)', () => {
     const store = useMissingModelStore()
 
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+
+    expect(store.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('refreshes missing models when a row emits refresh', async () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+    const store = useMissingModelStore()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh row' }))
 
     expect(store.refreshMissingModels).toHaveBeenCalled()
   })

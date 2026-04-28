@@ -45,20 +45,32 @@
       <Button
         variant="textonly"
         size="icon-sm"
-        :aria-label="t('rightSidePanel.missingModels.confirmSelection')"
-        :disabled="!canConfirm"
+        :aria-label="headerActionLabel"
+        :disabled="isHeaderActionDisabled"
         :class="
           cn(
             'size-8 shrink-0 rounded-lg transition-colors',
-            canConfirm ? 'bg-primary/10 hover:bg-primary/15' : 'opacity-20'
+            isHeaderActionAvailable
+              ? 'bg-primary/10 hover:bg-primary/15'
+              : 'opacity-20'
           )
         "
-        @click="handleLibrarySelect"
+        @click="handleHeaderAction"
       >
         <i
           aria-hidden="true"
-          class="icon-[lucide--check] size-4"
-          :class="canConfirm ? 'text-primary' : 'text-foreground'"
+          :class="
+            cn(
+              'size-4',
+              isElectronDownloadCompleted
+                ? 'icon-[lucide--refresh-cw]'
+                : 'icon-[lucide--check]',
+              isHeaderActionAvailable ? 'text-primary' : 'text-foreground',
+              isElectronDownloadCompleted &&
+                store.isRefreshingMissingModels &&
+                'animate-spin'
+            )
+          "
         />
       </Button>
 
@@ -151,7 +163,19 @@
           v-else-if="!isCloud && downloadable"
           class="flex w-full items-start py-1"
         >
+          <ElectronDownloadProgress
+            v-if="electronDownloadPhase === 'active' && electronDownload"
+            :download="electronDownload"
+            :file-size="modelFileSize"
+            class="w-full"
+          />
+          <ElectronDownloadStoppedNotice
+            v-else-if="electronDownloadPhase === 'stopped' && electronDownload"
+            :download="electronDownload"
+            @retry="handleDownload"
+          />
           <Button
+            v-else
             data-testid="missing-model-download"
             variant="secondary"
             size="md"
@@ -171,7 +195,7 @@
 
         <TransitionCollapse>
           <MissingModelLibrarySelect
-            v-if="!urlInputs[modelKey]"
+            v-if="!urlInputs[modelKey] && electronDownloadPhase === 'none'"
             :model-value="getComboValue(model.representative)"
             :options="comboOptions"
             :show-divider="isAssetSupported || downloadable"
@@ -184,12 +208,16 @@
 </template>
 
 <script setup lang="ts">
+import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import ElectronDownloadProgress from '@/platform/electronDownload/components/ElectronDownloadProgress.vue'
+import ElectronDownloadStoppedNotice from '@/platform/electronDownload/components/ElectronDownloadStoppedNotice.vue'
+import { useElectronDownload } from '@/platform/electronDownload/composables/useElectronDownload'
 import MissingModelStatusCard from '@/platform/missingModel/components/MissingModelStatusCard.vue'
 import MissingModelUrlInput from '@/platform/missingModel/components/MissingModelUrlInput.vue'
 import MissingModelLibrarySelect from '@/platform/missingModel/components/MissingModelLibrarySelect.vue'
@@ -221,6 +249,7 @@ const { model, directory, isAssetSupported } = defineProps<{
 
 const emit = defineEmits<{
   locateModel: [nodeId: string]
+  refreshMissingModels: []
 }>()
 
 const { t } = useI18n()
@@ -230,11 +259,30 @@ const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
 )
 
+const { download: electronDownload, phase: electronDownloadPhase } =
+  useElectronDownload(() => model.representative.url)
+
 const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
 const comboOptions = computed(() => getComboOptions(model.representative))
 const canConfirm = computed(() => isSelectionConfirmable(modelKey.value))
 const expanded = computed(() => isModelExpanded(modelKey.value))
 const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
+const isElectronDownloadCompleted = computed(
+  () => electronDownload.value?.status === DownloadStatus.COMPLETED
+)
+const isHeaderActionAvailable = computed(
+  () => isElectronDownloadCompleted.value || canConfirm.value
+)
+const isHeaderActionDisabled = computed(() =>
+  isElectronDownloadCompleted.value
+    ? store.isRefreshingMissingModels
+    : !canConfirm.value
+)
+const headerActionLabel = computed(() =>
+  isElectronDownloadCompleted.value
+    ? t('rightSidePanel.missingModels.refresh')
+    : t('rightSidePanel.missingModels.confirmSelection')
+)
 const isDownloadActive = computed(
   () =>
     downloadStatus.value?.status === 'running' ||
@@ -278,10 +326,14 @@ const downloadable = computed(() => {
 })
 
 const downloadLabel = computed(() => {
-  const base = t('g.download')
+  return modelFileSize.value
+    ? t('g.downloadWithSize', { size: formatSize(modelFileSize.value) })
+    : t('g.download')
+})
+
+const modelFileSize = computed(() => {
   const url = model.representative.url
-  const size = url ? store.fileSizes[url] : undefined
-  return size ? `${base} (${formatSize(size)})` : base
+  return url ? store.fileSizes[url] : undefined
 })
 
 function handleDownload() {
@@ -315,5 +367,14 @@ function handleLibrarySelect() {
     model.referencingNodes,
     directory
   )
+}
+
+function handleHeaderAction() {
+  if (isElectronDownloadCompleted.value) {
+    emit('refreshMissingModels')
+    return
+  }
+
+  handleLibrarySelect()
 }
 </script>

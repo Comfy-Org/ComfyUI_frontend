@@ -1194,11 +1194,17 @@
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
+    "pending": "Starting",
     "pause": "Pause Download",
     "paused": "Paused",
     "resume": "Resume Download",
     "cancel": "Cancel Download",
-    "cancelled": "Cancelled"
+    "completed": "Complete",
+    "cancelled": "Cancelled",
+    "cancelledNotice": "Download cancelled",
+    "failed": "Download failed",
+    "retry": "Try Again",
+    "dismiss": "Dismiss"
   },
   "maskEditor": {
     "title": "Mask Editor",

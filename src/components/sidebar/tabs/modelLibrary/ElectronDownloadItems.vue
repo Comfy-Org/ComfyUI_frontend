@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useElectronDownloadStore } from '@/platform/electronDownload/electronDownloadStore'
 
 import DownloadItem from './DownloadItem.vue'
 

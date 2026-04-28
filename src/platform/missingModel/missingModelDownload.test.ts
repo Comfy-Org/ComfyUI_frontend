@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import {
+  downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
   toBrowsableUrl
@@ -10,7 +11,9 @@ const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
 vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
-vi.mock('@/stores/electronDownloadStore', () => ({}))
+vi.mock('@/platform/electronDownload/electronDownloadStore', () => ({
+  useElectronDownloadStore: vi.fn()
+}))
 
 let testId = 0
 
@@ -211,5 +214,28 @@ describe('isModelDownloadable', () => {
         directory: 'checkpoints'
       })
     ).toBe(false)
+  })
+})
+
+describe('downloadModel', () => {
+  it('does not start a browser download for untrusted URLs', () => {
+    const click = vi.fn()
+    const createElement = vi
+      .spyOn(document, 'createElement')
+      .mockReturnValue({ click } as unknown as HTMLAnchorElement)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors?token=secret',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/tmp/checkpoints'] }
+    )
+
+    expect(click).not.toHaveBeenCalled()
+    expect(createElement).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith('Skipping untrusted model download URL')
   })
 })
