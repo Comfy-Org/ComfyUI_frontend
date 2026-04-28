@@ -161,7 +161,7 @@ export interface GroupNodeWorkflowData {
 
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
-  linkExtensions?: { id: LinkId; parentId: LinkId | undefined }[]
+  linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
   groupNodes?: Record<string, GroupNodeWorkflowData>

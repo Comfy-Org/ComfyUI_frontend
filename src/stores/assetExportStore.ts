@@ -30,7 +30,7 @@ const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
 
 export const useAssetExportStore = defineStore('assetExport', () => {
-  const exports = ref<Map<string, AssetExport>>(new Map())
+  const exports = ref<Map<TaskId, AssetExport>>(new Map())
 
   const exportList = computed(() => Array.from(exports.value.values()))
   const activeExports = computed(() =>

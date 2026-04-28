@@ -556,10 +556,10 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.workflow = workflow
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
-      jobIdToWorkflowId.value.set(String(id), String(wid))
+      jobIdToWorkflowId.value.set(id, wid)
     }
     if (workflow?.path) {
-      ensureSessionWorkflowPath(String(id), workflow.path)
+      ensureSessionWorkflowPath(id, workflow.path)
     }
   }
 
@@ -583,7 +583,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function registerJobWorkflowIdMapping(jobId: JobId, workflowId: WorkflowId) {
     if (!jobId || !workflowId) return
-    jobIdToWorkflowId.value.set(String(jobId), String(workflowId))
+    jobIdToWorkflowId.value.set(jobId, workflowId)
   }
 
   /**
