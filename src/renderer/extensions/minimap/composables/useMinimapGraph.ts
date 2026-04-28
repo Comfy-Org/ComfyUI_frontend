@@ -49,14 +49,23 @@ export function useMinimapGraph(
 
   // Per-graph patch record: original callbacks AND the wrappers we
   // installed. Cleanup uses the installed wrappers to clobber-guard.
-  const originalCallbacksMap = new Map<string, PatchRecord>()
+  // Keyed by LGraph instance (not id) so records bind to graph identity
+  // and disappear naturally when the graph is GC'd.
+  const originalCallbacksMap = new WeakMap<LGraph, PatchRecord>()
 
   // Once destroy() runs, the clobber-guard may have left chain-wrapped
   // slots in place (the extension's wrapper still calls our installed
   // wrapper internally). The disposed flag short-circuits the wrapper
   // body so post-destroy events don't keep firing minimap work and
-  // holding renderer closures alive.
+  // holding renderer closures alive. init() resets the flag so the
+  // manager can be reused across graph/canvas changes (useMinimap.ts
+  // calls destroy + init when the canvas swaps).
   let disposed = false
+
+  // Stop fn for the layoutStoreVersion watcher. Kept on the closure so
+  // destroy() can cancel the watcher symmetrically with init() and we
+  // don't leak watchers across reuse cycles.
+  let stopLayoutStoreWatch: (() => void) | undefined
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
     if (disposed) return
@@ -74,7 +83,7 @@ export function useMinimapGraph(
     // slot was restored to the original; chain-wrapped slots stay
     // untouched (the extension's wrapper still calls our wrapper
     // internally because that closure captured `original`).
-    const existing = originalCallbacksMap.get(g.id)
+    const existing = originalCallbacksMap.get(g)
     if (existing) {
       if (g.onNodeAdded === existing.original.onNodeAdded) {
         g.onNodeAdded = existing.installed.onNodeAdded
@@ -140,14 +149,14 @@ export function useMinimapGraph(
     g.onNodeRemoved = installed.onNodeRemoved
     g.onConnectionChange = installed.onConnectionChange
     g.onTrigger = installed.onTrigger
-    originalCallbacksMap.set(g.id, { original, installed })
+    originalCallbacksMap.set(g, { original, installed })
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
     const g = oldGraph || graph.value
     if (!g) return
 
-    const record = originalCallbacksMap.get(g.id)
+    const record = originalCallbacksMap.get(g)
     if (!record) {
       // Graph was never set up (e.g., minimap destroyed before init) - nothing to clean up
       return
@@ -187,7 +196,7 @@ export function useMinimapGraph(
       canRestoreConn &&
       canRestoreTrigger
     ) {
-      originalCallbacksMap.delete(g.id)
+      originalCallbacksMap.delete(g)
     }
   }
 
@@ -250,16 +259,20 @@ export function useMinimapGraph(
   }
 
   const init = () => {
+    disposed = false
     setupEventListeners()
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
 
-    watch(layoutStoreVersion, () => {
+    stopLayoutStoreWatch?.()
+    stopLayoutStoreWatch = watch(layoutStoreVersion, () => {
       void handleGraphChangedThrottled()
     })
   }
 
   const destroy = () => {
     disposed = true
+    stopLayoutStoreWatch?.()
+    stopLayoutStoreWatch = undefined
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     nodeStatesCache.clear()

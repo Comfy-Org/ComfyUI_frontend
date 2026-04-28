@@ -311,6 +311,24 @@ describe('useMinimapGraph', () => {
     expect(onGraphChangedMock).not.toHaveBeenCalled()
   })
 
+  it('resets disposed on init so the manager works after destroy + init', () => {
+    // Lifecycle symmetry: useMinimap.ts reuses the same graphManager
+    // across canvas changes (destroy on old canvas + init on new).
+    // Without resetting `disposed = false` in init, the manager would
+    // stay permanently inert after the first destroy and silently
+    // swallow all subsequent events.
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.init()
+    graphManager.destroy()
+    graphManager.init()
+
+    vi.mocked(onGraphChangedMock).mockClear()
+    mockGraph.onNodeAdded!({ id: '99' } as LGraphNode)
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+  })
+
   it('should clear cache', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
