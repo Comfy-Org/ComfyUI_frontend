@@ -3,8 +3,11 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { BANNER_DISMISS_DELAY_MS } from '@/composables/queue/useQueueNotificationBanners'
 
+// Mirrors BANNER_DISMISS_DELAY_MS in src/composables/queue/useQueueNotificationBanners.ts.
+// Duplicated here to avoid pulling production source (and its litegraph
+// transitive deps) into the Playwright TS loader.
+const BANNER_DISMISS_DELAY_MS = 4000
 const BANNER_ASSERT_TIMEOUT_MS = BANNER_DISMISS_DELAY_MS + 2000
 
 const REQUEST_ID_PRIMARY = 1
