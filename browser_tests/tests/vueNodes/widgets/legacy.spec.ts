@@ -3,33 +3,22 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
-test('In App Mode, widget width updates with panel size', async ({
+test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   comfyPage,
   comfyMouse
 }) => {
   await test.step('setup', async () => {
-    //This tests breaks basically every assumption made by every fixture
-    //A minimal widget is created since no core nodes use WidgetLegacy
-    //No fixture exists for grabbing a widget's width
-    //enterAppModeWithInputs serializes the graph, must setup widget after
-    await comfyPage.appMode.enterAppModeWithInputs([['5', 'testWidget']])
-    await comfyPage.page.evaluate(() => {
-      graph!.getNodeById(5)!.widgets!.push({
-        name: 'testWidget',
-        type: 'TESTWIDGET',
-        options: {},
-        y: 0
-      })
+    await comfyPage.nodeOps.addNode('DevToolsNodeWithLegacyWidget', undefined, {
+      x: 0,
+      y: 0
     })
-
-    await comfyPage.appMode.toggleAppMode()
-    await expect(comfyPage.appMode.linearWidgets).toBeHidden()
-    await comfyPage.appMode.toggleAppMode()
-    await expect(comfyPage.appMode.linearWidgets).toBeVisible()
+    await comfyPage.appMode.enterAppModeWithInputs([['10', 'legacy_widget']])
   })
 
-  const getWidth = () =>
-    comfyPage.page.evaluate(() => graph!.getNodeById(5)!.widgets![3].width ?? 0)
+  const getWidth = () => comfyPage.page.evaluate(
+    () => graph!.getNodeById(10)!.widgets![0].width ?? 0
+  )
+  console.error(await comfyPage.page.evaluate(() => graph.nodes.map(n => n.serialize())))
   const initialWidth = await getWidth()
   expect(initialWidth).toBeGreaterThan(0)
 
