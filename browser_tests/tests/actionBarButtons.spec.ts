@@ -15,7 +15,6 @@ async function registerTestButton(
     icon?: string
     label?: string
     tooltip?: string
-    onClick?: () => void
   } = {}
 ): Promise<void> {
   await page.evaluate(
@@ -35,10 +34,6 @@ async function registerTestButton(
 }
 
 test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
-
   test.describe('Empty state', () => {
     test('container is hidden when no extension registers buttons', async ({
       comfyPage
@@ -110,27 +105,16 @@ test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
     test('clicking a button fires its onClick handler', async ({
       comfyPage
     }) => {
-      await comfyPage.page.evaluate(
-        ({ icon, label, tooltip }) => {
-          ;(
-            window as typeof window & { __testClicked: boolean }
-          ).__testClicked = false
-          window.app!.registerExtension({
-            name: 'TestActionBarButton',
-            actionBarButtons: [
-              {
-                icon,
-                label,
-                tooltip,
-                onClick: () => {
-                  ;(
-                    window as typeof window & { __testClicked: boolean }
-                  ).__testClicked = true
-                }
-              }
-            ]
-          })
-        },
+      const onClickFired = comfyPage.page.evaluate(
+        ({ icon, label, tooltip }) =>
+          new Promise<boolean>((resolve) => {
+            window.app!.registerExtension({
+              name: 'TestActionBarButton',
+              actionBarButtons: [
+                { icon, label, tooltip, onClick: () => resolve(true) }
+              ]
+            })
+          }),
         { icon: ICON_CLASS, label: BUTTON_LABEL, tooltip: BUTTON_TOOLTIP }
       )
 
@@ -139,15 +123,7 @@ test.describe('ActionBar Buttons', { tag: ['@ui'] }, () => {
         .getByRole('button', { name: BUTTON_TOOLTIP })
       await button.click()
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () =>
-              (window as typeof window & { __testClicked: boolean })
-                .__testClicked
-          )
-        )
-        .toBe(true)
+      await expect(onClickFired).resolves.toBe(true)
     })
   })
 
