@@ -217,7 +217,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   items.push({
     label: t('mediaAsset.actions.download'),
     icon: 'icon-[lucide--download]',
-    command: () => actions.downloadAsset(asset)
+    command: () => actions.downloadMultipleAssets([asset])
   })
 
   // Separator before workflow actions (only if there are workflow actions)
