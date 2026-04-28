@@ -3395,6 +3395,10 @@ const translations = {
     en: 'Something went wrong. Please try again or email sales@comfy.org.',
     'zh-CN': '提交失败。请重试，或发送邮件至 sales@comfy.org。'
   },
+  'contact.form.buildsWorkflowsRequired': {
+    en: 'Please select at least one option for who primarily builds workflows.',
+    'zh-CN': '请至少选择一个主要负责构建工作流的人员选项。'
+  },
   'contact.form.firstNamePlaceholder': {
     en: 'Jane',
     'zh-CN': 'Jane'

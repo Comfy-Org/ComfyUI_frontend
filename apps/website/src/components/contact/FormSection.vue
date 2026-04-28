@@ -139,6 +139,11 @@ async function handleSubmit() {
     errorDetail.value = ''
     return
   }
+  if (buildsWorkflows.value.length === 0) {
+    status.value = 'error'
+    errorDetail.value = t(tk('buildsWorkflowsRequired'), locale)
+    return
+  }
   status.value = 'submitting'
   errorDetail.value = ''
   try {
@@ -223,10 +228,8 @@ async function handleSubmit() {
       <form class="space-y-6" @submit.prevent="handleSubmit">
         <!-- First Name + Last Name -->
         <div class="lg:grid lg:grid-cols-2 lg:gap-4">
-          <div>
-            <label class="text-primary-comfy-canvas text-xs">
-              {{ t(tk('firstName'), locale) }}*
-            </label>
+          <label class="text-primary-comfy-canvas block text-xs">
+            <span>{{ t(tk('firstName'), locale) }}*</span>
             <input
               v-model="firstName"
               type="text"
@@ -234,11 +237,9 @@ async function handleSubmit() {
               :placeholder="t(tk('firstNamePlaceholder'), locale)"
               :class="inputClass"
             />
-          </div>
-          <div class="mt-6 lg:mt-0">
-            <label class="text-primary-comfy-canvas text-xs">
-              {{ t(tk('lastName'), locale) }}*
-            </label>
+          </label>
+          <label class="text-primary-comfy-canvas mt-6 block text-xs lg:mt-0">
+            <span>{{ t(tk('lastName'), locale) }}*</span>
             <input
               v-model="lastName"
               type="text"
@@ -246,15 +247,13 @@ async function handleSubmit() {
               :placeholder="t(tk('lastNamePlaceholder'), locale)"
               :class="inputClass"
             />
-          </div>
+          </label>
         </div>
 
         <!-- Email + Phone -->
         <div class="lg:grid lg:grid-cols-2 lg:gap-4">
-          <div>
-            <label class="text-primary-comfy-canvas text-xs">
-              {{ t(tk('email'), locale) }}*
-            </label>
+          <label class="text-primary-comfy-canvas block text-xs">
+            <span>{{ t(tk('email'), locale) }}*</span>
             <input
               v-model="email"
               type="email"
@@ -262,13 +261,11 @@ async function handleSubmit() {
               :placeholder="t(tk('emailPlaceholder'), locale)"
               :class="inputClass"
             />
-          </div>
-          <div class="mt-6 lg:mt-0">
-            <label class="text-primary-comfy-canvas text-xs">
-              {{ t(tk('phone'), locale) }}
-            </label>
+          </label>
+          <label class="text-primary-comfy-canvas mt-6 block text-xs lg:mt-0">
+            <span>{{ t(tk('phone'), locale) }}</span>
             <input v-model="phone" type="tel" :class="inputClass" />
-          </div>
+          </label>
         </div>
 
         <!-- Package selection -->
@@ -361,7 +358,7 @@ async function handleSubmit() {
         <!-- Who primarily builds workflows (multi-select) -->
         <div>
           <p class="text-primary-comfy-canvas text-xs">
-            {{ t(tk('buildsWorkflows'), locale) }}
+            {{ t(tk('buildsWorkflows'), locale) }}*
           </p>
           <div class="mt-3 space-y-3">
             <label
@@ -387,6 +384,7 @@ async function handleSubmit() {
               <input
                 v-model="buildsWorkflows"
                 type="checkbox"
+                name="buildsWorkflows"
                 :value="opt.hubspotValue"
                 class="sr-only"
               />
@@ -398,17 +396,15 @@ async function handleSubmit() {
         </div>
 
         <!-- Looking for -->
-        <div>
-          <label class="text-primary-comfy-canvas text-xs">
-            {{ t(tk('lookingFor'), locale) }}*
-          </label>
+        <label class="text-primary-comfy-canvas block text-xs">
+          <span>{{ t(tk('lookingFor'), locale) }}*</span>
           <textarea
             v-model="lookingFor"
             required
             :placeholder="t(tk('lookingForPlaceholder'), locale)"
             :class="cn(inputClass, 'min-h-24 resize-y')"
           />
-        </div>
+        </label>
 
         <!-- Submit -->
         <div>

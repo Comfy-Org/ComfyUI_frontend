@@ -229,9 +229,21 @@ describe('submitHubspotForm', () => {
 })
 
 describe('readHubspotTrackingCookie', () => {
-  it('reads the hubspotutk cookie value', () => {
+  it('reads the hubspotutk cookie value with spaces after semicolons', () => {
     expect(
       readHubspotTrackingCookie('foo=bar; hubspotutk=abc123; baz=qux')
+    ).toBe('abc123')
+  })
+
+  it('reads the hubspotutk cookie value when separators have no spaces', () => {
+    expect(readHubspotTrackingCookie('foo=bar;hubspotutk=abc123;baz=qux')).toBe(
+      'abc123'
+    )
+  })
+
+  it('reads the hubspotutk cookie value when separators are mixed', () => {
+    expect(
+      readHubspotTrackingCookie('foo=bar; hubspotutk=abc123;baz=qux')
     ).toBe('abc123')
   })
 

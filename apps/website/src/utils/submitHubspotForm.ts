@@ -137,10 +137,11 @@ export function readHubspotTrackingCookie(
 ): string | null {
   if (!cookieString) return null
   const match = cookieString
-    .split('; ')
+    .split(';')
+    .map((entry) => entry.trim())
     .find((entry) => entry.startsWith('hubspotutk='))
   if (!match) return null
-  const value = match.slice('hubspotutk='.length)
+  const value = match.slice('hubspotutk='.length).trim()
   return value.length > 0 ? value : null
 }
 

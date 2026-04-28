@@ -30,21 +30,23 @@ vi.mock('../../utils/submitHubspotForm', async () => {
 
 import FormSection from './FormSection.vue'
 
-async function fillRequiredFields() {
+async function fillRequiredFields(
+  options: { selectBuildsWorkflows?: boolean } = {}
+) {
+  const { selectBuildsWorkflows = true } = options
   const user = userEvent.setup()
-  await user.type(screen.getByPlaceholderText('Jane'), 'Jane')
-  await user.type(screen.getByPlaceholderText('Smith'), 'Doe')
+  await user.type(screen.getByLabelText(/first name/i), 'Jane')
+  await user.type(screen.getByLabelText(/last name/i), 'Doe')
+  await user.type(screen.getByLabelText(/work email/i), 'jane@acme.example')
+  await user.click(screen.getByRole('radio', { name: /enterprise/i }))
+  await user.click(screen.getByRole('radio', { name: /yes, in production/i }))
+  if (selectBuildsWorkflows) {
+    await user.click(
+      screen.getByRole('checkbox', { name: /one dedicated technical owner/i })
+    )
+  }
   await user.type(
-    screen.getByPlaceholderText('jane@company.com'),
-    'jane@acme.example'
-  )
-  await user.click(screen.getByText('ENTERPRISE'))
-  await user.click(screen.getByText('Yes, in production'))
-  await user.click(screen.getByText('One dedicated technical owner'))
-  await user.type(
-    screen.getByPlaceholderText(
-      'Tell us about your team needs, expected usage, or other specific requirements.'
-    ),
+    screen.getByLabelText(/what are you looking for/i),
     'Need 50 seats'
   )
   return user
@@ -108,8 +110,20 @@ describe('FormSection', () => {
       'your message is in'
     )
     expect(
-      (screen.getByPlaceholderText('Jane') as HTMLInputElement).value
+      (screen.getByLabelText(/first name/i) as HTMLInputElement).value
     ).toBe('')
+  })
+
+  it('blocks submission with a localized error when no workflow-builder option is selected', async () => {
+    submitMock.mockReset()
+    render(FormSection)
+
+    const user = await fillRequiredFields({ selectBuildsWorkflows: false })
+    await user.click(screen.getByRole('button', { name: /submit/i }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/who primarily builds workflows/i)
+    expect(submitMock).not.toHaveBeenCalled()
   })
 
   it('surfaces HubSpot validation messages on failure', async () => {
