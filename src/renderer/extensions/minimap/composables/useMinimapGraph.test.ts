@@ -153,19 +153,6 @@ describe('useMinimapGraph', () => {
     expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
   })
 
-  // Regression: cleanup correctly leaves chain-wrapped slots alone
-  // (clobber-guard), but used to unconditionally drop the patch
-  // record. The next setup would then capture the chain-wrapper as
-  // the new "original" and install a second minimap wrapper
-  // underneath it — one node event then fired the minimap update
-  // twice. Now the record is only dropped once every slot is back
-  // to the captured original, so a re-setup with a chain-wrapped
-  // slot lives in the resubscribe path that does not re-stack.
-  // Parameterized across every patched slot to catch per-slot drift
-  // (e.g. a typo in the resubscribe path's onTrigger handling).
-  // The onTrigger wrapper only fires onGraphChanged for
-  // node:property:changed events with specific properties, so its
-  // fireArg matches that filter; the other slots fire on any args.
   it.each([
     { slot: 'onNodeAdded' as const, fireArg: { id: '99' } },
     { slot: 'onNodeRemoved' as const, fireArg: { id: '99' } },
@@ -190,26 +177,19 @@ describe('useMinimapGraph', () => {
         ...args: unknown[]
       ) => void
 
-      // External extension chain-wraps the minimap's slot (forwards
-      // through the captured wrapper, mirroring the real
-      // useGraphStructureRevision interop pattern).
       mockGraph[slot] = function (this: LGraph, ...args: unknown[]) {
         minimapWrapper.call(this, ...args)
       } as never
       const chainWrapped = mockGraph[slot]
 
       graphManager.cleanupEventListeners()
-      // Slot still holds the extension's wrapper; we did not clobber it.
       expect(mockGraph[slot]).toBe(chainWrapped)
 
       graphManager.setupEventListeners()
-      // Slot is unchanged — resubscribe path detected the chain-wrap
-      // and did not stack a second wrapper above it.
       expect(mockGraph[slot]).toBe(chainWrapped)
 
       vi.mocked(onGraphChangedMock).mockClear()
       ;(mockGraph[slot] as unknown as (arg: unknown) => void)(fireArg)
-      // Bug would have fired twice (outer-new + inner-old minimap wrappers).
       expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
     }
   )
@@ -307,6 +287,28 @@ describe('useMinimapGraph', () => {
       'graphChanged',
       expect.any(Function)
     )
+  })
+
+  it('does not fire onGraphChanged from chain-wrapped slots after destroy', () => {
+    // Disposed-flag regression: cleanupEventListeners leaves
+    // chain-wrapped slots in place by design (clobber-guard), so the
+    // installed wrapper remains reachable via the extension's chain.
+    // Without the disposed flag, post-destroy events still trigger
+    // minimap work and keep renderer closures alive.
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    const minimapWrapper = mockGraph.onNodeAdded!
+    mockGraph.onNodeAdded = function (this: LGraph, node: LGraphNode) {
+      minimapWrapper.call(this, node)
+    }
+
+    graphManager.destroy()
+
+    vi.mocked(onGraphChangedMock).mockClear()
+    mockGraph.onNodeAdded!({ id: '99' } as LGraphNode)
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
   })
 
   it('should clear cache', () => {

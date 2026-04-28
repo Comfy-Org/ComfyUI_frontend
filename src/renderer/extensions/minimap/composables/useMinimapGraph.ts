@@ -51,7 +51,15 @@ export function useMinimapGraph(
   // installed. Cleanup uses the installed wrappers to clobber-guard.
   const originalCallbacksMap = new Map<string, PatchRecord>()
 
+  // Once destroy() runs, the clobber-guard may have left chain-wrapped
+  // slots in place (the extension's wrapper still calls our installed
+  // wrapper internally). The disposed flag short-circuits the wrapper
+  // body so post-destroy events don't keep firing minimap work and
+  // holding renderer closures alive.
+  let disposed = false
+
   const handleGraphChangedThrottled = useThrottleFn(() => {
+    if (disposed) return
     onGraphChanged()
   }, 500)
 
@@ -94,19 +102,23 @@ export function useMinimapGraph(
     const installed: GraphCallbacks = {
       onNodeAdded: function (this: LGraph, node: LGraphNode) {
         original.onNodeAdded?.call(this, node)
+        if (disposed) return
         void handleGraphChangedThrottled()
       },
       onNodeRemoved: function (this: LGraph, node: LGraphNode) {
         original.onNodeRemoved?.call(this, node)
+        if (disposed) return
         nodeStatesCache.delete(node.id)
         void handleGraphChangedThrottled()
       },
       onConnectionChange: function (this: LGraph, node: LGraphNode) {
         original.onConnectionChange?.call(this, node)
+        if (disposed) return
         void handleGraphChangedThrottled()
       },
       onTrigger: function (this: LGraph, event: LGraphTriggerEvent) {
         original.onTrigger?.call(this, event)
+        if (disposed) return
 
         // Listen for visual property changes that affect minimap rendering
         if (
@@ -115,8 +127,10 @@ export function useMinimapGraph(
             event.property === 'bgcolor' ||
             event.property === 'color')
         ) {
-          // Invalidate cache for this node to force redraw
-          nodeStatesCache.delete(String(event.nodeId))
+          // Invalidate cache for this node to force redraw. Match
+          // the write site's NodeId key (number | string) — String()
+          // would miss numeric keys.
+          nodeStatesCache.delete(event.nodeId)
           void handleGraphChangedThrottled()
         }
       }
@@ -239,6 +253,7 @@ export function useMinimapGraph(
   }
 
   const destroy = () => {
+    disposed = true
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     nodeStatesCache.clear()
