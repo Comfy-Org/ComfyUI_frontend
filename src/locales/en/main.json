@@ -2752,6 +2752,10 @@
     "dontAskAgain": "Don't Ask Again",
     "loadError": "Failed to load survey. Please try again later."
   },
+  "errorPanelSurvey": {
+    "ctaText": "How's the new error panel?",
+    "ctaButton": "Give feedback"
+  },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
     "survey": {
