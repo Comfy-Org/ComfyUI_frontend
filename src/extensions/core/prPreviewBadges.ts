@@ -1,6 +1,5 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { api } from '@/scripts/api'
 import { useExtensionService } from '@/services/extensionService'
 import type { AboutPageBadge, TopbarBadge } from '@/types/comfy'
 
@@ -14,7 +13,7 @@ const commitShort = commit ? commit.slice(0, 8) : ''
 const settingStore = useSettingStore()
 const apiNodesEnabled = settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
-const backendUrl = `${api.api_host}${api.api_base}` || 'localhost:8188'
+const backendUrl = localStorage.getItem('comfyui-preview-backend-url') ?? '—'
 
 const tooltipLines = [
   author ? `@${author}` : null,
@@ -27,12 +26,24 @@ const tooltipLines = [
   .filter(Boolean)
   .join(' · ')
 
+const popoverLinks = [
+  { label: `PR #${prNumber}`, url: `${REPO}/pull/${prNumber}` },
+  ...(author
+    ? [{ label: `@${author}`, url: `https://github.com/${author}` }]
+    : []),
+  ...(commitShort
+    ? [{ label: commitShort, url: `${REPO}/commit/${commit}` }]
+    : []),
+  { label: t('prPreview.badge.configureBackend'), url: '/connect' }
+]
+
 const topbarBadges: TopbarBadge[] = [
   {
     label: t('prPreview.badge.label'),
     text: `#${prNumber}`,
     variant: 'warning',
-    tooltip: tooltipLines
+    tooltip: tooltipLines,
+    popoverLinks
   }
 ]
 

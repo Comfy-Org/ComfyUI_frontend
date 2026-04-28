@@ -42,6 +42,19 @@
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
+        <template v-if="badge.popoverLinks?.length">
+          <hr class="border-border-default" />
+          <a
+            v-for="link in badge.popoverLinks"
+            :key="link.url"
+            :href="link.url"
+            :target="link.url.startsWith('http') ? '_blank' : undefined"
+            :rel="link.url.startsWith('http') ? 'noopener' : undefined"
+            class="text-xs text-blue-400 hover:text-blue-300 hover:underline"
+          >
+            {{ link.label }}
+          </a>
+        </template>
       </div>
     </Popover>
   </div>
@@ -96,6 +109,19 @@
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
+        <template v-if="badge.popoverLinks?.length">
+          <hr class="border-border-default" />
+          <a
+            v-for="link in badge.popoverLinks"
+            :key="link.url"
+            :href="link.url"
+            :target="link.url.startsWith('http') ? '_blank' : undefined"
+            :rel="link.url.startsWith('http') ? 'noopener' : undefined"
+            class="text-xs text-blue-400 hover:text-blue-300 hover:underline"
+          >
+            {{ link.label }}
+          </a>
+        </template>
       </div>
     </Popover>
   </div>

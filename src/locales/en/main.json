@@ -3855,7 +3855,8 @@
       "label": "PR",
       "tooltipBackend": "Backend: {url}",
       "tooltipCloudApiNote": "Cloud API: see Settings → About",
-      "tooltipCloudApiDisabled": "Cloud API: disabled"
+      "tooltipCloudApiDisabled": "Cloud API: disabled",
+      "configureBackend": "Configure backend →"
     }
   }
 }
