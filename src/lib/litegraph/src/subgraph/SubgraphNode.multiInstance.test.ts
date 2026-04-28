@@ -103,6 +103,52 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     ])
   })
 
+  it('migrates legacy widgets_values per instance without sharing sibling state', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 0)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance1 = createTestSubgraphNode(subgraph, { id: 203 })
+    const instance2 = createTestSubgraphNode(subgraph, { id: 204 })
+
+    instance1.configure({
+      id: 203,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'value']] },
+      widgets_values: [10]
+    })
+
+    instance2.configure({
+      id: 204,
+      type: subgraph.id,
+      pos: [400, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 1,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'value']] },
+      widgets_values: [20]
+    })
+
+    expect(instance1.widgets?.[0].value).toBe(10)
+    expect(instance2.widgets?.[0].value).toBe(20)
+    expect(instance1.widgets?.[0].serializeValue?.(instance1, 0)).toBe(10)
+    expect(instance2.widgets?.[0].serializeValue?.(instance2, 0)).toBe(20)
+  })
+
   it('round-trips per-instance widget values through serialize and configure', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
@@ -273,7 +319,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 0,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
+      properties: { proxyWidgets: [['-1', 'value']] },
       widgets_values: []
     })
 
@@ -296,13 +342,13 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(instance.serialize().widgets_values).toBeUndefined()
   })
 
-  it('ignores legacy positional widgets_values on load (fix for #10849 Z-Image-Turbo regression)', () => {
+  it('migrates aligned legacy widgets_values into scoped promoted state on load', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
 
     const SOURCE_DEFAULT = 42
-    const LEGACY_NOISE = 999
+    const LEGACY_VALUE = 999
 
     const { node } = createNodeWithWidget('TestNode', SOURCE_DEFAULT)
     subgraph.add(node)
@@ -319,14 +365,19 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 0,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
-      widgets_values: [LEGACY_NOISE]
+      properties: { proxyWidgets: [['-1', 'value']] },
+      widgets_values: [LEGACY_VALUE]
     })
 
     const widget = instance.widgets?.[0]
-    expect(widget?.value).toBe(SOURCE_DEFAULT)
-    expect(widget?.serializeValue?.(instance, 0)).toBe(SOURCE_DEFAULT)
-    expect(instance.serialize().widgets_values).toBeUndefined()
+    expect(widget?.value).toBe(LEGACY_VALUE)
+    expect(widget?.serializeValue?.(instance, 0)).toBe(LEGACY_VALUE)
+
+    const serialized = instance.serialize()
+    expect(serialized.widgets_values).toBeUndefined()
+    expect(serialized.properties?.proxyWidgets).toEqual([
+      [String(node.id), 'widget', null, { value: LEGACY_VALUE }]
+    ])
   })
 
   it('does not corrupt unbound promoted widgets when widgets_values length mismatches view count (regression for #10849)', () => {
@@ -353,7 +404,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       mode: 0,
       order: 0,
       flags: {},
-      properties: { proxyWidgets: [['-1', 'widget']] },
+      properties: { proxyWidgets: [['-1', 'value']] },
       widgets_values: [LEGACY_NOISE_A, LEGACY_NOISE_B]
     })
 

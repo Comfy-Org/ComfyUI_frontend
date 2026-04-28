@@ -121,6 +121,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     hasMissingBoundSourceWidget: boolean
     views: PromotedWidgetView[]
   }
+  private _pendingLegacyWidgetsValues?: unknown[]
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
@@ -1054,6 +1055,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     useWidgetValueStore().clearInstanceWidgets(this.rootGraph.id, this.id)
+    this._pendingLegacyWidgetsValues = Array.isArray(info.widgets_values)
+      ? info.widgets_values
+      : undefined
 
     for (const input of this.inputs) {
       if (
@@ -1103,7 +1107,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    super.configure(info)
+    try {
+      super.configure(info)
+    } finally {
+      this._pendingLegacyWidgetsValues = undefined
+    }
   }
 
   override _internalConfigureAfterSlots() {
@@ -1126,14 +1134,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
      * Hydrate the promotion store from serialized `properties.proxyWidgets`.
      * Inline `{value}` state on each entry is paired with its resolved
      * identity in a single pass so legacy `-1` entries and ancestor-
-     * normalized entries stay aligned with their per-instance value.
+     * normalized entries stay aligned with their per-instance value. Older
+     * templates may still carry the same positional values in
+     * `widgets_values`; import those only when they line up with every
+     * proxyWidgets entry, then re-save through inline state below.
      */
     const raw = parseProxyWidgets(this.properties.proxyWidgets)
     const store = usePromotionStore()
     const pendingValues = new Map<string, unknown>()
 
+    const canHydrateLegacyWidgetsValues =
+      this._pendingLegacyWidgetsValues?.length === raw.length
+
     const entries = raw
-      .map((rawEntry) => {
+      .map((rawEntry, index) => {
         const nodeId = rawEntry[0]
         const widgetName = rawEntry[1]
         const thirdElement = rawEntry[2]
@@ -1168,6 +1182,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const state = getProxyWidgetInlineState(rawEntry)
           if (state && state.value !== undefined) {
             pendingValues.set(makePromotionEntryKey(resolved), state.value)
+          } else if (canHydrateLegacyWidgetsValues) {
+            const value = this._pendingLegacyWidgetsValues?.[index]
+            if (value != null) {
+              pendingValues.set(makePromotionEntryKey(resolved), value)
+            }
           }
         }
 
