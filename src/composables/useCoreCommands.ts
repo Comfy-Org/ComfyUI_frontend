@@ -1,5 +1,6 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSnackbarToast } from '@/composables/useSnackbarToast'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -21,6 +22,7 @@ import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -439,21 +441,38 @@ export function useCoreCommands(): ComfyCommand[] {
 
       function: (() => {
         const settingStore = useSettingStore()
+        const canvasToast = useSnackbarToast()
         let lastLinksRenderMode = LiteGraph.SPLINE_LINK
 
         return async () => {
           const currentMode = settingStore.get('Comfy.LinkRenderMode')
+          const keybinding = useKeybindingStore().getKeybindingByCommandId(
+            'Comfy.Canvas.ToggleLinkVisibility'
+          )
+          const shortcut = keybinding?.combo.toString()
 
           if (currentMode === LiteGraph.HIDDEN_LINK) {
-            // If links are hidden, restore the last positive value or default to spline mode
             await settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
+            canvasToast.show(t('g.linksVisible'), { shortcut })
           } else {
-            // If links are visible, store the current mode and hide links
             lastLinksRenderMode = currentMode
             await settingStore.set(
               'Comfy.LinkRenderMode',
               LiteGraph.HIDDEN_LINK
             )
+            canvasToast.show(t('g.linksHidden'), {
+              shortcut,
+              actionLabel: shortcut ? undefined : t('g.undo'),
+              onAction: shortcut
+                ? undefined
+                : async () => {
+                    await settingStore.set(
+                      'Comfy.LinkRenderMode',
+                      lastLinksRenderMode
+                    )
+                    canvasToast.show(t('g.linksVisible'))
+                  }
+            })
           }
         }
       })(),

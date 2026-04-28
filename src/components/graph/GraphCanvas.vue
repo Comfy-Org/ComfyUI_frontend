@@ -95,6 +95,7 @@
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
+  <SnackbarToast />
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
   <VueNodeSwitchPopup />
@@ -131,6 +132,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import SnackbarToast from '@/components/graph/SnackbarToast.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
@@ -154,6 +156,7 @@ import { useContextMenuTranslation } from '@/composables/useContextMenuTranslati
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
+import { useSnackbarToast } from '@/composables/useSnackbarToast'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
@@ -539,6 +542,16 @@ onMounted(async () => {
     window.graph = comfyApp.graph
 
     comfyAppReady.value = true
+
+    if (settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK) {
+      useSnackbarToast().show(t('g.linksHidden'), {
+        actionLabel: t('g.undo'),
+        onAction: () => {
+          void settingStore.set('Comfy.LinkRenderMode', LiteGraph.SPLINE_LINK)
+          useSnackbarToast().show(t('g.linksVisible'))
+        }
+      })
+    }
 
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
