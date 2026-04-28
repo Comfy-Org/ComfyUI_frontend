@@ -14,9 +14,9 @@ export async function initSmoothScroll() {
   if (prefersReducedMotion()) return
 
   const ua = navigator.userAgent
-  const isAndroid = /Android/.test(ua)
-  const isIOS = /iPad|iPhone|iPod/.test(ua)
-  if (isAndroid || isIOS) return
+  const isWindows = /Windows/.test(ua)
+  const isLinux = /Linux/.test(ua) && !/Android/.test(ua)
+  if (!isWindows && !isLinux) return
 
   const { default: Lenis } = await import('lenis')
 
