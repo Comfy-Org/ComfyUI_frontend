@@ -10,6 +10,11 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import {
+  applyViewport,
+  measureViewport
+} from '@/renderer/core/canvas/canvasViewport'
+import { devAssert } from '@/base/common/devAssert'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -4969,6 +4974,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!this.canvas || this.canvas.width == 0 || this.canvas.height == 0)
       return
 
+    devAssert(
+      this.canvas.width === this.bgcanvas.width &&
+        this.canvas.height === this.bgcanvas.height,
+      `Canvas size mismatch: fg=${this.canvas.width}×${this.canvas.height} bg=${this.bgcanvas.width}×${this.bgcanvas.height}`
+    )
+
     // fps counting
     const now = LiteGraph.getTime()
     this.render_time = (now - this.last_draw_time) * 0.001
@@ -6520,8 +6531,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
-   * resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode
-   * @todo Remove or rewrite
+   * Resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode.
+   * Uses the CanvasViewport system internally for DPR-aware sizing.
    */
   resize(width?: number, height?: number): void {
     if (!width && !height) {
@@ -6534,12 +6545,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    if (this.canvas.width == width && this.canvas.height == height) return
+    const viewport = measureViewport(
+      width ?? 0,
+      height ?? 0,
+      window.devicePixelRatio ?? 1
+    )
 
-    this.canvas.width = width ?? 0
-    this.canvas.height = height ?? 0
-    this.bgcanvas.width = this.canvas.width
-    this.bgcanvas.height = this.canvas.height
+    if (
+      this.canvas.width === viewport.physicalWidth &&
+      this.canvas.height === viewport.physicalHeight
+    )
+      return
+
+    applyViewport(viewport, this.canvas, this.bgcanvas)
     this.setDirty(true, true)
   }
 
