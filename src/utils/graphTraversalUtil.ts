@@ -300,9 +300,11 @@ export function findSubgraphPathById(
 ): string[] | null {
   // Cycle guard mirrors traverseNodesDepthFirst: an "exit" sentinel
   // removes the subgraph from `visited` after its subtree is fully
-  // processed, so a malformed A→B→A cycle short-circuits while two
-  // sibling SubgraphNodes pointing at the same Subgraph are still
-  // searched independently.
+  // processed, so a malformed A→B→A cycle short-circuits and a
+  // Subgraph that appears in unrelated subtrees is searched each
+  // time. Sibling SubgraphNodes in the same parent that point at
+  // the same Subgraph object are deduplicated (see inline note
+  // below).
   type StackItem =
     | { kind: 'node'; graph: LGraph | Subgraph; path: string[] }
     | { kind: 'exit'; subgraph: LGraph | Subgraph }
@@ -330,6 +332,12 @@ export function findSubgraphPathById(
         if (node.subgraph.id === targetId) {
           return newPath
         }
+        // Sibling-instance dedupe: identical Subgraph refs in the
+        // same parent are skipped here (the first is already on the
+        // stack with its exit sentinel still pending). Returning the
+        // first match suffices and avoids duplicate paths. Diverges
+        // from mapAllNodesWithVisited, which permits per-instance
+        // descent.
         if (visited.has(node.subgraph)) continue
         visited.add(node.subgraph)
         stack.push({ kind: 'exit', subgraph: node.subgraph })
