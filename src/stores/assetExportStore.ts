@@ -4,13 +4,14 @@ import { computed, ref, watch } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
 
 export interface AssetExport {
-  taskId: string
+  taskId: TaskId
   exportName: string
   assetsTotal: number
   assetsAttempted: number
@@ -45,7 +46,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
   const hasActiveExports = computed(() => activeExports.value.length > 0)
   const hasExports = computed(() => exports.value.size > 0)
 
-  function trackExport(taskId: string) {
+  function trackExport(taskId: TaskId) {
     if (exports.value.has(taskId)) return
 
     exports.value.set(taskId, {
