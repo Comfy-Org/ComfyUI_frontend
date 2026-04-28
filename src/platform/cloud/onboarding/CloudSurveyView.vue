@@ -70,19 +70,23 @@
             <Button
               v-if="!step.isFirst"
               variant="secondary"
-              class="flex-1 text-white"
+              class="h-10 flex-1 text-white"
               @click="goTo(step.index - 1, activateCallback)"
             >
               {{ $t('g.back') }}
             </Button>
-            <span v-else />
+            <span v-else class="flex-1" />
             <Button
               v-if="!step.isLast"
               :disabled="!isStepValid(step)"
-              :class="[
-                'h-10 border-none text-white',
-                step.isFirst ? 'w-full' : 'flex-1'
-              ]"
+              :class="
+                cn(
+                  'h-10 flex-1 border-none',
+                  isStepValid(step)
+                    ? 'bg-electric-400 text-black hover:bg-electric-400/85'
+                    : 'bg-zinc-800 text-zinc-500'
+                )
+              "
               @click="goTo(step.index + 1, activateCallback)"
             >
               {{ $t('g.next') }}
@@ -91,7 +95,14 @@
               v-else
               :disabled="!isStepValid(step) || isSubmitting"
               :loading="isSubmitting"
-              class="h-10 flex-1 border-none text-white"
+              :class="
+                cn(
+                  'h-10 flex-1 border-none',
+                  isStepValid(step) && !isSubmitting
+                    ? 'bg-electric-400 text-black hover:bg-electric-400/85'
+                    : 'bg-zinc-800 text-zinc-500'
+                )
+              "
               @click="onSubmitSurvey"
             >
               {{ $t('g.submit') }}
@@ -114,6 +125,8 @@ import Stepper from 'primevue/stepper'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
