@@ -3,17 +3,24 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { BANNER_DISMISS_DELAY_MS } from '@/composables/queue/useQueueNotificationBanners'
 
-const BANNER_DISMISS_TIMEOUT = 6_000
+const BANNER_ASSERT_TIMEOUT_MS = BANNER_DISMISS_DELAY_MS + 2000
+
+const REQUEST_ID_PRIMARY = 1
+const REQUEST_ID_SECONDARY = 2
+const REQUEST_ID_MISMATCH = 999
+
+let nextRequestId = 1000
+const newRequestId = () => nextRequestId++
 
 function bannerLocator(page: Page) {
   return page.getByTestId(TestIds.queue.notificationBanner)
 }
 
-function dispatchPromptQueueing(
-  page: Page,
-  opts: { batchCount?: number; requestId?: number } = {}
-) {
+type DispatchOpts = { batchCount?: number; requestId?: number }
+
+function dispatchPromptQueueing(page: Page, opts: DispatchOpts = {}) {
   return page.evaluate(
     ([batchCount, requestId]) => {
       window.app!.api.dispatchCustomEvent('promptQueueing', {
@@ -21,14 +28,11 @@ function dispatchPromptQueueing(
         requestId
       })
     },
-    [opts.batchCount ?? 1, opts.requestId ?? Date.now()] as const
+    [opts.batchCount ?? 1, opts.requestId ?? newRequestId()]
   )
 }
 
-function dispatchPromptQueued(
-  page: Page,
-  opts: { batchCount?: number; requestId?: number } = {}
-) {
+function dispatchPromptQueued(page: Page, opts: DispatchOpts = {}) {
   return page.evaluate(
     ([batchCount, requestId]) => {
       window.app!.api.dispatchCustomEvent('promptQueued', {
@@ -37,21 +41,16 @@ function dispatchPromptQueued(
         requestId
       })
     },
-    [opts.batchCount ?? 1, opts.requestId ?? Date.now()] as const
+    [opts.batchCount ?? 1, opts.requestId ?? newRequestId()]
   )
 }
 
-test.describe('Queue notification banners', { tag: ['@ui', '@queue'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
+test.describe('Queue notification banners', { tag: ['@ui'] }, () => {
   test.describe('Queuing lifecycle', () => {
     test('promptQueueing event shows a queueing banner', async ({
       comfyPage
     }) => {
       await dispatchPromptQueueing(comfyPage.page)
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toBeVisible()
@@ -61,22 +60,18 @@ test.describe('Queue notification banners', { tag: ['@ui', '@queue'] }, () => {
     test('promptQueued upgrades a pending banner to queued', async ({
       comfyPage
     }) => {
-      const requestId = Date.now()
-
       await dispatchPromptQueueing(comfyPage.page, {
         batchCount: 1,
-        requestId
+        requestId: REQUEST_ID_PRIMARY
       })
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toContainText('queuing')
 
       await dispatchPromptQueued(comfyPage.page, {
         batchCount: 1,
-        requestId
+        requestId: REQUEST_ID_PRIMARY
       })
-      await comfyPage.nextFrame()
 
       await expect(banner).toContainText('queued')
     })
@@ -85,7 +80,6 @@ test.describe('Queue notification banners', { tag: ['@ui', '@queue'] }, () => {
       comfyPage
     }) => {
       await dispatchPromptQueued(comfyPage.page, { batchCount: 3 })
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toBeVisible()
@@ -93,37 +87,39 @@ test.describe('Queue notification banners', { tag: ['@ui', '@queue'] }, () => {
       await expect(banner).toContainText('jobs added to queue')
     })
 
-    test('promptQueued with mismatched requestId does not upgrade pending banner', async ({
+    test('promptQueued with mismatched requestId enqueues a separate queued banner', async ({
       comfyPage
     }) => {
       await dispatchPromptQueueing(comfyPage.page, {
         batchCount: 1,
-        requestId: 100
+        requestId: REQUEST_ID_PRIMARY
       })
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toContainText('queuing')
 
       await dispatchPromptQueued(comfyPage.page, {
         batchCount: 1,
-        requestId: 999
+        requestId: REQUEST_ID_MISMATCH
       })
-      await comfyPage.nextFrame()
 
+      // Pending banner is not upgraded — still shows "queuing".
       await expect(banner).toContainText('queuing')
+
+      // After the pending banner auto-dismisses, the queued banner appears.
+      await expect(banner).toContainText('queued', {
+        timeout: BANNER_ASSERT_TIMEOUT_MS
+      })
     })
   })
 
   test.describe('Auto-dismiss', () => {
     test('Banner auto-dismisses after timeout', async ({ comfyPage }) => {
       await dispatchPromptQueued(comfyPage.page)
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toBeVisible()
-
-      await expect(banner).toBeHidden({ timeout: BANNER_DISMISS_TIMEOUT })
+      await expect(banner).toBeHidden({ timeout: BANNER_ASSERT_TIMEOUT_MS })
     })
   })
 
@@ -133,21 +129,17 @@ test.describe('Queue notification banners', { tag: ['@ui', '@queue'] }, () => {
     }) => {
       await dispatchPromptQueued(comfyPage.page, {
         batchCount: 1,
-        requestId: 1
+        requestId: REQUEST_ID_PRIMARY
       })
-      await comfyPage.nextFrame()
-
       await dispatchPromptQueued(comfyPage.page, {
         batchCount: 2,
-        requestId: 2
+        requestId: REQUEST_ID_SECONDARY
       })
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toContainText('Job queued')
-
       await expect(banner).toContainText('2 jobs added to queue', {
-        timeout: BANNER_DISMISS_TIMEOUT
+        timeout: BANNER_ASSERT_TIMEOUT_MS
       })
     })
   })
@@ -158,9 +150,8 @@ test.describe('Queue notification banners', { tag: ['@ui', '@queue'] }, () => {
     }) => {
       await dispatchPromptQueued(comfyPage.page, {
         batchCount: 1,
-        requestId: 999
+        requestId: REQUEST_ID_PRIMARY
       })
-      await comfyPage.nextFrame()
 
       const banner = bannerLocator(comfyPage.page)
       await expect(banner).toBeVisible()
