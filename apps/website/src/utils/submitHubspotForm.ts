@@ -13,6 +13,19 @@
 
 export type HubspotRegion = 'na1' | 'eu1'
 
+const HUBSPOT_REGIONS: readonly HubspotRegion[] = ['na1', 'eu1']
+
+export function resolveHubspotRegion(value: string | undefined): HubspotRegion {
+  if (value === undefined || value === '') return 'na1'
+  if ((HUBSPOT_REGIONS as readonly string[]).includes(value)) {
+    return value as HubspotRegion
+  }
+  console.warn(
+    `[hubspot] Unsupported PUBLIC_HUBSPOT_REGION ${JSON.stringify(value)}; falling back to "na1". Expected one of: ${HUBSPOT_REGIONS.join(', ')}`
+  )
+  return 'na1'
+}
+
 interface HubspotFormConfig {
   portalId: string
   formGuid: string

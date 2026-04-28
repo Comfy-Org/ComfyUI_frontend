@@ -3399,6 +3399,10 @@ const translations = {
     en: 'Please select at least one option for who primarily builds workflows.',
     'zh-CN': '请至少选择一个主要负责构建工作流的人员选项。'
   },
+  'contact.form.requiredFieldsMissing': {
+    en: 'Please fill in all required fields.',
+    'zh-CN': '请填写所有必填字段。'
+  },
   'contact.form.firstNamePlaceholder': {
     en: 'Jane',
     'zh-CN': 'Jane'

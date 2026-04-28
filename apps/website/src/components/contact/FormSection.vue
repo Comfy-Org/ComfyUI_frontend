@@ -3,13 +3,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import type { HubspotRegion } from '../../utils/submitHubspotForm'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
 import {
   HubspotSubmissionError,
   readHubspotTrackingCookie,
+  resolveHubspotRegion,
   submitHubspotForm
 } from '../../utils/submitHubspotForm'
 import BrandButton from '../common/BrandButton.vue'
@@ -28,7 +28,7 @@ const hubspotConfig = {
   formGuid:
     import.meta.env.PUBLIC_HUBSPOT_FORM_ID_CONTACT_SALES ??
     '94e05eab-1373-47f7-ab5e-d84f9e6aa262',
-  region: (import.meta.env.PUBLIC_HUBSPOT_REGION ?? 'na1') as HubspotRegion
+  region: resolveHubspotRegion(import.meta.env.PUBLIC_HUBSPOT_REGION)
 }
 const isFormConfigured = Boolean(
   hubspotConfig.portalId && hubspotConfig.formGuid
@@ -139,6 +139,21 @@ async function handleSubmit() {
     errorDetail.value = ''
     return
   }
+  const trimmedFirstName = firstName.value.trim()
+  const trimmedLastName = lastName.value.trim()
+  const trimmedEmail = email.value.trim()
+  const trimmedPhone = phone.value.trim()
+  const trimmedLookingFor = lookingFor.value.trim()
+  if (
+    !trimmedFirstName ||
+    !trimmedLastName ||
+    !trimmedEmail ||
+    !trimmedLookingFor
+  ) {
+    status.value = 'error'
+    errorDetail.value = t(tk('requiredFieldsMissing'), locale)
+    return
+  }
   if (buildsWorkflows.value.length === 0) {
     status.value = 'error'
     errorDetail.value = t(tk('buildsWorkflowsRequired'), locale)
@@ -150,17 +165,17 @@ async function handleSubmit() {
     await submitHubspotForm({
       config: hubspotConfig,
       fields: [
-        field(HUBSPOT_FIELD_NAMES.firstName, firstName.value),
-        field(HUBSPOT_FIELD_NAMES.lastName, lastName.value),
-        field(HUBSPOT_FIELD_NAMES.email, email.value),
-        field(HUBSPOT_FIELD_NAMES.phone, phone.value),
+        field(HUBSPOT_FIELD_NAMES.firstName, trimmedFirstName),
+        field(HUBSPOT_FIELD_NAMES.lastName, trimmedLastName),
+        field(HUBSPOT_FIELD_NAMES.email, trimmedEmail),
+        field(HUBSPOT_FIELD_NAMES.phone, trimmedPhone),
         field(HUBSPOT_FIELD_NAMES.package, selectedPackage.value),
         field(HUBSPOT_FIELD_NAMES.comfyUsage, comfyUsage.value),
         field(
           HUBSPOT_FIELD_NAMES.buildsWorkflows,
           buildsWorkflows.value.join(';')
         ),
-        field(HUBSPOT_FIELD_NAMES.lookingFor, lookingFor.value)
+        field(HUBSPOT_FIELD_NAMES.lookingFor, trimmedLookingFor)
       ],
       context: {
         hutk: readHubspotTrackingCookie(),
@@ -231,7 +246,7 @@ async function handleSubmit() {
           <label class="text-primary-comfy-canvas block text-xs">
             <span>{{ t(tk('firstName'), locale) }}*</span>
             <input
-              v-model="firstName"
+              v-model.trim="firstName"
               type="text"
               required
               :placeholder="t(tk('firstNamePlaceholder'), locale)"
@@ -241,7 +256,7 @@ async function handleSubmit() {
           <label class="text-primary-comfy-canvas mt-6 block text-xs lg:mt-0">
             <span>{{ t(tk('lastName'), locale) }}*</span>
             <input
-              v-model="lastName"
+              v-model.trim="lastName"
               type="text"
               required
               :placeholder="t(tk('lastNamePlaceholder'), locale)"
@@ -255,7 +270,7 @@ async function handleSubmit() {
           <label class="text-primary-comfy-canvas block text-xs">
             <span>{{ t(tk('email'), locale) }}*</span>
             <input
-              v-model="email"
+              v-model.trim="email"
               type="email"
               required
               :placeholder="t(tk('emailPlaceholder'), locale)"
@@ -264,7 +279,7 @@ async function handleSubmit() {
           </label>
           <label class="text-primary-comfy-canvas mt-6 block text-xs lg:mt-0">
             <span>{{ t(tk('phone'), locale) }}</span>
-            <input v-model="phone" type="tel" :class="inputClass" />
+            <input v-model.trim="phone" type="tel" :class="inputClass" />
           </label>
         </div>
 
@@ -399,7 +414,7 @@ async function handleSubmit() {
         <label class="text-primary-comfy-canvas block text-xs">
           <span>{{ t(tk('lookingFor'), locale) }}*</span>
           <textarea
-            v-model="lookingFor"
+            v-model.trim="lookingFor"
             required
             :placeholder="t(tk('lookingForPlaceholder'), locale)"
             :class="cn(inputClass, 'min-h-24 resize-y')"

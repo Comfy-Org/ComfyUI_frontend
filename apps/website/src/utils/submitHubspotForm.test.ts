@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   HubspotSubmissionError,
   buildHubspotEndpoint,
   readHubspotTrackingCookie,
+  resolveHubspotRegion,
   submitHubspotForm
 } from './submitHubspotForm'
 
@@ -258,5 +259,35 @@ describe('readHubspotTrackingCookie', () => {
 
   it('returns null for an empty hubspotutk value', () => {
     expect(readHubspotTrackingCookie('hubspotutk=')).toBeNull()
+  })
+})
+
+describe('resolveHubspotRegion', () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+  afterEach(() => {
+    warnSpy.mockClear()
+  })
+
+  it('falls back to "na1" when the value is undefined or empty', () => {
+    expect(resolveHubspotRegion(undefined)).toBe('na1')
+    expect(resolveHubspotRegion('')).toBe('na1')
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('accepts the documented region values', () => {
+    expect(resolveHubspotRegion('na1')).toBe('na1')
+    expect(resolveHubspotRegion('eu1')).toBe('eu1')
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('warns and falls back to "na1" for unknown values', () => {
+    expect(resolveHubspotRegion('eu')).toBe('na1')
+    expect(resolveHubspotRegion('EU1')).toBe('na1')
+    expect(resolveHubspotRegion('us-east-1')).toBe('na1')
+    expect(warnSpy).toHaveBeenCalledTimes(3)
+    expect(warnSpy).toHaveBeenLastCalledWith(
+      expect.stringContaining('Unsupported PUBLIC_HUBSPOT_REGION')
+    )
   })
 })

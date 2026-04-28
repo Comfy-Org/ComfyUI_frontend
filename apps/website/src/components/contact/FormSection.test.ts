@@ -126,6 +126,66 @@ describe('FormSection', () => {
     expect(submitMock).not.toHaveBeenCalled()
   })
 
+  it('joins multiple workflow-builder selections with ";" for HubSpot', async () => {
+    submitMock.mockReset()
+    submitMock.mockResolvedValue({})
+    render(FormSection)
+
+    const user = await fillRequiredFields()
+    await user.click(
+      screen.getByRole('checkbox', { name: /small group of power users/i })
+    )
+    await user.click(screen.getByRole('button', { name: /submit/i }))
+
+    expect(submitMock).toHaveBeenCalledTimes(1)
+    const args = submitMock.mock.calls[0][0] as {
+      fields: { name: string; value: string }[]
+    }
+    const builds = args.fields.find(
+      (f) => f.name === 'who_primarily_builds_workflows'
+    )
+    expect(builds?.value).toBe(
+      'One dedicated technical owner;Small group of power users'
+    )
+  })
+
+  it('rejects whitespace-only required fields without calling HubSpot', async () => {
+    submitMock.mockReset()
+    render(FormSection)
+
+    const firstName = screen.getByLabelText(/first name/i) as HTMLInputElement
+    const lastName = screen.getByLabelText(/last name/i) as HTMLInputElement
+    const emailEl = screen.getByLabelText(/work email/i) as HTMLInputElement
+    const lookingFor = screen.getByLabelText(
+      /what are you looking for/i
+    ) as HTMLTextAreaElement
+    firstName.value = '   '
+    firstName.dispatchEvent(new Event('input', { bubbles: true }))
+    lastName.value = 'Doe'
+    lastName.dispatchEvent(new Event('input', { bubbles: true }))
+    emailEl.value = 'jane@acme.example'
+    emailEl.dispatchEvent(new Event('input', { bubbles: true }))
+    lookingFor.value = 'Need seats'
+    lookingFor.dispatchEvent(new Event('input', { bubbles: true }))
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('radio', { name: /enterprise/i }))
+    await user.click(screen.getByRole('radio', { name: /yes, in production/i }))
+    await user.click(
+      screen.getByRole('checkbox', { name: /one dedicated technical owner/i })
+    )
+
+    const submitButton = screen.getByRole('button', {
+      name: /submit/i
+    }) as HTMLButtonElement
+    const form = submitButton.form
+    if (!form) throw new Error('submit button is not associated with a form')
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/required/i)
+    expect(submitMock).not.toHaveBeenCalled()
+  })
+
   it('surfaces HubSpot validation messages on failure', async () => {
     submitMock.mockReset()
     submitMock.mockRejectedValue(
