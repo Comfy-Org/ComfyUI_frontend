@@ -166,11 +166,6 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div class="font-inter text-sm">{{ badge.text }}</div>
-        <div v-if="badge.tooltip" class="text-xs text-neutral-400">
-          {{ badge.tooltip }}
-        </div>
-        <hr class="border-border-default" />
         <a
           v-for="link in badge.popoverLinks"
           :key="link.url"
