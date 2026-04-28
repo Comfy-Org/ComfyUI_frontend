@@ -1,4 +1,4 @@
-import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
+import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -29,7 +29,6 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import {
   createPromotedWidgetView,
   isPromotedWidgetView
@@ -77,7 +76,7 @@ const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
 
-  override readonly type: UUID
+  override readonly type: SubgraphId
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
