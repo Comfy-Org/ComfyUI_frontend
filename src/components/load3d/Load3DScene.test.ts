@@ -110,7 +110,8 @@ describe('Load3DScene', () => {
 
   it('does not render the drag overlay when not dragging', () => {
     dragState.isDragging!.value = false
-    renderComponent({ dragMessage: 'Drop' } as RenderOpts)
+    dragState.dragMessage!.value = 'Drop'
+    renderComponent()
 
     expect(screen.queryByText('Drop')).not.toBeInTheDocument()
   })

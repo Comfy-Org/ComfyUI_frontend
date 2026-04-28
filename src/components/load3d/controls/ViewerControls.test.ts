@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const showDialog = vi.fn()
 const handleViewerClose = vi.fn()
@@ -34,7 +34,7 @@ const i18n = createI18n({
   }
 })
 
-const mockNode = { id: 'node-1' } as unknown as LGraphNode
+const mockNode = createMockLGraphNode({ id: 'node-1' })
 
 describe('ViewerControls', () => {
   beforeEach(() => {
