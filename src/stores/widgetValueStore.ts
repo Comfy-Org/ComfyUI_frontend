@@ -97,12 +97,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetPrefix = graphWidgetPrefix(branded)
     const nodePrefix = graphNodePrefix(branded)
     for (const widgetId of world.entitiesWith(WidgetValueComponent)) {
-      if ((widgetId as string).startsWith(widgetPrefix)) {
+      if (widgetId.startsWith(widgetPrefix)) {
         world.removeComponent(widgetId, WidgetValueComponent)
       }
     }
     for (const nodeId of world.entitiesWith(WidgetContainerComponent)) {
-      if ((nodeId as string).startsWith(nodePrefix)) {
+      if (nodeId.startsWith(nodePrefix)) {
         world.removeComponent(nodeId, WidgetContainerComponent)
       }
     }

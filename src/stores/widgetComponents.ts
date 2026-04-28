@@ -1,11 +1,7 @@
 import { defineComponentKey } from '@/world/componentKey'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
 
-/**
- * `WidgetState` collapses to `WidgetValue` at the component-key boundary;
- * the same reactive object reference is shared with `useWidgetValueStore`
- * so Vue tracking is preserved across both read paths.
- */
+/** `WidgetState` collapses to `WidgetValue` at the component-key boundary. */
 export interface WidgetValue {
   value: unknown
 }

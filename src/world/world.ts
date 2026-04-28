@@ -1,13 +1,12 @@
-import { reactive } from 'vue'
+import { reactive, shallowReactive } from 'vue'
 
 import type { ComponentKey } from './componentKey'
 import type { EntityId } from './entityIds'
 
 /**
- * `setComponent` is identity-preserving — `BaseWidget._state` and
- * `widgetValueStore` rely on the shared reactive object reference.
- * Storage changes that break this contract require revisiting both
- * consumers first.
+ * `setComponent` stores by reference; `getComponent` returns a Vue proxy
+ * cached per `(id, key)`. The proxy is stable across reads and is NOT
+ * `===` to the input. Treat `getComponent` as the canonical read path.
  */
 export interface World {
   getComponent<TData, TEntity extends EntityId>(
@@ -29,7 +28,8 @@ export interface World {
 }
 
 export function createWorld(): World {
-  const store = new Map<string, Map<EntityId, unknown>>()
+  // shallowReactive so first-bucket creation is observable to subscribers.
+  const store = shallowReactive(new Map<string, Map<EntityId, unknown>>())
 
   return {
     getComponent<TData, TEntity extends EntityId>(
