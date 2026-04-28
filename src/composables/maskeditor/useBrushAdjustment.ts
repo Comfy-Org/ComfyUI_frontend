@@ -12,6 +12,8 @@ export function useBrushAdjustment(initialSettings?: {
   const coordinateTransform = useCoordinateTransform()
 
   const initialPoint = ref<Point | null>(null)
+  const initialBrushSize = ref(0)
+  const initialBrushHardness = ref(0)
   const useDominantAxis = ref(initialSettings?.useDominantAxis ?? false)
   const brushAdjustmentSpeed = ref(initialSettings?.brushAdjustmentSpeed ?? 1.0)
 
@@ -23,6 +25,8 @@ export function useBrushAdjustment(initialSettings?: {
 
     store.brushPreviewGradientVisible = true
     initialPoint.value = coords_canvas
+    initialBrushSize.value = store.brushSettings.size
+    initialBrushHardness.value = store.brushSettings.hardness
   }
 
   async function handleBrushAdjustment(event: PointerEvent): Promise<void> {
@@ -61,7 +65,7 @@ export function useBrushAdjustment(initialSettings?: {
       1,
       Math.min(
         500,
-        store.brushSettings.size +
+        initialBrushSize.value +
           (cappedDeltaX / 35) * brushAdjustmentSpeed.value
       )
     )
@@ -70,7 +74,7 @@ export function useBrushAdjustment(initialSettings?: {
       0,
       Math.min(
         1,
-        store.brushSettings.hardness -
+        initialBrushHardness.value -
           (cappedDeltaY / 4000) * brushAdjustmentSpeed.value
       )
     )

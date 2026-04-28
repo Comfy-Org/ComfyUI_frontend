@@ -67,6 +67,18 @@ describe('handleBrushAdjustment', () => {
     expect(store.brushSettings.size).toBeGreaterThan(sizeBefore)
   })
 
+  it('does not compound size when pointer stays at the same position', async () => {
+    const store = useMaskEditorStore()
+    const { startBrushAdjustment, handleBrushAdjustment } = useBrushAdjustment()
+    await startBrushAdjustment(makePointerEvent(100, 100))
+
+    await handleBrushAdjustment(makePointerEvent(150, 100))
+    const sizeAfterFirstMove = store.brushSettings.size
+
+    await handleBrushAdjustment(makePointerEvent(150, 100))
+    expect(store.brushSettings.size).toBe(sizeAfterFirstMove)
+  })
+
   it('clamps size to minimum 1 when dragging far left', async () => {
     const store = useMaskEditorStore()
     store.brushSettings.size = 2
