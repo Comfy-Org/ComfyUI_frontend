@@ -5,12 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
 
-test.describe('Vue Node Moving', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (
     comfyPage: ComfyPage,
     title: string

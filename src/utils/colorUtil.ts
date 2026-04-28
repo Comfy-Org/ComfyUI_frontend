@@ -36,7 +36,7 @@ export function isTransparent(color: string) {
   return false
 }
 
-function rgbToHsl({ r, g, b }: RGB): HSL {
+export function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255
   b /= 255

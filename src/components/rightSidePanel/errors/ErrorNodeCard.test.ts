@@ -50,7 +50,7 @@ vi.mock('@/stores/commandStore', () => ({
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: vi.fn(() => ({
     staticUrls: {
-      githubIssues: 'https://github.com/comfyanonymous/ComfyUI/issues'
+      githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
     }
   }))
 }))
@@ -284,7 +284,7 @@ describe('ErrorNodeCard.vue', () => {
     await user.click(screen.getByRole('button', { name: /Find on GitHub/ }))
 
     expect(openSpy).toHaveBeenCalledWith(
-      expect.stringContaining('github.com/comfyanonymous/ComfyUI/issues?q='),
+      expect.stringContaining('github.com/Comfy-Org/ComfyUI/issues?q='),
       '_blank',
       'noopener,noreferrer'
     )

@@ -129,6 +129,8 @@
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
+    "on": "On",
+    "off": "Off",
     "cancel": "Cancel",
     "close": "Close",
     "closeDialog": "Close dialog",
@@ -208,6 +210,7 @@
     "filterByType": "Filter by {type}...",
     "mostRelevant": "Most relevant",
     "favorites": "Favorites",
+    "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
     "output": "Output",
@@ -367,6 +370,8 @@
     "preloadErrorTitle": "Loading Error",
     "recents": "Recents",
     "partner": "Partner",
+    "blueprints": "Blueprints",
+    "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },
@@ -377,6 +382,10 @@
     "actions": "Actions",
     "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "incompatibleVersion": {
+      "title": "ComfyUI-Manager upgrade required",
+      "message": "Please upgrade ComfyUI-Manager to version 4.2.1 or higher.\n• Desktop: Update the ComfyUI Desktop app\n• Standalone: Run pip install -U comfyui-manager and restart\nLearn more: https://github.com/Comfy-Org/ComfyUI-Manager"
+    },
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
@@ -1668,6 +1677,7 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
+    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "math": "math",
@@ -1696,10 +1706,10 @@
     "gligen": "gligen",
     "shader": "shader",
     "Grok": "Grok",
+    "Wan": "Wan",
     "HitPaw": "HitPaw",
     "sd": "sd",
     "Ideogram": "Ideogram",
-    "postprocessing": "postprocessing",
     "transform": "transform",
     "batch": "batch",
     "upscaling": "upscaling",
@@ -1734,17 +1744,18 @@
     "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
+    "Sonilo": "Sonilo",
     "Stability AI": "Stability AI",
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "supir": "supir",
     "Tencent": "Tencent",
     "textgen": "textgen",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "Wan": "Wan",
     "camera": "camera",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
@@ -1788,6 +1799,7 @@
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
+    "INTERP_MODEL": "INTERP_MODEL",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -1815,6 +1827,7 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
     "STRING": "STRING",
@@ -1941,6 +1954,7 @@
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
+    "fitToViewer": "Fit to Viewer",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -1988,7 +2002,24 @@
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
-    "uploadingModel": "Uploading 3D model..."
+    "uploadingModel": "Uploading 3D model...",
+    "loadingHDRI": "Loading HDRI...",
+    "hdri": {
+      "label": "HDRI Environment",
+      "uploadFile": "Upload HDRI (.hdr, .exr)",
+      "changeFile": "Change HDRI",
+      "removeFile": "Remove HDRI",
+      "showAsBackground": "Show as Background",
+      "intensity": "Intensity"
+    },
+    "gizmo": {
+      "label": "Gizmo",
+      "toggle": "Gizmo",
+      "translate": "Translate",
+      "rotate": "Rotate",
+      "scale": "Scale",
+      "reset": "Reset Transform"
+    }
   },
   "imageCrop": {
     "loading": "Loading...",
@@ -2049,6 +2080,7 @@
     "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
+    "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
     "errorOpenImage": "Error opening image: {error}",
@@ -2083,7 +2115,11 @@
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
     "failedToUploadBackgroundImage": "Failed to upload background image",
-    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
+    "failedToLoadHDRI": "Failed to load HDRI file",
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
+    "failedToToggleGizmo": "Failed to toggle gizmo",
+    "failedToSetGizmoMode": "Failed to set gizmo mode"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -2702,6 +2738,7 @@
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
+    "blueprint": "Blueprint",
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
@@ -2747,6 +2784,10 @@
     "notNow": "Not Now",
     "dontAskAgain": "Don't Ask Again",
     "loadError": "Failed to load survey. Please try again later."
+  },
+  "errorPanelSurvey": {
+    "ctaText": "How's the new error panel?",
+    "ctaButton": "Give feedback"
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
@@ -2936,7 +2977,9 @@
     "finish": "Finish",
     "importAnother": "Import Another",
     "genericLinkPlaceholder": "Paste link here",
+    "gridView": "Grid view",
     "jobId": "Job ID",
+    "listView": "List view",
     "loadingModels": "Loading {type}...",
     "maxFileSize": "Max file size: {size}",
     "maxFileSizeValue": "1 GB",
@@ -2968,6 +3011,7 @@
     "sortingType": "Sorting Type",
     "sortPopular": "Popular",
     "sortRecent": "Recent",
+    "sortUnsorted": "Unsorted",
     "sortZA": "Z-A",
     "tags": "Tags",
     "tagsHelp": "Separate tags with commas",
@@ -3214,7 +3258,9 @@
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
-    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again."
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishSuccessTitle": "Published successfully",
+    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
@@ -3403,6 +3449,8 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
+    "editTitle": "Edit title",
+    "editSubgraph": "Edit subgraph",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
     "title": "No item(s) selected | 1 item selected | {count} items selected",
@@ -3528,7 +3576,10 @@
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
-      "downloadAll": "Download all"
+      "downloadAll": "Download all",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing missing models.",
+      "refreshFailed": "Failed to refresh missing models. Please try again."
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs",

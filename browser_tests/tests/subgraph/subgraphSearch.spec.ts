@@ -15,8 +15,7 @@ async function exitSubgraphAndPublish(
   subgraphNode: Awaited<ReturnType<typeof createSubgraphAndNavigateInto>>,
   blueprintName: string
 ) {
-  await comfyPage.page.keyboard.press('Escape')
-  await comfyPage.nextFrame()
+  await comfyPage.keyboard.press('Escape')
 
   await subgraphNode.click('title')
   await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
@@ -42,7 +41,6 @@ async function searchAndExpectResult(
 
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.NodeSearchBoxImpl',
       'v1 (legacy)'

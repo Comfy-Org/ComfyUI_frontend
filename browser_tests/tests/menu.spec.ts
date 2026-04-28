@@ -3,10 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Menu', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('Can register sidebar tab', async ({ comfyPage }) => {
     const initialChildrenCount = await comfyPage.menu.buttons.count()
 

@@ -46,10 +46,6 @@ test.describe(
   'Subgraph promoted widget panel',
   { tag: ['@node', '@widget'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test.describe('SubgraphEditor (Settings panel)', () => {
       test('linked promoted widgets have hide toggle disabled', async ({
         comfyPage

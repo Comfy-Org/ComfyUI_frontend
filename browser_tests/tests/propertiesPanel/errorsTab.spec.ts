@@ -6,7 +6,6 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true

@@ -5,7 +5,7 @@
     {
       "id": 10,
       "type": "LoadImage",
-      "pos": [50, 50],
+      "pos": [50, 200],
       "size": [315, 314],
       "flags": {},
       "order": 0,
@@ -31,7 +31,7 @@
     {
       "id": 11,
       "type": "LoadImage",
-      "pos": [450, 50],
+      "pos": [450, 200],
       "size": [315, 314],
       "flags": {},
       "order": 1,

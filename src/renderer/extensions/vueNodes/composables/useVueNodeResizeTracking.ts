@@ -8,8 +8,7 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
 
 import { useDocumentVisibility } from '@vueuse/core'
 
@@ -139,15 +138,6 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Skip collapsed nodes — their DOM height is just the header, and writing
-    // that back to the layout store would overwrite the stored expanded size.
-    if (elementType === 'node' && element.dataset.collapsed != null) {
-      if (nodeId) {
-        nodesNeedingSlotResync.add(nodeId)
-      }
-      continue
-    }
-
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
     const borderBox = Array.isArray(entry.borderBoxSize)
@@ -158,6 +148,7 @@ const resizeObserver = new ResizeObserver((entries) => {
         }
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
+
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
       : null
@@ -281,10 +272,9 @@ const resizeObserver = new ResizeObserver((entries) => {
  * ```
  */
 export function useVueElementTracking(
-  appIdentifierMaybe: MaybeRefOrGetter<string>,
+  appIdentifier: string,
   trackingType: string
 ) {
-  const appIdentifier = toValue(appIdentifierMaybe)
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
@@ -309,6 +299,7 @@ export function useVueElementTracking(
     delete element.dataset[config.dataAttribute]
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
+    deferredElements.delete(element)
     resizeObserver.unobserve(element)
   })
 }

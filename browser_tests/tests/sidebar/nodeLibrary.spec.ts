@@ -43,7 +43,6 @@ async function renameInlineFolder(comfyPage: ComfyPage, newName: string) {
 
 test.describe('Node library sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
     await comfyPage.settings.setSetting(bookmarksSettingId, [])
     await comfyPage.settings.setSetting(bookmarksCustomizationSettingId, {})

@@ -21,13 +21,14 @@ import {
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
@@ -86,6 +87,7 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {
   scanAllModelCandidates,
   enrichWithEmbeddedMetadata,
@@ -93,6 +95,7 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
   verifyCloudMediaCandidates
@@ -105,6 +108,8 @@ import {
   collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
+  isAncestorPathActive,
+  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -122,7 +127,6 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -149,6 +153,11 @@ import {
   pasteVideoNode,
   pasteVideoNodes
 } from '@/composables/usePaste'
+
+interface MissingModelPipelineOptions {
+  missingNodeTypes?: MissingNodeType[]
+  silent?: boolean
+}
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1125,24 +1134,35 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodes?: boolean
-      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
+      skipAssetScans?: boolean
+      silentAssetErrors?: boolean
     } = {}
   ) {
     const {
-      showMissingNodes = true,
-      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
-      deferWarnings = false
+      deferWarnings = false,
+      skipAssetScans = false,
+      silentAssetErrors = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
-    useMissingModelStore().clearMissingModels()
-    useMissingMediaStore().clearMissingMedia()
+    if (skipAssetScans) {
+      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // so cached results restored by showPendingWarnings still display sizes.
+      // Abort any in-flight verification from the outgoing workflow so a late
+      // result cannot repopulate the store after we've switched workflows.
+      useMissingModelStore().createVerificationAbortController().abort()
+      useMissingMediaStore().createVerificationAbortController().abort()
+      useMissingModelStore().setMissingModels([])
+      useMissingMediaStore().setMissingMedia([])
+    } else {
+      useMissingModelStore().clearMissingModels()
+      useMissingMediaStore().clearMissingMedia()
+    }
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI
@@ -1218,24 +1238,31 @@ export class ComfyApp {
       }
       for (let n of nodes) {
         if (!(n.type in LiteGraph.registered_node_types)) {
-          const replacement = nodeReplacementStore.getReplacementFor(n.type)
-          const cnrId = getCnrIdFromProperties(
-            n.properties as Record<string, unknown> | undefined
-          )
-          const executionId = pathPrefix
-            ? `${pathPrefix}:${n.id}`
-            : String(n.id)
+          // Always sanitize so configure() can handle unregistered types,
+          // but only report as missing if the node is active.
+          const isMuted =
+            n.mode === LGraphEventMode.NEVER ||
+            n.mode === LGraphEventMode.BYPASS
+          if (!isMuted) {
+            const replacement = nodeReplacementStore.getReplacementFor(n.type)
+            const cnrId = getCnrIdFromProperties(
+              n.properties as Record<string, unknown> | undefined
+            )
+            const executionId = pathPrefix
+              ? `${pathPrefix}:${n.id}`
+              : String(n.id)
 
-          missingNodeTypes.push({
-            type: n.type,
-            nodeId: executionId,
-            cnrId,
-            ...(displayName && {
-              hint: t('g.inSubgraph', { name: displayName })
-            }),
-            isReplaceable: replacement !== null,
-            replacement: replacement ?? undefined
-          })
+            missingNodeTypes.push({
+              type: n.type,
+              nodeId: executionId,
+              cnrId,
+              ...(displayName && {
+                hint: t('g.inSubgraph', { name: displayName })
+              }),
+              isReplaceable: replacement !== null,
+              replacement: replacement ?? undefined
+            })
+          }
 
           n.type = sanitizeNodeName(n.type)
         }
@@ -1415,17 +1442,30 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      await this.runMissingModelPipeline(
-        graphData,
-        missingNodeTypes,
-        showMissingNodes,
-        showMissingModels
+      // Drop missing-node entries whose enclosing subgraph is
+      // muted/bypassed. The initial JSON scan only checks each node's
+      // own mode; the cascade from an inactive container is applied here
+      // using the now-configured live graph.
+      const activeMissingNodeTypes = missingNodeTypes.filter(
+        (n) =>
+          typeof n === 'string' ||
+          n.nodeId == null ||
+          isAncestorPathActive(this.rootGraph, String(n.nodeId))
       )
 
-      await this.runMissingMediaPipeline()
+      if (!skipAssetScans) {
+        await this.runMissingModelPipeline(graphData, {
+          missingNodeTypes: activeMissingNodeTypes,
+          silent: silentAssetErrors
+        })
+
+        await this.runMissingMediaPipeline(silentAssetErrors)
+      }
 
       if (!deferWarnings) {
-        useWorkflowService().showPendingWarnings()
+        useWorkflowService().showPendingWarnings(undefined, {
+          silent: silentAssetErrors
+        })
       }
 
       void useSubgraphNavigationStore().updateHash()
@@ -1439,11 +1479,13 @@ export class ComfyApp {
 
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
-    missingNodeTypes: MissingNodeType[],
-    showMissingNodes: boolean,
-    showMissingModels: boolean
-  ): Promise<{ missingModels: ModelFile[] }> {
+    { missingNodeTypes, silent = false }: MissingModelPipelineOptions = {}
+  ): Promise<{
+    missingModels: ModelFile[]
+    confirmedCandidates: MissingModelCandidate[]
+  }> {
     const missingModelStore = useMissingModelStore()
+    const controller = missingModelStore.createVerificationAbortController()
 
     const getDirectory = (nodeType: string) =>
       useModelToNodeStore().getCategoryForNodeType(nodeType)
@@ -1459,7 +1501,7 @@ export class ComfyApp {
 
     const modelStore = useModelStore()
     await modelStore.loadModelFolders()
-    const enrichedCandidates = await enrichWithEmbeddedMetadata(
+    const enrichedAll = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       async (name, directory) => {
@@ -1473,6 +1515,19 @@ export class ComfyApp {
         ? (nodeType, widgetName) =>
             assetService.shouldUseAssetBrowser(nodeType, widgetName)
         : undefined
+    )
+
+    // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
+    // scans only checked each node's own mode; the cascade from an
+    // inactive container to its interior happens here.
+    // Asymmetric on purpose: a candidate dropped here is not resurrected if
+    // the user un-bypasses the container mid-verification. The realtime
+    // mode-change path (handleNodeModeChange → scanAndAddNodeErrors) is
+    // responsible for surfacing errors after an un-bypass.
+    const enrichedCandidates = enrichedAll.filter(
+      (c) =>
+        c.nodeId == null ||
+        isAncestorPathActive(this.rootGraph, String(c.nodeId))
     )
 
     const missingModels: ModelFile[] = enrichedCandidates
@@ -1490,34 +1545,26 @@ export class ComfyApp {
     )
 
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    if (activeWf) {
-      const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodes) {
-        warnings.missingNodeTypes = missingNodeTypes
-      }
-      if (confirmedCandidates.length && showMissingModels) {
-        warnings.missingModelCandidates = confirmedCandidates
-      }
-      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
-        activeWf.pendingWarnings = warnings
-      }
-    }
+    updatePendingWarnings(activeWf, {
+      ...(missingNodeTypes ? { missingNodeTypes } : {}),
+      missingModelCandidates: confirmedCandidates
+    })
 
-    // Intentionally runs on every graph load (including tab switches and
-    // undo/redo) because missing model state depends on external asset data
-    // that may change between workflow activations.
     if (enrichedCandidates.length) {
       if (isCloud) {
-        const controller = missingModelStore.createVerificationAbortController()
-        verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+        void verifyAssetSupportedCandidates(
+          enrichedCandidates,
+          controller.signal
+        )
           .then(() => {
             if (controller.signal.aborted) return
-            const confirmed = enrichedCandidates.filter(
-              (c) => c.isMissing === true
+            // Re-check ancestor: user may have bypassed a container
+            // while verification was in flight.
+            const confirmed = enrichedCandidates.filter((c) =>
+              isMissingCandidateActive(this.rootGraph, c)
             )
-            if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
-            }
+            useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
+            this.cacheModelCandidates(activeWf, confirmed)
           })
           .catch((err) => {
             console.warn(
@@ -1534,10 +1581,12 @@ export class ComfyApp {
             })
           })
       } else {
-        const controller = missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
-        if (confirmed.length) {
-          api
+        if (!confirmed.length) {
+          useExecutionErrorStore().surfaceMissingModels([], { silent })
+          this.cacheModelCandidates(activeWf, [])
+        } else {
+          void api
             .getFolderPaths()
             .then((paths) => {
               if (controller.signal.aborted) return
@@ -1551,7 +1600,10 @@ export class ComfyApp {
             })
             .finally(() => {
               if (controller.signal.aborted) return
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
+              this.cacheModelCandidates(activeWf, confirmed)
             })
 
           void Promise.allSettled(
@@ -1568,26 +1620,100 @@ export class ComfyApp {
           )
         }
       }
+    } else {
+      useExecutionErrorStore().surfaceMissingModels([], { silent })
+      this.cacheModelCandidates(activeWf, [])
     }
 
-    return { missingModels }
+    return { missingModels, confirmedCandidates }
   }
 
-  private async runMissingMediaPipeline(): Promise<void> {
-    const missingMediaStore = useMissingMediaStore()
-    const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+  async refreshMissingModels(options: { silent?: boolean } = {}): Promise<{
+    missingModels: ModelFile[]
+    confirmedCandidates: MissingModelCandidate[]
+  }> {
+    await this.reloadNodeDefs()
+    const graphData = this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+    const activeWorkflowState =
+      useWorkspaceStore().workflow.activeWorkflow?.activeState
+    const currentModelMetadata =
+      useMissingModelStore()
+        .missingModelCandidates?.filter(
+          (
+            candidate
+          ): candidate is MissingModelCandidate & {
+            url: string
+            directory: string
+          } => !!candidate.url && !!candidate.directory
+        )
+        .map((candidate) => ({
+          name: candidate.name,
+          url: candidate.url,
+          directory: candidate.directory,
+          hash: candidate.hash,
+          hash_type: candidate.hashType
+        })) ?? []
+    const models = activeWorkflowState?.models?.length
+      ? activeWorkflowState.models
+      : currentModelMetadata
 
-    if (!candidates.length) return
+    return this.runMissingModelPipeline(
+      models.length ? { ...graphData, models } : graphData,
+      {
+        silent: options.silent ?? true
+      }
+    )
+  }
+
+  private cacheModelCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingModelCandidate[]
+  ) {
+    if (!wf) return
+    updatePendingWarnings(wf, {
+      missingModelCandidates: confirmed
+    })
+  }
+
+  private cacheMediaCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingMediaCandidate[]
+  ) {
+    if (!wf) return
+    updatePendingWarnings(wf, {
+      missingMediaCandidates: confirmed
+    })
+  }
+
+  private async runMissingMediaPipeline(
+    silent: boolean = false
+  ): Promise<void> {
+    const missingMediaStore = useMissingMediaStore()
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+    // Drop candidates whose enclosing subgraph is muted/bypassed.
+    const candidates = allCandidates.filter((c) =>
+      isAncestorPathActive(this.rootGraph, String(c.nodeId))
+    )
+
+    if (!candidates.length) {
+      this.cacheMediaCandidates(activeWf, [])
+      return
+    }
 
     if (isCloud) {
       const controller = missingMediaStore.createVerificationAbortController()
       void verifyCloudMediaCandidates(candidates, controller.signal)
         .then(() => {
           if (controller.signal.aborted) return
-          const confirmed = candidates.filter((c) => c.isMissing === true)
+          // Re-check ancestor after async verification (see model pipeline).
+          const confirmed = candidates.filter((c) =>
+            isMissingCandidateActive(this.rootGraph, c)
+          )
           if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingMedia(confirmed)
+            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
           }
+          this.cacheMediaCandidates(activeWf, confirmed)
         })
         .catch((err) => {
           console.warn(
@@ -1606,8 +1732,9 @@ export class ComfyApp {
     } else {
       const confirmed = candidates.filter((c) => c.isMissing === true)
       if (confirmed.length) {
-        useExecutionErrorStore().surfaceMissingMedia(confirmed)
+        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
       }
+      this.cacheMediaCandidates(activeWf, confirmed)
     }
   }
 
@@ -2116,18 +2243,9 @@ export class ComfyApp {
   }
 
   /**
-   * Refresh combo list on whole nodes
+   * Reload node definitions and refresh combo lists on all nodes.
    */
-  async refreshComboInNodes() {
-    const requestToastMessage: ToastMessageOptions = {
-      severity: 'info',
-      summary: t('g.update'),
-      detail: t('toastMessages.updateRequested')
-    }
-    if (this.vueAppReady) {
-      useToastStore().add(requestToastMessage)
-    }
-
+  async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
@@ -2181,13 +2299,46 @@ export class ComfyApp {
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
-      useToastStore().remove(requestToastMessage)
-      useToastStore().add({
-        severity: 'success',
-        summary: t('g.updated'),
-        detail: t('toastMessages.nodeDefinitionsUpdated'),
-        life: 1000
-      })
+    }
+  }
+
+  /**
+   * Refresh combo list on whole nodes
+   */
+  async refreshComboInNodes() {
+    const requestToastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: t('g.update'),
+      detail: t('toastMessages.updateRequested')
+    }
+    if (this.vueAppReady) {
+      useToastStore().add(requestToastMessage)
+    }
+
+    try {
+      await this.reloadNodeDefs()
+
+      if (this.vueAppReady) {
+        useToastStore().add({
+          severity: 'success',
+          summary: t('g.updated'),
+          detail: t('toastMessages.nodeDefinitionsUpdated'),
+          life: 1000
+        })
+      }
+    } catch (error) {
+      if (this.vueAppReady) {
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('toastMessages.nodeDefinitionsUpdateFailed')
+        })
+      }
+      throw error
+    } finally {
+      if (this.vueAppReady) {
+        useToastStore().remove(requestToastMessage)
+      }
     }
   }
 

@@ -2,6 +2,10 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
+import type { Locale } from '../i18n/translations'
+import SiteFooter from '../components/common/SiteFooter.vue'
+import SiteNav from '../components/common/SiteNav.vue'
+import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
 interface Props {
   title: string
@@ -13,14 +17,18 @@ interface Props {
 const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
-  ogImage = '/og-default.png',
+  ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
 } = Astro.props
 
 const siteBase = Astro.site ?? 'https://comfy.org'
 const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
-const locale = Astro.currentLocale ?? 'en'
+const rawLocale = Astro.currentLocale ?? 'en'
+const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
@@ -29,7 +37,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: 'Comfy Org',
   url: 'https://comfy.org',
-  logo: 'https://comfy.org/favicon.svg',
+  logo: 'https://comfy.org/icons/logomark.svg',
   sameAs: [
     'https://github.com/comfyanonymous/ComfyUI',
     'https://discord.gg/comfyorg',
@@ -49,7 +57,7 @@ const websiteJsonLd = {
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html lang={locale} class="overflow-x-clip">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -57,7 +65,7 @@ const websiteJsonLd = {
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/logomark.svg" type="image/svg+xml" />
     <link rel="canonical" href={canonicalURL.href} />
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
@@ -81,8 +89,8 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
-    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
@@ -102,7 +110,7 @@ const websiteJsonLd = {
 
     <ClientRouter />
   </head>
-  <body class="bg-black text-white font-inter antialiased">
+  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
       <noscript>
         <iframe
@@ -114,8 +122,27 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <slot />
+    <SiteNav locale={locale} github-stars={githubStars} client:load />
+    <main class="mt-20 lg:mt-32">
+      <slot />
+    </main>
+    <SiteFooter locale={locale} client:load />
 
     <Analytics />
+
+    <script>
+      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
+      import { ScrollTrigger } from '../scripts/gsapSetup'
+
+      initSmoothScroll()
+
+      document.addEventListener('astro:page-load', () => {
+        ScrollTrigger.refresh()
+      })
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelScroll()
+      })
+    </script>
   </body>
 </html>

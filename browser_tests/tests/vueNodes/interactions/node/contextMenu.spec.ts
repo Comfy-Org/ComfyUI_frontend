@@ -60,22 +60,14 @@ async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
   return refs[0]
 }
 
-test.describe('Vue Node Context Menu', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
   test.describe('Single Node Actions', () => {
     test('should rename node via context menu', async ({ comfyPage }) => {
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Rename')
 
-      const titleInput = comfyPage.page.getByTestId(TestIds.node.titleInput)
-      await titleInput.waitFor({ state: 'visible' })
-      await titleInput.fill('My Renamed Sampler')
-      await titleInput.press('Enter')
+      await comfyPage.titleEditor.expectVisible()
+      await comfyPage.titleEditor.setTitle('My Renamed Sampler')
       await comfyPage.nextFrame()
 
       const renamedNode =
