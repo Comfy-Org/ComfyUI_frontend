@@ -30,6 +30,7 @@
  * text-xs type scale to the layout scale, and let multiline textareas
  * fill the cell body without their own min-height / resize-y overrides.
  */
+import { cn } from '@comfyorg/tailwind-utils'
 import { provide, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -101,10 +102,12 @@ function cancelRename() {
       <EditableText
         :model-value="entry.widget.label || entry.widget.name"
         :is-editing="isEditingLabel"
-        :class="[
-          'min-w-0 truncate text-layout-md text-layout-text',
-          variant === 'builder' && 'cursor-text'
-        ]"
+        :class="
+          cn(
+            'min-w-0 truncate text-layout-md text-layout-text',
+            variant === 'builder' && 'cursor-text'
+          )
+        "
         label-type="span"
         @dblclick="startEditing"
         @edit="commitRename"
@@ -127,12 +130,7 @@ function cancelRename() {
       <DropZone>
         <NodeWidgets
           :node-data="entry.nodeData"
-          :class="[
-            'gap-y-3 rounded-lg py-1',
-            '[&_textarea]:resize-y',
-            '**:[.col-span-2]:grid-cols-1',
-            'not-md:**:[.h-7]:h-10'
-          ]"
+          class="gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10"
         />
       </DropZone>
     </div>

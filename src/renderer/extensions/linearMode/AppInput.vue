@@ -39,7 +39,14 @@ function tick() {
 // the selection overlay is rendered) keeps the teleported ring glued
 // on without subscribing to canvas transform state.
 const { pause, resume } = useRafFn(tick, { immediate: false })
-watch(showSelection, (show) => (show ? resume() : pause()), { immediate: true })
+watch(
+  showSelection,
+  (show) => {
+    if (show) resume()
+    else pause()
+  },
+  { immediate: true }
+)
 
 function matchesThis([nodeId, widgetName]: LinearInput) {
   // nodeId is NodeId (string | number) across the graph/store boundary;

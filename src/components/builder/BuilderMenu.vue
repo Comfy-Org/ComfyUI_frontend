@@ -21,7 +21,6 @@
           )
         "
         :data-sidebar="sidebarLocation"
-        :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       >
         <i class="icon-[lucide--hammer] size-5" />
         <span class="text-base font-medium">

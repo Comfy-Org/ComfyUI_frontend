@@ -9,6 +9,8 @@
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 1813 382"
     fill="currentColor"
+    aria-hidden="true"
+    focusable="false"
     :style="{ fillRule: 'evenodd', clipRule: 'evenodd' }"
   >
     <path

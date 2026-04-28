@@ -11,13 +11,10 @@
  * primary semantic language (green = go, red = stop) that reads
  * instantly without the user parsing the text.
  */
-import { useI18n } from 'vue-i18n'
-
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCommandStore } from '@/stores/commandStore'
 
-const { t } = useI18n()
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
@@ -34,22 +31,15 @@ async function handleClick(e: MouseEvent | KeyboardEvent) {
 </script>
 
 <template>
+  <!-- active:scale gives press feedback (tactile on screen recordings);
+       100ms is short enough not to delay command dispatch. -->
   <Button
     size="unset"
-    :class="[
-      'size-full rounded-lg text-layout-xl text-white',
-      'border border-(--app-mode-go-border) bg-(--app-mode-go-bg)',
-      'hover:bg-(--app-mode-go-bg-hover)',
-      'focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1',
-      // Press feedback: a small scale-down on active so clicks feel
-      // tactile on camera. 100ms keeps it punchy — fast enough not to
-      // delay the command dispatch, long enough to be visible.
-      'transition-transform duration-100 ease-out active:scale-[0.97]'
-    ]"
+    class="size-full rounded-lg border border-(--app-mode-go-border) bg-(--app-mode-go-bg) text-layout-xl text-white transition-transform duration-100 ease-out hover:bg-(--app-mode-go-bg-hover) focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 active:scale-[0.97]"
     data-testid="layout-run-cell"
     @click="handleClick"
   >
     <i class="icon-[lucide--play] size-(--text-layout-xl)" />
-    {{ t('menu.run') }}
+    {{ $t('menu.run') }}
   </Button>
 </template>
