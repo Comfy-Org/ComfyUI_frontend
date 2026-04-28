@@ -44,19 +44,24 @@ browser_tests/
 ### Architectural Separation
 
 - **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
-- **`fixtures/components/`** — Page object components. Classes that encapsulate locators and user interactions for a specific UI area (e.g. `Actionbar`, `ContextMenu`, `ManageGroupNode`).
-- **`fixtures/helpers/`** — Helper classes wired into `ComfyPage`. Domain-specific action classes instantiated as `ComfyPage` properties (e.g. `CanvasHelper`, `WorkflowHelper`, `NodeOperationsHelper`).
+- **`fixtures/components/`** — Page object components. Classes that own locators for a specific UI region (e.g. `Actionbar`, `ContextMenu`, `ManageGroupNode`).
+- **`fixtures/helpers/`** — Helper classes that coordinate actions across multiple regions without owning a locator surface of their own (e.g. `CanvasHelper`, `WorkflowHelper`, `NodeOperationsHelper`).
 - **`fixtures/utils/`** — Standalone utility functions. Exported functions (not classes) used by tests or fixtures (e.g. `fitToView`, `clipboardSpy`, `builderTestUtils`).
 
 ### Placement Rule
 
-When adding a new file, use this decision flow:
+When adding a new file, use this decision tree:
 
-1. **Is it a class?**
-   - **Yes, and wired into `ComfyPage`** → `fixtures/helpers/`
-   - **Yes, but standalone** → `fixtures/components/`
-   - **No (exported functions)** → `fixtures/utils/`
-2. **Is it static data with no code?** → `fixtures/data/`
+```mermaid
+flowchart TD
+    A[New file in browser_tests/fixtures/] --> B{Has any code?}
+    B -- No, JSON/data only --> D[fixtures/data/]
+    B -- Yes --> C{Is it a class?}
+    C -- No, exported functions --> U[fixtures/utils/]
+    C -- Yes --> E{Owns locators for a<br/>specific UI region?}
+    E -- Yes --> P[fixtures/components/]
+    E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
+```
 
 ## Page Object Locator Style
 
