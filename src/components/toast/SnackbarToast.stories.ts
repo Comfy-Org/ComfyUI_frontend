@@ -6,7 +6,7 @@ import { useSnackbarToast } from '@/composables/useSnackbarToast'
 import SnackbarToast from './SnackbarToast.vue'
 
 const meta: Meta<typeof SnackbarToast> = {
-  title: 'Components/Graph/SnackbarToast',
+  title: 'Components/Toast/SnackbarToast',
   component: SnackbarToast,
   tags: ['autodocs'],
   parameters: {
