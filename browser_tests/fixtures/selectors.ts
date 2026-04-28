@@ -86,7 +86,10 @@ export const TestIds = {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    loginButton: 'login-button',
+    loginButtonPopover: 'login-button-popover',
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
