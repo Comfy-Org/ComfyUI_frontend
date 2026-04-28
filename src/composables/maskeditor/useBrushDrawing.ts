@@ -1,14 +1,12 @@
 /// <reference types="@webgpu/types" />
 import { ref, watch, nextTick, onUnmounted } from 'vue'
-import { debounce } from 'es-toolkit/compat'
 import { parseToRgb } from '@/utils/colorUtil'
-import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import {
   Tools,
   BrushShape,
   CompositionOperation
 } from '@/extensions/core/maskeditor/types'
-import type { Brush, Point } from '@/extensions/core/maskeditor/types'
+import type { Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import { resampleSegment } from './splineUtils'
@@ -24,45 +22,14 @@ import {
   drawMaskShape
 } from './brushDrawingUtils'
 import type { DirtyRect } from './brushDrawingUtils'
-
-/**
- * Saves the brush settings to local storage with a debounce.
- * @param key - The storage key.
- * @param brush - The brush settings object.
- */
-const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
-  try {
-    const brushString = JSON.stringify(brush)
-    setStorageValue(key, brushString)
-  } catch (error) {
-    console.error('Failed to save brush to cache:', error)
-  }
-}, 300)
-
-/**
- * Loads brush settings from local storage.
- * @param key - The storage key.
- * @returns The brush settings object or null if not found.
- */
-function loadBrushFromCache(key: string): Brush | null {
-  try {
-    const brushString = getStorageValue(key)
-    if (brushString) {
-      return JSON.parse(brushString) as Brush
-    } else {
-      return null
-    }
-  } catch (error) {
-    console.error('Failed to load brush from cache:', error)
-    return null
-  }
-}
+import { useBrushPersistence } from './useBrushPersistence'
 
 export function useBrushDrawing(initialSettings?: {
   useDominantAxis?: boolean
   brushAdjustmentSpeed?: number
 }) {
   const store = useMaskEditorStore()
+  const persistence = useBrushPersistence()
 
   const coordinateTransform = useCoordinateTransform()
 
@@ -100,14 +67,7 @@ export function useBrushDrawing(initialSettings?: {
   const useDominantAxis = ref(initialSettings?.useDominantAxis ?? false)
   const brushAdjustmentSpeed = ref(initialSettings?.brushAdjustmentSpeed ?? 1.0)
 
-  const cachedBrushSettings = loadBrushFromCache('maskeditor_brush_settings')
-  if (cachedBrushSettings) {
-    store.setBrushSize(cachedBrushSettings.size)
-    store.setBrushOpacity(cachedBrushSettings.opacity)
-    store.setBrushHardness(cachedBrushSettings.hardness)
-    store.brushSettings.type = cachedBrushSettings.type
-    store.setBrushStepSize(cachedBrushSettings.stepSize ?? 5)
-  }
+  persistence.loadAndApply()
 
   // Handle external clear events
   watch(
@@ -866,13 +826,6 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   /**
-   * Saves the current brush settings to cache.
-   */
-  function saveBrushSettings(): void {
-    saveBrushToCache('maskeditor_brush_settings', store.brushSettings)
-  }
-
-  /**
    * Reads back the GPU textures to CPU ImageDatas.
    * @returns Object containing mask and rgb ImageDatas.
    */
@@ -1272,7 +1225,7 @@ export function useBrushDrawing(initialSettings?: {
     drawEnd,
     startBrushAdjustment,
     handleBrushAdjustment,
-    saveBrushSettings,
+    saveBrushSettings: persistence.save,
     destroy,
     initGPUResources,
     initPreviewCanvas,

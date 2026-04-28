@@ -86,7 +86,10 @@ export const TestIds = {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    loginButton: 'login-button',
+    loginButtonPopover: 'login-button-popover',
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -249,6 +252,17 @@ export const TestIds = {
     batchCounter: 'batch-counter',
     batchNext: 'batch-next',
     batchPrev: 'batch-prev'
+  },
+  searchBoxV2: {
+    resultItem: 'result-item',
+    filterOption: 'filter-option',
+    filterChip: 'filter-chip',
+    chipDelete: 'chip-delete',
+    noResults: 'no-results',
+    nodeIdBadge: 'node-id-badge',
+    category: (id: string) => `category-${id}`,
+    rootCategory: (id: string) => `search-category-${id}`,
+    typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
 

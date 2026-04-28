@@ -55,29 +55,32 @@ export class NodeOperationsHelper {
    * Add a node to the graph by type.
    * @param type - The node type (e.g. 'KSampler', 'VAEDecode')
    * @param options - GraphAddOptions (ghost, skipComputeOrder). When ghost is
-   *   true and cursorPosition is provided, a synthetic MouseEvent is created
-   *   as the dragEvent.
-   * @param cursorPosition - Client coordinates for ghost placement dragEvent
+   *   true and position is provided, a synthetic MouseEvent is created as the
+   *   dragEvent.
+   * @param position - When ghost is true, client coordinates for the ghost
+   *   placement dragEvent. Otherwise, world coordinates assigned to node.pos.
    */
   async addNode(
     type: string,
     options?: Omit<GraphAddOptions, 'dragEvent'>,
-    cursorPosition?: Position
+    position?: Position
   ): Promise<NodeReference> {
     const id = await this.page.evaluate(
-      ([nodeType, opts, cursor]) => {
+      ([nodeType, opts, pos]) => {
         const node = window.LiteGraph!.createNode(nodeType)!
         const addOpts: Record<string, unknown> = { ...opts }
-        if (opts?.ghost && cursor) {
+        if (opts?.ghost && pos) {
           addOpts.dragEvent = new MouseEvent('click', {
-            clientX: cursor.x,
-            clientY: cursor.y
+            clientX: pos.x,
+            clientY: pos.y
           })
+        } else if (pos) {
+          node.pos = [pos.x, pos.y]
         }
         window.app!.graph.add(node, addOpts as GraphAddOptions)
         return node.id
       },
-      [type, options ?? {}, cursorPosition ?? null] as const
+      [type, options ?? {}, position ?? null] as const
     )
     return new NodeReference(id, this.comfyPage)
   }

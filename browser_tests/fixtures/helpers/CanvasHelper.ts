@@ -74,7 +74,7 @@ export class CanvasHelper {
    * Use with `page.mouse` APIs when Vue DOM overlays above the canvas would
    * cause Playwright's actionability check to fail on the canvas locator.
    */
-  private async toAbsolute(position: Position): Promise<Position> {
+  async toAbsolute(position: Position): Promise<Position> {
     const box = await this.canvas.boundingBox()
     if (!box) throw new Error('Canvas bounding box not available')
     return { x: box.x + position.x, y: box.y + position.y }
@@ -148,6 +148,28 @@ export class CanvasHelper {
       window.app!.canvas.ds.scale = s
     }, scale)
     await nextFrame(this.page)
+  }
+
+  async getOffset(): Promise<[number, number]> {
+    return this.page.evaluate(
+      () => [...window.app!.canvas.ds.offset] as [number, number]
+    )
+  }
+
+  async getNodeTitleHeight(): Promise<number> {
+    return this.page.evaluate(() => window.LiteGraph!.NODE_TITLE_HEIGHT)
+  }
+
+  /**
+   * Hold `Control+Shift` and drag from `from` to `to` using page-absolute
+   * coordinates.
+   */
+  async ctrlShiftDrag(from: Position, to: Position): Promise<void> {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.down('Shift')
+    await this.dragAndDrop(from, to)
+    await this.page.keyboard.up('Shift')
+    await this.page.keyboard.up('Control')
   }
 
   async convertOffsetToCanvas(

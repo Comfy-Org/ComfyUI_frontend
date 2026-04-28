@@ -326,6 +326,23 @@ export class NodeReference {
     const nodeSize = await this.getSize()
     return { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
   }
+  async dragBy(
+    delta: Position,
+    options?: {
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+    }
+  ): Promise<void> {
+    const titlePos = await this.getTitlePosition()
+    const target = { x: titlePos.x + delta.x, y: titlePos.y + delta.y }
+    const modifiers = options?.modifiers ?? []
+    const keyboard = this.comfyPage.page.keyboard
+    for (const mod of modifiers) await keyboard.down(mod)
+    try {
+      await this.comfyPage.canvasOps.dragAndDrop(titlePos, target)
+    } finally {
+      for (const mod of modifiers) await keyboard.up(mod)
+    }
+  }
   async isPinned() {
     return !!(await this.getFlags()).pinned
   }
