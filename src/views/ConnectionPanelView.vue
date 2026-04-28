@@ -89,26 +89,47 @@
         </div>
       </section>
 
-      <!-- API Key input (optional) -->
-      <section class="flex flex-col gap-2">
+      <!-- API Key input (optional) — hidden when backend has --disable-api-nodes -->
+      <section v-if="!isApiNodeDisabled" class="flex flex-col gap-2">
         <label for="api-key" class="text-sm font-medium text-neutral-300">
           {{ t('connectionPanel.apiKey') }}
           <span class="ml-1 text-xs font-normal text-neutral-500">{{
             t('connectionPanel.apiKeyOptional')
           }}</span>
         </label>
-        <input
-          id="api-key"
-          v-model="apiKeyInput"
-          type="password"
-          :placeholder="t('connectionPanel.apiKeyPlaceholder')"
-          autocomplete="current-password"
-          class="flex h-10 w-full min-w-0 appearance-none rounded-lg border-none bg-neutral-800 px-4 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
-        />
-        <p class="text-xs text-neutral-500">
+        <div class="flex gap-2">
+          <input
+            id="api-key"
+            v-model="apiKeyInput"
+            type="password"
+            :placeholder="t('connectionPanel.apiKeyPlaceholder')"
+            autocomplete="current-password"
+            class="flex h-10 w-full min-w-0 appearance-none rounded-lg border-none bg-neutral-800 px-4 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
+            @keyup.enter="testApiKey"
+          />
+          <Button
+            variant="secondary"
+            size="lg"
+            :loading="isTestingApiKey"
+            :disabled="isTestingApiKey || !apiKeyInput.trim()"
+            @click="testApiKey"
+          >
+            {{ t('connectionPanel.test') }}
+          </Button>
+        </div>
+        <p v-if="apiKeyStatus === 'ok'" class="text-xs text-green-400">
+          {{ t('connectionPanel.apiKeyTestOk') }}
+        </p>
+        <p v-else-if="apiKeyStatus === 'error'" class="text-xs text-red-400">
+          {{ t('connectionPanel.apiKeyTestError') }}
+        </p>
+        <p v-else class="text-xs text-neutral-500">
           {{ t('connectionPanel.apiKeyHint') }}
         </p>
       </section>
+      <p v-else class="text-xs text-neutral-500">
+        {{ t('connectionPanel.apiKeyDisabledNotice') }}
+      </p>
 
       <!-- Connection status -->
       <section
@@ -394,6 +415,10 @@ const httpStatus = ref<boolean | null>(null)
 const wsStatus = ref<boolean | null>(null)
 const connectionError = ref('')
 const backendCloudBase = ref<string | null>(null)
+const isApiNodeDisabled = ref(false)
+
+const isTestingApiKey = ref(false)
+const apiKeyStatus = ref<'idle' | 'ok' | 'error'>('idle')
 const frontendCloudBase = stripTrailingSlash(getComfyApiBaseUrl())
 const cloudMismatch = computed(
   () =>
@@ -474,6 +499,8 @@ async function testConnection() {
     backendCloudBase.value = stats
       ? resolveBackendCloudBase(stats.system)
       : null
+    isApiNodeDisabled.value =
+      stats?.system?.argv?.includes('--disable-api-nodes') ?? false
 
     if (stats === null && !ws) {
       connectionError.value = t('connectionPanel.errorUnreachable')
@@ -488,6 +515,29 @@ async function testConnection() {
     connectionError.value = t('connectionPanel.errorUnreachable')
   } finally {
     isTesting.value = false
+  }
+}
+
+async function testApiKey() {
+  const key = apiKeyInput.value.trim()
+  if (!key) return
+  isTestingApiKey.value = true
+  apiKeyStatus.value = 'idle'
+  const base = backendCloudBase.value ?? frontendCloudBase
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(`${base}/customers`, {
+      method: 'POST',
+      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+      signal: controller.signal
+    })
+    apiKeyStatus.value = res.ok ? 'ok' : 'error'
+  } catch {
+    apiKeyStatus.value = 'error'
+  } finally {
+    clearTimeout(timeout)
+    isTestingApiKey.value = false
   }
 }
 
