@@ -3,7 +3,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { sleep } from '@e2e/fixtures/utils/timing'
 
 const CLIP_NODE_COUNT = 2
@@ -271,7 +270,6 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
         'Default workflow must have CLIPTextEncode nodes'
       ).toHaveLength(CLIP_NODE_COUNT)
       const titlePos = await clipNodes[0].getTitlePosition()
-      const titleInput = comfyPage.page.getByTestId(TestIds.node.titleInput)
       const CLICK_GAP_MS = 200
 
       await test.step(`Gap (${CLICK_GAP_MS}ms) exceeds DoubleClickTime → editor stays hidden`, async () => {
@@ -282,7 +280,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
         await comfyPage.canvasOps.mouseClickAt(titlePos)
         await sleep(CLICK_GAP_MS)
         await comfyPage.canvasOps.mouseClickAt(titlePos)
-        await expect(titleInput).toBeHidden()
+        await comfyPage.titleEditor.expectHidden()
       })
 
       await test.step(`Gap (${CLICK_GAP_MS}ms) within DoubleClickTime → editor opens`, async () => {
@@ -293,7 +291,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
         await comfyPage.canvasOps.mouseClickAt(titlePos)
         await sleep(CLICK_GAP_MS)
         await comfyPage.canvasOps.mouseClickAt(titlePos)
-        await expect(titleInput).toBeVisible()
+        await comfyPage.titleEditor.expectVisible()
       })
     })
 
