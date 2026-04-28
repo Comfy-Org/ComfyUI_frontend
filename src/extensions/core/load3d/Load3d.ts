@@ -15,6 +15,7 @@ import type { RecordingManager } from './RecordingManager'
 import type { SceneManager } from './SceneManager'
 import type { SceneModelManager } from './SceneModelManager'
 import type { ViewHelperManager } from './ViewHelperManager'
+import { computeCameraFromMatrices } from './cameraFromMatrices'
 import type {
   CameraState,
   CaptureResult,
@@ -70,6 +71,7 @@ class Load3d {
   protected clock: THREE.Clock
   private renderLoop: RenderLoopHandle | null = null
   private loadingPromise: Promise<void> | null = null
+  private _loadGeneration: number = 0
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
 
@@ -463,12 +465,44 @@ class Load3d {
     this.forceRender()
   }
 
+  setCameraFromMatrices(
+    extrinsics: readonly (readonly number[])[],
+    intrinsics: readonly (readonly number[])[]
+  ): void {
+    const { position, target, fovYDegrees } = computeCameraFromMatrices(
+      extrinsics,
+      intrinsics
+    )
+    const current = this.cameraManager.getCameraState()
+    this.setCameraState({
+      position: new THREE.Vector3(position[0], position[1], position[2]),
+      target: new THREE.Vector3(target[0], target[1], target[2]),
+      zoom: current.zoom,
+      cameraType: current.cameraType
+    })
+    this.setFOV(fovYDegrees)
+  }
+
   setMaterialMode(mode: MaterialMode): void {
     this.modelManager.setMaterialMode(mode)
     this.forceRender()
   }
 
+  /**
+   * Monotonic counter that ticks once per loadModel call, **before** any
+   * await. Callers can capture this immediately after triggering a load and
+   * later compare against `currentLoadGeneration` to verify their load is
+   * still the latest one — useful when chaining post-load work
+   * (e.g. applying camera matrices) through `whenLoadIdle()`, which would
+   * otherwise wait for any newer queued load and apply stale state to it.
+   */
+  get currentLoadGeneration(): number {
+    return this._loadGeneration
+  }
+
   async loadModel(url: string, originalFileName?: string): Promise<void> {
+    this._loadGeneration += 1
+
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
@@ -477,6 +511,16 @@ class Load3d {
 
     this.loadingPromise = this._loadModelInternal(url, originalFileName)
     return this.loadingPromise
+  }
+
+  async whenLoadIdle(): Promise<void> {
+    let last: Promise<void> | null = null
+    while (this.loadingPromise && this.loadingPromise !== last) {
+      last = this.loadingPromise
+      try {
+        await last
+      } catch (e) {}
+    }
   }
 
   private async _loadModelInternal(
