@@ -120,6 +120,46 @@ describe('useNewUserService', () => {
       expect(service.isNewUser()).toBe(false)
     })
 
+    it('should identify existing user when V1 draft store keys exist', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.Drafts') return '{}'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify existing user when V1 draft order key exists', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftOrder') return '[]'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify existing user when V2 draft index key exists', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
+          return '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
     it('should identify new user when tutorial is explicitly false', async () => {
       mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': false }
       mockSettingStore.get.mockImplementation((key: string) => {
