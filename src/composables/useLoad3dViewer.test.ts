@@ -21,7 +21,21 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
-    uploadFile: vi.fn()
+    uploadFile: vi.fn(),
+    splitFilePath: vi.fn((path: string) => {
+      const parts = path.split('/')
+      return [parts.slice(0, -1).join('/'), parts[parts.length - 1] ?? '']
+    }),
+    getResourceURL: vi.fn(
+      (subfolder: string, filename: string, type: string) =>
+        `api/view?type=${type}&subfolder=${encodeURIComponent(subfolder)}&filename=${filename}`
+    )
+  }
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: vi.fn((url: string) => `/${url}`)
   }
 }))
 
@@ -542,6 +556,78 @@ describe('useLoad3dViewer', () => {
 
       expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
       expect(viewer.backgroundImage.value).toBe('uploaded-image.jpg')
+    })
+  })
+
+  describe('handleModelDrop', () => {
+    it('refreshes the capability refs after the dropped model loads, so the sidebar reflects the new model', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        '3d/dropped.splat'
+      )
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.canUseLighting.value).toBe(true)
+      expect(viewer.canUseGizmo.value).toBe(true)
+      expect(viewer.canExport.value).toBe(true)
+      expect([...viewer.materialModes.value]).toEqual([
+        'original',
+        'normal',
+        'wireframe'
+      ])
+
+      vi.mocked(mockLoad3d.isSplatModel!).mockReturnValueOnce(true)
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockReturnValueOnce({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: false,
+        exportable: false,
+        materialModes: [],
+        fitTargetSize: 20
+      })
+
+      const file = new File([''], 'dropped.splat')
+      await viewer.handleModelDrop(file)
+
+      expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
+        expect.stringContaining('dropped.splat')
+      )
+      expect(viewer.canUseLighting.value).toBe(false)
+      expect(viewer.canExport.value).toBe(false)
+      expect(viewer.isSplatModel.value).toBe(true)
+      expect([...viewer.materialModes.value]).toEqual([])
+    })
+
+    it('alerts and does not call loadModel when there is no active load3d instance', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+
+      const file = new File([''], 'whatever.glb')
+      await viewer.handleModelDrop(file)
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.no3dScene'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
+    })
+
+    it('alerts and skips loadModel when the file upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce('')
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      vi.mocked(mockLoad3d.loadModel!).mockClear()
+
+      const file = new File([''], 'whatever.glb')
+      await viewer.handleModelDrop(file)
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.fileUploadFailed'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
   })
 
