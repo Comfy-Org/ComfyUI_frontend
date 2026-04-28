@@ -70,7 +70,7 @@ const emptyCopy = computed(() => {
       <!-- Empty-state drop-zone affordance for widget picks from the canvas. -->
       <div
         v-else
-        class="m-2 flex flex-1 items-center justify-center rounded-layout-cell border-[3px] border-dashed border-(--color-app-mode-active-temp) bg-(--color-app-mode-active-temp-wash) p-6 text-center text-lg text-(--color-app-mode-active-temp)"
+        class="m-2 flex flex-1 items-center justify-center rounded-layout-cell border-[3px] border-dashed border-warning-background bg-warning-background/10 p-6 text-center text-lg text-warning-background"
       >
         {{ emptyCopy }}
       </div>

@@ -125,7 +125,7 @@ async function runFromPill(e: MouseEvent) {
         >
           <i18n-t keypath="linearMode.welcome.noOutputs" tag="span">
             <template #count>
-              <span class="font-bold text-(--color-app-mode-active-temp)">{{
+              <span class="font-bold text-warning-background">{{
                 t('linearMode.welcome.oneOutput')
               }}</span>
             </template>

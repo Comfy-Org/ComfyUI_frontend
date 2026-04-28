@@ -15,7 +15,7 @@
             cn(
               stepClasses,
               activeStep === step.id
-                ? 'bg-transparent ring-2 ring-(--color-app-mode-active-temp) ring-inset'
+                ? 'bg-transparent ring-2 ring-warning-background ring-inset'
                 : 'bg-transparent hover:bg-secondary-background'
             )
           "

@@ -48,9 +48,8 @@ function togglePromotion() {
     Vue-node / TransformPane stacking context and paint above the
     builder select-mode scrim (which sits between the link overlay
     canvas and the Vue node layer). Colors mirror AppInput.vue:
-    `--color-app-mode-accent-temp` = selectable,
-    `--color-app-mode-active-temp` (+ -wash for the 15% fill) =
-    selected. Both are TEMPORARY overrides defined in LayoutView.
+    `primary-background` = selectable, `warning-background` (+ /10
+    wash for the fill) = selected.
   -->
   <Teleport v-if="width > 0 && height > 0" to="body">
     <div
@@ -58,8 +57,8 @@ function togglePromotion() {
         cn(
           'group pointer-events-auto fixed cursor-pointer rounded-2xl outline-[5px] outline-solid',
           isPromoted
-            ? 'bg-(--color-app-mode-active-temp-wash) outline-(--color-app-mode-active-temp)'
-            : 'outline-(--color-app-mode-accent-temp) hover:outline-(--color-app-mode-active-temp) hover:outline-dashed'
+            ? 'bg-warning-background/10 outline-warning-background'
+            : 'outline-primary-background hover:outline-warning-background hover:outline-dashed'
         )
       "
       :style="{
@@ -78,12 +77,12 @@ function togglePromotion() {
       <div class="absolute top-0 right-0 size-8">
         <div
           v-if="isPromoted"
-          class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-(--color-app-mode-active-temp) p-2"
+          class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-warning-background p-2"
         >
           <!-- Inline SVG (see AppInput.vue for rationale) so we can
                set `stroke-width="3"` directly. -->
           <svg
-            class="size-full text-(--color-app-mode-active-temp-fg)"
+            class="size-full text-base-background"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -99,8 +98,8 @@ function togglePromotion() {
           v-else
           :class="[
             'absolute -top-1/2 -right-1/2 size-full rounded-lg',
-            'border-4 border-(--color-app-mode-accent-temp) bg-component-node-background',
-            'group-hover:border-dashed group-hover:border-(--color-app-mode-active-temp)'
+            'border-4 border-primary-background bg-component-node-background',
+            'group-hover:border-dashed group-hover:border-warning-background'
           ]"
         />
       </div>

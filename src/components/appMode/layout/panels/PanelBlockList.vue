@@ -140,11 +140,11 @@ onUpdated(() => {
             'duration-layout transition-[box-shadow,transform] ease-layout',
             variant === 'builder' && [
               'cursor-grab touch-none active:cursor-grabbing',
-              'hover:outline-2 hover:outline-offset-[6px] hover:outline-(--color-app-mode-active-temp) hover:outline-dashed'
+              'hover:outline-2 hover:outline-offset-[6px] hover:outline-warning-background hover:outline-dashed'
             ],
             block.id === draggingBlockId && [
               'z-20 scale-[1.02] shadow-2xl',
-              'outline-2 outline-offset-[6px] outline-(--color-app-mode-active-temp) outline-dashed'
+              'outline-2 outline-offset-[6px] outline-warning-background outline-dashed'
             ]
           )
         "
@@ -176,7 +176,7 @@ onUpdated(() => {
              pointer-events-none lets the drag machinery still see clicks. -->
         <div
           v-if="block.id === draggingBlockId"
-          class="pointer-events-none absolute -inset-1.5 z-10 rounded-layout-cell bg-(--color-app-mode-active-temp-wash)"
+          class="pointer-events-none absolute -inset-1.5 z-10 rounded-layout-cell bg-warning-background/10"
           aria-hidden="true"
         />
       </div>

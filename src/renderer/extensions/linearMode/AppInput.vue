@@ -103,12 +103,10 @@ function togglePromotion() {
               'flex shrink-0 items-center justify-center self-center',
               'rounded-lg border-[3px] shadow-sm',
               isPromoted
-                ? 'border-(--color-app-mode-active-temp) bg-(--color-app-mode-active-temp)'
+                ? 'border-warning-background bg-warning-background'
                 : [
-                    // Colors are TEMPORARY App Mode overrides — see
-                    // definitions in LayoutView.vue.
-                    'border-(--color-app-mode-accent-temp) bg-base-background',
-                    'group-hover:border-dashed group-hover:border-(--color-app-mode-active-temp)'
+                    'border-primary-background bg-base-background',
+                    'group-hover:border-dashed group-hover:border-warning-background'
                   ]
             )
           "
@@ -120,7 +118,7 @@ function togglePromotion() {
                thickened from the outside. -->
           <svg
             v-if="isPromoted"
-            class="size-3/4 text-(--color-app-mode-active-temp-fg)"
+            class="size-3/4 text-base-background"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -137,10 +135,10 @@ function togglePromotion() {
             cn(
               'pointer-events-none flex-1 self-stretch rounded-lg border-[3px]',
               isPromoted
-                ? 'border-(--color-app-mode-active-temp) bg-(--color-app-mode-active-temp-wash)'
+                ? 'border-warning-background bg-warning-background/10'
                 : [
-                    'border-(--color-app-mode-accent-temp)',
-                    'group-hover:border-dashed group-hover:border-(--color-app-mode-active-temp)'
+                    'border-primary-background',
+                    'group-hover:border-dashed group-hover:border-warning-background'
                   ]
             )
           "

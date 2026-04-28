@@ -40,8 +40,8 @@ const sizeStyle = computed(() => {
       // presets when the snap target changes.
       'pointer-events-none absolute z-20',
       'w-(--panel-dock-width,440px)',
-      'rounded-[10px] border-2 border-(--color-app-mode-accent-temp)',
-      'bg-(--color-app-mode-accent-temp-wash)',
+      'rounded-[10px] border-2 border-primary-background',
+      'bg-primary-background/30',
       'duration-layout transition-[top,bottom,left,right,max-height] ease-layout',
       presetClass
     ]"

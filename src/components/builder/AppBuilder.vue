@@ -220,7 +220,7 @@ const renderedInputCandidates = computed(() => {
               cn(
                 'fixed rounded-lg ring-2 ring-primary-background/60',
                 candidate.isSelected &&
-                  'bg-(--color-app-mode-active-temp-wash) ring-3 ring-(--color-app-mode-active-temp)'
+                  'bg-warning-background/10 ring-3 ring-warning-background'
               )
             "
           />
@@ -232,8 +232,8 @@ const renderedInputCandidates = computed(() => {
             :style="toValue(style)"
             :class="
               cn(
-                'fixed rounded-2xl ring-5 ring-(--color-app-mode-active-temp)',
-                !isSelected && 'ring-(--color-app-mode-active-temp-half)'
+                'fixed rounded-2xl ring-5 ring-warning-background',
+                !isSelected && 'ring-warning-background/50'
               )
             "
           >
@@ -243,7 +243,7 @@ const renderedInputCandidates = computed(() => {
                 :class="[
                   'pointer-events-auto absolute -top-1/2 -right-1/2',
                   'size-full cursor-pointer rounded-lg p-2',
-                  'bg-(--color-app-mode-active-temp)'
+                  'bg-warning-background'
                 ]"
                 @click.stop="appModeStore.removeSelectedOutput(key)"
                 @pointerdown.stop
@@ -251,7 +251,7 @@ const renderedInputCandidates = computed(() => {
                 <!-- Inline SVG (see AppInput.vue for rationale) so we
                      can set `stroke-width="3"` directly. -->
                 <svg
-                  class="size-full text-(--color-app-mode-active-temp-fg)"
+                  class="size-full text-base-background"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -269,7 +269,7 @@ const renderedInputCandidates = computed(() => {
                   'pointer-events-auto absolute -top-1/2 -right-1/2',
                   'size-full cursor-pointer rounded-lg',
                   'bg-component-node-background',
-                  'ring-4 ring-(--color-app-mode-active-temp-half) ring-inset'
+                  'ring-4 ring-warning-background/50 ring-inset'
                 ]"
                 @click.stop="appModeStore.toggleSelectedOutput(key)"
                 @pointerdown.stop

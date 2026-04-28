@@ -66,7 +66,7 @@ const existingOutput = computed(() => {
              block (1-col → 2-col) and back. Timeline reads as pause →
              drag-up → hold → drag-back → pause. -->
         <svg
-          class="drag-demo mx-auto w-3/4 max-w-sm text-(--color-app-mode-active-temp)"
+          class="drag-demo mx-auto w-3/4 max-w-sm text-warning-background"
           viewBox="0 0 240 144"
           aria-hidden="true"
         >
@@ -109,7 +109,7 @@ const existingOutput = computed(() => {
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
-          <span class="font-bold text-(--color-app-mode-active-temp) italic">
+          <span class="font-bold text-warning-background italic">
             {{ t('linearMode.arrange.atLeastOne') }}
           </span>
         </template>
@@ -124,9 +124,9 @@ const existingOutput = computed(() => {
       <Button
         size="lg"
         :class="[
-          'border bg-(--color-app-mode-accent-temp) text-white',
-          'border-(--color-app-mode-accent-temp-deep)',
-          'hover:bg-(--color-app-mode-accent-temp-deep)'
+          'border bg-primary-background text-white',
+          'border-primary-background-hover',
+          'hover:bg-primary-background-hover'
         ]"
         data-testid="linear-arrange-switch-to-outputs"
         @click="setMode('builder:outputs')"

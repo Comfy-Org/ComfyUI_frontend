@@ -278,11 +278,6 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
   Unscoped: Vue's `<Transition appear>` applies `panel-enter-*` to
   the child component's root, which a scoped selector can't reach
   without :deep(). The class prefix is unique to this transition.
-
-  Also hosts TEMPORARY App Mode accent tokens at :root so they reach
-  AppInput/AppOutput rings that teleport to <body>. Promote to
-  semantic design-system tokens when the palette stabilizes; each
-  call-site has a comment pointing back here.
 -->
 <style>
 .panel-enter-enter-active {
@@ -295,22 +290,5 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
   /* Slide from right edge to match the default right-dock preset —
      reads as "settling into position" rather than materializing. */
   transform: translateX(16px);
-}
-
-/* TEMPORARY App Mode tokens — accent (purple) replaces
-   `primary-background` for selectable affordances; active (yellow)
-   replaces `warning-background` for selected / drag-preview. Three
-   opacity variants because Tailwind's slash modifier doesn't compose
-   reliably with arbitrary CSS vars. The active-fg token is the
-   dark-on-yellow icon color (the design-system foreground tokens are
-   near-white and vanish against the bright chip). */
-:root {
-  --color-app-mode-accent-temp: #6366f1;
-  --color-app-mode-accent-temp-deep: #4338ca;
-  --color-app-mode-accent-temp-wash: rgb(99 102 241 / 0.3);
-  --color-app-mode-active-temp: #edfa78;
-  --color-app-mode-active-temp-wash: rgb(237 250 120 / 0.1);
-  --color-app-mode-active-temp-half: rgb(237 250 120 / 0.5);
-  --color-app-mode-active-temp-fg: #1f2937;
 }
 </style>
