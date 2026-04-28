@@ -1,8 +1,6 @@
 <template>
-  <!-- Color is the TEMPORARY App Mode accent — see definition in
-       LayoutView.vue (`--color-app-mode-accent-temp*`). -->
   <div
-    class="flex size-layout-cell shrink-0 items-center justify-center rounded-lg border border-(--color-app-mode-accent-temp-deep) bg-(--color-app-mode-accent-temp) text-white"
+    class="flex size-layout-cell shrink-0 items-center justify-center rounded-lg border border-white/8 bg-layout-cell-hover text-layout-text"
   >
     <span class="text-layout-xl font-bold">
       {{ index + 1 }}

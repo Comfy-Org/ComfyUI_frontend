@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
+import PreviewCard from '@/components/appMode/layout/PreviewCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
@@ -40,62 +41,58 @@ const existingOutput = computed(() => {
     v-else-if="hasOutputs"
     role="article"
     data-testid="linear-arrange-preview"
-    class="mx-auto flex size-full flex-col items-center justify-center gap-6 p-8"
+    class="mx-auto flex size-full flex-col items-center justify-center gap-4 p-8"
+    style="transform: translateX(calc(-0.5 * var(--sidebar-width, 0px)))"
   >
-    <!-- Square placeholder sized to match BuilderToolbar's width
-         so it reads as a vertical extension of the stepper above.
-         The toolbar is content-driven but its content is fixed
-         (3 i18n labels), so a hardcoded width is fine — bump in
-         lockstep with the toolbar if its content ever changes. The
-         translateX nudges the box onto the toolbar's viewport-
-         centered axis (the backdrop is sidebar-offset, which would
-         otherwise push the center sidebar-width/2 to the right). -->
-    <div
-      class="flex aspect-square w-132 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-(--color-app-mode-active-temp) p-12"
-      style="transform: translateX(calc(-0.5 * var(--sidebar-width, 0px)))"
-    >
-      <p class="m-0 text-3xl font-bold text-base-foreground">
-        {{ t('linearMode.arrange.outputs') }}
-      </p>
-      <p class="m-0 max-w-prose text-center text-lg text-base-foreground">
+    <!-- Two preview cards mirror the runtime's visual language — an
+         OutputWindow-style card on top for results, an AppPanel-
+         style card below for the inputs/blocks demo. The center
+         translateX nudges the stack onto the toolbar's viewport-
+         centered axis (backdrop is sidebar-offset). -->
+    <PreviewCard :title="t('linearMode.arrange.outputs')" class="w-132">
+      <p
+        class="m-0 max-w-prose px-6 py-8 text-left text-lg text-base-foreground"
+      >
         {{ t('linearMode.arrange.resultsLabel') }}
       </p>
-      <p class="m-0 max-w-prose text-center text-lg text-base-foreground">
-        {{ t('linearMode.arrange.dragHint') }}
-      </p>
-      <!-- Drag-to-reorder demo: bottom block lifts up beside the middle
-           block (1-col → 2-col) and back. Timeline reads as pause →
-           drag-up → hold → drag-back → pause; cubic-bezier(0.83, 0, 0.17, 1) smooths
-           every segment so moves accelerate out of rest and settle. -->
-      <svg
-        class="drag-demo mt-2 w-3/4 max-w-sm text-(--color-app-mode-active-temp)"
-        viewBox="0 0 240 144"
-        aria-hidden="true"
-      >
-        <!-- Panel chrome: matches the real panel header — collapse chevron
-             on the left, three-dot more-menu on the right. -->
-        <rect class="frame" x="4" y="4" width="232" height="136" rx="10" />
-        <line class="frame" x1="4" y1="28" x2="236" y2="28" />
-        <path class="frame" d="M14 15 L18 19 L22 15" />
-        <circle class="frame-dot" cx="210" cy="16" r="1.5" />
-        <circle class="frame-dot" cx="217" cy="16" r="1.5" />
-        <circle class="frame-dot" cx="224" cy="16" r="1.5" />
+    </PreviewCard>
 
-        <!-- Content blocks inside the panel — 12px margin on all sides,
-             8px gap between rows AND between side-by-side columns. -->
-        <rect x="16" y="40" width="208" height="24" rx="6" />
-        <rect class="shrinks" x="16" y="72" width="208" height="24" rx="6" />
-        <rect
-          class="mover shrinks"
-          x="16"
-          y="104"
-          width="208"
-          height="24"
-          rx="6"
-        />
-        <path class="cursor" d="M0 0 L0 16 L4 13 L7 19 L9 18 L6 12 L11 11 Z" />
-      </svg>
-    </div>
+    <PreviewCard :title="t('linearMode.arrange.inputs')" class="w-132">
+      <div class="flex flex-col items-stretch gap-4 p-6">
+        <p class="m-0 max-w-prose text-left text-lg text-base-foreground">
+          {{ t('linearMode.arrange.dragHint') }}
+        </p>
+        <!-- Drag-to-reorder demo: bottom block lifts up beside the middle
+             block (1-col → 2-col) and back. Timeline reads as pause →
+             drag-up → hold → drag-back → pause. -->
+        <svg
+          class="drag-demo mx-auto w-3/4 max-w-sm text-(--color-app-mode-active-temp)"
+          viewBox="0 0 240 144"
+          aria-hidden="true"
+        >
+          <rect class="frame" x="4" y="4" width="232" height="136" rx="10" />
+          <line class="frame" x1="4" y1="28" x2="236" y2="28" />
+          <path class="frame" d="M14 15 L18 19 L22 15" />
+          <circle class="frame-dot" cx="210" cy="16" r="1.5" />
+          <circle class="frame-dot" cx="217" cy="16" r="1.5" />
+          <circle class="frame-dot" cx="224" cy="16" r="1.5" />
+          <rect x="16" y="40" width="208" height="24" rx="6" />
+          <rect class="shrinks" x="16" y="72" width="208" height="24" rx="6" />
+          <rect
+            class="mover shrinks"
+            x="16"
+            y="104"
+            width="208"
+            height="24"
+            rx="6"
+          />
+          <path
+            class="cursor"
+            d="M0 0 L0 16 L4 13 L7 19 L9 18 L6 12 L11 11 Z"
+          />
+        </svg>
+      </div>
+    </PreviewCard>
   </div>
   <div
     v-else
