@@ -27,9 +27,10 @@ const {
   /** Whether to render the chevron toggle. */
   collapsible?: boolean
   menuEntries: MenuItem[]
-  expandLabel?: string
-  collapseLabel?: string
-  menuLabel?: string
+  /** Required so icon-only buttons always have accessible names. */
+  expandLabel: string
+  collapseLabel: string
+  menuLabel: string
 }>()
 
 const collapsed = defineModel<boolean>('collapsed', { default: false })

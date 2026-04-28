@@ -17,8 +17,8 @@
  * classify pointer position into columnBefore / columnAfter (edge
  * zones) or newRowBefore / newRowAfter (upper / lower mid).
  */
-import { computed, ref } from 'vue';
-import type { Ref } from 'vue';
+import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { BlockPos, DropTarget } from './panelTypes'
 import { usePointerDrag } from './usePointerDrag'
@@ -156,7 +156,6 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
   const { isDragging: isPastThreshold, start: startGen } = usePointerDrag({
     threshold: DRAG_THRESHOLD_PX,
     stopPropagation: true,
-    onStart: (e) => !(e.button !== 0 && e.pointerType === 'mouse'),
     onActivate: () => {
       if (pendingPos) draggingPos.value = { ...pendingPos }
     },
@@ -190,6 +189,9 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
   const isDragging = computed(() => isPastThreshold.value)
 
   function startDrag(pos: BlockPos, e: PointerEvent) {
+    // Gate before writing pendingPos / snapshot so a rejected press
+    // doesn't leak state into the next valid drag.
+    if (e.button !== 0 && e.pointerType === 'mouse') return
     pendingPos = pos
     // Snapshot the pre-drag layout — no reshuffle or FLIP has run yet,
     // so the DOM is in its stable original state.

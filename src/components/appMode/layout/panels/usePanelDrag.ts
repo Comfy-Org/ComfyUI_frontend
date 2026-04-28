@@ -4,17 +4,17 @@
  * caller commits on release. Drag activates only after the pointer
  * moves past `DRAG_THRESHOLD_PX` so a click on the header is a no-op.
  */
-import { ref } from 'vue';
-import type { Ref } from 'vue';
+import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { PanelPreset } from './panelTypes'
 import { usePointerDrag } from './usePointerDrag'
 
-// Half the dock panel width (matches --panel-dock-width: 440px).
-const PANEL_HALF_WIDTH = 220
 const DOCK_V_CENTER = 0.5 // fraction of viewport height
 const FLOAT_V_OFFSET = 200 // px from top/bottom for float corners
 const DRAG_THRESHOLD_PX = 5
+// Fallback if --panel-dock-width can't be read (SSR / token missing).
+const PANEL_WIDTH_FALLBACK = 440
 
 interface PresetAnchor {
   preset: PanelPreset
@@ -22,20 +22,31 @@ interface PresetAnchor {
   y: number
 }
 
-// Mirrors the CSS sidebar offset (panelPresetClasses) so hovering near
-// a left-anchored landing point actually snaps to it.
-function readSidebarWidth(): number {
-  if (typeof document === 'undefined') return 0
+// Read the named CSS variable from `:root` at runtime; returns NaN if
+// unavailable so callers can apply their own fallback. Used so the
+// snap-target math tracks rendered width when tokens change.
+function readRootVarPx(name: string): number {
+  if (typeof document === 'undefined') return NaN
   const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue('--sidebar-width')
+    .getPropertyValue(name)
     .trim()
-  const n = parseFloat(raw)
+  return parseFloat(raw)
+}
+
+function readSidebarWidth(): number {
+  const n = readRootVarPx('--sidebar-width')
   return Number.isFinite(n) ? n : 0
 }
 
+function readPanelHalfWidth(): number {
+  const n = readRootVarPx('--panel-dock-width')
+  return (Number.isFinite(n) ? n : PANEL_WIDTH_FALLBACK) / 2
+}
+
 function presetAnchors(vw: number, vh: number): PresetAnchor[] {
-  const rightX = vw - PANEL_HALF_WIDTH
-  const leftX = readSidebarWidth() + PANEL_HALF_WIDTH
+  const halfWidth = readPanelHalfWidth()
+  const rightX = vw - halfWidth
+  const leftX = readSidebarWidth() + halfWidth
   return [
     { preset: 'right-dock', x: rightX, y: vh * DOCK_V_CENTER },
     { preset: 'left-dock', x: leftX, y: vh * DOCK_V_CENTER },

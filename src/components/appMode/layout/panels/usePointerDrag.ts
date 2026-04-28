@@ -79,6 +79,9 @@ export function usePointerDrag(
   }
 
   function start(e: PointerEvent): void {
+    // Re-entrance guard: a second pointerdown before the first session
+    // ends would leak the prior pointer capture. Drop the new press.
+    if (activePointerId !== null) return
     if (opts.onStart?.(e) === false) return
     activePointerId = e.pointerId
     capturedEl = e.currentTarget as HTMLElement

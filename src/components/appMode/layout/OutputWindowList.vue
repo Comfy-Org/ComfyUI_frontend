@@ -159,11 +159,26 @@ async function loadAssetWorkflow(entry: OutputWindowEntry): Promise<void> {
 }
 
 async function rerunWindow(entry: OutputWindowEntry): Promise<void> {
-  await loadAssetWorkflow(entry)
+  try {
+    await loadAssetWorkflow(entry)
+  } catch (error) {
+    // Don't fall through to QueuePrompt against a stale graph if the
+    // asset's workflow couldn't be loaded.
+    toastErrorHandler(error)
+    return
+  }
   try {
     await commandStore.execute('Comfy.QueuePrompt', {
       metadata: { subscribe_to_run: false, trigger_source: 'linear' }
     })
+  } catch (error) {
+    toastErrorHandler(error)
+  }
+}
+
+async function reuseParams(entry: OutputWindowEntry): Promise<void> {
+  try {
+    await loadAssetWorkflow(entry)
   } catch (error) {
     toastErrorHandler(error)
   }
@@ -256,7 +271,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
         :class="BODY_ACTION_CLASS"
         :title="t('linearMode.reuseParameters')"
         :aria-label="t('linearMode.reuseParameters')"
-        @click="loadAssetWorkflow(entry)"
+        @click="reuseParams(entry)"
       >
         <i class="icon-[lucide--list-restart] size-4" />
       </button>

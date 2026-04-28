@@ -97,6 +97,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   function clear(): void {
     windows.value = []
     spawnCounter = 0
+    nextZ = 1
   }
 
   return {

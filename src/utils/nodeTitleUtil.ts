@@ -15,9 +15,15 @@ type ResolveNodeDisplayNameOptions = {
 
 /**
  * Short labels for well-known noisy node titles. Keeps the panel
- * subtitle readable when widgets sit in a two-column layout where
- * "Empty Latent Image" would truncate to "Empty Latent Ima…".
- * Keys are compared case-insensitively against the raw node title.
+ * subtitle readable in two-column layouts where "Empty Latent Image"
+ * would truncate to "Empty Latent Ima…". Compared case-insensitively
+ * against the raw node title.
+ *
+ * Known follow-up (CR): values are hard-coded English; non-English
+ * locales fall back to the raw title via the `??` chain in
+ * `friendlyNodeLabel`. Threading a translator (mirroring
+ * `resolveNodeDisplayName`) is the right path but needs new keys in
+ * every locale file — deferred to a separate PR.
  */
 const SHORT_NODE_LABELS: Record<string, string> = {
   'empty latent image': 'Image',

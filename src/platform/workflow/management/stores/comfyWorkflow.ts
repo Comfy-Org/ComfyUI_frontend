@@ -24,7 +24,7 @@ export interface InputWidgetConfig {
 
 export type LinearInput = [NodeId, string, InputWidgetConfig?]
 
-export interface LinearLayoutConfig {
+interface LinearLayoutConfig {
   /** Grid column count. Defaults to 4. */
   columns?: number
 }

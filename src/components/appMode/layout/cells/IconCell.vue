@@ -16,9 +16,9 @@ defineProps<{
   active?: boolean
   /** Whether the cell is disabled */
   disabled?: boolean
-  /** Click handler */
-  onActivate?: () => void | Promise<void>
 }>()
+
+const emit = defineEmits<{ activate: [] }>()
 </script>
 
 <template>
@@ -33,7 +33,7 @@ defineProps<{
     :aria-label="label"
     :title="label"
     :disabled="disabled"
-    @click="() => onActivate?.()"
+    @click="emit('activate')"
   >
     <i :class="[icon, 'size-5']" />
     <span

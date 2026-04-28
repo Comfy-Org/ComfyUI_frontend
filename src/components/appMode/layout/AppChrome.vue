@@ -248,7 +248,7 @@ function cellClass(cell: ChromeCell): string {
           icon="icon-[lucide--hammer]"
           :label="t('linearMode.appModeToolbar.appBuilder')"
           :disabled="!hasNodes"
-          :on-activate="enterBuilder"
+          @activate="enterBuilder"
         />
         <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
       </div>
@@ -274,7 +274,7 @@ function cellClass(cell: ChromeCell): string {
           icon="icon-[lucide--send]"
           :label="t('actionbar.share')"
           inline-label
-          :on-activate="openShare"
+          @activate="openShare"
           @pointerenter="prefetchShareDialog"
         />
         <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
@@ -321,7 +321,7 @@ function cellClass(cell: ChromeCell): string {
           v-if="cell.kind === 'nav-zoom-out'"
           icon="icon-[lucide--zoom-out]"
           :label="t('linearMode.zoomOut')"
-          :on-activate="navZoomOut"
+          @activate="navZoomOut"
         />
         <div
           v-else-if="cell.kind === 'nav-zoom-percent'"
@@ -337,13 +337,13 @@ function cellClass(cell: ChromeCell): string {
           v-else-if="cell.kind === 'nav-zoom-in'"
           icon="icon-[lucide--zoom-in]"
           :label="t('linearMode.zoomIn')"
-          :on-activate="navZoomIn"
+          @activate="navZoomIn"
         />
         <IconCell
           v-else-if="cell.kind === 'nav-zoom-fit'"
           icon="icon-[lucide--maximize]"
           :label="t('linearMode.resetView')"
-          :on-activate="navResetView"
+          @activate="navResetView"
         />
       </div>
     </div>

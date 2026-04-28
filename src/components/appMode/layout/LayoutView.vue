@@ -65,7 +65,14 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
     const dx = e.clientX - dragStart.x
     const dy = e.clientY - dragStart.y
     if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
-    bgRef.value?.setPointerCapture(dragStart.pointerId)
+    // Capture before flipping `dragging` so a thrown capture doesn't
+    // leave the handler in a half-state.
+    try {
+      bgRef.value?.setPointerCapture(dragStart.pointerId)
+    } catch {
+      // Some browsers reject capture on non-primary pointers; carry
+      // on without it — window listeners still see the events.
+    }
     dragging = true
   }
   appModeStore.panBy(e.movementX, e.movementY)

@@ -56,6 +56,6 @@ export function useOutputWindowSync(): void {
         if (matched) windowStore.attachAsset(w.id, matched)
       }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
   )
 }

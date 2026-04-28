@@ -69,8 +69,14 @@ export function useAppPanelLayout() {
       })
       if (!matchingWidget) return []
 
-      matchingWidget.slotMetadata = undefined
-      matchingWidget.nodeId = String(node.id)
+      // Shallow copy so the computed stays pure — `extractVueNodeData`
+      // is shared; mutating its widgets in-place leaks state to every
+      // other consumer and breaks the recompute → re-mutate cycle.
+      const widgetView = {
+        ...matchingWidget,
+        slotMetadata: undefined,
+        nodeId: String(node.id)
+      }
 
       // widget.options is a generic TOptions at the IBaseWidget
       // boundary; narrow via in-check before reading `multiline`.
@@ -87,7 +93,7 @@ export function useAppPanelLayout() {
           key: `${nodeId}:${widgetName}`,
           nodeData: {
             ...fullNodeData,
-            widgets: [matchingWidget]
+            widgets: [widgetView]
           },
           widget,
           node,
