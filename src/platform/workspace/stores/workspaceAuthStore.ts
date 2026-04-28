@@ -49,6 +49,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // State
   const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
   const workspaceToken = ref<string | null>(null)
+  const workspaceTokenExpiresAt = ref<number | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -80,6 +81,26 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     refreshTimerId = setTimeout(() => {
       void refreshToken()
     }, delay)
+  }
+
+  function scheduleWorkspaceContextClear(expiresAt: number): void {
+    stopRefreshTimer()
+    const delay = Math.max(0, expiresAt - Date.now())
+
+    refreshTimerId = setTimeout(() => {
+      if (workspaceTokenExpiresAt.value === expiresAt) {
+        clearWorkspaceContext()
+      }
+    }, delay)
+  }
+
+  function hasValidWorkspaceContext(): boolean {
+    return (
+      currentWorkspace.value !== null &&
+      workspaceToken.value !== null &&
+      workspaceTokenExpiresAt.value !== null &&
+      workspaceTokenExpiresAt.value > Date.now()
+    )
   }
 
   function persistToSession(
@@ -155,6 +176,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
       currentWorkspace.value = parseResult.data
       workspaceToken.value = token
+      workspaceTokenExpiresAt.value = expiresAt
       error.value = null
 
       scheduleTokenRefresh(expiresAt)
@@ -176,6 +198,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (currentWorkspace.value?.id !== workspaceId) {
       refreshRequestId++
     }
+    const capturedRequestId = refreshRequestId
 
     isLoading.value = true
     error.value = null
@@ -257,16 +280,29 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         role: data.role
       }
 
+      if (capturedRequestId !== refreshRequestId) {
+        return
+      }
+
       currentWorkspace.value = workspaceWithRole
       workspaceToken.value = data.token
+      workspaceTokenExpiresAt.value = expiresAt
 
       persistToSession(workspaceWithRole, data.token, expiresAt)
       scheduleTokenRefresh(expiresAt)
     } catch (err) {
-      error.value = err instanceof Error ? err : new Error(String(err))
-      throw error.value
+      const normalizedError =
+        err instanceof Error ? err : new Error(String(err))
+
+      if (capturedRequestId === refreshRequestId) {
+        error.value = normalizedError
+      }
+
+      throw normalizedError
     } finally {
-      isLoading.value = false
+      if (capturedRequestId === refreshRequestId) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -327,8 +363,24 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
         // Only clear context if this refresh is still for the current workspace
         if (capturedRequestId === refreshRequestId) {
-          console.error('Failed to refresh workspace token after retries:', err)
-          clearWorkspaceContext()
+          const currentTokenExpiresAt = workspaceTokenExpiresAt.value
+          if (
+            isTransientError &&
+            currentTokenExpiresAt !== null &&
+            hasValidWorkspaceContext()
+          ) {
+            console.error(
+              'Failed to refresh workspace token after retries; preserving current workspace token until expiry:',
+              err
+            )
+            scheduleWorkspaceContextClear(currentTokenExpiresAt)
+          } else {
+            console.error(
+              'Failed to refresh workspace token after retries:',
+              err
+            )
+            clearWorkspaceContext()
+          }
         }
       }
     }
@@ -353,6 +405,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     stopRefreshTimer()
     currentWorkspace.value = null
     workspaceToken.value = null
+    workspaceTokenExpiresAt.value = null
     error.value = null
     clearSessionStorage()
   }
