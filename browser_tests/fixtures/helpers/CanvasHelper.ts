@@ -156,6 +156,10 @@ export class CanvasHelper {
     )
   }
 
+  async getNodeTitleHeight(): Promise<number> {
+    return this.page.evaluate(() => window.LiteGraph!.NODE_TITLE_HEIGHT)
+  }
+
   /**
    * Hold `Control+Shift` and drag from `from` to `to` using page-absolute
    * coordinates.
