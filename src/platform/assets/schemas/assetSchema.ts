@@ -85,6 +85,15 @@ export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
 export const asyncUploadResponseSchema = zAsyncUploadResponse
 
+/**
+ * Identifier for a single asset record.
+ *
+ * Backed by `AssetItem.id` which the API serialises as a string. This alias
+ * names that primitive at use sites (services, stores, composables) without
+ * changing structural typing.
+ */
+export type AssetId = string
+
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>

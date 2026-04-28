@@ -4,12 +4,12 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { PromotedWidgetEntry } from '@e2e/helpers/promotedWidgets'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 import {
   getPromotedWidgetCount,
   getPromotedWidgetNames,
   getPromotedWidgets
-} from '@e2e/helpers/promotedWidgets'
+} from '@e2e/fixtures/utils/promotedWidgets'
 
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 const LEGACY_PREFIXED_WORKFLOW =
