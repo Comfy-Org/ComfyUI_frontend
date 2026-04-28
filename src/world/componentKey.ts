@@ -14,8 +14,17 @@ export interface ComponentKey<TData, TEntity extends EntityId> {
   readonly [componentKeyEntity]?: TEntity
 }
 
+const registeredNames = new Set<string>()
+
 export function defineComponentKey<TData, TEntity extends EntityId>(
   name: string
 ): ComponentKey<TData, TEntity> {
+  if (import.meta.env.DEV && registeredNames.has(name)) {
+    console.error(
+      `[world] ComponentKey name collision: "${name}" was already registered. ` +
+        `Two keys with the same name share storage and will silently overwrite each other.`
+    )
+  }
+  registeredNames.add(name)
   return { name } as ComponentKey<TData, TEntity>
 }

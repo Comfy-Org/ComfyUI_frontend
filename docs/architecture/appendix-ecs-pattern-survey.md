@@ -1,5 +1,9 @@
 # Appendix: ECS Pattern Survey
 
+_Note: cross-references to `temp/plans/world-consolidation.md` point to a
+working planning document that may not be present in all checkouts. The
+load-bearing claims are reproduced inline below._
+
 _A survey of mainstream Entity Component System libraries — bitECS, miniplex,
 koota, ECSY, and Bevy — captured during the world-consolidation analysis that
 shipped slice 1 of [ADR 0008](../adr/0008-entity-component-system.md). This
@@ -139,9 +143,13 @@ either would break
 [BaseWidget.\_state](../../src/lib/litegraph/src/widgets/BaseWidget.ts)
 shared reactive identity — the contract that lets DOM widget overrides,
 `useProcessedWidgets` memoization, and the 40+ extension ecosystem all
-read the same proxy. Our `setComponent(id, key, sharedRef)` is
-identity-preserving by design, and `widgetValueStore.registerWidget`
-returns the same proxy that `getComponent` returns
+read the same proxy. Our `setComponent(id, key, ref)` stores by reference
+and the inner `reactive(Map)` keeps a stable cached proxy per
+entity-component pair: every `getComponent` returns the same proxy,
+regardless of how many writes intervene. `widgetValueStore.registerWidget`
+returns that proxy (not the caller's input ref), so `BaseWidget._state`
+and every other reader observe the same object. Replace-on-write idioms
+would swap the cached proxy on each write and break that stability
 ([temp/plans/world-consolidation.md §3.1 step
 6](../../temp/plans/world-consolidation.md), reactive-identity test).
 
@@ -166,15 +174,19 @@ world-consolidation plan — copied here for proximity):
 
 ```ts
 /**
- * Storage strategy: AoS (per-entity reactive object reference) backed by
- * `reactive(Map)`. Component values are stored by reference; mutating a
- * value's fields propagates to all readers through Vue's reactive proxy.
- * `setComponent(id, key, ref)` is intentionally identity-preserving.
+ * `setComponent` stores values by reference (no clone). The inner
+ * `reactive(Map)` produces a single cached Vue proxy per entity-component
+ * pair: every `getComponent` call returns the same proxy, and mutations
+ * through it propagate to all readers. Note that the proxy is NOT `===`
+ * to the raw object passed to `setComponent` — read through `getComponent`
+ * (or a `registerWidget`-style helper that does so internally) and treat
+ * that proxy as canonical.
  *
- * NOT a sparse-set / archetype store. A future SoA migration would break
- * the shared-reactive-identity contract that BaseWidget._state and the
- * widgetValueStore facade rely on; do not refactor without revisiting
- * those consumers.
+ * `BaseWidget._state` and `widgetValueStore` rely on this stable-proxy
+ * invariant. Replace-on-write idioms (koota's `entity.set(...)`,
+ * miniplex's `world.add(entity)`) would swap the cached proxy on each
+ * write and break the contract; revisiting either consumer is required
+ * before changing storage semantics.
  */
 ```
 

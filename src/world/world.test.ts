@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { defineComponentKey } from './componentKey'
 import type { NodeEntityId, WidgetEntityId } from './entityIds'
@@ -29,13 +30,35 @@ describe('createWorld', () => {
     expect(world.getComponent(widgetId, TestWidgetThing)).toBeUndefined()
   })
 
-  it('preserves shared object identity (reactive bridging)', () => {
+  it('propagates mutations through the stored proxy', () => {
     const world = createWorld()
     const widgetId = widgetEntityId(graphId, 1, 'seed')
     const data = { value: 42 }
     world.setComponent(widgetId, TestWidgetThing, data)
     data.value = 99
     expect(world.getComponent(widgetId, TestWidgetThing)?.value).toBe(99)
+  })
+
+  it('returns the same proxy across reads of the same (id, key)', () => {
+    const world = createWorld()
+    const widgetId = widgetEntityId(graphId, 1, 'seed')
+    world.setComponent(widgetId, TestWidgetThing, { value: 42 })
+
+    const a = world.getComponent(widgetId, TestWidgetThing)
+    const b = world.getComponent(widgetId, TestWidgetThing)
+    expect(a).toBe(b)
+  })
+
+  it('reacts when subscribing before the first component for a key exists', () => {
+    const world = createWorld()
+    const widgetId = widgetEntityId(graphId, 1, 'seed')
+    const observed = computed(
+      () => world.getComponent(widgetId, TestWidgetThing)?.value
+    )
+
+    expect(observed.value).toBeUndefined()
+    world.setComponent(widgetId, TestWidgetThing, { value: 42 })
+    expect(observed.value).toBe(42)
   })
 
   it('iterates entities for a given component key', () => {
