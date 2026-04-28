@@ -207,11 +207,20 @@ describe('i18n', () => {
   })
 
   describe('resolveSupportedLocale', () => {
-    it('returns the input when it is a shipped tag', () => {
+    it('returns the canonical tag when the input is shipped', () => {
       expect(resolveSupportedLocale('en')).toBe('en')
       expect(resolveSupportedLocale('ja')).toBe('ja')
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+    })
+
+    it('matches case-insensitively per BCP-47 and returns canonical casing', () => {
+      // Older browsers / OS configs may emit lowercase region tags.
+      expect(resolveSupportedLocale('pt-br')).toBe('pt-BR')
+      expect(resolveSupportedLocale('PT-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('zh-tw')).toBe('zh-TW')
+      expect(resolveSupportedLocale('ZH-TW')).toBe('zh-TW')
+      expect(resolveSupportedLocale('EN')).toBe('en')
     })
 
     it('falls back to the base tag when the full tag is unshipped', () => {

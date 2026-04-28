@@ -118,20 +118,28 @@ const SUPPORTED_LOCALES = [
 
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 
-const supportedLocaleSet: ReadonlySet<string> = new Set(SUPPORTED_LOCALES)
+// Lowercased lookup map → canonical tag, since BCP-47 matching is
+// case-insensitive (e.g. `pt-br` from older browsers must match `pt-BR`).
+const supportedLocaleByLower = new Map<string, SupportedLocale>(
+  SUPPORTED_LOCALES.map((locale) => [locale.toLowerCase(), locale])
+)
 
 /**
  * Resolve a BCP-47 language tag to a locale we ship messages for, with
  * graceful fallback. Tries the full tag (preserves `zh-TW`, `pt-BR`),
- * then the base tag (`zh`, `pt`), then `'en'`.
+ * then the base tag (`zh`, `pt`), then `'en'`. Matching is case-insensitive
+ * but the returned tag is always in canonical casing.
  */
 export function resolveSupportedLocale(
   input: string | undefined | null
 ): SupportedLocale {
   if (!input) return 'en'
-  if (supportedLocaleSet.has(input)) return input as SupportedLocale
-  const base = input.split('-')[0]
-  if (supportedLocaleSet.has(base)) return base as SupportedLocale
+  const normalized = input.toLowerCase()
+  const exact = supportedLocaleByLower.get(normalized)
+  if (exact) return exact
+  const base = normalized.split('-')[0]
+  const baseMatch = supportedLocaleByLower.get(base)
+  if (baseMatch) return baseMatch
   return 'en'
 }
 
