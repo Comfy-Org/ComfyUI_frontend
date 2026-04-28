@@ -223,6 +223,49 @@ describe('resolveOutputAssetItems', () => {
     expect(results[0].display_name).toBeUndefined()
   })
 
+  it('FE-297: deduplicates outputs that share the same composite output key', async () => {
+    // Regression for FE-297: cloud media asset panel duplicates one asset
+    // while scrolling expanded large jobs.
+    //
+    // When the backend returns two output records that resolve to the same
+    // composite outputKey (`<nodeId>-<subfolder>-<filename>`), the synthetic
+    // AssetItem ids collide, Vue's keyed v-for in VirtualGrid reuses a single
+    // DOM node for the colliding rows, and the same asset visibly replaces
+    // distinct neighbours as the list scrolls. Defensive contract: a single
+    // job's resolved asset list must contain each composite key at most once.
+    const first = createOutput({
+      filename: 'ComfyUI_00001_.png',
+      nodeId: '9',
+      subfolder: '',
+      url: 'https://example.com/first.png'
+    })
+    const duplicate = createOutput({
+      filename: 'ComfyUI_00001_.png',
+      nodeId: '9',
+      subfolder: '',
+      url: 'https://example.com/duplicate.png'
+    })
+    const distinct = createOutput({
+      filename: 'ComfyUI_00002_.png',
+      nodeId: '9',
+      subfolder: '',
+      url: 'https://example.com/distinct.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-fe-297',
+      nodeId: '9',
+      subfolder: '',
+      outputCount: 3,
+      allOutputs: [first, duplicate, distinct]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(2)
+    const ids = results.map((asset) => asset.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
   it('keeps root outputs with empty subfolders', async () => {
     const output = createOutput({
       filename: 'root.png',
