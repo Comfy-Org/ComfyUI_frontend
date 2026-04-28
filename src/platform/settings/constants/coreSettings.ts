@@ -1,3 +1,4 @@
+import { resolveSupportedLocale } from '@/i18n'
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -443,7 +444,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'pt-BR', text: 'Português (BR)' },
       { value: 'fa', text: 'فارسی' }
     ],
-    defaultValue: () => navigator.language.split('-')[0] || 'en'
+    defaultValue: () => resolveSupportedLocale(navigator.language)
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',

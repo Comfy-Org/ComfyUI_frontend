@@ -190,11 +190,10 @@ watchEffect(() => {
 watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
   if (locale) {
-    // Load the locale dynamically if not already loaded
     try {
-      await loadLocale(locale)
-      // Type assertion is safe here as loadLocale validates the locale exists
-      i18n.global.locale.value = locale as typeof i18n.global.locale.value
+      // loadLocale clamps unsupported tags to a locale we actually ship.
+      const resolved = await loadLocale(locale)
+      i18n.global.locale.value = resolved as typeof i18n.global.locale.value
     } catch (error) {
       console.error(`Failed to switch to locale "${locale}":`, error)
     }
