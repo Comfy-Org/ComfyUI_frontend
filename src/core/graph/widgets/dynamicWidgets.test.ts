@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -9,6 +9,9 @@ import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
+type TestAutogrowNode = LGraphNode & {
+  comfyDynamic: { autogrow: Record<string, unknown> }
+}
 
 const { addNodeInput } = useLitegraphService()
 
@@ -181,6 +184,45 @@ describe('Autogrow', () => {
     node.disconnectInput(0)
     await nextTick()
     expect(node.inputs.length).toBe(5)
+  })
+  test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
+    const graph = new LGraph()
+    const node = testNode() as TestAutogrowNode
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+
+    const rafCallbacks: FrameRequestCallback[] = []
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        rafCallbacks.push(callback)
+        return rafCallbacks.length
+      })
+
+    try {
+      connectInput(node, 0, graph)
+      expect(node.inputs.length).toBe(2)
+
+      rafCallbacks.shift()?.(0)
+
+      node.disconnectInput(0)
+
+      const staleDisconnectCallback = rafCallbacks.shift()
+      expect(staleDisconnectCallback).toBeDefined()
+
+      delete node.comfyDynamic.autogrow['0']
+
+      const callbackCountBeforeFlush = onConnectionsChange.mock.calls.length
+      staleDisconnectCallback?.(0)
+
+      expect(onConnectionsChange).toHaveBeenCalledTimes(
+        callbackCountBeforeFlush
+      )
+    } finally {
+      requestAnimationFrameSpy.mockRestore()
+    }
   })
   test('Multi-group autogrow shifts second group indices on first group growth', () => {
     const graph = new LGraph()

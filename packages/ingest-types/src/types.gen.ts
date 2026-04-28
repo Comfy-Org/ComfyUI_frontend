@@ -3825,14 +3825,14 @@ export type CreateAssetExportData = {
     /**
      * Strategy for naming files in the ZIP:
      * - group_by_job_id: Group assets by job ID as a parent directory (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4/ComfyUI_00001_.png")
-     * - prepend_job_id: Prepend job ID to filenames for uniqueness (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4_ComfyUI_00001_.png")
+     * - group_by_job_time: Group assets by job execution time as parent directories
      * - preserve: Use original asset names, skip duplicates (first one wins)
      * - asset_id: Use the asset ID as the filename (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4.png")
      *
      */
     naming_strategy?:
       | 'group_by_job_id'
-      | 'prepend_job_id'
+      | 'group_by_job_time'
       | 'preserve'
       | 'asset_id'
     /**

@@ -9,10 +9,13 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
     "test:visual": "playwright test --project visual",
-    "test:visual:update": "playwright test --project visual --update-snapshots"
+    "test:visual:update": "playwright test --project visual --update-snapshots",
+    "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
@@ -23,7 +26,8 @@
     "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",
@@ -32,7 +36,9 @@
     "@tailwindcss/vite": "catalog:",
     "astro": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "nx": {
     "tags": [
@@ -87,6 +93,22 @@
         "options": {
           "cwd": "apps/website",
           "command": "astro check"
+        }
+      },
+      "test:unit": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/website",
+          "command": "vitest run"
+        }
+      },
+      "test:coverage": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/website",
+          "command": "vitest run --coverage"
         }
       },
       "test:e2e": {

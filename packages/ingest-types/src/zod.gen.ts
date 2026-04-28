@@ -1818,7 +1818,7 @@ export const zCreateAssetExportData = z.object({
     job_ids: z.array(z.string()).optional(),
     asset_ids: z.array(z.string()).optional(),
     naming_strategy: z
-      .enum(['group_by_job_id', 'prepend_job_id', 'preserve', 'asset_id'])
+      .enum(['group_by_job_id', 'group_by_job_time', 'preserve', 'asset_id'])
       .optional(),
     job_asset_name_filters: z.record(z.array(z.string()).min(1)).optional()
   }),

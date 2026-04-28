@@ -53,29 +53,44 @@ describe('parseIsoDateSafe', () => {
   })
 
   it('normalizes fractional seconds longer than 3 digits', () => {
-    const date = parseIsoDateSafe('2026-04-18T10:04:55.6513Z')
-    expect(date?.toISOString()).toBe('2026-04-18T10:04:55.651Z')
+    withStrictMillisecondParser((normalizedValues) => {
+      const date = parseIsoDateSafe('2026-04-18T10:04:55.6513Z')
+      expect(date?.toISOString()).toBe('2026-04-18T10:04:55.651Z')
+      expect(normalizedValues).toEqual(['2026-04-18T10:04:55.651Z'])
+    })
   })
 
   it('handles fractional seconds without timezone suffix', () => {
-    const date = parseIsoDateSafe('2026-04-18T10:04:55.6513')
-    expect(date).not.toBeNull()
-    expect(Number.isNaN(date!.getTime())).toBe(false)
+    withStrictMillisecondParser((normalizedValues) => {
+      const date = parseIsoDateSafe('2026-04-18T10:04:55.6513')
+      expect(date).not.toBeNull()
+      expect(Number.isNaN(date!.getTime())).toBe(false)
+      expect(normalizedValues).toEqual(['2026-04-18T10:04:55.651'])
+    })
   })
 
   it('handles offset timezones with long fractional seconds', () => {
-    const date = parseIsoDateSafe('2026-04-18T10:04:55.6513+09:00')
-    expect(date?.toISOString()).toBe('2026-04-18T01:04:55.651Z')
+    withStrictMillisecondParser((normalizedValues) => {
+      const date = parseIsoDateSafe('2026-04-18T10:04:55.6513+09:00')
+      expect(date?.toISOString()).toBe('2026-04-18T01:04:55.651Z')
+      expect(normalizedValues).toEqual(['2026-04-18T10:04:55.651+09:00'])
+    })
   })
 
   it('handles negative-offset timezones with long fractional seconds', () => {
-    const date = parseIsoDateSafe('2026-04-18T10:04:55.987654-05:00')
-    expect(date?.toISOString()).toBe('2026-04-18T15:04:55.987Z')
+    withStrictMillisecondParser((normalizedValues) => {
+      const date = parseIsoDateSafe('2026-04-18T10:04:55.987654-05:00')
+      expect(date?.toISOString()).toBe('2026-04-18T15:04:55.987Z')
+      expect(normalizedValues).toEqual(['2026-04-18T10:04:55.987-05:00'])
+    })
   })
 
   it('handles the full 9-digit nanosecond precision Go can emit', () => {
-    const date = parseIsoDateSafe('2026-04-18T10:04:55.123456789Z')
-    expect(date?.toISOString()).toBe('2026-04-18T10:04:55.123Z')
+    withStrictMillisecondParser((normalizedValues) => {
+      const date = parseIsoDateSafe('2026-04-18T10:04:55.123456789Z')
+      expect(date?.toISOString()).toBe('2026-04-18T10:04:55.123Z')
+      expect(normalizedValues).toEqual(['2026-04-18T10:04:55.123Z'])
+    })
   })
 
   it('passes through timestamps without any fractional seconds', () => {

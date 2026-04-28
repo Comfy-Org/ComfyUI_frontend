@@ -301,7 +301,10 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       inputs: [{ name: 'value', type: 'number' }]
     })
 
-    const { node } = createNodeWithWidget('TestNode', 42)
+    const SOURCE_DEFAULT = 42
+    const LEGACY_NOISE = 999
+
+    const { node } = createNodeWithWidget('TestNode', SOURCE_DEFAULT)
     subgraph.add(node)
     subgraph.inputNode.slots[0].connect(node.inputs[0], node)
 
@@ -317,14 +320,46 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       order: 0,
       flags: {},
       properties: { proxyWidgets: [['-1', 'widget']] },
-      widgets_values: [999]
+      widgets_values: [LEGACY_NOISE]
     })
 
-    // LOAD invariant: stale positional widgets_values must not leak into the
-    // promoted view — it falls back to the inner widget's own value (42).
-    expect(instance.widgets?.[0].value).toBe(42)
-    // SAVE invariant: re-serialized output drops the dead widgets_values.
+    const widget = instance.widgets?.[0]
+    expect(widget?.value).toBe(SOURCE_DEFAULT)
+    expect(widget?.serializeValue?.(instance, 0)).toBe(SOURCE_DEFAULT)
     expect(instance.serialize().widgets_values).toBeUndefined()
+  })
+
+  it('does not corrupt unbound promoted widgets when widgets_values length mismatches view count (regression for #10849)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const SOURCE_DEFAULT = 42
+    const LEGACY_NOISE_A = 111
+    const LEGACY_NOISE_B = 222
+
+    const { node } = createNodeWithWidget('TestNode', SOURCE_DEFAULT)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 803 })
+    instance.configure({
+      id: 803,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [LEGACY_NOISE_A, LEGACY_NOISE_B]
+    })
+
+    const widget = instance.widgets?.[0]
+    expect(widget?.value).toBe(SOURCE_DEFAULT)
+    expect(widget?.value).not.toBe(LEGACY_NOISE_A)
   })
 
   it('serialize succeeds when widget value is uncloneable', () => {

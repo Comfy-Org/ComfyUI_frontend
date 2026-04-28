@@ -17,7 +17,7 @@ interface Props {
 const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
-  ogImage = '/og-default.png',
+  ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
 } = Astro.props
 
@@ -57,7 +57,7 @@ const websiteJsonLd = {
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html lang={locale} class="overflow-x-clip">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
