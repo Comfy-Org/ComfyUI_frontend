@@ -59,11 +59,11 @@
                 {{ t('maskEditor.maskOpacity') }}
               </span>
               <Slider
-                :model-value="store.maskOpacity"
+                :model-value="[Math.round(store.maskOpacity * 100)]"
                 class="my-1 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
                 :min="0"
-                :max="1"
-                :step="0.01"
+                :max="100"
+                :step="1"
                 @update:model-value="onMaskOpacityChange"
               />
             </div>
@@ -155,7 +155,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from 'primevue/slider'
+import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -241,13 +241,14 @@ const onBaseImageLayerVisibilityChange = (event: Event) => {
   }
 }
 
-const onMaskOpacityChange = (value: number | number[] | undefined) => {
-  const numValue = Array.isArray(value) ? value[0] : (value ?? 0)
-  store.setMaskOpacity(numValue)
+const onMaskOpacityChange = (value: number[] | undefined) => {
+  if (!value?.length) return
+  const numValue = value[0]
+  store.setMaskOpacity(numValue / 100)
 
   const maskCanvas = store.maskCanvas
-  if (maskCanvas) {
-    maskCanvas.style.opacity = String(numValue)
+  if (maskCanvas && store.maskBlendMode !== MaskBlendMode.Negative) {
+    maskCanvas.style.opacity = String(numValue / 100)
   }
 
   maskLayerVisible.value = numValue !== 0

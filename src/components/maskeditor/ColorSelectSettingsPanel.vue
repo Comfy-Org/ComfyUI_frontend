@@ -13,20 +13,16 @@
           <input
             :value="store.colorSelectTolerance"
             type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
+            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
             min="0"
             max="255"
             step="1"
             @input="onToleranceChangeInput"
           />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >px</span
-          >
         </div>
       </div>
       <Slider
-        :model-value="store.colorSelectTolerance"
+        :model-value="[store.colorSelectTolerance]"
         class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
         :min="0"
         :max="255"
@@ -57,7 +53,7 @@
         </div>
       </div>
       <Slider
-        :model-value="store.selectionOpacity"
+        :model-value="[store.selectionOpacity]"
         class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
         :min="0"
         :max="100"
@@ -122,20 +118,16 @@
           <input
             :value="store.maskTolerance"
             type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
+            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
             min="0"
             max="255"
             step="1"
             @input="onMaskToleranceChangeInput"
           />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >px</span
-          >
         </div>
       </div>
       <Slider
-        :model-value="store.maskTolerance"
+        :model-value="[store.maskTolerance]"
         class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
         :min="0"
         :max="255"
@@ -147,10 +139,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from 'primevue/slider'
+import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -170,17 +162,17 @@ const methodDropdownOpen = ref(false)
 
 const methodOptions = Object.values(ColorComparisonMethod)
 
-const methodMenuItems = methodOptions.map((method) => ({
-  id: method,
-  label: method,
-  icon:
-    store.colorComparisonMethod === method ? 'icon-[lucide--check]' : undefined,
-  command: () => onMethodChange(method)
-}))
+const methodMenuItems = computed(() =>
+  methodOptions.map((method) => ({
+    id: method,
+    label: method,
+    command: () => onMethodChange(method)
+  }))
+)
 
-const onToleranceChange = (value: number | number[] | undefined) => {
-  const numValue = Array.isArray(value) ? value[0] : (value ?? 0)
-  store.setColorSelectTolerance(numValue)
+const onToleranceChange = (value: number[] | undefined) => {
+  if (!value?.length) return
+  store.setColorSelectTolerance(value[0])
 }
 
 const onToleranceChangeInput = (event: Event) => {
@@ -188,9 +180,9 @@ const onToleranceChangeInput = (event: Event) => {
   store.setColorSelectTolerance(value)
 }
 
-const onSelectionOpacityChange = (value: number | number[] | undefined) => {
-  const numValue = Array.isArray(value) ? value[0] : (value ?? 0)
-  store.setSelectionOpacity(numValue)
+const onSelectionOpacityChange = (value: number[] | undefined) => {
+  if (!value?.length) return
+  store.setSelectionOpacity(value[0])
 }
 
 const onMethodChange = (method: ColorComparisonMethod) => {
@@ -215,9 +207,9 @@ const onMaskBoundaryChange = (value: boolean) => {
   store.maskBoundary = value
 }
 
-const onMaskToleranceChange = (value: number | number[] | undefined) => {
-  const numValue = Array.isArray(value) ? value[0] : (value ?? 0)
-  store.setMaskTolerance(numValue)
+const onMaskToleranceChange = (value: number[] | undefined) => {
+  if (!value?.length) return
+  store.setMaskTolerance(value[0])
 }
 
 const onMaskToleranceChangeInput = (event: Event) => {

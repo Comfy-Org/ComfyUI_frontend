@@ -9,10 +9,12 @@
           showDelay: 300,
           hideDelay: 300
         }"
-        :class="[
-          'maskEditor_toolPanelContainer',
-          { maskEditor_toolPanelContainerSelected: currentTool === tool }
-        ]"
+        :class="
+          cn(
+            'maskEditor_toolPanelContainer',
+            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
+          )
+        "
         @click="onToolSelect(tool)"
       >
         <div
@@ -61,6 +63,7 @@ import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { iconsHtml } from '@/extensions/core/maskeditor/constants'
 import { Tools, allTools } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const { toolManager } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>

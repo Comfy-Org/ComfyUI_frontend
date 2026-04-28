@@ -23,11 +23,7 @@
         {{ t('maskEditor.redo') }}
       </button>
 
-      <DropdownMenuRoot
-        v-model:open="imageDropdownOpen"
-        :modal="false"
-        :dismissible="false"
-      >
+      <DropdownMenuRoot v-model:open="imageDropdownOpen" :modal="false">
         <DropdownMenuTrigger as-child>
           <button
             type="button"
@@ -82,14 +78,10 @@
         <i class="icon-[lucide--check] size-4" />
         {{ saveButtonText }}
       </button>
-      <button
-        type="button"
-        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary-background px-3 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
-        @click="handleCancel"
-      >
+      <Button variant="secondary" class="gap-1.5 px-3" @click="handleCancel">
         <i class="icon-[lucide--x] size-4" />
         {{ t('g.cancel') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -104,6 +96,7 @@ import {
   DropdownMenuTrigger
 } from 'reka-ui'
 
+import Button from '@/components/ui/button/Button.vue'
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
@@ -219,6 +212,11 @@ const imageMenuItems = [
 ]
 </script>
 
+<!--
+  TODO: The following style rule targets WorkflowActionsList internal elements.
+  Consider removing it and passing appropriate classes via WorkflowActionsList
+  props if the component exposes such an API.
+-->
 <style scoped>
 :deep(.workflow-actions-list-item span) {
   font-size: 0.875rem;
