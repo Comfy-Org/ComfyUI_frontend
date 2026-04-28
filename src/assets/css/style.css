@@ -1,17 +1,9 @@
 @import '@comfyorg/design-system/css/style.css';
 
-/* App Mode chrome tokens. `header-fill` overrides the design-system
-   default (50/50 mix is too light against our dark canvas) to a
-   25/75 midpoint. `--app-mode-go-*` / `--app-mode-stop-*` are global
-   because RunCell and OutputWindow's overlay sit in sibling subtrees;
-   pending a product/design call on promoting to semantic tokens. */
+/* Run/Stop button colors — temporary, pending product/design feedback
+   on promoting to semantic tokens. Global because RunCell and
+   OutputWindow's stop overlay sit in sibling subtrees. */
 :root {
-  --color-layout-header-fill: color-mix(
-    in srgb,
-    var(--color-layout-cell) 25%,
-    var(--color-layout-canvas) 75%
-  );
-
   --app-mode-go-bg: #279252;
   --app-mode-go-bg-hover: #35a361;
   --app-mode-go-border: #2c7c49;

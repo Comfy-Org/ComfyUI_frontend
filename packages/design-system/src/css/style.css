@@ -330,8 +330,8 @@
   );
   --color-layout-header-fill: color-mix(
     in srgb,
-    var(--color-layout-cell) 50%,
-    var(--color-layout-canvas) 50%
+    var(--color-layout-cell) 25%,
+    var(--color-layout-canvas) 75%
   );
   --color-layout-grid-dot: color-mix(
     in srgb,
