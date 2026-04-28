@@ -57,6 +57,12 @@ export interface TopbarBadge {
    * Optional tooltip text to show on hover
    */
   tooltip?: string
+  /**
+   * Optional links rendered as clickable anchors inside the popover.
+   * External URLs (starting with "http") open in a new tab; internal
+   * paths (e.g. "/connect") navigate within the SPA.
+   */
+  popoverLinks?: Array<{ label: string; url: string }>
 }
 
 /*

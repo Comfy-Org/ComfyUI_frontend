@@ -42,6 +42,19 @@
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
+        <template v-if="badge.popoverLinks?.length">
+          <hr class="border-border-default" />
+          <a
+            v-for="link in badge.popoverLinks"
+            :key="link.url"
+            :href="link.url"
+            :target="link.url.startsWith('http') ? '_blank' : undefined"
+            :rel="link.url.startsWith('http') ? 'noopener' : undefined"
+            class="text-xs text-blue-400 hover:text-blue-300 hover:underline"
+          >
+            {{ link.label }}
+          </a>
+        </template>
       </div>
     </Popover>
   </div>
@@ -96,6 +109,19 @@
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
+        <template v-if="badge.popoverLinks?.length">
+          <hr class="border-border-default" />
+          <a
+            v-for="link in badge.popoverLinks"
+            :key="link.url"
+            :href="link.url"
+            :target="link.url.startsWith('http') ? '_blank' : undefined"
+            :rel="link.url.startsWith('http') ? 'noopener' : undefined"
+            class="text-xs text-blue-400 hover:text-blue-300 hover:underline"
+          >
+            {{ link.label }}
+          </a>
+        </template>
       </div>
     </Popover>
   </div>
@@ -103,10 +129,15 @@
   <!-- Full mode: Icon + Label + Text -->
   <div
     v-else
-    v-tooltip="badge.tooltip"
-    class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
-    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-3']"
+    v-tooltip="badge.popoverLinks?.length ? undefined : badge.tooltip"
+    class="relative flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
+    :class="[
+      { 'flex-row-reverse': reverseOrder },
+      noPadding ? '' : 'px-3',
+      badge.popoverLinks?.length ? clickableClasses : ''
+    ]"
     :style="menuBackgroundStyle"
+    @click="badge.popoverLinks?.length ? togglePopover($event) : undefined"
   >
     <i
       v-if="iconClass"
@@ -123,6 +154,30 @@
     <div class="font-inter text-sm" :class="textClasses">
       {{ badge.text }}
     </div>
+    <Popover
+      v-if="badge.popoverLinks?.length"
+      ref="popover"
+      append-to="body"
+      :auto-z-index="true"
+      :base-z-index="1000"
+      :dismissable="true"
+      :close-on-escape="true"
+      unstyled
+      :pt="popoverPt"
+    >
+      <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
+        <a
+          v-for="link in badge.popoverLinks"
+          :key="link.url"
+          :href="link.url"
+          :target="link.url.startsWith('http') ? '_blank' : undefined"
+          :rel="link.url.startsWith('http') ? 'noopener' : undefined"
+          class="text-xs text-blue-400 hover:text-blue-300 hover:underline"
+        >
+          {{ link.label }}
+        </a>
+      </div>
+    </Popover>
   </div>
 </template>
 <script setup lang="ts">

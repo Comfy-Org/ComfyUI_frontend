@@ -8,6 +8,7 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isBackendReachable } from '@/platform/connectionPanel/backendReachable'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -29,13 +30,17 @@ const isFileProtocol = window.location.protocol === 'file:'
  * Determine base path for the router.
  * - Electron: always root
  * - Cloud: use Vite's BASE_URL (configured at build time)
- * - Standard web (including reverse proxy subpaths): use window.location.pathname
- *   to support deployments like http://mysite.com/ComfyUI/
+ * - Standard web: a deploy directory pathname ends with `/`
+ *   (e.g. `/ComfyUI/`) — use it as base to support reverse-proxy subpaths.
+ *   A SPA route pathname does not end with `/` (e.g. `/connect`) — fall back
+ *   to BASE_URL so the route doesn't get appended to itself.
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
   if (isCloud) return import.meta.env?.BASE_URL || '/'
-  return window.location.pathname
+  const pathname = window.location.pathname
+  if (pathname.endsWith('/')) return pathname
+  return import.meta.env?.BASE_URL || '/'
 }
 
 const basePath = getBasePath()
@@ -66,6 +71,12 @@ const router = createRouter({
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
+            // Redirect to /connect when no ComfyUI backend is reachable
+            // (e.g. static deployments like Cloudflare Pages preview)
+            if (!(await isBackendReachable())) {
+              return next('/connect')
+            }
+
             // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
@@ -82,6 +93,11 @@ const router = createRouter({
           component: () => import('@/views/UserSelectView.vue')
         }
       ]
+    },
+    {
+      path: '/connect',
+      name: 'ConnectionPanel',
+      component: () => import('@/views/ConnectionPanelView.vue')
     }
   ],
 

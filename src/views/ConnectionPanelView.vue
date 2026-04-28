@@ -1,0 +1,598 @@
+<template>
+  <BaseViewTemplate dark>
+    <main
+      class="relative my-8 flex w-full max-w-lg flex-col gap-6 rounded-lg bg-(--comfy-menu-bg) p-8 shadow-lg"
+    >
+      <header class="flex flex-col gap-2">
+        <h1 class="text-xl font-semibold text-neutral-100">
+          {{ t('connectionPanel.title') }}
+        </h1>
+        <p class="text-sm text-neutral-400">
+          {{ t('connectionPanel.subtitle') }}
+        </p>
+        <aside
+          v-if="prNumber"
+          class="mt-1 flex flex-col gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200"
+        >
+          <p class="font-medium">
+            {{ t('connectionPanel.previewWarningTitle') }}
+          </p>
+          <p class="text-amber-200/85">
+            {{ t('connectionPanel.previewWarningBody') }}
+          </p>
+          <i18n-t
+            keypath="connectionPanel.previewProvenance"
+            tag="p"
+            class="text-amber-200/85"
+          >
+            <template #pr>
+              <a
+                :href="prUrl"
+                target="_blank"
+                rel="noopener"
+                class="underline hover:text-amber-100"
+                >#{{ prNumber }}</a
+              >
+            </template>
+            <template #commit>
+              <a
+                :href="commitUrl"
+                target="_blank"
+                rel="noopener"
+                class="underline hover:text-amber-100"
+                ><code>{{ commitShort }}</code></a
+              >
+            </template>
+            <template #author>
+              <a
+                v-if="prAuthor"
+                :href="authorUrl"
+                target="_blank"
+                rel="noopener"
+                class="underline hover:text-amber-100"
+                >@{{ prAuthor }}</a
+              >
+              <span v-else>{{
+                t('connectionPanel.previewUnknownAuthor')
+              }}</span>
+            </template>
+          </i18n-t>
+          <p class="font-medium text-amber-100">
+            {{ t('connectionPanel.previewTrustWarning') }}
+          </p>
+        </aside>
+      </header>
+
+      <!-- Backend URL input -->
+      <section class="flex flex-col gap-2">
+        <label for="backend-url" class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.backendUrl') }}
+        </label>
+        <div class="flex gap-2">
+          <input
+            id="backend-url"
+            v-model="backendUrl"
+            type="url"
+            :placeholder="DEFAULT_BACKEND_URL"
+            class="flex h-10 w-full min-w-0 appearance-none rounded-lg border-none bg-neutral-800 px-4 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
+            @keyup.enter="testConnection"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            :loading="isTesting"
+            :disabled="isTesting"
+            @click="testConnection"
+          >
+            {{ t('connectionPanel.test') }}
+          </Button>
+        </div>
+      </section>
+
+      <!-- Connection status -->
+      <section
+        v-if="httpStatus !== null || wsStatus !== null"
+        role="status"
+        aria-live="polite"
+        class="flex flex-col gap-2 rounded-md bg-neutral-800/50 p-3"
+      >
+        <h2
+          class="text-xs font-medium tracking-wide text-neutral-400 uppercase"
+        >
+          {{ t('connectionPanel.status') }}
+        </h2>
+        <div class="flex gap-4 text-sm">
+          <span class="flex items-center gap-1.5">
+            <span
+              :class="
+                cn(
+                  'inline-block size-2 rounded-full',
+                  httpStatus === true && 'bg-green-500',
+                  httpStatus === false && 'bg-red-500',
+                  httpStatus === null && 'bg-neutral-600'
+                )
+              "
+            />
+            {{ t('connectionPanel.http') }}
+            {{ httpStatus === true ? '✓' : httpStatus === false ? '✗' : '—' }}
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span
+              :class="
+                cn(
+                  'inline-block size-2 rounded-full',
+                  wsStatus === true && 'bg-green-500',
+                  wsStatus === false && 'bg-red-500',
+                  wsStatus === null && 'bg-neutral-600'
+                )
+              "
+            />
+            {{ t('connectionPanel.ws') }}
+            {{ wsStatus === true ? '✓' : wsStatus === false ? '✗' : '—' }}
+          </span>
+        </div>
+        <p v-if="connectionError" class="text-xs text-red-400">
+          {{ connectionError }}
+        </p>
+        <p
+          v-if="httpStatus === true && wsStatus === true"
+          class="text-xs text-green-400"
+        >
+          {{ t('connectionPanel.connected') }}
+        </p>
+
+        <!-- Backend cloud-API base + API key -->
+        <div
+          v-if="backendCloudBase"
+          class="flex flex-col gap-3 border-t border-neutral-700 pt-2"
+        >
+          <p class="text-xs text-neutral-400">
+            <span class="text-neutral-500"
+              >{{ t('connectionPanel.backendCloud') }}
+            </span>
+            <code
+              class="ml-1 rounded-sm bg-neutral-900 px-1 py-0.5 text-neutral-200"
+              >{{ backendCloudBase }}</code
+            >
+          </p>
+          <p v-if="cloudMismatch" class="text-xs text-amber-400">
+            {{
+              t('connectionPanel.cloudMismatch', {
+                frontend: frontendCloudBase
+              })
+            }}
+          </p>
+
+          <!-- API key input — hidden when --disable-api-nodes -->
+          <div v-if="!isApiNodeDisabled" class="flex flex-col gap-1.5">
+            <label for="api-key" class="text-xs font-medium text-neutral-300">
+              {{ t('connectionPanel.apiKey') }}
+              <span class="ml-1 font-normal text-neutral-500">{{
+                t('connectionPanel.apiKeyOptional')
+              }}</span>
+            </label>
+            <div class="flex gap-2">
+              <input
+                id="api-key"
+                v-model="apiKeyInput"
+                type="password"
+                :placeholder="t('connectionPanel.apiKeyPlaceholder')"
+                autocomplete="current-password"
+                class="flex h-8 w-full min-w-0 appearance-none rounded-md border-none bg-neutral-900 px-3 py-1.5 text-xs text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
+                @keyup.enter="testApiKey"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                :loading="isTestingApiKey"
+                :disabled="isTestingApiKey || !apiKeyInput.trim()"
+                @click="testApiKey"
+              >
+                {{ t('connectionPanel.test') }}
+              </Button>
+            </div>
+            <p v-if="apiKeyStatus === 'ok'" class="text-xs text-green-400">
+              {{ t('connectionPanel.apiKeyTestOk') }}
+            </p>
+            <p
+              v-else-if="apiKeyStatus === 'error'"
+              class="text-xs text-red-400"
+            >
+              {{ t('connectionPanel.apiKeyTestError') }}
+            </p>
+            <p v-else class="text-xs text-neutral-500">
+              {{ t('connectionPanel.apiKeyHint') }}
+              <a
+                v-if="apiKeyPageUrl"
+                :href="apiKeyPageUrl"
+                target="_blank"
+                rel="noopener"
+                class="ml-1 text-neutral-400 underline decoration-dotted hover:text-neutral-200"
+              >
+                {{ t('connectionPanel.getApiKeyLink') }}
+              </a>
+            </p>
+          </div>
+          <p v-else class="text-xs text-neutral-500">
+            {{ t('connectionPanel.apiKeyDisabledNotice') }}
+          </p>
+        </div>
+
+        <!-- Connect & Go button -->
+        <Button
+          v-if="httpStatus === true"
+          variant="primary"
+          size="lg"
+          class="mt-2 w-full"
+          @click="connectAndGo"
+        >
+          {{ t('connectionPanel.connectAndGo') }}
+        </Button>
+      </section>
+
+      <!-- Quick Start with Comfy CLI -->
+      <section class="flex flex-col gap-3">
+        <h2 class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.quickStart') }}
+        </h2>
+        <p class="text-xs text-neutral-400">
+          {{ t('connectionPanel.quickStartDescription') }}
+        </p>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step1InstallUv') }}
+            </span>
+            <CopyCodeBlock
+              text="curl -LsSf https://astral.sh/uv/install.sh | sh"
+            />
+            <CopyCodeBlock
+              text='powershell -c "irm https://astral.sh/uv/install.ps1 | iex"'
+            />
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.uvNote') }}
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step2InstallComfyui') }}
+            </span>
+            <CopyCodeBlock
+              text="uv pip install comfy-cli --system && comfy install"
+            />
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.managerIncludedNote') }}
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step3Launch') }}
+            </span>
+            <CopyCodeBlock :text="launchCmd" />
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.corsOriginNote') }}
+            </p>
+          </div>
+        </div>
+
+        <p class="text-xs text-neutral-500">
+          {{ t('connectionPanel.corsNote') }}
+        </p>
+
+        <aside
+          class="flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-800/50 p-3"
+        >
+          <h3 class="text-xs font-medium text-neutral-300">
+            {{ t('connectionPanel.managerTitle') }}
+          </h3>
+          <p class="text-xs text-neutral-400">
+            {{ t('connectionPanel.managerDescription') }}
+          </p>
+          <a
+            href="https://github.com/Comfy-Org/ComfyUI-Manager"
+            target="_blank"
+            rel="noopener"
+            class="text-xs text-neutral-300 underline hover:text-neutral-100"
+          >
+            {{ t('connectionPanel.managerLearnMore') }}
+          </a>
+        </aside>
+      </section>
+
+      <!-- Alternative: manual python / pip -->
+      <details class="group">
+        <summary
+          class="cursor-pointer text-sm font-medium text-neutral-400 hover:text-neutral-300"
+        >
+          {{ t('connectionPanel.altManualSetup') }}
+        </summary>
+        <div class="mt-2 flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <p class="text-xs text-neutral-400">
+              {{ t('connectionPanel.altPipDescription') }}
+            </p>
+            <CopyCodeBlock text="pip install comfy-cli" />
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.altPipNote') }}
+            </p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <p class="text-xs text-neutral-400">
+              {{ t('connectionPanel.altManagerDescription') }}
+            </p>
+            <CopyCodeBlock
+              text="git clone https://github.com/Comfy-Org/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <p class="text-xs text-neutral-400">
+              {{ t('connectionPanel.guideDescription') }}
+            </p>
+            <CopyCodeBlock :text="pythonMainCmd" />
+          </div>
+        </div>
+      </details>
+
+      <!-- Local network access -->
+      <section class="flex flex-col gap-3">
+        <h2 class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.localAccess') }}
+        </h2>
+        <p class="text-xs text-neutral-400">
+          {{ t('connectionPanel.localAccessDescription') }}
+        </p>
+        <div class="flex flex-col gap-1">
+          <p class="text-xs text-neutral-400">
+            {{ t('connectionPanel.localAccessListenDescription') }}
+          </p>
+          <CopyCodeBlock :text="launchListenCmd" />
+          <p class="text-xs text-neutral-500">
+            {{ t('connectionPanel.localAccessListenNote') }}
+          </p>
+        </div>
+      </section>
+
+      <footer
+        class="flex items-center justify-between border-t border-neutral-700 pt-4 text-xs text-neutral-500"
+      >
+        <span
+          :title="buildTooltip"
+          class="cursor-help underline decoration-dotted"
+        >
+          {{ buildLabel }}
+        </span>
+        <a
+          :href="repoUrl"
+          target="_blank"
+          rel="noopener"
+          class="text-neutral-400 hover:text-neutral-200"
+        >
+          {{ t('connectionPanel.source') }}
+        </a>
+      </footer>
+    </main>
+  </BaseViewTemplate>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import Button from '@/components/ui/button/Button.vue'
+import CopyCodeBlock from '@/components/connection/CopyCodeBlock.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import {
+  getComfyApiBaseUrl,
+  getPlatformBaseUrlForApiBase
+} from '@/config/comfyApi'
+import { resolveBackendCloudBase } from '@/platform/connectionPanel/resolveBackendCloudBase'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+type SystemStats = {
+  system?: { argv?: string[]; comfy_api_base?: string }
+}
+
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
+const { t } = useI18n()
+
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8188'
+const STORAGE_KEY = 'comfyui-preview-backend-url'
+const REPO = 'https://github.com/Comfy-Org/ComfyUI_frontend'
+const corsOrigin = window.location.origin
+
+const backendUrl = ref(localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
+const API_KEY_STORAGE_KEY = 'comfy_api_key'
+const apiKeyInput = ref(localStorage.getItem(API_KEY_STORAGE_KEY) ?? '')
+
+const launchCmd = `comfy launch -- --enable-cors-header="${corsOrigin}"`
+const launchListenCmd = `comfy launch -- --listen --enable-cors-header="${corsOrigin}"`
+const pythonMainCmd = `python main.py --enable-cors-header="${corsOrigin}"`
+
+const isTesting = ref(false)
+const httpStatus = ref<boolean | null>(null)
+const wsStatus = ref<boolean | null>(null)
+const connectionError = ref('')
+const backendCloudBase = ref<string | null>(null)
+const isApiNodeDisabled = ref(false)
+
+const isTestingApiKey = ref(false)
+const apiKeyStatus = ref<'idle' | 'ok' | 'error'>('idle')
+const frontendCloudBase = stripTrailingSlash(getComfyApiBaseUrl())
+const cloudMismatch = computed(
+  () =>
+    backendCloudBase.value !== null &&
+    backendCloudBase.value !== frontendCloudBase
+)
+const apiKeyPageUrl = computed(() => {
+  if (!backendCloudBase.value) return null
+  const platform = getPlatformBaseUrlForApiBase(backendCloudBase.value)
+  return platform ? `${platform}/profile/api-keys` : null
+})
+
+function normalizeUrl(raw: string): string {
+  let url = raw.trim()
+  if (!url) url = DEFAULT_BACKEND_URL
+  if (!/^https?:\/\//i.test(url)) url = 'http://' + url
+  return url.replace(/\/+$/, '')
+}
+
+async function fetchSystemStats(base: string): Promise<SystemStats | null> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
+  try {
+    const res = await fetch(`${base}/api/system_stats`, {
+      signal: controller.signal
+    })
+    if (!res.ok) return null
+    return (await res.json()) as SystemStats
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function testWs(base: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const wsUrl = new URL(base)
+    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+    wsUrl.pathname = '/ws'
+    wsUrl.search = ''
+    wsUrl.hash = ''
+    const ws = new WebSocket(wsUrl.toString())
+    const timeout = setTimeout(() => {
+      ws.close()
+      resolve(false)
+    }, 5000)
+    ws.addEventListener('open', () => {
+      clearTimeout(timeout)
+      ws.close()
+      resolve(true)
+    })
+    ws.addEventListener('error', () => {
+      clearTimeout(timeout)
+      resolve(false)
+    })
+  })
+}
+
+async function testConnection() {
+  isTesting.value = true
+  httpStatus.value = null
+  wsStatus.value = null
+  connectionError.value = ''
+  backendCloudBase.value = null
+
+  const base = normalizeUrl(backendUrl.value)
+  backendUrl.value = base
+  localStorage.setItem(STORAGE_KEY, base)
+
+  try {
+    const [stats, ws] = await Promise.all([
+      fetchSystemStats(base),
+      testWs(base)
+    ])
+    httpStatus.value = stats !== null
+    wsStatus.value = ws
+    backendCloudBase.value = stats
+      ? resolveBackendCloudBase(stats.system)
+      : null
+    isApiNodeDisabled.value =
+      stats?.system?.argv?.includes('--disable-api-nodes') ?? false
+
+    if (stats === null && !ws) {
+      connectionError.value = t('connectionPanel.errorUnreachable')
+    } else if (stats === null) {
+      connectionError.value = t('connectionPanel.errorHttpFailed')
+    } else if (!ws) {
+      connectionError.value = t('connectionPanel.errorWsFailed')
+    }
+  } catch {
+    httpStatus.value = false
+    wsStatus.value = false
+    connectionError.value = t('connectionPanel.errorUnreachable')
+  } finally {
+    isTesting.value = false
+  }
+}
+
+async function testApiKey() {
+  const key = apiKeyInput.value.trim()
+  if (!key) return
+  isTestingApiKey.value = true
+  apiKeyStatus.value = 'idle'
+  const base = backendCloudBase.value ?? frontendCloudBase
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(`${base}/customers`, {
+      method: 'POST',
+      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+      signal: controller.signal
+    })
+    apiKeyStatus.value = res.ok ? 'ok' : 'error'
+  } catch {
+    apiKeyStatus.value = 'error'
+  } finally {
+    clearTimeout(timeout)
+    isTestingApiKey.value = false
+  }
+}
+
+function connectAndGo() {
+  const base = normalizeUrl(backendUrl.value)
+  localStorage.setItem(STORAGE_KEY, base)
+  const trimmedKey = apiKeyInput.value.trim()
+  if (trimmedKey) {
+    localStorage.setItem(API_KEY_STORAGE_KEY, trimmedKey)
+  }
+  // Full page reload so ComfyApi constructor picks up the new backend URL
+  window.location.href = import.meta.env.BASE_URL || '/'
+}
+
+const version = __COMFYUI_FRONTEND_VERSION__
+const commit = __COMFYUI_FRONTEND_COMMIT__
+const branch = __CI_BRANCH__
+const prNumber = __CI_PR_NUMBER__
+const prAuthor = __CI_PR_AUTHOR__
+const runId = __CI_RUN_ID__
+const jobId = __CI_JOB_ID__
+
+const commitShort = commit ? commit.slice(0, 8) : ''
+const prUrl = prNumber ? `${REPO}/pull/${prNumber}` : REPO
+const commitUrl = commit ? `${REPO}/commit/${commit}` : REPO
+const authorUrl = prAuthor ? `https://github.com/${prAuthor}` : ''
+
+const buildLabel = computed(() => {
+  if (prNumber) return t('connectionPanel.buildPr', { prNumber })
+  if (branch) return branch
+  return t('connectionPanel.buildVersion', { version })
+})
+
+const buildTooltip = computed(() => {
+  const parts = [t('connectionPanel.tooltipVersion', { version })]
+  if (commit)
+    parts.push(
+      t('connectionPanel.tooltipCommit', { commit: commit.slice(0, 8) })
+    )
+  if (branch) parts.push(t('connectionPanel.tooltipBranch', { branch }))
+  if (runId) parts.push(t('connectionPanel.tooltipRunId', { runId }))
+  if (jobId) parts.push(t('connectionPanel.tooltipJobId', { jobId }))
+  return parts.join('\n')
+})
+
+const repoUrl = computed(() => {
+  if (prNumber) return `${REPO}/pull/${prNumber}`
+  if (branch) return `${REPO}/tree/${branch}`
+  return REPO
+})
+
+onMounted(() => {
+  document.getElementById('splash-loader')?.remove()
+})
+</script>
