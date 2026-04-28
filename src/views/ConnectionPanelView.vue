@@ -89,6 +89,27 @@
         </div>
       </section>
 
+      <!-- API Key input (optional) -->
+      <section class="flex flex-col gap-2">
+        <label for="api-key" class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.apiKey') }}
+          <span class="ml-1 text-xs font-normal text-neutral-500">{{
+            t('connectionPanel.apiKeyOptional')
+          }}</span>
+        </label>
+        <input
+          id="api-key"
+          v-model="apiKeyInput"
+          type="password"
+          :placeholder="t('connectionPanel.apiKeyPlaceholder')"
+          autocomplete="current-password"
+          class="flex h-10 w-full min-w-0 appearance-none rounded-lg border-none bg-neutral-800 px-4 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
+        />
+        <p class="text-xs text-neutral-500">
+          {{ t('connectionPanel.apiKeyHint') }}
+        </p>
+      </section>
+
       <!-- Connection status -->
       <section
         v-if="httpStatus !== null || wsStatus !== null"
@@ -361,6 +382,8 @@ const REPO = 'https://github.com/Comfy-Org/ComfyUI_frontend'
 const corsOrigin = window.location.origin
 
 const backendUrl = ref(localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
+const API_KEY_STORAGE_KEY = 'comfy_api_key'
+const apiKeyInput = ref(localStorage.getItem(API_KEY_STORAGE_KEY) ?? '')
 
 const launchCmd = `comfy launch -- --enable-cors-header="${corsOrigin}"`
 const launchListenCmd = `comfy launch -- --listen --enable-cors-header="${corsOrigin}"`
@@ -471,6 +494,10 @@ async function testConnection() {
 function connectAndGo() {
   const base = normalizeUrl(backendUrl.value)
   localStorage.setItem(STORAGE_KEY, base)
+  const trimmedKey = apiKeyInput.value.trim()
+  if (trimmedKey) {
+    localStorage.setItem(API_KEY_STORAGE_KEY, trimmedKey)
+  }
   // Full page reload so ComfyApi constructor picks up the new backend URL
   window.location.href = import.meta.env.BASE_URL || '/'
 }
