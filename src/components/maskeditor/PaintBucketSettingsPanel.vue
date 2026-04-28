@@ -4,92 +4,53 @@
       {{ t('maskEditor.paintBucketSettings') }}
     </h3>
 
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-(--descrip-text)">
-          {{ t('maskEditor.tolerance') }}
-        </span>
-        <div class="relative">
-          <input
-            :value="store.paintBucketTolerance"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
-            min="0"
-            max="255"
-            step="1"
-            @input="onToleranceChangeInput"
-          />
-        </div>
-      </div>
-      <Slider
-        :model-value="[store.paintBucketTolerance]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="255"
-        :step="1"
-        @update:model-value="onToleranceChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.tolerance')"
+      :model-value="store.paintBucketTolerance"
+      :min="0"
+      :max="255"
+      :step="1"
+      @update:model-value="onToleranceChange"
+    />
 
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-(--descrip-text)">
-          {{ t('maskEditor.fillOpacity') }}
-        </span>
-        <div class="relative">
-          <input
-            :value="store.fillOpacity"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
-            min="0"
-            max="100"
-            step="1"
-            @input="onFillOpacityChangeInput"
-          />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >%</span
-          >
-        </div>
-      </div>
-      <Slider
-        :model-value="[store.fillOpacity]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="100"
-        :step="1"
-        @update:model-value="onFillOpacityChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.fillOpacity')"
+      :model-value="fillOpacity"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      input-id="fill-opacity-input"
+      @update:model-value="onFillOpacityChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@/components/ui/slider/Slider.vue'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
+import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
 
-const onToleranceChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  store.setPaintBucketTolerance(value[0])
-}
+const fillOpacity = computed({
+  get: () => Math.round(store.fillOpacity * 100),
+  set: (value: number) => {
+    if (Number.isNaN(value)) return
+    store.setFillOpacity(value / 100)
+  }
+})
 
-const onToleranceChangeInput = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
+const onToleranceChange = (value: number) => {
+  if (Number.isNaN(value)) return
   store.setPaintBucketTolerance(value)
 }
 
-const onFillOpacityChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  store.setFillOpacity(value[0])
-}
-
-const onFillOpacityChangeInput = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
-  store.setFillOpacity(value)
+const onFillOpacityChange = (value: number) => {
+  fillOpacity.value = value
 }
 </script>

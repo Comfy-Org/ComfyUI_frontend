@@ -72,141 +72,68 @@
         <div class="relative">
           <input
             id="brush-thickness-input"
-            v-model.number="brushSize"
+            :value="brushSize"
             type="number"
             class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
-            :min="1"
-            :max="250"
-            :step="1"
-            :aria-label="t('maskEditor.thickness')"
+            min="1"
+            max="250"
+            step="1"
+            @input="onThicknessInput"
           />
           <span
             class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >px</span
           >
+            px
+          </span>
         </div>
       </div>
       <Slider
-        :model-value="[brushSizeSliderValue]"
+        id="brush-thickness-input-slider"
+        :model-value="[thicknessSliderValue]"
+        aria-labelledby="brush-thickness-input"
         class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
         :min="0"
         :max="1"
         :step="0.001"
-        :aria-label="t('maskEditor.thickness')"
-        @update:model-value="onBrushSizeSliderChange"
+        @update:model-value="onThicknessSliderChange"
       />
     </div>
 
     <!-- Opacity -->
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <label
-          for="brush-opacity-input"
-          class="text-left font-sans text-xs text-(--descrip-text)"
-        >
-          {{ t('maskEditor.opacity') }}
-        </label>
-        <div class="relative">
-          <input
-            id="brush-opacity-input"
-            v-model.number="brushOpacity"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
-            :min="0"
-            :max="100"
-            :step="1"
-            :aria-label="t('maskEditor.opacity')"
-          />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >%</span
-          >
-        </div>
-      </div>
-      <Slider
-        :model-value="[brushOpacity]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="100"
-        :step="1"
-        :aria-label="t('maskEditor.opacity')"
-        @update:model-value="onBrushOpacityChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.opacity')"
+      :model-value="brushOpacity"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      input-id="brush-opacity-input"
+      @update:model-value="onBrushOpacityChange"
+    />
 
     <!-- Hardness -->
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <label
-          for="brush-hardness-input"
-          class="text-left font-sans text-xs text-(--descrip-text)"
-        >
-          {{ t('maskEditor.hardness') }}
-        </label>
-        <div class="relative">
-          <input
-            id="brush-hardness-input"
-            v-model.number="brushHardness"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
-            :min="0"
-            :max="100"
-            :step="1"
-            :aria-label="t('maskEditor.hardness')"
-          />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >%</span
-          >
-        </div>
-      </div>
-      <Slider
-        :model-value="[brushHardness]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="100"
-        :step="1"
-        :aria-label="t('maskEditor.hardness')"
-        @update:model-value="onBrushHardnessChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.hardness')"
+      :model-value="brushHardness"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      input-id="brush-hardness-input"
+      @update:model-value="onBrushHardnessChange"
+    />
 
     <!-- Step Size -->
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <label
-          for="brush-stepsize-input"
-          class="text-left font-sans text-xs text-(--descrip-text)"
-        >
-          {{ t('maskEditor.stepSize') }}
-        </label>
-        <div class="relative">
-          <input
-            id="brush-stepsize-input"
-            v-model.number="brushStepSize"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
-            :min="1"
-            :max="100"
-            :step="1"
-            :aria-label="t('maskEditor.stepSize')"
-          />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >px</span
-          >
-        </div>
-      </div>
-      <Slider
-        :model-value="[brushStepSize]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="1"
-        :max="100"
-        :step="1"
-        :aria-label="t('maskEditor.stepSize')"
-        @update:model-value="onBrushStepSizeChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.stepSize')"
+      :model-value="brushStepSize"
+      :min="1"
+      :max="100"
+      :step="1"
+      suffix="px"
+      input-id="brush-stepsize-input"
+      @update:model-value="onBrushStepSizeChange"
+    />
   </div>
 </template>
 
@@ -219,6 +146,8 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { cn } from '@/utils/tailwindUtil'
+
+import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
@@ -234,7 +163,7 @@ const brushSize = computed({
 
 const rawSliderValue = ref<number | null>(null)
 
-const brushSizeSliderValue = computed({
+const thicknessSliderValue = computed({
   get: () => {
     if (rawSliderValue.value !== null) {
       const cachedSize = Math.round(Math.pow(250, rawSliderValue.value))
@@ -282,24 +211,29 @@ const setBrushShape = (shape: BrushShape) => {
   store.brushSettings.type = shape
 }
 
-const onBrushSizeSliderChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  brushSizeSliderValue.value = value[0]
+const onBrushOpacityChange = (value: number) => {
+  brushOpacity.value = value
 }
 
-const onBrushOpacityChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  brushOpacity.value = value[0]
+const onBrushHardnessChange = (value: number) => {
+  brushHardness.value = value
 }
 
-const onBrushHardnessChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  brushHardness.value = value[0]
+const onBrushStepSizeChange = (value: number) => {
+  brushStepSize.value = value
 }
 
-const onBrushStepSizeChange = (value: number[] | undefined) => {
+const onThicknessSliderChange = (value: number[] | undefined) => {
   if (!value?.length) return
-  brushStepSize.value = value[0]
+  const parsed = Number(value[0])
+  if (Number.isNaN(parsed)) return
+  thicknessSliderValue.value = parsed
+}
+
+const onThicknessInput = (event: Event) => {
+  const parsed = Number((event.target as HTMLInputElement).value)
+  if (Number.isNaN(parsed)) return
+  brushSize.value = parsed
 }
 
 /* Reset */

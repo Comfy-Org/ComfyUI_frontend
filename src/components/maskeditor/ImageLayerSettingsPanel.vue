@@ -54,19 +54,16 @@
             :collision-padding="10"
             class="z-2102 rounded-lg border border-border-subtle bg-base-background px-3 py-4 shadow-interface"
           >
-            <div class="flex w-48 flex-col gap-3">
-              <span class="text-left font-sans text-xs text-(--descrip-text)">
-                {{ t('maskEditor.maskOpacity') }}
-              </span>
-              <Slider
-                :model-value="[Math.round(store.maskOpacity * 100)]"
-                class="my-1 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-                :min="0"
-                :max="100"
-                :step="1"
-                @update:model-value="onMaskOpacityChange"
-              />
-            </div>
+            <SliderField
+              :label="t('maskEditor.maskOpacity')"
+              :model-value="maskOpacityPercent"
+              :min="0"
+              :max="100"
+              :step="1"
+              suffix="%"
+              input-id="mask-opacity-slider"
+              @update:model-value="onMaskOpacityChange"
+            />
           </DropdownMenuContent>
         </DropdownMenuPortal>
       </DropdownMenuRoot>
@@ -155,7 +152,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -168,6 +164,8 @@ import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import type { ImageLayer } from '@/extensions/core/maskeditor/types'
 import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
+import SliderField from './controls/SliderField.vue'
 
 const { toolManager } = defineProps<{
   toolManager?: ReturnType<typeof useToolManager>
@@ -182,6 +180,8 @@ const opacityDropdownOpen = ref(false)
 const maskLayerVisible = ref(true)
 const paintLayerVisible = ref(true)
 const baseImageLayerVisible = ref(true)
+
+const maskOpacityPercent = computed(() => Math.round(store.maskOpacity * 100))
 
 const blendModeLabels: Record<MaskBlendMode, string> = {
   [MaskBlendMode.Black]: t('maskEditor.black'),
@@ -241,17 +241,16 @@ const onBaseImageLayerVisibilityChange = (event: Event) => {
   }
 }
 
-const onMaskOpacityChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  const numValue = value[0]
-  store.setMaskOpacity(numValue / 100)
+const onMaskOpacityChange = (percent: number) => {
+  if (Number.isNaN(percent)) return
+  store.setMaskOpacity(percent / 100)
 
   const maskCanvas = store.maskCanvas
   if (maskCanvas && store.maskBlendMode !== MaskBlendMode.Negative) {
-    maskCanvas.style.opacity = String(numValue / 100)
+    maskCanvas.style.opacity = String(percent / 100)
   }
 
-  maskLayerVisible.value = numValue !== 0
+  maskLayerVisible.value = percent !== 0
 }
 
 const setActiveLayer = (layer: ImageLayer) => {

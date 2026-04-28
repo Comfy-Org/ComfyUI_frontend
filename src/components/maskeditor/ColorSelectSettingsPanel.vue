@@ -4,63 +4,26 @@
       {{ t('maskEditor.colorSelectSettings') }}
     </h3>
 
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-(--descrip-text)">
-          {{ t('maskEditor.tolerance') }}
-        </span>
-        <div class="relative">
-          <input
-            :value="store.colorSelectTolerance"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
-            min="0"
-            max="255"
-            step="1"
-            @input="onToleranceChangeInput"
-          />
-        </div>
-      </div>
-      <Slider
-        :model-value="[store.colorSelectTolerance]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="255"
-        :step="1"
-        @update:model-value="onToleranceChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.tolerance')"
+      :model-value="colorTolerancePercent"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      @update:model-value="onToleranceChange"
+    />
 
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-(--descrip-text)">
-          {{ t('maskEditor.selectionOpacity') }}
-        </span>
-        <div class="relative">
-          <input
-            :value="store.selectionOpacity"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 pr-8 text-center text-sm"
-            min="0"
-            max="100"
-            step="1"
-            @input="onSelectionOpacityChangeInput"
-          />
-          <span
-            class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground"
-            >%</span
-          >
-        </div>
-      </div>
-      <Slider
-        :model-value="[store.selectionOpacity]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="100"
-        :step="1"
-        @update:model-value="onSelectionOpacityChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.selectionOpacity')"
+      :model-value="store.selectionOpacity"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      input-id="selection-opacity-input"
+      @update:model-value="onSelectionOpacityChange"
+    />
 
     <ToggleControl
       :label="t('maskEditor.livePreview')"
@@ -109,32 +72,15 @@
       @update:model-value="onMaskBoundaryChange"
     />
 
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-(--descrip-text)">
-          {{ t('maskEditor.maskTolerance') }}
-        </span>
-        <div class="relative">
-          <input
-            :value="store.maskTolerance"
-            type="number"
-            class="border-p-form-field-border-color text-input-text w-20 [appearance:textfield] rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
-            min="0"
-            max="255"
-            step="1"
-            @input="onMaskToleranceChangeInput"
-          />
-        </div>
-      </div>
-      <Slider
-        :model-value="[store.maskTolerance]"
-        class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
-        :min="0"
-        :max="255"
-        :step="1"
-        @update:model-value="onMaskToleranceChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.maskTolerance')"
+      :model-value="maskTolerancePercent"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      @update:model-value="onMaskToleranceChange"
+    />
   </div>
 </template>
 
@@ -142,7 +88,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -153,6 +98,7 @@ import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
+import SliderField from './controls/SliderField.vue'
 import ToggleControl from './controls/ToggleControl.vue'
 
 const { t } = useI18n()
@@ -170,29 +116,29 @@ const methodMenuItems = computed(() =>
   }))
 )
 
-const onToleranceChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  store.setColorSelectTolerance(value[0])
+const colorTolerancePercent = computed(() =>
+  Math.round((store.colorSelectTolerance / 255) * 100)
+)
+
+const maskTolerancePercent = computed(() =>
+  Math.round((store.maskTolerance / 255) * 100)
+)
+
+const onToleranceChange = (percent: number) => {
+  if (Number.isNaN(percent)) return
+  const clamped = Math.min(100, Math.max(0, percent))
+  const raw = Math.round((clamped / 100) * 255)
+  store.setColorSelectTolerance(raw)
 }
 
-const onToleranceChangeInput = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
-  store.setColorSelectTolerance(value)
-}
-
-const onSelectionOpacityChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  store.setSelectionOpacity(value[0])
+const onSelectionOpacityChange = (value: number) => {
+  if (Number.isNaN(value)) return
+  store.setSelectionOpacity(value)
 }
 
 const onMethodChange = (method: ColorComparisonMethod) => {
   store.colorComparisonMethod = method
   methodDropdownOpen.value = false
-}
-
-const onSelectionOpacityChangeInput = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
-  store.setSelectionOpacity(value)
 }
 
 const onLivePreviewChange = (value: boolean) => {
@@ -207,13 +153,10 @@ const onMaskBoundaryChange = (value: boolean) => {
   store.maskBoundary = value
 }
 
-const onMaskToleranceChange = (value: number[] | undefined) => {
-  if (!value?.length) return
-  store.setMaskTolerance(value[0])
-}
-
-const onMaskToleranceChangeInput = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
-  store.setMaskTolerance(value)
+const onMaskToleranceChange = (percent: number) => {
+  if (Number.isNaN(percent)) return
+  const clamped = Math.min(100, Math.max(0, percent))
+  const raw = Math.round((clamped / 100) * 255)
+  store.setMaskTolerance(raw)
 }
 </script>
