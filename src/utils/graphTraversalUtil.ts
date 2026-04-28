@@ -139,24 +139,23 @@ function mapAllNodesWithVisited<T>(
   mapFn: (node: LGraphNode) => T | undefined,
   visited: Set<LGraph | Subgraph>
 ): T[] {
+  // Path-local cycle guard: seed `visited` with the current graph at
+  // function entry (not from the parent frame), so a self-referential
+  // SubgraphNode (`node.subgraph === graph`) is detected and skipped
+  // instead of recursing into the same graph and double-applying
+  // mapFn to every node. Sibling SubgraphNodes pointing at the same
+  // Subgraph are still visited independently — each is an independent
+  // execution and global dedup would under-count contents.
+  // Object identity rather than `subgraph.id` because LGraph defaults
+  // to the zero UUID until `configure()` assigns a real one.
+  if (visited.has(graph)) return []
+  visited.add(graph)
+
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
-    // Path-local cycle guard: add on descent, delete on return. Skips
-    // the subgraph only when it's already on the current descent path
-    // (a cycle), but allows re-visit when the same Subgraph definition
-    // is reached via a sibling SubgraphNode. Each SubgraphNode is an
-    // independent execution — global dedup would under-count contents
-    // (cost-aggregation would miss the second instance's nodes).
-    // Object identity rather than `subgraph.id` because LGraph defaults
-    // to the zero UUID until `configure()` assigns a real one. Mirrors
-    // the WeakSet pattern in `useGraphStructureRevision.forEachSubgraph`.
     if (node.isSubgraphNode?.() && node.subgraph) {
-      if (!visited.has(node.subgraph)) {
-        visited.add(node.subgraph)
-        results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
-        visited.delete(node.subgraph)
-      }
+      results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
     }
 
     const result = mapFn(node)
@@ -165,6 +164,7 @@ function mapAllNodesWithVisited<T>(
     }
   })
 
+  visited.delete(graph)
   return results
 }
 
@@ -187,19 +187,21 @@ function forEachNodeWithVisited(
   fn: (node: LGraphNode) => void,
   visited: Set<LGraph | Subgraph>
 ): void {
+  // See `mapAllNodesWithVisited`: seed at function entry so self-cycle
+  // (`node.subgraph === graph`) is short-circuited before fn is called
+  // twice on every node.
+  if (visited.has(graph)) return
+  visited.add(graph)
+
   visitGraphNodes(graph, (node) => {
-    // See `mapAllNodesWithVisited` — path-local visited set, object
-    // identity, sibling-permits, cycle-blocks.
     if (node.isSubgraphNode?.() && node.subgraph) {
-      if (!visited.has(node.subgraph)) {
-        visited.add(node.subgraph)
-        forEachNodeWithVisited(node.subgraph, fn, visited)
-        visited.delete(node.subgraph)
-      }
+      forEachNodeWithVisited(node.subgraph, fn, visited)
     }
 
     fn(node)
   })
+
+  visited.delete(graph)
 }
 
 /**

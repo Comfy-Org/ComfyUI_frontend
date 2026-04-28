@@ -102,6 +102,20 @@ function makeCyclicSubgraphFixture(): { graph: LGraph; rootNodeId: number } {
   return { graph: createMockGraph([rootNode]), rootNodeId: 1 }
 }
 
+// Self-cycle fixture: a SubgraphNode whose `subgraph` is its own parent.
+// Pathological JSON, but the cycle guard must still produce a single
+// visit per node (not double via outer + inner descent).
+function makeSelfCycleSubgraphFixture(): {
+  parent: Subgraph
+  childNodeId: number
+} {
+  const parent = createMockSubgraph('self', [])
+  const child = createMockNode(42)
+  const selfRef = createMockNode(7, { isSubgraph: true, subgraph: parent })
+  ;(parent.nodes as LGraphNode[]).push(child, selfRef)
+  return { parent, childNodeId: 42 }
+}
+
 describe('graphTraversalUtil', () => {
   describe('Pure utility functions', () => {
     describe('parseExecutionId', () => {
@@ -441,6 +455,19 @@ describe('graphTraversalUtil', () => {
         const childCount = results.filter((id) => id === 99).length
         expect(childCount).toBe(2)
       })
+
+      it('visits each node exactly once on a self-referential subgraph', () => {
+        // Self-cycle: a SubgraphNode whose .subgraph === its own parent.
+        // If the cycle guard adds the subgraph from the parent frame
+        // instead of seeding visited at function entry, the recursion
+        // descends once into the same graph and mapFn is applied twice
+        // to every node (outer + inner pass).
+        const { parent, childNodeId } = makeSelfCycleSubgraphFixture()
+
+        const results = mapAllNodes(parent, (node) => node.id)
+        const childCount = results.filter((id) => id === childNodeId).length
+        expect(childCount).toBe(1)
+      })
     })
 
     describe('forEachNode', () => {
@@ -524,6 +551,22 @@ describe('graphTraversalUtil', () => {
         expect(visitCounts.get(10)).toBe(1)
         expect(visitCounts.get(20)).toBe(1)
         expect(visitCounts.get(1)).toBe(1)
+      })
+
+      it('invokes fn exactly once per node on a self-referential subgraph', () => {
+        // See mapAllNodes counterpart: side-effect fn must not fire
+        // twice per node when SubgraphNode.subgraph === parent. This is
+        // particularly risky here because forEachNode is used for
+        // mutation (e.g. subgraph registry updates, removal callbacks).
+        const { parent, childNodeId } = makeSelfCycleSubgraphFixture()
+
+        const visitCounts = new Map<number | string, number>()
+        forEachNode(parent, (node) => {
+          visitCounts.set(node.id, (visitCounts.get(node.id) ?? 0) + 1)
+        })
+
+        expect(visitCounts.get(childNodeId)).toBe(1)
+        expect(visitCounts.get(7)).toBe(1)
       })
 
       it('treats sibling subgraphs sharing the default id as distinct', () => {
