@@ -1,9 +1,15 @@
 <template>
   <SidebarTabTemplate
+    ref="sidebarTabRef"
     :title="title"
     v-bind="$attrs"
     :data-testid="dataTestid"
-    class="workflows-sidebar-tab"
+    :class="
+      cn(
+        'workflows-sidebar-tab',
+        isOverDropZone && 'bg-primary-500/10 ring-4 ring-primary-500 ring-inset'
+      )
+    "
   >
     <template #alt-title>
       <slot name="alt-title" />
@@ -140,8 +146,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { unrefElement, useDropZone } from '@vueuse/core'
 import ConfirmDialog from 'primevue/confirmdialog'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -162,6 +170,8 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getDataFromJSON } from '@/scripts/metadata/json'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import {
@@ -189,6 +199,7 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
+const sidebarTabRef = useTemplateRef('sidebarTabRef')
 
 const searchBoxRef = ref()
 
@@ -348,5 +359,35 @@ const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
   searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
+})
+
+const sidebarTabGetter = () => {
+  const el = unrefElement(sidebarTabRef)
+  return el instanceof HTMLElement ? el : undefined
+}
+
+const { isOverDropZone } = useDropZone(sidebarTabGetter, {
+  onDrop: async (files) => {
+    if (!files?.length) return
+    await Promise.allSettled(
+      files.map(async (file) => {
+        const { workflow } = (await getDataFromJSON(file)) ?? {}
+        if (!workflow) return
+        const workflowJSON = await validateComfyWorkflow(workflow)
+        if (!workflowJSON) return
+
+        const comfyWorkflow = workflowStore.createNewTemporary(
+          file.name,
+          workflowJSON
+        )
+        await workflowStore.closeWorkflow(comfyWorkflow)
+        await comfyWorkflow.save()
+      })
+    )
+    await workflowStore.syncWorkflows()
+  },
+  dataTypes: ['application/json'],
+  multiple: true,
+  preventDefaultForUnhandled: false
 })
 </script>
