@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onBeforeUpdate, onUpdated, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import InputCell from '../cells/InputCell.vue'
 import type { InputCellEntry, InputCellVariant } from '../cells/InputCell.vue'
 import type { BlockPos, BlockRow, DropTarget } from './panelTypes'
 import { applyMove } from './useAppPanelLayout'
 import { useBlockDrag } from './useBlockDrag'
+import { useFlipReorder } from './useFlipReorder'
 
 const { rows, variant = 'app-mode' } = defineProps<{
   rows: BlockRow[]
@@ -58,58 +59,16 @@ function beginDrag(blockId: string, event: PointerEvent) {
   if (pos) startDrag(pos, event)
 }
 
-// FLIP reorder animation. Re-samples rects on each reactive update
-// (drag-preview reshuffles + committed reorders).
-const FLIP_DURATION_MS = 200
-const prevRects = new Map<string, DOMRect>()
-
-onBeforeUpdate(() => {
-  prevRects.clear()
-  const els = listEl.value?.querySelectorAll<HTMLElement>('[data-flip-key]')
-  if (!els) return
-  for (const el of els) {
-    const key = el.dataset.flipKey
-    if (key) prevRects.set(key, el.getBoundingClientRect())
-  }
-})
-
-onUpdated(() => {
-  const els = listEl.value?.querySelectorAll<HTMLElement>('[data-flip-key]')
-  if (!els) return
-  const draggingId = draggingBlockId.value
-  for (const el of els) {
-    const key = el.dataset.flipKey
-    if (!key || key === draggingId) continue
-    const prev = prevRects.get(key)
-    if (!prev) continue
-    const next = el.getBoundingClientRect()
-    const dx = prev.left - next.left
-    const dy = prev.top - next.top
-    // Skip sub-pixel deltas — would animate a jiggle every keystroke.
-    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue
-    // Double-RAF: write the inverse transform, then re-enable transition
-    // on the next frame so the browser doesn't batch and skip.
-    el.style.transform = `translate(${dx}px, ${dy}px)`
-    el.style.transition = 'none'
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.transition = `transform ${FLIP_DURATION_MS}ms ease`
-        el.style.transform = ''
-      })
-    })
-  }
-})
+// Skip the dragging block — its lift treatment shouldn't compete
+// with the slide animation on its siblings.
+useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
 </script>
 
 <template>
-  <ul
-    ref="listEl"
-    class="m-0 flex list-none flex-col gap-[10px] p-0"
-    role="list"
-  >
+  <ul ref="listEl" class="m-0 flex list-none flex-col gap-2.5 p-0" role="list">
     <li
       v-for="(row, rowIdx) in displayRows"
-      :key="`row-${rowIdx}-${row[0]?.id}`"
+      :key="rowIdx"
       class="flex min-w-0 flex-row items-stretch gap-4"
     >
       <div
@@ -122,11 +81,11 @@ onUpdated(() => {
             'duration-layout transition-[box-shadow,transform] ease-layout',
             variant === 'builder' && [
               'cursor-grab touch-none active:cursor-grabbing',
-              'hover:outline-2 hover:outline-offset-[6px] hover:outline-warning-background hover:outline-dashed'
+              'hover:outline-offset-1.5 hover:outline-2 hover:outline-warning-background hover:outline-dashed'
             ],
             block.id === draggingBlockId && [
               'z-20 scale-[1.02] shadow-2xl',
-              'outline-2 outline-offset-[6px] outline-warning-background outline-dashed'
+              'outline-offset-1.5 outline-2 outline-warning-background outline-dashed'
             ]
           )
         "
@@ -168,7 +127,7 @@ onUpdated(() => {
 <!-- :deep() into NodeWidgets internals; documented exception in
      docs/guidance/vue-components.md §Styling. -->
 <style scoped>
-.panel-block__input :deep(input:not(textarea)) {
+.panel-block__input :deep(input) {
   text-align: center;
 }
 

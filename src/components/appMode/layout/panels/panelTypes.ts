@@ -1,6 +1,5 @@
 /**
  * Panel + block config types for the semi-customizable floating panel.
- * In-memory only for now; persistence is a follow-up.
  */
 
 export type PanelPreset =

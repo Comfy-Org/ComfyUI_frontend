@@ -308,7 +308,31 @@ const zExtra = z
         outputs: z.array(zNodeId).optional(),
         layout: z
           .object({
-            columns: z.number().int().positive().optional()
+            columns: z.number().int().positive().optional(),
+            panelPreset: z
+              .enum([
+                'right-dock',
+                'left-dock',
+                'float-tr',
+                'float-br',
+                'float-tl',
+                'float-bl'
+              ])
+              .optional(),
+            panelCollapsed: z.boolean().optional(),
+            panelWidthCells: z.number().int().positive().optional(),
+            panelRows: z
+              .array(
+                z.array(
+                  z.object({
+                    id: z.string(),
+                    kind: z.literal('input'),
+                    entryKey: z.string(),
+                    isMultiline: z.boolean().optional()
+                  })
+                )
+              )
+              .optional()
           })
           .passthrough()
           .optional()

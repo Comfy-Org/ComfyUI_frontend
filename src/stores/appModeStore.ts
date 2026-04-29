@@ -178,11 +178,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     flyAnimationId = requestAnimationFrame(tick)
   }
 
-  // Shared panel position + collapse state — single source of truth for
-  // the floating inputs panel across App Mode (runtime) and App Builder
-  // (edit). Moving or collapsing the panel in either view updates both,
-  // so the builder is WYSIWYG with App Mode by construction. In-memory
-  // only for now.
+  // Shared panel position + collapse state — single source of truth so
+  // moving / collapsing the panel in either view updates both. Persisted
+  // to the workflow via `extra.linearData.layout` (see watch below).
   const panelPreset = ref<PanelPreset>('right-dock')
   const panelCollapsed = ref(false)
   // Width of the dock panel in grid cells (8 = default 440px). Bumping
@@ -223,6 +221,14 @@ export const useAppModeStore = defineStore('appMode', () => {
     const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
+
+    const layout = data?.layout
+    if (!layout) return
+    if (layout.panelPreset) panelPreset.value = layout.panelPreset
+    if (typeof layout.panelCollapsed === 'boolean')
+      panelCollapsed.value = layout.panelCollapsed
+    if (layout.panelWidthCells) panelWidthCells.value = layout.panelWidthCells
+    if (layout.panelRows) panelRows.value = layout.panelRows
   }
 
   function resetSelectedToWorkflow() {
@@ -238,23 +244,52 @@ export const useAppModeStore = defineStore('appMode', () => {
     resetSelectedToWorkflow
   )
 
+  // Builder-only writes: inputs, outputs, and the block arrangement
+  // inside the panel. Block reorder is gated to builder by PanelBlockList,
+  // so panelRows only mutates here.
   watch(
     () =>
       isBuilderMode.value
-        ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
+        ? {
+            inputs: selectedInputs.value,
+            outputs: selectedOutputs.value,
+            panelRows: panelRows.value
+          }
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
       const graph = app.rootGraph
       if (!graph) return
       const extra = (graph.extra ??= {})
-      extra.linearData = {
-        inputs: [...data.inputs],
-        outputs: [...data.outputs]
+      const linearData: Partial<LinearData> = (extra.linearData ??= {})
+      linearData.inputs = [...data.inputs]
+      linearData.outputs = [...data.outputs]
+      linearData.layout = {
+        ...(linearData.layout ?? {}),
+        panelRows: data.panelRows.map((row) => row.map((b) => ({ ...b })))
       }
       workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
     },
     { deep: true }
+  )
+
+  // Persist panel layout. Fires from both App Mode and Builder so a
+  // user dragging the panel in either view writes back to the workflow.
+  watch(
+    () => ({
+      panelPreset: panelPreset.value,
+      panelCollapsed: panelCollapsed.value,
+      panelWidthCells: panelWidthCells.value
+    }),
+    (layout) => {
+      if (ChangeTracker.isLoadingGraph) return
+      const graph = app.rootGraph
+      if (!graph) return
+      const extra = (graph.extra ??= {})
+      const linearData: Partial<LinearData> = (extra.linearData ??= {})
+      linearData.layout = { ...(linearData.layout ?? {}), ...layout }
+      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    }
   )
 
   let unwatchReadOnly: (() => void) | undefined
