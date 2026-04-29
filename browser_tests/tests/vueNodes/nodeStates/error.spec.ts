@@ -18,10 +18,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const ERROR_CLASS = /ring-destructive-background/
-const KSAMPLER_NODE_ID = '3'
 const UNKNOWN_NODE_ID = '1'
-const RAISE_ERROR_NODE_ID = '17'
-const SUBGRAPH_PARENT_ID = '2'
 const INNER_EXECUTION_ID = '2:1'
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
@@ -39,10 +36,12 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+    const raiseErrorId =
+      await comfyPage.vueNodes.getNodeIdByTitle('Raise Error')
     await comfyPage.runButton.click()
 
     await expect(
-      comfyPage.vueNodes.getNodeInnerWrapper(RAISE_ERROR_NODE_ID)
+      comfyPage.vueNodes.getNodeInnerWrapper(raiseErrorId)
     ).toHaveClass(ERROR_CLASS)
   })
 
@@ -55,9 +54,10 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
     test('shows error ring when a validation error is returned for a node', async ({
       comfyPage
     }) => {
+      const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
       const exec = new ExecutionHelper(comfyPage)
       await exec.mockValidationFailure({
-        [KSAMPLER_NODE_ID]: buildKSamplerError(
+        [ksamplerId]: buildKSamplerError(
           'value_bigger_than_max',
           'steps',
           'steps: 99999 is bigger than max 10000'
@@ -67,20 +67,20 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       await comfyPage.runButton.click()
 
       await expect(
-        comfyPage.vueNodes.getNodeInnerWrapper(KSAMPLER_NODE_ID)
+        comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
       ).toHaveClass(ERROR_CLASS)
     })
 
     test('clears error ring when user edits an out-of-range number widget back into range', async ({
       comfyPage
     }) => {
-      const innerWrapper =
-        comfyPage.vueNodes.getNodeInnerWrapper(KSAMPLER_NODE_ID)
+      const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
       const exec = new ExecutionHelper(comfyPage)
 
       await test.step('queue with out-of-range steps to surface the error', async () => {
         await exec.mockValidationFailure({
-          [KSAMPLER_NODE_ID]: buildKSamplerError(
+          [ksamplerId]: buildKSamplerError(
             'value_bigger_than_max',
             'steps',
             'steps: 99999 is bigger than max 10000'
@@ -109,13 +109,13 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
     test('clears error ring when user picks a different combo option', async ({
       comfyPage
     }) => {
-      const innerWrapper =
-        comfyPage.vueNodes.getNodeInnerWrapper(KSAMPLER_NODE_ID)
+      const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
       const exec = new ExecutionHelper(comfyPage)
 
       await test.step('queue with invalid sampler to surface the error', async () => {
         await exec.mockValidationFailure({
-          [KSAMPLER_NODE_ID]: buildKSamplerError(
+          [ksamplerId]: buildKSamplerError(
             'value_not_in_list',
             'sampler_name',
             'sampler_name: bogus_sampler is not in list'
@@ -148,9 +148,12 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
+      const subgraphParentId = await comfyPage.vueNodes.getNodeIdByTitle(
+        'Subgraph with Missing Node'
+      )
 
       await expect(
-        comfyPage.vueNodes.getNodeInnerWrapper(SUBGRAPH_PARENT_ID)
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
       ).toHaveClass(ERROR_CLASS)
     })
 
@@ -160,9 +163,12 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_subgraph'
       )
+      const subgraphParentId = await comfyPage.vueNodes.getNodeIdByTitle(
+        'Subgraph with Missing Model'
+      )
 
       await expect(
-        comfyPage.vueNodes.getNodeInnerWrapper(SUBGRAPH_PARENT_ID)
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
       ).toHaveClass(ERROR_CLASS)
     })
 
@@ -170,9 +176,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       comfyPage,
       getWebSocket
     }) => {
-      const innerWrapper =
-        comfyPage.vueNodes.getNodeInnerWrapper(SUBGRAPH_PARENT_ID)
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      const subgraphParentId =
+        await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
+      const innerWrapper =
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
       await expect(
         innerWrapper,
         'subgraph parent must mount before injecting WS execution_error'
@@ -196,9 +204,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       // Validation errors are keyed by execution id, so an interior error
       // ("2:1") must propagate the ring up to the root-level subgraph
       // container ("2") via errorAncestorExecutionIds.
-      const innerWrapper =
-        comfyPage.vueNodes.getNodeInnerWrapper(SUBGRAPH_PARENT_ID)
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      const subgraphParentId =
+        await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
+      const innerWrapper =
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
       await expect(innerWrapper).toBeVisible()
       await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
 
