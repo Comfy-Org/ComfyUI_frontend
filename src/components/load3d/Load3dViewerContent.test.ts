@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 class NoopMutationObserver {
   observe() {}
@@ -129,7 +130,7 @@ type RenderOptions = {
   dragOverrides?: Partial<ReturnType<typeof buildDragStub>>
 }
 
-const MOCK_NODE = { id: 'node-1', type: 'Load3D' } as unknown as LGraphNode
+const MOCK_NODE = createMockLGraphNode({ id: 'node-1', type: 'Load3D' })
 
 async function renderViewerContent(options: RenderOptions = {}) {
   const viewerStub = buildViewerStub()
