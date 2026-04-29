@@ -14,6 +14,10 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import {
+  getComboSpecComboOptions,
+  isComboInputSpec
+} from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -56,19 +60,64 @@ export class PrimitiveNode extends LGraphNode {
     applyFirstWidgetValueToGraph(this, extraLinks, () => v)
   }
 
-  override refreshComboInNode() {
+  override refreshComboInNode(defs?: Record<string, ComfyNodeDef>) {
     const widget = this.widgets?.[0]
-    if (widget?.type === 'combo') {
-      // @ts-expect-error fixme ts strict error
-      widget.options.values = this.outputs[0].widget[GET_CONFIG]()[0]
+    if (widget?.type !== 'combo') return
 
-      // @ts-expect-error fixme ts strict error
-      if (!widget.options.values.includes(widget.value as string)) {
-        // @ts-expect-error fixme ts strict error
-        widget.value = widget.options.values[0]
-        widget.callback?.(widget.value)
-      }
+    const newValues = this._resolveComboValues(defs)
+    if (!newValues?.length) return
+
+    widget.options.values = newValues
+
+    if (!newValues.includes(widget.value as string | number)) {
+      widget.value = newValues[0]
+      widget.callback?.(widget.value)
     }
+  }
+
+  private _resolveComboValues(
+    defs?: Record<string, ComfyNodeDef>
+  ): (string | number)[] | undefined {
+    const fromDefs = defs ? this._comboValuesFromDefs(defs) : undefined
+    if (fromDefs?.length) return fromDefs
+
+    const slotWidget = this.outputs?.[0]?.widget
+    const config = (
+      slotWidget?.[GET_CONFIG] as (() => InputSpec) | undefined
+    )?.()
+    if (!config) return undefined
+
+    return isComboInputSpec(config)
+      ? getComboSpecComboOptions(config)
+      : undefined
+  }
+
+  private _comboValuesFromDefs(
+    defs: Record<string, ComfyNodeDef>
+  ): (string | number)[] | undefined {
+    const link = this._getFirstOutputLink()
+    if (!link) return undefined
+
+    const targetNode = this.graph?.getNodeById(link.target_id)
+    const targetType = targetNode?.type
+    if (!targetType) return undefined
+
+    const targetInput = targetNode?.inputs?.[link.target_slot]
+    const widgetName = targetInput?.widget?.name
+    if (!widgetName) return undefined
+
+    const def = defs[targetType]
+    const inputSpec =
+      def?.input?.required?.[widgetName] ?? def?.input?.optional?.[widgetName]
+    if (!inputSpec || !isComboInputSpec(inputSpec)) return undefined
+
+    return getComboSpecComboOptions(inputSpec)
+  }
+
+  private _getFirstOutputLink(): LLink | undefined {
+    const linkId = this.outputs?.[0]?.links?.[0]
+    if (linkId == null || !this.graph) return undefined
+    return this.graph.links[linkId] ?? undefined
   }
 
   override onAfterGraphConfigured() {
