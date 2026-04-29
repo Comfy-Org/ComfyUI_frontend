@@ -51,6 +51,10 @@ export class BuilderSelectHelper {
     return this.comfyPage.page
   }
 
+  get selectedItems(): Locator {
+    return this.page.getByTestId(TestIds.builder.ioItem)
+  }
+
   /**
    * Get the actions menu trigger for a builder IoItem (input-select sidebar).
    * @param title The widget title shown in the IoItem.

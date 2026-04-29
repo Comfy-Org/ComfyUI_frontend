@@ -9,13 +9,15 @@ import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
+import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
-  readonly steps: BuilderStepsHelper
   readonly footer: BuilderFooterHelper
+  readonly mobile: MobileAppHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
   readonly outputHistory: OutputHistoryComponent
+  readonly steps: BuilderStepsHelper
   readonly widgets: AppModeWidgetHelper
 
   /** The "Connect an output" popover shown when saving without outputs. */
@@ -62,11 +64,12 @@ export class AppModeHelper {
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
-    this.steps = new BuilderStepsHelper(comfyPage)
+    this.mobile = new MobileAppHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
 
     this.connectOutputPopover = this.page.getByTestId(
@@ -218,6 +221,10 @@ export class AppModeHelper {
     }, inputs)
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()
+  }
+
+  get centerPanel(): Locator {
+    return this.page.getByTestId(TestIds.linear.centerPanel)
   }
 
   /**
