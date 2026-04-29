@@ -79,23 +79,18 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
   })
 
   test.describe('Comfy.UI.TabBarLayout', () => {
-    // Without this flag the integrated container has no visible children
-    // in the local test env (not logged in, not desktop) and Default vs
-    // Legacy render the same DOM.
-    test.use({ initialFeatureFlags: { show_signin_button: true } })
-
-    test('"Default" renders integrated login button in workflow tabs', async ({
+    test('"Default" renders integrated tab bar actions container', async ({
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.UI.TabBarLayout', 'Default')
-      await expect(comfyPage.menu.topbar.workflowTabsLoginButton).toBeVisible()
+      await expect(comfyPage.menu.topbar.integratedTabBarActions).toBeAttached()
     })
 
-    test('"Legacy" does not render integrated login button in workflow tabs', async ({
+    test('"Legacy" does not render integrated tab bar actions container', async ({
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.UI.TabBarLayout', 'Legacy')
-      await expect(comfyPage.menu.topbar.workflowTabsLoginButton).toHaveCount(0)
+      await expect(comfyPage.menu.topbar.integratedTabBarActions).toHaveCount(0)
     })
   })
 
