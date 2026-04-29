@@ -55,22 +55,24 @@ interface PrefillMetadataFields {
   metadata?: Record<string, unknown> | null
 }
 
-function labelRefsToNames(
+function labelRefsToDisplayNames(
   refs: LabelRefOrString[] | null | undefined
 ): string[] | undefined {
   if (!refs?.length) return undefined
-  const names = refs
-    .map((ref) => (typeof ref === 'string' ? ref : ref.name))
-    .filter((name) => name.length > 0)
-  return names.length > 0 ? names : undefined
+  const labels = refs
+    .map((ref) =>
+      typeof ref === 'string' ? ref : (ref.display_name ?? ref.name)
+    )
+    .filter((label) => label.length > 0)
+  return labels.length > 0 ? labels : undefined
 }
 
 function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
   const name = fields.name ?? undefined
   const description = fields.description ?? undefined
-  const tags = labelRefsToNames(fields.tags)
-  const models = labelRefsToNames(fields.models)
-  const customNodes = labelRefsToNames(fields.custom_nodes)
+  const tags = labelRefsToDisplayNames(fields.tags)
+  const models = labelRefsToDisplayNames(fields.models)
+  const customNodes = labelRefsToDisplayNames(fields.custom_nodes)
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
   const thumbnailUrl = fields.thumbnail_url ?? undefined
   const thumbnailComparisonUrl = fields.thumbnail_comparison_url ?? undefined

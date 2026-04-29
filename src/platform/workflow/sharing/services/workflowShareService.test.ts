@@ -215,8 +215,8 @@ describe(useWorkflowShareService, () => {
           name: 'Full Workflow',
           description: 'Everything filled in',
           tags: [
-            { name: 'art', display_name: 'art' },
-            { name: 'upscale', display_name: 'upscale' }
+            { name: 'text-to-image', display_name: 'Text to Image' },
+            { name: 'upscale', display_name: 'Upscale' }
           ],
           models: [{ name: 'sdxl', display_name: 'SDXL' }],
           custom_nodes: [
@@ -241,9 +241,9 @@ describe(useWorkflowShareService, () => {
     expect(status.prefill).toEqual({
       name: 'Full Workflow',
       description: 'Everything filled in',
-      tags: ['art', 'upscale'],
-      models: ['sdxl'],
-      customNodes: ['comfyui-impact-pack'],
+      tags: ['Text to Image', 'Upscale'],
+      models: ['SDXL'],
+      customNodes: ['Impact Pack'],
       thumbnailType: 'image',
       thumbnailUrl: 'https://cdn.example.com/thumb.png',
       thumbnailComparisonUrl: 'https://cdn.example.com/after.png',
@@ -251,6 +251,32 @@ describe(useWorkflowShareService, () => {
       tutorialUrl: 'https://youtube.com/watch?v=abc',
       metadata: { extended_description: 'long form text' }
     })
+  })
+
+  it('falls back to label slug when display_name is missing', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-fallback/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-fallback',
+          share_id: 'wf-fallback',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-fallback') {
+        return mockJsonResponse({
+          tags: [{ name: 'realism' }, { name: 'portrait' }]
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-fallback')
+
+    expect(status.prefill).toEqual({ tags: ['realism', 'portrait'] })
   })
 
   it('accepts string-shaped tag arrays for backward compatibility', async () => {

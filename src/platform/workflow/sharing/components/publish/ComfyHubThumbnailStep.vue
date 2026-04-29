@@ -269,11 +269,19 @@ const thumbnailObjectUrl = useObjectUrl(thumbnailFile)
 const thumbnailPreviewUrl = computed(
   () => thumbnailObjectUrl.value ?? thumbnailUrl ?? undefined
 )
-const isVideoFile = computed(() =>
-  thumbnailFile.value
-    ? thumbnailFile.value.type.startsWith('video/')
-    : thumbnailType === 'video'
-)
+function urlLooksLikeVideo(url: string | null | undefined): boolean {
+  if (!url) return false
+  const path = url.split(/[?#]/, 1)[0] ?? ''
+  return /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(path)
+}
+
+const isVideoFile = computed(() => {
+  if (thumbnailFile.value) {
+    return thumbnailFile.value.type.startsWith('video/')
+  }
+  if (thumbnailType !== 'video') return false
+  return urlLooksLikeVideo(thumbnailUrl)
+})
 
 function setThumbnailPreview(file: File) {
   const maxSize = file.type.startsWith('video/')

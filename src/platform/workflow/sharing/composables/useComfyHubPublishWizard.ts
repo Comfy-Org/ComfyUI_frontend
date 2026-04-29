@@ -8,7 +8,6 @@ import type {
 } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { PublishPrefill } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { normalizeTags } from '@/platform/workflow/sharing/utils/normalizeTags'
 
 const PUBLISH_STEPS = [
   'describe',
@@ -47,16 +46,38 @@ function createExampleImagesFromUrls(urls: string[]): ExampleImage[] {
   return urls.map((url) => ({ id: uuidv4(), url }))
 }
 
+function nonBlobUrlsFromExampleImages(
+  exampleImages: ComfyHubPublishFormData['exampleImages']
+): string[] | undefined {
+  const urls = exampleImages
+    .map((img) => img.url)
+    .filter((url) => url.length > 0 && !url.startsWith('blob:'))
+  return urls.length > 0 ? urls : undefined
+}
+
 function extractPrefillFromFormData(
   formData: ComfyHubPublishFormData
 ): PublishPrefill {
   return {
+    name: formData.name || undefined,
     description: formData.description || undefined,
-    tags: formData.tags.length > 0 ? normalizeTags(formData.tags) : undefined,
+    tags: formData.tags.length > 0 ? [...formData.tags] : undefined,
+    models: formData.models.length > 0 ? [...formData.models] : undefined,
+    customNodes:
+      formData.customNodes.length > 0 ? [...formData.customNodes] : undefined,
     thumbnailType: formData.thumbnailType,
-    sampleImageUrls: formData.exampleImages
-      .map((img) => img.url)
-      .filter((url) => !url.startsWith('blob:'))
+    thumbnailUrl:
+      formData.thumbnailType !== 'imageComparison'
+        ? (formData.thumbnailUrl ?? undefined)
+        : (formData.comparisonBeforeUrl ?? undefined),
+    thumbnailComparisonUrl:
+      formData.thumbnailType === 'imageComparison'
+        ? (formData.comparisonAfterUrl ?? undefined)
+        : undefined,
+    sampleImageUrls: nonBlobUrlsFromExampleImages(formData.exampleImages),
+    tutorialUrl: formData.tutorialUrl || undefined,
+    metadata:
+      Object.keys(formData.metadata).length > 0 ? formData.metadata : undefined
   }
 }
 
