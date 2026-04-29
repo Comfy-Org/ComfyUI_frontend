@@ -545,7 +545,7 @@ describe('useMediaAssetActions', () => {
     })
   })
 
-  describe('downloadMultipleAssets - export toast file count', () => {
+  describe('downloadAssets - export toast file count', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockCreateAssetExport.mockClear()
@@ -585,7 +585,7 @@ describe('useMediaAssetActions', () => {
       const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([j1, j2])
+      actions.downloadAssets([j1, j2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
@@ -604,7 +604,7 @@ describe('useMediaAssetActions', () => {
       const a2 = createOutputAsset('a2', 'img2.png', 'job2')
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([a1, a2])
+      actions.downloadAssets([a1, a2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
@@ -623,7 +623,7 @@ describe('useMediaAssetActions', () => {
       const a2 = createOutputAsset('a2', 'img2.png', 'job2')
 
       const actions = useMediaAssetActions()
-      actions.downloadMultipleAssets([j1, a2])
+      actions.downloadAssets([j1, a2])
 
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
