@@ -40,32 +40,6 @@ function getJobListResults(page: Page): Locator {
   return page.getByTestId(TestIds.queue.jobAssetsList).locator('[data-job-id]')
 }
 
-/**
- * Walks the virtualized job list and returns the set of distinct `data-job-id`
- * values rendered across the full scroll range. Robust to viewports smaller
- * than the configured cap, where overscan alone wouldn't keep every row in the
- * DOM.
- */
-async function collectAllRenderedJobIds(page: Page): Promise<Set<string>> {
-  const jobs = getJobListResults(page)
-  const seen = new Set<string>()
-
-  async function captureRendered(): Promise<void> {
-    const rows = await jobs.all()
-    const ids = await Promise.all(
-      rows.map((row: Locator) => row.getAttribute('data-job-id'))
-    )
-    for (const id of ids) if (id !== null) seen.add(id)
-  }
-
-  await jobs.first().scrollIntoViewIfNeeded()
-  await captureRendered()
-  await jobs.last().scrollIntoViewIfNeeded()
-  await captureRendered()
-
-  return seen
-}
-
 test.describe('Queue settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Queue.MaxHistoryItems', () => {
     test.describe('limit query parameter', () => {
@@ -139,12 +113,9 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
       await captureNextHistoryRequest(comfyPage, exec)
 
       await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
-      const latest = getJobListResults(comfyPage.page).first()
-      await expect(latest).toBeVisible()
-
-      await expect
-        .poll(async () => (await collectAllRenderedJobIds(comfyPage.page)).size)
-        .toBe(VISIBLE_LIMIT)
+      const jobs = getJobListResults(comfyPage.page)
+      await expect(jobs.first()).toBeVisible()
+      await expect(jobs).toHaveCount(VISIBLE_LIMIT)
     })
   })
 })
