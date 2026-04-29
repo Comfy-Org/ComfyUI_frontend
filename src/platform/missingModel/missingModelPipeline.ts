@@ -29,14 +29,14 @@ export interface MissingModelPipelineResult {
   confirmedCandidates: MissingModelCandidate[]
 }
 
-export interface MissingModelPipelineStore {
+interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
 }
 
-export interface RunMissingModelPipelineOptions {
+interface RunMissingModelPipelineOptions {
   graph: LGraph
   graphData: MissingModelWorkflowData
   missingModelStore: MissingModelPipelineStore
@@ -44,7 +44,7 @@ export interface RunMissingModelPipelineOptions {
   silent?: boolean
 }
 
-export interface RefreshMissingModelPipelineOptions {
+interface RefreshMissingModelPipelineOptions {
   graph: LGraph
   reloadNodeDefs: () => Promise<void>
   missingModelStore: MissingModelPipelineStore

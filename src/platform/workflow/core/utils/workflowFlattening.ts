@@ -15,7 +15,7 @@ export interface FlattenableWorkflowGraph {
   }
 }
 
-export interface FlattenableSubgraphDefinition {
+interface FlattenableSubgraphDefinition {
   id: string
   name: string
   nodes: FlattenableWorkflowNode[]
