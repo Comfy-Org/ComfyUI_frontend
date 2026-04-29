@@ -31,18 +31,21 @@ export class LoaderManager implements LoaderManagerInterface {
   private readonly eventManager: EventManagerInterface
   private readonly adapters: ModelAdapter[]
   private readonly adapterRef: AdapterRef
+  private readonly suppressErrors: boolean
   private currentLoadId: number = 0
 
   constructor(
     modelManager: ModelManagerInterface,
     eventManager: EventManagerInterface,
     adapters?: readonly ModelAdapter[],
-    adapterRef?: AdapterRef
+    adapterRef?: AdapterRef,
+    suppressErrors: boolean = false
   ) {
     this.modelManager = modelManager
     this.eventManager = eventManager
     this.adapters = adapters ? [...adapters] : defaultAdapters()
     this.adapterRef = adapterRef ?? createAdapterRef()
+    this.suppressErrors = suppressErrors
   }
 
   getCurrentAdapter(): ModelAdapter | null {
@@ -105,7 +108,9 @@ export class LoaderManager implements LoaderManagerInterface {
       if (loadId === this.currentLoadId) {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
-        useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
+        if (!this.suppressErrors) {
+          useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
+        }
       }
     }
   }

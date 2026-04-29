@@ -132,6 +132,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
+        suppressLoadErrors: isPreview.value,
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
