@@ -39,6 +39,20 @@ describe('buildSubgraphExecutionPaths', () => {
     ).toEqual(new Map())
   })
 
+  it('skips malformed subgraph definitions', () => {
+    const malformedDef = {
+      id: 'def-A',
+      name: 'def-A',
+      nodes: [null],
+      inputNode: {},
+      outputNode: {}
+    }
+
+    expect(
+      buildSubgraphExecutionPaths([node(5, 'def-A')], [malformedDef])
+    ).toEqual(new Map())
+  })
+
   it('maps a single subgraph instance to its execution path', () => {
     const def = subgraphDef('def-A', [])
     const result = buildSubgraphExecutionPaths([node(5, 'def-A')], [def])
@@ -107,6 +121,25 @@ describe('flattenWorkflowNodes', () => {
 
     expect(result).toHaveLength(3)
     expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:20'])
+  })
+
+  it('skips malformed subgraph definitions', () => {
+    const result = flattenWorkflowNodes({
+      nodes: [node(5, 'def-A')],
+      definitions: {
+        subgraphs: [
+          {
+            id: 'def-A',
+            name: 'def-A',
+            nodes: [null],
+            inputNode: {},
+            outputNode: {}
+          }
+        ]
+      }
+    })
+
+    expect(result.map((n) => n.id)).toEqual([5])
   })
 
   it('prefixes nested subgraph nodes with full execution path', () => {

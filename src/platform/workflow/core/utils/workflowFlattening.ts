@@ -26,6 +26,18 @@ interface FlattenableSubgraphDefinition {
   outputNode: unknown
 }
 
+function isFlattenableWorkflowNode(
+  obj: unknown
+): obj is FlattenableWorkflowNode {
+  if (obj === null || typeof obj !== 'object') return false
+
+  const candidate = obj as Record<string, unknown>
+  return (
+    (typeof candidate.id === 'string' || typeof candidate.id === 'number') &&
+    typeof candidate.type === 'string'
+  )
+}
+
 /**
  * Type guard to check if an object is a subgraph definition.
  * This helps TypeScript understand the type when recursive definitions are unknown.
@@ -33,15 +45,16 @@ interface FlattenableSubgraphDefinition {
 export function isSubgraphDefinition(
   obj: unknown
 ): obj is FlattenableSubgraphDefinition {
+  if (obj === null || typeof obj !== 'object') return false
+
+  const candidate = obj as Record<string, unknown>
   return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'id' in obj &&
-    'name' in obj &&
-    'nodes' in obj &&
-    Array.isArray((obj as FlattenableSubgraphDefinition).nodes) &&
-    'inputNode' in obj &&
-    'outputNode' in obj
+    typeof candidate.id === 'string' &&
+    typeof candidate.name === 'string' &&
+    Array.isArray(candidate.nodes) &&
+    candidate.nodes.every(isFlattenableWorkflowNode) &&
+    'inputNode' in candidate &&
+    'outputNode' in candidate
   )
 }
 
@@ -61,10 +74,10 @@ export function buildSubgraphExecutionPaths(
   const pathMap = new Map<string, string[]>()
   const visited = new Set<string>()
 
-  const build = (
+  function build(
     nodes: readonly FlattenableWorkflowNode[],
     parentPrefix: string
-  ) => {
+  ) {
     for (const n of nodes ?? []) {
       if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
       if (visited.has(n.type)) continue
