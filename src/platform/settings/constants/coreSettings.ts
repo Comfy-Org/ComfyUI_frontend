@@ -160,6 +160,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
+  {
     id: 'Comfy.Canvas.NavigationMode',
     category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
     name: 'Navigation Mode',
