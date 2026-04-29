@@ -1,58 +1,32 @@
-import { ref } from 'vue'
+import type { InjectionKey } from 'vue'
+import { inject } from 'vue'
 
-const message = ref('')
-const shortcut = ref('')
-const visible = ref(false)
-const actionLabel = ref('')
-const onAction = ref<(() => void) | null>(null)
-let timeout: ReturnType<typeof setTimeout> | null = null
-let duration = 2000
+export interface ShowSnackbarOptions {
+  shortcut?: string
+  duration?: number
+  actionLabel?: string
+  onAction?: () => void
+}
 
-export function useSnackbarToast() {
-  function show(
-    msg: string,
-    options?: {
-      shortcut?: string
-      duration?: number
-      actionLabel?: string
-      onAction?: () => void
-    }
-  ) {
-    if (timeout) clearTimeout(timeout)
-    message.value = msg
-    shortcut.value = options?.shortcut ?? ''
-    actionLabel.value = options?.actionLabel ?? ''
-    onAction.value = options?.onAction ?? null
-    duration = options?.duration ?? 2000
-    visible.value = true
-    startTimer()
+export interface SnackbarToastItem extends ShowSnackbarOptions {
+  id: string
+  message: string
+}
+
+export interface SnackbarToastApi {
+  show(message: string, options?: ShowSnackbarOptions): string
+  dismiss(id: string): void
+}
+
+export const SnackbarToastKey: InjectionKey<SnackbarToastApi> =
+  Symbol('SnackbarToastApi')
+
+export function useSnackbarToast(): SnackbarToastApi {
+  const api = inject(SnackbarToastKey, null)
+  if (!api) {
+    throw new Error(
+      'useSnackbarToast() must be called within <SnackbarToastProvider>.'
+    )
   }
-
-  function startTimer() {
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(() => {
-      visible.value = false
-    }, duration)
-  }
-
-  function pause() {
-    if (timeout) clearTimeout(timeout)
-  }
-
-  function dismiss() {
-    if (timeout) clearTimeout(timeout)
-    visible.value = false
-  }
-
-  return {
-    message,
-    shortcut,
-    visible,
-    actionLabel,
-    onAction,
-    show,
-    dismiss,
-    pause,
-    startTimer
-  }
+  return api
 }

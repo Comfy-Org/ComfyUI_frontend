@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import Button from '@/components/ui/button/Button.vue'
 import { useSnackbarToast } from '@/composables/useSnackbarToast'
 
-import SnackbarToast from './SnackbarToast.vue'
+import SnackbarToastProvider from './SnackbarToastProvider.vue'
 
-const meta: Meta<typeof SnackbarToast> = {
+const meta: Meta<typeof SnackbarToastProvider> = {
   title: 'Components/Toast/SnackbarToast',
-  component: SnackbarToast,
+  component: SnackbarToastProvider,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen'
@@ -25,88 +25,91 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   render: () => ({
-    components: { SnackbarToast, Button },
-    setup() {
-      const toast = useSnackbarToast()
-      function trigger() {
-        toast.show('Toast message')
-      }
-      return { trigger }
-    },
+    components: { SnackbarToastProvider, Button, Trigger },
     template: `
-      <div class="flex flex-col gap-2">
-        <p class="text-base-foreground">Auto-dismiss after 2s. Hover to pause.</p>
-        <Button class="w-fit" @click="trigger">Show toast</Button>
-        <SnackbarToast />
-      </div>
+      <SnackbarToastProvider>
+        <Trigger label="Show toast" message="Toast message" />
+      </SnackbarToastProvider>
     `
   })
 }
 
 export const WithShortcut: Story = {
   render: () => ({
-    components: { SnackbarToast, Button },
-    setup() {
-      const toast = useSnackbarToast()
-      function trigger() {
-        toast.show('Links hidden', { shortcut: 'Ctrl+A' })
-      }
-      return { trigger }
-    },
+    components: { SnackbarToastProvider, Button, TriggerWithShortcut },
     template: `
-      <div class="flex flex-col gap-2">
-        <p class="text-base-foreground">Toast with assigned keybinding badge.</p>
-        <Button class="w-fit" @click="trigger">Show toast</Button>
-        <SnackbarToast />
-      </div>
+      <SnackbarToastProvider>
+        <TriggerWithShortcut />
+      </SnackbarToastProvider>
     `
   })
 }
 
 export const WithUndoAction: Story = {
   render: () => ({
-    components: { SnackbarToast, Button },
-    setup() {
-      const toast = useSnackbarToast()
-      function trigger() {
-        toast.show('Subgraph unpacked', {
-          actionLabel: 'Undo',
-          onAction: () => {
-            toast.show('Subgraph repacked')
-          }
-        })
-      }
-      return { trigger }
-    },
+    components: { SnackbarToastProvider, Button, TriggerWithUndo },
     template: `
-      <div class="flex flex-col gap-2">
-        <p class="text-base-foreground">No assigned shortcut: shows an Undo action button.</p>
-        <Button class="w-fit" @click="trigger">Show toast</Button>
-        <SnackbarToast />
-      </div>
+      <SnackbarToastProvider>
+        <TriggerWithUndo />
+      </SnackbarToastProvider>
     `
   })
 }
 
 export const Persistent: Story = {
   render: () => ({
-    components: { SnackbarToast, Button },
-    setup() {
-      const toast = useSnackbarToast()
-      function trigger() {
-        toast.show('Stays open until dismissed', { duration: 60_000 })
-      }
-      return { trigger, dismiss: toast.dismiss }
-    },
+    components: { SnackbarToastProvider, Button, TriggerPersistent },
     template: `
-      <div class="flex flex-col gap-2">
-        <p class="text-base-foreground">Long duration so close-button behavior is testable.</p>
-        <div class="flex gap-2">
-          <Button class="w-fit" @click="trigger">Show toast</Button>
-          <Button class="w-fit" variant="muted-textonly" @click="dismiss">Dismiss</Button>
-        </div>
-        <SnackbarToast />
-      </div>
+      <SnackbarToastProvider>
+        <TriggerPersistent />
+      </SnackbarToastProvider>
     `
   })
+}
+
+const Trigger = {
+  components: { Button },
+  setup() {
+    const toast = useSnackbarToast()
+    return { trigger: () => toast.show('Toast message') }
+  },
+  template: `<Button class="w-fit" @click="trigger">Show toast</Button>`
+}
+
+const TriggerWithShortcut = {
+  components: { Button },
+  setup() {
+    const toast = useSnackbarToast()
+    return {
+      trigger: () => toast.show('Links hidden', { shortcut: 'Ctrl+A' })
+    }
+  },
+  template: `<Button class="w-fit" @click="trigger">Show toast</Button>`
+}
+
+const TriggerWithUndo = {
+  components: { Button },
+  setup() {
+    const toast = useSnackbarToast()
+    return {
+      trigger: () =>
+        toast.show('Subgraph unpacked', {
+          actionLabel: 'Undo',
+          onAction: () => toast.show('Subgraph repacked')
+        })
+    }
+  },
+  template: `<Button class="w-fit" @click="trigger">Show toast</Button>`
+}
+
+const TriggerPersistent = {
+  components: { Button },
+  setup() {
+    const toast = useSnackbarToast()
+    return {
+      trigger: () =>
+        toast.show('Stays open until dismissed', { duration: 60_000 })
+    }
+  },
+  template: `<Button class="w-fit" @click="trigger">Show toast</Button>`
 }
