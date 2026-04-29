@@ -3306,9 +3306,9 @@ const translations = {
     en: 'Last Name',
     'zh-CN': '姓'
   },
-  'contact.form.company': {
-    en: 'Company',
-    'zh-CN': '公司'
+  'contact.form.email': {
+    en: 'Work Email',
+    'zh-CN': '工作邮箱'
   },
   'contact.form.phone': {
     en: 'Phone Number (optional)',
@@ -3351,6 +3351,26 @@ const translations = {
     en: 'Not using Comfy yet, but using other GenAI tools',
     'zh-CN': '尚未使用 Comfy，但在使用其他 GenAI 工具'
   },
+  'contact.form.buildsWorkflows': {
+    en: 'Who primarily builds workflows?',
+    'zh-CN': '主要由谁构建工作流？'
+  },
+  'contact.form.buildsDedicatedOwner': {
+    en: 'One dedicated technical owner',
+    'zh-CN': '一位专属技术负责人'
+  },
+  'contact.form.buildsPowerUsers': {
+    en: 'Small group of power users',
+    'zh-CN': '少数核心用户'
+  },
+  'contact.form.buildsEveryone': {
+    en: 'Everyone builds their own',
+    'zh-CN': '每个人各自构建'
+  },
+  'contact.form.buildsExternal': {
+    en: 'External consultant / partner',
+    'zh-CN': '外部顾问或合作伙伴'
+  },
   'contact.form.lookingFor': {
     en: 'What are you looking for?',
     'zh-CN': '您在寻找什么？'
@@ -3363,6 +3383,39 @@ const translations = {
     en: 'SUBMIT',
     'zh-CN': '提交'
   },
+  'contact.form.submitting': {
+    en: 'SUBMITTING…',
+    'zh-CN': '正在提交…'
+  },
+  'contact.form.successMessage': {
+    en: 'Thanks — your message is in. Our team will be in touch shortly.',
+    'zh-CN': '感谢您 — 我们已收到您的信息，团队会尽快与您联系。'
+  },
+  'contact.form.errorMessage': {
+    en: 'Something went wrong. Please try again or email sales@comfy.org.',
+    'zh-CN': '提交失败。请重试，或发送邮件至 sales@comfy.org。'
+  },
+  'contact.form.buildsWorkflowsRequired': {
+    en: 'Please select at least one option for who primarily builds workflows.',
+    'zh-CN': '请至少选择一个主要负责构建工作流的人员选项。'
+  },
+  'contact.form.requiredFieldsMissing': {
+    en: 'Please fill in all required fields.',
+    'zh-CN': '请填写所有必填字段。'
+  },
+  'contact.form.privacyDisclosureBefore': {
+    en: 'By submitting this form, your information is sent to our CRM provider, HubSpot, so our team can follow up. See our ',
+    'zh-CN':
+      '提交此表单即表示您的信息将发送至我们的 CRM 服务商 HubSpot，以便团队与您联系。详情请参阅我们的'
+  },
+  'contact.form.privacyDisclosureLinkLabel': {
+    en: 'Privacy Policy',
+    'zh-CN': '隐私政策'
+  },
+  'contact.form.privacyDisclosureAfter': {
+    en: ' for details.',
+    'zh-CN': '。'
+  },
   'contact.form.firstNamePlaceholder': {
     en: 'Jane',
     'zh-CN': 'Jane'
@@ -3371,9 +3424,9 @@ const translations = {
     en: 'Smith',
     'zh-CN': 'Smith'
   },
-  'contact.form.companyPlaceholder': {
-    en: 'jane@acme.org',
-    'zh-CN': 'jane@acme.org'
+  'contact.form.emailPlaceholder': {
+    en: 'jane@company.com',
+    'zh-CN': 'jane@company.com'
   },
 
   'customers.story.whatsNext': {
