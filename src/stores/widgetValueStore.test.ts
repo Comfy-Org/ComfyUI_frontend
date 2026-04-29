@@ -1,8 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
+import { getWorld, resetWorldInstance } from '@/world/worldInstance'
+
+import { WidgetValueComponent } from './widgetComponents'
 import type { WidgetState } from './widgetValueStore'
 import { useWidgetValueStore } from './widgetValueStore'
 
@@ -23,6 +28,7 @@ describe('useWidgetValueStore', () => {
   const graphB = 'graph-b' as UUID
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    resetWorldInstance()
   })
 
   describe('widgetState.value access', () => {
@@ -174,6 +180,60 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getWidget(graphA, 'node-1', 'seed')).toBeUndefined()
       expect(store.getWidget(graphB, 'node-1', 'seed')?.value).toBe(2)
+    })
+  })
+
+  describe('World facade contract', () => {
+    it('returns the same reactive object reference from registerWidget and getWidget', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(
+        graphA,
+        widget('node-1', 'seed', 'number', 100)
+      )
+      const fetched = store.getWidget(graphA, 'node-1', 'seed')
+      expect(registered).toBe(fetched)
+    })
+
+    it('store and World return the SAME reference for the same widget', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(
+        graphA,
+        widget('node-1', 'seed', 'number', 100)
+      )
+      const widgetId = widgetEntityId(asGraphId(graphA), 'node-1', 'seed')
+      const direct = getWorld().getComponent(widgetId, WidgetValueComponent)
+      expect(direct).toBe(registered)
+      expect(direct).toBe(store.getWidget(graphA, 'node-1', 'seed'))
+    })
+
+    it('mutation through the store is observed by a Vue computed reading through the World', () => {
+      const store = useWidgetValueStore()
+      const state = store.registerWidget(
+        graphA,
+        widget('node-1', 'seed', 'number', 100)
+      )
+      const widgetId = widgetEntityId(asGraphId(graphA), 'node-1', 'seed')
+      const observed = computed(
+        () => getWorld().getComponent(widgetId, WidgetValueComponent)?.value
+      )
+      expect(observed.value).toBe(100)
+      state.value = 250
+      expect(observed.value).toBe(250)
+    })
+
+    it('resets cleanly across resetWorldInstance() — second registration lands in the new world', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 100))
+      expect(store.getWidget(graphA, 'node-1', 'seed')?.value).toBe(100)
+
+      resetWorldInstance()
+      // After reset the store must read against the new world. If getWorld()
+      // was captured once in the defineStore factory, this would still see
+      // the old (dead) world and the second registration would fail.
+      expect(store.getWidget(graphA, 'node-1', 'seed')).toBeUndefined()
+
+      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 999))
+      expect(store.getWidget(graphA, 'node-1', 'seed')?.value).toBe(999)
     })
   })
 })

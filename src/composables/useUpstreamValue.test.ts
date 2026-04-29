@@ -1,9 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { resetWorldInstance } from '@/world/worldInstance'
 
-import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
+import {
+  boundsExtractor,
+  singleValueExtractor,
+  useUpstreamValue
+} from './useUpstreamValue'
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: {
+      graph: { rootGraph: { id: '00000000-0000-0000-0000-000000000001' } }
+    }
+  })
+}))
 
 function widget(name: string, value: unknown): WidgetState {
   return { name, type: 'INPUT', value, nodeId: '1' as NodeId, options: {} }
@@ -114,5 +131,40 @@ describe('boundsExtractor', () => {
       widget('height', 99)
     ]
     expect(extract(widgets, undefined)).toEqual(bounds)
+  })
+})
+
+describe('useUpstreamValue (store-backed read path)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    resetWorldInstance()
+  })
+
+  it('reads upstream node widgets via the widget value store', () => {
+    const graphId = '00000000-0000-0000-0000-000000000001' as UUID
+    const state = useWidgetValueStore().registerWidget(graphId, {
+      nodeId: 'upstream-1' as NodeId,
+      name: 'value',
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+
+    const upstreamValue = useUpstreamValue<number>(
+      () => ({ nodeId: 'upstream-1', outputName: 'value' }),
+      singleValueExtractor((v): v is number => typeof v === 'number')
+    )
+
+    expect(upstreamValue.value).toBe(7)
+    state.value = 11
+    expect(upstreamValue.value).toBe(11)
+  })
+
+  it('returns undefined when no upstream linkage is provided', () => {
+    const upstreamValue = useUpstreamValue(
+      () => undefined,
+      singleValueExtractor((v): v is number => typeof v === 'number')
+    )
+    expect(upstreamValue.value).toBeUndefined()
   })
 })
