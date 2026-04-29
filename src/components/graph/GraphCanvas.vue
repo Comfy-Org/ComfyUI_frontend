@@ -4,15 +4,15 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI" #workflow-tabs>
+      <!-- Native drag area for Electron when workflow tabs are not in the topbar -->
+      <div
+        v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+        class="app-drag pointer-events-auto fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
+      />
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
-        <!-- Native drag area for Electron -->
-        <div
-          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
-        />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
