@@ -343,10 +343,23 @@ export class SceneManager implements SceneManagerInterface {
     const originalClearAlpha = this.renderer.getClearAlpha()
     const originalOutputColorSpace = this.renderer.outputColorSpace
 
+    const activeCamera = this.getActiveCamera()
+    const savedCameraParams =
+      activeCamera instanceof THREE.PerspectiveCamera
+        ? { type: 'perspective' as const, aspect: activeCamera.aspect }
+        : {
+            type: 'orthographic' as const,
+            left: (activeCamera as THREE.OrthographicCamera).left,
+            right: (activeCamera as THREE.OrthographicCamera).right,
+            top: (activeCamera as THREE.OrthographicCamera).top,
+            bottom: (activeCamera as THREE.OrthographicCamera).bottom
+          }
+
     const originalMaterials = new Map<
       THREE.Mesh,
       THREE.Material | THREE.Material[]
     >()
+    const tempMaterials: THREE.MeshNormalMaterial[] = []
     const gridVisible = this.gridHelper.visible
 
     try {
@@ -355,15 +368,11 @@ export class SceneManager implements SceneManagerInterface {
       this.renderer.setPixelRatio(1)
       this.renderer.setSize(width, height)
 
-      if (this.getActiveCamera() instanceof THREE.PerspectiveCamera) {
-        const perspectiveCamera =
-          this.getActiveCamera() as THREE.PerspectiveCamera
-
-        perspectiveCamera.aspect = width / height
-        perspectiveCamera.updateProjectionMatrix()
+      if (activeCamera instanceof THREE.PerspectiveCamera) {
+        activeCamera.aspect = width / height
+        activeCamera.updateProjectionMatrix()
       } else {
-        const orthographicCamera =
-          this.getActiveCamera() as THREE.OrthographicCamera
+        const orthographicCamera = activeCamera as THREE.OrthographicCamera
 
         const frustumSize = 10
         const aspect = width / height
@@ -391,23 +400,25 @@ export class SceneManager implements SceneManagerInterface {
 
       this.renderer.clear()
       this.renderBackground()
-      this.renderer.render(this.scene, this.getActiveCamera())
+      this.renderer.render(this.scene, activeCamera)
       const sceneData = this.renderer.domElement.toDataURL('image/png')
 
       this.renderer.setClearColor(0x000000, 0)
       this.renderer.clear()
-      this.renderer.render(this.scene, this.getActiveCamera())
+      this.renderer.render(this.scene, activeCamera)
       const maskData = this.renderer.domElement.toDataURL('image/png')
 
       this.scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           originalMaterials.set(child, child.material)
 
-          child.material = new THREE.MeshNormalMaterial({
+          const tempMaterial = new THREE.MeshNormalMaterial({
             flatShading: false,
             side: THREE.DoubleSide,
             normalScale: new THREE.Vector2(1, 1)
           })
+          tempMaterials.push(tempMaterial)
+          child.material = tempMaterial
         }
       })
 
@@ -415,7 +426,7 @@ export class SceneManager implements SceneManagerInterface {
 
       this.renderer.setClearColor(0x000000, 1)
       this.renderer.clear()
-      this.renderer.render(this.scene, this.getActiveCamera())
+      this.renderer.render(this.scene, activeCamera)
       const normalData = this.renderer.domElement.toDataURL('image/png')
 
       this.renderer.setClearColor(0xffffff, 1)
@@ -431,7 +442,22 @@ export class SceneManager implements SceneManagerInterface {
           }
         }
       })
+      for (const mat of tempMaterials) {
+        mat.dispose()
+      }
       this.gridHelper.visible = gridVisible
+      if (savedCameraParams.type === 'perspective') {
+        const persp = activeCamera as THREE.PerspectiveCamera
+        persp.aspect = savedCameraParams.aspect
+        persp.updateProjectionMatrix()
+      } else {
+        const ortho = activeCamera as THREE.OrthographicCamera
+        ortho.left = savedCameraParams.left
+        ortho.right = savedCameraParams.right
+        ortho.top = savedCameraParams.top
+        ortho.bottom = savedCameraParams.bottom
+        ortho.updateProjectionMatrix()
+      }
       this.renderer.setClearColor(originalClearColor, originalClearAlpha)
       this.renderer.setPixelRatio(originalPixelRatio)
       this.renderer.setSize(originalSize.x, originalSize.y)
