@@ -284,7 +284,8 @@ export const useWorkflowService = () => {
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
         itemList: [workflow.path],
-        hint: options.hint
+        hint: options.hint,
+        denyLabel: t('sideToolbar.workflowTab.closeAnyway')
       })
       // Cancel
       if (confirmed === null) return false

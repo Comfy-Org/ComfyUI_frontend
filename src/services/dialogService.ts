@@ -244,7 +244,8 @@ export const useDialogService = () => {
     message,
     type = 'default',
     itemList = [],
-    hint
+    hint,
+    denyLabel
   }: {
     /** Dialog heading */
     title: string
@@ -255,6 +256,8 @@ export const useDialogService = () => {
     /** Displayed as an unordered list immediately below the message body */
     itemList?: string[]
     hint?: string
+    /** Override the deny button label (currently only honored by `dirtyClose`) */
+    denyLabel?: string
   }): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
@@ -266,7 +269,8 @@ export const useDialogService = () => {
           type,
           itemList,
           onConfirm: resolve,
-          hint
+          hint,
+          denyLabel
         },
         dialogComponentProps: {
           onClose: () => resolve(null)
