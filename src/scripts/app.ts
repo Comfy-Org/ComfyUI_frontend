@@ -34,13 +34,14 @@ import { useWorkflowValidation } from '@/platform/workflow/validation/composable
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
-  ModelFile,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
+  collectSubgraphDefinitions,
   isSubgraphDefinition,
   buildSubgraphExecutionPaths
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@/platform/workflow/core/utils/workflowFlattening'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -73,7 +74,6 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
@@ -87,12 +87,11 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {
-  scanAllModelCandidates,
-  enrichWithEmbeddedMetadata,
-  verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/missingModel/missingModelPipeline'
+import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
@@ -100,8 +99,6 @@ import {
   scanAllMediaCandidates,
   verifyCloudMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
-import { assetService } from '@/platform/assets/services/assetService'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
@@ -153,11 +150,6 @@ import {
   pasteVideoNode,
   pasteVideoNodes
 } from '@/composables/usePaste'
-
-interface MissingModelPipelineOptions {
-  missingNodeTypes?: MissingNodeType[]
-  silent?: boolean
-}
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1225,7 +1217,7 @@ export class ComfyApp {
 
     // Collect missing node types from all nodes (root + subgraphs)
     const collectMissingNodes = (
-      nodes: ComfyWorkflowJSON['nodes'],
+      nodes: FlattenableWorkflowNode[] | readonly FlattenableWorkflowNode[],
       pathPrefix: string = '',
       displayName: string = ''
     ) => {
@@ -1270,7 +1262,9 @@ export class ComfyApp {
     }
 
     collectMissingNodes(graphData.nodes)
-    const subgraphDefs = graphData.definitions?.subgraphs ?? []
+    const subgraphDefs = collectSubgraphDefinitions(
+      graphData.definitions?.subgraphs ?? []
+    )
     const subgraphContainerIdMap = buildSubgraphExecutionPaths(
       graphData.nodes,
       subgraphDefs
@@ -1454,7 +1448,10 @@ export class ComfyApp {
       )
 
       if (!skipAssetScans) {
-        await this.runMissingModelPipeline(graphData, {
+        await runMissingModelPipeline({
+          graph: this.rootGraph,
+          graphData,
+          missingModelStore: useMissingModelStore(),
           missingNodeTypes: activeMissingNodeTypes,
           silent: silentAssetErrors
         })
@@ -1477,201 +1474,14 @@ export class ComfyApp {
     }
   }
 
-  private async runMissingModelPipeline(
-    graphData: ComfyWorkflowJSON,
-    { missingNodeTypes, silent = false }: MissingModelPipelineOptions = {}
-  ): Promise<{
-    missingModels: ModelFile[]
-    confirmedCandidates: MissingModelCandidate[]
-  }> {
-    const missingModelStore = useMissingModelStore()
-    const controller = missingModelStore.createVerificationAbortController()
-
-    const getDirectory = (nodeType: string) =>
-      useModelToNodeStore().getCategoryForNodeType(nodeType)
-
-    const candidates = scanAllModelCandidates(
-      this.rootGraph,
-      isCloud
-        ? (nodeType, widgetName) =>
-            assetService.shouldUseAssetBrowser(nodeType, widgetName)
-        : () => false,
-      getDirectory
-    )
-
-    const modelStore = useModelStore()
-    await modelStore.loadModelFolders()
-    const enrichedAll = await enrichWithEmbeddedMetadata(
-      candidates,
-      graphData,
-      async (name, directory) => {
-        const folder = await modelStore.getLoadedModelFolder(directory)
-        const models = folder?.models
-        return !!(
-          models && Object.values(models).some((m) => m.file_name === name)
-        )
-      },
-      isCloud
-        ? (nodeType, widgetName) =>
-            assetService.shouldUseAssetBrowser(nodeType, widgetName)
-        : undefined
-    )
-
-    // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
-    // scans only checked each node's own mode; the cascade from an
-    // inactive container to its interior happens here.
-    // Asymmetric on purpose: a candidate dropped here is not resurrected if
-    // the user un-bypasses the container mid-verification. The realtime
-    // mode-change path (handleNodeModeChange → scanAndAddNodeErrors) is
-    // responsible for surfacing errors after an un-bypass.
-    const enrichedCandidates = enrichedAll.filter(
-      (c) =>
-        c.nodeId == null ||
-        isAncestorPathActive(this.rootGraph, String(c.nodeId))
-    )
-
-    const missingModels: ModelFile[] = enrichedCandidates
-      .filter((c) => c.isMissing === true && c.url)
-      .map((c) => ({
-        name: c.name,
-        url: c.url ?? '',
-        directory: c.directory ?? '',
-        hash: c.hash,
-        hash_type: c.hashType
-      }))
-
-    const confirmedCandidates = enrichedCandidates.filter(
-      (c) => c.isMissing === true
-    )
-
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    updatePendingWarnings(activeWf, {
-      ...(missingNodeTypes ? { missingNodeTypes } : {}),
-      missingModelCandidates: confirmedCandidates
-    })
-
-    if (enrichedCandidates.length) {
-      if (isCloud) {
-        void verifyAssetSupportedCandidates(
-          enrichedCandidates,
-          controller.signal
-        )
-          .then(() => {
-            if (controller.signal.aborted) return
-            // Re-check ancestor: user may have bypassed a container
-            // while verification was in flight.
-            const confirmed = enrichedCandidates.filter((c) =>
-              isMissingCandidateActive(this.rootGraph, c)
-            )
-            useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
-            this.cacheModelCandidates(activeWf, confirmed)
-          })
-          .catch((err) => {
-            console.warn(
-              '[Missing Model Pipeline] Asset verification failed:',
-              err
-            )
-            useToastStore().add({
-              severity: 'warn',
-              summary: st(
-                'toastMessages.missingModelVerificationFailed',
-                'Failed to verify missing models. Some models may not be shown in the Errors tab.'
-              ),
-              life: 5000
-            })
-          })
-      } else {
-        const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
-        if (!confirmed.length) {
-          useExecutionErrorStore().surfaceMissingModels([], { silent })
-          this.cacheModelCandidates(activeWf, [])
-        } else {
-          void api
-            .getFolderPaths()
-            .then((paths) => {
-              if (controller.signal.aborted) return
-              missingModelStore.setFolderPaths(paths)
-            })
-            .catch((err) => {
-              console.warn(
-                '[Missing Model Pipeline] Failed to fetch folder paths:',
-                err
-              )
-            })
-            .finally(() => {
-              if (controller.signal.aborted) return
-              useExecutionErrorStore().surfaceMissingModels(confirmed, {
-                silent
-              })
-              this.cacheModelCandidates(activeWf, confirmed)
-            })
-
-          void Promise.allSettled(
-            confirmed
-              .filter((c) => c.url)
-              .map(async (c) => {
-                const { fetchModelMetadata } =
-                  await import('@/platform/missingModel/missingModelDownload')
-                const metadata = await fetchModelMetadata(c.url!)
-                if (!controller.signal.aborted && metadata.fileSize !== null) {
-                  missingModelStore.setFileSize(c.url!, metadata.fileSize)
-                }
-              })
-          )
-        }
-      }
-    } else {
-      useExecutionErrorStore().surfaceMissingModels([], { silent })
-      this.cacheModelCandidates(activeWf, [])
-    }
-
-    return { missingModels, confirmedCandidates }
-  }
-
-  async refreshMissingModels(options: { silent?: boolean } = {}): Promise<{
-    missingModels: ModelFile[]
-    confirmedCandidates: MissingModelCandidate[]
-  }> {
-    await this.reloadNodeDefs()
-    const graphData = this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-    const activeWorkflowState =
-      useWorkspaceStore().workflow.activeWorkflow?.activeState
-    const currentModelMetadata =
-      useMissingModelStore()
-        .missingModelCandidates?.filter(
-          (
-            candidate
-          ): candidate is MissingModelCandidate & {
-            url: string
-            directory: string
-          } => !!candidate.url && !!candidate.directory
-        )
-        .map((candidate) => ({
-          name: candidate.name,
-          url: candidate.url,
-          directory: candidate.directory,
-          hash: candidate.hash,
-          hash_type: candidate.hashType
-        })) ?? []
-    const models = activeWorkflowState?.models?.length
-      ? activeWorkflowState.models
-      : currentModelMetadata
-
-    return this.runMissingModelPipeline(
-      models.length ? { ...graphData, models } : graphData,
-      {
-        silent: options.silent ?? true
-      }
-    )
-  }
-
-  private cacheModelCandidates(
-    wf: ComfyWorkflow | null,
-    confirmed: MissingModelCandidate[]
-  ) {
-    if (!wf) return
-    updatePendingWarnings(wf, {
-      missingModelCandidates: confirmed
+  async refreshMissingModels(
+    options: { silent?: boolean } = {}
+  ): Promise<MissingModelPipelineResult> {
+    return refreshMissingModelPipeline({
+      graph: this.rootGraph,
+      reloadNodeDefs: () => this.reloadNodeDefs(),
+      missingModelStore: useMissingModelStore(),
+      silent: options.silent ?? true
     })
   }
 

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,10 +7,7 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  ModelFile
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -22,14 +20,13 @@ import {
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 const {
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
-  mockWorkspaceWorkflow
+  mockWorkspaceWorkflow,
+  mockRefreshMissingModelPipeline
 } = vi.hoisted(() => ({
   mockToastStore: {
     addAlert: vi.fn(),
@@ -44,8 +41,9 @@ const {
     refreshNodeOutputs: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null as unknown
-  }
+    activeWorkflow: null
+  },
+  mockRefreshMissingModelPipeline: vi.fn()
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -88,6 +86,11 @@ vi.mock('@/stores/workspaceStore', () => ({
   }))
 }))
 
+vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+  refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
+  runMissingModelPipeline: vi.fn()
+}))
+
 function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
   return {
     id: 1,
@@ -115,16 +118,6 @@ function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
 }
 
-type ComfyAppMissingModelPipelineTarget = {
-  runMissingModelPipeline: (
-    graphData: ComfyWorkflowJSON,
-    options?: { silent?: boolean; missingNodeTypes?: string[] }
-  ) => Promise<{
-    missingModels: ModelFile[]
-    confirmedCandidates: MissingModelCandidate[]
-  }>
-}
-
 function createWorkflowGraphData(): ComfyWorkflowJSON {
   return {
     last_node_id: 0,
@@ -143,7 +136,7 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     vi.clearAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
@@ -187,104 +180,32 @@ describe('ComfyApp', () => {
   })
 
   describe('refreshMissingModels', () => {
-    function mockRefreshMissingModelsApp(
-      graphData: ComfyWorkflowJSON,
-      candidates: MissingModelCandidate[] = []
-    ) {
-      mockWorkspaceWorkflow.activeWorkflow = null
-      Reflect.set(app, 'rootGraphInternal', {
+    it('delegates to the app-independent missing model refresh pipeline', async () => {
+      const graph = {
         nodes: [],
-        serialize: vi.fn(() => graphData)
-      })
+        serialize: vi.fn(() => createWorkflowGraphData())
+      }
+      const result = {
+        missingModels: [],
+        confirmedCandidates: []
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
-      const appWithPrivate =
-        app as unknown as ComfyAppMissingModelPipelineTarget
-      const pipelineSpy = vi
-        .spyOn(appWithPrivate, 'runMissingModelPipeline')
-        .mockResolvedValue({
-          missingModels: [],
-          confirmedCandidates: []
-        })
-      useMissingModelStore().missingModelCandidates = candidates
-      return pipelineSpy
-    }
+      mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
-    it('reuses active workflow model metadata when refreshing the current graph', async () => {
-      const graphData = createWorkflowGraphData()
-      const activeModels = [
-        {
-          name: 'embedded.safetensors',
-          url: 'https://example.com/embedded.safetensors',
-          directory: 'checkpoints'
-        }
-      ]
-      const pipelineSpy = mockRefreshMissingModelsApp(graphData, [
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'candidate.safetensors',
-          url: 'https://example.com/candidate.safetensors',
-          directory: 'checkpoints',
-          isMissing: true,
-          isAssetSupported: true
-        }
-      ])
-      mockWorkspaceWorkflow.activeWorkflow = {
-        activeState: { models: activeModels }
-      } as LoadedComfyWorkflow
+      await expect(app.refreshMissingModels({ silent: false })).resolves.toBe(
+        result
+      )
 
-      await app.refreshMissingModels({ silent: false })
+      expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
+        graph,
+        reloadNodeDefs: expect.any(Function),
+        missingModelStore: useMissingModelStore(),
+        silent: false
+      })
 
+      await mockRefreshMissingModelPipeline.mock.calls[0][0].reloadNodeDefs()
       expect(app.reloadNodeDefs).toHaveBeenCalled()
-      expect(pipelineSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ models: activeModels }),
-        { silent: false }
-      )
-    })
-
-    it('falls back to current missing model metadata when workflow state has no models', async () => {
-      const graphData = createWorkflowGraphData()
-      const pipelineSpy = mockRefreshMissingModelsApp(graphData, [
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'candidate.safetensors',
-          url: 'https://example.com/candidate.safetensors',
-          directory: 'checkpoints',
-          hash: 'abc123',
-          hashType: 'sha256',
-          isMissing: true,
-          isAssetSupported: true
-        },
-        {
-          nodeId: '2',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'missing-url.safetensors',
-          directory: 'checkpoints',
-          isMissing: true,
-          isAssetSupported: true
-        }
-      ])
-
-      await app.refreshMissingModels()
-
-      expect(pipelineSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          models: [
-            {
-              name: 'candidate.safetensors',
-              url: 'https://example.com/candidate.safetensors',
-              directory: 'checkpoints',
-              hash: 'abc123',
-              hash_type: 'sha256'
-            }
-          ]
-        }),
-        { silent: true }
-      )
     })
   })
 
