@@ -1,9 +1,6 @@
-import type {
-  ComfyWorkflowJSON,
-  ModelFile,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { flattenWorkflowNodes } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WorkflowGraphForFlattening } from '@/platform/workflow/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/utils/workflowFlattening'
 import type {
   MissingModelCandidate,
   MissingModelViewModel,
@@ -27,6 +24,10 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
+
+export type MissingModelWorkflowData = WorkflowGraphForFlattening & {
+  models?: ModelFile[]
+}
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -180,7 +181,7 @@ function scanAssetWidget(
   if (!isModelFileName(value)) return null
 
   return {
-    nodeId: executionId as NodeId,
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: true,
@@ -206,7 +207,7 @@ function scanComboWidget(
   const inOptions = options.includes(value)
 
   return {
-    nodeId: executionId as NodeId,
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: nodeIsAssetSupported,
@@ -218,7 +219,7 @@ function scanComboWidget(
 
 export async function enrichWithEmbeddedMetadata(
   candidates: readonly MissingModelCandidate[],
-  graphData: ComfyWorkflowJSON,
+  graphData: MissingModelWorkflowData,
   checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
   isAssetSupported?: (nodeType: string, widgetName: string) => boolean
 ): Promise<MissingModelCandidate[]> {
@@ -388,7 +389,7 @@ function isAncestorPathActiveInFlattened(
 
 function collectEmbeddedModelsWithSource(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
-  graphData: ComfyWorkflowJSON
+  graphData: MissingModelWorkflowData
 ): EmbeddedModelWithSource[] {
   const result: EmbeddedModelWithSource[] = []
 
@@ -399,9 +400,7 @@ function collectEmbeddedModelsWithSource(
     )
       continue
 
-    const selected = getSelectedModelsMetadata(
-      node as Parameters<typeof getSelectedModelsMetadata>[0]
-    )
+    const selected = getSelectedModelsMetadata(node)
     if (!selected?.length) continue
 
     for (const model of selected) {
@@ -435,8 +434,7 @@ function findWidgetNameForModel(
   modelName: string
 ): string {
   if (Array.isArray(node.widgets_values) || !node.widgets_values) return ''
-  const wv = node.widgets_values as Record<string, unknown>
-  for (const [key, val] of Object.entries(wv)) {
+  for (const [key, val] of Object.entries(node.widgets_values)) {
     if (val === modelName) return key
   }
   return ''
