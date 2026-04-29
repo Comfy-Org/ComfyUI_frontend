@@ -22,9 +22,12 @@ const {
   dropIndicator?: {
     iconClass?: string
     imageUrl?: string
+    videoUrl?: string
     label?: string
     onClick?: (e: MouseEvent) => void
     onMaskEdit?: () => void
+    onDownload?: () => void
+    onRemove?: () => void
   }
   forceHovered?: boolean
 }>()
@@ -92,7 +95,8 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
         data-slot="drop-zone-indicator"
         :class="
           cn(
-            'm-3 block h-25 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+            'm-3 block w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+            dropIndicator.videoUrl ? 'h-52' : 'h-25',
             dropIndicator.onClick && 'cursor-pointer'
           )
         "
@@ -104,16 +108,33 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
             cn(
               'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
               isHovered &&
-                !dropIndicator.imageUrl &&
+                !(dropIndicator.imageUrl || dropIndicator.videoUrl) &&
                 'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'
             )
           "
         >
-          <div v-if="dropIndicator.imageUrl" class="max-h-full max-w-full">
+          <div
+            v-if="dropIndicator.imageUrl"
+            class="flex size-full items-center justify-center overflow-hidden"
+          >
             <img
               class="max-h-full max-w-full rounded-md object-contain"
               :alt="dropIndicator.label ?? ''"
               :src="dropIndicator.imageUrl"
+            />
+          </div>
+          <div
+            v-else-if="dropIndicator.videoUrl"
+            class="flex size-full items-center justify-center overflow-hidden"
+            @click.stop
+          >
+            <video
+              class="max-h-full max-w-full rounded-md object-contain"
+              :src="dropIndicator.videoUrl"
+              preload="metadata"
+              controls
+              loop
+              playsinline
             />
           </div>
           <template v-else>
@@ -130,7 +151,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
           </template>
         </div>
       </component>
-      <template v-if="dropIndicator.imageUrl">
+      <template v-if="dropIndicator.imageUrl || dropIndicator.videoUrl">
         <div
           class="absolute top-2 right-5 z-10 flex gap-1 opacity-0 transition-opacity duration-200 group-focus-within/dropzone:opacity-100 group-hover/dropzone:opacity-100"
         >
@@ -145,6 +166,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
             <i class="icon-[comfy--mask] size-4" />
           </button>
           <button
+            v-if="dropIndicator.imageUrl"
             type="button"
             :aria-label="t('mediaAsset.actions.zoom')"
             :title="t('mediaAsset.actions.zoom')"
@@ -153,8 +175,29 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
           >
             <i class="icon-[lucide--zoom-in] size-4" />
           </button>
+          <button
+            v-if="dropIndicator.onDownload"
+            type="button"
+            :aria-label="t('g.downloadImage')"
+            :title="t('g.downloadImage')"
+            class="flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background transition-colors hover:bg-base-foreground/90"
+            @click.stop="dropIndicator.onDownload()"
+          >
+            <i class="icon-[lucide--download] size-4" />
+          </button>
+          <button
+            v-if="dropIndicator.onRemove"
+            type="button"
+            :aria-label="t('g.removeImage')"
+            :title="t('g.removeImage')"
+            class="flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background transition-colors hover:bg-base-foreground/90"
+            @click.stop="dropIndicator.onRemove()"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </button>
         </div>
         <ImageLightbox
+          v-if="dropIndicator.imageUrl"
           v-model="lightboxOpen"
           :src="dropIndicator.imageUrl"
           :alt="dropIndicator.label ?? ''"
