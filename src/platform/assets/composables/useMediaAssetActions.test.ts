@@ -27,19 +27,22 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const mockToastAdd = vi.hoisted(() => vi.fn())
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({
-    add: vi.fn()
+    add: mockToastAdd
   })
 }))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key
+    t: (key: string, count?: number) =>
+      count !== undefined ? `${key}:${count}` : key
   }),
   createI18n: () => ({
     global: {
-      t: (key: string) => key
+      t: (key: string, count?: number) =>
+        count !== undefined ? `${key}:${count}` : key
     }
   })
 }))
@@ -539,6 +542,99 @@ describe('useMediaAssetActions', () => {
         job1: ['img1.png', 'img2.png']
       })
       expect(payload.naming_strategy).toBe('preserve')
+    })
+  })
+
+  describe('downloadAssets - export toast file count', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockCreateAssetExport.mockClear()
+      mockToastAdd.mockClear()
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    function createOutputAsset(
+      id: string,
+      name: string,
+      jobId: string,
+      outputCount?: number
+    ): AssetItem {
+      return createMockAsset({
+        id,
+        name,
+        tags: ['output'],
+        user_metadata: { jobId, nodeId: '1', subfolder: '', outputCount }
+      })
+    }
+
+    function getExportToastDetail(): string | undefined {
+      const exportToastCall = mockToastAdd.mock.calls.find(
+        ([arg]) =>
+          typeof arg?.detail === 'string' &&
+          arg.detail.startsWith('mediaAsset.selection.exportStarted')
+      )
+      return exportToastCall?.[0]?.detail
+    }
+
+    it('should report total file count, not job count, for multi-output jobs', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
+      const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, j2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+      await vi.waitFor(() => {
+        expect(getExportToastDetail()).toBeDefined()
+      })
+
+      expect(getExportToastDetail()).toBe(
+        'mediaAsset.selection.exportStarted:6'
+      )
+    })
+
+    it('should treat assets without outputCount as a single file', async () => {
+      const a1 = createOutputAsset('a1', 'img1.png', 'job1')
+      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([a1, a2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+      await vi.waitFor(() => {
+        expect(getExportToastDetail()).toBeDefined()
+      })
+
+      expect(getExportToastDetail()).toBe(
+        'mediaAsset.selection.exportStarted:2'
+      )
+    })
+
+    it('should mix multi-output and single-output assets correctly', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, a2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+      await vi.waitFor(() => {
+        expect(getExportToastDetail()).toBeDefined()
+      })
+
+      expect(getExportToastDetail()).toBe(
+        'mediaAsset.selection.exportStarted:4'
+      )
     })
   })
 
