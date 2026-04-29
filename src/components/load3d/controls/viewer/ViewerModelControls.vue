@@ -10,7 +10,7 @@
       />
     </div>
 
-    <div v-if="!hideMaterialMode" class="flex flex-col gap-2">
+    <div v-if="materialModes.length > 0" class="flex flex-col gap-2">
       <label>{{ $t('load3d.materialMode') }}</label>
       <Select
         v-model="materialMode"
@@ -33,9 +33,8 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 
 const { t } = useI18n()
-const { hideMaterialMode = false, isPlyModel = false } = defineProps<{
-  hideMaterialMode?: boolean
-  isPlyModel?: boolean
+const { materialModes = ['original', 'normal', 'wireframe'] } = defineProps<{
+  materialModes?: readonly MaterialMode[]
 }>()
 
 const upDirection = defineModel<UpDirection>('upDirection')
@@ -51,23 +50,10 @@ const upDirectionOptions = [
   { label: '+Z', value: '+z' }
 ]
 
-const materialModeOptions = computed(() => {
-  const options = [
-    { label: t('load3d.materialModes.original'), value: 'original' }
-  ]
-
-  if (isPlyModel) {
-    options.push({
-      label: t('load3d.materialModes.pointCloud'),
-      value: 'pointCloud'
-    })
-  }
-
-  options.push(
-    { label: t('load3d.materialModes.normal'), value: 'normal' },
-    { label: t('load3d.materialModes.wireframe'), value: 'wireframe' }
-  )
-
-  return options
-})
+const materialModeOptions = computed(() =>
+  materialModes.map((mode) => ({
+    label: t(`load3d.materialModes.${mode}`),
+    value: mode
+  }))
+)
 </script>

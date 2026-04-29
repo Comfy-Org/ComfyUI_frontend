@@ -94,9 +94,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 
 function dragDrop(e: DragEvent) {
   const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  linearWorkflowRef.value?.handleDragDrop(e)
+  if (dataTransfer) linearWorkflowRef.value?.handleDragDrop()
 }
 </script>
 <template>

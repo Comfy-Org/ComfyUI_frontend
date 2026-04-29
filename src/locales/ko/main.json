@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "앱",
+    "blueprint": "블루프린트",
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteBlueprint": "블루프린트 삭제",
     "deleteWorkflow": "워크플로 삭제",
@@ -918,6 +919,10 @@
     "showSwapNodes": "교체 가능한 노드 표시",
     "swapNodes": "일부 노드는 대체 가능한 노드로 교체할 수 있습니다"
   },
+  "errorPanelSurvey": {
+    "ctaButton": "피드백 남기기",
+    "ctaText": "새로운 오류 패널은 어떠신가요?"
+  },
   "essentials": {
     "batchImage": "이미지 일괄 처리",
     "canny": "Canny",
@@ -1003,7 +1008,9 @@
     "back": "뒤로",
     "batchRename": "일괄 이름 변경",
     "beta": "베타",
+    "blueprints": "블루프린트",
     "bookmark": "라이브러리에 저장",
+    "bookmarked": "북마크됨",
     "browserReservedKeybinding": "이 단축키는 일부 브라우저에서 예약되어 있어 예기치 않은 결과가 발생할 수 있습니다.",
     "browserReservedKeybindingTooltip": "이 단축키는 브라우저 예약 단축키와 충돌합니다",
     "calculatingDimensions": "크기 계산 중",
@@ -1230,6 +1237,7 @@
     "output": "출력",
     "overwrite": "덮어쓰기",
     "partner": "파트너",
+    "partnerNodes": "파트너 노드",
     "pause": "일시정지",
     "play": "재생",
     "playPause": "재생/일시정지",
@@ -2602,6 +2610,9 @@
       "metadataFetchFailed": "메타데이터를 가져오지 못했습니다. 링크를 확인하고 다시 시도하세요.",
       "missingModelsTitle": "누락된 모델",
       "or": "또는",
+      "refresh": "새로고침",
+      "refreshFailed": "누락된 모델을 새로고침하지 못했습니다. 다시 시도해 주세요.",
+      "refreshing": "누락된 모델을 새로고침하는 중입니다.",
       "typeMismatch": "이 모델은 \"{detectedType}\"로 보입니다. 계속하시겠습니까?",
       "unknownCategory": "알 수 없음",
       "unsupportedUrl": "Civitai와 Hugging Face URL만 지원됩니다.",
@@ -3495,6 +3506,7 @@
     "no3dScene": "텍스처를 적용할 3D 장면이 없습니다",
     "no3dSceneToExport": "내보낼 3D 장면이 없습니다",
     "noTemplatesToExport": "내보낼 템플릿이 없습니다",
+    "nodeDefinitionsUpdateFailed": "노드 정의 업데이트에 실패했습니다",
     "nodeDefinitionsUpdated": "노드 정의가 업데이트되었습니다",
     "nothingSelected": "선택된 항목이 없습니다",
     "nothingToGroup": "그룹화할 항목이 없습니다",

@@ -24,7 +24,10 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
-    getAssetsForNodeType: vi.fn()
+    getAssetsForNodeType: vi.fn(),
+    updateAsset: vi.fn(),
+    addAssetTags: vi.fn(),
+    removeAssetTags: vi.fn()
   }
 }))
 
@@ -1032,6 +1035,233 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(() =>
         store.invalidateModelsForCategory('unknown-category')
       ).not.toThrow()
+    })
+  })
+
+  describe('updateAssetMetadata optimistic cache', () => {
+    it('reflects the server response in the cache after a successful update', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-1'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        original
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      const serverResponse = {
+        ...original,
+        user_metadata: { note: 'server-confirmed' }
+      }
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce(serverResponse)
+
+      await store.updateAssetMetadata(
+        original,
+        { note: 'optimistic' },
+        'CheckpointLoaderSimple'
+      )
+
+      const cached = store.getAssets('CheckpointLoaderSimple')[0]
+      expect(cached.user_metadata).toEqual({ note: 'server-confirmed' })
+    })
+
+    it('rolls back to the original metadata when the server rejects', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-2'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        original
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
+        new Error('500 Internal Error')
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await store.updateAssetMetadata(
+        original,
+        { note: 'will be reverted' },
+        'CheckpointLoaderSimple'
+      )
+
+      const cached = store.getAssets('CheckpointLoaderSimple')[0]
+      expect(cached.user_metadata).toEqual({ note: 'before' })
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('updateAssetTags diff-based dispatch', () => {
+    it('skips both endpoints and does not mutate the cache when tags are unchanged', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-noop', ['models', 'checkpoints'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      await store.updateAssetTags(
+        asset,
+        ['checkpoints', 'models'],
+        'CheckpointLoaderSimple'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).not.toHaveBeenCalled()
+      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+    })
+
+    it('calls only the add endpoint when there are no tags to remove', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-add-only', ['models'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      vi.mocked(assetService.addAssetTags).mockResolvedValueOnce({
+        added: ['featured'],
+        total_tags: ['models', 'featured']
+      })
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'featured'],
+        'CheckpointLoaderSimple'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledWith(
+        'tags-add-only',
+        ['featured']
+      )
+      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
+        'models',
+        'featured'
+      ])
+    })
+
+    it('rolls back the cache when removeAssetTags succeeds but addAssetTags rejects', async () => {
+      // Documents the known recovery gap on partial-failure during a
+      // "change category" mutation: remove succeeds server-side, add fails,
+      // and the cache is restored to the original tags. The server now has
+      // the old category tag removed, so the cache and backend diverge until
+      // the next refetch — surface that gap here rather than papering over it.
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(vi.mocked(assetService.removeAssetTags)).toHaveBeenCalledWith(
+        'tags-partial-fail',
+        ['loras']
+      )
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledWith(
+        'tags-partial-fail',
+        ['checkpoints']
+      )
+      // Cache restored to original tags even though the server has already
+      // removed 'loras'. This codifies a known divergence — fix the recovery
+      // semantics in updateAssetTags to address it (e.g. invalidate the
+      // category cache, or reconcile against the last confirmed total_tags).
+      expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
+      consoleSpy.mockRestore()
+    })
+  })
+})
+
+describe('assetsStore - Deletion State and Input Mapping', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+  })
+
+  describe('setAssetDeleting / isAssetDeleting', () => {
+    it('tracks per-asset deletion state and clears it on flip', () => {
+      const store = useAssetsStore()
+
+      expect(store.isAssetDeleting('asset-A')).toBe(false)
+
+      store.setAssetDeleting('asset-A', true)
+      expect(store.isAssetDeleting('asset-A')).toBe(true)
+      expect(store.isAssetDeleting('asset-B')).toBe(false)
+
+      store.setAssetDeleting('asset-A', false)
+      expect(store.isAssetDeleting('asset-A')).toBe(false)
+    })
+  })
+
+  describe('getInputName', () => {
+    it('resolves a hashed filename to the human-readable name when the input asset is in the cache', async () => {
+      mockIsCloud.value = true
+      try {
+        setActivePinia(createTestingPinia({ stubActions: false }))
+        const store = useAssetsStore()
+
+        vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
+          {
+            id: 'input-1',
+            name: 'cute-puppy.png',
+            asset_hash: 'abc123def.png',
+            tags: ['input']
+          }
+        ])
+        await store.updateInputs()
+
+        expect(store.getInputName('abc123def.png')).toBe('cute-puppy.png')
+      } finally {
+        mockIsCloud.value = false
+      }
+    })
+
+    it('falls back to the original filename when the input asset is not cached', () => {
+      const store = useAssetsStore()
+      expect(store.getInputName('unknown.png')).toBe('unknown.png')
+    })
+  })
+
+  describe('updateInputs cloud routing', () => {
+    it('reads from assetService.getAssetsByTag with limit 100 when isCloud is true', async () => {
+      mockIsCloud.value = true
+      try {
+        setActivePinia(createTestingPinia({ stubActions: false }))
+        const store = useAssetsStore()
+
+        vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([])
+        await store.updateInputs()
+
+        expect(vi.mocked(assetService.getAssetsByTag)).toHaveBeenCalledWith(
+          'input',
+          false,
+          { limit: 100 }
+        )
+      } finally {
+        mockIsCloud.value = false
+      }
     })
   })
 })
