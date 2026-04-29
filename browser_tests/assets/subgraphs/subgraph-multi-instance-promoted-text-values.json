@@ -20,8 +20,9 @@
         { "name": "latent_image", "type": "LATENT", "link": null }
       ],
       "outputs": [],
-      "properties": {},
-      "widgets_values": ["Alpha\n"]
+      "properties": {
+        "proxyWidgets": [["10", "text", null, { "value": "Alpha\n" }]]
+      }
     },
     {
       "id": 12,
@@ -39,8 +40,9 @@
         { "name": "latent_image", "type": "LATENT", "link": null }
       ],
       "outputs": [],
-      "properties": {},
-      "widgets_values": ["Beta\n"]
+      "properties": {
+        "proxyWidgets": [["10", "text", null, { "value": "Beta\n" }]]
+      }
     },
     {
       "id": 13,
@@ -58,8 +60,9 @@
         { "name": "latent_image", "type": "LATENT", "link": null }
       ],
       "outputs": [],
-      "properties": {},
-      "widgets_values": ["Gamma\n"]
+      "properties": {
+        "proxyWidgets": [["10", "text", null, { "value": "Gamma\n" }]]
+      }
     }
   ],
   "links": [],

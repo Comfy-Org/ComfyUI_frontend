@@ -50,14 +50,17 @@ export interface WidgetSlotMetadata {
 
 /**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
- * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
+ * widgetValueStore is preferred for value and metadata. `value` provides the
+ * LiteGraph fallback when no scoped store entry exists yet.
  */
 export interface SafeWidgetData {
   nodeId?: NodeId
   storeNodeId?: NodeId
+  storeInstanceId?: NodeId
   name: string
   storeName?: string
   type: string
+  value?: WidgetValue
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
   /** Control widget for seed randomization/increment/decrement */
@@ -336,9 +339,13 @@ function safeWidgetMapper(
       return {
         nodeId,
         storeNodeId: nodeId,
+        storeInstanceId: isPromotedWidgetView(widget)
+          ? String(node.id)
+          : undefined,
         name,
         storeName,
         type: effectiveWidget.type,
+        value: normalizeWidgetValue(widget.value),
         ...sharedEnhancements,
         callback,
         hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',

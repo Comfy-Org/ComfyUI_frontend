@@ -229,6 +229,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
     expect(widgetData).toBeDefined()
     expect(widgetData?.slotName).toBe('value')
+    expect(widgetData?.value).toBe('hello')
     expect(widgetData?.slotMetadata?.linked).toBe(true)
 
     // Disconnect
@@ -475,6 +476,7 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
+    expect(mappedWidget?.storeInstanceId).toBe(String(subgraphNodeB.id))
   })
 
   it('keeps linked and independent same-name promotions as distinct sources', () => {
@@ -587,6 +589,9 @@ describe('Nested promoted widget mapping', () => {
         `${outerSubgraphNode.subgraph.id}:${secondTextNode.id}`
       ])
     )
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeInstanceId))
+    ).toEqual(new Set([String(outerSubgraphNode.id)]))
   })
 })
 
