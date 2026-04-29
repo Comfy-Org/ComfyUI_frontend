@@ -51,6 +51,11 @@ export interface RefreshMissingModelPipelineOptions {
   silent?: boolean
 }
 
+type MissingModelCandidateWithDownloadMetadata = MissingModelCandidate & {
+  url: string
+  directory: string
+}
+
 function cacheModelCandidates(
   wf: Pick<ComfyWorkflow, 'pendingWarnings'> | null | undefined,
   confirmed: MissingModelCandidate[]
@@ -61,26 +66,29 @@ function cacheModelCandidates(
   })
 }
 
+function hasDownloadMetadata(
+  candidate: MissingModelCandidate
+): candidate is MissingModelCandidateWithDownloadMetadata {
+  return !!candidate.url && !!candidate.directory
+}
+
+function toModelFile(candidate: MissingModelCandidateWithDownloadMetadata) {
+  return {
+    name: candidate.name,
+    url: candidate.url,
+    directory: candidate.directory,
+    hash: candidate.hash,
+    hash_type: candidate.hashType
+  }
+}
+
 function getCurrentMissingModelMetadata(
   missingModelStore: MissingModelPipelineStore
 ): ModelFile[] {
   return (
     missingModelStore.missingModelCandidates
-      ?.filter(
-        (
-          candidate
-        ): candidate is MissingModelCandidate & {
-          url: string
-          directory: string
-        } => !!candidate.url && !!candidate.directory
-      )
-      .map((candidate) => ({
-        name: candidate.name,
-        url: candidate.url,
-        directory: candidate.directory,
-        hash: candidate.hash,
-        hash_type: candidate.hashType
-      })) ?? []
+      ?.filter(hasDownloadMetadata)
+      .map(toModelFile) ?? []
   )
 }
 
@@ -95,13 +103,14 @@ export async function runMissingModelPipeline({
 
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
+  const isAssetBrowserWidget = isCloud
+    ? (nodeType: string, widgetName: string) =>
+        assetService.shouldUseAssetBrowser(nodeType, widgetName)
+    : () => false
 
   const candidates = scanAllModelCandidates(
     graph,
-    isCloud
-      ? (nodeType, widgetName) =>
-          assetService.shouldUseAssetBrowser(nodeType, widgetName)
-      : () => false,
+    isAssetBrowserWidget,
     getDirectory
   )
 
@@ -117,10 +126,7 @@ export async function runMissingModelPipeline({
         models && Object.values(models).some((m) => m.file_name === name)
       )
     },
-    isCloud
-      ? (nodeType, widgetName) =>
-          assetService.shouldUseAssetBrowser(nodeType, widgetName)
-      : undefined
+    isCloud ? isAssetBrowserWidget : undefined
   )
 
   // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
@@ -139,17 +145,8 @@ export async function runMissingModelPipeline({
   )
 
   const missingModels: ModelFile[] = confirmedCandidates
-    .filter(
-      (c): c is MissingModelCandidate & { url: string; directory: string } =>
-        !!c.url && !!c.directory
-    )
-    .map((c) => ({
-      name: c.name,
-      url: c.url,
-      directory: c.directory,
-      hash: c.hash,
-      hash_type: c.hashType
-    }))
+    .filter(hasDownloadMetadata)
+    .map(toModelFile)
 
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
   updatePendingWarnings(activeWf, {
@@ -164,11 +161,14 @@ export async function runMissingModelPipeline({
           if (controller.signal.aborted) return
           // Re-check ancestor: user may have bypassed a container
           // while verification was in flight.
-          const confirmed = enrichedCandidates.filter((c) =>
+          const confirmedAfterReverify = enrichedCandidates.filter((c) =>
             isMissingCandidateActive(graph, c)
           )
-          useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
-          cacheModelCandidates(activeWf, confirmed)
+          useExecutionErrorStore().surfaceMissingModels(
+            confirmedAfterReverify,
+            { silent }
+          )
+          cacheModelCandidates(activeWf, confirmedAfterReverify)
         })
         .catch((err) => {
           console.warn(
@@ -185,8 +185,7 @@ export async function runMissingModelPipeline({
           })
         })
     } else {
-      const confirmed = confirmedCandidates
-      if (!confirmed.length) {
+      if (!confirmedCandidates.length) {
         useExecutionErrorStore().surfaceMissingModels([], { silent })
         cacheModelCandidates(activeWf, [])
       } else {
@@ -204,16 +203,16 @@ export async function runMissingModelPipeline({
           })
           .finally(() => {
             if (controller.signal.aborted) return
-            useExecutionErrorStore().surfaceMissingModels(confirmed, {
+            useExecutionErrorStore().surfaceMissingModels(confirmedCandidates, {
               silent
             })
-            cacheModelCandidates(activeWf, confirmed)
+            cacheModelCandidates(activeWf, confirmedCandidates)
           })
 
         const missingModelDownload =
           import('@/platform/missingModel/missingModelDownload')
         void Promise.allSettled(
-          confirmed
+          confirmedCandidates
             .filter(
               (c): c is MissingModelCandidate & { url: string } => !!c.url
             )
@@ -242,7 +241,7 @@ export async function refreshMissingModelPipeline({
   silent = true
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   await reloadNodeDefs()
-  const graphData = graph.serialize()
+  const graphData: MissingModelWorkflowData = graph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState
   const currentModelMetadata = getCurrentMissingModelMetadata(missingModelStore)

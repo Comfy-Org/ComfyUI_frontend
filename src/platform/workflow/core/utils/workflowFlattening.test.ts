@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkflowNodeForFlattening } from '@/platform/workflow/utils/workflowFlattening'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import {
   buildSubgraphExecutionPaths,
   flattenWorkflowNodes
-} from '@/platform/workflow/utils/workflowFlattening'
+} from '@/platform/workflow/core/utils/workflowFlattening'
 
-function node(id: number, type: string): WorkflowNodeForFlattening {
+function node(id: number, type: string): FlattenableWorkflowNode {
   return { id, type }
 }
 
-function subgraphDef(id: string, nodes: WorkflowNodeForFlattening[]) {
+function subgraphDef(id: string, nodes: FlattenableWorkflowNode[]) {
   return { id, name: id, nodes, inputNode: {}, outputNode: {} }
 }
 

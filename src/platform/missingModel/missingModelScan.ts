@@ -1,6 +1,6 @@
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { WorkflowGraphForFlattening } from '@/platform/workflow/utils/workflowFlattening'
-import { flattenWorkflowNodes } from '@/platform/workflow/utils/workflowFlattening'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   MissingModelCandidate,
   MissingModelViewModel,
@@ -25,7 +25,7 @@ import {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 
-export type MissingModelWorkflowData = WorkflowGraphForFlattening & {
+export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
 }
 

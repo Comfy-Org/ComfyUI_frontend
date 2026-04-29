@@ -454,8 +454,6 @@ describe('missingModelPipeline', () => {
         missingModelStore: mockMissingModelStore
       })
 
-      expect(mockIsAncestorPathActive).toHaveBeenCalledWith(graph, '1')
-      expect(mockIsAncestorPathActive).toHaveBeenCalledWith(graph, '2')
       expect(result.confirmedCandidates).toEqual([activeCandidate])
       expect(activeWorkflow.pendingWarnings).toEqual({
         missingNodeTypes: undefined,
@@ -496,7 +494,9 @@ describe('missingModelPipeline', () => {
       controller.abort()
       resolveFolderPaths({ checkpoints: ['/models/checkpoints'] })
       await folderPathsPromise
-      await Promise.resolve()
+      // Let the getFolderPaths().then().finally() chain settle so this fails
+      // if the abort guards are removed from either continuation.
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(mockMissingModelStore.setFolderPaths).not.toHaveBeenCalled()
       expect(

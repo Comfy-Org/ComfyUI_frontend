@@ -39,8 +39,8 @@ import type {
 import {
   isSubgraphDefinition,
   buildSubgraphExecutionPaths
-} from '@/platform/workflow/utils/workflowFlattening'
-import type { WorkflowNodeForFlattening } from '@/platform/workflow/utils/workflowFlattening'
+} from '@/platform/workflow/core/utils/workflowFlattening'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -1216,7 +1216,7 @@ export class ComfyApp {
 
     // Collect missing node types from all nodes (root + subgraphs)
     const collectMissingNodes = (
-      nodes: WorkflowNodeForFlattening[] | readonly WorkflowNodeForFlattening[],
+      nodes: FlattenableWorkflowNode[] | readonly FlattenableWorkflowNode[],
       pathPrefix: string = '',
       displayName: string = ''
     ) => {

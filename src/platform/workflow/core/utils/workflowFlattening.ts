@@ -1,6 +1,6 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/lib/litegraph/src/litegraph'
 
-export interface WorkflowNodeForFlattening {
+export interface FlattenableWorkflowNode {
   id: NodeId
   type: string
   mode?: number
@@ -8,17 +8,17 @@ export interface WorkflowNodeForFlattening {
   properties?: Record<string, unknown>
 }
 
-export interface WorkflowGraphForFlattening {
-  nodes?: readonly WorkflowNodeForFlattening[]
+export interface FlattenableWorkflowGraph {
+  nodes?: readonly FlattenableWorkflowNode[]
   definitions?: {
     subgraphs?: readonly unknown[]
   }
 }
 
-export interface SubgraphDefinitionForFlattening {
+export interface FlattenableSubgraphDefinition {
   id: string
   name: string
-  nodes: WorkflowNodeForFlattening[]
+  nodes: FlattenableWorkflowNode[]
   definitions?: {
     subgraphs?: readonly unknown[]
   }
@@ -32,14 +32,14 @@ export interface SubgraphDefinitionForFlattening {
  */
 export function isSubgraphDefinition(
   obj: unknown
-): obj is SubgraphDefinitionForFlattening {
+): obj is FlattenableSubgraphDefinition {
   return (
     obj !== null &&
     typeof obj === 'object' &&
     'id' in obj &&
     'name' in obj &&
     'nodes' in obj &&
-    Array.isArray((obj as SubgraphDefinitionForFlattening).nodes) &&
+    Array.isArray((obj as FlattenableSubgraphDefinition).nodes) &&
     'inputNode' in obj &&
     'outputNode' in obj
   )
@@ -52,7 +52,7 @@ export function isSubgraphDefinition(
  * "def-A" -> ["5", "10"] for each container node instantiating that subgraph definition.
  */
 export function buildSubgraphExecutionPaths(
-  rootNodes: readonly WorkflowNodeForFlattening[],
+  rootNodes: readonly FlattenableWorkflowNode[],
   allSubgraphDefs: readonly unknown[]
 ): Map<string, string[]> {
   const subgraphDefMap = new Map(
@@ -62,7 +62,7 @@ export function buildSubgraphExecutionPaths(
   const visited = new Set<string>()
 
   const build = (
-    nodes: readonly WorkflowNodeForFlattening[],
+    nodes: readonly FlattenableWorkflowNode[],
     parentPrefix: string
   ) => {
     for (const n of nodes ?? []) {
@@ -96,8 +96,8 @@ export function buildSubgraphExecutionPaths(
  */
 function collectAllSubgraphDefs(
   rootDefs: readonly unknown[]
-): SubgraphDefinitionForFlattening[] {
-  const result: SubgraphDefinitionForFlattening[] = []
+): FlattenableSubgraphDefinition[] {
+  const result: FlattenableSubgraphDefinition[] = []
   const seen = new Set<string>()
 
   function collect(defs: readonly unknown[]) {
@@ -121,13 +121,13 @@ function collectAllSubgraphDefs(
  * Each node's `id` is prefixed with its execution path (e.g. node "3" inside container "11" -> "11:3").
  */
 export function flattenWorkflowNodes(
-  graphData: WorkflowGraphForFlattening
-): Readonly<WorkflowNodeForFlattening>[] {
+  graphData: FlattenableWorkflowGraph
+): Readonly<FlattenableWorkflowNode>[] {
   const rootNodes = graphData.nodes ?? []
   const allDefs = collectAllSubgraphDefs(graphData.definitions?.subgraphs ?? [])
   const pathMap = buildSubgraphExecutionPaths(rootNodes, allDefs)
 
-  const allNodes: WorkflowNodeForFlattening[] = [...rootNodes]
+  const allNodes: FlattenableWorkflowNode[] = [...rootNodes]
 
   const subgraphDefMap = new Map(allDefs.map((s) => [s.id, s]))
   for (const [defId, paths] of pathMap.entries()) {
