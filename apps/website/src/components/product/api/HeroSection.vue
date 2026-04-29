@@ -223,7 +223,7 @@ onUnmounted(() => {
 
       <div class="mt-8 flex flex-col gap-4 lg:flex-row">
         <BrandButton
-          :href="externalLinks.platform"
+          :href="externalLinks.apiKeys"
           size="lg"
           class="text-center lg:min-w-60 lg:p-4"
         >

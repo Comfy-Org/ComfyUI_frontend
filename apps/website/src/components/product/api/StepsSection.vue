@@ -13,13 +13,13 @@ const steps = [
     number: '01',
     titleKey: 'api.steps.step1.title' as const,
     descriptionKey: 'api.steps.step1.description' as const,
-    image: 'https://media.comfy.org/website/api/logo-purple.webp'
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_1.webp'
   },
   {
     number: '02',
     titleKey: 'api.steps.step2.title' as const,
     descriptionKey: 'api.steps.step2.description' as const,
-    image: 'https://media.comfy.org/website/api/logo-yellow.webp'
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_2.webp'
   },
   {
     number: '03',
@@ -61,7 +61,7 @@ const steps = [
         class="mt-12 flex flex-col items-center gap-4 lg:flex-row lg:justify-center"
       >
         <BrandButton
-          :href="externalLinks.cloud"
+          :href="externalLinks.apiKeys"
           variant="solid"
           size="lg"
           class="w-full text-center lg:w-auto lg:min-w-48"
@@ -69,7 +69,7 @@ const steps = [
           {{ t('api.hero.getApiKeys', locale) }}
         </BrandButton>
         <BrandButton
-          :href="externalLinks.docs"
+          :href="externalLinks.docsApi"
           variant="outline"
           size="lg"
           class="w-full text-center lg:w-auto lg:min-w-48"

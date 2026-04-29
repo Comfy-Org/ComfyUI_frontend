@@ -59,6 +59,9 @@ export const TestIds = {
     missingModelCopyName: 'missing-model-copy-name',
     missingModelCopyUrl: 'missing-model-copy-url',
     missingModelDownload: 'missing-model-download',
+    missingModelActions: 'missing-model-actions',
+    missingModelDownloadAll: 'missing-model-download-all',
+    missingModelRefresh: 'missing-model-refresh',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
     missingMediaRow: 'missing-media-row',
@@ -83,7 +86,11 @@ export const TestIds = {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    loginButton: 'login-button',
+    loginButtonPopover: 'login-button-popover',
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -207,6 +214,18 @@ export const TestIds = {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
   },
+  publish: {
+    dialog: 'publish-dialog',
+    savePrompt: 'publish-save-prompt',
+    describeStep: 'publish-describe-step',
+    finishStep: 'publish-finish-step',
+    footer: 'publish-footer',
+    profilePrompt: 'publish-profile-prompt',
+    nav: 'publish-nav',
+    gateFlow: 'publish-gate-flow',
+    nameInput: 'publish-name-input',
+    tagsInput: 'publish-tags-input'
+  },
   loading: {
     overlay: 'loading-overlay'
   },
@@ -232,6 +251,17 @@ export const TestIds = {
     batchCounter: 'batch-counter',
     batchNext: 'batch-next',
     batchPrev: 'batch-prev'
+  },
+  searchBoxV2: {
+    resultItem: 'result-item',
+    filterOption: 'filter-option',
+    filterChip: 'filter-chip',
+    chipDelete: 'chip-delete',
+    noResults: 'no-results',
+    nodeIdBadge: 'node-id-badge',
+    category: (id: string) => `category-${id}`,
+    rootCategory: (id: string) => `search-category-${id}`,
+    typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
 

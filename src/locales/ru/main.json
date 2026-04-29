@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Приложение",
+    "blueprint": "Чертёж",
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteBlueprint": "Удалить схему",
     "deleteWorkflow": "Удалить рабочий процесс",
@@ -918,6 +919,10 @@
     "showSwapNodes": "Показать заменяемые узлы",
     "swapNodes": "Некоторые узлы можно заменить альтернативами"
   },
+  "errorPanelSurvey": {
+    "ctaButton": "Оставить отзыв",
+    "ctaText": "Как вам новая панель ошибок?"
+  },
   "essentials": {
     "batchImage": "Пакетная обработка изображений",
     "canny": "Canny",
@@ -1003,7 +1008,9 @@
     "back": "Назад",
     "batchRename": "Пакетное переименование",
     "beta": "БЕТА",
+    "blueprints": "Чертежи",
     "bookmark": "Сохранить в библиотеку",
+    "bookmarked": "В избранном",
     "browserReservedKeybinding": "Это сочетание клавиш зарезервировано некоторыми браузерами и может привести к неожиданным результатам.",
     "browserReservedKeybindingTooltip": "Это сочетание конфликтует с зарезервированными сочетаниями браузера",
     "calculatingDimensions": "Расчёт размеров",
@@ -1230,6 +1237,7 @@
     "output": "Выход",
     "overwrite": "Перезаписать",
     "partner": "Партнёр",
+    "partnerNodes": "Партнёрские узлы",
     "pause": "Пауза",
     "play": "Воспроизвести",
     "playPause": "Воспроизвести/Пауза",
@@ -2602,6 +2610,9 @@
       "metadataFetchFailed": "Не удалось получить метаданные. Проверьте ссылку и попробуйте снова.",
       "missingModelsTitle": "Отсутствующие модели",
       "or": "ИЛИ",
+      "refresh": "Обновить",
+      "refreshFailed": "Не удалось обновить отсутствующие модели. Пожалуйста, попробуйте ещё раз.",
+      "refreshing": "Обновление отсутствующих моделей.",
       "typeMismatch": "Похоже, эта модель — «{detectedType}». Вы уверены?",
       "unknownCategory": "Неизвестно",
       "unsupportedUrl": "Поддерживаются только URL Civitai и Hugging Face.",
@@ -3495,6 +3506,7 @@
     "no3dScene": "Нет 3D сцены для применения текстуры",
     "no3dSceneToExport": "Нет 3D сцены для экспорта",
     "noTemplatesToExport": "Нет шаблонов для экспорта",
+    "nodeDefinitionsUpdateFailed": "Не удалось обновить определения узлов",
     "nodeDefinitionsUpdated": "Определения узлов обновлены",
     "nothingSelected": "Ничего не выбрано",
     "nothingToGroup": "Нечего группировать",

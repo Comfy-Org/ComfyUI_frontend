@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -140,7 +140,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -222,6 +222,24 @@ jobs:
           name: playwright-report-chromium
           path: ./playwright-report/
           retention-days: 30
+
+  # Gate job — single required check that passes whether the matrix ran or was
+  # skipped. Branch rulesets require this instead of the individual matrix-
+  # expanded check names so PRs with no e2e-relevant changes aren't stuck.
+  e2e-status:
+    if: ${{ always() }}
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check E2E results
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should_run }}
+          SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          BROWSERS: ${{ needs.playwright-tests.result }}
+        run: |
+          [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          echo "E2E passed"
 
   #### BEGIN Deployment and commenting (non-forked PRs only)
   # when using pull_request event, we have permission to comment directly
