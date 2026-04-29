@@ -28,10 +28,14 @@ const assetKind = inject(AssetKindKey)
 
 const isVideo = computed(() => assetKind?.value === 'video')
 const isMesh = computed(() => assetKind?.value === 'mesh')
+const isAudio = computed(() => assetKind?.value === 'audio')
 
 const mediaContainerRef = ref<HTMLElement>()
 const resolvedMeshPreview = ref<string | null>(null)
 const meshPreviewAttempted = ref(false)
+
+const audioRef = ref<HTMLAudioElement | null>(null)
+const isPlayingAudio = ref(false)
 
 function toLookupName(name: string): string {
   const stripped = name.replace(/ \[output\]$/, '')
@@ -66,6 +70,17 @@ const displayedPreviewUrl = computed(() =>
 
 function handleClick() {
   emit('click', props.index)
+}
+
+function toggleAudioPreview(event: Event) {
+  event.stopPropagation()
+  const audio = audioRef.value
+  if (!audio) return
+  if (audio.paused) {
+    void audio.play().catch(() => {})
+  } else {
+    audio.pause()
+  }
 }
 
 function handleImageLoad(event: Event) {
@@ -148,6 +163,35 @@ function handleVideoLoad(event: Event) {
         muted
         @loadeddata="handleVideoLoad"
       />
+      <button
+        v-else-if="previewUrl && isAudio"
+        type="button"
+        :aria-label="
+          isPlayingAudio
+            ? t('widgets.remoteCombo.pauseAudioPreview')
+            : t('widgets.remoteCombo.playAudioPreview')
+        "
+        :aria-pressed="isPlayingAudio"
+        class="flex size-full cursor-pointer items-center justify-center bg-component-node-widget-background hover:bg-component-node-widget-background-hovered"
+        @click.stop="toggleAudioPreview"
+      >
+        <audio
+          ref="audioRef"
+          :src="previewUrl"
+          preload="none"
+          @play="isPlayingAudio = true"
+          @pause="isPlayingAudio = false"
+          @ended="isPlayingAudio = false"
+        />
+        <i
+          :class="
+            cn(
+              'text-secondary size-5',
+              isPlayingAudio ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
+            )
+          "
+        />
+      </button>
       <img
         v-else-if="displayedPreviewUrl"
         :src="displayedPreviewUrl"
@@ -192,6 +236,13 @@ function handleVideoLoad(event: Event) {
         "
       >
         {{ label ?? name }}
+      </span>
+      <!-- Description -->
+      <span
+        v-if="description && layout !== 'grid'"
+        class="text-secondary line-clamp-1 block overflow-hidden text-xs"
+      >
+        {{ description }}
       </span>
       <!-- Meta Data -->
       <span v-if="actualDimensions" class="text-secondary block text-xs">
