@@ -335,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Uygulama",
+    "blueprint": "Plan",
     "clearWorkflow": "İş Akışını Temizle",
     "deleteBlueprint": "Taslağı Sil",
     "deleteWorkflow": "İş Akışını Sil",
@@ -918,6 +919,10 @@
     "showSwapNodes": "Değiştirilebilir düğümleri göster",
     "swapNodes": "Bazı düğümler alternatiflerle değiştirilebilir"
   },
+  "errorPanelSurvey": {
+    "ctaButton": "Geri bildirim ver",
+    "ctaText": "Yeni hata paneli nasıl?"
+  },
   "essentials": {
     "batchImage": "Toplu Görüntü",
     "canny": "Canny",
@@ -1003,7 +1008,9 @@
     "back": "Geri",
     "batchRename": "Toplu Yeniden Adlandır",
     "beta": "BETA",
+    "blueprints": "Planlar",
     "bookmark": "Kütüphaneye Kaydet",
+    "bookmarked": "Yer İmleri",
     "browserReservedKeybinding": "Bu kısayol bazı tarayıcılar tarafından ayrılmıştır ve beklenmeyen sonuçlara yol açabilir.",
     "browserReservedKeybindingTooltip": "Bu kısayol, tarayıcıya ayrılmış kısayollarla çakışıyor",
     "calculatingDimensions": "Boyutlar hesaplanıyor",
@@ -1230,6 +1237,7 @@
     "output": "Çıktı",
     "overwrite": "Üzerine Yaz",
     "partner": "Partner",
+    "partnerNodes": "Ortak Düğümler",
     "pause": "Duraklat",
     "play": "Oynat",
     "playPause": "Oynat/Duraklat",
@@ -2602,6 +2610,9 @@
       "metadataFetchFailed": "Meta veriler alınamadı. Lütfen bağlantıyı kontrol edip tekrar deneyin.",
       "missingModelsTitle": "Eksik Modeller",
       "or": "VEYA",
+      "refresh": "Yenile",
+      "refreshFailed": "Eksik modeller yenilenemedi. Lütfen tekrar deneyin.",
+      "refreshing": "Eksik modeller yenileniyor.",
       "typeMismatch": "Bu model \"{detectedType}\" gibi görünüyor. Emin misiniz?",
       "unknownCategory": "Bilinmeyen",
       "unsupportedUrl": "Sadece Civitai ve Hugging Face URL'leri desteklenmektedir.",
@@ -3495,6 +3506,7 @@
     "no3dScene": "Doku uygulanacak 3D sahne yok",
     "no3dSceneToExport": "Dışa aktarılacak 3D sahne yok",
     "noTemplatesToExport": "Dışa aktarılacak şablon yok",
+    "nodeDefinitionsUpdateFailed": "Düğüm tanımları güncellenemedi",
     "nodeDefinitionsUpdated": "Düğüm tanımları güncellendi",
     "nothingSelected": "Hiçbir şey seçilmedi",
     "nothingToGroup": "Gruplandırılacak bir şey yok",
