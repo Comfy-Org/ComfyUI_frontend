@@ -32,9 +32,17 @@ type FirebaseRuntimeConfig = {
  */
 export type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
 
+/**
+ * A translatable string. Either:
+ * - a single literal (treated as the fallback in any locale), or
+ * - a locale → text map, e.g. `{ en: 'Personal use', ko: '개인 용도' }`,
+ *   so the backend can ship translations without a frontend release.
+ */
+export type LocalizedString = string | Record<string, string>
+
 export type OnboardingSurveyOption = {
   value: string
-  label?: string
+  label?: LocalizedString
   labelKey?: string
 }
 
@@ -47,7 +55,7 @@ export type OnboardingSurveyField = {
   id: string
   type: OnboardingSurveyFieldType
   labelKey?: string
-  label?: string
+  label?: LocalizedString
   options?: OnboardingSurveyOption[]
   required?: boolean
   randomize?: boolean

@@ -161,6 +161,109 @@ describe('DynamicSurveyForm', () => {
     expect(screen.getByLabelText('Localized B')).toBeInTheDocument()
   })
 
+  it('renders server-supplied translations from a label locale map', () => {
+    const koreanI18n = createI18n({
+      legacy: false,
+      locale: 'ko',
+      fallbackLocale: 'en',
+      messages: {
+        en: {
+          g: { back: 'Back', next: 'Next', submit: 'Submit' },
+          cloudOnboarding: {
+            survey: {
+              intro: '',
+              errors: {
+                chooseAnOption: '',
+                selectAtLeastOne: '',
+                describeAnswer: ''
+              }
+            }
+          }
+        },
+        ko: { g: { back: '뒤로', next: '다음', submit: '제출' } }
+      }
+    })
+
+    render(DynamicSurveyForm, {
+      global: { plugins: [PrimeVue, koreanI18n] },
+      props: {
+        survey: {
+          version: 1,
+          fields: [
+            {
+              id: 'usage',
+              type: 'single',
+              label: {
+                en: 'How will you use it?',
+                ko: '어떻게 사용하시겠어요?'
+              },
+              required: true,
+              options: [
+                {
+                  value: 'personal',
+                  label: { en: 'Personal use', ko: '개인 용도' }
+                },
+                { value: 'work', label: { en: 'Work', ko: '업무' } }
+              ]
+            }
+          ]
+        }
+      }
+    })
+
+    expect(screen.getByText('어떻게 사용하시겠어요?')).toBeVisible()
+    expect(screen.getByLabelText('개인 용도')).toBeInTheDocument()
+    expect(screen.getByLabelText('업무')).toBeInTheDocument()
+  })
+
+  it('falls back to English when current locale missing from label map', () => {
+    const fallbackI18n = createI18n({
+      legacy: false,
+      locale: 'fr',
+      fallbackLocale: 'en',
+      messages: {
+        en: {
+          g: { back: 'Back', next: 'Next', submit: 'Submit' },
+          cloudOnboarding: {
+            survey: {
+              intro: '',
+              errors: {
+                chooseAnOption: '',
+                selectAtLeastOne: '',
+                describeAnswer: ''
+              }
+            }
+          }
+        },
+        fr: {}
+      }
+    })
+
+    render(DynamicSurveyForm, {
+      global: { plugins: [PrimeVue, fallbackI18n] },
+      props: {
+        survey: {
+          version: 1,
+          fields: [
+            {
+              id: 'q',
+              type: 'single',
+              label: { en: 'English question', ko: '한국어' },
+              required: true,
+              options: [
+                { value: 'a', label: { en: 'English A', ko: '한국어 A' } }
+              ]
+            }
+          ]
+        }
+      }
+    })
+
+    // fr is not in the map → falls back to en
+    expect(screen.getByText('English question')).toBeVisible()
+    expect(screen.getByLabelText('English A')).toBeInTheDocument()
+  })
+
   it('allows advancing past an optional field while still empty', async () => {
     const user = userEvent.setup()
     render(DynamicSurveyForm, {

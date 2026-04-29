@@ -88,6 +88,7 @@ import { useI18n } from 'vue-i18n'
 
 import Input from '@/components/ui/input/Input.vue'
 import type {
+  LocalizedString,
   OnboardingSurveyField,
   OnboardingSurveyOption
 } from '@/platform/remoteConfig/types'
@@ -109,8 +110,13 @@ const emit = defineEmits<{
   'update:otherValue': [value: string]
 }>()
 
-const { t, te } = useI18n()
+const { t, te, locale } = useI18n()
 const controlId = useId()
+
+const resolveLocalized = (value: LocalizedString): string => {
+  if (typeof value === 'string') return value
+  return value[locale.value] ?? value.en ?? Object.values(value)[0] ?? ''
+}
 
 const checkedTokens = {
   checked: {
@@ -123,12 +129,14 @@ const checkedTokens = {
 
 const resolvedLabel = (() => {
   if (field.labelKey && te(field.labelKey)) return t(field.labelKey)
-  return field.label ?? field.id
+  if (field.label != null) return resolveLocalized(field.label)
+  return field.id
 })()
 
 const resolveOptionLabel = (option: OnboardingSurveyOption): string => {
   if (option.labelKey && te(option.labelKey)) return t(option.labelKey)
-  return option.label ?? option.value
+  if (option.label != null) return resolveLocalized(option.label)
+  return option.value
 }
 
 const onSingleChange = (value: unknown) => {
