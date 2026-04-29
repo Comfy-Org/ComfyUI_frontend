@@ -339,7 +339,7 @@
   --node-component-border-error: var(--color-danger-100);
   --node-component-border-executing: var(--color-blue-500);
   --node-component-border-selected: var(--color-charcoal-200);
-  --node-component-header-icon: var(--muted-foreground);
+  --node-component-header-icon: var(--color-smoke-800);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);
   --node-component-ring: rgb(var(--color-smoke-500) / 20%);
