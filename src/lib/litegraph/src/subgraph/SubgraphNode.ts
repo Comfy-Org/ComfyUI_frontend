@@ -1146,6 +1146,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const canHydrateLegacyWidgetsValues =
       this._pendingLegacyWidgetsValues?.length === raw.length
 
+    if (this._pendingLegacyWidgetsValues && !canHydrateLegacyWidgetsValues) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[SubgraphNode] Legacy widgets_values length (${this._pendingLegacyWidgetsValues.length}) ` +
+            `does not match proxyWidgets length (${raw.length}); dropping legacy values for instance ${this.id}.`
+        )
+      }
+    }
+
     const entries = raw
       .map((rawEntry, index) => {
         const nodeId = rawEntry[0]
@@ -1724,16 +1733,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return cloneWidgetValue(raw)
     })
 
-    const serialized = super.serialize()
+    return super.serialize()
+  }
+
+  protected override getSerializableWidgetsValues(): undefined {
     /**
      * `SubgraphNode.widgets_values` is a dead field — per-instance values
-     * live inline on `proxyWidgets` entries. Delete any value the base-class
-     * serialize path may have written for defence in depth.
+     * live inline on `proxyWidgets` entries.
      */
-    delete serialized.widgets_values
-
-    return serialized
+    return undefined
   }
+
   override clone() {
     const clone = super.clone()
 

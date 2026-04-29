@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -33,6 +33,10 @@ function createNodeWithWidget(
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('SubgraphNode multi-instance widget isolation', () => {
@@ -381,6 +385,7 @@ describe('SubgraphNode multi-instance widget isolation', () => {
   })
 
   it('does not corrupt unbound promoted widgets when widgets_values length mismatches view count (regression for #10849)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
@@ -411,6 +416,9 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     const widget = instance.widgets?.[0]
     expect(widget?.value).toBe(SOURCE_DEFAULT)
     expect(widget?.value).not.toBe(LEGACY_NOISE_A)
+    expect(warn).toHaveBeenCalledWith(
+      '[SubgraphNode] Legacy widgets_values length (2) does not match proxyWidgets length (1); dropping legacy values for instance 803.'
+    )
   })
 
   it('rejects uncloneable promoted widget values', () => {

@@ -183,6 +183,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.getStoreBackedValue()
   }
 
+  /**
+   * Writes only the scoped per-instance promoted-widget value. This no longer
+   * mutates the source widget's `.value`; extensions that need instance state
+   * should read the promoted widget or `widgetValueStore`.
+   */
   set value(value: IBaseWidget['value']) {
     this.writeScopedValue(value)
   }

@@ -967,19 +967,8 @@ export class LGraphNode
 
     if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
 
-    const { widgets } = this
-    if (widgets && this.serialize_widgets) {
-      o.widgets_values = []
-      for (const [i, widget] of widgets.entries()) {
-        if (widget.serialize === false) continue
-        const val = widget?.value
-        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        o.widgets_values[i] =
-          val != null && typeof val === 'object'
-            ? JSON.parse(JSON.stringify(val))
-            : (val ?? null)
-      }
-    }
+    const widgetsValues = this.getSerializableWidgetsValues()
+    if (widgetsValues) o.widgets_values = widgetsValues
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
@@ -994,6 +983,26 @@ export class LGraphNode
       )
 
     return o
+  }
+
+  protected getSerializableWidgetsValues():
+    | ISerialisedNode['widgets_values']
+    | undefined {
+    const { widgets } = this
+    if (!widgets || !this.serialize_widgets) return undefined
+
+    const widgetsValues: NonNullable<ISerialisedNode['widgets_values']> = []
+    for (const [i, widget] of widgets.entries()) {
+      if (widget.serialize === false) continue
+      const val = widget?.value
+      // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
+      widgetsValues[i] =
+        val != null && typeof val === 'object'
+          ? JSON.parse(JSON.stringify(val))
+          : (val ?? null)
+    }
+
+    return widgetsValues
   }
 
   /* Creates a clone of this node */
