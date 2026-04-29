@@ -7,7 +7,6 @@ import AppChrome from './AppChrome.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
 import { useAppPanelLayout } from './panels/useAppPanelLayout'
-import { panelSide as resolvePanelSide } from './panels/panelTypes'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
@@ -118,15 +117,11 @@ const panelTitle = computed(() => {
 })
 
 const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
-
-// Steers the welcome-copy offset to the panel-free edge.
-const panelSide = computed(() => resolvePanelSide(panelPreset.value))
 </script>
 
 <template>
   <div
     class="layout-view"
-    :data-panel-side="panelSide"
     :style="{
       '--viewport-scale': viewportScale,
       '--viewport-offset-x': `${viewportOffsetX}px`,
@@ -211,18 +206,6 @@ const panelSide = computed(() => resolvePanelSide(panelPreset.value))
       calc(50% + var(--viewport-offset-y, 0));
   overflow: hidden;
   isolation: isolate;
-  /* LinearWelcome offsets copy away from the panel; default = right-dock. */
-  --welcome-panel-offset-left: 0;
-  --welcome-panel-offset-right: calc(
-    var(--panel-dock-width, 440px) + var(--spacing-layout-outer, 8px)
-  );
-}
-
-.layout-view[data-panel-side='left'] {
-  --welcome-panel-offset-left: calc(
-    var(--panel-dock-width, 440px) + var(--spacing-layout-outer, 8px)
-  );
-  --welcome-panel-offset-right: 0;
 }
 
 .layout-view__background {
