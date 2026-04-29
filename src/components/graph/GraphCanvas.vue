@@ -124,7 +124,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -605,7 +605,11 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
-  if (!isMiddlePointerInput(e)) return
+  // Bound to pointerdown, pointerup, AND pointermove (see template capture
+  // handlers). isMiddleForPointerEvent picks the right helper per event type
+  // so the forwarder survives chorded moves without misclassifying chorded
+  // pointerdowns.
+  if (!isMiddleForPointerEvent(e)) return
   if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 

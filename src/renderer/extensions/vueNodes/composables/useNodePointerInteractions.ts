@@ -1,7 +1,7 @@
 import { onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -22,7 +22,7 @@ export function useNodePointerInteractions(
   const { nodeManager } = useVueNodeLifecycle()
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-    if (!isMiddlePointerInput(event)) return false
+    if (!isMiddleForPointerEvent(event)) return false
     forwardEventToCanvas(event)
     return true
   }

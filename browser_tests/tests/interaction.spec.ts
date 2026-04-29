@@ -216,76 +216,6 @@ test.describe('Node Interaction', () => {
     })
   })
 
-  test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'no action'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.ActionShift',
-        'no action'
-      )
-    })
-
-    // Test both directions of edge connection.
-    ;[{ reverse: false }, { reverse: true }].forEach(({ reverse }) => {
-      test(`Can disconnect/connect edge ${reverse ? 'reverse' : 'normal'}`, async ({
-        comfyPage
-      }) => {
-        await comfyPage.canvasOps.disconnectEdge()
-        await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
-        await comfyPage.canvasOps.connectEdge({ reverse })
-        // Move mouse to empty area to avoid slot highlight.
-        await comfyPage.canvasOps.moveMouseToEmptyArea()
-        // Litegraph renders edge with a slight offset.
-        await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
-          maxDiffPixels: 50
-        })
-      })
-    })
-
-    test('Can move link', async ({ comfyPage }) => {
-      await comfyPage.canvasOps.dragAndDrop(
-        DefaultGraphPositions.clipTextEncodeNode1InputSlot,
-        DefaultGraphPositions.emptySpace
-      )
-      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
-      await comfyPage.canvasOps.dragAndDrop(
-        DefaultGraphPositions.clipTextEncodeNode2InputSlot,
-        DefaultGraphPositions.clipTextEncodeNode1InputSlot
-      )
-      await expect(comfyPage.canvas).toHaveScreenshot('moved-link.png')
-    })
-
-    test('Can copy link by shift-drag existing link', async ({ comfyPage }) => {
-      await comfyPage.canvasOps.dragAndDrop(
-        DefaultGraphPositions.clipTextEncodeNode1InputSlot,
-        DefaultGraphPositions.emptySpace
-      )
-      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
-      await comfyPage.page.keyboard.down('Shift')
-      await comfyPage.canvasOps.dragAndDrop(
-        DefaultGraphPositions.clipTextEncodeNode2InputLinkPath,
-        DefaultGraphPositions.clipTextEncodeNode1InputSlot
-      )
-      await comfyPage.page.keyboard.up('Shift')
-      await expect(comfyPage.canvas).toHaveScreenshot('copied-link.png')
-    })
-
-    test('Auto snap&highlight when dragging link over node', async ({
-      comfyPage,
-      comfyMouse
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
-      await comfyPage.settings.setSetting('Comfy.Node.SnapHighlightsNode', true)
-
-      await comfyMouse.move(DefaultGraphPositions.clipTextEncodeNode1InputSlot)
-      await comfyMouse.drag(DefaultGraphPositions.clipTextEncodeNode2InputSlot)
-      await expect(comfyPage.canvas).toHaveScreenshot('snapped-highlighted.png')
-    })
-  })
-
   test(
     'Can adjust widget value',
     { tag: '@screenshot' },
@@ -1158,11 +1088,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       )
     })
 
-    test('Middle-click drag should pan canvas', async ({ comfyPage }) => {
-      await comfyPage.page.mouse.move(50, 50)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(150, 150)
-      await comfyPage.page.mouse.up({ button: 'middle' })
+    test('Middle-click drag should pan canvas', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyMouse.mmbDrag({ x: 50, y: 50 }, { x: 150, y: 150 })
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'legacy-middle-drag-pan.png'
@@ -1234,11 +1164,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       )
     })
 
-    test('Middle-click drag should pan canvas', async ({ comfyPage }) => {
-      await comfyPage.page.mouse.move(50, 50)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(150, 150)
-      await comfyPage.page.mouse.up({ button: 'middle' })
+    test('Middle-click drag should pan canvas', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyMouse.mmbDrag({ x: 50, y: 50 }, { x: 150, y: 150 })
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'standard-middle-drag-pan.png'

@@ -18,6 +18,7 @@ browser_tests/
 │   ├── components/       - Page object classes (locators, user interactions)
 │   │   ├── Actionbar.ts
 │   │   ├── ContextMenu.ts
+│   │   ├── MaskEditorDialog.ts
 │   │   ├── ManageGroupNode.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts

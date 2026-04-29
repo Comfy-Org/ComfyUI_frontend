@@ -4,6 +4,7 @@ import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -18,12 +19,13 @@ function addMultilineWidget(
   opts: { defaultVal: string; placeholder?: string }
 ) {
   const widgetStore = useWidgetValueStore()
+  const settingStore = useSettingStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.dataset.testid = 'dom-widget-textarea'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
-  inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
+  inputEl.spellcheck = settingStore.get('Comfy.TextareaWidget.Spellcheck')
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
@@ -58,27 +60,10 @@ function addMultilineWidget(
     widget.callback?.(widget.value)
   })
 
-  // Allow middle mouse button panning
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseDown(event)
-    }
-  })
-
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
-      app.canvas.processMouseMove(event)
-    }
-  })
-
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseUp(event)
-    }
-  })
+  forwardMiddleButtonToCanvas(inputEl)
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    const gesturesEnabled = useSettingStore().get(
+    const gesturesEnabled = settingStore.get(
       'LiteGraph.Pointer.TrackpadGestures'
     )
     const deltaX = event.deltaX

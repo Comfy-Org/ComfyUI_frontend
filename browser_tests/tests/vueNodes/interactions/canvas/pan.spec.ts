@@ -17,4 +17,23 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       )
     }
   )
+
+  test(
+    'Middle-click drag on node should pan canvas',
+    { tag: ['@screenshot', '@canvas'] },
+    async ({ comfyPage, comfyMouse }) => {
+      const node = comfyPage.vueNodes
+        .getNodeByTitle('CLIP Text Encode (Prompt)')
+        .first()
+      await comfyMouse.mmbDragFromCenter(
+        node,
+        { dx: 140, dy: 90 },
+        { steps: 10 }
+      )
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-paned-with-mmb-over-node.png'
+      )
+    }
+  )
 })
