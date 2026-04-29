@@ -8,6 +8,10 @@ import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTran
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import {
+  hasNorthEdge,
+  hasWestEdge
+} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 export interface ResizeCallbackPayload {
   size: Size
@@ -128,20 +132,23 @@ export function useNodeResize(
           break
       }
 
+      const isWestCorner = hasWestEdge(activeCorner)
+      const isNorthCorner = hasNorthEdge(activeCorner)
+
       // Apply snap-to-grid
       if (shouldSnap(moveEvent)) {
         // Snap position first for N/W corners, then compensate size
-        if (activeCorner.includes('N') || activeCorner.includes('W')) {
+        if (isNorthCorner || isWestCorner) {
           const originalX = newX
           const originalY = newY
           const snapped = applySnapToPosition({ x: newX, y: newY })
           newX = snapped.x
           newY = snapped.y
 
-          if (activeCorner.includes('N')) {
+          if (isNorthCorner) {
             newHeight += originalY - newY
           }
-          if (activeCorner.includes('W')) {
+          if (isWestCorner) {
             newWidth += originalX - newX
           }
         }
@@ -159,14 +166,14 @@ export function useNodeResize(
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
       if (newWidth < minWidth) {
-        if (activeCorner.includes('W')) {
+        if (isWestCorner) {
           newX =
             resizeStartPosition.value.x + resizeStartSize.value.width - minWidth
         }
         newWidth = minWidth
       }
       if (newHeight < minContentHeight) {
-        if (activeCorner.includes('N')) {
+        if (isNorthCorner) {
           newY =
             resizeStartPosition.value.y +
             resizeStartSize.value.height -

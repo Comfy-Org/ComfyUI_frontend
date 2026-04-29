@@ -1,5 +1,7 @@
 import type { Locator } from '@playwright/test'
 
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -45,5 +47,41 @@ export class VueNodeFixture {
 
   boundingBox(): ReturnType<Locator['boundingBox']> {
     return this.locator.boundingBox()
+  }
+
+  /** Locator for the resize handle at the given corner, scoped to this node. */
+  getResizeHandle(corner: CompassCorners): Locator {
+    return this.root.locator(`[data-corner="${corner}"]`)
+  }
+
+  /**
+   * Drag the resize handle at `corner` by (deltaX, deltaY) viewport pixels.
+   * Uses `hover()` to land the pointer on the handle with Playwright's
+   * actionability checks before starting the mouse sequence, which protects
+   * against occluding overlays and subpixel hit-test misses.
+   */
+  async resizeFromCorner(
+    corner: CompassCorners,
+    deltaX: number,
+    deltaY: number
+  ): Promise<void> {
+    const handle = this.getResizeHandle(corner)
+    await handle.hover()
+    const box = await handle.boundingBox()
+    if (!box) {
+      throw new Error(
+        `Resize handle for corner "${corner}" has no bounding box`
+      )
+    }
+
+    const page = this.locator.page()
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height / 2
+    await page.mouse.move(startX, startY)
+    await page.mouse.down()
+    await page.mouse.move(startX + deltaX, startY + deltaY, {
+      steps: 5
+    })
+    await page.mouse.up()
   }
 }
