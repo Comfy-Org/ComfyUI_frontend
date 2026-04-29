@@ -3,6 +3,17 @@
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     v-bind="$attrs"
   >
+    <template #tool-buttons>
+      <Button
+        v-tooltip.bottom="$t('sideToolbar.mediaAssets.openBrowser')"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.mediaAssets.openBrowser')"
+        @click="openMediaBrowser"
+      >
+        <i class="icon-[lucide--maximize-2] size-4" />
+      </Button>
+    </template>
     <template #alt-title>
       <div
         v-if="isInFolderView"
@@ -26,7 +37,7 @@
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
+      <div v-if="isInFolderView" class="p-2 2xl:px-4">
         <Button variant="secondary" size="lg" @click="exitFolderView">
           <i class="icon-[lucide--arrow-left] size-4" />
           <span>{{ $t('sideToolbar.backToAssets') }}</span>
@@ -35,22 +46,55 @@
 
       <!-- Filter Bar -->
       <MediaAssetFilterBar
+        ref="filterBarRef"
         v-model:search-query="searchQuery"
+        v-model:filter-tags="filterTags"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
+        :suggestions="availableTags"
+        :property-suggestions="propertySuggestions"
+        @update:property-filters="propertyFilters = $event"
       />
-      <!-- Tab list -->
+      <!-- Tab list + asset info button -->
       <div
         v-if="!isInFolderView"
-        class="border-b border-comfy-input p-2 2xl:px-4"
+        class="flex items-center justify-between border-b border-comfy-input p-2 2xl:px-4"
       >
         <TabList v-model="activeTab">
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
           <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         </TabList>
+        <Popover
+          v-if="hasSelection"
+          v-model="infoPopoverOpen"
+          :show-arrow="false"
+        >
+          <template #button>
+            <Button
+              variant="secondary"
+              size="sm"
+              :aria-label="$t('sideToolbar.mediaAssets.assetInfo')"
+            >
+              <i class="icon-[lucide--info] size-3.5" />
+              {{ $t('sideToolbar.mediaAssets.assetInfo') }}
+            </Button>
+          </template>
+          <template #default>
+            <div class="max-h-[70vh] w-72 overflow-y-auto">
+              <MediaAssetInfoPanel
+                :asset="selectedAssets[0]"
+                :assets="infoPanelAssets"
+                :tag-suggestions="availableTags"
+                :property-suggestions="propertySuggestions"
+                compact
+                @zoom="handleZoomClick"
+              />
+            </div>
+          </template>
+        </Popover>
       </div>
     </template>
     <template #body>
@@ -183,6 +227,9 @@
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
+    :asset="lightboxAsset"
+    :tag-suggestions="availableTags"
+    :property-suggestions="propertySuggestions"
   />
   <MediaAssetContextMenu
     v-if="contextMenuAsset"
@@ -194,6 +241,7 @@
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"
+    @open-info="infoPopoverOpen = true"
     @hide="handleContextMenuHide"
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
@@ -234,12 +282,17 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
+import MediaAssetInfoPanel from '@/platform/assets/components/mediaInfo/MediaAssetInfoPanel.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import { useMediaAssetBrowserDialog } from '@/platform/assets/composables/useMediaAssetBrowserDialog'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
+import { usePropertySuggestions } from '@/platform/assets/composables/usePropertySuggestions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -266,6 +319,12 @@ const { t } = useI18n()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
+const { show: showMediaBrowser } = useMediaAssetBrowserDialog()
+
+function openMediaBrowser() {
+  showMediaBrowser({ initialTab: activeTab.value })
+}
+
 const activeTab = ref<'input' | 'output'>('output')
 const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
@@ -277,6 +336,7 @@ const viewMode = useStorage<'list' | 'grid'>(
 )
 const isListView = computed(() => viewMode.value === 'list')
 
+const infoPopoverOpen = ref(false)
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
 
@@ -367,6 +427,8 @@ const currentAssets = computed(() =>
 const loading = computed(() => currentAssets.value.loading.value)
 const error = computed(() => currentAssets.value.error.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
+const availableTags = useAvailableMediaTags(mediaAssets)
+const propertySuggestions = usePropertySuggestions(mediaAssets)
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -399,8 +461,14 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
-  useMediaAssetFiltering(baseAssets)
+const {
+  searchQuery,
+  filterTags,
+  propertyFilters,
+  sortBy,
+  mediaTypeFilters,
+  filteredAssets
+} = useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
   return filteredAssets.value
@@ -426,7 +494,49 @@ const previewableVisibleAssets = computed(() =>
   )
 )
 
+const lightboxAsset = computed(() => {
+  if (galleryActiveIndex.value === -1 || !currentGalleryAssetId.value)
+    return undefined
+  return previewableVisibleAssets.value.find(
+    (a) => a.id === currentGalleryAssetId.value
+  )
+})
+
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
+
+// Expand image sets (outputCount > 1) into sub-images for the info panel
+const expandedSelectedAssets = ref<AssetItem[]>([])
+
+watch(selectedAssets, async (assets, _, onCleanup) => {
+  let cancelled = false
+  onCleanup(() => {
+    cancelled = true
+  })
+
+  if (assets.length !== 1) {
+    expandedSelectedAssets.value = []
+    return
+  }
+  const asset = assets[0]
+  if (getOutputCount(asset) > 1) {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (metadata) {
+      const items = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      if (!cancelled) expandedSelectedAssets.value = items
+      return
+    }
+  }
+  expandedSelectedAssets.value = []
+})
+
+const infoPanelAssets = computed(() => {
+  if (selectedAssets.value.length > 1) return selectedAssets.value
+  if (expandedSelectedAssets.value.length > 1)
+    return expandedSelectedAssets.value
+  return undefined
+})
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
@@ -499,8 +609,12 @@ watch(
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
+    filterTags.value = []
+    propertyFilters.value = []
     // Reset pagination state when tab changes
     void refreshAssets()
+    // Refocus search bar after tab switch
+    void nextTick(() => filterBarRef.value?.focus())
   },
   { immediate: true }
 )
@@ -639,8 +753,11 @@ const exitFolderView = () => {
   searchQuery.value = ''
 }
 
+const filterBarRef = ref<InstanceType<typeof MediaAssetFilterBar>>()
+
 onMounted(() => {
   activateSelection()
+  filterBarRef.value?.focus()
 })
 
 onUnmounted(() => {

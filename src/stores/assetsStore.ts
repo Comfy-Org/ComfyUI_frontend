@@ -569,12 +569,14 @@ export const useAssetsStore = defineStore('assets', () => {
       ) {
         const originalMetadata = asset.user_metadata
         updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
+        updateMediaAsset(asset.id, { user_metadata: userMetadata })
 
         try {
           const updatedAsset = await assetService.updateAsset(asset.id, {
             user_metadata: userMetadata
           })
           updateAssetInCache(asset.id, updatedAsset, cacheKey)
+          updateMediaAsset(asset.id, updatedAsset)
         } catch (error) {
           console.error('Failed to update asset metadata:', error)
           updateAssetInCache(
@@ -582,6 +584,7 @@ export const useAssetsStore = defineStore('assets', () => {
             { user_metadata: originalMetadata },
             cacheKey
           )
+          updateMediaAsset(asset.id, { user_metadata: originalMetadata })
         }
       }
 
@@ -721,6 +724,26 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   )
 
+  /**
+   * Update an asset in-place within the media asset arrays (input/history).
+   * Used after metadata writes to keep the UI in sync without a full refetch.
+   */
+  function updateMediaAsset(
+    assetId: string,
+    updates: Partial<AssetItem>
+  ) {
+    for (const list of [inputAssets, historyAssets]) {
+      const arr = list.value
+      const index = arr.findIndex((a) => a.id === assetId)
+      if (index !== -1) {
+        // Mutate in-place so existing refs (e.g. focusedAsset) see the change
+        Object.assign(arr[index], updates)
+        // Trigger shallowRef reactivity by reassigning .value
+        list.value = [...arr]
+      }
+    }
+  }
+
   return {
     // States
     inputAssets,
@@ -741,6 +764,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+    updateMediaAsset,
 
     // Input mapping helpers
     inputAssetsByFilename,

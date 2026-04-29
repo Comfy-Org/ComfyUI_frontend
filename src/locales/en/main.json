@@ -280,6 +280,9 @@
     "imageUrl": "Image URL",
     "clear": "Clear",
     "clearAll": "Clear all",
+    "createTag": "Create new tag",
+    "tagPrefix": "tag:",
+    "typePrefix": "type:",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
     "itemsSelected": "No items selected | {count} item selected | {count} items selected",
@@ -821,6 +824,18 @@
     "arrow": "Arrow",
     "box": "Box"
   },
+  "properties": {
+    "addProperty": "Add property",
+    "keyPlaceholder": "Property name",
+    "createKey": "Create \"{key}\"",
+    "noSuggestions": "Type a property name",
+    "mixed": "Mixed",
+    "selectType": "Select type…",
+    "createNew": "Create",
+    "typeText": "Text",
+    "typeNumber": "Number",
+    "typeBoolean": "Boolean"
+  },
   "sideToolbar": {
     "sidebar": "Sidebar",
     "themeToggle": "Toggle Theme",
@@ -843,7 +858,22 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
-      "viewSettings": "View settings"
+      "viewSettings": "View settings",
+      "openBrowser": "Open media browser",
+      "assetInfo": "Asset Info",
+      "selectAssetPrompt": "Select an asset to view details",
+      "infoPanel": {
+        "preview": "Preview",
+        "mediaType": "Type",
+        "fileSize": "File Size",
+        "generationTime": "Generation Time",
+        "tagging": "Tagging",
+        "properties": "Properties",
+        "description": "Description",
+        "selection": "Selection",
+        "selectedCount": "Total",
+        "generatedOutputReadonly": "Editing is not yet available for generated outputs."
+      }
     },
     "backToAssets": "Back to all assets",
     "folderView": {
@@ -3098,6 +3128,8 @@
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
       "inspect": "Inspect asset",
+      "assetInfo": "Asset Info",
+      "assetInfoMultiple": "Asset Info ({count})",
       "more": "More options",
       "zoom": "Zoom in",
       "moreOptions": "More options",

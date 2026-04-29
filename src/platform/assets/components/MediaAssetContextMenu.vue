@@ -65,6 +65,7 @@ const {
 
 const emit = defineEmits<{
   zoom: []
+  'open-info': []
   hide: []
   'asset-deleted': []
   'bulk-download': [assets: AssetItem[]]
@@ -153,6 +154,15 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       disabled: true
     })
 
+    // Asset Info (bulk)
+    items.push({
+      label: t('mediaAsset.actions.assetInfoMultiple', {
+        count: selectedAssets.length
+      }),
+      icon: 'icon-[lucide--info]',
+      command: () => emit('open-info')
+    })
+
     // Bulk Add to Workflow
     items.push({
       label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
@@ -203,6 +213,13 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       command: () => emit('zoom')
     })
   }
+
+  // Asset Info
+  items.push({
+    label: t('mediaAsset.actions.assetInfo'),
+    icon: 'icon-[lucide--info]',
+    command: () => emit('open-info')
+  })
 
   // Add to workflow (conditional)
   if (showAddToWorkflow.value) {
