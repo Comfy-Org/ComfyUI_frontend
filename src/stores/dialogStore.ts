@@ -20,6 +20,16 @@ type DialogPosition =
   | 'bottomleft'
   | 'bottomright'
 
+/**
+ * Selects the dialog renderer used by `GlobalDialog`. `'primevue'` is the
+ * current default and runs the legacy PrimeVue `Dialog` path. `'reka'` opts
+ * into the Reka-UI primitive set under `src/components/ui/dialog/`. Migration
+ * tracked in `temp/plans/adr-0009-dialog-reka-migration-DRAFT.md`.
+ */
+type DialogRenderer = 'primevue' | 'reka'
+
+type DialogContentSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
+
 interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
@@ -32,6 +42,8 @@ interface CustomDialogComponentProps {
   dismissableMask?: boolean
   unstyled?: boolean
   headless?: boolean
+  renderer?: DialogRenderer
+  size?: DialogContentSize
 }
 
 export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
