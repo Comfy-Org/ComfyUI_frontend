@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -567,6 +568,7 @@ describe('useCoreCommands', () => {
   describe('Help commands', () => {
     const findCmd = (id: string) =>
       useCoreCommands().find((cmd) => cmd.id === id)!
+    const { staticUrls } = useExternalLink()
     let openSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
@@ -585,7 +587,7 @@ describe('useCoreCommands', () => {
           source: 'menu'
         })
       )
-      expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_blank')
+      expect(openSpy).toHaveBeenCalledWith(staticUrls.githubIssues, '_blank')
     })
 
     it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
@@ -596,7 +598,7 @@ describe('useCoreCommands', () => {
           resource_type: 'discord'
         })
       )
-      expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_blank')
+      expect(openSpy).toHaveBeenCalledWith(staticUrls.discord, '_blank')
     })
 
     it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
