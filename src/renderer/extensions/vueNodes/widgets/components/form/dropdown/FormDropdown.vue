@@ -44,6 +44,8 @@ interface Props {
   accept?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
+  showSort?: boolean
+  showLayoutSwitcher?: boolean
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -72,6 +74,8 @@ const {
   accept,
   filterOptions = [],
   sortOptions = getDefaultSortOptions(),
+  showSort = true,
+  showLayoutSwitcher = true,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
@@ -374,6 +378,8 @@ function showPicker() {
         :uploadable
         :filter-options
         :sort-options
+        :show-sort
+        :show-layout-switcher
         :show-ownership-filter
         :ownership-options
         :show-base-model-filter
