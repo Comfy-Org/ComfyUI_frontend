@@ -15,6 +15,16 @@ vi.mock(
   })
 )
 
+const distributionState = vi.hoisted(() => ({
+  isCloud: false
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distributionState.isCloud
+  }
+}))
+
 // Mock the API
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -49,6 +59,14 @@ vi.mock('@/stores/dialogStore', () => ({
   }))
 }))
 
+const mockGetSharedWorkflow = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
+  useWorkflowShareService: () => ({
+    getSharedWorkflow: mockGetSharedWorkflow
+  })
+}))
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -58,9 +76,20 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
+    distributionState.isCloud = false
     mockWorkflowTemplatesStore = {
       isLoaded: false,
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+      getTemplateByName: vi.fn((name: string) =>
+        name === 'template1'
+          ? {
+              name: 'template1',
+              mediaType: 'image',
+              mediaSubtype: 'jpg',
+              description: 'Template 1 description'
+            }
+          : undefined
+      ),
       groupedTemplates: [
         {
           label: 'ComfyUI Examples',
@@ -115,6 +144,16 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(fetch).mockResolvedValue({
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
     } as Partial<Response> as Response)
+
+    mockGetSharedWorkflow.mockResolvedValue({
+      shareId: 'share-123',
+      workflowId: 'workflow-123',
+      name: 'Shared Template',
+      listed: true,
+      publishedAt: null,
+      workflowJson: { workflow: 'shared' },
+      assets: []
+    })
   })
 
   it('should load templates from store', async () => {
@@ -175,6 +214,25 @@ describe('useTemplateWorkflows', () => {
 
     expect(url).toBe(
       'mock-api-url/workflow_templates/custom-module/test-template.jpg'
+    )
+  })
+
+  it('should prefer absolute thumbnail URLs when provided', () => {
+    const { getTemplateThumbnailUrl } = useTemplateWorkflows()
+    const template = {
+      name: 'hub-template',
+      mediaSubtype: 'webp',
+      mediaType: 'image',
+      description: 'Hub template',
+      thumbnailUrl: 'https://cdn.example.com/thumb.webp',
+      thumbnailComparisonUrl: 'https://cdn.example.com/compare.webp'
+    }
+
+    expect(getTemplateThumbnailUrl(template, 'hub', '1')).toBe(
+      'https://cdn.example.com/thumb.webp'
+    )
+    expect(getTemplateThumbnailUrl(template, 'hub', '2')).toBe(
+      'https://cdn.example.com/compare.webp'
     )
   })
 
@@ -306,5 +364,28 @@ describe('useTemplateWorkflows', () => {
 
     // Restore console.error
     consoleSpy.mockRestore()
+  })
+
+  it('should load cloud templates by share id through the shared workflow service', async () => {
+    distributionState.isCloud = true
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockClear()
+    mockWorkflowTemplatesStore.getTemplateByName = vi.fn(() => ({
+      name: 'template1',
+      shareId: 'share-123',
+      sourceModule: 'default',
+      title: 'Template 1',
+      mediaType: 'image',
+      mediaSubtype: 'jpg',
+      description: 'Template 1 description'
+    }))
+
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    const result = await loadWorkflowTemplate('template1', 'hub')
+
+    expect(result).toBe(true)
+    expect(mockGetSharedWorkflow).toHaveBeenCalledWith('share-123')
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
