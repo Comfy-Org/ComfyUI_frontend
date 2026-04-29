@@ -58,7 +58,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Devtools extensions, included dynamically
+    'tools/devtools/web/**'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
