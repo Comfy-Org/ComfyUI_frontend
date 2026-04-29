@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -169,6 +170,36 @@ class NodeSlotReference {
       [this.type, this.node.id, this.index] as const
     )
   }
+
+  async getLink(): Promise<SerialisableLLink | null> {
+    return await this.node.comfyPage.page.evaluate(
+      ([type, id, index]) => {
+        const graph = window.app!.canvas.graph!
+        const node = graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const linkId =
+          type === 'input'
+            ? node.inputs[index].link
+            : (node.outputs[index].links ?? [])[0]
+        if (linkId == null) return null
+        const link =
+          graph.links instanceof Map
+            ? graph.links.get(linkId)
+            : graph.links[linkId]
+        if (!link) return null
+        return {
+          id: link.id,
+          origin_id: link.origin_id,
+          origin_slot: link.origin_slot,
+          target_id: link.target_id,
+          target_slot: link.target_slot,
+          type: link.type,
+          parentId: link.parentId
+        }
+      },
+      [this.type, this.node.id, this.index] as const
+    )
+  }
 }
 
 export class NodeWidgetReference {
@@ -325,6 +356,23 @@ export class NodeReference {
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
     return { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
+  }
+  async dragBy(
+    delta: Position,
+    options?: {
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+    }
+  ): Promise<void> {
+    const titlePos = await this.getTitlePosition()
+    const target = { x: titlePos.x + delta.x, y: titlePos.y + delta.y }
+    const modifiers = options?.modifiers ?? []
+    const keyboard = this.comfyPage.page.keyboard
+    for (const mod of modifiers) await keyboard.down(mod)
+    try {
+      await this.comfyPage.canvasOps.dragAndDrop(titlePos, target)
+    } finally {
+      for (const mod of modifiers) await keyboard.up(mod)
+    }
   }
   async isPinned() {
     return !!(await this.getFlags()).pinned

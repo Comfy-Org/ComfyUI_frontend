@@ -90,7 +90,8 @@ export const TestIds = {
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
-    workflowTabs: 'topbar-workflow-tabs'
+    workflowTabs: 'topbar-workflow-tabs',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'

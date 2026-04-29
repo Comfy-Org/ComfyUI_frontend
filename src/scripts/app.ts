@@ -241,7 +241,7 @@ export class ComfyApp {
   }
 
   canvas!: LGraphCanvas
-  dragOverNode: LGraphNode | null = null
+  dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
