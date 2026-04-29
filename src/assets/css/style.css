@@ -74,7 +74,7 @@
   background-color: rgb(255 255 255 / 0.1);
 }
 
-/* Mouse-focus outline off; keyboard outline is below (WCAG 2.4.7). */
+/* Brighter border on focus is the only active/selected signal. */
 :is(.floating-panel, .app-chrome) textarea:focus,
 :is(.floating-panel, .app-chrome) input:focus,
 :is(.floating-panel, .app-chrome)
@@ -82,14 +82,6 @@
   border-color: rgb(255 255 255 / 0.18);
   outline: none;
   box-shadow: none;
-}
-
-:is(.floating-panel, .app-chrome) textarea:focus-visible,
-:is(.floating-panel, .app-chrome) input:focus-visible,
-:is(.floating-panel, .app-chrome)
-  .bg-component-node-widget-background:has(:focus-visible) {
-  outline: 2px solid rgb(255 255 255 / 0.7);
-  outline-offset: 1px;
 }
 
 /* Kill NodeWidgets' focus-within ring; pill border is the focus signal. */
