@@ -194,9 +194,12 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     :title="filenameFor(entry)"
     :menu-entries="menuEntriesFor(entry)"
     :initial-position="entry.position"
+    :initial-width="entry.width"
+    :initial-height="entry.height"
     :z-index="entry.zIndex"
     :body-aspect="aspectFor(entry)"
     @update:position="(pos) => windowStore.move(entry.id, pos)"
+    @update:size="(size) => windowStore.resize(entry.id, size)"
     @promote="windowStore.promote(entry.id)"
   >
     <template #header-actions-right>

@@ -74,6 +74,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     deltaY: number,
     rect: { left: number; top: number; width: number; height: number }
   ) {
+    cancelFlyTo()
     const prevScale = viewportScale.value
     // 1.1 ** (delta / -30) matches ZoomPane's original responsiveness so
     // wheel feel doesn't change between the old in-pane zoom and the new
@@ -89,6 +90,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function panBy(dx: number, dy: number) {
+    cancelFlyTo()
     viewportOffsetX.value += dx
     viewportOffsetY.value += dy
   }
@@ -97,6 +99,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   // is the natural focal point when there's no cursor position driving
   // the change.
   function zoomStep(factor: number) {
+    cancelFlyTo()
     const prevScale = viewportScale.value
     const nextScale = clampScale(prevScale * factor)
     if (nextScale === prevScale) return
@@ -115,9 +118,64 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function resetView() {
+    cancelFlyTo()
     viewportScale.value = 1
     viewportOffsetX.value = 0
     viewportOffsetY.value = 0
+  }
+
+  // Active flyTo animation handle so a second call (or a manual
+  // pan/zoom) can interrupt the prior tween mid-flight.
+  let flyAnimationId: number | null = null
+  function cancelFlyTo() {
+    if (flyAnimationId !== null) {
+      cancelAnimationFrame(flyAnimationId)
+      flyAnimationId = null
+    }
+  }
+
+  // Smoothly center the viewport on a workspace rect. Keeps the
+  // current zoom unless it's WAY out (< 0.5×) or WAY in (> 2×),
+  // in which case it eases toward 1×.
+  function flyTo(
+    target: { x: number; y: number; width: number; height: number },
+    options?: {
+      duration?: number
+      viewportWidth?: number
+      viewportHeight?: number
+    }
+  ) {
+    cancelFlyTo()
+    const duration = options?.duration ?? 450
+    const vw = options?.viewportWidth ?? window.innerWidth
+    const vh = options?.viewportHeight ?? window.innerHeight
+
+    const cx = target.x + target.width / 2
+    const cy = target.y + target.height / 2
+
+    const fromScale = viewportScale.value
+    const toScale = fromScale < 0.5 || fromScale > 2 ? clampScale(1) : fromScale
+
+    // From the workspace transform: screenX = vw/2 + (cx - vw/2)*scale + offsetX
+    // For screenX = vw/2 (center), offsetX = (vw/2 - cx) * scale.
+    const toX = (vw / 2 - cx) * toScale
+    const toY = (vh / 2 - cy) * toScale
+
+    const fromX = viewportOffsetX.value
+    const fromY = viewportOffsetY.value
+
+    const start = performance.now()
+    const easeInOut = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t)
+
+    function tick(now: number) {
+      const t = Math.min(1, (now - start) / duration)
+      const k = easeInOut(t)
+      viewportOffsetX.value = fromX + (toX - fromX) * k
+      viewportOffsetY.value = fromY + (toY - fromY) * k
+      viewportScale.value = fromScale + (toScale - fromScale) * k
+      flyAnimationId = t < 1 ? requestAnimationFrame(tick) : null
+    }
+    flyAnimationId = requestAnimationFrame(tick)
   }
 
   // Shared panel position + collapse state — single source of truth for
@@ -326,6 +384,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   return {
     enterBuilder,
     exitBuilder,
+    flyTo,
     hasNodes,
     hasOutputs,
     loadSelections,

@@ -10,22 +10,35 @@ import { useAppPanelLayout } from './panels/useAppPanelLayout'
 import { panelSide as resolvePanelSide } from './panels/panelTypes'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getPathDetails } from '@/utils/formatUtil'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const appModeStore = useAppModeStore()
 const workflowStore = useWorkflowStore()
-const linearOutputStore = useLinearOutputStore()
+const windowStore = useOutputWindowStore()
 const { viewportScale, viewportOffsetX, viewportOffsetY } =
   storeToRefs(appModeStore)
 
-// Reset pan/zoom on selected-output change so a new generation isn't
-// scrolled off-screen by the prior run's transform.
+// Smooth-pan to a new output window on spawn so the user lands on the
+// fresh content without the previous run's transform leaving it off-
+// screen. flyTo keeps the current zoom unless it's WAY off.
+const FALLBACK_W = 512
+const FALLBACK_H = 560
 watch(
-  () => linearOutputStore.selectedId,
-  () => appModeStore.resetView()
+  () => windowStore.windows.length,
+  (next, prev) => {
+    if (next <= (prev ?? 0)) return
+    const latest = windowStore.windows[windowStore.windows.length - 1]
+    if (!latest) return
+    appModeStore.flyTo({
+      x: latest.position.x,
+      y: latest.position.y,
+      width: latest.width ?? FALLBACK_W,
+      height: latest.height ?? FALLBACK_H
+    })
+  }
 )
 
 // Pan/zoom handlers bind to `.layout-view` (always full viewport), not
