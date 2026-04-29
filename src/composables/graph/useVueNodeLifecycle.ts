@@ -10,6 +10,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -86,6 +87,16 @@ function useVueNodeLifecycleIndividual() {
     () => !shouldRenderVueNodes.value,
     () => {
       disposeNodeManagerAndSyncs()
+
+      // Clear stale DOM widget position overrides from the Vue rendering
+      // cycle. The legacy renderer re-establishes needed overrides during
+      // its first draw pass via PromotedWidgetView.draw / y setter.
+      const domWidgetStore = useDomWidgetStore()
+      for (const [widgetId, state] of domWidgetStore.widgetStates) {
+        if (state.positionOverride) {
+          domWidgetStore.clearPositionOverride(widgetId)
+        }
+      }
 
       // Force arrange() on all nodes so input.pos is computed before
       // the first legacy drawConnections frame (which may run before
