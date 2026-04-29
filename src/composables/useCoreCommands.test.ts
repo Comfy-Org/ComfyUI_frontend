@@ -23,12 +23,22 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
+  const mockDs = {
+    scale: 1,
+    element: { width: 800, height: 600 } as Pick<
+      HTMLCanvasElement,
+      'width' | 'height'
+    >,
+    changeScale: vi.fn()
+  }
   const mockCanvas = {
     subgraph: undefined,
     selectedItems: new Set(),
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
-    selectItems: vi.fn()
+    selectItems: vi.fn(),
+    ds: mockDs,
+    setDirty: vi.fn()
   }
 
   return {
@@ -39,6 +49,8 @@ vi.mock('@/scripts/app', () => {
           mockGraphClear()
         }
       }),
+      openClipspace: vi.fn(),
+      refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
         clear: mockGraphClear
@@ -81,8 +93,27 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
+const mockResetView = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: vi.fn(() => ({}))
+  useLitegraphService: vi.fn(() => ({
+    resetView: mockResetView
+  }))
+}))
+
+const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: vi.fn(() => ({
+    trackHelpResourceClicked: mockTrackHelpResourceClicked
+  }))
+}))
+
+const mockShowAbout = vi.hoisted(() => vi.fn())
+const mockShowSettings = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    show: mockShowSettings,
+    showAbout: mockShowAbout
+  }))
 }))
 
 vi.mock('@/stores/executionStore', () => ({
@@ -480,6 +511,98 @@ describe('useCoreCommands', () => {
         expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
         expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('Canvas view commands', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
+      await findCmd('Comfy.Canvas.ResetView').function()
+
+      expect(mockResetView).toHaveBeenCalled()
+    })
+
+    it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
+      app.canvas.ds.scale = 1
+      await findCmd('Comfy.Canvas.ZoomIn').function()
+
+      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
+        1.1,
+        expect.any(Array)
+      )
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('Comfy.Canvas.ZoomOut scales the canvas down by 1/1.1× and marks it dirty', async () => {
+      app.canvas.ds.scale = 1
+      await findCmd('Comfy.Canvas.ZoomOut').function()
+
+      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
+        1 / 1.1,
+        expect.any(Array)
+      )
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+  })
+
+  describe('Workflow lifecycle commands', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it('Comfy.OpenClipspace delegates to app.openClipspace', async () => {
+      await findCmd('Comfy.OpenClipspace').function()
+
+      expect(app.openClipspace).toHaveBeenCalled()
+    })
+
+    it('Comfy.RefreshNodeDefinitions awaits app.refreshComboInNodes', async () => {
+      await findCmd('Comfy.RefreshNodeDefinitions').function()
+
+      expect(app.refreshComboInNodes).toHaveBeenCalled()
+    })
+  })
+
+  describe('Help commands', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+    let openSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      openSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => null as unknown as Window)
+    })
+
+    it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
+      await findCmd('Comfy.Help.OpenComfyUIIssues').function()
+
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resource_type: 'github',
+          is_external: true,
+          source: 'menu'
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_blank')
+    })
+
+    it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
+      await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
+
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resource_type: 'discord'
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_blank')
+    })
+
+    it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
+      await findCmd('Comfy.Help.AboutComfyUI').function()
+
+      expect(mockShowAbout).toHaveBeenCalled()
     })
   })
 })
