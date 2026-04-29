@@ -17,15 +17,16 @@ test.describe('Load3D LOD', () => {
         (el: HTMLCanvasElement) => el.width
       )
 
-      // Set the canvas zoom level programmatically. canvasOps.zoom() scrolls
-      // at (10, 10) which lands in the topbar when the new menu is active, so
-      // wheel events never reach the LiteGraph canvas. Setting ds.scale directly
-      // and marking the canvas dirty forces the render loop to call
-      // computeVisibleArea() → ds.onChanged() → appScalePercentage update →
-      // useLoad3d watch → handleResize() → renderer.setPixelRatio(scale).
+      // Simulate a canvas zoom change: set ds.scale to 2×, then invoke
+      // node.onResize() which calls load3d.handleResize() directly.
+      // handleResize() reads getZoomScaleCallback() → app.canvas.ds.scale = 2.0
+      // and sets renderer.setPixelRatio(2.0), so canvas.width = clientWidth × 2.
+      // This path is independent of the appScalePercentage watch chain and
+      // exercises the core LOD fix in handleResize().
       await comfyPage.page.evaluate(() => {
+        const node = window.app!.graph!.nodes[0]
         window.app!.canvas.ds.scale = 2.0
-        window.app!.canvas.setDirty(true, true)
+        node.onResize?.(node.size)
       })
       await comfyPage.nextFrame()
 
