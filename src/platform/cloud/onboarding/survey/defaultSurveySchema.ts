@@ -1,5 +1,14 @@
 import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
+const optionsFor = (
+  fieldId: string,
+  values: string[]
+): { value: string; labelKey: string }[] =>
+  values.map((value) => ({
+    value,
+    labelKey: `cloudOnboarding.survey.options.${fieldId}.${value}`
+  }))
+
 export const defaultOnboardingSurvey: OnboardingSurvey = {
   version: 2,
   introKey: 'cloudOnboarding.survey.intro',
@@ -9,24 +18,20 @@ export const defaultOnboardingSurvey: OnboardingSurvey = {
       type: 'single',
       labelKey: 'cloudSurvey_steps_usage',
       required: true,
-      options: [
-        { value: 'personal', label: 'Personal use' },
-        { value: 'work', label: 'Work' },
-        { value: 'education', label: 'Education (student or educator)' }
-      ]
+      options: optionsFor('usage', ['personal', 'work', 'education'])
     },
     {
       id: 'familiarity',
       type: 'single',
       labelKey: 'cloudSurvey_steps_familiarity',
       required: true,
-      options: [
-        { value: 'new', label: 'New — never used it' },
-        { value: 'starting', label: 'Beginner — following tutorials' },
-        { value: 'basics', label: 'Intermediate — comfortable with basics' },
-        { value: 'advanced', label: 'Advanced — build and edit workflows' },
-        { value: 'expert', label: 'Expert — I help others' }
-      ]
+      options: optionsFor('familiarity', [
+        'new',
+        'starting',
+        'basics',
+        'advanced',
+        'expert'
+      ])
     },
     {
       id: 'intent',
@@ -34,17 +39,17 @@ export const defaultOnboardingSurvey: OnboardingSurvey = {
       labelKey: 'cloudSurvey_steps_intent',
       required: true,
       randomize: true,
-      options: [
-        { value: 'workflows', label: 'Custom workflows or pipelines' },
-        { value: 'custom_nodes', label: 'Custom nodes' },
-        { value: 'videos', label: 'Videos' },
-        { value: 'images', label: 'Images' },
-        { value: '3d_game', label: '3D assets / game assets' },
-        { value: 'audio', label: 'Audio / music' },
-        { value: 'apps', label: 'Simplified Apps from workflows' },
-        { value: 'api', label: 'API endpoints to run workflows' },
-        { value: 'not_sure', label: 'Not sure' }
-      ]
+      options: optionsFor('intent', [
+        'workflows',
+        'custom_nodes',
+        'videos',
+        'images',
+        '3d_game',
+        'audio',
+        'apps',
+        'api',
+        'not_sure'
+      ])
     },
     {
       id: 'source',
@@ -52,20 +57,20 @@ export const defaultOnboardingSurvey: OnboardingSurvey = {
       labelKey: 'cloudSurvey_steps_source',
       required: true,
       randomize: true,
-      options: [
-        { value: 'youtube', label: 'YouTube' },
-        { value: 'reddit', label: 'Reddit' },
-        { value: 'twitter', label: 'Twitter / X' },
-        { value: 'instagram', label: 'Instagram' },
-        { value: 'linkedin', label: 'LinkedIn' },
-        { value: 'friend', label: 'Friend or colleague' },
-        { value: 'search', label: 'Google / search' },
-        { value: 'newsletter', label: 'Newsletter or blog' },
-        { value: 'conference', label: 'Conference or event' },
-        { value: 'discord', label: 'Discord / community' },
-        { value: 'github', label: 'GitHub' },
-        { value: 'other', label: 'Other' }
-      ]
+      options: optionsFor('source', [
+        'youtube',
+        'reddit',
+        'twitter',
+        'instagram',
+        'linkedin',
+        'friend',
+        'search',
+        'newsletter',
+        'conference',
+        'discord',
+        'github',
+        'other'
+      ])
     }
   ]
 }

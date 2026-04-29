@@ -23,7 +23,7 @@
         <label
           :for="`${field.id}-${option.value}`"
           class="cursor-pointer text-sm"
-          >{{ option.label }}</label
+          >{{ resolveOptionLabel(option) }}</label
         >
       </div>
     </template>
@@ -42,7 +42,7 @@
         <label
           :for="`${field.id}-${option.value}`"
           class="cursor-pointer text-sm"
-          >{{ option.label }}</label
+          >{{ resolveOptionLabel(option) }}</label
         >
       </div>
     </template>
@@ -85,7 +85,10 @@ import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Input from '@/components/ui/input/Input.vue'
-import type { OnboardingSurveyField } from '@/platform/remoteConfig/types'
+import type {
+  OnboardingSurveyField,
+  OnboardingSurveyOption
+} from '@/platform/remoteConfig/types'
 
 const {
   field,
@@ -111,6 +114,11 @@ const resolvedLabel = (() => {
   if (field.labelKey && te(field.labelKey)) return t(field.labelKey)
   return field.label ?? field.id
 })()
+
+const resolveOptionLabel = (option: OnboardingSurveyOption): string => {
+  if (option.labelKey && te(option.labelKey)) return t(option.labelKey)
+  return option.label ?? option.value
+}
 
 const onSingleChange = (value: unknown) => {
   emit('update:modelValue', typeof value === 'string' ? value : '')

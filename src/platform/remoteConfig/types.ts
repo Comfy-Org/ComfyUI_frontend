@@ -34,7 +34,8 @@ export type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
 
 export type OnboardingSurveyOption = {
   value: string
-  label: string
+  label?: string
+  labelKey?: string
 }
 
 export type OnboardingSurveyFieldCondition = {

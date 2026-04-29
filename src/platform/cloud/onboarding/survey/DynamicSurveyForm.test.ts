@@ -111,6 +111,56 @@ describe('DynamicSurveyForm', () => {
     expect(screen.getByText('How do you plan to use ComfyUI?')).toBeVisible()
   })
 
+  it('resolves option and field labels via labelKey when provided', () => {
+    const localizedI18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          g: { back: 'Back', next: 'Next', submit: 'Submit' },
+          cloudOnboarding: {
+            survey: {
+              intro: 'Help us tailor your ComfyUI experience.',
+              errors: {
+                chooseAnOption: '',
+                selectAtLeastOne: '',
+                describeAnswer: ''
+              }
+            }
+          },
+          survey_label: 'Localized question?',
+          survey_a: 'Localized A',
+          survey_b: 'Localized B'
+        }
+      }
+    })
+
+    render(DynamicSurveyForm, {
+      global: { plugins: [PrimeVue, localizedI18n] },
+      props: {
+        survey: {
+          version: 1,
+          fields: [
+            {
+              id: 'q',
+              type: 'single',
+              labelKey: 'survey_label',
+              required: true,
+              options: [
+                { value: 'a', labelKey: 'survey_a' },
+                { value: 'b', labelKey: 'survey_b' }
+              ]
+            }
+          ]
+        }
+      }
+    })
+
+    expect(screen.getByText('Localized question?')).toBeVisible()
+    expect(screen.getByLabelText('Localized A')).toBeInTheDocument()
+    expect(screen.getByLabelText('Localized B')).toBeInTheDocument()
+  })
+
   it('enables Submit only after the multi-select field has at least one choice', async () => {
     const user = userEvent.setup()
     renderForm(twoStepSurvey)
