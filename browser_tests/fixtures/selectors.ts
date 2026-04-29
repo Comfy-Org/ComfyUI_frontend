@@ -262,6 +262,9 @@ export const TestIds = {
     chipDelete: 'chip-delete',
     noResults: 'no-results',
     nodeIdBadge: 'node-id-badge',
+    sidebarToggle: 'toggle-category-sidebar',
+    sidebarBackdrop: 'sidebar-backdrop',
+    filterChipsScroll: 'filter-chips-scroll',
     category: (id: string) => `category-${id}`,
     rootCategory: (id: string) => `search-category-${id}`,
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
