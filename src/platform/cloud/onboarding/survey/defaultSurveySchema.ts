@@ -10,13 +10,9 @@ export const defaultOnboardingSurvey: OnboardingSurvey = {
       labelKey: 'cloudSurvey_steps_usage',
       required: true,
       options: [
-        { value: 'personal', label: '[DEFAULT] Personal use' },
-        { value: 'work', label: '[DEFAULT] Work' },
-        {
-          value: 'education',
-          label: '[DEFAULT] Education (student or educator)'
-        },
-        { value: 'hobby', label: '[DEFAULT] Just curious / hobby' }
+        { value: 'personal', label: 'Personal use' },
+        { value: 'work', label: 'Work' },
+        { value: 'education', label: 'Education (student or educator)' }
       ]
     },
     {

@@ -79,16 +79,11 @@ export function useFeatureFlags() {
       )
     },
     get onboardingSurveyEnabled() {
-      // DO NOT MERGE: hard-coded to true so QA can preview the redesigned
-      // onboarding survey without any backend flag work. Replace the body
-      // with `return resolveFlag(...)` (see git history) before merging —
-      // the survey must remain backend-gated in production.
-      resolveFlag(
+      return resolveFlag(
         ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
         remoteConfig.value.onboarding_survey_enabled,
-        true
+        false
       )
-      return true
     },
     get linearToggleEnabled() {
       if (isNightly) return true

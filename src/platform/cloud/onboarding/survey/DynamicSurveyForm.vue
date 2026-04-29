@@ -134,7 +134,7 @@ const introText = computed(() => {
 const liveValues = ref<SurveyValues>(buildInitialValues(preparedSurvey.value))
 
 const validationSchema = computed(() =>
-  toTypedSchema(buildZodSchema(preparedSurvey.value, liveValues.value))
+  toTypedSchema(buildZodSchema(preparedSurvey.value, liveValues.value, t))
 )
 
 const { values, errors, setFieldValue, validate, resetForm } =

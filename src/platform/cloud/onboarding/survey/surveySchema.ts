@@ -54,35 +54,44 @@ export const prepareSurvey = (survey: OnboardingSurvey): OnboardingSurvey => ({
   fields: survey.fields.map(randomizeOptions)
 })
 
-const fieldSchema = (field: OnboardingSurveyField) => {
+type Translator = (key: string) => string
+
+const identityTranslator: Translator = (key) => key
+
+const fieldSchema = (field: OnboardingSurveyField, t: Translator) => {
   if (field.type === 'multi') {
     const arr = z.array(z.string())
     return field.required
-      ? arr.min(1, { message: 'Please select at least one option.' })
+      ? arr.min(1, {
+          message: t('cloudOnboarding.survey.errors.selectAtLeastOne')
+        })
       : arr.optional()
   }
   if (field.required) {
-    return z.string().min(1, { message: 'Please choose an option.' })
+    return z.string().min(1, {
+      message: t('cloudOnboarding.survey.errors.chooseAnOption')
+    })
   }
   return z.string().optional()
 }
 
 export const buildZodSchema = (
   survey: OnboardingSurvey,
-  values: SurveyValues
+  values: SurveyValues,
+  t: Translator = identityTranslator
 ) => {
   const shape: Record<string, z.ZodTypeAny> = {}
   for (const field of survey.fields) {
     if (!conditionMatches(field.showWhen, values)) continue
-    shape[field.id] = fieldSchema(field)
+    shape[field.id] = fieldSchema(field, t)
     if (
       field.allowOther &&
       field.otherFieldId &&
       values[field.id] === 'other'
     ) {
-      shape[field.otherFieldId] = z
-        .string()
-        .min(1, { message: 'Please describe your answer.' })
+      shape[field.otherFieldId] = z.string().min(1, {
+        message: t('cloudOnboarding.survey.errors.describeAnswer')
+      })
     } else if (field.otherFieldId) {
       shape[field.otherFieldId] = z.string().optional()
     }

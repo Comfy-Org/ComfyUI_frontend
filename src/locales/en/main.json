@@ -2791,6 +2791,11 @@
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
       "intro": "Help us tailor your ComfyUI experience.",
+      "errors": {
+        "chooseAnOption": "Please choose an option.",
+        "selectAtLeastOne": "Please select at least one option.",
+        "describeAnswer": "Please describe your answer."
+      },
       "steps": {
         "usage": "How do you plan to use ComfyUI?",
         "familiarity": "How familiar are you with ComfyUI?",
