@@ -475,6 +475,7 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
+    expect(mappedWidget?.storeInstanceId).toBe(String(subgraphNodeB.id))
   })
 
   it('keeps linked and independent same-name promotions as distinct sources', () => {
@@ -587,6 +588,9 @@ describe('Nested promoted widget mapping', () => {
         `${outerSubgraphNode.subgraph.id}:${secondTextNode.id}`
       ])
     )
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeInstanceId))
+    ).toEqual(new Set([String(outerSubgraphNode.id)]))
   })
 })
 

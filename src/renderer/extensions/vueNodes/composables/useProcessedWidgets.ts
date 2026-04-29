@@ -200,7 +200,12 @@ export function computeProcessedWidgets({
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
     const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      ? widgetValueStore.getWidget(
+          graphId,
+          bareWidgetId,
+          storeWidgetName,
+          widget.storeInstanceId
+        )
       : undefined
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
