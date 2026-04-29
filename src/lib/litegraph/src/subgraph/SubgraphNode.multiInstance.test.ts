@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createTestSubgraph,
@@ -151,6 +152,66 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(instance2.widgets?.[0].value).toBe(20)
     expect(instance1.widgets?.[0].serializeValue?.(instance1, 0)).toBe(10)
     expect(instance2.widgets?.[0].serializeValue?.(instance2, 0)).toBe(20)
+  })
+
+  it('clears stale scoped entries keyed by info.id during configure', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 0)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 700 })
+    const staleInstanceId = '701'
+    const innerNodeId = String(node.id)
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(
+      instance.rootGraph.id,
+      {
+        nodeId: innerNodeId,
+        name: 'widget',
+        type: 'number',
+        value: 999,
+        options: {}
+      },
+      staleInstanceId
+    )
+
+    expect(
+      widgetValueStore.getWidget(
+        instance.rootGraph.id,
+        innerNodeId,
+        'widget',
+        staleInstanceId
+      )?.value
+    ).toBe(999)
+
+    instance.configure({
+      id: Number(staleInstanceId),
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: {
+        proxyWidgets: [[innerNodeId, 'widget']]
+      },
+      widgets_values: [10]
+    })
+
+    expect(
+      widgetValueStore.getWidget(
+        instance.rootGraph.id,
+        innerNodeId,
+        'widget',
+        staleInstanceId
+      )?.value
+    ).toBe(10)
   })
 
   it('round-trips per-instance widget values through serialize and configure', () => {

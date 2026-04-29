@@ -100,6 +100,26 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
+  /**
+   * Clears one promoted-widget scope under a subgraph instance.
+   *
+   * `scopePrefix` starts after the `${instanceId}@` boundary from
+   * `makeKey(nodeId, widgetName, instanceId)`:
+   * - `${nodeId}` clears all scoped widgets on that source node.
+   * - `${nodeId}:${widgetName}` clears exactly one scoped widget.
+   */
+  function clearScopedWidget(
+    graphId: UUID,
+    instanceId: NodeId,
+    scopePrefix: string
+  ): void {
+    const widgetStates = getWidgetStateMap(graphId)
+    const prefix = `${instanceId}@${scopePrefix}`
+    for (const key of widgetStates.keys()) {
+      if (key.startsWith(prefix)) widgetStates.delete(key)
+    }
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
   }
@@ -109,6 +129,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getNodeWidgets,
     clearInstanceWidgets,
+    clearScopedWidget,
     clearGraph
   }
 })

@@ -195,6 +195,102 @@ describe('useWidgetValueStore', () => {
         store.getWidget(graphA, 'node-1', 'prompt', 'subgraph-b')?.value
       ).toBe('instance-b')
     })
+
+    it('clearScopedWidget with node prefix clears all widgets for that source node only', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(graphA, widget('node-1', 'prompt', 'text', 'shared'))
+      store.registerWidget(
+        graphA,
+        widget('node-2', 'prompt', 'text', 'shared-2')
+      )
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'prompt', 'text', 'instance-a-prompt'),
+        'subgraph-a'
+      )
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'steps', 'number', 20),
+        'subgraph-a'
+      )
+      store.registerWidget(
+        graphA,
+        widget('node-2', 'prompt', 'text', 'instance-a-node-2'),
+        'subgraph-a'
+      )
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'prompt', 'text', 'instance-b-prompt'),
+        'subgraph-b'
+      )
+
+      store.clearScopedWidget(graphA, 'subgraph-a', 'node-1')
+
+      expect(store.getWidget(graphA, 'node-1', 'prompt')?.value).toBe('shared')
+      expect(store.getWidget(graphA, 'node-2', 'prompt')?.value).toBe(
+        'shared-2'
+      )
+      expect(
+        store.getWidget(graphA, 'node-1', 'prompt', 'subgraph-a')
+      ).toBeUndefined()
+      expect(
+        store.getWidget(graphA, 'node-1', 'steps', 'subgraph-a')
+      ).toBeUndefined()
+      expect(
+        store.getWidget(graphA, 'node-2', 'prompt', 'subgraph-a')?.value
+      ).toBe('instance-a-node-2')
+      expect(
+        store.getWidget(graphA, 'node-1', 'prompt', 'subgraph-b')?.value
+      ).toBe('instance-b-prompt')
+    })
+
+    it('clearScopedWidget with node:widget prefix clears only the targeted widget', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'prompt', 'text', 'instance-a-prompt'),
+        'subgraph-a'
+      )
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'steps', 'number', 20),
+        'subgraph-a'
+      )
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'prompt', 'text', 'instance-b-prompt'),
+        'subgraph-b'
+      )
+
+      store.clearScopedWidget(graphA, 'subgraph-a', 'node-1:prompt')
+
+      expect(
+        store.getWidget(graphA, 'node-1', 'prompt', 'subgraph-a')
+      ).toBeUndefined()
+      expect(
+        store.getWidget(graphA, 'node-1', 'steps', 'subgraph-a')?.value
+      ).toBe(20)
+      expect(
+        store.getWidget(graphA, 'node-1', 'prompt', 'subgraph-b')?.value
+      ).toBe('instance-b-prompt')
+    })
+
+    it('clearScopedWidget does not affect legacy unscoped keys', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(graphA, widget('node-1', 'prompt', 'text', 'shared'))
+      store.registerWidget(
+        graphA,
+        widget('node-1', 'prompt', 'text', 'instance-a-prompt'),
+        'subgraph-a'
+      )
+
+      store.clearScopedWidget(graphA, 'subgraph-a', 'node-1:prompt')
+
+      expect(store.getWidget(graphA, 'node-1', 'prompt')?.value).toBe('shared')
+      expect(
+        store.getWidget(graphA, 'node-1', 'prompt', 'subgraph-a')
+      ).toBeUndefined()
+    })
   })
 
   describe('direct property mutation', () => {

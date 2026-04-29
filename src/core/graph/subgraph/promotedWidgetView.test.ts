@@ -2007,6 +2007,40 @@ describe('promote/demote cycle', () => {
       (subgraphNode.widgets[0] as PromotedWidgetView).sourceWidgetName
     ).toBe('widgetA')
   })
+
+  test('re-promote does not reuse stale scoped value from a demoted view', () => {
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'source-default', () => {})
+
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
+    const firstView = subgraphNode.widgets[0] as PromotedWidgetView
+    firstView.value = 'edited-scoped-value'
+
+    expect(firstView.value).toBe('edited-scoped-value')
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNode.rootGraph.id,
+        innerIds[0],
+        'widgetA',
+        subgraphNode.id
+      )?.value
+    ).toBe('edited-scoped-value')
+
+    subgraphNode.removeWidget(firstView)
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNode.rootGraph.id,
+        innerIds[0],
+        'widgetA',
+        subgraphNode.id
+      )
+    ).toBeUndefined()
+
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
+    const secondView = subgraphNode.widgets[0] as PromotedWidgetView
+
+    expect(secondView.value).toBe('source-default')
+  })
 })
 
 describe('disconnected state', () => {

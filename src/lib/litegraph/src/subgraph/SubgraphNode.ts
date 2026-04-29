@@ -1004,7 +1004,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _pendingWidgetsValues?: unknown[]
 
   override configure(info: ExportedSubgraphInstance): void {
-    useWidgetValueStore().clearInstanceWidgets(this.rootGraph.id, this.id)
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.clearInstanceWidgets(this.rootGraph.id, this.id)
+    if (info.id != null && info.id !== this.id) {
+      widgetValueStore.clearInstanceWidgets(this.rootGraph.id, info.id)
+    }
     this._pendingWidgetsValues = Array.isArray(info.widgets_values)
       ? info.widgets_values
       : undefined
@@ -1289,6 +1293,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         previousView.sourceWidgetName !== widgetName)
     ) {
       usePromotionStore().demote(this.rootGraph.id, this.id, previousView)
+      this._clearPromotedViewScopedWidgets(previousView)
       this._removePromotedView(previousView)
     }
 
@@ -1560,6 +1565,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  private _clearPromotedViewScopedWidgets(view: PromotedWidgetView): void {
+    useWidgetValueStore().clearScopedWidget(
+      this.rootGraph.id,
+      this.id,
+      `${view.sourceNodeId}:${view.sourceWidgetName}`
+    )
+  }
+
   override removeWidget(widget: IBaseWidget): void {
     this.ensureWidgetRemoved(widget)
   }
@@ -1568,6 +1581,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (isPromotedWidgetView(widget)) {
       this._clearDomOverrideForView(widget)
       usePromotionStore().demote(this.rootGraph.id, this.id, widget)
+      this._clearPromotedViewScopedWidgets(widget)
       this._removePromotedView(widget)
     }
     for (const input of this.inputs) {
