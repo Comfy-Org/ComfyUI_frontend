@@ -2699,6 +2699,12 @@
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached"
     },
+    "remoteCombo": {
+      "loading": "Loading...",
+      "loadFailed": "Failed to load options",
+      "playAudioPreview": "Play audio preview",
+      "pauseAudioPreview": "Pause audio preview"
+    },
     "valueControl": {
       "header": {
         "prefix": "Automatically update the value",

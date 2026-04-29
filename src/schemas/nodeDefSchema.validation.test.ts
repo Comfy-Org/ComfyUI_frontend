@@ -71,4 +71,66 @@ describe('validateNodeDef', () => {
       })
     }
   )
+
+  describe('remote_combo route validation', () => {
+    const buildNodeDef = (remoteCombo: object): unknown => ({
+      ...EXAMPLE_NODE_DEF,
+      input: {
+        required: {
+          voice: ['COMBO', { remote_combo: remoteCombo }]
+        }
+      }
+    })
+
+    const baseRemoteCombo = {
+      item_schema: { value_field: 'id', label_field: 'name' }
+    }
+
+    it('accepts a relative route', () => {
+      expect(
+        validateComfyNodeDef(
+          buildNodeDef({
+            ...baseRemoteCombo,
+            route: '/voices'
+          })
+        )
+      ).not.toBeNull()
+    })
+
+    it('rejects an absolute http URL', () => {
+      expect(
+        validateComfyNodeDef(
+          buildNodeDef({
+            ...baseRemoteCombo,
+            route: 'http://api.example.com/voices'
+          }),
+          () => {}
+        )
+      ).toBeNull()
+    })
+
+    it('rejects an absolute https URL', () => {
+      expect(
+        validateComfyNodeDef(
+          buildNodeDef({
+            ...baseRemoteCombo,
+            route: 'https://api.example.com/voices'
+          }),
+          () => {}
+        )
+      ).toBeNull()
+    })
+
+    it('rejects a route with no leading slash', () => {
+      expect(
+        validateComfyNodeDef(
+          buildNodeDef({
+            ...baseRemoteCombo,
+            route: 'voices'
+          }),
+          () => {}
+        )
+      ).toBeNull()
+    })
+  })
 })
