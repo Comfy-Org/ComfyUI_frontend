@@ -17,6 +17,9 @@ export class ComfyNodeSearchBoxV2 {
   readonly filterChips: Locator
   readonly noResults: Locator
   readonly nodeIdBadge: Locator
+  readonly sidebarToggle: Locator
+  readonly sidebarBackdrop: Locator
+  readonly filterChipsScroll: Locator
 
   constructor(private comfyPage: ComfyPage) {
     const page = comfyPage.page
@@ -28,6 +31,11 @@ export class ComfyNodeSearchBoxV2 {
     this.filterChips = this.dialog.getByTestId(searchBoxV2.filterChip)
     this.noResults = this.dialog.getByTestId(searchBoxV2.noResults)
     this.nodeIdBadge = this.dialog.getByTestId(searchBoxV2.nodeIdBadge)
+    this.sidebarToggle = this.dialog.getByTestId(searchBoxV2.sidebarToggle)
+    this.sidebarBackdrop = this.dialog.getByTestId(searchBoxV2.sidebarBackdrop)
+    this.filterChipsScroll = this.dialog.getByTestId(
+      searchBoxV2.filterChipsScroll
+    )
   }
 
   /** Sidebar category tree button (e.g. `sampling`, `sampling/custom_sampling`). */
