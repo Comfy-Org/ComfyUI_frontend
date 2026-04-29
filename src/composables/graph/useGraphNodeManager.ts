@@ -98,6 +98,12 @@ export interface SafeWidgetData {
   tooltip?: string
   /** For promoted widgets, the display label from the subgraph input slot. */
   promotedLabel?: string
+  /**
+   * Read-only fallback value sourced from the underlying widget when no
+   * scoped store entry exists yet. Render paths use this for first-paint of
+   * promoted widgets that have never been edited.
+   */
+  defaultValue?: unknown
 }
 
 export interface VueNodeData {
@@ -362,7 +368,10 @@ function safeWidgetMapper(
             ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
             : undefined,
         tooltip: widget.tooltip,
-        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
+        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined,
+        defaultValue: isPromotedWidgetView(widget)
+          ? (sourceWidget?.value ?? widget.value)
+          : undefined
       }
     } catch (error) {
       console.warn(

@@ -194,6 +194,72 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(restoredWidget?.serializeValue?.(restoredInstance, 0)).toBe(33)
   })
 
+  it('preserves source defaults for unedited promoted widgets when serializing mixed edits', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'value', type: 'number' },
+        { name: 'value_2', type: 'number' }
+      ]
+    })
+
+    const SOURCE_DEFAULT = 42
+    const EDITED_VALUE = 99
+
+    const { node: firstNode } = createNodeWithWidget(
+      'FirstNode',
+      SOURCE_DEFAULT
+    )
+    const { node: secondNode } = createNodeWithWidget(
+      'SecondNode',
+      SOURCE_DEFAULT
+    )
+
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    subgraph.inputNode.slots[0].connect(firstNode.inputs[0], firstNode)
+    subgraph.inputNode.slots[1].connect(secondNode.inputs[0], secondNode)
+
+    const originalInstance = createTestSubgraphNode(subgraph, { id: 303 })
+    const firstNodeId = String(firstNode.id)
+    const secondNodeId = String(secondNode.id)
+
+    originalInstance.configure({
+      id: 303,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: {
+        proxyWidgets: [
+          [firstNodeId, 'widget'],
+          [secondNodeId, 'widget']
+        ]
+      },
+      widgets_values: [EDITED_VALUE, SOURCE_DEFAULT]
+    })
+
+    const serialized = originalInstance.serialize()
+    expect(serialized.widgets_values).toEqual([EDITED_VALUE, SOURCE_DEFAULT])
+    expect(serialized.widgets_values).not.toContain(null)
+
+    const restoredInstance = createTestSubgraphNode(subgraph, { id: 304 })
+    restoredInstance.configure({
+      ...serialized,
+      id: 304,
+      type: subgraph.id
+    })
+
+    const restoredWidgets = restoredInstance.widgets
+    expect(restoredWidgets).toHaveLength(2)
+    expect(restoredWidgets?.[0].value).toBe(EDITED_VALUE)
+    expect(restoredWidgets?.[1].value).toBe(SOURCE_DEFAULT)
+    expect(restoredWidgets?.[1].value).not.toBeNull()
+  })
+
   it('keeps fresh sibling instances isolated before save or reload', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]

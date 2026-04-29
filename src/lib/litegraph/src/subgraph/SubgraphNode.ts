@@ -1140,10 +1140,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
               inlineState.value
             )
           } else if (canHydrateLegacyWidgetsValues) {
-            pendingValues.set(
-              makePromotionEntryKey(resolved),
-              this._pendingWidgetsValues?.[index]
-            )
+            const legacyValue = this._pendingWidgetsValues?.[index]
+            if (legacyValue !== null && legacyValue !== undefined) {
+              pendingValues.set(makePromotionEntryKey(resolved), legacyValue)
+            }
           }
         }
 
@@ -1660,8 +1660,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     if (hasAnyScopedValue) {
+      // For un-edited promoted views (no scoped store value), fall back to the
+      // source widget's effective value via the view getter. This keeps the
+      // round-trip stable: replaying the same source-default into the store
+      // on configure is a no-op, whereas writing `null` would blank out the
+      // widget on next load.
       serialized.widgets_values = serializableViews.map((view) => {
-        const value = view.getScopedStoreValue() ?? null
+        const value = view.getScopedStoreValue() ?? view.value ?? null
         return value != null && typeof value === 'object'
           ? JSON.parse(JSON.stringify(value))
           : value
