@@ -3,7 +3,7 @@ import type { TagsInputItemProps } from 'reka-ui'
 import { TagsInputItem, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   TagsInputItemProps & { class?: HTMLAttributes['class'] }

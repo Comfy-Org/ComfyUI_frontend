@@ -24,7 +24,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
@@ -153,17 +153,15 @@ function nodeToNodeData(node: LGraphNode) {
   }
 }
 
-async function handleDragDrop(e: DragEvent) {
-  for (const { nodeData } of mappedSelections.value) {
-    if (!nodeData?.onDragOver?.(e)) continue
-
-    const rawResult = nodeData?.onDragDrop?.(e)
-    if (rawResult === false) continue
-
-    e.stopPropagation()
-    e.preventDefault()
-    if ((await rawResult) === true) return
+async function handleDragDrop() {
+  const onDragDrop = async (e: DragEvent) => {
+    for (const { nodeData } of mappedSelections.value)
+      if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
+        return true
+    return false
   }
+
+  app.dragOverNode = { id: -1, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })

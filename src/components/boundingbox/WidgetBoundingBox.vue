@@ -3,19 +3,43 @@
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.x') }}
     </label>
-    <ScrubableNumberInput v-model="x" :min="0" :step="1" :disabled />
+    <ScrubableNumberInput
+      v-model="x"
+      :min="0"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-x"
+    />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.y') }}
     </label>
-    <ScrubableNumberInput v-model="y" :min="0" :step="1" :disabled />
+    <ScrubableNumberInput
+      v-model="y"
+      :min="0"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-y"
+    />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.width') }}
     </label>
-    <ScrubableNumberInput v-model="width" :min="1" :step="1" :disabled />
+    <ScrubableNumberInput
+      v-model="width"
+      :min="1"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-width"
+    />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.height') }}
     </label>
-    <ScrubableNumberInput v-model="height" :min="1" :step="1" :disabled />
+    <ScrubableNumberInput
+      v-model="height"
+      :min="1"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-height"
+    />
   </div>
 </template>
 

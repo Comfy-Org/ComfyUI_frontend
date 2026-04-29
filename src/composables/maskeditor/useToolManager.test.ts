@@ -1,223 +1,524 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, nextTick, reactive } from 'vue'
+import type { EffectScope } from 'vue'
 
-import { Tools } from '@/extensions/core/maskeditor/types'
+import { useBrushDrawing } from '@/composables/maskeditor/useBrushDrawing'
 import { useToolManager } from '@/composables/maskeditor/useToolManager'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { Tools } from '@/extensions/core/maskeditor/types'
 
-const handlePanStart = vi.fn()
-const handlePanMove = vi.fn(async () => {})
-const addPenPointerId = vi.fn()
-const updateCursorPosition = vi.fn()
+type MockStore = {
+  currentTool: Tools
+  activeLayer: 'mask' | 'rgb'
+  pointerZone: HTMLElement | null
+  brushVisible: boolean
+  brushPreviewGradientVisible: boolean
+  isAdjustingBrush: boolean
+  isPanning: boolean
+}
 
-const startDrawing = vi.fn(async () => {})
-const handleDrawing = vi.fn(async () => {})
-const drawEnd = vi.fn(async () => {})
-const startBrushAdjustment = vi.fn(async () => {})
-const clearLastColorSelectPoint = vi.fn()
+const mockStore: MockStore = reactive({
+  currentTool: Tools.MaskPen,
+  activeLayer: 'mask',
+  pointerZone: null,
+  brushVisible: true,
+  brushPreviewGradientVisible: false,
+  isAdjustingBrush: false,
+  isPanning: false
+}) as MockStore
+
+const mockBrushDrawing = {
+  startDrawing: vi.fn().mockResolvedValue(undefined),
+  handleDrawing: vi.fn().mockResolvedValue(undefined),
+  drawEnd: vi.fn().mockResolvedValue(undefined),
+  startBrushAdjustment: vi.fn().mockResolvedValue(undefined),
+  handleBrushAdjustment: vi.fn().mockResolvedValue(undefined)
+}
+
+const mockCanvasTools = {
+  paintBucketFill: vi.fn(),
+  colorSelectFill: vi.fn().mockResolvedValue(undefined),
+  clearLastColorSelectPoint: vi.fn()
+}
+
+const mockCoordinateTransform = {
+  screenToCanvas: vi.fn((p: { x: number; y: number }) => ({
+    x: p.x * 2,
+    y: p.y * 2
+  })),
+  canvasToScreen: vi.fn()
+}
+
+vi.mock('@/stores/maskEditorStore', () => ({
+  useMaskEditorStore: vi.fn(() => mockStore)
+}))
+
+vi.mock('@/composables/maskeditor/useBrushDrawing', () => ({
+  useBrushDrawing: vi.fn(() => mockBrushDrawing)
+}))
+
+vi.mock('@/composables/maskeditor/useCanvasTools', () => ({
+  useCanvasTools: vi.fn(() => mockCanvasTools)
+}))
+
+vi.mock('@/composables/maskeditor/useCoordinateTransform', () => ({
+  useCoordinateTransform: vi.fn(() => mockCoordinateTransform)
+}))
 
 vi.mock('@/scripts/app', () => ({
   app: {
     extensionManager: {
       setting: {
-        get: () => undefined
+        get: vi.fn((key: string) => {
+          if (key === 'Comfy.MaskEditor.UseDominantAxis') return false
+          if (key === 'Comfy.MaskEditor.BrushAdjustmentSpeed') return 1
+          return undefined
+        })
       }
     }
   }
 }))
 
-vi.mock('@/composables/maskeditor/useBrushDrawing', () => ({
-  useBrushDrawing: () => ({
-    startDrawing,
-    handleDrawing,
-    drawEnd,
-    startBrushAdjustment
-  })
-}))
+const mockKeyboard = {
+  isKeyDown: vi.fn().mockReturnValue(false),
+  addListeners: vi.fn(),
+  removeListeners: vi.fn()
+}
 
-vi.mock('@/composables/maskeditor/useCanvasTools', () => ({
-  useCanvasTools: () => ({
-    paintBucketFill: vi.fn(),
-    colorSelectFill: vi.fn(async () => {}),
-    clearLastColorSelectPoint
-  })
-}))
+const mockPanZoom = {
+  initializeCanvasPanZoom: vi.fn(),
+  handlePanStart: vi.fn(),
+  handlePanMove: vi.fn().mockResolvedValue(undefined),
+  handleTouchStart: vi.fn(),
+  handleTouchMove: vi.fn(),
+  handleTouchEnd: vi.fn(),
+  updateCursorPosition: vi.fn(),
+  zoom: vi.fn(),
+  invalidatePanZoom: vi.fn(),
+  addPenPointerId: vi.fn(),
+  removePenPointerId: vi.fn()
+}
 
-vi.mock('@/composables/maskeditor/useCoordinateTransform', () => ({
-  useCoordinateTransform: () => ({
-    screenToCanvas: (p: { x: number; y: number }) => p
-  })
-}))
-
-function createKeyboardMock(spaceHeld = false) {
+const pointerEvent = (
+  init: Partial<PointerEvent> & { pointerType?: string }
+): PointerEvent => {
   return {
-    isKeyDown: (key: string) => (key === ' ' ? spaceHeld : false)
-  } as unknown as Parameters<typeof useToolManager>[0]
+    preventDefault: vi.fn(),
+    pointerId: 1,
+    pointerType: 'mouse',
+    button: 0,
+    buttons: 0,
+    clientX: 0,
+    clientY: 0,
+    offsetX: 0,
+    offsetY: 0,
+    altKey: false,
+    ...init
+  } as unknown as PointerEvent
 }
 
-function createPanZoomMock() {
-  return {
-    handlePanStart,
-    handlePanMove,
-    addPenPointerId,
-    updateCursorPosition,
-    handlePanEnd: vi.fn(),
-    handleTouchStart: vi.fn(),
-    handleTouchMove: vi.fn(async () => {}),
-    handleTouchEnd: vi.fn(),
-    zoom: vi.fn(async () => {})
-  } as unknown as Parameters<typeof useToolManager>[1]
+let scope: EffectScope | null = null
+
+const setup = (): ReturnType<typeof useToolManager> => {
+  scope = effectScope()
+  return scope.run(() =>
+    useToolManager(
+      mockKeyboard as unknown as Parameters<typeof useToolManager>[0],
+      mockPanZoom as unknown as Parameters<typeof useToolManager>[1]
+    )
+  )!
 }
 
-function makePointerEvent(
-  type: 'pointerdown' | 'pointermove',
-  init: PointerEventInit
-) {
-  const event = new PointerEvent(type, init)
-  // PointerEvent.preventDefault is a no-op in happy-dom, but the handler
-  // calls it unconditionally — nothing to assert.
-  return event
-}
-
-describe('useToolManager MMB pan branch', () => {
+describe('useToolManager', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
-    // Reset store state that the handlers toggle.
-    const store = useMaskEditorStore()
-    store.brushVisible = true
-    store.currentTool = Tools.MaskPen
+    mockStore.currentTool = Tools.MaskPen
+    mockStore.activeLayer = 'mask'
+    mockStore.pointerZone = document.createElement('div')
+    mockStore.brushVisible = true
+    mockStore.brushPreviewGradientVisible = false
+    mockStore.isAdjustingBrush = false
+    mockStore.isPanning = false
+    mockKeyboard.isKeyDown.mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    scope?.stop()
+    scope = null
+  })
+
+  describe('useBrushDrawing factory', () => {
+    it('should construct useBrushDrawing with settings from the extension manager', () => {
+      setup()
+
+      expect(useBrushDrawing).toHaveBeenCalledWith({
+        useDominantAxis: false,
+        brushAdjustmentSpeed: 1
+      })
+    })
+  })
+
+  describe('switchTool', () => {
+    it('should set the current tool on the store', () => {
+      const tm = setup()
+      tm.switchTool(Tools.Eraser)
+      expect(mockStore.currentTool).toBe(Tools.Eraser)
+    })
+
+    it('should update activeLayer to "rgb" when switching to PaintPen', () => {
+      const tm = setup()
+      tm.switchTool(Tools.PaintPen)
+      expect(mockStore.activeLayer).toBe('rgb')
+    })
+
+    it('should update activeLayer to "mask" when switching to MaskPen', () => {
+      const tm = setup()
+      mockStore.activeLayer = 'rgb'
+      tm.switchTool(Tools.MaskPen)
+      expect(mockStore.activeLayer).toBe('mask')
+    })
+
+    it('should set custom cursor and hide brush for MaskBucket', () => {
+      const tm = setup()
+      tm.switchTool(Tools.MaskBucket)
+      expect(mockStore.brushVisible).toBe(false)
+      expect(mockStore.pointerZone!.style.cursor).toContain('paintBucket.png')
+    })
+
+    it('should reset cursor to "none" and show brush for tools without custom cursor', () => {
+      const tm = setup()
+      tm.switchTool(Tools.MaskBucket)
+      expect(mockStore.brushVisible).toBe(false)
+
+      tm.switchTool(Tools.MaskPen)
+      expect(mockStore.brushVisible).toBe(true)
+      expect(mockStore.pointerZone!.style.cursor).toBe('none')
+    })
+
+    it('should not touch cursor when pointerZone is missing', () => {
+      const tm = setup()
+      mockStore.pointerZone = null
+      expect(() => tm.switchTool(Tools.MaskBucket)).not.toThrow()
+    })
+  })
+
+  describe('setActiveLayer', () => {
+    it('should switch from mask-only tool to PaintPen when activating rgb layer', () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskBucket
+
+      tm.setActiveLayer('rgb')
+
+      expect(mockStore.activeLayer).toBe('rgb')
+      expect(mockStore.currentTool).toBe(Tools.PaintPen)
+    })
+
+    it('should switch from PaintPen to MaskPen when activating mask layer', () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.PaintPen
+
+      tm.setActiveLayer('mask')
+
+      expect(mockStore.activeLayer).toBe('mask')
+      expect(mockStore.currentTool).toBe(Tools.MaskPen)
+    })
+
+    it('should leave a non-mask-only tool alone when activating rgb', () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.Eraser
+
+      tm.setActiveLayer('rgb')
+
+      expect(mockStore.currentTool).toBe(Tools.Eraser)
+    })
+  })
+
+  describe('updateCursor', () => {
+    it('should hide brush and set custom cursor for tools that define one', () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskColorFill
+
+      tm.updateCursor()
+
+      expect(mockStore.brushVisible).toBe(false)
+      expect(mockStore.pointerZone!.style.cursor).toContain('colorSelect.png')
+      expect(mockStore.brushPreviewGradientVisible).toBe(false)
+    })
+
+    it('should show brush and "none" cursor for tools without a custom cursor', () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskPen
+
+      tm.updateCursor()
+
+      expect(mockStore.brushVisible).toBe(true)
+      expect(mockStore.pointerZone!.style.cursor).toBe('none')
+    })
+  })
+
+  describe('currentTool watcher', () => {
+    it('should clear last color-select point when switching away from MaskColorFill', async () => {
+      setup()
+      mockStore.currentTool = Tools.MaskColorFill
+      await nextTick()
+      mockCanvasTools.clearLastColorSelectPoint.mockClear()
+
+      mockStore.currentTool = Tools.MaskPen
+      await nextTick()
+
+      expect(mockCanvasTools.clearLastColorSelectPoint).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not clear color-select point when switching to MaskColorFill', async () => {
+      setup()
+      mockStore.currentTool = Tools.MaskPen
+      await nextTick()
+      mockCanvasTools.clearLastColorSelectPoint.mockClear()
+
+      mockStore.currentTool = Tools.MaskColorFill
+      await nextTick()
+
+      expect(mockCanvasTools.clearLastColorSelectPoint).not.toHaveBeenCalled()
+    })
   })
 
   describe('handlePointerDown', () => {
-    it('starts pan and hides brush on middle-button pointerdown', async () => {
-      const { handlePointerDown } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
-      )
-      const store = useMaskEditorStore()
+    it('should ignore touch pointers entirely', async () => {
+      const tm = setup()
+      await tm.handlePointerDown(pointerEvent({ pointerType: 'touch' }))
 
-      await handlePointerDown(
-        makePointerEvent('pointerdown', { button: 1, buttons: 4 })
-      )
-
-      expect(handlePanStart).toHaveBeenCalledTimes(1)
-      expect(store.brushVisible).toBe(false)
-      expect(startDrawing).not.toHaveBeenCalled()
+      expect(mockBrushDrawing.startDrawing).not.toHaveBeenCalled()
+      expect(mockPanZoom.handlePanStart).not.toHaveBeenCalled()
+      expect(mockPanZoom.addPenPointerId).not.toHaveBeenCalled()
     })
 
-    it('starts pan on Space + left-button pointerdown', async () => {
-      const { handlePointerDown } = useToolManager(
-        createKeyboardMock(true),
-        createPanZoomMock()
-      )
-
-      await handlePointerDown(
-        makePointerEvent('pointerdown', { button: 0, buttons: 1 })
-      )
-
-      expect(handlePanStart).toHaveBeenCalledTimes(1)
-      expect(startDrawing).not.toHaveBeenCalled()
-    })
-
-    it('starts drawing on plain left-button pointerdown with drawing tool selected', async () => {
-      const { handlePointerDown } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
-      )
-
-      await handlePointerDown(
-        makePointerEvent('pointerdown', { button: 0, buttons: 1 })
-      )
-
-      expect(handlePanStart).not.toHaveBeenCalled()
-      expect(startDrawing).toHaveBeenCalledTimes(1)
-    })
-
-    it('ignores touch pointerdown', async () => {
-      const { handlePointerDown } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
-      )
-
-      await handlePointerDown(
-        makePointerEvent('pointerdown', {
-          button: 1,
-          buttons: 4,
-          pointerType: 'touch'
+    it('should register pen pointer id then continue tool routing', async () => {
+      const tm = setup()
+      await tm.handlePointerDown(
+        pointerEvent({
+          pointerType: 'pen',
+          button: 0,
+          buttons: 1,
+          pointerId: 7
         })
       )
 
-      expect(handlePanStart).not.toHaveBeenCalled()
-      expect(startDrawing).not.toHaveBeenCalled()
+      expect(mockPanZoom.addPenPointerId).toHaveBeenCalledWith(7)
     })
 
-    it('registers pen pointer id before MMB branch runs', async () => {
-      const { handlePointerDown } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
+    it('should start panning on middle mouse button (buttons===4)', async () => {
+      const tm = setup()
+      await tm.handlePointerDown(pointerEvent({ buttons: 4 }))
+
+      expect(mockPanZoom.handlePanStart).toHaveBeenCalled()
+      expect(mockStore.brushVisible).toBe(false)
+      expect(mockBrushDrawing.startDrawing).not.toHaveBeenCalled()
+    })
+
+    it('should start panning on left button + space held', async () => {
+      const tm = setup()
+      mockKeyboard.isKeyDown.mockImplementation((k) => k === ' ')
+
+      await tm.handlePointerDown(pointerEvent({ buttons: 1 }))
+
+      expect(mockPanZoom.handlePanStart).toHaveBeenCalled()
+      expect(mockBrushDrawing.startDrawing).not.toHaveBeenCalled()
+    })
+
+    it('should start drawing for MaskPen on left button', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskPen
+
+      await tm.handlePointerDown(pointerEvent({ button: 0, buttons: 1 }))
+
+      expect(mockBrushDrawing.startDrawing).toHaveBeenCalledTimes(1)
+    })
+
+    it('should start drawing for PaintPen on left button', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.PaintPen
+
+      await tm.handlePointerDown(pointerEvent({ button: 0, buttons: 1 }))
+
+      expect(mockBrushDrawing.startDrawing).toHaveBeenCalledTimes(1)
+    })
+
+    it('should continue drawing for PaintPen when a non-left button fires while left is held', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.PaintPen
+
+      await tm.handlePointerDown(pointerEvent({ button: 2, buttons: 1 }))
+
+      expect(mockBrushDrawing.handleDrawing).toHaveBeenCalledTimes(1)
+      expect(mockBrushDrawing.startDrawing).not.toHaveBeenCalled()
+    })
+
+    it('should call paintBucketFill on MaskBucket left click using transformed coords', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskBucket
+
+      await tm.handlePointerDown(
+        pointerEvent({ button: 0, offsetX: 50, offsetY: 25 })
       )
 
-      await handlePointerDown(
-        makePointerEvent('pointerdown', {
-          button: 1,
-          buttons: 4,
-          pointerType: 'pen'
-        })
+      expect(mockCoordinateTransform.screenToCanvas).toHaveBeenCalledWith({
+        x: 50,
+        y: 25
+      })
+      expect(mockCanvasTools.paintBucketFill).toHaveBeenCalledWith({
+        x: 100,
+        y: 50
+      })
+    })
+
+    it('should call colorSelectFill on MaskColorFill left click', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskColorFill
+
+      await tm.handlePointerDown(
+        pointerEvent({ button: 0, offsetX: 10, offsetY: 20 })
       )
 
-      expect(addPenPointerId).toHaveBeenCalledTimes(1)
-      expect(handlePanStart).toHaveBeenCalledTimes(1)
+      expect(mockCanvasTools.colorSelectFill).toHaveBeenCalledWith({
+        x: 20,
+        y: 40
+      })
+    })
+
+    it('should start brush adjustment on alt + right-click', async () => {
+      const tm = setup()
+
+      await tm.handlePointerDown(
+        pointerEvent({ altKey: true, button: 2, buttons: 2 })
+      )
+
+      expect(mockStore.isAdjustingBrush).toBe(true)
+      expect(mockBrushDrawing.startBrushAdjustment).toHaveBeenCalled()
+    })
+
+    it('should start drawing on right-click for drawing tools', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.Eraser
+
+      await tm.handlePointerDown(pointerEvent({ button: 2, buttons: 2 }))
+
+      expect(mockBrushDrawing.startDrawing).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not start drawing for non-drawing tools', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskBucket
+
+      await tm.handlePointerDown(pointerEvent({ button: 2, buttons: 2 }))
+
+      expect(mockBrushDrawing.startDrawing).not.toHaveBeenCalled()
     })
   })
 
   describe('handlePointerMove', () => {
-    it('continues pan on pointermove while middle is held (buttons=4)', async () => {
-      const { handlePointerMove } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
-      )
+    it('should ignore touch pointers', async () => {
+      const tm = setup()
+      await tm.handlePointerMove(pointerEvent({ pointerType: 'touch' }))
 
-      await handlePointerMove(makePointerEvent('pointermove', { buttons: 4 }))
-
-      expect(handlePanMove).toHaveBeenCalledTimes(1)
+      expect(mockPanZoom.updateCursorPosition).not.toHaveBeenCalled()
     })
 
-    it('does NOT continue pan on pointermove with chorded MMB+LMB (buttons=5, strict semantics)', async () => {
-      // useToolManager still uses isMiddlePointerInput (strict on the buttons
-      // branch). The chorded case is explicitly out of scope for the pan
-      // branch — if callers want the bitmask semantic they should use
-      // isMiddleButtonHeld. Pin the current contract.
-      const { handlePointerMove } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
-      )
+    it('should always update cursor position for non-touch pointers', async () => {
+      const tm = setup()
+      await tm.handlePointerMove(pointerEvent({ clientX: 30, clientY: 40 }))
 
-      await handlePointerMove(makePointerEvent('pointermove', { buttons: 5 }))
-
-      expect(handlePanMove).not.toHaveBeenCalled()
+      expect(mockPanZoom.updateCursorPosition).toHaveBeenCalledWith({
+        x: 30,
+        y: 40
+      })
     })
 
-    it('continues pan on Space + left-button pointermove', async () => {
-      const { handlePointerMove } = useToolManager(
-        createKeyboardMock(true),
-        createPanZoomMock()
-      )
+    it('should pan on middle button drag', async () => {
+      const tm = setup()
+      await tm.handlePointerMove(pointerEvent({ buttons: 4 }))
 
-      await handlePointerMove(makePointerEvent('pointermove', { buttons: 1 }))
-
-      expect(handlePanMove).toHaveBeenCalledTimes(1)
+      expect(mockPanZoom.handlePanMove).toHaveBeenCalled()
+      expect(mockBrushDrawing.handleDrawing).not.toHaveBeenCalled()
     })
 
-    it('does not pan on plain left-drag pointermove (no Space, no MMB)', async () => {
-      const { handlePointerMove } = useToolManager(
-        createKeyboardMock(false),
-        createPanZoomMock()
+    it('should not pan on chorded middle and left button drag', async () => {
+      const tm = setup()
+      await tm.handlePointerMove(pointerEvent({ buttons: 5 }))
+
+      expect(mockPanZoom.handlePanMove).not.toHaveBeenCalled()
+    })
+
+    it('should pan on left button + space drag', async () => {
+      const tm = setup()
+      mockKeyboard.isKeyDown.mockImplementation((k) => k === ' ')
+
+      await tm.handlePointerMove(pointerEvent({ buttons: 1 }))
+
+      expect(mockPanZoom.handlePanMove).toHaveBeenCalled()
+    })
+
+    it('should ignore drawing for non-drawing tools', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskBucket
+
+      await tm.handlePointerMove(pointerEvent({ buttons: 1 }))
+
+      expect(mockBrushDrawing.handleDrawing).not.toHaveBeenCalled()
+    })
+
+    it('should adjust brush on alt + right-drag while adjusting', async () => {
+      const tm = setup()
+      mockStore.isAdjustingBrush = true
+      mockStore.currentTool = Tools.MaskPen
+
+      await tm.handlePointerMove(pointerEvent({ altKey: true, buttons: 2 }))
+
+      expect(mockBrushDrawing.handleBrushAdjustment).toHaveBeenCalled()
+      expect(mockBrushDrawing.handleDrawing).not.toHaveBeenCalled()
+    })
+
+    it('should call handleDrawing on left or right drag for drawing tools', async () => {
+      const tm = setup()
+      mockStore.currentTool = Tools.MaskPen
+
+      await tm.handlePointerMove(pointerEvent({ buttons: 1 }))
+      expect(mockBrushDrawing.handleDrawing).toHaveBeenCalledTimes(1)
+
+      await tm.handlePointerMove(pointerEvent({ buttons: 2 }))
+      expect(mockBrushDrawing.handleDrawing).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('handlePointerUp', () => {
+    it('should reset panning and brush state', async () => {
+      const tm = setup()
+      mockStore.isPanning = true
+      mockStore.brushVisible = false
+      mockStore.isAdjustingBrush = true
+
+      await tm.handlePointerUp(pointerEvent({}))
+
+      expect(mockStore.isPanning).toBe(false)
+      expect(mockStore.brushVisible).toBe(true)
+      expect(mockStore.isAdjustingBrush).toBe(false)
+      expect(mockBrushDrawing.drawEnd).toHaveBeenCalled()
+    })
+
+    it('should remove pen pointer id when pointerType is "pen"', async () => {
+      const tm = setup()
+
+      await tm.handlePointerUp(
+        pointerEvent({ pointerType: 'pen', pointerId: 12 })
       )
 
-      await handlePointerMove(makePointerEvent('pointermove', { buttons: 1 }))
+      expect(mockPanZoom.removePenPointerId).toHaveBeenCalledWith(12)
+    })
 
-      expect(handlePanMove).not.toHaveBeenCalled()
+    it('should bail out before drawEnd for touch pointers', async () => {
+      const tm = setup()
+
+      await tm.handlePointerUp(pointerEvent({ pointerType: 'touch' }))
+
+      expect(mockBrushDrawing.drawEnd).not.toHaveBeenCalled()
     })
   })
 })
