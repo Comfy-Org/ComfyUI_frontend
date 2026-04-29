@@ -272,6 +272,10 @@
       "v1 (legacy)": "v1 (legacy)"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "추가된 노드가 커서를 따라감",
+    "tooltip": "활성화하면, 검색 상자에서 추가된 노드가 클릭하여 배치할 때까지 커서를 따라갑니다. 기본 구현에만 적용됩니다."
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "노드 미리보기",
     "tooltip": "기본 구현에만 적용됩니다."
