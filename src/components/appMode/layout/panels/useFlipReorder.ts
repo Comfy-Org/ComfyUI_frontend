@@ -4,18 +4,13 @@ import type { Ref } from 'vue'
 interface FlipReorderOptions {
   /** Animation duration in ms. Default 200. */
   durationMs?: number
-  /** Returns the flip-key of an element to skip — used to keep a
-   *  drag/lift treatment in place while siblings animate. */
+  /** Returns the flip-key of an element to skip (e.g. the drag source). */
   skipKey?: () => string | null
 }
 
 /**
  * FLIP-animates `[data-flip-key]` descendants of `containerEl` whose
- * positions changed between Vue patches.
- *
- * Captures rects in `onBeforeUpdate`, then in `onUpdated` plays the
- * difference back via the Web Animations API. Sub-pixel deltas are
- * skipped so unrelated reactive updates don't jiggle the layout.
+ * positions changed between Vue patches, via Web Animations API.
  */
 export function useFlipReorder(
   containerEl: Ref<HTMLElement | null>,
@@ -48,7 +43,7 @@ export function useFlipReorder(
       const next = el.getBoundingClientRect()
       const dx = prev.left - next.left
       const dy = prev.top - next.top
-      // Sub-pixel deltas would jiggle on every reactive update.
+      // Skip sub-pixel deltas — would jiggle on unrelated updates.
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue
       el.animate(
         [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],

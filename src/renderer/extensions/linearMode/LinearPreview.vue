@@ -31,13 +31,9 @@ const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const executionStore = useExecutionStore()
 
-// Bridges linearOutputStore's in-progress lifecycle into windowStore.
 useOutputWindowSync()
 const windowStore = useOutputWindowStore()
 
-// Read the active node's step ratio directly. Graph-level fallback
-// (completed/total nodes) over-credits encoders and bounces the bar
-// when the sampler starts; 0 outside sampler reads better.
 const progressPercent = computed(() => {
   const p = executionStore._executingNodeProgress
   if (p && p.max > 0) {
@@ -46,8 +42,7 @@ const progressPercent = computed(() => {
   return 0
 })
 
-// Per-node step + ETA (tqdm-style). Resets on (job, node) change so
-// linear extrapolation doesn't average across encoder + sampler.
+// Per-node step + ETA. Reset per (job, node) for accurate extrapolation.
 const stepProgress = ref<{ value: number; max: number } | null>(null)
 const etaSeconds = ref<number | null>(null)
 let samplingStart: { ts: number; firstValue: number; key: string } | null = null
@@ -97,8 +92,7 @@ const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
 
-// `isWorkflowActive` covers the Run-click → first-skeleton gap so
-// the welcome doesn't flash back on.
+// `isWorkflowActive` keeps welcome hidden during the click → skeleton gap.
 const hasMoodboardContent = computed(
   () => windowStore.windows.length > 0 || isWorkflowActive.value
 )
@@ -122,7 +116,6 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!workflow) return
 
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
-  // Same id — update in-place, push old version onto undo.
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
@@ -200,8 +193,6 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <!-- App Mode (hideChrome): one OutputWindow per generation;
-       welcome / arrange fill the canvas while empty. -->
   <template v-if="hideChrome">
     <OutputWindowList
       :progress-percent="progressPercent"
@@ -234,7 +225,6 @@ async function rerun(e: Event) {
     <LinearArrange v-else-if="isArrangeMode" key="arrange" />
     <LinearWelcome v-else key="welcome" />
   </Transition>
-  <!-- Standalone linear mode only; App Mode uses useOutputWindowSync. -->
   <div
     v-if="!hideChrome && !mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
@@ -261,8 +251,7 @@ async function rerun(e: Event) {
   />
 </template>
 
-<!-- Unscoped: <Transition> classes apply to slot-child roots, which
-     scoped styles can't reach without :deep(). -->
+<!-- Unscoped: <Transition> classes apply to slot-child roots. -->
 <style>
 .preview-fade-enter-active,
 .preview-fade-leave-active {
@@ -272,8 +261,7 @@ async function rerun(e: Event) {
 .preview-fade-leave-to {
   opacity: 0;
 }
-/* Pin the outgoing element so the incoming one fades in without a
-   layout collapse. */
+/* Pin outgoing so incoming fades in without layout collapse. */
 .preview-fade-leave-active {
   position: absolute;
   inset: 0;

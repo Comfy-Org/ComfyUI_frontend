@@ -11,10 +11,8 @@ defineProps<{
 defineEmits<{ toggle: [] }>()
 </script>
 <template>
-  <!-- Teleported to <body> so the ring + checkbox escape the
-       TransformPane stacking context and paint above the builder
-       scrim. Pixel sizes are fixed so the chrome reads identically
-       at every canvas zoom. width/height>0 guards the pre-mount flash. -->
+  <!-- Teleported to <body> to escape TransformPane's stacking context.
+       width/height>0 guards the pre-mount flash. -->
   <Teleport v-if="width > 0 && height > 0" to="body">
     <div
       class="group pointer-events-auto fixed flex cursor-pointer flex-row items-stretch gap-2"
@@ -45,10 +43,8 @@ defineEmits<{ toggle: [] }>()
           )
         "
       >
-        <!-- Inline SVG (instead of `icon-[lucide--check]`) for explicit
-             `stroke-width="3"` — the bundled lucide set ships only the
-             default 2-stroke variant, rendered as a 1-bit CSS mask that
-             can't be thickened from the outside. -->
+        <!-- Inline SVG so we can set stroke-width="3"; iconify's CSS-mask
+             approach can't be thickened. -->
         <svg
           v-if="isSelected"
           class="size-3/4 text-base-background"

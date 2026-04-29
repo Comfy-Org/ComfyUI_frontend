@@ -1,13 +1,7 @@
 /**
- * Pointer-driven multi-column block reorder.
- *
- * Hit-testing reads a snapshot of block rects taken at drag start —
- * never the live DOM — so the FLIP-animated preview can't feed back
- * into target detection. Equality guard before writing dropTarget
- * keeps the display layout from re-running every pointermove.
- * HYSTERESIS_PX widens the active zone's boundary so the pointer
- * has to move past the edge before switching — kills jitter at
- * column edges and row midlines.
+ * Pointer-driven multi-column block reorder. Hit-tests against a
+ * snapshot of rects taken at drag start so the FLIP-animated preview
+ * can't feed back into target detection.
  */
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -90,8 +84,7 @@ function computeDropTarget(
     EDGE_MAX_PX
   )
 
-  // Hysteresis only when nearest === last target; crossing to a
-  // different block uses fresh boundaries.
+  // Hysteresis: stick to the current zone when nearest is unchanged.
   let stickyKind: DropTarget['kind'] | null = null
   if (currentTarget && currentTarget.rowIndex === rowIndex) {
     if (
@@ -100,7 +93,6 @@ function computeDropTarget(
     ) {
       if (currentTarget.colIndex === colIndex) stickyKind = currentTarget.kind
     } else {
-      // newRow* is per-row, so any block in this row keeps it sticky.
       stickyKind = currentTarget.kind
     }
   }
@@ -171,8 +163,6 @@ export function useBlockDrag(opts: UseBlockDragOptions) {
   const isDragging = computed(() => isPastThreshold.value)
 
   function startDrag(pos: BlockPos, e: PointerEvent) {
-    // Gate before writing state so a rejected press can't leak into
-    // the next valid drag.
     if (e.button !== 0 && e.pointerType === 'mouse') return
     pendingPos = pos
     const container = opts.listEl.value

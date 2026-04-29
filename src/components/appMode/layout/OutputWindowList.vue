@@ -26,9 +26,8 @@ const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
 defineProps<{
-  /** Blended 0–100; LinearPreview owns the math. */
+  /** Blended 0–100. */
   progressPercent: number
-  /** Both nullable — only `step` between encoder+sampler, both mid-sampler. */
   stepProgress: { value: number; max: number } | null
   etaSeconds: number | null
   formatEta: (s: number) => string
@@ -39,8 +38,7 @@ function filenameFor(entry: OutputWindowEntry): string | undefined {
   return out?.display_name?.trim() || out?.filename || undefined
 }
 
-// Cloud-mode: re-clone with `asset_hash` so we hit the right URL.
-// OSS-mode passes through unchanged.
+// Cloud: re-clone with `asset_hash` to hit the right URL. OSS: pass-through.
 function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   const out = entry.output
   if (!out) return undefined
@@ -49,7 +47,6 @@ function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   return new ResultItemImpl({
     filename: hash,
     subfolder: out.subfolder,
-    // ResultItemImpl widens `type` to string; init interface stays narrow.
     type: out.type as 'input' | 'output' | 'temp' | undefined,
     nodeId: out.nodeId,
     mediaType: out.mediaType,
@@ -60,8 +57,6 @@ function resolvedOutput(entry: OutputWindowEntry): ResultItemImpl | undefined {
   })
 }
 
-// Body actions: light-on-dark pill over the image. Header actions:
-// transparent + hover-tinted in the chrome strip.
 const BODY_ACTION_CLASS =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center ' +
   'rounded-lg border-0 bg-base-foreground p-2 text-base-background ' +
@@ -77,7 +72,6 @@ const HEADER_ACTION_CLASS =
   'focus-visible:ring-2 focus-visible:ring-base-foreground/40 ' +
   '[&>i]:size-[18px]'
 
-// Probed via preload (browser cache makes the second fetch ~free).
 const imageAspects = ref<Record<string, number>>({})
 function aspectFor(entry: OutputWindowEntry): number | undefined {
   return imageAspects.value[entry.id]
@@ -92,7 +86,7 @@ watch(
       if (!url) continue
       const probe = new Image()
       probe.onload = () => {
-        // Race guard: drop stale aspect if URL changed (latent → final).
+        // Race guard for latent → final URL swap.
         const current = windowStore.windows.find((w) => w.id === id)
         if (!current || aspectSourceUrl(current) !== url) return
         if (probe.naturalWidth <= 0 || probe.naturalHeight <= 0) return
@@ -106,7 +100,6 @@ watch(
   { immediate: true, deep: true }
 )
 
-// Topmost not-yet-image window owns the run-status overlay.
 const inFlightWindowId = computed<string | null>(() => {
   for (let i = sortedWindows.value.length - 1; i >= 0; i--) {
     const w = sortedWindows.value[i]
@@ -128,7 +121,6 @@ function downloadOutput(entry: OutputWindowEntry): void {
   if (url) downloadFile(url)
 }
 
-// Shared by rerun + reuse-params (rerun also fires QueuePrompt).
 async function loadAssetWorkflow(entry: OutputWindowEntry): Promise<void> {
   const asset = entry.asset
   if (!asset) return
@@ -145,7 +137,6 @@ async function rerunWindow(entry: OutputWindowEntry): Promise<void> {
   try {
     await loadAssetWorkflow(entry)
   } catch (error) {
-    // Don't fall through to QueuePrompt against a stale graph.
     toastErrorHandler(error)
     return
   }
@@ -174,7 +165,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       command: () => windowStore.remove(entry.id)
     }
   ]
-  // Clear-all redundant on one window.
   if (windows.value.length > 1) {
     entries.push({ separator: true })
     entries.push({
@@ -225,8 +215,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       />
     </template>
     <template v-else-if="entry.state === 'latent' && entry.latentPreviewUrl">
-      <!-- object-fill stretches the latent to bounds — distortion is
-           invisible at this resolution and matches the final image's box. -->
+      <!-- object-fill — distortion invisible at latent resolution. -->
       <img
         :src="entry.latentPreviewUrl"
         class="size-full rounded-lg border border-white/8 object-fill"
@@ -238,7 +227,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     </template>
 
     <template #body-actions>
-      <!-- Rerun + reuse-params require a finalized asset. -->
       <button
         v-if="entry.asset"
         type="button"
@@ -279,7 +267,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
             class="h-full bg-(--app-mode-go-bg) transition-[width] duration-300 ease-out"
             :style="{ width: `${progressPercent}%` }"
           />
-          <!-- Empty spans pin Step / ETA via justify-between. -->
           <div
             class="pointer-events-none absolute inset-0 flex items-center justify-between px-3 text-xs text-white tabular-nums"
           >

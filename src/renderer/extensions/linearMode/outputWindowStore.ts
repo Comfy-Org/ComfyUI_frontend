@@ -5,25 +5,20 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 /**
- * One floating output window. Fed by
- * `linearOutputStore.activeWorkflowInProgressItems`: spawns at
- * `'skeleton'`, transitions to `'latent'` / `'image'`, and stays
- * after the source item is absorbed out of the in-progress list —
- * that's what gives the canvas its moodboard accumulation.
+ * One floating output window. Fed by linearOutputStore's in-progress
+ * items; persists after the source item is absorbed (moodboard).
  */
 export interface OutputWindowEntry {
   id: string
-  /** Matches the window back to its `AssetItem` via `outputs.media`. */
   jobId?: string
   state: 'skeleton' | 'latent' | 'image'
   latentPreviewUrl?: string
   output?: ResultItemImpl
-  /** Populated by useOutputWindowSync; unlocks rerun + reuse-params
-   *  and the Cloud asset_hash URL fix. */
+  /** Populated by useOutputWindowSync. */
   asset?: AssetItem
   /** Workspace coordinates (pre-transform). */
   position: { x: number; y: number }
-  /** User-set dimensions in workspace px; undefined = auto-fit / default. */
+  /** User-set dimensions; undefined = auto-fit / default. */
   width?: number
   height?: number
   zIndex: number
@@ -31,12 +26,9 @@ export interface OutputWindowEntry {
 
 const SPAWN_ANCHOR_X = 80
 const SPAWN_ANCHOR_Y = 60
-// One grid unit between adjacent windows.
 const SPAWN_GAP = 16
 const SPAWN_GRID = 16
-// Default size for spawn-placement math; matches OutputWindow's
-// pre-image defaults. Once the image lands the window resizes in
-// place; placement stays stable.
+// Match OutputWindow's pre-image defaults so placement stays stable.
 const DEFAULT_SPAWN_W = 512
 const DEFAULT_SPAWN_H = 560
 
@@ -78,14 +70,12 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
       return { x: snapSpawn(SPAWN_ANCHOR_X), y: snapSpawn(SPAWN_ANCHOR_Y) }
     }
 
-    // Anchor on the most recently spawned window — that's the one the
-    // user just generated and wants the next image next to.
+    // Anchor on the most recently spawned window.
     const last = entryRect(windows.value[windows.value.length - 1])
     const newW = DEFAULT_SPAWN_W
     const newH = DEFAULT_SPAWN_H
 
-    // Try right, below, left, above of the anchor — pick the first
-    // free side. SPAWN_GAP between adjacent windows.
+    // Try each side; first non-colliding wins.
     const candidates = [
       { x: last.x + last.w + SPAWN_GAP, y: last.y },
       { x: last.x, y: last.y + last.h + SPAWN_GAP },
@@ -100,7 +90,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
       if (!collides) return { x: snapSpawn(c.x), y: snapSpawn(c.y) }
     }
 
-    // Cluster fully boxed in — drop a row below the bottommost window.
+    // Cluster boxed in — wrap to a fresh row below.
     const bottomY = Math.max(
       ...windows.value.map((w) => w.position.y + (w.height ?? DEFAULT_SPAWN_H))
     )
@@ -154,7 +144,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   function promote(id: string): void {
     const w = windows.value.find((w) => w.id === id)
     if (!w) return
-    // Skip when already topmost — caps zIndex climb from idle clicks.
+    // No-op when already topmost; caps zIndex growth.
     const maxZ = windows.value.reduce(
       (m, x) => (x.zIndex > m ? x.zIndex : m),
       0

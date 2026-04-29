@@ -124,8 +124,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     viewportOffsetY.value = 0
   }
 
-  // Active flyTo animation handle so a second call (or a manual
-  // pan/zoom) can interrupt the prior tween mid-flight.
+  // Mid-flight handle so a second flyTo / manual pan can cancel.
   let flyAnimationId: number | null = null
   function cancelFlyTo() {
     if (flyAnimationId !== null) {
@@ -134,9 +133,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
   }
 
-  // Smoothly center the viewport on a workspace rect. Keeps the
-  // current zoom unless it's WAY out (< 0.5×) or WAY in (> 2×),
-  // in which case it eases toward 1×.
+  // Smooth-pan to a workspace rect. Keeps current zoom unless it's
+  // far out (<0.5×) or far in (>2×), in which case it eases to 1×.
   function flyTo(
     target: { x: number; y: number; width: number; height: number },
     options?: {
@@ -156,8 +154,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     const fromScale = viewportScale.value
     const toScale = fromScale < 0.5 || fromScale > 2 ? clampScale(1) : fromScale
 
-    // From the workspace transform: screenX = vw/2 + (cx - vw/2)*scale + offsetX
-    // For screenX = vw/2 (center), offsetX = (vw/2 - cx) * scale.
+    // Solve workspaceTransform for offsetX that puts cx at viewport center.
     const toX = (vw / 2 - cx) * toScale
     const toY = (vh / 2 - cy) * toScale
 
@@ -178,19 +175,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     flyAnimationId = requestAnimationFrame(tick)
   }
 
-  // Shared panel position + collapse state — single source of truth so
-  // moving / collapsing the panel in either view updates both. Persisted
-  // to the workflow via `extra.linearData.layout` (see watch below).
+  // Shared panel state across App Mode + Builder. Persisted via
+  // `extra.linearData.layout` (see watch below).
   const panelPreset = ref<PanelPreset>('right-dock')
   const panelCollapsed = ref(false)
-  // Width of the dock panel in grid cells (8 = default 440px). Bumping
-  // this grows the panel by one cell + gutter per step (56px). Float
-  // presets ignore this; they stay at the default 8-cell width.
+  // Width in grid cells (8 = 440px). Float presets ignore this.
   const panelWidthCells = ref(8)
-  // Block layout inside the panel, shared with the builder's arrange step
-  // for the same WYSIWYG reason — rearranging in either view mutates the
-  // same 2D grid. Reconciliation against selectedInputs lives in
-  // useAppPanelLayout so the store stays free of graph-resolution code.
   const panelRows = ref<BlockRow[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
@@ -200,9 +190,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  // Prune entries referencing nodes deleted in workflow mode.
-  // Only check node existence, not widgets — dynamic widgets can
-  // hide/show other widgets so a missing widget does not mean stale data.
+  // Prune entries referencing deleted nodes. Don't check widgets:
+  // dynamic widgets can hide/show siblings.
   function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
@@ -244,9 +233,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     resetSelectedToWorkflow
   )
 
-  // Builder-only writes: inputs, outputs, and the block arrangement
-  // inside the panel. Block reorder is gated to builder by PanelBlockList,
-  // so panelRows only mutates here.
+  // Builder-only writes (inputs, outputs, panelRows reorders).
   watch(
     () =>
       isBuilderMode.value
@@ -273,8 +260,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     { deep: true }
   )
 
-  // Persist panel layout. Fires from both App Mode and Builder so a
-  // user dragging the panel in either view writes back to the workflow.
+  // Persist panel layout from both App Mode and Builder.
   watch(
     () => ({
       panelPreset: panelPreset.value,

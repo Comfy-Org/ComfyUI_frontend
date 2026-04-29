@@ -14,14 +14,8 @@ const isPromoted = computed(() =>
   appModeStore.selectedOutputs.some(matchesThis)
 )
 
-// TransformPane uses a CSS transform that resize/scroll observers don't
-// fire for, so a RAF loop keeps the teleported chrome glued to the node
-// rect as the canvas pans/zooms. Bounded by mount: AppOutput renders
-// only while `isSelectOutputsMode` is true (see LGraphNode.vue).
-//
-// Known follow-up (CR): with many output nodes visible, each instance
-// runs its own RAF callback. A shared dispatcher driving all
-// AppInput/AppOutput updates would reduce per-frame work — out of scope.
+// RAF keeps the teleported chrome glued to the node — TransformPane's
+// CSS transform doesn't fire resize/scroll observers.
 const wrapperRef = useTemplateRef<HTMLElement>('wrapper')
 const { top, left, width, height, update } = useElementBounding(wrapperRef)
 useRafFn(update, { immediate: true })

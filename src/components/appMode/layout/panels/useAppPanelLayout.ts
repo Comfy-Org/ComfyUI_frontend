@@ -26,8 +26,7 @@ interface InputEntryWithMeta extends InputCellEntry {
 export function useAppPanelLayout() {
   const appModeStore = useAppModeStore()
 
-  // Re-resolve on graph reconfigure so stale entries prune. rootGraph
-  // may be null mid-transition; VueUse re-binds when it appears.
+  // Re-resolve on graph reconfigure so stale entries prune.
   const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph?.nodes ?? [])
   useEventListener(
     () => app.rootGraph?.events,
@@ -36,7 +35,6 @@ export function useAppPanelLayout() {
   )
 
   const inputEntries = computed<InputEntryWithMeta[]>(() => {
-    // Touching graphNodes registers the dep so we re-run on rebind.
     if (!graphNodes.value) return []
     const nodeDataByNode = new Map<
       LGraphNode,
@@ -65,15 +63,13 @@ export function useAppPanelLayout() {
       })
       if (!matchingWidget) return []
 
-      // Shallow copy — extractVueNodeData is shared and mutating in
-      // place would leak state into other consumers.
+      // Shallow copy — extractVueNodeData is shared.
       const widgetView = {
         ...matchingWidget,
         slotMetadata: undefined,
         nodeId: String(node.id)
       }
 
-      // Narrow generic TOptions before reading `multiline`.
       const opts: unknown = widget.options
       const isMultiline =
         (typeof opts === 'object' &&
@@ -102,8 +98,7 @@ export function useAppPanelLayout() {
     () => new Map(inputEntries.value.map((e) => [e.key, e]))
   )
 
-  // Reconcile panelRows: preserve layout, drop entry-less blocks,
-  // refresh meta, append new inputs as single-block rows.
+  // Reconcile panelRows against current entries.
   watchEffect(() => {
     const entryByBlockId = new Map(
       inputEntries.value.map((e) => [`input-${e.key}`, e])
@@ -148,7 +143,6 @@ export function useAppPanelLayout() {
       ])
     }
 
-    // Equality guard — unconditional write would re-trigger this effect.
     if (!isEqual(preserved, appModeStore.panelRows)) {
       appModeStore.panelRows = preserved
     }
@@ -167,8 +161,7 @@ export function useAppPanelLayout() {
 
 /**
  * Pure reorder of `panelRows`. Returns the original reference on
- * noop moves so callers can identity-check. Shared by commit + drag
- * preview so the in-flight render matches the final result.
+ * noop moves so callers can identity-check.
  */
 export function applyMove(
   rows: BlockRow[],

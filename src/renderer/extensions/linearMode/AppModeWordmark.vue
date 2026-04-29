@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// Source SVG: comfyui-app-mode/design/mockups/app-mode-wordmark.svg.
-// Path is inlined so fill="currentColor" picks up the parent's `color`,
-// letting the wordmark adapt to light/dark theme via Tailwind text classes.
+// Inlined so fill="currentColor" inherits the parent's text color
+// and adapts to light/dark theme via Tailwind text-* classes.
 </script>
 
 <template>

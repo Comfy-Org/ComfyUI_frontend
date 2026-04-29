@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import PreviewCard from '@/components/appMode/layout/PreviewCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import DragReorderDemo from '@/renderer/extensions/linearMode/DragReorderDemo.vue'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -44,8 +45,6 @@ const existingOutput = computed(() => {
     class="mx-auto flex size-full flex-col items-center justify-center gap-4 p-8"
     style="transform: translateX(calc(-0.5 * var(--sidebar-width, 0px)))"
   >
-    <!-- translateX recenters onto the toolbar's viewport-centered
-         axis (the backdrop is sidebar-offset). -->
     <PreviewCard :title="t('linearMode.arrange.outputs')" class="w-132">
       <p
         class="m-0 max-w-prose px-6 py-8 text-left text-lg text-base-foreground"
@@ -59,34 +58,7 @@ const existingOutput = computed(() => {
         <p class="m-0 max-w-prose text-left text-lg text-base-foreground">
           {{ t('linearMode.arrange.dragHint') }}
         </p>
-        <!-- Drag-to-reorder demo: bottom block lifts beside the middle
-             block (1-col → 2-col) and back. -->
-        <svg
-          class="drag-demo mx-auto w-3/4 max-w-sm text-warning-background"
-          viewBox="0 0 240 144"
-          aria-hidden="true"
-        >
-          <rect class="frame" x="4" y="4" width="232" height="136" rx="10" />
-          <line class="frame" x1="4" y1="28" x2="236" y2="28" />
-          <path class="frame" d="M14 15 L18 19 L22 15" />
-          <circle class="frame-dot" cx="210" cy="16" r="1.5" />
-          <circle class="frame-dot" cx="217" cy="16" r="1.5" />
-          <circle class="frame-dot" cx="224" cy="16" r="1.5" />
-          <rect x="16" y="40" width="208" height="24" rx="6" />
-          <rect class="shrinks" x="16" y="72" width="208" height="24" rx="6" />
-          <rect
-            class="mover shrinks"
-            x="16"
-            y="104"
-            width="208"
-            height="24"
-            rx="6"
-          />
-          <path
-            class="cursor"
-            d="M0 0 L0 16 L4 13 L7 19 L9 18 L6 12 L11 11 Z"
-          />
-        </svg>
+        <DragReorderDemo />
       </div>
     </PreviewCard>
   </div>
@@ -113,93 +85,17 @@ const existingOutput = computed(() => {
 
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
-    <div class="flex flex-row gap-2">
-      <Button
-        size="lg"
-        :class="[
-          'border bg-primary-background text-white',
-          'border-primary-background-hover',
-          'hover:bg-primary-background-hover'
-        ]"
-        data-testid="linear-arrange-switch-to-outputs"
-        @click="setMode('builder:outputs')"
-      >
-        {{ t('linearMode.arrange.switchToOutputsButton') }}
-      </Button>
-    </div>
+    <Button
+      size="lg"
+      :class="[
+        'border bg-primary-background text-white',
+        'border-primary-background-hover',
+        'hover:bg-primary-background-hover'
+      ]"
+      data-testid="linear-arrange-switch-to-outputs"
+      @click="setMode('builder:outputs')"
+    >
+      {{ t('linearMode.arrange.switchToOutputsButton') }}
+    </Button>
   </div>
 </template>
-
-<style scoped>
-/* easeInOutQuint — the pronounced curve makes the pause→drag→pause
-   rhythm legible. */
-.drag-demo rect {
-  fill: currentColor;
-}
-.drag-demo .frame {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.drag-demo .frame-dot {
-  fill: currentColor;
-}
-.drag-demo .shrinks {
-  animation: drag-shrink 4s cubic-bezier(0.83, 0, 0.17, 1) infinite;
-}
-.drag-demo .mover {
-  animation:
-    drag-translate 4s cubic-bezier(0.83, 0, 0.17, 1) infinite,
-    drag-shrink 4s cubic-bezier(0.83, 0, 0.17, 1) infinite;
-}
-.drag-demo .cursor {
-  fill: currentColor;
-  stroke: var(--color-layout-canvas, #0a0a0a);
-  /* paint-order: stroke under fill — fill covers the inner half so
-     only the outer 1.5px shows, matching the frame outline. */
-  stroke-width: 3;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  paint-order: stroke;
-  animation: drag-cursor 4s cubic-bezier(0.83, 0, 0.17, 1) infinite;
-}
-
-@keyframes drag-shrink {
-  0%,
-  20%,
-  80%,
-  100% {
-    width: 208px;
-  }
-  40%,
-  60% {
-    width: 100px;
-  }
-}
-@keyframes drag-translate {
-  0%,
-  20%,
-  80%,
-  100% {
-    transform: translate(0, 0);
-  }
-  40%,
-  60% {
-    transform: translate(108px, -32px);
-  }
-}
-@keyframes drag-cursor {
-  0%,
-  20%,
-  80%,
-  100% {
-    transform: translate(120px, 116px);
-  }
-  40%,
-  60% {
-    transform: translate(174px, 84px);
-  }
-}
-</style>

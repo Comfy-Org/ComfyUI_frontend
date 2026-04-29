@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
- * Translucent outline rendered at the snap-target preset's bounds
- * during a panel drag. Sits above the live panel to signal where it
- * will land on release.
+ * Translucent outline at the snap-target preset's bounds during a
+ * panel drag — signals where the panel will land on release.
  */
 import { computed } from 'vue'
 
@@ -18,11 +17,7 @@ const props = defineProps<{
 
 const presetClass = computed(() => PANEL_PRESET_CLASSES[props.preset])
 const isDocked = computed(() => isDockPreset(props.preset))
-// Match the live panel's rendered dimensions so the preview lands at
-// the size the panel will. Dock presets span the full slot via
-// top+bottom anchors, so leave height out for them — an explicit
-// height would override the bottom anchor and shrink the preview to
-// the live panel's content-fit height.
+// Skip explicit height on docks — would override the bottom anchor.
 const sizeStyle = computed(() => {
   const style: Record<string, string> = {}
   if (!isDocked.value && props.panelHeight != null)
@@ -35,9 +30,6 @@ const sizeStyle = computed(() => {
 <template>
   <div
     :class="[
-      // Accent-temp outline + 30% tint fill, animated through the
-      // shared layout duration/easing so the preview tweens between
-      // presets when the snap target changes.
       'pointer-events-none absolute z-20',
       'w-(--panel-dock-width,440px)',
       'rounded-[10px] border-2 border-primary-background',

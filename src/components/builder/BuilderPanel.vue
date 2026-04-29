@@ -18,7 +18,6 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 const { isSelectInputsMode, isSelectOutputsMode } = useAppMode()
 const { inputEntryMap, moveBlock } = useAppPanelLayout()
 
-// Match App Mode's title for WYSIWYG parity.
 const panelTitle = computed(() => {
   const path = workflowStore.activeWorkflow?.path
   if (!path) return t('linearMode.builder.title')
@@ -36,8 +35,7 @@ const emptyCopy = computed(() => {
 </script>
 
 <template>
-  <!-- Positioned ancestor for FloatingPanel; sidebar-width offset
-       matches App Mode's coordinate system. -->
+  <!-- Positioned ancestor for FloatingPanel; offset past sidebar. -->
   <div
     class="pointer-events-none fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-100"
   >

@@ -1,12 +1,8 @@
 <script setup lang="ts">
 /**
- * AppBuilder — graph-canvas selection overlay for the builder's
- * inputs/outputs steps. Renders the same SelectionChrome we use for
- * Vue-nodes mode, computing each ring's viewport rect from canvas
- * pan/zoom state on RAF. Sizes stay constant in screen pixels.
- *
- * Gated on `isSelectMode` and skipped when Vue nodes are enabled —
- * Vue nodes render their own AppInput/AppOutput rings via LGraphNode.
+ * Graph-canvas selection overlay for the builder's inputs/outputs
+ * steps. Skipped when Vue nodes are enabled — those render their own
+ * rings via AppInput/AppOutput.
  */
 import { useRafFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
@@ -52,9 +48,8 @@ const active = computed(
   () => isSelectMode.value && !settingStore.get('Comfy.VueNodes.Enabled')
 )
 
-// Canvas pan/zoom is applied via 2D-context transforms — no DOM events
-// fire when the user pans/zooms, so we sample DragAndScale + the canvas
-// element rect each frame to derive viewport-space bounds.
+// Canvas pan/zoom uses 2D-context transforms (no DOM events), so
+// sample DragAndScale + canvas rect on RAF to derive viewport bounds.
 const viewport = ref({ rectLeft: 0, rectTop: 0, scale: 1, ox: 0, oy: 0 })
 const { pause, resume } = useRafFn(
   () => {
@@ -111,8 +106,7 @@ const candidates = computed<Candidate[]>(() => {
   if (!active.value) return []
   const g = canvas.graph
   if (!g) return []
-  // Read viewport so the computed re-runs each frame as canvas state
-  // updates (the iteration over g.nodes itself isn't reactive).
+  // Read viewport so the computed re-runs as canvas state updates.
   void viewport.value
 
   if (isSelectInputsMode.value) {

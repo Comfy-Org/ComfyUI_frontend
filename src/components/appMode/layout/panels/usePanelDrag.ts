@@ -1,8 +1,7 @@
 /**
- * Pointer-driven drag for FloatingPanel between 6 fixed presets.
- * `snapTarget` tracks the nearest preset under the pointer; the
- * caller commits on release. Drag activates only after the pointer
- * moves past `DRAG_THRESHOLD_PX` so a click on the header is a no-op.
+ * Pointer-driven drag for FloatingPanel between fixed presets.
+ * `snapTarget` tracks the nearest preset under the pointer; caller
+ * commits on release.
  */
 import { ref } from 'vue'
 import type { Ref } from 'vue'
@@ -22,9 +21,7 @@ interface PresetAnchor {
   y: number
 }
 
-// Read the named CSS variable from `:root` at runtime; returns NaN if
-// unavailable so callers can apply their own fallback. Used so the
-// snap-target math tracks rendered width when tokens change.
+// Returns NaN when unavailable so callers can apply their own fallback.
 function readRootVarPx(name: string): number {
   if (typeof document === 'undefined') return NaN
   const raw = getComputedStyle(document.documentElement)
@@ -86,7 +83,6 @@ export function usePanelDrag(opts: UsePanelDragOptions) {
   const { isDragging, start: onHeaderPointerDown } = usePointerDrag({
     threshold: DRAG_THRESHOLD_PX,
     stopPropagation: true,
-    // Primary button (mouse) or any non-mouse pointer (touch / pen).
     onStart: (e) => !(e.button !== 0 && e.pointerType === 'mouse'),
     onMove: (e) => {
       snapTarget.value = nearestPreset(e.clientX, e.clientY)

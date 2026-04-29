@@ -12,7 +12,6 @@ const appModeStore = useAppModeStore()
 const { viewportScale, viewportOffsetX, viewportOffsetY } =
   storeToRefs(appModeStore)
 
-// Workspace pan/zoom mirrors LayoutView.
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
 
 function handleWheel(e: WheelEvent) {
@@ -67,7 +66,7 @@ function endDrag() {
 useEventListener(window, 'pointerup', endDrag)
 useEventListener(window, 'pointercancel', endDrag)
 
-// Abandon on blur — pointerup may never arrive after alt-tab / OS modal.
+// Abandon on blur — pointerup may never arrive after alt-tab.
 const focused = useWindowFocus()
 watch(focused, (nowFocused) => {
   if (!nowFocused && dragStart !== null) endDrag()
@@ -81,8 +80,7 @@ const workspaceTransform = computed(
 
 const DOT_SIZE_PX = 24
 const MIN_GRID_SPACING_PX = 16
-// LOD-double the pitch so the grid doesn't collapse into noise when
-// zoomed out.
+// LOD-double the pitch so the grid doesn't collapse into noise.
 const gridSpacing = computed(() => {
   let s = DOT_SIZE_PX * viewportScale.value
   if (!(s > 0)) return DOT_SIZE_PX
@@ -92,8 +90,7 @@ const gridSpacing = computed(() => {
 </script>
 
 <template>
-  <!-- z-50 sits over the graph canvas, under AppChrome / FloatingPanel
-       / BuilderToolbar. -->
+  <!-- z-50 above graph canvas, below AppChrome / FloatingPanel / toolbar. -->
   <div
     v-if="isArrangeMode"
     :class="[
@@ -108,7 +105,6 @@ const gridSpacing = computed(() => {
       backgroundPosition: `${viewportOffsetX}px ${viewportOffsetY}px`
     }"
   >
-    <!-- Drives the same viewport state LayoutView reads. -->
     <div
       ref="bgRef"
       class="builder-backdrop__workspace absolute inset-0 flex flex-col"
@@ -122,8 +118,7 @@ const gridSpacing = computed(() => {
   </div>
 </template>
 
-<!-- :deep(*) re-enables pointer events on slotted LinearPreview;
-     documented exception in docs/guidance/vue-components.md §Styling. -->
+<!-- :deep(*) override; documented exception in docs/guidance/vue-components.md. -->
 <style scoped>
 .builder-backdrop :deep(*) {
   pointer-events: auto;

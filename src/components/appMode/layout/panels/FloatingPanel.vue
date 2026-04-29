@@ -41,7 +41,7 @@ const { isDragging, snapTarget, onHeaderPointerDown } = usePanelDrag({
   onCommit: (next) => (preset.value = next)
 })
 
-// Round to int — subpixel size jitters the drag-preview outline.
+// Round to int — subpixel jitters the drag-preview outline.
 const panelRef = useTemplateRef<HTMLElement>('panelRef')
 const { width: panelWidth, height: panelHeight } = useElementSize(panelRef)
 const previewHeight = computed(() => Math.round(panelHeight.value))
@@ -52,8 +52,7 @@ const { panelWidthCells } = storeToRefs(appModeStore)
 
 const isDocked = computed(() => isDockPreset(preset.value))
 
-// Per-instance override of `--panel-dock-width` — sibling chrome
-// alignment stays anchored to the token's default.
+// Per-instance override; sibling chrome stays anchored to the token default.
 const widthStyle = computed(() => {
   if (!isDocked.value) return undefined
   const cells = panelWidthCells.value
@@ -71,25 +70,19 @@ const { startResize } = usePanelResize({
 
 const sectionClass = computed(() =>
   cn(
-    // pointer-events-auto so canvas clicks still fall through empty
-    // chrome (the parent surface is pointer-events-none).
     'floating-panel pointer-events-auto absolute z-10 flex flex-col overflow-hidden',
     !isDocked.value && 'w-(--panel-dock-width,440px)',
     'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
     'rounded-[10px] border border-white/8 bg-layout-cell',
-    // Drop blur while dragging — recomputing it every frame tanks
+    // Drop blur while dragging — re-computing it every frame tanks
     // framerate when a run is repainting in parallel.
     !isDragging.value && 'backdrop-blur-sm',
     'shadow-[0_2px_4px_rgb(0_0_0/0.4),0_16px_48px_rgb(0_0_0/0.45)]',
     'duration-layout ease-layout',
-    // Drag tweens opacity only; position is pointer-driven, so a
-    // position transition would pop on commit.
     movable && isDragging.value
       ? 'opacity-[0.15] transition-opacity'
       : 'transition-[top,bottom,left,right,opacity]',
     PANEL_PRESET_CLASSES[preset.value],
-    // Collapsed: release the off-corner anchor; bottom floats re-pin
-    // at the bottom so the header hugs the lower chrome rail.
     collapsed.value && [
       'h-auto max-h-none',
       isFloatBottom(preset.value) ? 'top-auto' : 'bottom-auto'
@@ -127,8 +120,7 @@ const menuEntries = computed<MenuItem[]>(() => [
 
 <template>
   <section ref="panelRef" :class="sectionClass" :style="widthStyle">
-    <!-- Invisible 6px hit-strip on the dock's inner edge — cursor is
-         the only affordance. -->
+    <!-- Invisible resize hit-strip; cursor is the only affordance. -->
     <div
       v-if="isDocked"
       :class="
@@ -151,8 +143,6 @@ const menuEntries = computed<MenuItem[]>(() => [
       @pointerdown="handleHeaderPointerDown"
     />
 
-    <!-- Content-driven height; `min-h-0` lets flex-shrink scroll
-         once content exceeds the section's max-height cap. -->
     <div v-show="!collapsed" class="min-h-0 overflow-y-auto p-4">
       <slot />
     </div>

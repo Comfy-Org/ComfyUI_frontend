@@ -33,9 +33,8 @@ const draggingBlockId = computed<string | null>(() => {
   return rows[pos.row]?.[pos.col]?.id ?? null
 })
 
-// During drag, preview the post-drop layout via the same applyMove
-// the commit uses. `data-block-row/col` stay in ORIGINAL coords so
-// hit-testing returns drop targets in the space applyMove expects.
+// Preview the post-drop layout while dragging; data-block-row/col
+// keep their original coords so hit-testing math stays consistent.
 const displayRows = computed<BlockRow[]>(() => {
   const pos = draggingPos.value
   const target = dropTarget.value
@@ -52,15 +51,13 @@ const originalById = computed(() => {
 })
 
 function beginDrag(blockId: string, event: PointerEvent) {
-  // app-mode: skip so startDrag's preventDefault doesn't suppress
-  // widget text-selection / focus.
+  // Skip in app-mode so preventDefault doesn't suppress widget focus.
   if (variant !== 'builder') return
   const pos = originalById.value.get(blockId)
   if (pos) startDrag(pos, event)
 }
 
-// Skip the dragging block — its lift treatment shouldn't compete
-// with the slide animation on its siblings.
+// Skip the dragging block; its lift treatment overrides the slide.
 useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
 </script>
 
@@ -97,8 +94,7 @@ useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
         @pointerdown="beginDrag(block.id, $event)"
       >
         <div class="w-full min-w-0 overflow-hidden">
-          <!-- 1-item v-for + v-if narrows the Map lookup so :entry is
-               typed without `!`. -->
+          <!-- v-for + v-if narrows the Map lookup without `!`. -->
           <template
             v-for="entry in [inputEntryMap.get(block.entryKey)]"
             :key="entry?.key ?? block.entryKey"
@@ -112,8 +108,7 @@ useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
             </div>
           </template>
         </div>
-        <!-- Tint paints in the gaps between widgets (which paint
-             opaque); pointer-events-none keeps drag tracking. -->
+        <!-- Tint paints in gaps between opaque widgets. -->
         <div
           v-if="block.id === draggingBlockId"
           class="pointer-events-none absolute -inset-1.5 z-10 rounded-layout-cell bg-warning-background/10"
@@ -131,8 +126,7 @@ useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
   text-align: center;
 }
 
-/* Collapse NodeWidgets' 3-col grid (slot-dot | label | widget) to
-   a single column — dot is empty, label is hidden via HideLayoutFieldKey. */
+/* Collapse NodeWidgets' 3-col grid; dot + label are hidden upstream. */
 .panel-block__input :deep([data-testid='node-widgets']) {
   grid-template-columns: 1fr !important;
   padding: 0 !important;
@@ -145,8 +139,7 @@ useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
   display: none !important;
 }
 
-/* Auto-grow via field-sizing:content; panel's max-h is the single
-   height ceiling so the panel body scrolls, not the textarea. */
+/* Auto-grow textareas; panel max-h scrolls instead. */
 .panel-block__input[data-multiline='true'] :deep(textarea) {
   field-sizing: content;
   height: auto !important;

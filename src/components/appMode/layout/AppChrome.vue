@@ -69,9 +69,8 @@ if (variant === 'builder') {
   onBeforeUnmount(() => canvasStore.cleanupScaleSync())
 }
 
-// Two zoom systems behind one nav cluster: App Mode + builder/arrange
-// drive `appModeStore.viewportScale` (CSS transform); builder/inputs+
-// outputs drive `LGraphCanvas.ds.scale` via Comfy.Canvas.* commands.
+// One nav cluster, two zoom systems: appModeStore (CSS transform) for
+// app/arrange; LGraphCanvas.ds.scale for builder/inputs+outputs.
 const useAppModeZoom = computed(
   () => variant !== 'builder' || isArrangeMode.value
 )
@@ -140,8 +139,7 @@ const topLeftCells = computed<ChromeCell[]>(() => {
 
 const topRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
-  // Conditional cells go leftmost so show/hide pushes the cluster's
-  // left edge instead of shifting share/batch/run.
+  // Conditional cells go leftmost so show/hide doesn't shift the rest.
   if (showJobQueue.value)
     include(out, { id: 'system-job-queue', kind: 'system-job-queue', span: 2 })
   if (showShare.value)

@@ -12,7 +12,6 @@ import PanelHeader from './PanelHeader.vue'
 const { t } = useI18n()
 const {
   defaultWidth = 512,
-  // Fallback before an image lands; bodyAspect takes over once known.
   defaultHeight = 560,
   title,
   menuEntries = [],
@@ -27,15 +26,13 @@ const {
   title?: string
   /** Appended below the internal Maximize / Restore entry. */
   menuEntries?: MenuItem[]
-  /** Workspace-coord starting position. Listen for `update:position` for committed values. */
+  /** Workspace-coord starting position. */
   initialPosition?: { x: number; y: number }
-  /** User-set dimensions; emit via `update:size`. Either being set
-   *  switches off bodyAspect content-fit. */
+  /** User-set dimensions; switches off bodyAspect content-fit. */
   initialWidth?: number
   initialHeight?: number
   zIndex?: number
-  /** `naturalWidth / naturalHeight`; when set (and user hasn't resized),
-   *  body uses CSS aspect-ratio. */
+  /** `naturalWidth / naturalHeight`; drives content-fit if user hasn't resized. */
   bodyAspect?: number
 }>()
 
@@ -45,7 +42,6 @@ const emit = defineEmits<{
   promote: []
 }>()
 
-// True once the user resizes — switches off bodyAspect auto-fit.
 const userSized = computed(() => initialWidth != null || initialHeight != null)
 
 const collapsed = ref(false)
@@ -71,12 +67,11 @@ onMounted(() => {
     wy.value = snap(initialPosition.y)
     return
   }
-  // No initial position → center in the viewport.
   wx.value = snap(Math.max(0, (window.innerWidth - ww.value) / 2))
   wy.value = snap(Math.max(0, (window.innerHeight - wh.value) / 2 - 32))
 })
 
-// Skipped while dragging so we don't fight the pointer with stale values.
+// Skip while dragging so the pointer wins over stale prop values.
 watch(
   () => initialPosition,
   (next) => {
@@ -102,15 +97,14 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
     stopPropagation: true,
     onStart: (e) => {
       if (e.button !== 0) return false
-      // Promote even when maximized — only the drag is gated.
+      // Promote even when maximized; only drag is gated.
       emit('promote')
       if (maximized.value) return false
       dragStart = { px: e.clientX, py: e.clientY, bx: wx.value, by: wy.value }
     },
     onMove: (e) => {
       if (!dragStart) return
-      // Divide by scale so the cursor stays stuck to the header at
-      // any zoom (pointer is screen px; position is workspace px).
+      // Divide by scale: pointer is screen px, position is workspace px.
       const s = viewportScale.value || 1
       wx.value = snap(dragStart.bx + (e.clientX - dragStart.px) / s)
       wy.value = snap(dragStart.by + (e.clientY - dragStart.py) / s)
@@ -124,8 +118,7 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
   }
 )
 
-// Min width = title's natural width + chrome budget (chevron, gaps,
-// download, ellipsis, padding) so the filename never truncates.
+// Min width = title's natural width + chrome budget so filename can't truncate.
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const HEADER_CHROME_BUDGET_PX = 140
 const MIN_HEIGHT_PX = 80
@@ -145,9 +138,7 @@ type ResizeStart = {
   by: number
   bw: number
   bh: number
-  /** Section width minus the body's interior width (= 2 × body padding). */
   chromeW: number
-  /** Section height minus the body's interior height (header + 2 × padding). */
   chromeH: number
   dir: ResizeDir
 }
@@ -168,8 +159,7 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
         | undefined
       if (!dir) return false
       activeDir.value = dir
-      // Sample actual rendered dimensions (wh.value is the default
-      // until first resize and doesn't match aspect-fit on screen).
+      // wh.value is the default before first resize; sample the rendered rect.
       const s = viewportScale.value || 1
       const sectionEl = sectionRef.value
       const rectH = sectionEl?.getBoundingClientRect().height
@@ -204,9 +194,8 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
       let nw_ = bw + (right ? dx : left ? -dx : 0)
       let nh_ = bh + (bottom ? dy : top ? -dy : 0)
 
-      // Aspect-lock targets the BODY's interior so the image's margins
-      // stay even on all sides (header + padding eat chrome from the
-      // section dimensions but not from the body the image fills).
+      // Aspect-lock the BODY interior, not the section, so image
+      // margins stay even on all sides.
       if (bodyAspect != null) {
         const widthChanged = right || left
         const heightChanged = top || bottom
@@ -223,7 +212,6 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
         }
       }
 
-      // Clamp; aspect-lock holds across the clamp via the body interior.
       const minW = minWidth.value
       if (nw_ < minW) {
         nw_ = minW
@@ -234,8 +222,7 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
         if (bodyAspect != null) nw_ = (nh_ - chromeH) * bodyAspect + chromeW
       }
 
-      // Anchor the OPPOSITE corner — edges default the implicit axis
-      // to top/left so only the dragged edge visibly moves.
+      // Anchor the diagonally-opposite corner.
       const anchorEast = left
       const anchorSouth = top
       const nx = anchorEast ? bx + bw - nw_ : bx
@@ -282,8 +269,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       maximized
         ? { inset: '0px', zIndex: zIndex ?? 30 }
         : {
-            // translate3d keeps drag on the compositor; the trailing 0
-            // forces an upfront 3D layer instead of first-move promotion.
+            // translate3d keeps drag on the compositor.
             transform: `translate3d(${wx}px, ${wy}px, 0)`,
             width: `${ww}px`,
             zIndex: zIndex ?? 30,
@@ -340,9 +326,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
         <slot name="body-overlay" />
       </div>
     </div>
-    <!-- Resize hit-zones: 6px edges and 12px corners. Cursor is the
-         only affordance; corners stack above edges so the diagonal
-         cursor wins in the overlap. -->
+    <!-- Resize hit-zones — corners (z-40) stack above edges (z-30). -->
     <template v-if="!maximized && !collapsed">
       <div
         data-resize-dir="n"
@@ -384,7 +368,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
         class="group/resize absolute -right-1 -bottom-1 z-40 size-3 cursor-se-resize"
         @pointerdown="handleResizePointerDown"
       >
-        <!-- Visible cue on the SE corner only — three-pip stack. -->
+        <!-- Visible cue on the SE corner. -->
         <div
           :class="[
             'pointer-events-none absolute right-1 bottom-1 size-1.5 rounded-full bg-base-foreground/30',

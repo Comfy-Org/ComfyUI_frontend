@@ -16,21 +16,17 @@ const { id, enable, name } = defineProps<{
 
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
-// InputCell opts out so the panel preview matches App Mode 1:1
-// (selection happens via the canvas overlay there).
 const hideInputSelection = useHideInputSelection()
 const showSelection = computed(() => enable && !hideInputSelection)
 
 const wrapperRef = useTemplateRef<HTMLElement>('wrapper')
 const { top, left, width, height, update } = useElementBounding(wrapperRef)
-// TransformPane uses a CSS transform that resize/scroll observers
-// don't fire for; RAF (gated to selection mode) keeps the teleported
-// chrome glued to the widget rect.
+// RAF keeps teleported chrome glued to the widget — TransformPane's
+// CSS transform doesn't fire resize/scroll observers.
 const { pause, resume } = useRafFn(update, { immediate: false })
 watch(showSelection, (s) => (s ? resume() : pause()), { immediate: true })
 
 function matchesThis([nodeId, widgetName]: LinearInput) {
-  // NodeId is string|number across graph/store; normalize both sides.
   return id === String(nodeId) && name === widgetName
 }
 function togglePromotion() {
