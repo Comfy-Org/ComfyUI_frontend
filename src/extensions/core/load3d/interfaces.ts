@@ -82,6 +82,9 @@ export interface Load3DOptions {
 
   // Optional context menu callback
   onContextMenu?: (event: MouseEvent) => void
+
+  // Suppress model-load error toasts (e.g. for preview nodes that don't own their model file)
+  suppressLoadErrors?: boolean
 }
 
 export interface CaptureResult {

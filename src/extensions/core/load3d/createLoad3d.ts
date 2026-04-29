@@ -34,7 +34,10 @@ function createRenderer(container: Element | HTMLElement): THREE.WebGLRenderer {
   return renderer
 }
 
-function buildLoad3dDeps(container: Element | HTMLElement): Load3dDeps {
+function buildLoad3dDeps(
+  container: Element | HTMLElement,
+  options?: Load3DOptions
+): Load3dDeps {
   const renderer = createRenderer(container)
   const eventManager = new EventManager()
   // Shared mutable handle: LoaderManager writes the active adapter on each
@@ -94,7 +97,8 @@ function buildLoad3dDeps(container: Element | HTMLElement): Load3dDeps {
     modelManager,
     eventManager,
     undefined,
-    adapterRef
+    adapterRef,
+    options?.suppressLoadErrors ?? false
   )
   const recordingManager = new RecordingManager(
     sceneManager.scene,
@@ -140,5 +144,5 @@ export function createLoad3d(
   container: Element | HTMLElement,
   options?: Load3DOptions
 ): Load3d {
-  return new Load3d(container, buildLoad3dDeps(container), options)
+  return new Load3d(container, buildLoad3dDeps(container, options), options)
 }

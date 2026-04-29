@@ -510,9 +510,7 @@ useExtensionService().registerExtension({
           const filePath = result?.[0]
 
           if (!filePath) {
-            const msg = t('toastMessages.unableToGetModelFilePath')
-            console.error(msg)
-            useToastStore().addAlert(msg)
+            console.error(t('toastMessages.unableToGetModelFilePath'))
           }
 
           const cameraState = result?.[1]

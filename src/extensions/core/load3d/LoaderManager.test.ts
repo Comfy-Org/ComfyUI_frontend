@@ -521,6 +521,26 @@ describe('LoaderManager', () => {
       expect(capturedCtx!.materialMode).toBe('wireframe')
     })
 
+    it('does not show a toast when suppressErrors is true and the adapter throws', async () => {
+      const modelManager = makeModelManagerStub()
+      const eventManager = makeEventManagerStub()
+      const lm = new LoaderManager(
+        modelManager as unknown as ConstructorParameters<
+          typeof LoaderManager
+        >[0],
+        eventManager,
+        undefined,
+        undefined,
+        true
+      )
+      meshLoad.mockRejectedValueOnce(new Error('boom'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb')
+
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
     it('suppresses alerts and modelLoadingEnd when a stale load throws', async () => {
       const { lm, eventManager } = makeLoaderManager()
 
