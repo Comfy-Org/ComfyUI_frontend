@@ -113,6 +113,28 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 The script exits non-zero on any non-fresh outcome so stale/empty
 snapshots can't be accidentally committed.
 
+## HubSpot contact form
+
+The contact page uses HubSpot's hosted form embed for the interest form:
+
+```html
+<script
+  src="https://js-na2.hsforms.net/forms/embed/244637579.js"
+  defer
+></script>
+<div
+  class="hs-form-frame"
+  data-region="na2"
+  data-form-id="94e05eab-1373-47f7-ab5e-d84f9e6aa262"
+  data-portal-id="244637579"
+></div>
+```
+
+This keeps submission handling, validation, anti-spam updates, and field
+configuration in HubSpot. The local implementation in
+`src/components/contact/HubspotFormEmbed.vue` only loads the hosted script and
+renders the documented embed container.
+
 ## Scripts
 
 - `pnpm dev` — Astro dev server
