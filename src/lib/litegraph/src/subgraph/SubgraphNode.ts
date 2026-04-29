@@ -1180,7 +1180,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         if (resolved) {
           const state = getProxyWidgetInlineState(rawEntry)
-          if (state && state.value !== undefined) {
+          if (state) {
             pendingValues.set(makePromotionEntryKey(resolved), state.value)
           } else if (canHydrateLegacyWidgetsValues) {
             const value = this._pendingLegacyWidgetsValues?.[index]

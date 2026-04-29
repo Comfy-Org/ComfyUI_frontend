@@ -3,11 +3,20 @@ import { fromZodError } from 'zod-validation-error'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
-const proxyWidgetStateSchema = z.object({ value: z.unknown() })
-/**
- * Ordering is defensive: longest tuple first, though `z.tuple` also enforces
- * exact arity so a 4-tuple cannot match the 3-tuple form by length alone.
- */
+type DefinedProxyWidgetValue =
+  | null
+  | boolean
+  | number
+  | string
+  | bigint
+  | symbol
+  | object
+
+const definedValueSchema = z.custom<DefinedProxyWidgetValue>(
+  (value) => value !== undefined,
+  'Inline proxy widget value cannot be undefined'
+)
+const proxyWidgetStateSchema = z.object({ value: definedValueSchema })
 const proxyWidgetTupleSchema = z.union([
   z.tuple([
     z.string(),
@@ -21,6 +30,7 @@ const proxyWidgetTupleSchema = z.union([
 const proxyWidgetsPropertySchema = z.array(proxyWidgetTupleSchema)
 type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 type ProxyWidgetEntry = ProxyWidgetsProperty[number]
+type ProxyWidgetInlineState = z.infer<typeof proxyWidgetStateSchema>
 
 export function parseProxyWidgets(
   property: NodeProperty | undefined
@@ -43,12 +53,9 @@ export function parseProxyWidgets(
 /**
  * Typed accessor for the optional trailing `{ value }` state on a proxyWidgets
  * entry. Returns undefined for 2- and 3-tuple (identity-only) entries.
- *
- * Zod infers the state object as `{ value?: unknown }` because `z.unknown()`
- * treats undefined as valid input.
  */
 export function getProxyWidgetInlineState(
   entry: ProxyWidgetEntry
-): { value?: unknown } | undefined {
+): ProxyWidgetInlineState | undefined {
   return entry.length === 4 ? entry[3] : undefined
 }

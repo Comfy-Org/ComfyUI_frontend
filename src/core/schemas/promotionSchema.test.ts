@@ -36,6 +36,13 @@ describe(parseProxyWidgets, () => {
     ])
   })
 
+  it('parses 4-tuple arrays with inline state', () => {
+    const input = [['3', 'text', null, { value: 'hello' }]]
+    expect(parseProxyWidgets(input)).toEqual([
+      ['3', 'text', null, { value: 'hello' }]
+    ])
+  })
+
   it('returns empty array for non-array input', () => {
     expect(parseProxyWidgets(undefined)).toEqual([])
     expect(parseProxyWidgets('not-json{')).toEqual([])
@@ -44,5 +51,8 @@ describe(parseProxyWidgets, () => {
   it('returns empty array for invalid tuples', () => {
     expect(parseProxyWidgets([['only-one']])).toEqual([])
     expect(parseProxyWidgets([['a', 'b', 'c', 'd']])).toEqual([])
+    expect(parseProxyWidgets([['a', 'b', null, { value: undefined }]])).toEqual(
+      []
+    )
   })
 })
