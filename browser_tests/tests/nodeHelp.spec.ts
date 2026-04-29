@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
@@ -87,8 +87,6 @@ async function setLocaleAndWaitForWorkflowReload(
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
   })
 

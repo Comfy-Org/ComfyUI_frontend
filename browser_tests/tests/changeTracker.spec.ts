@@ -71,7 +71,7 @@ async function waitForChangeTrackerSettled(
 ) {
   // Visible node flags can flip before undo finishes loadGraphData() and
   // updates the tracker. Poll the tracker's own settled state so we do not
-  // start the next transaction while checkState() is still gated.
+  // start the next transaction while captureCanvasState() is still gated.
   await expect
     .poll(() => getChangeTrackerDebugState(comfyPage))
     .toMatchObject({
@@ -223,8 +223,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await beforeChange(comfyPage)
       await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
-      await comfyPage.page.keyboard.press('KeyP')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyP')
       await expect(node).toBePinned()
       await afterChange(comfyPage)
     }
@@ -272,5 +271,43 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.canvasOps.pan({ x: 10, y: 10 })
     await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+  })
+
+  test('Undo preserves viewport offset', async ({ comfyPage }) => {
+    // Pan to a distinct offset so we can detect drift
+    await comfyPage.canvasOps.pan({ x: 200, y: 150 })
+
+    const viewportBefore = await comfyPage.page.evaluate(() => {
+      const ds = window.app!.canvas.ds
+      return { scale: ds.scale, offset: [...ds.offset] }
+    })
+
+    // Make a graph change so we have something to undo
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    await node.click('title')
+    await node.click('collapse')
+    await expect(node).toBeCollapsed()
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+    // Undo the collapse — viewport should be preserved
+    await comfyPage.keyboard.undo()
+    await expect(node).not.toBeCollapsed()
+
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate(() => {
+            const ds = window.app!.canvas.ds
+            return { scale: ds.scale, offset: [...ds.offset] }
+          }),
+        { timeout: 2_000 }
+      )
+      .toEqual({
+        scale: expect.closeTo(viewportBefore.scale, 2),
+        offset: [
+          expect.closeTo(viewportBefore.offset[0], 0),
+          expect.closeTo(viewportBefore.offset[1], 0)
+        ]
+      })
   })
 })

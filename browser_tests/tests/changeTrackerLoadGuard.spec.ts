@@ -12,7 +12,7 @@ test.describe(
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
-    test('Prevents checkState from corrupting workflow state during tab switch', async ({
+    test('Prevents captureCanvasState from corrupting workflow state during tab switch', async ({
       comfyPage
     }) => {
       // Tab 0: default workflow (7 nodes)
@@ -21,9 +21,9 @@ test.describe(
       // Save tab 0 so it has a unique name for tab switching
       await comfyPage.menu.topbar.saveWorkflow('workflow-a')
 
-      // Register an extension that forces checkState during graph loading.
+      // Register an extension that forces captureCanvasState during graph loading.
       // This simulates the bug scenario where a user clicks during graph loading
-      // which triggers a checkState call on the wrong graph, corrupting the activeState.
+      // which triggers a captureCanvasState call on the wrong graph, corrupting the activeState.
       await comfyPage.page.evaluate(() => {
         window.app!.registerExtension({
           name: 'TestCheckStateDuringLoad',
@@ -35,7 +35,7 @@ test.describe(
             // ; (workflow.changeTracker.constructor as unknown as { isLoadingGraph: boolean }).isLoadingGraph = false
 
             // Simulate the user clicking during graph loading
-            workflow.changeTracker.checkState()
+            workflow.changeTracker.captureCanvasState()
           }
         })
       })

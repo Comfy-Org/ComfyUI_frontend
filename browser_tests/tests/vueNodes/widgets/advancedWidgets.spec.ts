@@ -3,9 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Advanced Widget Visibility', () => {
+test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting(
       'Comfy.Node.AlwaysShowAdvancedWidgets',
       false

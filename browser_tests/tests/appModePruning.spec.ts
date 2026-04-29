@@ -1,10 +1,10 @@
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { setupBuilder } from '../helpers/builderTestUtils'
-import { fitToViewInstant } from '../helpers/fitToView'
+} from '@e2e/fixtures/ComfyPage'
+import { setupBuilder } from '@e2e/fixtures/utils/builderTestUtils'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const RESIZE_NODE_TITLE = 'Resize Image/Mask'
 const RESIZE_NODE_ID = '1'

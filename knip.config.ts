@@ -17,6 +17,9 @@ const config: KnipConfig = {
       entry: ['src/i18n.ts'],
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/design-system': {
+      project: ['src/**/*.{css,js,ts}']
+    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -30,13 +33,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      entry: [
-        'src/pages/**/*.astro',
-        'src/layouts/**/*.astro',
-        'src/components/**/*.vue',
-        'src/styles/global.css'
-      ],
-      project: ['src/**/*.{astro,vue,ts}', '*.{js,ts,mjs}']
+      entry: ['src/scripts/**/*.ts']
     }
   },
   ignoreBinaries: ['python3'],

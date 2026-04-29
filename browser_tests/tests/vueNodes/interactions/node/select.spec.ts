@@ -7,12 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Vue Node Selection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Selection', { tag: '@vue-nodes' }, () => {
   const modifiers = [
     { key: 'Control', name: 'ctrl' },
     { key: 'Shift', name: 'shift' },

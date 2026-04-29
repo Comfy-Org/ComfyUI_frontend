@@ -121,6 +121,74 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       missingMediaCandidates.value = null
   }
 
+  function removeMissingMediaByNodeId(nodeId: string) {
+    if (!missingMediaCandidates.value) return
+    const removedNames = new Set(
+      missingMediaCandidates.value
+        .filter((m) => String(m.nodeId) === nodeId)
+        .map((m) => m.name)
+    )
+    missingMediaCandidates.value = missingMediaCandidates.value.filter(
+      (m) => String(m.nodeId) !== nodeId
+    )
+    for (const name of removedNames) {
+      if (!missingMediaCandidates.value.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+    if (!missingMediaCandidates.value.length)
+      missingMediaCandidates.value = null
+  }
+
+  /**
+   * Remove all candidates whose nodeId starts with `prefix`.
+   *
+   * Intended for clearing all interior errors when a subgraph container is
+   * removed. Callers are expected to pass `${execId}:` (with trailing
+   * colon) so that sibling IDs sharing a numeric prefix (e.g. `"705"` vs
+   * `"70"`) are not matched.
+   */
+  function removeMissingMediaByPrefix(prefix: string) {
+    if (!missingMediaCandidates.value) return
+    const removedNames = new Set<string>()
+    const remaining: MissingMediaCandidate[] = []
+    for (const m of missingMediaCandidates.value) {
+      // Preserve candidates without a nodeId; they cannot belong to any
+      // subgraph scope. The type marks nodeId as required, but defensive
+      // handling matches the rest of the missing-media code.
+      if (m.nodeId == null) {
+        remaining.push(m)
+        continue
+      }
+      if (String(m.nodeId).startsWith(prefix)) {
+        removedNames.add(m.name)
+      } else {
+        remaining.push(m)
+      }
+    }
+    if (removedNames.size === 0) return
+    missingMediaCandidates.value = remaining.length ? remaining : null
+    for (const name of removedNames) {
+      if (!remaining.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+  }
+
+  function addMissingMedia(media: MissingMediaCandidate[]) {
+    if (!media.length) return
+    const existing = missingMediaCandidates.value ?? []
+    const existingKeys = new Set(
+      existing.map((m) => `${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    const newMedia = media.filter(
+      (m) =>
+        !existingKeys.has(`${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    if (!newMedia.length) return
+    missingMediaCandidates.value = [...existing, ...newMedia]
+  }
+
   function clearMissingMedia() {
     _verificationAbortController?.abort()
     _verificationAbortController = null
@@ -139,8 +207,11 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     activeMissingMediaGraphIds,
 
     setMissingMedia,
+    addMissingMedia,
     removeMissingMediaByName,
     removeMissingMediaByWidget,
+    removeMissingMediaByNodeId,
+    removeMissingMediaByPrefix,
     clearMissingMedia,
     createVerificationAbortController,
 

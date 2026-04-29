@@ -37,7 +37,6 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   }
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.VersionCompatibility.DisableWarnings',
       false

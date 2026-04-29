@@ -3,12 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Nodes Canvas Pan', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
   test(
     '@mobile Can pan with touch',
     { tag: '@screenshot' },

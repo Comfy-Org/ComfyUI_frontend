@@ -272,6 +272,10 @@
       "v1 (legacy)": "v1 (heredado)"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Los nodos añadidos siguen el cursor",
+    "tooltip": "Cuando está activado, los nodos añadidos desde la caja de búsqueda siguen el cursor hasta que se hace clic para colocarlos. Solo se aplica a la implementación predeterminada."
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "Vista previa del nodo",
     "tooltip": "Solo se aplica a la implementación predeterminada"

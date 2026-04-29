@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { logMeasurement, recordMeasurement } from '@e2e/helpers/perfReporter'
+import {
+  logMeasurement,
+  recordMeasurement
+} from '@e2e/fixtures/utils/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {

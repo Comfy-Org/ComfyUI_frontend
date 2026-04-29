@@ -163,10 +163,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     missingMediaStore.removeMissingMediaByWidget(executionId, widgetName)
   }
 
-  /** Set missing models and open the error overlay if the Errors tab is enabled. */
-  function surfaceMissingModels(models: MissingModelCandidate[]) {
+  /** Set missing models and optionally open the error overlay. */
+  function surfaceMissingModels(
+    models: MissingModelCandidate[],
+    options?: { silent?: boolean }
+  ) {
     missingModelStore.setMissingModels(models)
     if (
+      !options?.silent &&
       models.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
@@ -174,10 +178,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
-  /** Set missing media and open the error overlay if the Errors tab is enabled. */
-  function surfaceMissingMedia(media: MissingMediaCandidate[]) {
+  /** Set missing media and optionally open the error overlay. */
+  function surfaceMissingMedia(
+    media: MissingMediaCandidate[],
+    options?: { silent?: boolean }
+  ) {
     missingMediaStore.setMissingMedia(media)
     if (
+      !options?.silent &&
       media.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {

@@ -1,8 +1,8 @@
 import type { WebSocketRoute } from '@playwright/test'
 
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyPage } from '../ComfyPage'
-import { createMockJob } from './AssetsHelper'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 /**
  * Helper for simulating prompt execution in e2e tests.

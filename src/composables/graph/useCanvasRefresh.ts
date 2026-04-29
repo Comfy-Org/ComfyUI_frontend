@@ -13,7 +13,7 @@ export function useCanvasRefresh() {
     canvasStore.canvas?.setDirty(true, true)
     canvasStore.canvas?.graph?.afterChange()
     canvasStore.canvas?.emitAfterChange()
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   return {

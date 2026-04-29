@@ -5,7 +5,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'

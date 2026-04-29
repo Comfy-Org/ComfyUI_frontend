@@ -2,6 +2,7 @@ import { capitalize } from 'es-toolkit'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
+import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
@@ -10,6 +11,7 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
+  getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -49,7 +51,7 @@ function getMediaUrl(
   type: 'input' | 'output',
   assetKind: AssetKind | undefined
 ): string {
-  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? '')) return ''
+  if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
@@ -78,9 +80,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       return [{ name: capitalize(categoryName), value: 'all' }]
     }
     return [
-      { name: 'All', value: 'all' },
-      { name: 'Inputs', value: 'inputs' },
-      { name: 'Outputs', value: 'outputs' }
+      { name: t('g.all'), value: 'all' },
+      { name: t('sideToolbar.labels.imported'), value: 'inputs' },
+      { name: t('sideToolbar.labels.generated'), value: 'outputs' }
     ]
   })
 
@@ -179,12 +181,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const annotatedPath = `${asset.name} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:
-          asset.preview_url || getMediaUrl(asset.name, 'output', kind),
+          kind === 'mesh'
+            ? ''
+            : asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(annotatedPath, labelFn)
+        label: getDisplayLabel(displayLabel, labelFn)
       })
     }
 

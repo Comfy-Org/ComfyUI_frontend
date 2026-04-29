@@ -2,23 +2,18 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { getPseudoPreviewWidgets } from '@e2e/helpers/promotedWidgets'
+import { getPseudoPreviewWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 
 const domPreviewSelector = '.image-preview'
 
 test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
   test.describe('Cleanup Behavior After Promoted Source Removal', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Deleting the promoted source removes the exterior DOM widget', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const textarea = comfyPage.page.getByTestId(
         TestIds.widgets.domWidgetTextarea

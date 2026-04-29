@@ -3,13 +3,9 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Node Collapse', () => {
+test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('should allow collapsing node with collapse icon', async ({

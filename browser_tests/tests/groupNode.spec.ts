@@ -170,7 +170,6 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await comfyPage.workflow.loadWorkflow(
       'groupnodes/group_node_identical_nodes_hidden_inputs'
     )
-    await comfyPage.nextFrame()
 
     const groupNodeId = 19
     const groupNodeName = 'two_VAE_decode'
@@ -336,12 +335,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
       )
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
-        await comfyPage.page.evaluate(
-          (workflow) =>
-            window.app!.loadGraphData(workflow as ComfyWorkflowJSON),
-          currentGraphState
+        await comfyPage.workflow.loadGraphData(
+          currentGraphState as ComfyWorkflowJSON
         )
-        await comfyPage.nextFrame()
         await verifyNodeLoaded(comfyPage, 1)
       })
     })

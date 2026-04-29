@@ -2,16 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 
-test.describe('Vue Nodes Renaming', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
   test('should display node title', async ({ comfyPage }) => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await expect(vueNode.header).toContainText('KSampler')
@@ -29,8 +21,8 @@ test.describe('Vue Nodes Renaming', () => {
     // Test cancel with Escape
     await vueNode.title.dblclick()
     await comfyPage.nextFrame()
-    await vueNode.titleInput.fill('This Should Be Cancelled')
-    await vueNode.titleInput.press('Escape')
+    await vueNode.titleEditor.input.fill('This Should Be Cancelled')
+    await vueNode.titleEditor.cancel()
     await comfyPage.nextFrame()
 
     // Title should remain as the previously saved value
@@ -47,9 +39,6 @@ test.describe('Vue Nodes Renaming', () => {
     if (!nodeBbox) throw new Error('Node not found')
     await loadCheckpointNode.dblclick()
 
-    const editingTitleInput = comfyPage.page.getByTestId(
-      TestIds.node.titleInput
-    )
-    await expect(editingTitleInput).toBeHidden()
+    await comfyPage.titleEditor.expectHidden()
   })
 })
