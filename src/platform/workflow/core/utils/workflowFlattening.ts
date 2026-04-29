@@ -120,9 +120,12 @@ export function collectSubgraphDefinitions(
       if (seen.has(def.id)) continue
       seen.add(def.id)
       result.push(def)
-      if (def.definitions?.subgraphs?.length) {
-        collect(def.definitions.subgraphs)
+
+      const nestedSubgraphs = def.definitions?.subgraphs
+      if (!Array.isArray(nestedSubgraphs) || nestedSubgraphs.length === 0) {
+        continue
       }
+      collect(nestedSubgraphs)
     }
   }
 

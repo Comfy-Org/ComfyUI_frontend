@@ -142,6 +142,21 @@ describe('flattenWorkflowNodes', () => {
     expect(result.map((n) => n.id)).toEqual([5])
   })
 
+  it('skips malformed nested subgraph definitions', () => {
+    const outerDef = {
+      ...subgraphDef('def-A', [node(10, 'def-B')]),
+      definitions: { subgraphs: { length: 1 } }
+    }
+    const result = flattenWorkflowNodes({
+      nodes: [node(5, 'def-A')],
+      definitions: {
+        subgraphs: [outerDef]
+      }
+    })
+
+    expect(result.map((n) => n.id)).toEqual([5, '5:10'])
+  })
+
   it('prefixes nested subgraph nodes with full execution path', () => {
     const innerDef = subgraphDef('def-B', [node(3, 'Leaf')])
     const outerDef = subgraphDef('def-A', [node(10, 'def-B')], [innerDef])
