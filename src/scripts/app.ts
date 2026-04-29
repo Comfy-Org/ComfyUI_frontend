@@ -27,8 +27,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
@@ -127,7 +127,6 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -154,6 +153,11 @@ import {
   pasteVideoNode,
   pasteVideoNodes
 } from '@/composables/usePaste'
+
+interface MissingModelPipelineOptions {
+  missingNodeTypes?: MissingNodeType[]
+  silent?: boolean
+}
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -237,7 +241,7 @@ export class ComfyApp {
   }
 
   canvas!: LGraphCanvas
-  dragOverNode: LGraphNode | null = null
+  dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
@@ -1450,11 +1454,10 @@ export class ComfyApp {
       )
 
       if (!skipAssetScans) {
-        await this.runMissingModelPipeline(
-          graphData,
-          activeMissingNodeTypes,
-          silentAssetErrors
-        )
+        await this.runMissingModelPipeline(graphData, {
+          missingNodeTypes: activeMissingNodeTypes,
+          silent: silentAssetErrors
+        })
 
         await this.runMissingMediaPipeline(silentAssetErrors)
       }
@@ -1476,10 +1479,13 @@ export class ComfyApp {
 
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
-    missingNodeTypes: MissingNodeType[],
-    silent: boolean = false
-  ): Promise<{ missingModels: ModelFile[] }> {
+    { missingNodeTypes, silent = false }: MissingModelPipelineOptions = {}
+  ): Promise<{
+    missingModels: ModelFile[]
+    confirmedCandidates: MissingModelCandidate[]
+  }> {
     const missingModelStore = useMissingModelStore()
+    const controller = missingModelStore.createVerificationAbortController()
 
     const getDirectory = (nodeType: string) =>
       useModelToNodeStore().getCategoryForNodeType(nodeType)
@@ -1539,22 +1545,13 @@ export class ComfyApp {
     )
 
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    if (activeWf) {
-      activeWf.pendingWarnings = {
-        ...activeWf.pendingWarnings,
-        missingNodeTypes: missingNodeTypes.length
-          ? missingNodeTypes
-          : undefined,
-        missingModelCandidates: confirmedCandidates.length
-          ? confirmedCandidates
-          : undefined
-      }
-      this.cleanupPendingWarnings(activeWf)
-    }
+    updatePendingWarnings(activeWf, {
+      ...(missingNodeTypes ? { missingNodeTypes } : {}),
+      missingModelCandidates: confirmedCandidates
+    })
 
     if (enrichedCandidates.length) {
       if (isCloud) {
-        const controller = missingModelStore.createVerificationAbortController()
         void verifyAssetSupportedCandidates(
           enrichedCandidates,
           controller.signal
@@ -1566,11 +1563,7 @@ export class ComfyApp {
             const confirmed = enrichedCandidates.filter((c) =>
               isMissingCandidateActive(this.rootGraph, c)
             )
-            if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed, {
-                silent
-              })
-            }
+            useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
             this.cacheModelCandidates(activeWf, confirmed)
           })
           .catch((err) => {
@@ -1588,9 +1581,11 @@ export class ComfyApp {
             })
           })
       } else {
-        const controller = missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
-        if (confirmed.length) {
+        if (!confirmed.length) {
+          useExecutionErrorStore().surfaceMissingModels([], { silent })
+          this.cacheModelCandidates(activeWf, [])
+        } else {
           void api
             .getFolderPaths()
             .then((paths) => {
@@ -1625,21 +1620,49 @@ export class ComfyApp {
           )
         }
       }
+    } else {
+      useExecutionErrorStore().surfaceMissingModels([], { silent })
+      this.cacheModelCandidates(activeWf, [])
     }
 
-    return { missingModels }
+    return { missingModels, confirmedCandidates }
   }
 
-  private cleanupPendingWarnings(wf: {
-    pendingWarnings: PendingWarnings | null
-  }) {
-    if (
-      !wf.pendingWarnings?.missingNodeTypes &&
-      !wf.pendingWarnings?.missingModelCandidates &&
-      !wf.pendingWarnings?.missingMediaCandidates
-    ) {
-      wf.pendingWarnings = null
-    }
+  async refreshMissingModels(options: { silent?: boolean } = {}): Promise<{
+    missingModels: ModelFile[]
+    confirmedCandidates: MissingModelCandidate[]
+  }> {
+    await this.reloadNodeDefs()
+    const graphData = this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+    const activeWorkflowState =
+      useWorkspaceStore().workflow.activeWorkflow?.activeState
+    const currentModelMetadata =
+      useMissingModelStore()
+        .missingModelCandidates?.filter(
+          (
+            candidate
+          ): candidate is MissingModelCandidate & {
+            url: string
+            directory: string
+          } => !!candidate.url && !!candidate.directory
+        )
+        .map((candidate) => ({
+          name: candidate.name,
+          url: candidate.url,
+          directory: candidate.directory,
+          hash: candidate.hash,
+          hash_type: candidate.hashType
+        })) ?? []
+    const models = activeWorkflowState?.models?.length
+      ? activeWorkflowState.models
+      : currentModelMetadata
+
+    return this.runMissingModelPipeline(
+      models.length ? { ...graphData, models } : graphData,
+      {
+        silent: options.silent ?? true
+      }
+    )
   }
 
   private cacheModelCandidates(
@@ -1647,11 +1670,9 @@ export class ComfyApp {
     confirmed: MissingModelCandidate[]
   ) {
     if (!wf) return
-    wf.pendingWarnings = {
-      ...wf.pendingWarnings,
-      missingModelCandidates: confirmed.length ? confirmed : undefined
-    }
-    this.cleanupPendingWarnings(wf)
+    updatePendingWarnings(wf, {
+      missingModelCandidates: confirmed
+    })
   }
 
   private cacheMediaCandidates(
@@ -1659,11 +1680,9 @@ export class ComfyApp {
     confirmed: MissingMediaCandidate[]
   ) {
     if (!wf) return
-    wf.pendingWarnings = {
-      ...wf.pendingWarnings,
-      missingMediaCandidates: confirmed.length ? confirmed : undefined
-    }
-    this.cleanupPendingWarnings(wf)
+    updatePendingWarnings(wf, {
+      missingMediaCandidates: confirmed
+    })
   }
 
   private async runMissingMediaPipeline(
@@ -2224,18 +2243,9 @@ export class ComfyApp {
   }
 
   /**
-   * Refresh combo list on whole nodes
+   * Reload node definitions and refresh combo lists on all nodes.
    */
-  async refreshComboInNodes() {
-    const requestToastMessage: ToastMessageOptions = {
-      severity: 'info',
-      summary: t('g.update'),
-      detail: t('toastMessages.updateRequested')
-    }
-    if (this.vueAppReady) {
-      useToastStore().add(requestToastMessage)
-    }
-
+  async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
@@ -2289,13 +2299,46 @@ export class ComfyApp {
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
-      useToastStore().remove(requestToastMessage)
-      useToastStore().add({
-        severity: 'success',
-        summary: t('g.updated'),
-        detail: t('toastMessages.nodeDefinitionsUpdated'),
-        life: 1000
-      })
+    }
+  }
+
+  /**
+   * Refresh combo list on whole nodes
+   */
+  async refreshComboInNodes() {
+    const requestToastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: t('g.update'),
+      detail: t('toastMessages.updateRequested')
+    }
+    if (this.vueAppReady) {
+      useToastStore().add(requestToastMessage)
+    }
+
+    try {
+      await this.reloadNodeDefs()
+
+      if (this.vueAppReady) {
+        useToastStore().add({
+          severity: 'success',
+          summary: t('g.updated'),
+          detail: t('toastMessages.nodeDefinitionsUpdated'),
+          life: 1000
+        })
+      }
+    } catch (error) {
+      if (this.vueAppReady) {
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('toastMessages.nodeDefinitionsUpdateFailed')
+        })
+      }
+      throw error
+    } finally {
+      if (this.vueAppReady) {
+        useToastStore().remove(requestToastMessage)
+      }
     }
   }
 
