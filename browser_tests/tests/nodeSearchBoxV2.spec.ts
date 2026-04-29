@@ -5,32 +5,19 @@ import {
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.searchBoxV2.reload(comfyPage)
+    await comfyPage.searchBoxV2.setup()
   })
 
   test('Can open search and add node', async ({ comfyPage }) => {
     const { searchBoxV2 } = comfyPage
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    await comfyPage.canvasOps.doubleClick()
-    await expect(searchBoxV2.input).toBeVisible()
-
+    await searchBoxV2.open()
     await searchBoxV2.input.fill('KSampler')
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Enter')
     await expect(searchBoxV2.input).toBeHidden()
-
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialCount + 1)
@@ -40,33 +27,28 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     const { searchBoxV2 } = comfyPage
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    await comfyPage.canvasOps.doubleClick()
-    await expect(searchBoxV2.input).toBeVisible()
-
-    // Default results should be visible without typing
+    await searchBoxV2.open()
+    // Default results should be visible without typing.
     await expect(searchBoxV2.results.first()).toBeVisible()
 
-    // Enter should add the first (selected) result
     await comfyPage.page.keyboard.press('Enter')
     await expect(searchBoxV2.input).toBeHidden()
-
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialCount + 1)
   })
 
   test.describe('Category navigation', () => {
-    test('Favorites shows only bookmarked nodes', async ({ comfyPage }) => {
+    test('Bookmarked filter shows only bookmarked nodes', async ({
+      comfyPage
+    }) => {
       const { searchBoxV2 } = comfyPage
       await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [
         'KSampler'
       ])
-      await searchBoxV2.reload(comfyPage)
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
-
-      await searchBoxV2.categoryButton('favorites').click()
+      await searchBoxV2.open()
+      await searchBoxV2.rootCategoryButton('favorites').click()
 
       await expect(searchBoxV2.results).toHaveCount(1)
       await expect(searchBoxV2.results.first()).toContainText('KSampler')
@@ -77,13 +59,10 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     }) => {
       const { searchBoxV2 } = comfyPage
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
-
+      await searchBoxV2.open()
       await searchBoxV2.categoryButton('sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
-      await expect.poll(() => searchBoxV2.results.count()).toBeGreaterThan(0)
     })
   })
 
@@ -91,26 +70,23 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     test('Can filter by input type via filter bar', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
+      await searchBoxV2.open()
 
-      // Click "Input" filter chip in the filter bar
-      await searchBoxV2.filterBarButton('Input').click()
+      await test.step('Open Input filter popover', async () => {
+        await searchBoxV2.typeFilterButton('input').click()
+        await expect(searchBoxV2.filterOptions.first()).toBeVisible()
+      })
 
-      // Filter options should appear
-      await expect(searchBoxV2.filterOptions.first()).toBeVisible()
+      await test.step('Select MODEL type', async () => {
+        await searchBoxV2.filterSearch.fill('MODEL')
+        await searchBoxV2.filterOptions
+          .filter({ hasText: 'MODEL' })
+          .first()
+          .click()
+      })
 
-      // Type to narrow and select MODEL
-      await searchBoxV2.input.fill('MODEL')
-      await searchBoxV2.filterOptions
-        .filter({ hasText: 'MODEL' })
-        .first()
-        .click()
-
-      // Filter chip should appear and results should be filtered
-      await expect(
-        searchBoxV2.dialog.getByText('Input:', { exact: false }).locator('..')
-      ).toContainText('MODEL')
+      await expect(searchBoxV2.filterChips).toHaveCount(1)
+      await expect(searchBoxV2.filterChips.first()).toContainText('MODEL')
       await expect(searchBoxV2.results.first()).toBeVisible()
     })
   })
@@ -120,32 +96,33 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
-
+      await searchBoxV2.open()
       await searchBoxV2.input.fill('KSampler')
       const results = searchBoxV2.results
       await expect(results.first()).toBeVisible()
 
-      // First result selected by default
-      await expect(results.first()).toHaveAttribute('aria-selected', 'true')
+      await test.step('First result is selected by default', async () => {
+        await expect(results.first()).toHaveAttribute('aria-selected', 'true')
+      })
 
-      // ArrowDown moves selection
-      await comfyPage.page.keyboard.press('ArrowDown')
-      await expect(results.nth(1)).toHaveAttribute('aria-selected', 'true')
-      await expect(results.first()).toHaveAttribute('aria-selected', 'false')
+      await test.step('ArrowDown moves selection to next result', async () => {
+        await comfyPage.page.keyboard.press('ArrowDown')
+        await expect(results.nth(1)).toHaveAttribute('aria-selected', 'true')
+        await expect(results.first()).toHaveAttribute('aria-selected', 'false')
+      })
 
-      // ArrowUp moves back
-      await comfyPage.page.keyboard.press('ArrowUp')
-      await expect(results.first()).toHaveAttribute('aria-selected', 'true')
+      await test.step('ArrowUp moves selection back', async () => {
+        await comfyPage.page.keyboard.press('ArrowUp')
+        await expect(results.first()).toHaveAttribute('aria-selected', 'true')
+      })
 
-      // Enter selects and adds node
-      await comfyPage.page.keyboard.press('Enter')
-      await expect(searchBoxV2.input).toBeHidden()
-
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await test.step('Enter selects and adds the node', async () => {
+        await comfyPage.page.keyboard.press('Enter')
+        await expect(searchBoxV2.input).toBeHidden()
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(initialCount + 1)
+      })
     })
   })
 })

@@ -3,11 +3,11 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCount
-} from '@e2e/helpers/promotedWidgets'
+} from '@e2e/fixtures/utils/promotedWidgets'
 
 async function expectPromotedWidgetNamesToContain(
   comfyPage: ComfyPage,

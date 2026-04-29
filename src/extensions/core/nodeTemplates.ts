@@ -51,6 +51,7 @@ class ManageTemplates extends ComfyDialog {
     })
 
     this.element.classList.add('comfy-manage-templates')
+    this.element.dataset.testid = 'manage-node-templates-dialog'
     this.draggedEl = null
     this.saveVisualCue = null
     this.emptyImg = new Image()

@@ -59,6 +59,9 @@ export const TestIds = {
     missingModelCopyName: 'missing-model-copy-name',
     missingModelCopyUrl: 'missing-model-copy-url',
     missingModelDownload: 'missing-model-download',
+    missingModelActions: 'missing-model-actions',
+    missingModelDownloadAll: 'missing-model-download-all',
+    missingModelRefresh: 'missing-model-refresh',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
     missingMediaRow: 'missing-media-row',
@@ -76,11 +79,18 @@ export const TestIds = {
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
   },
+  nodeTemplates: {
+    manageDialog: 'manage-node-templates-dialog'
+  },
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    loginButton: 'login-button',
+    loginButtonPopover: 'login-button-popover',
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -114,6 +124,13 @@ export const TestIds = {
   },
   menu: {
     moreMenuContent: 'more-menu-content'
+  },
+  helpCenter: {
+    button: 'help-center-button',
+    popup: 'help-center-popup',
+    backdrop: 'help-center-backdrop',
+    menuItem: (key: string) => `help-menu-item-${key}`,
+    releaseItem: (version: string) => `help-release-item-${version}`
   },
   widgets: {
     container: 'node-widgets',
@@ -176,7 +193,13 @@ export const TestIds = {
     vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
-    subgraph: 'subgraph-breadcrumb'
+    subgraph: 'subgraph-breadcrumb',
+    back: 'subgraph-breadcrumb-back',
+    item: (key: string) => `subgraph-breadcrumb-item-${key}`,
+    blueprintTag: 'subgraph-breadcrumb-blueprint-tag',
+    missingNodesIcon: 'subgraph-breadcrumb-missing-nodes-icon',
+    renameInput: 'subgraph-breadcrumb-rename-input',
+    menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
   templates: {
     content: 'template-workflows-content',
@@ -193,11 +216,33 @@ export const TestIds = {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
   },
+  publish: {
+    dialog: 'publish-dialog',
+    savePrompt: 'publish-save-prompt',
+    describeStep: 'publish-describe-step',
+    finishStep: 'publish-finish-step',
+    footer: 'publish-footer',
+    profilePrompt: 'publish-profile-prompt',
+    nav: 'publish-nav',
+    gateFlow: 'publish-gate-flow',
+    nameInput: 'publish-name-input',
+    tagsInput: 'publish-tags-input'
+  },
   loading: {
     overlay: 'loading-overlay'
   },
+  load3d: {
+    recordingDuration: 'load3d-recording-duration'
+  },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
+  },
+  terminal: {
+    root: 'terminal-root',
+    host: 'terminal-host',
+    copyButton: 'terminal-copy-button',
+    errorMessage: 'terminal-error-message',
+    loadingSpinner: 'terminal-loading-spinner'
   },
   imageCompare: {
     viewport: 'image-compare-viewport',
@@ -208,37 +253,25 @@ export const TestIds = {
     batchCounter: 'batch-counter',
     batchNext: 'batch-next',
     batchPrev: 'batch-prev'
+  },
+  searchBoxV2: {
+    resultItem: 'result-item',
+    filterOption: 'filter-option',
+    filterChip: 'filter-chip',
+    chipDelete: 'chip-delete',
+    noResults: 'no-results',
+    nodeIdBadge: 'node-id-badge',
+    category: (id: string) => `category-${id}`,
+    rootCategory: (id: string) => `search-category-${id}`,
+    typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
 
-/**
- * Helper type for accessing nested TestIds (excludes function values)
- */
-export type TestIdValue =
-  | (typeof TestIds.sidebar)[keyof typeof TestIds.sidebar]
-  | (typeof TestIds.tree)[keyof typeof TestIds.tree]
-  | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
-  | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
-  | (typeof TestIds.keybindings)[keyof typeof TestIds.keybindings]
-  | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
-  | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
-  | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
-  | (typeof TestIds.node)[keyof typeof TestIds.node]
-  | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
-  | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
-  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
-  | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
-  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
-  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
-  | Exclude<
-      (typeof TestIds.templates)[keyof typeof TestIds.templates],
-      (id: string) => string
-    >
-  | (typeof TestIds.user)[keyof typeof TestIds.user]
-  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
-  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
-  | (typeof TestIds.queue)[keyof typeof TestIds.queue]
-  | (typeof TestIds.errors)[keyof typeof TestIds.errors]
-  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
-  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]
-  | (typeof TestIds.imageCompare)[keyof typeof TestIds.imageCompare]
+export type TestId<K extends keyof typeof TestIds> = Exclude<
+  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
+  (...args: never[]) => string
+>
+
+export type TestIdValue = {
+  [K in keyof typeof TestIds]: TestId<K>
+}[keyof typeof TestIds]

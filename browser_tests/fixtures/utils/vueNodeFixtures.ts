@@ -2,13 +2,14 @@ import type { Locator } from '@playwright/test'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
   public readonly header: Locator
   public readonly title: Locator
-  public readonly titleInput: Locator
+  public readonly titleEditor: TitleEditor
   public readonly body: Locator
   public readonly pinIndicator: Locator
   public readonly collapseButton: Locator
@@ -18,7 +19,7 @@ export class VueNodeFixture {
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
     this.title = locator.getByTestId('node-title')
-    this.titleInput = locator.getByTestId('node-title-input')
+    this.titleEditor = new TitleEditor(locator)
     this.body = locator.locator('[data-testid^="node-body-"]')
     this.pinIndicator = locator.getByTestId(TestIds.node.pinIndicator)
     this.collapseButton = locator.getByTestId('node-collapse-button')
@@ -32,17 +33,8 @@ export class VueNodeFixture {
 
   async setTitle(value: string): Promise<void> {
     await this.header.dblclick()
-    const input = this.titleInput
-    await input.waitFor({ state: 'visible' })
-    await input.fill(value)
-    await input.press('Enter')
-  }
-
-  async cancelTitleEdit(): Promise<void> {
-    await this.header.dblclick()
-    const input = this.titleInput
-    await input.waitFor({ state: 'visible' })
-    await input.press('Escape')
+    await this.titleEditor.expectVisible()
+    await this.titleEditor.setTitle(value)
   }
 
   async toggleCollapse(): Promise<void> {
@@ -83,11 +75,11 @@ export class VueNodeFixture {
     }
 
     const page = this.locator.page()
-    const centerX = box.x + box.width / 2
-    const centerY = box.y + box.height / 2
-
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height / 2
+    await page.mouse.move(startX, startY)
     await page.mouse.down()
-    await page.mouse.move(centerX + deltaX, centerY + deltaY, {
+    await page.mouse.move(startX + deltaX, startY + deltaY, {
       steps: 5
     })
     await page.mouse.up()
