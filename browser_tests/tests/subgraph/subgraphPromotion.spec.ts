@@ -538,3 +538,30 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'WidgetControlMode in subgraphs',
+  { tag: ['@subgraph', '@widget'] },
+  () => {
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'after')
+    })
+
+    test('Mode change updates control widget labels inside subgraph nodes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'after')
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+      await expect
+        .poll(() => comfyPage.subgraph.getInnerControlWidgetLabels())
+        .toEqual(expect.arrayContaining([expect.stringContaining('after')]))
+
+      await comfyPage.settings.setSetting('Comfy.WidgetControlMode', 'before')
+
+      await expect
+        .poll(() => comfyPage.subgraph.getInnerControlWidgetLabels())
+        .toEqual(expect.arrayContaining([expect.stringContaining('before')]))
+    })
+  }
+)
