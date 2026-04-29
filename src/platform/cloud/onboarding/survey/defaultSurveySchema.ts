@@ -57,6 +57,7 @@ export const defaultOnboardingSurvey: OnboardingSurvey = {
         { value: 'reddit', label: 'Reddit' },
         { value: 'twitter', label: 'Twitter / X' },
         { value: 'instagram', label: 'Instagram' },
+        { value: 'linkedin', label: 'LinkedIn' },
         { value: 'friend', label: 'Friend or colleague' },
         { value: 'search', label: 'Google / search' },
         { value: 'newsletter', label: 'Newsletter or blog' },
