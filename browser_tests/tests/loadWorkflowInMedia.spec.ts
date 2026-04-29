@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -60,12 +60,58 @@ test.describe(
       test(`Load workflow from URL ${url} (drop from different browser tabs)`, async ({
         comfyPage
       }) => {
+        const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+
         await comfyPage.dragDrop.dragAndDropURL(url)
-        const readableName = url.split('/').pop()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          `dropped_workflow_url_${readableName}.png`
-        )
+
+        // The drop triggers an async fetch → parse → loadGraphData chain.
+        // Poll until the graph settles with the loaded workflow's nodes.
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
+            timeout: 15000
+          })
+          .toBeGreaterThan(initialNodeCount)
       })
+    })
+
+    test('Load workflow from URL dropped onto Vue node', async ({
+      comfyPage
+    }) => {
+      const fakeUrl = 'https://example.com/workflow.png'
+      await comfyPage.page.route(fakeUrl, (route) =>
+        route.fulfill({
+          path: comfyPage.assetPath('workflowInMedia/workflow_itxt.png')
+        })
+      )
+
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
+
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      await expect.poll(() => node.boundingBox()).toBeTruthy()
+      const box = (await node.boundingBox())!
+
+      const dropPosition = {
+        x: box.x + box.width / 2,
+        y: box.y + box.height / 2
+      }
+
+      await comfyPage.dragDrop.dragAndDropURL(fakeUrl, {
+        dropPosition,
+        preserveNativePropagation: true
+      })
+
+      await comfyPage.page.waitForFunction(
+        (prevCount) => window.app!.graph.nodes.length !== prevCount,
+        initialNodeCount,
+        { timeout: 10000 }
+      )
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .not.toBe(initialNodeCount)
     })
   }
 )

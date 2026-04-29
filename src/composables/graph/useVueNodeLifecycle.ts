@@ -86,6 +86,24 @@ function useVueNodeLifecycleIndividual() {
     () => !shouldRenderVueNodes.value,
     () => {
       disposeNodeManagerAndSyncs()
+
+      // Force arrange() on all nodes so input.pos is computed before
+      // the first legacy drawConnections frame (which may run before
+      // drawNode on the foreground canvas).
+      const graph = comfyApp.canvas?.graph
+      if (!graph) {
+        comfyApp.canvas?.setDirty(true, true)
+        return
+      }
+      for (const node of graph._nodes) {
+        if (node.flags.collapsed) continue
+        try {
+          node.arrange()
+        } catch {
+          /* skip nodes not fully initialized */
+        }
+      }
+
       comfyApp.canvas?.setDirty(true, true)
     }
   )

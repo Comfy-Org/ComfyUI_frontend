@@ -382,7 +382,13 @@ function renderCategoryBlock(category, hasBaseline) {
     ? ['File', 'Before', 'After', 'Δ Raw', 'Δ Gzip', 'Δ Brotli']
     : ['File', 'Size', 'Gzip', 'Brotli']
 
-  const rows = category.bundles
+  // Filter out unchanged bundles to keep report within GitHub's 65k char limit
+  const changedBundles = category.bundles.filter(
+    (b) => b.status !== 'unchanged'
+  )
+  const unchangedCount = category.bundles.length - changedBundles.length
+
+  const rows = changedBundles
     .slice()
     .sort((a, b) => {
       const diffMagnitude = Math.abs(b.diff.size) - Math.abs(a.diff.size)
@@ -409,8 +415,10 @@ function renderCategoryBlock(category, hasBaseline) {
       ]
     })
 
-  lines.push(markdownTable([headers, ...rows]))
-  lines.push('')
+  if (rows.length > 0) {
+    lines.push(markdownTable([headers, ...rows]))
+    lines.push('')
+  }
 
   const statusParts = []
   if (category.counts.added) statusParts.push(`${category.counts.added} added`)
@@ -420,6 +428,7 @@ function renderCategoryBlock(category, hasBaseline) {
     statusParts.push(`${category.counts.increased} grew`)
   if (category.counts.decreased)
     statusParts.push(`${category.counts.decreased} shrank`)
+  if (unchangedCount > 0) statusParts.push(`${unchangedCount} unchanged`)
 
   if (statusParts.length > 0) {
     lines.push(`_Status:_ ${statusParts.join(' / ')}`)

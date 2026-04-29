@@ -15,7 +15,7 @@ type ValidationState = InstallValidation['basePath']
 type IndexedUpdate = InstallValidation & Record<string, ValidationState>
 
 /** State of a maintenance task, managed by the maintenance task store. */
-export class MaintenanceTaskRunner {
+class MaintenanceTaskRunner {
   constructor(readonly task: MaintenanceTask) {}
 
   private _state?: MaintenanceTaskState

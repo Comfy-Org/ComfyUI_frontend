@@ -8,7 +8,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
@@ -24,7 +25,7 @@ export class MovingInputLink extends MovingLinkBase {
   readonly fromSlot: INodeOutputSlot
   readonly fromPos: Point
   readonly fromDirection: LinkDirection
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
   disconnectOnDrop: boolean
   readonly disconnectOrigin: Point
 

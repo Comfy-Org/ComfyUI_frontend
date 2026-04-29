@@ -85,6 +85,15 @@ export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
 export const asyncUploadResponseSchema = zAsyncUploadResponse
 
+/**
+ * Identifier for a single asset record.
+ *
+ * Backed by `AssetItem.id` which the API serialises as a string. This alias
+ * names that primitive at use sites (services, stores, composables) without
+ * changing structural typing.
+ */
+export type AssetId = string
+
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
@@ -95,7 +104,7 @@ export type ModelFile = z.infer<typeof zModelFile>
 
 /** Payload for updating an asset via PUT /assets/:id */
 export type AssetUpdatePayload = Partial<
-  Pick<AssetItem, 'name' | 'tags' | 'user_metadata'>
+  Pick<AssetItem, 'name' | 'tags' | 'user_metadata' | 'preview_id'>
 >
 
 /** User-editable metadata fields for model assets */

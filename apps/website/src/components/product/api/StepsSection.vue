@@ -1,0 +1,82 @@
+<script setup lang="ts">
+import type { Locale } from '../../../i18n/translations'
+
+import { externalLinks } from '../../../config/routes'
+import { t } from '../../../i18n/translations'
+import BrandButton from '../../common/BrandButton.vue'
+import CardGridSection from '../shared/CardGridSection.vue'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const steps = [
+  {
+    number: '01',
+    titleKey: 'api.steps.step1.title' as const,
+    descriptionKey: 'api.steps.step1.description' as const,
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_1.webp'
+  },
+  {
+    number: '02',
+    titleKey: 'api.steps.step2.title' as const,
+    descriptionKey: 'api.steps.step2.description' as const,
+    image: 'https://media.comfy.org/website/enterprise/enterprise_node_2.webp'
+  },
+  {
+    number: '03',
+    titleKey: 'api.steps.step3.title' as const,
+    descriptionKey: 'api.steps.step3.description' as const,
+    image: 'https://media.comfy.org/website/api/logo-multicolor.webp'
+  }
+]
+</script>
+
+<template>
+  <CardGridSection :heading="t('api.steps.heading', locale)" :columns="3">
+    <div
+      v-for="step in steps"
+      :key="step.number"
+      class="bg-primary-comfy-ink flex flex-col justify-between rounded-3xl border border-white/10"
+    >
+      <img
+        :src="step.image"
+        :alt="t(step.titleKey, locale)"
+        class="w-full rounded-t-3xl object-contain p-8"
+      />
+      <div class="p-6 pt-0">
+        <p class="text-primary-comfy-yellow text-sm font-bold tracking-wider">
+          {{ step.number }}
+        </p>
+        <h3 class="text-primary-comfy-canvas mt-2 text-3xl font-medium">
+          {{ t(step.titleKey, locale) }}
+        </h3>
+        <p class="mt-3 text-sm text-smoke-700">
+          {{ t(step.descriptionKey, locale) }}
+        </p>
+      </div>
+    </div>
+
+    <!-- CTA buttons -->
+    <template #footer>
+      <div
+        class="mt-12 flex flex-col items-center gap-4 lg:flex-row lg:justify-center"
+      >
+        <BrandButton
+          :href="externalLinks.apiKeys"
+          variant="solid"
+          size="lg"
+          class="w-full text-center lg:w-auto lg:min-w-48"
+        >
+          {{ t('api.hero.getApiKeys', locale) }}
+        </BrandButton>
+        <BrandButton
+          :href="externalLinks.docsApi"
+          variant="outline"
+          size="lg"
+          class="w-full text-center lg:w-auto lg:min-w-48"
+        >
+          {{ t('api.hero.viewDocs', locale) }}
+        </BrandButton>
+      </div>
+    </template>
+  </CardGridSection>
+</template>

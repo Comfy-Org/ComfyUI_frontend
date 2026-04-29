@@ -41,7 +41,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-primary-background px-3.5 py-0.5 text-xxs font-medium text-base-foreground"
+              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-primary-background px-3.5 py-0.5 text-2xs font-medium text-base-foreground"
             >
               {{ t('menu.run') }}
             </span>
@@ -50,7 +50,11 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
       </p>
     </div>
     <template v-else>
-      <p v-if="!hasNodes" class="mt-0 max-w-md text-sm text-base-foreground">
+      <p
+        v-if="!hasNodes"
+        data-testid="linear-welcome-empty-workflow"
+        class="mt-0 max-w-md text-sm text-base-foreground"
+      >
         {{ t('linearMode.emptyWorkflowExplanation') }}
       </p>
       <p
@@ -66,11 +70,17 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         </i18n-t>
       </p>
       <div class="flex flex-row gap-2">
-        <Button variant="textonly" size="lg" @click="setMode('graph')">
+        <Button
+          data-testid="linear-welcome-back-to-workflow"
+          variant="textonly"
+          size="lg"
+          @click="setMode('graph')"
+        >
           {{ t('linearMode.backToWorkflow') }}
         </Button>
         <Button
           v-if="!hasNodes"
+          data-testid="linear-welcome-load-template"
           variant="secondary"
           size="lg"
           @click="templateSelectorDialog.show('appbuilder')"
@@ -79,6 +89,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         </Button>
         <Button
           v-else
+          data-testid="linear-welcome-build-app"
           variant="primary"
           size="lg"
           @click="appModeStore.enterBuilder()"
@@ -86,7 +97,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
           <i class="icon-[lucide--hammer]" />
           {{ t('linearMode.welcome.buildApp') }}
           <div
-            class="absolute -top-2 -right-2 rounded-full bg-base-foreground px-1 text-xxs text-base-background"
+            class="absolute -top-2 -right-2 rounded-full bg-base-foreground px-1 text-2xs text-base-background"
           >
             {{ t('g.experimental') }}
           </div>

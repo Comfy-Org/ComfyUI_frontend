@@ -2,6 +2,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { GtmTelemetryProvider } from './GtmTelemetryProvider'
 
+function createInitializedProvider(): GtmTelemetryProvider {
+  window.__CONFIG__ = { gtm_container_id: 'GTM-TEST123' }
+  return new GtmTelemetryProvider()
+}
+
+function lastDataLayerEntry(): Record<string, unknown> | undefined {
+  const dl = window.dataLayer as unknown[] | undefined
+  return dl?.[dl.length - 1] as Record<string, unknown> | undefined
+}
+
 describe('GtmTelemetryProvider', () => {
   beforeEach(() => {
     window.__CONFIG__ = {}
@@ -65,5 +75,292 @@ describe('GtmTelemetryProvider', () => {
     )
 
     expect(gtagScripts).toHaveLength(1)
+  })
+
+  describe('event dispatch', () => {
+    it('pushes subscription modal as view_promotion', () => {
+      const provider = createInitializedProvider()
+      provider.trackSubscription('modal_opened')
+      expect(lastDataLayerEntry()).toMatchObject({ event: 'view_promotion' })
+    })
+
+    it('pushes subscribe click as select_promotion', () => {
+      const provider = createInitializedProvider()
+      provider.trackSubscription('subscribe_clicked')
+      expect(lastDataLayerEntry()).toMatchObject({ event: 'select_promotion' })
+    })
+
+    it('pushes subscription_success for subscription activation', () => {
+      const provider = createInitializedProvider()
+      provider.trackMonthlySubscriptionSucceeded()
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'subscription_success'
+      })
+    })
+
+    it('pushes subscription_success metadata with ecommerce reset', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackMonthlySubscriptionSucceeded({
+        checkout_attempt_id: 'attempt-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        value: 336,
+        currency: 'USD',
+        ecommerce: {
+          currency: 'USD',
+          value: 336,
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'yearly',
+              price: 336,
+              quantity: 1
+            }
+          ]
+        }
+      })
+
+      const dataLayer = window.dataLayer as Record<string, unknown>[]
+
+      expect(dataLayer[dataLayer.length - 2]).toMatchObject({ ecommerce: null })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'subscription_success',
+        checkout_attempt_id: 'attempt-123',
+        value: 336
+      })
+    })
+
+    it('does not reset ecommerce when GTM is not initialized', () => {
+      window.__CONFIG__ = {
+        ga_measurement_id: 'G-TEST123'
+      }
+
+      const provider = new GtmTelemetryProvider()
+
+      provider.trackMonthlySubscriptionSucceeded({
+        checkout_attempt_id: 'attempt-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        value: 336,
+        currency: 'USD',
+        ecommerce: {
+          currency: 'USD',
+          value: 336,
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'yearly',
+              price: 336,
+              quantity: 1
+            }
+          ]
+        }
+      })
+
+      const dataLayer = window.dataLayer as unknown[]
+
+      expect(
+        dataLayer.some(
+          (entry) =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            'ecommerce' in (entry as Record<string, unknown>)
+        )
+      ).toBe(false)
+      expect(
+        dataLayer.some(
+          (entry) =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            (entry as Record<string, unknown>).event === 'subscription_success'
+        )
+      ).toBe(false)
+    })
+
+    it('pushes run_workflow with trigger_source', () => {
+      const provider = createInitializedProvider()
+      provider.trackRunButton({ trigger_source: 'button' })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'run_workflow',
+        trigger_source: 'button',
+        subscribe_to_run: false
+      })
+    })
+
+    it('pushes execution_error with truncated error', () => {
+      const provider = createInitializedProvider()
+      const longError = 'x'.repeat(200)
+      provider.trackExecutionError({
+        jobId: 'job-1',
+        nodeType: 'KSampler',
+        error: longError
+      })
+      const entry = lastDataLayerEntry()
+      expect(entry).toMatchObject({
+        event: 'execution_error',
+        node_type: 'KSampler'
+      })
+      expect(entry!.error as string).toHaveLength(100)
+    })
+
+    it('pushes select_content for template events', () => {
+      const provider = createInitializedProvider()
+      provider.trackTemplate({
+        workflow_name: 'flux-dev',
+        template_category: 'image-gen'
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'select_content',
+        content_type: 'template',
+        workflow_name: 'flux-dev',
+        template_category: 'image-gen'
+      })
+    })
+
+    it('pushes survey_opened for survey opened stage', () => {
+      const provider = createInitializedProvider()
+      provider.trackSurvey('opened')
+      expect(lastDataLayerEntry()).toMatchObject({ event: 'survey_opened' })
+    })
+
+    it('pushes survey_submitted with responses', () => {
+      const provider = createInitializedProvider()
+      provider.trackSurvey('submitted', {
+        familiarity: 'expert',
+        industry: 'gaming'
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'survey_submitted',
+        familiarity: 'expert',
+        industry: 'gaming'
+      })
+    })
+
+    it('pushes email_verify_opened for opened stage', () => {
+      const provider = createInitializedProvider()
+      provider.trackEmailVerification('opened')
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'email_verify_opened'
+      })
+    })
+
+    it('pushes email_verify_completed for completed stage', () => {
+      const provider = createInitializedProvider()
+      provider.trackEmailVerification('completed')
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'email_verify_completed'
+      })
+    })
+
+    it('pushes search for node search (GA4 recommended)', () => {
+      const provider = createInitializedProvider()
+      provider.trackNodeSearch({ query: 'KSampler' })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'search',
+        search_term: 'KSampler'
+      })
+    })
+
+    it('pushes select_item for node search result (GA4 recommended)', () => {
+      const provider = createInitializedProvider()
+      provider.trackNodeSearchResultSelected({
+        node_type: 'KSampler',
+        last_query: 'sampler'
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'select_item',
+        item_id: 'KSampler',
+        search_term: 'sampler'
+      })
+    })
+
+    it('pushes setting_changed with setting_id', () => {
+      const provider = createInitializedProvider()
+      provider.trackSettingChanged({ setting_id: 'theme' })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'setting_changed',
+        setting_id: 'theme'
+      })
+    })
+
+    it('pushes workflow_created with metadata', () => {
+      const provider = createInitializedProvider()
+      provider.trackWorkflowCreated({
+        workflow_type: 'blank',
+        previous_workflow_had_nodes: true
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'workflow_created',
+        workflow_type: 'blank',
+        previous_workflow_had_nodes: true
+      })
+    })
+
+    it('pushes share_flow with step and source', () => {
+      const provider = createInitializedProvider()
+      provider.trackShareFlow({
+        step: 'link_copied',
+        source: 'app_mode'
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'share_flow',
+        step: 'link_copied',
+        source: 'app_mode'
+      })
+    })
+
+    it('pushes normalized email inside the auth event payload', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackAuth({
+        method: 'email',
+        is_new_user: true,
+        user_id: 'uid-123',
+        email: '  Test@Example.com  '
+      })
+
+      const dl = window.dataLayer as Record<string, unknown>[]
+      const authEvent = dl.find((entry) => entry.event === 'sign_up')
+      expect(authEvent).toMatchObject({
+        event: 'sign_up',
+        method: 'email',
+        user_id: 'uid-123',
+        user_data: {
+          email: 'test@example.com'
+        }
+      })
+      expect(
+        dl.some((entry) => 'user_data' in entry && !('event' in entry))
+      ).toBe(false)
+    })
+
+    it('omits user_data when email is absent', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: false,
+        user_id: 'uid-456'
+      })
+
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'login',
+        method: 'google',
+        user_id: 'uid-456'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
+    })
+
+    it('does not push events when not initialized', () => {
+      window.__CONFIG__ = {}
+      const provider = new GtmTelemetryProvider()
+      provider.trackSubscription('modal_opened')
+      expect(window.dataLayer).toBeUndefined()
+    })
   })
 })

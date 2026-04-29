@@ -1,5 +1,6 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -16,29 +17,39 @@ const i18n = createI18n({
 })
 
 describe('TagsInput', () => {
-  function mountTagsInput(props = {}, slots = {}) {
-    return mount(TagsInput, {
+  function renderTagsInput(props = {}, slots = {}) {
+    const user = userEvent.setup()
+
+    const result = render(TagsInput, {
       props: {
         modelValue: [],
         ...props
       },
       slots
     })
+
+    return { ...result, user }
   }
 
   it('renders slot content', () => {
-    const wrapper = mountTagsInput({}, { default: '<span>Slot Content</span>' })
+    renderTagsInput({}, { default: '<span>Slot Content</span>' })
 
-    expect(wrapper.text()).toContain('Slot Content')
+    expect(screen.getByText('Slot Content')).toBeInTheDocument()
   })
 })
 
 describe('TagsInput with child components', () => {
-  function mountFullTagsInput(tags: string[] = ['tag1', 'tag2']) {
-    return mount(TagsInput, {
+  function renderFullTagsInput(
+    tags: string[] = ['tag1', 'tag2'],
+    extraProps: Record<string, unknown> = {}
+  ) {
+    const user = userEvent.setup()
+
+    const result = render(TagsInput, {
       global: { plugins: [i18n] },
       props: {
-        modelValue: tags
+        modelValue: tags,
+        ...extraProps
       },
       slots: {
         default: () => [
@@ -52,55 +63,52 @@ describe('TagsInput with child components', () => {
         ]
       }
     })
+
+    return { ...result, user }
   }
 
   it('renders tags structure and content', () => {
     const tags = ['tag1', 'tag2']
-    const wrapper = mountFullTagsInput(tags)
+    renderFullTagsInput(tags)
 
-    const items = wrapper.findAllComponents(TagsInputItem)
-    const textElements = wrapper.findAllComponents(TagsInputItemText)
-    const deleteButtons = wrapper.findAllComponents(TagsInputItemDelete)
+    expect(screen.getByText('tag1')).toBeInTheDocument()
+    expect(screen.getByText('tag2')).toBeInTheDocument()
 
-    expect(items).toHaveLength(tags.length)
-    expect(textElements).toHaveLength(tags.length)
+    const deleteButtons = tags.map((tag) =>
+      screen.getByRole('button', { name: tag })
+    )
     expect(deleteButtons).toHaveLength(tags.length)
-
-    textElements.forEach((el, i) => {
-      expect(el.text()).toBe(tags[i])
-    })
-
-    expect(wrapper.findComponent(TagsInputInput).exists()).toBe(true)
   })
 
   it('updates model value when adding a tag', async () => {
-    let currentTags = ['existing']
+    const onUpdate = vi.fn()
 
-    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+    const user = userEvent.setup()
+    const { container } = render(TagsInput, {
       props: {
-        modelValue: currentTags,
-        'onUpdate:modelValue': (payload) => {
-          currentTags = payload
-        }
+        modelValue: ['existing'],
+        'onUpdate:modelValue': onUpdate
       },
       slots: {
         default: () => h(TagsInputInput, { placeholder: 'Add tag...' })
       }
     })
 
-    await wrapper.trigger('click')
+    // Click the container to enter edit mode and show the input
+    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to enter edit mode; no role/label available
+    await user.click(container.firstElementChild!)
     await nextTick()
 
-    const input = wrapper.find('input')
-    await input.setValue('newTag')
-    await input.trigger('keydown', { key: 'Enter' })
+    const input = screen.getByPlaceholderText('Add tag...')
+    await user.type(input, 'newTag{Enter}')
     await nextTick()
 
-    expect(currentTags).toContain('newTag')
+    expect(onUpdate).toHaveBeenCalledWith(['existing', 'newTag'])
   })
 
   it('does not enter edit mode when disabled', async () => {
-    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+    const user = userEvent.setup()
+    const { container } = render(TagsInput, {
       props: {
         modelValue: ['tag1'],
         disabled: true
@@ -110,18 +118,21 @@ describe('TagsInput with child components', () => {
       }
     })
 
-    expect(wrapper.find('input').exists()).toBe(false)
+    expect(screen.queryByPlaceholderText('Add tag...')).not.toBeInTheDocument()
 
-    await wrapper.trigger('click')
+    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to test disabled behavior; no role/label available
+    await user.click(container.firstElementChild!)
     await nextTick()
 
-    expect(wrapper.find('input').exists()).toBe(false)
+    expect(screen.queryByPlaceholderText('Add tag...')).not.toBeInTheDocument()
   })
 
   it('exits edit mode when clicking outside', async () => {
     const outsideElement = document.createElement('div')
     document.body.appendChild(outsideElement)
-    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+
+    const user = userEvent.setup()
+    const { container } = render(TagsInput, {
       props: {
         modelValue: ['tag1']
       },
@@ -130,21 +141,21 @@ describe('TagsInput with child components', () => {
       }
     })
 
-    await wrapper.trigger('click')
+    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click; no role/label
+    await user.click(container.firstElementChild!)
     await nextTick()
-    expect(wrapper.find('input').exists()).toBe(true)
+    expect(screen.getByPlaceholderText('Add tag...')).toBeInTheDocument()
 
     outsideElement.dispatchEvent(new PointerEvent('click', { bubbles: true }))
     await nextTick()
 
-    expect(wrapper.find('input').exists()).toBe(false)
+    expect(screen.queryByPlaceholderText('Add tag...')).not.toBeInTheDocument()
 
-    wrapper.unmount()
     outsideElement.remove()
   })
 
   it('shows placeholder when modelValue is empty', async () => {
-    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+    render(TagsInput, {
       props: {
         modelValue: []
       },
@@ -156,8 +167,7 @@ describe('TagsInput with child components', () => {
 
     await nextTick()
 
-    const input = wrapper.find('input')
-    expect(input.exists()).toBe(true)
-    expect(input.attributes('placeholder')).toBe('Add tag...')
+    const input = screen.getByPlaceholderText('Add tag...')
+    expect(input).toBeInTheDocument()
   })
 })

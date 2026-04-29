@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -61,11 +62,17 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Report missing nodes when connect to missing node', async ({
     comfyPage
   }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_node_connect_missing_node'
     )
-    // Wait for the element with the .comfy-missing-nodes selector to be visible
-    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
-    await expect(missingNodesWarning).toBeVisible()
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
   })
 })

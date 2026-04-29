@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/product/cloud/HeroSection.vue'
+import ReasonSection from '../../components/product/cloud/ReasonSection.vue'
+import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
+import AudienceSection from '../../components/product/cloud/AudienceSection.vue'
+import PricingSection from '../../components/product/cloud/PricingSection.vue'
+import ProductCardsSection from '../../components/product/cloud/ProductCardsSection.vue'
+import FAQSection from '../../components/product/cloud/FAQSection.vue'
+---
+
+<BaseLayout title="Comfy Cloud — AI in the Cloud">
+  <HeroSection />
+  <ReasonSection />
+  <AIModelsSection />
+  <AudienceSection />
+  <PricingSection />
+  <ProductCardsSection />
+  <FAQSection client:visible />
+</BaseLayout>

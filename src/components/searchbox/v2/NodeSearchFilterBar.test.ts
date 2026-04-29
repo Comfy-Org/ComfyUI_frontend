@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -12,7 +13,11 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => undefined),
+    get: vi.fn((key: string) => {
+      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
+      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
+      return undefined
+    }),
     set: vi.fn()
   }))
 }))
@@ -30,54 +35,83 @@ describe(NodeSearchFilterBar, () => {
     ])
   })
 
-  async function createWrapper(props = {}) {
-    const wrapper = mount(NodeSearchFilterBar, {
-      props,
-      global: { plugins: [testI18n] }
+  async function createRender(props = {}) {
+    const user = userEvent.setup()
+    const onSelectCategory = vi.fn()
+    render(NodeSearchFilterBar, {
+      props: { onSelectCategory, ...props },
+      global: {
+        plugins: [testI18n],
+        stubs: {
+          NodeSearchTypeFilterPopover: {
+            template: '<div data-testid="popover"><slot /></div>',
+            props: ['chip', 'selectedValues']
+          }
+        }
+      }
     })
     await nextTick()
-    return wrapper
+    return { user, onSelectCategory }
   }
 
-  it('should render all filter chips', async () => {
-    const wrapper = await createWrapper()
+  it('should render Extensions button and Input/Output popover triggers', async () => {
+    await createRender({ hasCustomNodes: true })
 
-    const buttons = wrapper.findAll('button')
-    expect(buttons).toHaveLength(6)
-    expect(buttons[0].text()).toBe('Blueprints')
-    expect(buttons[1].text()).toBe('Partner Nodes')
-    expect(buttons[2].text()).toBe('Essentials')
-    expect(buttons[3].text()).toBe('Extensions')
-    expect(buttons[4].text()).toBe('Input')
-    expect(buttons[5].text()).toBe('Output')
+    const buttons = screen.getAllByRole('button')
+    const texts = buttons.map((b) => b.textContent?.trim())
+    expect(texts).toContain('Extensions')
+    expect(texts).toContain('Input')
+    expect(texts).toContain('Output')
   })
 
-  it('should mark active chip as pressed when activeChipKey matches', async () => {
-    const wrapper = await createWrapper({ activeChipKey: 'input' })
-
-    const inputBtn = wrapper.findAll('button').find((b) => b.text() === 'Input')
-    expect(inputBtn?.attributes('aria-pressed')).toBe('true')
+  it('should always render Comfy button', async () => {
+    await createRender()
+    const texts = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent?.trim())
+    expect(texts).toContain('Comfy')
   })
 
-  it('should not mark chips as pressed when activeChipKey does not match', async () => {
-    const wrapper = await createWrapper({ activeChipKey: null })
-
-    wrapper.findAll('button').forEach((btn) => {
-      expect(btn.attributes('aria-pressed')).toBe('false')
+  it('should render conditional category buttons when matching nodes exist', async () => {
+    await createRender({
+      hasFavorites: true,
+      hasEssentialNodes: true,
+      hasBlueprintNodes: true,
+      hasPartnerNodes: true
     })
+    const texts = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent?.trim())
+    expect(texts).toContain('Bookmarked')
+    expect(texts).toContain('Blueprints')
+    expect(texts).toContain('Partner')
+    expect(texts).toContain('Essentials')
   })
 
-  it('should emit selectChip with chip data when clicked', async () => {
-    const wrapper = await createWrapper()
+  it('should not render Extensions button when no custom nodes exist', async () => {
+    await createRender()
+    const texts = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent?.trim())
+    expect(texts).not.toContain('Extensions')
+  })
 
-    const inputBtn = wrapper.findAll('button').find((b) => b.text() === 'Input')
-    await inputBtn?.trigger('click')
-
-    const emitted = wrapper.emitted('selectChip')!
-    expect(emitted[0][0]).toMatchObject({
-      key: 'input',
-      label: 'Input',
-      filter: expect.anything()
+  it('should emit selectCategory when category button is clicked', async () => {
+    const { user, onSelectCategory } = await createRender({
+      hasCustomNodes: true
     })
+
+    await user.click(screen.getByRole('button', { name: 'Extensions' }))
+
+    expect(onSelectCategory).toHaveBeenCalledWith('custom')
+  })
+
+  it('should apply active styling when activeCategory matches', async () => {
+    await createRender({ activeCategory: 'custom', hasCustomNodes: true })
+
+    expect(screen.getByRole('button', { name: 'Extensions' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   })
 })

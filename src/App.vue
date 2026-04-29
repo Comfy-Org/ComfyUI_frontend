@@ -9,19 +9,15 @@ import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
-import { useI18n } from 'vue-i18n'
-
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { isStaleChunkError, parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
-const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 

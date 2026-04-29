@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <ResultGallery
+  <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
@@ -57,7 +57,7 @@ import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'

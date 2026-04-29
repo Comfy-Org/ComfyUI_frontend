@@ -138,11 +138,10 @@ describe('DOMWidget draw promotion behavior', () => {
 
     widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
 
-    expect(isPromotedByAnyMock).toHaveBeenCalledWith(
-      'root-graph-id',
-      '-1',
-      'seed'
-    )
+    expect(isPromotedByAnyMock).toHaveBeenCalledWith('root-graph-id', {
+      sourceNodeId: '-1',
+      sourceWidgetName: 'seed'
+    })
     expect(ctx.strokeRect).toHaveBeenCalledOnce()
     expect(onDraw).toHaveBeenCalledWith(widget)
   })

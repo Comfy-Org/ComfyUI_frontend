@@ -1,7 +1,7 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-
 import {
   LGraph,
   LGraphCanvas,
@@ -60,7 +60,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 
   el.getContext = vi
     .fn()
-    .mockReturnValue(ctx as unknown as CanvasRenderingContext2D)
+    .mockReturnValue(fromAny<CanvasRenderingContext2D, unknown>(ctx))
   el.getBoundingClientRect = vi.fn().mockReturnValue({
     left: 0,
     top: 0,

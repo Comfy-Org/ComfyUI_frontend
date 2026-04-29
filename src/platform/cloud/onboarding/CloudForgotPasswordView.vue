@@ -76,11 +76,11 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 
 const { t } = useI18n()
 const router = useRouter()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 
 const email = ref('')
 const loading = ref(false)

@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
@@ -55,8 +56,8 @@ const tooltipDirectiveStub = {
   updated: vi.fn()
 }
 
-const mountHeader = (props = {}) =>
-  mount(QueueOverlayHeader, {
+const renderHeader = (props = {}) =>
+  render(QueueOverlayHeader, {
     props: {
       headerTitle: 'Job queue',
       queuedCount: 3,
@@ -81,54 +82,53 @@ describe('QueueOverlayHeader', () => {
   })
 
   it('renders header title', () => {
-    const wrapper = mountHeader()
-    expect(wrapper.text()).toContain('Job queue')
+    renderHeader()
+    expect(screen.getByText('Job queue')).toBeInTheDocument()
   })
 
   it('shows clear queue text and emits clear queued', async () => {
-    const wrapper = mountHeader({ queuedCount: 4 })
+    const user = userEvent.setup()
+    const clearQueuedSpy = vi.fn()
 
-    expect(wrapper.text()).toContain('Clear queue')
-    expect(wrapper.text()).not.toContain('4 queued')
+    renderHeader({ queuedCount: 4, onClearQueued: clearQueuedSpy })
 
-    const clearQueuedButton = wrapper.get('button[aria-label="Clear queued"]')
-    await clearQueuedButton.trigger('click')
-    expect(wrapper.emitted('clearQueued')).toHaveLength(1)
+    expect(screen.getByText('Clear queue')).toBeInTheDocument()
+    expect(screen.queryByText('4 queued')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Clear queued' }))
+    expect(clearQueuedSpy).toHaveBeenCalledOnce()
   })
 
   it('disables clear queued button when queued count is zero', () => {
-    const wrapper = mountHeader({ queuedCount: 0 })
-    const clearQueuedButton = wrapper.get('button[aria-label="Clear queued"]')
+    renderHeader({ queuedCount: 0 })
 
-    expect(clearQueuedButton.attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Clear queue')
+    expect(screen.getByRole('button', { name: 'Clear queued' })).toBeDisabled()
+    expect(screen.getByText('Clear queue')).toBeInTheDocument()
   })
 
   it('emits clear history from the menu', async () => {
+    const user = userEvent.setup()
     const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
+    const clearHistorySpy = vi.fn()
 
-    const wrapper = mountHeader()
+    renderHeader({ onClearHistory: clearHistorySpy })
 
-    expect(wrapper.find('button[aria-label="More options"]').exists()).toBe(
-      true
-    )
+    expect(
+      screen.getByRole('button', { name: 'More options' })
+    ).toBeInTheDocument()
     expect(spy).toHaveBeenCalledWith('More')
 
-    const clearHistoryButton = wrapper.get(
-      '[data-testid="clear-history-action"]'
-    )
-    await clearHistoryButton.trigger('click')
+    await user.click(screen.getByTestId('clear-history-action'))
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('clearHistory')).toHaveLength(1)
+    expect(clearHistorySpy).toHaveBeenCalledOnce()
   })
 
   it('opens floating queue progress overlay when disabling from the menu', async () => {
-    const wrapper = mountHeader()
+    const user = userEvent.setup()
 
-    const dockedJobHistoryButton = wrapper.get(
-      '[data-testid="docked-job-history-action"]'
-    )
-    await dockedJobHistoryButton.trigger('click')
+    renderHeader()
+
+    await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetMany).toHaveBeenCalledTimes(1)
@@ -141,15 +141,14 @@ describe('QueueOverlayHeader', () => {
   })
 
   it('opens docked job history sidebar when enabling from the menu', async () => {
+    const user = userEvent.setup()
     mockGetSetting.mockImplementation((key: string) =>
       key === 'Comfy.Queue.QPOV2' ? false : undefined
     )
-    const wrapper = mountHeader()
 
-    const dockedJobHistoryButton = wrapper.get(
-      '[data-testid="docked-job-history-action"]'
-    )
-    await dockedJobHistoryButton.trigger('click')
+    renderHeader()
+
+    await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
@@ -159,16 +158,15 @@ describe('QueueOverlayHeader', () => {
   })
 
   it('keeps docked target open even when enabling persistence fails', async () => {
+    const user = userEvent.setup()
     mockGetSetting.mockImplementation((key: string) =>
       key === 'Comfy.Queue.QPOV2' ? false : undefined
     )
     mockSetSetting.mockRejectedValueOnce(new Error('persistence failed'))
-    const wrapper = mountHeader()
 
-    const dockedJobHistoryButton = wrapper.get(
-      '[data-testid="docked-job-history-action"]'
-    )
-    await dockedJobHistoryButton.trigger('click')
+    renderHeader()
+
+    await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
@@ -176,13 +174,12 @@ describe('QueueOverlayHeader', () => {
   })
 
   it('closes the menu when disabling persistence fails', async () => {
+    const user = userEvent.setup()
     mockSetMany.mockRejectedValueOnce(new Error('persistence failed'))
-    const wrapper = mountHeader()
 
-    const dockedJobHistoryButton = wrapper.get(
-      '[data-testid="docked-job-history-action"]'
-    )
-    await dockedJobHistoryButton.trigger('click')
+    renderHeader()
+
+    await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetMany).toHaveBeenCalledWith({
@@ -192,12 +189,11 @@ describe('QueueOverlayHeader', () => {
   })
 
   it('toggles show run progress bar setting from the menu', async () => {
-    const wrapper = mountHeader()
+    const user = userEvent.setup()
 
-    const showRunProgressBarButton = wrapper.get(
-      '[data-testid="show-run-progress-bar-action"]'
-    )
-    await showRunProgressBarButton.trigger('click')
+    renderHeader()
+
+    await user.click(screen.getByTestId('show-run-progress-bar-action'))
 
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledWith(

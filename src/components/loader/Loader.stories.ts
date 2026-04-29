@@ -14,6 +14,11 @@ const meta: Meta<typeof Loader> = {
       control: 'select',
       options: ['sm', 'md', 'lg'],
       description: 'Spinner size: sm (16px), md (32px), lg (48px)'
+    },
+    variant: {
+      control: 'select',
+      options: ['loader', 'loader-circle'],
+      description: 'The type of loader displayed'
     }
   }
 }

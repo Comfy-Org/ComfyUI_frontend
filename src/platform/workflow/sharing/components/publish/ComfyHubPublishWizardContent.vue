@@ -7,17 +7,15 @@
       :on-close="onGateClose"
       :show-close-button="false"
     />
-    <div v-else class="flex min-h-0 flex-1 flex-col px-6 pt-4 pb-2">
+    <div v-else class="flex min-h-0 flex-1 flex-col">
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <ComfyHubDescribeStep
           v-if="currentStep === 'describe'"
           :name="formData.name"
           :description="formData.description"
-          :workflow-type="formData.workflowType"
           :tags="formData.tags"
           @update:name="onUpdateFormData({ name: $event })"
           @update:description="onUpdateFormData({ description: $event })"
-          @update:workflow-type="onUpdateFormData({ workflowType: $event })"
           @update:tags="onUpdateFormData({ tags: $event })"
         />
         <div
@@ -37,13 +35,22 @@
           />
           <ComfyHubExamplesStep
             :example-images="formData.exampleImages"
-            :selected-example-ids="formData.selectedExampleIds"
             @update:example-images="onUpdateFormData({ exampleImages: $event })"
-            @update:selected-example-ids="
-              onUpdateFormData({ selectedExampleIds: $event })
-            "
           />
         </div>
+        <div
+          v-else-if="currentStep === 'finish' && isProfileLoading"
+          class="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4"
+        >
+          <Skeleton class="h-4 w-1/4" />
+          <Skeleton class="h-20 w-full rounded-2xl" />
+        </div>
+        <ComfyHubFinishStep
+          v-else-if="currentStep === 'finish' && hasProfile && profile"
+          v-model:ready="finishStepReady"
+          v-model:acknowledged="assetsAcknowledged"
+          :profile
+        />
         <ComfyHubProfilePromptPanel
           v-else-if="currentStep === 'finish'"
           @request-profile="onRequireProfile"
@@ -53,6 +60,7 @@
         :is-first-step
         :is-last-step
         :is-publish-disabled
+        :is-publishing="isPublishInFlight"
         @back="onGoBack"
         @next="onGoNext"
         @publish="handlePublish"
@@ -70,8 +78,10 @@ import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/
 import ComfyHubCreateProfileForm from '@/platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
+import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
 import ComfyHubProfilePromptPanel from './ComfyHubProfilePromptPanel.vue'
 import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
 import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
@@ -81,6 +91,7 @@ const {
   formData,
   isFirstStep,
   isLastStep,
+  isPublishing = false,
   onGoNext,
   onGoBack,
   onUpdateFormData,
@@ -93,10 +104,11 @@ const {
   formData: ComfyHubPublishFormData
   isFirstStep: boolean
   isLastStep: boolean
+  isPublishing?: boolean
   onGoNext: () => void
   onGoBack: () => void
   onUpdateFormData: (patch: Partial<ComfyHubPublishFormData>) => void
-  onPublish: () => void
+  onPublish: () => Promise<void>
   onRequireProfile: () => void
   onGateComplete?: () => void
   onGateClose?: () => void
@@ -104,24 +116,42 @@ const {
 
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
-const { checkProfile, hasProfile } = useComfyHubProfileGate()
+const { checkProfile, hasProfile, isFetchingProfile, profile } =
+  useComfyHubProfileGate()
+const isProfileLoading = computed(
+  () => hasProfile.value === null || isFetchingProfile.value
+)
+const finishStepReady = ref(false)
+const assetsAcknowledged = ref(false)
 const isResolvingPublishAccess = ref(false)
+const isPublishInFlight = computed(
+  () => isPublishing || isResolvingPublishAccess.value
+)
+const isFinishStepVisible = computed(
+  () =>
+    currentStep === 'finish' &&
+    hasProfile.value === true &&
+    profile.value !== null
+)
 const isPublishDisabled = computed(
-  () => flags.comfyHubProfileGateEnabled && hasProfile.value !== true
+  () =>
+    isPublishInFlight.value ||
+    (flags.comfyHubProfileGateEnabled && hasProfile.value !== true) ||
+    (isFinishStepVisible.value && !finishStepReady.value)
 )
 
 async function handlePublish() {
-  if (isResolvingPublishAccess.value) {
-    return
-  }
-
-  if (!flags.comfyHubProfileGateEnabled) {
-    onPublish()
+  if (isResolvingPublishAccess.value || isPublishing) {
     return
   }
 
   isResolvingPublishAccess.value = true
   try {
+    if (!flags.comfyHubProfileGateEnabled) {
+      await onPublish()
+      return
+    }
+
     let profileExists: boolean
     try {
       profileExists = await checkProfile()
@@ -131,11 +161,13 @@ async function handlePublish() {
     }
 
     if (profileExists) {
-      onPublish()
+      await onPublish()
       return
     }
 
     onRequireProfile()
+  } catch (error) {
+    toastErrorHandler(error)
   } finally {
     isResolvingPublishAccess.value = false
   }

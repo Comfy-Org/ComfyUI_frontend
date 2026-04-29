@@ -9,10 +9,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphEventMap'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type {
+  LGraph,
+  Subgraph,
+  SubgraphEventMap,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from '../../__fixtures__/testExtensions'
 
@@ -20,14 +22,17 @@ const test = baseTest.extend({
   pinia: [
     async ({}, use) => {
       setActivePinia(createTestingPinia({ stubActions: false }))
+      resetSubgraphFixtureState()
       await use(undefined)
     },
     { auto: true }
   ]
 })
 import {
+  createTestRootGraph,
   createEventCapture,
   createNestedSubgraphs,
+  resetSubgraphFixtureState,
   createTestSubgraph,
   createTestSubgraphNode
 } from './subgraphHelpers'
@@ -133,8 +138,9 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
       nodeCount: 1
     })
 
-    const parentGraph = new LGraph()
+    const parentGraph = createTestRootGraph()
     const subgraphNode = createTestSubgraphNode(subgraph, {
+      parentGraph,
       pos: [200, 200],
       size: [180, 80]
     })

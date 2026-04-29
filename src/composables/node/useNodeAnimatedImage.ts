@@ -30,7 +30,8 @@ export function useNodeAnimatedImage() {
       const element = document.createElement('div')
       element.appendChild(node.imgs[0])
       const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', element, {
-        hideOnZoom: false
+        hideOnZoom: false,
+        canvasOnly: true
       })
       node.overIndex = 0
 

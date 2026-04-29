@@ -14,7 +14,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
@@ -91,10 +91,15 @@ const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
+
+function dragDrop(e: DragEvent) {
+  const { dataTransfer } = e
+  if (dataTransfer) linearWorkflowRef.value?.handleDragDrop()
+}
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute size-full">
+  <div v-else class="absolute size-full" @dragover.prevent>
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
@@ -144,8 +149,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         id="linearCenterPanel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+        @drop="dragDrop"
       >
         <LinearProgressBar
+          data-testid="linear-header-progress-bar"
           class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
         <LinearPreview

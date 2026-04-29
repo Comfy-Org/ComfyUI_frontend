@@ -1,0 +1,31 @@
+name: 'Lint and format verify'
+description: >
+  Runs the lint/format/knip verification suite plus a conditional
+  browser-tests typecheck. Shared by ci-lint-format.yaml (PR) and
+  ci-lint-format-queue.yaml (merge queue) so both paths run the exact
+  same checks. The caller is responsible for checkout and frontend setup
+  before invoking this action.
+
+runs:
+  using: composite
+  steps:
+    - name: Detect browser_tests changes
+      id: changed-paths
+      uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      with:
+        filters: |
+          browser_tests:
+            - 'browser_tests/**'
+
+    - name: Verify lint and format
+      shell: bash
+      run: |
+        pnpm lint
+        pnpm stylelint
+        pnpm format:check
+        pnpm knip
+
+    - name: Typecheck browser tests
+      if: steps.changed-paths.outputs.browser_tests == 'true'
+      shell: bash
+      run: pnpm typecheck:browser

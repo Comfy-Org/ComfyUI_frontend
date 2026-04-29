@@ -16,13 +16,15 @@ export type ResultItemType = z.infer<typeof resultItemType>
 const zCustomNodesI18n = z.record(z.string(), z.unknown())
 export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 
-const zResultItem = z.object({
+export const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
   display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
+// Uses .passthrough() because custom nodes can output arbitrary keys.
+// See docs/adr/0007-node-execution-output-passthrough-schema.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
@@ -298,10 +300,11 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.Appearance.DisableAnimations': z.boolean(),
   'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
-  'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
+  'Comfy.Desktop.CloudNotificationShown': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
   'Comfy.DisableSliders': z.boolean(),
   'Comfy.DOMClippingEnabled': z.boolean(),
@@ -309,6 +312,7 @@ const zSettings = z.object({
   'Comfy.EnableTooltips': z.boolean(),
   'Comfy.EnableWorkflowViewRestore': z.boolean(),
   'Comfy.FloatRoundingPrecision': z.number(),
+  'Comfy.Graph.AutoPanSpeed': z.number(),
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
@@ -331,6 +335,7 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
+  'Comfy.NodeSearchBoxImpl.FollowCursor': z.boolean(),
   'Comfy.NodeSearchBoxImpl': z.enum([
     'default',
     'v1 (legacy)',
@@ -378,6 +383,7 @@ const zSettings = z.object({
   'Comfy.WorkflowActions.SeenItems': z.array(z.string()),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
+  'Comfy.Keybinding.CurrentPreset': z.string(),
   'Comfy.Extension.Disabled': z.array(z.string()),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
@@ -410,6 +416,7 @@ const zSettings = z.object({
   'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
