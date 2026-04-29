@@ -1,6 +1,6 @@
 import type { MaybeRef } from 'vue'
 
-import { toRef } from '@vueuse/core'
+import { toRef, useDebounceFn } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
@@ -45,11 +45,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   let load3d: Load3d | null = null
   let isFirstModelLoad = true
 
+  const debouncedHandleResize = useDebounceFn(() => {
+    load3d?.handleResize()
+  }, 150)
+
   watch(
     () => (getActivePinia() ? useCanvasStore().appScalePercentage : 0),
-    () => {
-      load3d?.handleResize()
-    }
+    debouncedHandleResize
   )
 
   const sceneConfig = ref<SceneConfig>({

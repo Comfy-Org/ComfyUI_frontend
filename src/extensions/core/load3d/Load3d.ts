@@ -640,7 +640,7 @@ class Load3d {
     // Scale pixel density to match the graph zoom level so the 3D scene
     // renders at the correct resolution when the canvas is zoomed in or out.
     const zoomScale = this.getZoomScaleCallback?.() ?? 1
-    this.renderer.setPixelRatio(zoomScale)
+    this.renderer.setPixelRatio(Math.min(zoomScale, 3))
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
