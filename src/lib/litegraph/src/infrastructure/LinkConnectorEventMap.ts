@@ -15,6 +15,11 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 export interface LinkConnectorEventMap {
   reset: boolean
 
+  /** Fired when a new link drag begins from a slot or subgraph IO node. */
+  connecting: {
+    connectingTo: 'input' | 'output'
+  }
+
   'before-drop-links': {
     renderLinks: RenderLink[]
     event: CanvasPointerEvent
@@ -44,6 +49,8 @@ export interface LinkConnectorEventMap {
     node: SubgraphInputNode | SubgraphOutputNode
     event: CanvasPointerEvent
   }
+  /** Fired before a link is dropped on empty canvas. Call event.preventDefault() to intercept; dispatch() returns false when prevented. */
+  'before-drop-on-canvas': CanvasPointerEvent
   'dropped-on-canvas': CanvasPointerEvent
 
   'dropped-on-widget': {
