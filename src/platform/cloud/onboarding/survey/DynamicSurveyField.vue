@@ -18,6 +18,7 @@
           :input-id="`${field.id}-${option.value}`"
           :name="field.id"
           :value="option.value"
+          :dt="checkedTokens"
           @update:model-value="onSingleChange"
         />
         <label
@@ -37,6 +38,7 @@
           :model-value="(modelValue as string[]) ?? []"
           :input-id="`${field.id}-${option.value}`"
           :value="option.value"
+          :dt="checkedTokens"
           @update:model-value="onMultiChange"
         />
         <label
@@ -110,6 +112,15 @@ const emit = defineEmits<{
 const { t, te } = useI18n()
 const controlId = useId()
 
+const checkedTokens = {
+  checked: {
+    background: 'var(--color-electric-400)',
+    borderColor: 'var(--color-electric-400)',
+    hoverBackground: 'var(--color-electric-400)',
+    hoverBorderColor: 'var(--color-electric-400)'
+  }
+}
+
 const resolvedLabel = (() => {
   if (field.labelKey && te(field.labelKey)) return t(field.labelKey)
   return field.label ?? field.id
@@ -140,14 +151,3 @@ const onOtherChange = (value: string | number | undefined) => {
   emit('update:otherValue', String(value ?? ''))
 }
 </script>
-
-<style scoped>
-:deep(.p-radiobutton-checked .p-radiobutton-box) {
-  background-color: #f0ff41 !important;
-  border-color: #f0ff41 !important;
-}
-:deep(.p-checkbox-checked .p-checkbox-box) {
-  background-color: #f0ff41 !important;
-  border-color: #f0ff41 !important;
-}
-</style>

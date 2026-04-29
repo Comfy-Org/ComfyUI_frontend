@@ -7,11 +7,8 @@
       class="mb-8 h-2 w-full overflow-hidden rounded-full bg-secondary-background"
     >
       <div
-        class="h-full transition-[width] duration-300 ease-out"
-        :style="{
-          width: `${progressPercent}%`,
-          backgroundColor: '#f0ff41'
-        }"
+        class="h-full bg-electric-400 transition-[width] duration-300 ease-out"
+        :style="{ width: `${progressPercent}%` }"
       />
     </div>
 
@@ -173,11 +170,15 @@ const progressPercent = computed(() =>
 const isCurrentValid = computed(() => {
   const field = currentField.value
   if (!field) return false
+
   const value = values[field.id]
-  if (field.type === 'multi') {
-    return Array.isArray(value) && value.length > 0
-  }
-  if (typeof value !== 'string' || value.length === 0) return false
+  const isEmpty =
+    field.type === 'multi'
+      ? !Array.isArray(value) || value.length === 0
+      : typeof value !== 'string' || value.length === 0
+
+  if (isEmpty) return !field.required
+
   if (field.allowOther && field.otherFieldId && value === 'other') {
     const other = values[field.otherFieldId]
     return typeof other === 'string' && other.trim().length > 0

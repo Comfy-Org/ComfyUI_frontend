@@ -161,6 +161,44 @@ describe('DynamicSurveyForm', () => {
     expect(screen.getByLabelText('Localized B')).toBeInTheDocument()
   })
 
+  it('allows advancing past an optional field while still empty', async () => {
+    const user = userEvent.setup()
+    render(DynamicSurveyForm, {
+      global: { plugins: [PrimeVue, i18n] },
+      props: {
+        survey: {
+          version: 1,
+          fields: [
+            {
+              id: 'q1',
+              type: 'single',
+              label: 'Optional question?',
+              options: [
+                { value: 'a', label: 'A' },
+                { value: 'b', label: 'B' }
+              ]
+              // no required: true — should be skippable
+            },
+            {
+              id: 'q2',
+              type: 'single',
+              label: 'Required question?',
+              required: true,
+              options: [{ value: 'c', label: 'C' }]
+            }
+          ]
+        }
+      }
+    })
+
+    const next = screen.getByRole('button', { name: 'Next' })
+    expect(next).toBeEnabled()
+
+    await user.click(next)
+    await flushPromises()
+    expect(screen.getByText('Required question?')).toBeVisible()
+  })
+
   it('enables Submit only after the multi-select field has at least one choice', async () => {
     const user = userEvent.setup()
     renderForm(twoStepSurvey)
