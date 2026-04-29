@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createTestSubgraph,
@@ -103,7 +104,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
     expect(subgraphNode.widgets[1].name).toBe('widgetA')
   })
-  test('Will mirror changes to value', () => {
+  test('reads source value until promoted view writes scoped state', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -116,7 +117,16 @@ describe('Subgraph proxyWidgets', () => {
     innerNodes[0].widgets![0].value = 'test'
     expect(subgraphNode.widgets[0].value).toBe('test')
     subgraphNode.widgets[0].value = 'test2'
-    expect(innerNodes[0].widgets![0].value).toBe('test2')
+    expect(subgraphNode.widgets[0].value).toBe('test2')
+    expect(innerNodes[0].widgets![0].value).toBe('test')
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNode.rootGraph.id,
+        innerIds[0],
+        'stringWidget',
+        subgraphNode.id
+      )?.value
+    ).toBe('test2')
   })
   test('Will not modify position or sizing of existing widgets', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
@@ -253,7 +263,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets).toHaveLength(0)
   })
 
-  test('serialize stores widgets_values for promoted views', () => {
+  test('serialize writes positional widgets_values for edited promoted widgets', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -262,13 +272,17 @@ describe('Subgraph proxyWidgets', () => {
       [{ sourceNodeId: innerIds[0], sourceWidgetName: 'stringWidget' }]
     )
     expect(subgraphNode.widgets).toHaveLength(1)
+    subgraphNode.widgets[0].value = 'edited'
 
     const serialized = subgraphNode.serialize()
 
-    expect(serialized.widgets_values).toEqual(['value'])
+    expect(serialized.widgets_values).toStrictEqual(['edited'])
+    expect(serialized.properties?.proxyWidgets).toStrictEqual([
+      [innerIds[0], 'stringWidget']
+    ])
   })
 
-  test('serialize preserves proxyWidgets in properties', () => {
+  test('serialize preserves identity-only proxyWidgets in properties', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
@@ -369,9 +383,18 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNodeA.widgets[0].type).toBe('number')
     expect(subgraphNodeA.widgets[0].value).toBe(42)
 
-    // Setting value at outermost level propagates to concrete widget
+    // Setting value at outermost level writes the instance-scoped store slot.
     subgraphNodeA.widgets[0].value = 99
-    expect(concreteNode.widgets![0].value).toBe(99)
+    expect(subgraphNodeA.widgets[0].value).toBe(99)
+    expect(concreteNode.widgets![0].value).toBe(42)
+    expect(
+      useWidgetValueStore().getWidget(
+        subgraphNodeA.rootGraph.id,
+        String(concreteNode.id),
+        'deep_input',
+        subgraphNodeA.id
+      )?.value
+    ).toBe(99)
   })
 
   test('removeWidget cleans up promotion and input, then re-promote works', () => {

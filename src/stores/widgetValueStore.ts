@@ -9,11 +9,12 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 
 /**
- * Widget state is keyed by `nodeId:widgetName` without graph context.
- * This is intentional: nodes viewed at different subgraph depths share
- * the same widget state, enabling synchronized values across the hierarchy.
+ * Widget state is keyed by `nodeId:widgetName` without graph context by
+ * default. Promoted subgraph widgets can add an instance coordinate so sibling
+ * SubgraphNode instances do not collide while regular depth views keep sharing
+ * the legacy slot.
  */
-type WidgetKey = `${NodeId}:${string}`
+type WidgetKey = `${NodeId}:${string}` | `${NodeId}@${NodeId}:${string}`
 
 /**
  * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
@@ -46,23 +47,35 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return nextWidgetStates
   }
 
-  function makeKey(nodeId: NodeId, widgetName: string): WidgetKey {
-    return `${nodeId}:${widgetName}`
+  function makeKey(
+    nodeId: NodeId,
+    widgetName: string,
+    instanceId?: NodeId
+  ): WidgetKey {
+    return instanceId === undefined
+      ? `${nodeId}:${widgetName}`
+      : `${instanceId}@${nodeId}:${widgetName}`
   }
 
   function registerWidget<TValue = unknown>(
     graphId: UUID,
-    state: WidgetState<TValue>
+    state: WidgetState<TValue>,
+    instanceId?: NodeId
   ): WidgetState<TValue> {
     const widgetStates = getWidgetStateMap(graphId)
-    const key = makeKey(state.nodeId, state.name)
+    const key = makeKey(state.nodeId, state.name, instanceId)
     widgetStates.set(key, state)
     return widgetStates.get(key) as WidgetState<TValue>
   }
 
-  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
+  function getNodeWidgets(
+    graphId: UUID,
+    nodeId: NodeId,
+    instanceId?: NodeId
+  ): WidgetState[] {
     const widgetStates = getWidgetStateMap(graphId)
-    const prefix = `${nodeId}:`
+    const prefix =
+      instanceId === undefined ? `${nodeId}:` : `${instanceId}@${nodeId}:`
     return [...widgetStates]
       .filter(([key]) => key.startsWith(prefix))
       .map(([, state]) => state)
@@ -71,9 +84,40 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function getWidget(
     graphId: UUID,
     nodeId: NodeId,
-    widgetName: string
+    widgetName: string,
+    instanceId?: NodeId
   ): WidgetState | undefined {
-    return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+    return getWidgetStateMap(graphId).get(
+      makeKey(nodeId, widgetName, instanceId)
+    )
+  }
+
+  function clearInstanceWidgets(graphId: UUID, instanceId: NodeId): void {
+    const widgetStates = getWidgetStateMap(graphId)
+    const prefix = `${instanceId}@`
+    for (const key of widgetStates.keys()) {
+      if (key.startsWith(prefix)) widgetStates.delete(key)
+    }
+  }
+
+  /**
+   * Clears one promoted-widget scope under a subgraph instance.
+   *
+   * `scopePrefix` starts after the `${instanceId}@` boundary from
+   * `makeKey(nodeId, widgetName, instanceId)`:
+   * - `${nodeId}` clears all scoped widgets on that source node.
+   * - `${nodeId}:${widgetName}` clears exactly one scoped widget.
+   */
+  function clearScopedWidget(
+    graphId: UUID,
+    instanceId: NodeId,
+    scopePrefix: string
+  ): void {
+    const widgetStates = getWidgetStateMap(graphId)
+    const prefix = `${instanceId}@${scopePrefix}`
+    for (const key of widgetStates.keys()) {
+      if (key.startsWith(prefix)) widgetStates.delete(key)
+    }
   }
 
   function clearGraph(graphId: UUID): void {
@@ -84,6 +128,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     registerWidget,
     getWidget,
     getNodeWidgets,
+    clearInstanceWidgets,
+    clearScopedWidget,
     clearGraph
   }
 })

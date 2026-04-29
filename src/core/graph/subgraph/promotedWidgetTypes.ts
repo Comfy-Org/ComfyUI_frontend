@@ -26,6 +26,10 @@ export interface PromotedWidgetView extends IBaseWidget {
   readonly disambiguatingSourceNodeId?: string
   /** Whether the resolved source widget is workflow-persistent. */
   readonly sourceSerialize: boolean
+  /** Stable identity key for this promotion on its host instance. */
+  readonly instanceKey: string
+  /** Return the instance-scoped store value, if this view has one. */
+  getScopedStoreValue(): IBaseWidget['value'] | undefined
 }
 
 export function isPromotedWidgetView(

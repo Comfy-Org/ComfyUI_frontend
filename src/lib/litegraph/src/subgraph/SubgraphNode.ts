@@ -43,12 +43,16 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import {
+  getProxyWidgetInlineState,
+  parseProxyWidgets
+} from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -992,20 +996,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /** Temporarily stored during configure for use by _internalConfigureAfterSlots */
+  /**
+   * Temporary configure-time handoff for legacy positional widgets_values.
+   * LGraphNode.configure invokes _internalConfigureAfterSlots internally, so
+   * this value is staged before super.configure and cleared in a finally block.
+   */
   private _pendingWidgetsValues?: unknown[]
 
-  /**
-   * Per-instance promoted widget values.
-   * Multiple SubgraphNode instances share the same inner nodes, so
-   * promoted widget values must be stored per-instance to avoid collisions.
-   * Key: `${sourceNodeId}:${sourceWidgetName}`
-   */
-  readonly _instanceWidgetValues = new Map<string, unknown>()
-
   override configure(info: ExportedSubgraphInstance): void {
-    this._instanceWidgetValues.clear()
-    this._pendingWidgetsValues = info.widgets_values
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.clearInstanceWidgets(this.rootGraph.id, this.id)
+    if (info.id != null && info.id !== this.id) {
+      widgetValueStore.clearInstanceWidgets(this.rootGraph.id, info.id)
+    }
+    this._pendingWidgetsValues = Array.isArray(info.widgets_values)
+      ? info.widgets_values
+      : undefined
 
     for (const input of this.inputs) {
       if (
@@ -1055,7 +1061,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    super.configure(info)
+    try {
+      super.configure(info)
+    } finally {
+      this._pendingWidgetsValues = undefined
+    }
   }
 
   override _internalConfigureAfterSlots() {
@@ -1077,28 +1087,71 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Hydrate the store from serialized properties.proxyWidgets
     const raw = parseProxyWidgets(this.properties.proxyWidgets)
     const store = usePromotionStore()
+    const pendingValues = new Map<string, unknown>()
+    const canHydrateLegacyWidgetsValues =
+      this._pendingWidgetsValues?.length === raw.length
+
+    if (this._pendingWidgetsValues && !canHydrateLegacyWidgetsValues) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[SubgraphNode] Dropping stale widgets_values for ${this.id}: ` +
+            `widgets_values length (${this._pendingWidgetsValues.length}) ` +
+            `does not match proxyWidgets length (${raw.length}).`
+        )
+      }
+    }
 
     const entries = raw
-      .map(([nodeId, widgetName, sourceNodeId]) => {
-        if (nodeId === '-1') {
-          const resolved = this._resolveLegacyEntry(widgetName)
-          if (resolved)
-            return { sourceNodeId: resolved[0], sourceWidgetName: resolved[1] }
-          if (import.meta.env.DEV) {
-            console.warn(
-              `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
-            )
-          }
-          return null
-        }
-        if (!this.subgraph.getNodeById(nodeId)) return null
+      .map((rawEntry, index) => {
+        const nodeId = rawEntry[0]
+        const widgetName = rawEntry[1]
+        const thirdElement = rawEntry[2]
+        const sourceNodeId =
+          typeof thirdElement === 'string' ? thirdElement : undefined
 
-        return normalizeLegacyProxyWidgetEntry(
-          this,
-          nodeId,
-          widgetName,
-          sourceNodeId
-        )
+        let resolved: PromotedWidgetSource | null
+        if (nodeId === '-1') {
+          const legacy = this._resolveLegacyEntry(widgetName)
+          if (legacy) {
+            resolved = {
+              sourceNodeId: legacy[0],
+              sourceWidgetName: legacy[1]
+            }
+          } else {
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
+              )
+            }
+            resolved = null
+          }
+        } else if (!this.subgraph.getNodeById(nodeId)) {
+          resolved = null
+        } else {
+          resolved = normalizeLegacyProxyWidgetEntry(
+            this,
+            nodeId,
+            widgetName,
+            sourceNodeId
+          )
+        }
+
+        if (resolved) {
+          const inlineState = getProxyWidgetInlineState(rawEntry)
+          if (inlineState) {
+            pendingValues.set(
+              makePromotionEntryKey(resolved),
+              inlineState.value
+            )
+          } else if (canHydrateLegacyWidgetsValues) {
+            const legacyValue = this._pendingWidgetsValues?.[index]
+            if (legacyValue !== null && legacyValue !== undefined) {
+              pendingValues.set(makePromotionEntryKey(resolved), legacyValue)
+            }
+          }
+        }
+
+        return resolved
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
 
@@ -1138,19 +1191,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.promote(this.rootGraph.id, this.id, source)
     }
 
-    // Hydrate per-instance promoted widget values from serialized data.
-    // LGraphNode.configure skips promoted widgets (serialize === false on
-    // the view), so they must be applied here after promoted views exist.
-    // Only iterate serializable views to match what serialize() wrote.
-    if (this._pendingWidgetsValues) {
-      const views = this._getPromotedViews()
-      let i = 0
-      for (const view of views) {
-        if (!view.sourceSerialize) continue
-        if (i >= this._pendingWidgetsValues.length) break
-        view.value = this._pendingWidgetsValues[i++] as typeof view.value
+    if (pendingValues.size > 0) {
+      for (const view of this._getPromotedViews()) {
+        if (!pendingValues.has(view.instanceKey)) continue
+        view.value = pendingValues.get(view.instanceKey) as typeof view.value
       }
-      this._pendingWidgetsValues = undefined
     }
   }
 
@@ -1248,6 +1293,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         previousView.sourceWidgetName !== widgetName)
     ) {
       usePromotionStore().demote(this.rootGraph.id, this.id, previousView)
+      this._clearPromotedViewScopedWidgets(previousView)
       this._removePromotedView(previousView)
     }
 
@@ -1519,6 +1565,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  private _clearPromotedViewScopedWidgets(view: PromotedWidgetView): void {
+    useWidgetValueStore().clearScopedWidget(
+      this.rootGraph.id,
+      this.id,
+      `${view.sourceNodeId}:${view.sourceWidgetName}`
+    )
+  }
+
   override removeWidget(widget: IBaseWidget): void {
     this.ensureWidgetRemoved(widget)
   }
@@ -1527,6 +1581,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (isPromotedWidgetView(widget)) {
       this._clearDomOverrideForView(widget)
       usePromotionStore().demote(this.rootGraph.id, this.id, widget)
+      this._clearPromotedViewScopedWidgets(widget)
       this._removePromotedView(widget)
     }
     for (const input of this.inputs) {
@@ -1546,7 +1601,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onRemoved(): void {
     this._eventAbortController.abort()
     this._invalidatePromotedViewsCache()
-    this._instanceWidgetValues.clear()
+    useWidgetValueStore().clearInstanceWidgets(this.rootGraph.id, this.id)
 
     for (const widget of this.widgets) {
       if (isPromotedWidgetView(widget)) {
@@ -1614,14 +1669,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const views = this._getPromotedViews()
 
     const serializableViews = views.filter((view) => view.sourceSerialize)
-    if (serializableViews.length > 0) {
+    const hasAnyScopedValue = serializableViews.some(
+      (view) => view.getScopedStoreValue() !== undefined
+    )
+
+    if (hasAnyScopedValue) {
+      // For un-edited promoted views (no scoped store value), fall back to the
+      // source widget's effective value via the view getter. This keeps the
+      // round-trip stable: replaying the same source-default into the store
+      // on configure is a no-op, whereas writing `null` would blank out the
+      // widget on next load.
       serialized.widgets_values = serializableViews.map((view) => {
-        const value = view.serializeValue
-          ? view.serializeValue(this, -1)
-          : view.value
+        const value = view.getScopedStoreValue() ?? view.value ?? null
         return value != null && typeof value === 'object'
           ? JSON.parse(JSON.stringify(value))
-          : (value ?? null)
+          : value
       })
     }
 
