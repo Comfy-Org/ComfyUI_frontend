@@ -210,7 +210,8 @@ export const TestIds = {
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
-    clearHistoryAction: 'clear-history-action'
+    clearHistoryAction: 'clear-history-action',
+    jobAssetsList: 'job-assets-list'
   },
   errors: {
     imageLoadError: 'error-loading-image',
