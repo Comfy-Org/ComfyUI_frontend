@@ -1,3 +1,4 @@
+import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
@@ -314,6 +315,429 @@ describe('load3dService', () => {
 
       expect(load3d.toggleCamera).toHaveBeenNthCalledWith(1, 'perspective')
       expect(load3d.toggleCamera).toHaveBeenNthCalledWith(2, 'orthographic')
+    })
+  })
+
+  describe('copyLoad3dState', () => {
+    type SourceOverrides = Partial<{
+      currentModel: THREE.Object3D | null
+      isSplat: boolean
+      originalURL: string | null
+      originalModel: unknown
+      materialMode: string
+      currentUpDirection: string
+      appliedTexture: unknown
+      gizmoEnabled: boolean
+      hasAnimations: boolean
+      cameraType: 'perspective' | 'orthographic'
+      backgroundInfo: { type: 'image' | 'color' }
+      lightsIntensity: number | undefined
+      fov: number
+    }>
+
+    function makeSource(overrides: SourceOverrides = {}): Load3d {
+      const {
+        currentModel = null,
+        isSplat = false,
+        originalURL = null,
+        originalModel = null,
+        materialMode = 'original',
+        currentUpDirection = 'original',
+        appliedTexture = null,
+        gizmoEnabled = false,
+        hasAnimations = false,
+        cameraType = 'perspective',
+        backgroundInfo = { type: 'color' },
+        lightsIntensity = 0.8,
+        fov = 35
+      } = overrides
+      const ambient = { intensity: 0.5 }
+      const main = { intensity: lightsIntensity }
+      return {
+        modelManager: { currentModel, originalURL },
+        getGizmoManager: () => ({
+          isEnabled: () => gizmoEnabled,
+          getInitialTransform: () => ({
+            position: { x: 1, y: 2, z: 3 },
+            rotation: { x: 0.1, y: 0.2, z: 0.3 },
+            scale: { x: 4, y: 5, z: 6 }
+          })
+        }),
+        isSplatModel: () => isSplat,
+        getModelManager: () => ({
+          originalModel,
+          materialMode,
+          currentUpDirection,
+          appliedTexture
+        }),
+        getGizmoTransform: () => ({
+          position: { x: 7, y: 8, z: 9 },
+          rotation: { x: 0.4, y: 0.5, z: 0.6 },
+          scale: { x: 10, y: 11, z: 12 }
+        }),
+        hasAnimations: () => hasAnimations,
+        getCurrentCameraType: () => cameraType,
+        getCameraState: () => ({ snapshot: true }),
+        getSceneManager: () => ({
+          scene: new THREE.Scene(),
+          currentBackgroundColor: '#abcdef',
+          gridHelper: { visible: true },
+          getCurrentBackgroundInfo: () => backgroundInfo
+        }),
+        getLightingManager: () => ({ lights: [ambient, main] }),
+        getCameraManager: () => ({ perspectiveCamera: { fov } })
+      } as unknown as Load3d
+    }
+
+    type TargetState = {
+      modelManager: {
+        currentModel: THREE.Object3D | null
+        originalModel: unknown
+        materialMode: string
+        currentUpDirection: string
+        appliedTexture: unknown
+      }
+      gizmoManager: {
+        isEnabled: () => boolean
+        detach: ReturnType<typeof vi.fn>
+        setupForModel: ReturnType<typeof vi.fn>
+      }
+      animationManager: {
+        setupModelAnimations: ReturnType<typeof vi.fn>
+      }
+      sceneRemoved: THREE.Object3D[]
+      sceneAdded: THREE.Object3D[]
+    }
+
+    function makeTarget(
+      opts: {
+        gizmoEnabled?: boolean
+        existingModel?: THREE.Object3D | null
+      } = {}
+    ) {
+      const { gizmoEnabled = false, existingModel = null } = opts
+      const scene = new THREE.Scene()
+      const sceneRemoved: THREE.Object3D[] = []
+      const sceneAdded: THREE.Object3D[] = []
+      const sceneRemove = vi.fn((o: THREE.Object3D) => {
+        sceneRemoved.push(o)
+        scene.remove(o)
+      })
+      const sceneAdd = vi.fn((o: THREE.Object3D) => {
+        sceneAdded.push(o)
+        scene.add(o)
+      })
+      const modelManager = {
+        currentModel: existingModel as THREE.Object3D | null,
+        originalModel: null as unknown,
+        materialMode: 'original',
+        currentUpDirection: 'original',
+        appliedTexture: null as unknown
+      }
+      const animationManager = {
+        setupModelAnimations: vi.fn()
+      }
+      // Memoize the gizmo manager so production code's repeated
+      // `target.getGizmoManager()` calls reach the same vi.fn instances.
+      const gizmoManager = {
+        isEnabled: () => gizmoEnabled,
+        detach: vi.fn(),
+        setupForModel: vi.fn()
+      }
+      const target = {
+        getGizmoManager: () => gizmoManager,
+        getModelManager: () => modelManager,
+        getSceneManager: () => ({
+          scene: {
+            add: sceneAdd,
+            remove: sceneRemove
+          } as unknown as THREE.Scene
+        }),
+        loadModel: vi.fn().mockResolvedValue(undefined),
+        setMaterialMode: vi.fn(),
+        setUpDirection: vi.fn(),
+        applyGizmoTransform: vi.fn(),
+        setGizmoEnabled: vi.fn(),
+        animationManager,
+        toggleCamera: vi.fn(),
+        setCameraState: vi.fn(),
+        setBackgroundColor: vi.fn(),
+        toggleGrid: vi.fn(),
+        setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+        setLightIntensity: vi.fn(),
+        setFOV: vi.fn()
+      } as unknown as Load3d
+      const state: TargetState = {
+        modelManager,
+        gizmoManager,
+        animationManager,
+        sceneRemoved,
+        sceneAdded
+      }
+      return { target, state }
+    }
+
+    function makeModel(): THREE.Object3D {
+      return new THREE.Object3D()
+    }
+
+    it('copies camera/scene/lighting/FOV even when there is no source model', async () => {
+      const source = makeSource({ currentModel: null, lightsIntensity: 2 })
+      const { target } = makeTarget()
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.toggleCamera).toHaveBeenCalledWith('perspective')
+      expect(target.setCameraState).toHaveBeenCalledWith({ snapshot: true })
+      expect(target.setBackgroundColor).toHaveBeenCalledWith('#abcdef')
+      expect(target.toggleGrid).toHaveBeenCalledWith(true)
+      expect(target.setLightIntensity).toHaveBeenCalledWith(2)
+      expect(target.setFOV).toHaveBeenCalledWith(35)
+      expect(skeletonCloneMock).not.toHaveBeenCalled()
+      expect(target.loadModel).not.toHaveBeenCalled()
+    })
+
+    it('uses target.loadModel(originalURL) for splat models, never invoking SkeletonUtils.clone', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        isSplat: true,
+        originalURL: 'http://example.com/scan.splat'
+      })
+      const { target } = makeTarget()
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.loadModel).toHaveBeenCalledWith(
+        'http://example.com/scan.splat'
+      )
+      expect(skeletonCloneMock).not.toHaveBeenCalled()
+    })
+
+    it('skips loadModel for splat models when originalURL is null', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        isSplat: true,
+        originalURL: null
+      })
+      const { target } = makeTarget()
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.loadModel).not.toHaveBeenCalled()
+    })
+
+    it('removes the target existing model from the scene before adding the clone', async () => {
+      const existing = makeModel()
+      existing.name = 'existing'
+      const source = makeSource({ currentModel: makeModel() })
+      const { target, state } = makeTarget({ existingModel: existing })
+      const clone = makeModel()
+      skeletonCloneMock.mockReturnValue(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.sceneRemoved).toContain(existing)
+      expect(state.sceneAdded).toContain(clone)
+    })
+
+    it('clones the source model via SkeletonUtils and assigns it as the target current model', async () => {
+      const sourceModel = makeModel()
+      const clone = makeModel()
+      const source = makeSource({ currentModel: sourceModel })
+      const { target, state } = makeTarget()
+      skeletonCloneMock.mockReturnValue(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(skeletonCloneMock).toHaveBeenCalledWith(sourceModel)
+      expect(state.modelManager.currentModel).toBe(clone)
+    })
+
+    it('copies originalModel, material mode, up direction, and applied texture from source to target', async () => {
+      const sourceOriginal = { kind: 'gltf' }
+      const texture = { id: 'tex1' }
+      const source = makeSource({
+        currentModel: makeModel(),
+        originalModel: sourceOriginal,
+        materialMode: 'wireframe',
+        currentUpDirection: '+y',
+        appliedTexture: texture
+      })
+      const { target, state } = makeTarget()
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.modelManager.originalModel).toBe(sourceOriginal)
+      expect(state.modelManager.materialMode).toBe('wireframe')
+      expect(state.modelManager.currentUpDirection).toBe('+y')
+      expect(state.modelManager.appliedTexture).toBe(texture)
+      expect(target.setMaterialMode).toHaveBeenCalledWith('wireframe')
+      expect(target.setUpDirection).toHaveBeenCalledWith('+y')
+    })
+
+    it('positions the clone at the source initial transform', async () => {
+      const clone = makeModel()
+      const source = makeSource({ currentModel: makeModel() })
+      const { target } = makeTarget()
+      skeletonCloneMock.mockReturnValue(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(clone.position.toArray()).toEqual([1, 2, 3])
+      expect(clone.rotation.toArray().slice(0, 3)).toEqual([0.1, 0.2, 0.3])
+      expect(clone.scale.toArray()).toEqual([4, 5, 6])
+    })
+
+    it('applies the source gizmo transform to the target', async () => {
+      const source = makeSource({ currentModel: makeModel() })
+      const { target } = makeTarget()
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.applyGizmoTransform).toHaveBeenCalledWith(
+        { x: 7, y: 8, z: 9 },
+        { x: 0.4, y: 0.5, z: 0.6 },
+        { x: 10, y: 11, z: 12 }
+      )
+    })
+
+    it('enables the gizmo on target when the source had it enabled', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        gizmoEnabled: true
+      })
+      const { target } = makeTarget({ gizmoEnabled: false })
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setGizmoEnabled).toHaveBeenCalledWith(true)
+    })
+
+    it('enables the gizmo on target when the target previously had it enabled, even if source did not', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        gizmoEnabled: false
+      })
+      const { target } = makeTarget({ gizmoEnabled: true })
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setGizmoEnabled).toHaveBeenCalledWith(true)
+    })
+
+    it('does not enable the gizmo when neither side had it', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        gizmoEnabled: false
+      })
+      const { target } = makeTarget({ gizmoEnabled: false })
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setGizmoEnabled).not.toHaveBeenCalled()
+    })
+
+    it('forwards animation setup when the source has animations', async () => {
+      const sourceOriginal = { kind: 'gltf' }
+      const clone = makeModel()
+      const source = makeSource({
+        currentModel: makeModel(),
+        originalModel: sourceOriginal,
+        hasAnimations: true
+      })
+      const { target, state } = makeTarget()
+      skeletonCloneMock.mockReturnValue(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.animationManager.setupModelAnimations).toHaveBeenCalledWith(
+        clone,
+        sourceOriginal
+      )
+    })
+
+    it('does not forward animation setup when the source has none', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        hasAnimations: false
+      })
+      const { target, state } = makeTarget()
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.animationManager.setupModelAnimations).not.toHaveBeenCalled()
+    })
+
+    it('forwards an image background to setBackgroundImage when the source node has a configured path', async () => {
+      const node = createMockLGraphNode({
+        id: 'bg-source',
+        properties: { 'Scene Config': { backgroundImage: '3d/bg.png' } }
+      })
+      createdNodes.add(node)
+      const source = makeSource({ backgroundInfo: { type: 'image' } })
+      nodeMap.set(node, source)
+      // Warm the cache so `getNodeByLoad3d` finds the source.
+      await useLoad3dService().getLoad3dAsync(node)
+      const { target } = makeTarget()
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setBackgroundImage).toHaveBeenCalledWith('3d/bg.png')
+    })
+
+    it('clears the background when the source background type is not image', async () => {
+      const source = makeSource({ backgroundInfo: { type: 'color' } })
+      const { target } = makeTarget()
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setBackgroundImage).toHaveBeenCalledWith('')
+    })
+
+    it('falls back to setLightIntensity(1) when the second light intensity is falsy', async () => {
+      const source = makeSource({ lightsIntensity: 0 })
+      const { target } = makeTarget()
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setLightIntensity).toHaveBeenCalledWith(1)
+    })
+
+    it('skips setFOV when the source camera is orthographic', async () => {
+      const source = makeSource({ cameraType: 'orthographic' })
+      const { target } = makeTarget()
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.setFOV).not.toHaveBeenCalled()
+    })
+
+    it('always detaches the target gizmo at the start of the copy', async () => {
+      const source = makeSource({ currentModel: makeModel() })
+      const { target, state } = makeTarget()
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.gizmoManager.detach).toHaveBeenCalled()
+    })
+
+    it('calls setupForModel on the target gizmo with the freshly cloned model', async () => {
+      const clone = makeModel()
+      const source = makeSource({ currentModel: makeModel() })
+      const { target, state } = makeTarget()
+      skeletonCloneMock.mockReturnValue(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.gizmoManager.setupForModel).toHaveBeenCalledWith(clone)
     })
   })
 })
