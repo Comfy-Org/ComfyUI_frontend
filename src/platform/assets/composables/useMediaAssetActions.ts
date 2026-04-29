@@ -156,10 +156,15 @@ export function useMediaAssetActions() {
 
       assetExportStore.trackExport(result.task_id)
 
+      const fileCount = assets.reduce((sum, a) => {
+        const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
+        return sum + (typeof count === 'number' && count > 1 ? count : 1)
+      }, 0)
+
       toast.add({
         severity: 'info',
         summary: t('exportToast.exportStarted'),
-        detail: t('mediaAsset.selection.exportStarted', assets.length),
+        detail: t('mediaAsset.selection.exportStarted', fileCount),
         life: 3000
       })
     } catch (error) {
