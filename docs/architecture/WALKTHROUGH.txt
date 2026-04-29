@@ -1,0 +1,683 @@
+===============================================================================
+   ____          _      _                       ____
+  / ___|___   __| | ___| |__   __ _ ___  ___   / ___|__ ___   _____ _ __ _ __  ___
+ | |   / _ \ / _` |/ _ \ '_ \ / _` / __|/ _ \ | |   / _` \ \ / / _ \ '__| '_ \/ __|
+ | |__| (_) | (_| |  __/ |_) | (_| \__ \  __/ | |__| (_| |\ V /  __/ |  | | | \__ \
+  \____\___/ \__,_|\___|_.__/ \__,_|___/\___|  \____\__,_| \_/ \___|_|  |_| |_|___/
+
+       ComfyUI Frontend Architecture Adventure - Complete Walkthrough
+===============================================================================
+
+  Platform:     Web Browser (any modern browser)
+  Version:      1.0
+  Author:       An Architect Who Has Seen Things
+  Last Updated: 2026-03-24
+  Spoilers:     YES. This guide contains ALL solutions and ALL endings.
+
+===============================================================================
+                         TABLE OF CONTENTS
+===============================================================================
+
+  I.    Introduction & Controls
+  II.   Game Mechanics
+  III.  Room Guide & Map
+  IV.   Challenge Solutions (SPOILERS)
+  V.    Optimal Route - "The ECS Enlightenment" Speedrun
+  VI.   All Four Endings
+  VII.  Achievements
+  VIII. Artifacts Checklist
+  IX.   Pro Tips & Secrets
+
+===============================================================================
+ I.  INTRODUCTION & CONTROLS
+===============================================================================
+
+  Codebase Caverns is an interactive choose-your-own-adventure game that
+  teaches you the architecture of the ComfyUI frontend codebase. You explore
+  10 rooms representing different architectural layers, face 9 real engineering
+  challenges, collect artifacts, and reach one of 4 endings based on your
+  decisions.
+
+  Every challenge in this game is based on REAL architectural problems
+  documented in the ComfyUI frontend repo. The "correct" answers match the
+  actual migration strategy being used in production.
+
+  CONTROLS:
+  =========
+    1, 2, 3      Navigate between rooms (press the number key)
+    A, B, C      Choose a challenge option (press the letter key)
+    M            Toggle the map overlay
+    Escape       Close the map / close ending preview
+
+  BUTTONS:
+  ========
+    Map [M]      Opens the room map overlay
+    Restart      Resets the current run (keeps achievements)
+    Play Again   After an ending, starts a new run
+
+  Your progress auto-saves to localStorage. Close the tab and come back
+  later - you'll pick up right where you left off.
+
+===============================================================================
+ II.  GAME MECHANICS
+===============================================================================
+
+  STATS
+  =====
+  You have four stats tracked in the HUD at the top:
+
+    Debt     [||||||||..] 50   Technical debt. LOWER is better.
+    Quality  [|||.......] 30   Code quality. HIGHER is better.
+    Morale   [||||||....] 60   Team morale. HIGHER is better.
+    ECS      [.........] 0/5   Migration progress. 5 is max.
+
+  Each challenge choice modifies these stats. Your final stats determine
+  which of the 4 endings you get.
+
+  CHALLENGES
+  ==========
+  9 of the 10 rooms contain a one-time challenge - an architectural dilemma
+  with 2-3 options. Each option has a rating:
+
+    [GOOD]   Best practice. Matches the real migration strategy.
+             Usually: Debt down, Quality up, +1 ECS progress.
+
+    [OK]     Pragmatic but imperfect. Gets the job done.
+             Mixed stat effects.
+
+    [BAD]    Tempting but harmful. Short-term gain, long-term pain.
+             Usually: Debt up or Morale down.
+
+  After choosing, you see your result, the recommended answer, and a link
+  to the real architecture documentation that explains why.
+
+  ARTIFACTS
+  =========
+  Rooms contain collectible artifacts - key files and concepts from the
+  codebase. These are auto-collected when you enter a room. They appear
+  as icons in your Inventory sidebar.
+
+  ENDINGS
+  =======
+  After resolving all 8 challenges, you get one of 4 endings based on
+  your accumulated stats. See Section VI for details.
+
+  ACHIEVEMENTS
+  ============
+  Each ending you reach is permanently saved as an achievement badge.
+  Achievements persist across runs - even after restarting. Click an
+  unlocked badge to review that ending's screen.
+
+===============================================================================
+ III.  ROOM GUIDE & MAP
+===============================================================================
+
+               +-------------------+
+               |    ENTRY POINT    |
+               |   (src/main.ts)   |
+               +-+--------+------+-+
+                 |        |      |
+      +----------+        |      +-----------+
+      |                   |                  |
+  +---v----------+  +-----v--------+  +------v---------+
+  |  COMPONENT   |  |    STORE     |  |    SERVICE     |
+  |   GALLERY    |  |    VAULTS    |  |   CORRIDORS    |
+  | [Challenge]  |  | [Challenge]  |  |  [Challenge]   |
+  +--+------+----+  +--+------+----+  +--------+-------+
+     |      |          |      |               |
+     |      |     +----v---+  |        +------v-------+
+     |      |     |  ECS   |  |        | COMPOSABLES  |
+     |      |     | CHAMB. |  |        |  WORKSHOP    |
+     |      |     | [Chal] |  |        | [Challenge]  |
+     |      |     +---+----+  |        +--------------+
+     |      |         |  +----v------+
+     |      |    +----v--+--+        |
+     |      |    |SUBGRAPH| RENDERER |
+     |      |    | DEPTHS | OVERLOOK |
+     |      |    | [Chal] |  [Chal]  |
+     |      |    +--------+----------+
+     |      |
+  +--v------v----+
+  |  LITEGRAPH   |
+  |   ENGINE     |
+  | [Challenge]  |
+  +------+-------+
+         |
+  +------v-------+
+  | COMMAND      |
+  |   FORGE      |
+  | [Challenge]  |
+  +--------------+
+
+  ROOM DETAILS:
+  =============
+
+  1. THE ENTRY POINT [src/main.ts]
+     No challenge. No artifacts. Starting room.
+     Exits: Components (1), Stores (2), Services (3)
+
+  2. THE COMPONENT GALLERY [Presentation]
+     Challenge: The Circular Dependency
+     Artifacts: GraphView.vue
+     Exits: Litegraph (1), Command Forge (2), Entry (3)
+
+  3. THE STORE VAULTS [State]
+     Challenge: The Scattered Mutations
+     Artifacts: widgetValueStore.ts, layoutStore.ts
+     Exits: ECS (1), Renderer (2), Entry (3)
+
+  4. THE SERVICE CORRIDORS [Services]
+     Challenge: The Migration Question
+     Artifacts: litegraphService.ts, Extension Migration Guide
+     Exits: Composables (1), Entry (2)
+
+  5. THE LITEGRAPH ENGINE ROOM [Graph Engine]
+     Challenge: The God Object Dilemma
+     Artifacts: LGraphCanvas.ts, LGraphNode.ts
+     Exits: ECS (1), Components (2), Entry (3)
+
+  6. THE ECS ARCHITECT'S CHAMBER [ECS]
+     Challenge: The ID Crossroads
+     Artifacts: World Registry, Branded Entity IDs
+     Exits: Subgraph Depths (1), Renderer (2), Entry (3)
+
+  7. THE SUBGRAPH DEPTHS [Graph Boundaries]
+     Challenge: The Widget Promotion Decision
+     Artifacts: SubgraphStructure, Typed Interface Contracts
+     Exits: ECS (1), Litegraph (2), Entry (3)
+
+  8. THE RENDERER OVERLOOK [Renderer]
+     Challenge: The Render-Time Mutation
+     Artifacts: QuadTree Spatial Index, Y.js CRDT Layout
+     Exits: ECS (1), Entry (2)
+
+  9. THE COMPOSABLES WORKSHOP [Composables]
+     Challenge: The Collaboration Protocol
+     Artifacts: useCoreCommands.ts
+     Exits: Stores (1), Entry (2)
+
+ 10. THE COMMAND FORGE [Commands & Intent]
+     Challenge: The Mutation Gateway
+     Artifacts: CommandExecutor, Command Interface
+     Exits: Components (1), Stores (2), Entry (3)
+
+===============================================================================
+ IV.  CHALLENGE SOLUTIONS (SPOILERS)
+===============================================================================
+
+  *** WARNING: FULL SOLUTIONS BELOW ***
+  *** SCROLL PAST SECTION VI IF YOU WANT TO PLAY BLIND ***
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 1: The Circular Dependency          | Room: Components   |
+  |------------------------------------------------------------------  |
+  | Subgraph extends LGraph, but LGraph creates Subgraph instances.    |
+  | Circular import forces order-dependent barrel exports.             |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Composition over inheritance  [GOOD] <<<                    |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                       |
+  |     A subgraph IS a graph - just a node with SubgraphStructure.    |
+  |     Under graph unification, no class inheritance at all.          |
+  |                                                                    |
+  |   B. Barrel file reordering  [BAD]                                 |
+  |     Debt +10, Quality -5, Morale -5                                |
+  |     Band-aid. The coupling remains and will break again.           |
+  |                                                                    |
+  |   C. Factory injection  [OK]                                       |
+  |     Debt -5, Quality +10                                           |
+  |     Pragmatic fix but classes stay coupled at runtime.             |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 2: The Scattered Mutations            | Room: Stores     |
+  |------------------------------------------------------------------  |
+  | graph._version++ appears in 19 locations across 7 files.           |
+  | One missed site = silent data loss.                                |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Centralize into graph.incrementVersion()  [GOOD] <<<        |
+  |     Debt -15, Quality +15, ECS +1                                  |
+  |     This is Phase 0a of the real migration plan.                   |
+  |     19 sites -> 1 method. Auditable change tracking.               |
+  |                                                                    |
+  |   B. Add a JavaScript Proxy  [OK]                                  |
+  |     Debt +5, Quality +5, Morale -5                                 |
+  |     Catches mutations but adds opaque runtime overhead.            |
+  |                                                                    |
+  |   C. Leave it as-is  [BAD]                                         |
+  |     Debt +10, Morale +5                                            |
+  |     "It works, don't touch it" - until it doesn't.                 |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 3: The Migration Question           | Room: Services     |
+  |------------------------------------------------------------------  |
+  | Legacy litegraph works. How to migrate to ECS without breaking     |
+  | production for thousands of users?                                 |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. 5-phase incremental plan  [GOOD] <<<                        |
+  |     Quality +15, Morale +10, ECS +1                                |
+  |     Foundation -> Types -> Bridge -> Systems -> Legacy Removal.    |
+  |     Each phase independently shippable. This is the real plan.     |
+  |                                                                    |
+  |   B. Big bang rewrite  [BAD]                                       |
+  |     Debt -10, Quality +5, Morale -20                               |
+  |     Feature freeze + scope creep + burnout = disaster.             |
+  |                                                                    |
+  |   C. Strangler fig pattern  [OK]                                   |
+  |     Quality +10, Morale +5                                         |
+  |     Solid pattern but lacks clear milestones without a plan.       |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 4: The God Object Dilemma          | Room: Litegraph     |
+  |------------------------------------------------------------------  |
+  | LGraphCanvas: ~9,100 lines. LGraphNode: ~4,300 lines.              |
+  | God objects mixing rendering, serialization, connectivity, etc.    |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  |   A. Rewrite from scratch  [BAD]                                   |
+  |     Debt -20, Quality +5, Morale -25                               |
+  |     Heroic rewrite stalls at month three. Team burns out.          |
+  |                                                                    |
+  | >>> B. Extract incrementally  [GOOD] <<<                           |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                       |
+  |     Position -> Connectivity -> Rendering. Small testable PRs.     |
+  |     This matches the actual migration strategy.                    |
+  |                                                                    |
+  |   C. Add a facade layer  [OK]                                      |
+  |     Debt +5, Quality +5, Morale +10                                |
+  |     Nicer API but complexity lives behind the facade.              |
+  |                                                                    |
+  | NOTE: This is the only challenge where A is NOT the best answer!   |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 5: The ID Crossroads                     | Room: ECS     |
+  |------------------------------------------------------------------  |
+  | NodeId is number | string. Nothing prevents passing a LinkId       |
+  | where a NodeId is expected. Six entity kinds share one ID space.   |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Branded types with cast helpers  [GOOD] <<<                 |
+  |     Debt -15, Quality +20, ECS +1                                  |
+  |     type NodeEntityId = number & { __brand: 'NodeEntityId' }       |
+  |     Compile-time safety, zero runtime cost. Phase 1a.              |
+  |                                                                    |
+  |   B. String prefixes at runtime  [OK]                              |
+  |     Debt +5, Quality +5, Morale -5                                 |
+  |     "node:42" - parsing overhead everywhere.                       |
+  |                                                                    |
+  |   C. Keep plain numbers  [BAD]                                     |
+  |     Debt +15, Quality -5                                           |
+  |     "Just be careful" - someone WILL pass the wrong ID.            |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 6: The Widget Promotion Decision   | Room: Subgraph     |
+  |------------------------------------------------------------------  |
+  | A user promotes a widget from inside a subgraph to the parent.     |
+  | Today this needs PromotionStore + ViewManager + PromotedWidgetView |
+  | — a parallel state system. Two ECS candidates.                     |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Connections-only: promotion = typed input  [GOOD] <<<       |
+  |     Debt -15, Quality +15, Morale +5, ECS +1                      |
+  |     Promotion = adding an interface input. Type->widget mapping    |
+  |     creates the widget automatically. Eliminates PromotionStore,   |
+  |     ViewManager, and PromotedWidgetView entirely.                  |
+  |                                                                    |
+  |   B. Simplified component promotion  [OK]                          |
+  |     Debt -5, Quality +10, Morale +5                                |
+  |     WidgetPromotion component on widget entities. Removes           |
+  |     ViewManager but keeps promotion as a distinct concept.         |
+  |     Shared subgraph instance ambiguity remains.                    |
+  |                                                                    |
+  |   C. Keep the current three-layer system  [BAD]                    |
+  |     Debt +10, Quality -5, Morale -5                                |
+  |     The parallel state system persists indefinitely.               |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 7: The Render-Time Mutation          | Room: Renderer    |
+  |------------------------------------------------------------------  |
+  | drawNode() calls _setConcreteSlots() and arrange() during the      |
+  | render pass. Draw order affects layout. Classic mutation-in-       |
+  | render bug.                                                        |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Separate update and render phases  [GOOD] <<<               |
+  |     Debt -15, Quality +15, ECS +1                                  |
+  |     Input -> Update (layout) -> Render (read-only).                |
+  |     Matches the ECS system pipeline design.                        |
+  |                                                                    |
+  |   B. Dirty flags and deferred render  [OK]                         |
+  |     Debt -5, Quality +5, Morale +5                                 |
+  |     Reduces symptoms but render pass can still mutate.             |
+  |                                                                    |
+  | NOTE: Only 2 options here. Both are reasonable; A is optimal.      |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 8: The Collaboration Protocol     | Room: Composables    |
+  |------------------------------------------------------------------  |
+  | Multiple users want to edit the same workflow simultaneously.      |
+  | layoutStore already extracts position data. How to sync?           |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Y.js CRDTs  [GOOD] <<<                                      |
+  |     Debt -10, Quality +15, Morale +10                              |
+  |     Conflict-free replicated data types. Already proven.           |
+  |     This is what the real layoutStore uses.                        |
+  |                                                                    |
+  |   B. Polling-based sync  [BAD]                                     |
+  |     Debt +10, Quality -5, Morale -5                                |
+  |     Flickering, lag, silent data loss. Support nightmare.          |
+  |                                                                    |
+  |   C. Skip collaboration for now  [OK]                              |
+  |     Morale +5                                                      |
+  |     Pragmatic delay but cloud team won't be happy.                 |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 9: The Mutation Gateway        | Room: Command Forge     |
+  |------------------------------------------------------------------  |
+  | The World's imperative API (world.setComponent()) vs. the command  |
+  | pattern requirement from ADR 0003. How should external callers     |
+  | mutate the World?                                                  |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Commands as intent; systems as handlers; World as store <<< |
+  |     Debt -10, Quality +15, Morale +5, ECS +1               [GOOD] |
+  |     Caller -> Command -> System -> World -> Y.js. Commands are     |
+  |     serializable. ADR 0003 and ADR 0008 are complementary.        |
+  |                                                                    |
+  |   B. Make World.setComponent() itself serializable  [OK]           |
+  |     Debt +5, Quality +5, Morale -5                                |
+  |     Conflates store with command layer. Batch ops become noisy.   |
+  |                                                                    |
+  |   C. Skip commands - let callers mutate directly  [BAD]            |
+  |     Debt +15, Quality -10                                         |
+  |     No undo/redo, no replay, no CRDT sync, no audit trail.       |
+  '--------------------------------------------------------------------'
+
+===============================================================================
+ V.  OPTIMAL ROUTE - "THE ECS ENLIGHTENMENT" SPEEDRUN
+===============================================================================
+
+  This route hits all 8 challenges picking the GOOD answer, collecting
+  all 13 artifacts, visiting all 10 rooms. Order matters for efficiency
+  (fewest key presses).
+
+  Starting stats: Debt 50, Quality 30, Morale 60, ECS 0/5
+
+    ENTRY POINT
+      Press 1 -> Component Gallery
+
+    COMPONENT GALLERY
+      Challenge: The Circular Dependency -> Press A (Composition)
+      [Debt 40, Quality 45, Morale 65, ECS 1/5]
+      Press 2 -> Command Forge
+
+    THE COMMAND FORGE
+      Challenge: The Mutation Gateway -> Press A (Commands as intent)
+      [Debt 30, Quality 60, Morale 70, ECS 2/5]
+      Press 2 -> Store Vaults
+
+    STORE VAULTS
+      Challenge: The Scattered Mutations -> Press A (Centralize)
+      [Debt 15, Quality 75, Morale 70, ECS 3/5]
+      Press 1 -> ECS Chamber
+
+    ECS ARCHITECT'S CHAMBER
+      Challenge: The ID Crossroads -> Press A (Branded types)
+      [Debt 0, Quality 95, Morale 70, ECS 4/5]
+      Press 1 -> Subgraph Depths
+
+    SUBGRAPH DEPTHS
+      Challenge: The Widget Promotion Decision -> Press A (Connections-only)
+      [Debt 0, Quality 100, Morale 75, ECS 5/5]
+      Press 1 -> ECS Chamber
+      Press 2 -> Renderer
+
+    RENDERER OVERLOOK
+      Challenge: The Render-Time Mutation -> Press A (Separate phases)
+      [Debt 0, Quality 100, Morale 75, ECS 5/5]
+      Press 2 -> Entry Point
+
+    ENTRY POINT
+      Press 3 -> Services
+
+    SERVICE CORRIDORS
+      Challenge: The Migration Question -> Press A (5-phase plan)
+      [Debt 0, Quality 100, Morale 85, ECS 5/5]
+      Press 1 -> Composables
+
+    COMPOSABLES WORKSHOP
+      Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 2 -> Entry Point
+
+    ENTRY POINT
+      Press 1 -> Components
+      Press 1 -> Litegraph
+
+    LITEGRAPH ENGINE ROOM
+      Challenge: The God Object Dilemma -> Press B (Extract incrementally)
+      [Debt 0, Quality 100, Morale 100, ECS 5/5]
+
+  FINAL STATS: Debt 0 | Quality 100 | Morale 100 | ECS 5/5
+
+  *** ENDING: THE ECS ENLIGHTENMENT ***
+
+  Total key presses: 28 (including challenge answers)
+  Rooms visited: 10/10
+  Artifacts: 16/16
+  Challenges: 9/9 correct
+
+===============================================================================
+ VI.  ALL FOUR ENDINGS
+===============================================================================
+
+  Endings are checked in order. First match wins.
+
+  .--------------------------------------------------------------------.
+  |                                                                    |
+  |   ENDING 1: THE ECS ENLIGHTENMENT                          [BEST]  |
+  |                                                                    |
+  |   Requirements: Debt < 25 AND Quality >= 75 AND Morale >= 60       |
+  |                                                                    |
+  |   "The World registry hums with clean data. Node removal:          |
+  |    30 lines instead of 107. Serialization: one system instead      |
+  |    of six scattered methods. Branded IDs catch bugs at compile     |
+  |    time. Y.js CRDTs enable real-time collaboration. The team       |
+  |    ships features faster than ever."                               |
+  |                                                                    |
+  |   HOW TO GET IT: Pick ALL good answers. Hard to miss if you        |
+  |   read the hints carefully.                                        |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  |                                                                    |
+  |   ENDING 2: THE CLEAN ARCHITECTURE                          [GOOD] |
+  |                                                                    |
+  |   Requirements: Debt < 40 AND Quality >= 50                        |
+  |                                                                    |
+  |   "The migration completes on schedule. Systems hum along,         |
+  |    the ECS World holds most entity state, and the worst god        |
+  |    objects have been tamed."                                       |
+  |                                                                    |
+  |   HOW TO GET IT: Pick mostly good answers, 1-2 OK answers.         |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  |                                                                    |
+  |   ENDING 3: THE ETERNAL REFACTOR                            [MEH]  |
+  |                                                                    |
+  |   Requirements: Debt < 70                                          |
+  |                                                                    |
+  |   "The migration... continues. Every sprint has a 'cleanup'        |
+  |    ticket that never quite closes."                                |
+  |                                                                    |
+  |   HOW TO GET IT: Mix of OK and BAD answers. The "safe" middle.     |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  |                                                                    |
+  |   ENDING 4: THE SPAGHETTI SINGULARITY                     [WORST]  |
+  |                                                                    |
+  |   Requirements: Debt >= 70 (catch-all)                             |
+  |                                                                    |
+  |   "The god objects grew sentient. LGraphCanvas hit 12,000 lines    |
+  |    and developed a circular dependency with itself."               |
+  |                                                                    |
+  |   HOW TO GET IT: Pick all BAD answers. You have to try.            |
+  |   Starting debt is 50, so you need +20 from bad choices.           |
+  '--------------------------------------------------------------------'
+
+===============================================================================
+ VII.  ACHIEVEMENTS
+===============================================================================
+
+  Achievements are permanently saved across runs. You need 4 playthroughs
+  (minimum) to unlock all endings, since each run can only reach one.
+
+    [x] The ECS Enlightenment    - All good answers
+    [x] The Clean Architecture   - Mostly good, few OK
+    [x] The Eternal Refactor     - Mix of OK and bad
+    [x] The Spaghetti Singularity - Maximize debt (see pro tip below)
+
+  Click any unlocked achievement badge in the Endings sidebar panel
+  to review that ending's screen without resetting your current game.
+
+  PRO TIP: "The Spaghetti Singularity" requires Debt >= 70. This is
+  TRICKY because some "bad" answers actually LOWER debt! Rewrites
+  (Litegraph A: Debt -20) and big bang rewrites (Services B: Debt -10)
+  reduce debt short-term even though they tank morale.
+
+  To hit Debt >= 70 you must pick options that ADD debt or leave it
+  alone. Here's the proven path (starting at Debt 50):
+
+    Components:    B (Barrel file reordering)    Debt +10 -> 60
+    Command Forge: C (Skip commands)             Debt +15 -> 75
+    Stores:        C (Leave it as-is)            Debt +10 -> 85
+    Services:      C (Strangler fig)             Debt  +0 -> 85
+    Litegraph:     C (Add a facade)              Debt  +5 -> 90
+    ECS:           C (Keep plain numbers)        Debt +15 -> 100
+    Subgraph:      C (Keep three-layer system)   Debt +10 -> 100
+    Renderer:      B (Dirty flags)               Debt  -5 -> 95
+    Composables:   B (Polling-based sync)        Debt +10 -> 100
+
+  Final: Debt 100 / Quality 10 / Morale 50 -> SPAGHETTI SINGULARITY
+
+  WARNING: Picking "all bad-rated answers" does NOT work! The bad
+  answers for Litegraph (A: Rewrite, Debt -20) and Services (B: Big
+  bang, Debt -10) have negative debt effects that pull you back
+  under 70.
+
+===============================================================================
+ VIII.  ARTIFACTS CHECKLIST
+===============================================================================
+
+  Room              | Artifact                   | Type
+  ==================|============================|==================
+  Component Gallery | GraphView.vue              | Component
+  Store Vaults      | widgetValueStore.ts        | Proto-ECS Store
+  Store Vaults      | layoutStore.ts             | Proto-ECS Store
+  Service Corridors | litegraphService.ts        | Service
+  Service Corridors | Extension Migration Guide  | Design Pattern
+  Litegraph Engine  | LGraphCanvas.ts            | God Object
+  Litegraph Engine  | LGraphNode.ts              | God Object
+  ECS Chamber       | World Registry             | ECS Core
+  ECS Chamber       | Branded Entity IDs         | Type Safety
+  Subgraph Depths   | SubgraphStructure          | ECS Component
+  Subgraph Depths   | Typed Interface Contracts  | Design Pattern
+  Renderer Overlook | QuadTree Spatial Index     | Data Structure
+  Renderer Overlook | Y.js CRDT Layout           | Collaboration
+  Composables       | useCoreCommands.ts         | Composable
+  Command Forge     | CommandExecutor            | ECS Core
+  Command Forge     | Command Interface          | Design Pattern
+
+  Total: 16 artifacts across 9 rooms.
+  Entry Point has no artifacts.
+
+===============================================================================
+ IX.  PRO TIPS & SECRETS
+===============================================================================
+
+  * Your game auto-saves after every room change and challenge. Close
+    the tab and come back anytime - you won't lose progress.
+
+  * The Restart button in the HUD resets your run but KEEPS your
+    achievement badges. Use it to go for a different ending.
+
+  * Every code reference in the room descriptions is a clickable link
+    to the actual file on GitHub. Open them in new tabs to read the
+    real code while you play.
+
+  * After each challenge, the "Read more" link takes you to the
+    architecture documentation that explains the real engineering
+    rationale behind the recommended answer.
+
+  * The map overlay (press M) shows challenge badges:
+    [?] = challenge available but not yet attempted
+    [v] = challenge completed
+
+  * Room navigation preloads images for adjacent rooms, so transitions
+    should be instant after the first visit.
+
+  * The Command Forge (formerly the Side Panel) teaches the Command
+    Pattern - how commands relate to systems and the World. Its challenge
+    covers the architectural layering from ADR 0003 and ADR 0008.
+
+  * The ECS Migration Progress stat maxes at 5, matching the 5 phases
+    of the real migration plan. But 9 challenges can give +1 each
+    (8 of the 9 GOOD answers grant +1 ECS). The Services challenge
+    ("5-phase plan") gives +1 ECS but no debt reduction - it's pure
+    planning, not implementation.
+
+  * There are between 2-3 choices per challenge, giving
+    3*3*3*3*3*3*2*3*3 = 13,122 possible playthroughs. But only 4
+    distinct endings. Most paths lead to "The Clean Architecture"
+    or "The Eternal Refactor."
+
+  * If you want to learn the ComfyUI frontend architecture for real,
+    the recommended reading order matches the optimal speedrun route:
+    1. src/main.ts (entry point)
+    2. src/views/GraphView.vue (main canvas)
+    3. src/stores/ (state management)
+    4. src/ecs/ (the future)
+    5. docs/architecture/ecs-world-command-api.md (command layer)
+    6. src/renderer/core/ (canvas pipeline)
+    7. docs/architecture/ecs-migration-plan.md (the plan)
+    8. src/composables/ (Vue logic hooks)
+    9. src/lib/litegraph/src/ (the legacy engine)
+
+  * The pixel art images were generated using the Z-Image Turbo
+    pipeline on the same ComfyUI that this frontend controls.
+    Meta, isn't it?
+
+===============================================================================
+
+  This document Copyright (c) 2026 A Concerned Architect
+  ComfyUI is maintained by Comfy-Org: https://github.com/Comfy-Org
+
+  "In a world of god objects, be an entity-component-system."
+
+                            ___
+                           |   |
+                        ___|   |___
+                       |           |
+                       | COMFY  UI |
+                       | FRONTEND  |
+                       |___________|
+                       | | | | | | |
+                       | | | | | | |
+                      _| | | | | | |_
+                     |_______________|
+
+                        GG. GIT GUD.
+
+===============================================================================

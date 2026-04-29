@@ -32,6 +32,10 @@ const config: KnipConfig = {
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
+    'apps/architecture-adventure': {
+      project: ['src/**/*.ts'],
+      vite: { config: ['vite.config.ts'] }
+    },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
     }
@@ -55,7 +59,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // ECS draft interfaces (ADR 0008) — not yet consumed by production code
+    'src/ecs/**/*.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
