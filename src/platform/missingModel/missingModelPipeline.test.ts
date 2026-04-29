@@ -23,6 +23,8 @@ const {
   mockToastStore,
   mockAssetService,
   mockApi,
+  mockIsAncestorPathActive,
+  mockIsMissingCandidateActive,
   state
 } = vi.hoisted(() => {
   const state = {
@@ -64,7 +66,9 @@ const {
     },
     mockApi: {
       getFolderPaths: vi.fn()
-    }
+    },
+    mockIsAncestorPathActive: vi.fn(),
+    mockIsMissingCandidateActive: vi.fn()
   }
 })
 
@@ -108,6 +112,11 @@ vi.mock('@/scripts/api', () => ({
   api: mockApi
 }))
 
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  isAncestorPathActive: mockIsAncestorPathActive,
+  isMissingCandidateActive: mockIsMissingCandidateActive
+}))
+
 function createWorkflowGraphData(): ComfyWorkflowJSON {
   return {
     last_node_id: 0,
@@ -138,6 +147,8 @@ describe('missingModelPipeline', () => {
     mockModelToNodeStore.getCategoryForNodeType.mockReturnValue(undefined)
     mockScanAllModelCandidates.mockReturnValue([])
     mockApi.getFolderPaths.mockResolvedValue({})
+    mockIsAncestorPathActive.mockReturnValue(true)
+    mockIsMissingCandidateActive.mockReturnValue(true)
   })
 
   describe('refreshMissingModelPipeline', () => {
@@ -405,6 +416,92 @@ describe('missingModelPipeline', () => {
         { silent: false }
       )
       expect(activeWorkflow.pendingWarnings).toBeNull()
+    })
+
+    it('drops candidates whose ancestor path is inactive', async () => {
+      const activeCandidate = {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'active.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      const inactiveCandidate = {
+        nodeId: '2',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'inactive.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      const activeWorkflow = {
+        activeState: null,
+        pendingWarnings: null
+      }
+      const graph = createGraph()
+      state.enrichedCandidates = [activeCandidate, inactiveCandidate]
+      mockWorkspaceWorkflow.activeWorkflow = activeWorkflow
+      mockIsAncestorPathActive.mockImplementation(
+        (_graph: LGraph, nodeId: string) => nodeId !== '2'
+      )
+
+      const result = await runMissingModelPipeline({
+        graph,
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockMissingModelStore
+      })
+
+      expect(mockIsAncestorPathActive).toHaveBeenCalledWith(graph, '1')
+      expect(mockIsAncestorPathActive).toHaveBeenCalledWith(graph, '2')
+      expect(result.confirmedCandidates).toEqual([activeCandidate])
+      expect(activeWorkflow.pendingWarnings).toEqual({
+        missingNodeTypes: undefined,
+        missingModelCandidates: [activeCandidate],
+        missingMediaCandidates: undefined
+      })
+    })
+
+    it('skips post-fetch surface when folder path refresh is aborted', async () => {
+      const controller = new AbortController()
+      const confirmedCandidate = {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      let resolveFolderPaths!: (paths: Record<string, string[]>) => void
+      const folderPathsPromise = new Promise<Record<string, string[]>>(
+        (resolve) => {
+          resolveFolderPaths = resolve
+        }
+      )
+      state.enrichedCandidates = [confirmedCandidate]
+      mockMissingModelStore.createVerificationAbortController.mockReturnValueOnce(
+        controller
+      )
+      mockApi.getFolderPaths.mockReturnValueOnce(folderPathsPromise)
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockMissingModelStore
+      })
+
+      controller.abort()
+      resolveFolderPaths({ checkpoints: ['/models/checkpoints'] })
+      await folderPathsPromise
+      await Promise.resolve()
+
+      expect(mockMissingModelStore.setFolderPaths).not.toHaveBeenCalled()
+      expect(
+        mockExecutionErrorStore.surfaceMissingModels
+      ).not.toHaveBeenCalled()
     })
   })
 })
