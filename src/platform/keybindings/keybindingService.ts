@@ -53,6 +53,14 @@ export function useKeybindingService() {
         if (dialogStore.dialogStack.length > 0) {
           return
         }
+        // Reka's DismissableLayer (Popover, DropdownMenu, etc.) skips
+        // its own `dismiss` when defaultPrevented. Bail before
+        // preventDefault() so the open layer can close itself.
+        if (
+          document.querySelector('[data-dismissable-layer][data-state="open"]')
+        ) {
+          return
+        }
       }
 
       event.preventDefault()

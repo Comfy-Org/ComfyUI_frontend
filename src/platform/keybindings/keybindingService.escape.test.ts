@@ -108,6 +108,41 @@ describe('keybindingService - Escape key handling', () => {
     expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
+  it('should NOT execute Escape keybinding when a Reka dismissable layer is open', async () => {
+    const layer = document.createElement('div')
+    layer.setAttribute('data-dismissable-layer', '')
+    layer.setAttribute('data-state', 'open')
+    document.body.appendChild(layer)
+
+    try {
+      const event = createKeyboardEvent('Escape')
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    } finally {
+      document.body.removeChild(layer)
+    }
+  })
+
+  it('should execute Escape keybinding when a closed dismissable layer is in the DOM', async () => {
+    const layer = document.createElement('div')
+    layer.setAttribute('data-dismissable-layer', '')
+    layer.setAttribute('data-state', 'closed')
+    document.body.appendChild(layer)
+
+    try {
+      const event = createKeyboardEvent('Escape')
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).toHaveBeenCalledWith(
+        'Comfy.Graph.ExitSubgraph'
+      )
+    } finally {
+      document.body.removeChild(layer)
+    }
+  })
+
   it('should execute Escape keybinding with modifiers regardless of dialog state', async () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
