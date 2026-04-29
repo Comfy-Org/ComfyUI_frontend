@@ -38,11 +38,15 @@
 }
 
 /* Dark widget fill + shared height baseline so the pill, text input,
-   and textarea start at the same height. Textareas still grow. */
+   and textarea start at the same height. Textareas still grow.
+   Single horizontal inset on each side so widget text lines up with
+   the InputCell header label above (matching padding). */
 :is(.floating-panel, .app-chrome) textarea,
 :is(.floating-panel, .app-chrome) input {
   background-color: var(--color-layout-canvas);
   min-height: 2.25rem;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 /* Subtle white selection tint — the browser default system-blue

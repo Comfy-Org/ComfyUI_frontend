@@ -14,6 +14,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
+import { widgetSubtitle } from '@/utils/widgetSubtitleUtil'
 
 import type { InputCellEntry } from '../cells/InputCell.vue'
 import type { BlockConfig, BlockPos, BlockRow, DropTarget } from './panelTypes'
@@ -90,7 +91,8 @@ export function useAppPanelLayout() {
           },
           widget,
           node,
-          isMultiline
+          isMultiline,
+          subtitle: widgetSubtitle(widgetView)
         }
       ]
     })

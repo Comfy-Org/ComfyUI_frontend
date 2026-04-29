@@ -9,7 +9,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { HideInputSelectionKey, HideLayoutFieldKey } from '@/types/widgetTypes'
-import { friendlyNodeLabel } from '@/utils/nodeTitleUtil'
 import { renameWidget } from '@/utils/widgetUtil'
 
 export interface InputCellEntry {
@@ -18,6 +17,9 @@ export interface InputCellEntry {
   nodeData: ReturnType<typeof extractVueNodeData>
   widget: IBaseWidget
   node: LGraphNode
+  /** Type/semantic descriptor shown to the right of the input label.
+   *  Computed by `widgetSubtitle()` against the simplified widget. */
+  subtitle: string
 }
 
 export type InputCellVariant = 'app-mode' | 'builder'
@@ -55,7 +57,8 @@ function cancelRename() {
 
 <template>
   <div class="box-border flex size-full min-h-0 min-w-0 flex-col gap-2.5">
-    <div class="flex min-h-4 shrink-0 items-center gap-1">
+    <!-- px-1.5 matches widget text inset so label aligns with input. -->
+    <div class="flex min-h-4 shrink-0 items-center gap-1 px-1.5">
       <!-- Builder variant: dblclick-to-rename. app-mode: plain span. -->
       <EditableText
         :model-value="entry.widget.label || entry.widget.name"
@@ -71,9 +74,9 @@ function cancelRename() {
         @edit="commitRename"
         @cancel="cancelRename"
       />
-      <!-- Subtitle disambiguates widgets that share a label across nodes. -->
+      <!-- Type/semantic descriptor (text, number, size, seed, list, …). -->
       <span class="flex-1 truncate text-right text-layout-md text-layout-mute">
-        {{ friendlyNodeLabel(entry.node.title) }}
+        {{ entry.subtitle }}
       </span>
     </div>
     <div
