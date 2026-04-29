@@ -2,26 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    watch: vi.fn()
-  }
-})
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    onUserResolved: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/telemetry/topupTracker', () => ({
-  checkForCompletedTopup: vi.fn(),
-  clearTopupTracking: vi.fn(),
-  startTopupTracking: vi.fn()
-}))
-
 const hoisted = vi.hoisted(() => ({
   mockNodeDefsByName: {} as Record<string, unknown>,
   mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[],
@@ -82,10 +62,6 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 vi.mock('@/scripts/app', () => ({
   app: { rootGraph: {} }
-}))
-
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: { value: null }
 }))
 
 import { getExecutionContext } from './getExecutionContext'

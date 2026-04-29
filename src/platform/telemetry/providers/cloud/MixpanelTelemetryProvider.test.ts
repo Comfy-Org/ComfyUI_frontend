@@ -13,12 +13,12 @@ vi.mock('mixpanel-browser', () => ({
   default: mockMixpanel
 }))
 
+// Required: the provider constructor calls watch(remoteConfig, ...) which
+// would otherwise create a real Vue effect and racily delay the dynamic
+// import resolution that drives mockMixpanel.init.
 vi.mock('vue', async () => {
   const actual = await vi.importActual<typeof VueModule>('vue')
-  return {
-    ...actual,
-    watch: vi.fn()
-  }
+  return { ...actual, watch: vi.fn() }
 })
 
 const mockOnUserResolved = vi.hoisted(() => vi.fn())
@@ -54,11 +54,30 @@ vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
   })
 }))
 
+const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
+  normalizeSurveyResponses: mockNormalizeSurveyResponses
+}))
+
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: { value: null }
 }))
 
 import { MixpanelTelemetryProvider } from '@/platform/telemetry/providers/cloud/MixpanelTelemetryProvider'
+import type {
+  AuthMetadata,
+  DefaultViewSetMetadata,
+  EnterLinearMetadata,
+  ExecutionErrorMetadata,
+  ExecutionSuccessMetadata,
+  ShareFlowMetadata,
+  SurveyResponses,
+  TemplateLibraryClosedMetadata,
+  TemplateLibraryMetadata,
+  TemplateMetadata,
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
+} from '@/platform/telemetry/types'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 
 const flushDynamicImport = () => new Promise((r) => setTimeout(r, 0))
@@ -74,12 +93,18 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
   it('warns and disables itself when no mixpanel_token is configured', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
-    const provider = new MixpanelTelemetryProvider()
-    provider.trackUserLoggedIn()
+    try {
+      const provider = new MixpanelTelemetryProvider()
+      provider.trackUserLoggedIn()
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Mixpanel token'))
-    expect(mockMixpanel.track).not.toHaveBeenCalled()
-    expect(mockMixpanel.init).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Mixpanel token')
+      )
+      expect(mockMixpanel.track).not.toHaveBeenCalled()
+      expect(mockMixpanel.init).not.toHaveBeenCalled()
+    } finally {
+      warn.mockRestore()
+    }
   })
 })
 
@@ -92,6 +117,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     mockMixpanel.init.mockImplementation((_token, config) => {
       config?.loaded?.()
     })
+    mockNormalizeSurveyResponses.mockImplementation((responses) => responses)
   })
 
   it('initializes Mixpanel and tracks events synchronously after the loaded callback fires', async () => {
@@ -140,7 +166,11 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     await flushDynamicImport()
     mockMixpanel.track.mockClear()
 
-    provider.trackWorkflowOpened({} as never)
+    const metadata: WorkflowImportMetadata = {
+      missing_node_count: 0,
+      missing_node_types: []
+    }
+    provider.trackWorkflowOpened(metadata)
 
     expect(mockMixpanel.track).not.toHaveBeenCalled()
   })
@@ -182,12 +212,21 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     const provider = new MixpanelTelemetryProvider()
     await flushDynamicImport()
 
-    provider.trackSurvey('submitted', {
+    const normalized = {
       industry: 'tech',
-      use_case: 'fun'
-    } as never)
+      industry_normalized: 'Software / IT / AI',
+      industry_raw: 'tech',
+      useCase: 'fun',
+      useCase_normalized: 'Personal & Hobby',
+      useCase_raw: 'fun'
+    }
+    mockNormalizeSurveyResponses.mockReturnValueOnce(normalized)
 
-    expect(mockMixpanel.people.set).toHaveBeenCalled()
+    const responses: SurveyResponses = { industry: 'tech', useCase: 'fun' }
+    provider.trackSurvey('submitted', responses)
+
+    expect(mockNormalizeSurveyResponses).toHaveBeenCalledWith(responses)
+    expect(mockMixpanel.people.set).toHaveBeenCalledWith(normalized)
   })
 
   it('does not write to Mixpanel.people for survey "opened"', async () => {
@@ -223,9 +262,33 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     mockMixpanel.init.mockImplementation((_token, config) => {
       config?.loaded?.()
     })
+    mockNormalizeSurveyResponses.mockImplementation((responses) => responses)
   })
 
   type Trackable = (provider: MixpanelTelemetryProvider) => void
+
+  const templateMetadata: TemplateMetadata = { workflow_name: 't' }
+  const templateLibraryMetadata: TemplateLibraryMetadata = { source: 'menu' }
+  const templateLibraryClosedMetadata: TemplateLibraryClosedMetadata = {
+    template_selected: false,
+    time_spent_seconds: 0
+  }
+  const workflowImportMetadata: WorkflowImportMetadata = {
+    missing_node_count: 0,
+    missing_node_types: []
+  }
+  const workflowSavedMetadata: WorkflowSavedMetadata = {
+    is_app: false,
+    is_new: false
+  }
+  const defaultViewSetMetadata: DefaultViewSetMetadata = {
+    default_view: 'graph'
+  }
+  const enterLinearMetadata: EnterLinearMetadata = {}
+  const shareFlowMetadata: ShareFlowMetadata = { step: 'dialog_opened' }
+  const executionErrorMetadata: ExecutionErrorMetadata = { jobId: 'job-1' }
+  const executionSuccessMetadata: ExecutionSuccessMetadata = { jobId: 'job-1' }
+  const authMetadata: AuthMetadata = {}
 
   it.each<
     [string, Trackable, (typeof TelemetryEvents)[keyof typeof TelemetryEvents]]
@@ -252,57 +315,57 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     ],
     [
       'trackTemplate',
-      (p) => p.trackTemplate({ template_name: 't' } as never),
+      (p) => p.trackTemplate(templateMetadata),
       TelemetryEvents.TEMPLATE_WORKFLOW_OPENED
     ],
     [
       'trackTemplateLibraryOpened',
-      (p) => p.trackTemplateLibraryOpened({} as never),
+      (p) => p.trackTemplateLibraryOpened(templateLibraryMetadata),
       TelemetryEvents.TEMPLATE_LIBRARY_OPENED
     ],
     [
       'trackTemplateLibraryClosed',
-      (p) => p.trackTemplateLibraryClosed({} as never),
+      (p) => p.trackTemplateLibraryClosed(templateLibraryClosedMetadata),
       TelemetryEvents.TEMPLATE_LIBRARY_CLOSED
     ],
     [
       'trackWorkflowImported',
-      (p) => p.trackWorkflowImported({} as never),
+      (p) => p.trackWorkflowImported(workflowImportMetadata),
       TelemetryEvents.WORKFLOW_IMPORTED
     ],
     [
       'trackWorkflowSaved',
-      (p) => p.trackWorkflowSaved({} as never),
+      (p) => p.trackWorkflowSaved(workflowSavedMetadata),
       TelemetryEvents.WORKFLOW_SAVED
     ],
     [
       'trackDefaultViewSet',
-      (p) => p.trackDefaultViewSet({} as never),
+      (p) => p.trackDefaultViewSet(defaultViewSetMetadata),
       TelemetryEvents.DEFAULT_VIEW_SET
     ],
     [
       'trackEnterLinear',
-      (p) => p.trackEnterLinear({} as never),
+      (p) => p.trackEnterLinear(enterLinearMetadata),
       TelemetryEvents.ENTER_LINEAR_MODE
     ],
     [
       'trackShareFlow',
-      (p) => p.trackShareFlow({} as never),
+      (p) => p.trackShareFlow(shareFlowMetadata),
       TelemetryEvents.SHARE_FLOW
     ],
     [
       'trackExecutionError',
-      (p) => p.trackExecutionError({} as never),
+      (p) => p.trackExecutionError(executionErrorMetadata),
       TelemetryEvents.EXECUTION_ERROR
     ],
     [
       'trackExecutionSuccess',
-      (p) => p.trackExecutionSuccess({} as never),
+      (p) => p.trackExecutionSuccess(executionSuccessMetadata),
       TelemetryEvents.EXECUTION_SUCCESS
     ],
     [
       'trackAuth',
-      (p) => p.trackAuth({} as never),
+      (p) => p.trackAuth(authMetadata),
       TelemetryEvents.USER_AUTH_COMPLETED
     ],
     [
@@ -343,7 +406,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
 
     provider.trackRunButton({
       subscribe_to_run: true,
-      trigger_source: 'menu' as never
+      trigger_source: 'button'
     })
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
@@ -351,7 +414,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       expect.objectContaining({
         subscribe_to_run: true,
         workflow_type: 'custom',
-        trigger_source: 'menu',
+        trigger_source: 'button',
         view_mode: 'workflow',
         is_app_mode: false
       })
@@ -363,12 +426,12 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     await flushDynamicImport()
     mockMixpanel.track.mockClear()
 
-    provider.trackRunButton({ trigger_source: 'menu' as never })
+    provider.trackRunButton({ trigger_source: 'keybinding' })
     provider.trackWorkflowExecution()
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'menu' })
+      expect.objectContaining({ trigger_source: 'keybinding' })
     )
 
     mockMixpanel.track.mockClear()
