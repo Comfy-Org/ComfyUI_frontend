@@ -223,6 +223,47 @@ describe('resolveOutputAssetItems', () => {
     expect(results[0].display_name).toBeUndefined()
   })
 
+  /**
+   * Regression for FE-297. When two output records share the composite
+   * `<nodeId>-<subfolder>-<filename>` key, the synthetic AssetItem ids
+   * collide, the keyed v-for in VirtualGrid reuses one DOM node for the
+   * colliding rows, and the asset visibly duplicates while scrolling. A
+   * resolved job's asset list must contain each composite key at most once.
+   */
+  it('FE-297: deduplicates outputs that share the same composite output key', async () => {
+    const first = createOutput({
+      filename: 'ComfyUI_00001_.png',
+      nodeId: '9',
+      subfolder: '',
+      url: 'https://example.com/first.png'
+    })
+    const duplicate = createOutput({
+      filename: 'ComfyUI_00001_.png',
+      nodeId: '9',
+      subfolder: '',
+      url: 'https://example.com/duplicate.png'
+    })
+    const distinct = createOutput({
+      filename: 'ComfyUI_00002_.png',
+      nodeId: '9',
+      subfolder: '',
+      url: 'https://example.com/distinct.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-fe-297',
+      nodeId: '9',
+      subfolder: '',
+      outputCount: 3,
+      allOutputs: [first, duplicate, distinct]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(2)
+    const ids = results.map((asset) => asset.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
   it('keeps root outputs with empty subfolders', async () => {
     const output = createOutput({
       filename: 'root.png',
