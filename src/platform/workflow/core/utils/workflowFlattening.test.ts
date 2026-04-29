@@ -10,8 +10,19 @@ function node(id: number, type: string): FlattenableWorkflowNode {
   return { id, type }
 }
 
-function subgraphDef(id: string, nodes: FlattenableWorkflowNode[]) {
-  return { id, name: id, nodes, inputNode: {}, outputNode: {} }
+function subgraphDef(
+  id: string,
+  nodes: FlattenableWorkflowNode[],
+  nestedDefs: unknown[] = []
+) {
+  return {
+    id,
+    name: id,
+    nodes,
+    definitions: { subgraphs: nestedDefs },
+    inputNode: {},
+    outputNode: {}
+  }
 }
 
 describe('buildSubgraphExecutionPaths', () => {
@@ -56,17 +67,16 @@ describe('buildSubgraphExecutionPaths', () => {
 
   it('does not recurse infinitely on self-referential subgraph definitions', () => {
     const cyclicDef = subgraphDef('def-A', [node(70, 'def-A')])
-    expect(() =>
-      buildSubgraphExecutionPaths([node(5, 'def-A')], [cyclicDef])
-    ).not.toThrow()
+    const result = buildSubgraphExecutionPaths([node(5, 'def-A')], [cyclicDef])
+    expect(result.get('def-A')).toEqual(['5'])
   })
 
   it('does not recurse infinitely on mutually cyclic subgraph definitions', () => {
     const defA = subgraphDef('def-A', [node(70, 'def-B')])
     const defB = subgraphDef('def-B', [node(80, 'def-A')])
-    expect(() =>
-      buildSubgraphExecutionPaths([node(5, 'def-A')], [defA, defB])
-    ).not.toThrow()
+    const result = buildSubgraphExecutionPaths([node(5, 'def-A')], [defA, defB])
+    expect(result.get('def-A')).toEqual(['5'])
+    expect(result.get('def-B')).toEqual(['5:70'])
   })
 })
 
@@ -100,16 +110,40 @@ describe('flattenWorkflowNodes', () => {
   })
 
   it('prefixes nested subgraph nodes with full execution path', () => {
+    const innerDef = subgraphDef('def-B', [node(3, 'Leaf')])
+    const outerDef = subgraphDef('def-A', [node(10, 'def-B')], [innerDef])
     const result = flattenWorkflowNodes({
       nodes: [node(5, 'def-A')],
       definitions: {
-        subgraphs: [
-          subgraphDef('def-A', [node(10, 'def-B')]),
-          subgraphDef('def-B', [node(3, 'Leaf')])
-        ]
+        subgraphs: [outerDef]
       }
     })
 
     expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:10:3'])
+  })
+
+  it('does not clone phantom nodes from self-referential subgraphs', () => {
+    const cyclicDef = subgraphDef('def-A', [node(70, 'def-A')])
+    const result = flattenWorkflowNodes({
+      nodes: [node(5, 'def-A')],
+      definitions: {
+        subgraphs: [cyclicDef]
+      }
+    })
+
+    expect(result.map((n) => n.id)).toEqual([5, '5:70'])
+  })
+
+  it('does not clone phantom nodes from mutually cyclic subgraphs', () => {
+    const defA = subgraphDef('def-A', [node(70, 'def-B')])
+    const defB = subgraphDef('def-B', [node(80, 'def-A')])
+    const result = flattenWorkflowNodes({
+      nodes: [node(5, 'def-A')],
+      definitions: {
+        subgraphs: [defA, defB]
+      }
+    })
+
+    expect(result.map((n) => n.id)).toEqual([5, '5:70', '5:70:80'])
   })
 })

@@ -37,6 +37,7 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
+  collectSubgraphDefinitions,
   isSubgraphDefinition,
   buildSubgraphExecutionPaths
 } from '@/platform/workflow/core/utils/workflowFlattening'
@@ -1261,7 +1262,9 @@ export class ComfyApp {
     }
 
     collectMissingNodes(graphData.nodes)
-    const subgraphDefs = graphData.definitions?.subgraphs ?? []
+    const subgraphDefs = collectSubgraphDefinitions(
+      graphData.definitions?.subgraphs ?? []
+    )
     const subgraphContainerIdMap = buildSubgraphExecutionPaths(
       graphData.nodes,
       subgraphDefs

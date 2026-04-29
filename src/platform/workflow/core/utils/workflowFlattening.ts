@@ -67,6 +67,8 @@ export function buildSubgraphExecutionPaths(
   ) => {
     for (const n of nodes ?? []) {
       if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
+      if (visited.has(n.type)) continue
+
       const path = parentPrefix ? `${parentPrefix}:${n.id}` : String(n.id)
       const existing = pathMap.get(n.type)
       if (existing) {
@@ -75,7 +77,6 @@ export function buildSubgraphExecutionPaths(
         pathMap.set(n.type, [path])
       }
 
-      if (visited.has(n.type)) continue
       visited.add(n.type)
 
       const innerDef = subgraphDefMap.get(n.type)
@@ -94,7 +95,7 @@ export function buildSubgraphExecutionPaths(
 /**
  * Recursively collect all subgraph definitions from root and nested levels.
  */
-function collectAllSubgraphDefs(
+export function collectSubgraphDefinitions(
   rootDefs: readonly unknown[]
 ): FlattenableSubgraphDefinition[] {
   const result: FlattenableSubgraphDefinition[] = []
@@ -124,7 +125,9 @@ export function flattenWorkflowNodes(
   graphData: FlattenableWorkflowGraph
 ): Readonly<FlattenableWorkflowNode>[] {
   const rootNodes = graphData.nodes ?? []
-  const allDefs = collectAllSubgraphDefs(graphData.definitions?.subgraphs ?? [])
+  const allDefs = collectSubgraphDefinitions(
+    graphData.definitions?.subgraphs ?? []
+  )
   const pathMap = buildSubgraphExecutionPaths(rootNodes, allDefs)
 
   const allNodes: FlattenableWorkflowNode[] = [...rootNodes]

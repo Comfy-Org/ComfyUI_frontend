@@ -171,6 +171,7 @@ export async function runMissingModelPipeline({
           cacheModelCandidates(activeWf, confirmedAfterReverify)
         })
         .catch((err) => {
+          if (controller.signal.aborted) return
           console.warn(
             '[Missing Model Pipeline] Asset verification failed:',
             err
@@ -212,17 +213,13 @@ export async function runMissingModelPipeline({
         const missingModelDownload =
           import('@/platform/missingModel/missingModelDownload')
         void Promise.allSettled(
-          confirmedCandidates
-            .filter(
-              (c): c is MissingModelCandidate & { url: string } => !!c.url
-            )
-            .map(async (c) => {
-              const { fetchModelMetadata } = await missingModelDownload
-              const metadata = await fetchModelMetadata(c.url)
-              if (!controller.signal.aborted && metadata.fileSize !== null) {
-                missingModelStore.setFileSize(c.url, metadata.fileSize)
-              }
-            })
+          confirmedCandidates.filter(hasDownloadMetadata).map(async (c) => {
+            const { fetchModelMetadata } = await missingModelDownload
+            const metadata = await fetchModelMetadata(c.url)
+            if (!controller.signal.aborted && metadata.fileSize !== null) {
+              missingModelStore.setFileSize(c.url, metadata.fileSize)
+            }
+          })
         )
       }
     }
