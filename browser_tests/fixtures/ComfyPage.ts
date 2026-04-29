@@ -5,8 +5,8 @@ import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { ComfyActionbar } from '@e2e/helpers/actionbar'
-import { ComfyTemplates } from '@e2e/helpers/templates'
+import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
+import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
@@ -22,6 +22,7 @@ import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import {
   AssetsSidebarTab,
   ModelLibrarySidebarTab,
@@ -54,11 +55,13 @@ class ComfyPropertiesPanel {
   readonly root: Locator
   readonly panelTitle: Locator
   readonly searchBox: Locator
+  readonly titleEditor: TitleEditor
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
+    this.titleEditor = new TitleEditor(this.root)
   }
 }
 
@@ -160,6 +163,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly templatesDialog: TemplatesDialog
+  public readonly titleEditor: TitleEditor
   public readonly mediaLightbox: MediaLightbox
   public readonly vueNodes: VueNodeHelpers
   public readonly appMode: AppModeHelper
@@ -206,13 +210,14 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
-    this.searchBoxV2 = new ComfyNodeSearchBoxV2(page)
+    this.searchBoxV2 = new ComfyNodeSearchBoxV2(this)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.templatesDialog = new TemplatesDialog(page)
+    this.titleEditor = new TitleEditor(page)
     this.mediaLightbox = new MediaLightbox(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)

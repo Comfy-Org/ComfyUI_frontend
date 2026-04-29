@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -10,7 +11,7 @@ import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setActivePinia } from 'pinia'
+import { app } from '@/scripts/app'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -306,24 +307,7 @@ describe('LGraphNode', () => {
   })
 
   describe('handleDrop', () => {
-    it('should call onDragDrop with claimEvent=true so the handler can claim the event sync', async () => {
-      const onDragDrop = vi.fn().mockResolvedValue(true)
-      mockData.mockLgraphNode = {
-        onDragDrop,
-        onDragOver: vi.fn(),
-        isSubgraphNode: () => false
-      }
-
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
-      const nodeEl = getNodeRoot(container)
-
-      const dropEvent = new Event('drop', { bubbles: true, cancelable: true })
-      nodeEl.dispatchEvent(dropEvent)
-
-      expect(onDragDrop).toHaveBeenCalledWith(dropEvent, true)
-    })
-
-    it('should not stop propagation when node has no onDragDrop handler', async () => {
+    it('should set app.dragOverNode and let event bubble', async () => {
       mockData.mockLgraphNode = {
         onDragOver: vi.fn(),
         isSubgraphNode: () => false
@@ -343,6 +327,7 @@ describe('LGraphNode', () => {
       )
 
       expect(parentListener).toHaveBeenCalled()
+      expect(app.dragOverNode).toBe(mockData.mockLgraphNode)
     })
   })
 })

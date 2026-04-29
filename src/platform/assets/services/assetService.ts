@@ -9,6 +9,7 @@ import {
   tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
 import type {
+  AssetId,
   AssetItem,
   AssetMetadata,
   AssetResponse,
@@ -35,7 +36,7 @@ interface AssetRequestOptions extends PaginationOptions {
 
 interface AssetExportOptions {
   job_ids?: string[]
-  asset_ids?: string[]
+  asset_ids?: AssetId[]
   naming_strategy?:
     | 'group_by_job_id'
     | 'group_by_job_time'
@@ -371,7 +372,7 @@ function createAssetService() {
    * @param id - The asset ID
    * @returns Promise<AssetItem> - Complete asset object with user_metadata
    */
-  async function getAssetDetails(id: string): Promise<AssetItem> {
+  async function getAssetDetails(id: AssetId): Promise<AssetItem> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
@@ -427,7 +428,7 @@ function createAssetService() {
    * @returns Promise<void>
    * @throws Error if deletion fails
    */
-  async function deleteAsset(id: string): Promise<void> {
+  async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
@@ -449,7 +450,7 @@ function createAssetService() {
    * @throws Error if update fails
    */
   async function updateAsset(
-    id: string,
+    id: AssetId,
     newData: AssetUpdatePayload
   ): Promise<AssetItem> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {

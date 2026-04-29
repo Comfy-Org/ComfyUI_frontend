@@ -43,8 +43,16 @@ const zTaskResponse = z.object({
 
 export type TaskResponse = z.infer<typeof zTaskResponse>
 
+/**
+ * Identifier for a background task tracked by the `/tasks` API.
+ *
+ * Backed by `TaskResponse.id` which is `z.string().uuid()`. This alias names
+ * that primitive at use sites without changing structural typing.
+ */
+export type TaskId = string
+
 function createTaskService() {
-  async function getTask(taskId: string): Promise<TaskResponse> {
+  async function getTask(taskId: TaskId): Promise<TaskResponse> {
     const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`)
 
     if (!res.ok) {

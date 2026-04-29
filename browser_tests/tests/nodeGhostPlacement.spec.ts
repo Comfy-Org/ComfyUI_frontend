@@ -201,12 +201,10 @@ for (const mode of ['litegraph', 'vue'] as const) {
       'subgraph blueprint added from search box enters ghost mode',
       { tag: ['@subgraph'] },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
         await comfyPage.settings.setSetting(
           'Comfy.NodeSearchBoxImpl',
           'default'
         )
-        await comfyPage.searchBoxV2.reload(comfyPage)
 
         // Convert a node to a subgraph and publish it as a blueprint
         const nodeRef = await comfyPage.nodeOps.getNodeRefById('3')
@@ -231,9 +229,8 @@ for (const mode of ['litegraph', 'vue'] as const) {
         const nodeCountBefore = await comfyPage.nodeOps.getGraphNodesCount()
 
         // Open v2 search box and search for the published blueprint
-        await comfyPage.canvasOps.doubleClick()
         const { searchBoxV2 } = comfyPage
-        await expect(searchBoxV2.input).toBeVisible()
+        await searchBoxV2.open()
 
         await searchBoxV2.input.fill(blueprintName)
         await expect(searchBoxV2.results.first()).toBeVisible()

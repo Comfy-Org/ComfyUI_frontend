@@ -51,7 +51,8 @@ import type {
   Positionable,
   ReadOnlyRect,
   Rect,
-  Size
+  Size,
+  SlotIndex
 } from './interfaces'
 import { LiteGraph, Subgraph } from './litegraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
@@ -1115,7 +1116,7 @@ export class LGraphNode
   /**
    * sets the output data type, useful when you want to be able to overwrite the data type
    */
-  setOutputDataType(slot: number, type: ISlotType): void {
+  setOutputDataType(slot: SlotIndex, type: ISlotType): void {
     const { outputs } = this
     if (!outputs || slot == -1 || slot >= outputs.length) return
 
@@ -1173,7 +1174,7 @@ export class LGraphNode
    * @param slot
    * @returns datatype in string format
    */
-  getInputDataType(slot: number): ISlotType | null {
+  getInputDataType(slot: SlotIndex): ISlotType | null {
     if (!this.inputs) return null
     if (slot >= this.inputs.length || this.inputs[slot].link == null)
       return null
@@ -3457,7 +3458,7 @@ export class LGraphNode
    * @param outputSlotIndex Output slot index
    * @returns Position of the output slot
    */
-  getOutputPos(outputSlotIndex: number): Point {
+  getOutputPos(outputSlotIndex: SlotIndex): Point {
     return getSlotPosition(this, outputSlotIndex, false)
   }
 

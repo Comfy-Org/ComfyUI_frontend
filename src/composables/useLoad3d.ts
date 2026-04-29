@@ -97,6 +97,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const canFitToViewer = ref(true)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'normal',
+    'wireframe'
+  ])
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -785,6 +794,16 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      const caps = load3d?.getCurrentModelCapabilities()
+      canFitToViewer.value = caps?.fitToViewer ?? true
+      canUseGizmo.value = caps?.gizmoTransform ?? true
+      canUseLighting.value = caps?.lighting ?? true
+      canExport.value = caps?.exportable ?? true
+      materialModes.value = caps?.materialModes ?? [
+        'original',
+        'normal',
+        'wireframe'
+      ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       applyGizmoConfigToLoad3d()
       isFirstModelLoad = false
@@ -925,6 +944,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    canFitToViewer,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
     hasSkeleton,
     hasRecording,
     recordingDuration,
