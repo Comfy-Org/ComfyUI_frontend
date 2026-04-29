@@ -335,6 +335,7 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
+  'Comfy.NodeSearchBoxImpl.FollowCursor': z.boolean(),
   'Comfy.NodeSearchBoxImpl': z.enum([
     'default',
     'v1 (legacy)',

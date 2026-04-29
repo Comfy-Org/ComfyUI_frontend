@@ -312,8 +312,13 @@
     "name": "Node preview",
     "tooltip": "Only applies to the default implementation"
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Added nodes follow the cursor",
+    "tooltip": "When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation."
+  },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
-    "name": "Show node category in search results"
+    "name": "Show node category in search results",
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "Show node id name in search results",
