@@ -101,29 +101,69 @@ const loadingLocales = new Map<string, Promise<void>>()
 // Store custom nodes i18n data for merging when locales are lazily loaded
 const customNodesI18nData: Record<string, unknown> = {}
 
+const SUPPORTED_LOCALES = [
+  'en',
+  'ar',
+  'es',
+  'fa',
+  'fr',
+  'ja',
+  'ko',
+  'ru',
+  'tr',
+  'zh',
+  'zh-TW',
+  'pt-BR'
+] as const
+
+type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
+
+// Lowercased lookup map → canonical tag, since BCP-47 matching is
+// case-insensitive (e.g. `pt-br` from older browsers must match `pt-BR`).
+const supportedLocaleByLower = new Map<string, SupportedLocale>(
+  SUPPORTED_LOCALES.map((locale) => [locale.toLowerCase(), locale])
+)
+
 /**
- * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
+ * Resolve a BCP-47 language tag to a locale we ship messages for, with
+ * graceful fallback. Tries the full tag (preserves `zh-TW`, `pt-BR`),
+ * then the base tag (`zh`, `pt`), then `'en'`. Matching is case-insensitive
+ * but the returned tag is always in canonical casing.
  */
-export async function loadLocale(locale: string): Promise<void> {
-  if (loadedLocales.has(locale)) {
-    return
+export function resolveSupportedLocale(
+  input: string | undefined | null
+): SupportedLocale {
+  if (!input) return 'en'
+  const normalized = input.toLowerCase()
+  const exact = supportedLocaleByLower.get(normalized)
+  if (exact) return exact
+  const base = normalized.split('-')[0]
+  const baseMatch = supportedLocaleByLower.get(base)
+  if (baseMatch) return baseMatch
+  return 'en'
+}
+
+/**
+ * Dynamically load a locale and its associated files (nodeDefs, commands, settings).
+ * Unsupported locales are clamped to `'en'`.
+ */
+export async function loadLocale(locale: string): Promise<SupportedLocale> {
+  const resolved = resolveSupportedLocale(locale)
+  if (loadedLocales.has(resolved)) {
+    return resolved
   }
 
   // If already loading, return the existing promise to prevent duplicate loads
-  const existingLoad = loadingLocales.get(locale)
+  const existingLoad = loadingLocales.get(resolved)
   if (existingLoad) {
-    return existingLoad
+    await existingLoad
+    return resolved
   }
 
-  const loader = localeLoaders[locale]
-  const nodeDefsLoader = nodeDefsLoaders[locale]
-  const commandsLoader = commandsLoaders[locale]
-  const settingsLoader = settingsLoaders[locale]
-
-  if (!loader || !nodeDefsLoader || !commandsLoader || !settingsLoader) {
-    console.warn(`Locale "${locale}" is not supported`)
-    return
-  }
+  const loader = localeLoaders[resolved]
+  const nodeDefsLoader = nodeDefsLoaders[resolved]
+  const commandsLoader = commandsLoaders[resolved]
+  const settingsLoader = settingsLoaders[resolved]
 
   // Create and track the loading promise
   const loadPromise = (async () => {
@@ -142,23 +182,24 @@ export async function loadLocale(locale: string): Promise<void> {
         settings.default
       )
 
-      i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
-      loadedLocales.add(locale)
+      i18n.global.setLocaleMessage(resolved, messages as LocaleMessages)
+      loadedLocales.add(resolved)
 
-      if (customNodesI18nData[locale]) {
-        i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
+      if (customNodesI18nData[resolved]) {
+        i18n.global.mergeLocaleMessage(resolved, customNodesI18nData[resolved])
       }
     } catch (error) {
-      console.error(`Failed to load locale "${locale}":`, error)
+      console.error(`Failed to load locale "${resolved}":`, error)
       throw error
     } finally {
       // Clean up the loading promise once complete
-      loadingLocales.delete(locale)
+      loadingLocales.delete(resolved)
     }
   })()
 
-  loadingLocales.set(locale, loadPromise)
-  return loadPromise
+  loadingLocales.set(resolved, loadPromise)
+  await loadPromise
+  return resolved
 }
 
 /**
@@ -190,7 +231,7 @@ type LocaleMessages = typeof messages.en
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
-  locale: navigator.language.split('-')[0] || 'en',
+  locale: resolveSupportedLocale(navigator.language),
   fallbackLocale: 'en',
   escapeParameter: true,
   messages,

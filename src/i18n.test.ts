@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
+const { i18n, loadLocale, mergeCustomNodesI18n, resolveSupportedLocale } =
+  await import('./i18n')
 
 // Mock the JSON imports before importing i18n module
 vi.mock('./locales/en/main.json', () => ({ default: { welcome: 'Welcome' } }))
@@ -179,15 +180,22 @@ describe('i18n', () => {
       // Should complete without error (second call returns early)
     })
 
-    it('should warn for unsupported locale', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    it('should clamp unsupported locale to en (loaded eagerly)', async () => {
+      const resolved = await loadLocale('de')
+      expect(resolved).toBe('en')
+    })
 
-      await loadLocale('unsupported-locale')
+    it('should preserve full BCP-47 tag for shipped variants', async () => {
+      const resolved = await loadLocale('zh-TW')
+      expect(resolved).toBe('zh-TW')
+    })
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Locale "unsupported-locale" is not supported'
-      )
-      consoleSpy.mockRestore()
+    it('should fall back from pt-BR base tag pt to pt-BR', async () => {
+      // pt is not shipped on its own, but pt-BR is.
+      // resolveSupportedLocale only fires the base-tag fallback for inputs
+      // whose full tag isn't shipped — verifying the standalone helper here.
+      expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('pt')).toBe('en')
     })
 
     it('should handle concurrent load requests for same locale', async () => {
@@ -195,6 +203,45 @@ describe('i18n', () => {
       const promises = [loadLocale('zh'), loadLocale('zh'), loadLocale('zh')]
 
       await Promise.all(promises)
+    })
+  })
+
+  describe('resolveSupportedLocale', () => {
+    it('returns the canonical tag when the input is shipped', () => {
+      expect(resolveSupportedLocale('en')).toBe('en')
+      expect(resolveSupportedLocale('ja')).toBe('ja')
+      expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
+      expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+    })
+
+    it('matches case-insensitively per BCP-47 and returns canonical casing', () => {
+      // Older browsers / OS configs may emit lowercase region tags.
+      expect(resolveSupportedLocale('pt-br')).toBe('pt-BR')
+      expect(resolveSupportedLocale('PT-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('zh-tw')).toBe('zh-TW')
+      expect(resolveSupportedLocale('ZH-TW')).toBe('zh-TW')
+      expect(resolveSupportedLocale('EN')).toBe('en')
+    })
+
+    it('falls back to the base tag when the full tag is unshipped', () => {
+      // de-DE → de (unshipped) → en
+      expect(resolveSupportedLocale('de-DE')).toBe('en')
+      // fr-CA → fr (shipped) → fr
+      expect(resolveSupportedLocale('fr-CA')).toBe('fr')
+      // ko-KR → ko (shipped) → ko
+      expect(resolveSupportedLocale('ko-KR')).toBe('ko')
+      // zh-CN → zh (shipped) → zh (Simplified is the base)
+      expect(resolveSupportedLocale('zh-CN')).toBe('zh')
+    })
+
+    it('falls back to en for unsupported and missing inputs', () => {
+      expect(resolveSupportedLocale('de')).toBe('en')
+      expect(resolveSupportedLocale('it')).toBe('en')
+      expect(resolveSupportedLocale('nl')).toBe('en')
+      expect(resolveSupportedLocale('xx-YY')).toBe('en')
+      expect(resolveSupportedLocale('')).toBe('en')
+      expect(resolveSupportedLocale(undefined)).toBe('en')
+      expect(resolveSupportedLocale(null)).toBe('en')
     })
   })
 })
