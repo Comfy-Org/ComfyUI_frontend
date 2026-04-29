@@ -9,16 +9,42 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
+import type {
+  BlockRow,
+  PanelPreset
+} from '@/components/appMode/layout/panels/panelTypes'
 
 export interface InputWidgetConfig {
   height?: number
+  /** 1-indexed grid column. Undefined in legacy workflows. */
+  col?: number
+  /** 1-indexed grid row. Undefined in legacy workflows. */
+  row?: number
+  /** Number of grid columns the widget spans. Defaults to full width. */
+  colSpan?: number
+  /** Number of grid rows the widget spans. Defaults to 1. */
+  rowSpan?: number
 }
 
 export type LinearInput = [NodeId, string, InputWidgetConfig?]
 
+interface LinearLayoutConfig {
+  /** Grid column count. Defaults to 4. */
+  columns?: number
+  /** Floating panel position preset (right-dock, float-tr, …). */
+  panelPreset?: PanelPreset
+  /** Whether the panel is collapsed to its header. */
+  panelCollapsed?: boolean
+  /** Drag-resized dock width, in grid cells. */
+  panelWidthCells?: number
+  /** 2D block arrangement inside the panel (rows of blocks). */
+  panelRows?: BlockRow[]
+}
+
 export interface LinearData {
   inputs: LinearInput[]
   outputs: NodeId[]
+  layout?: LinearLayoutConfig
 }
 
 export interface PendingWarnings {

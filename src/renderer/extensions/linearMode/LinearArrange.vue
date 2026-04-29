@@ -3,8 +3,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
+import PreviewCard from '@/components/appMode/layout/PreviewCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import DragReorderDemo from '@/renderer/extensions/linearMode/DragReorderDemo.vue'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -40,16 +42,25 @@ const existingOutput = computed(() => {
     v-else-if="hasOutputs"
     role="article"
     data-testid="linear-arrange-preview"
-    class="mx-auto flex h-full w-3/4 flex-col items-center justify-center gap-6 p-8"
+    class="mx-auto flex size-full flex-col items-center justify-center gap-4 p-8"
+    style="transform: translateX(calc(-0.5 * var(--sidebar-width, 0px)))"
   >
-    <div
-      class="flex h-4/5 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-warning-background p-12"
-    >
-      <p class="mb-0 font-bold text-base-foreground">
-        {{ t('linearMode.arrange.outputs') }}
+    <PreviewCard :title="t('linearMode.arrange.outputs')" class="w-132">
+      <p
+        class="m-0 max-w-prose px-6 py-8 text-left text-lg text-base-foreground"
+      >
+        {{ t('linearMode.arrange.resultsLabel') }}
       </p>
-      <p class="text-center">{{ t('linearMode.arrange.resultsLabel') }}</p>
-    </div>
+    </PreviewCard>
+
+    <PreviewCard :title="t('linearMode.arrange.inputs')" class="w-132">
+      <div class="flex flex-col items-stretch gap-4 p-6">
+        <p class="m-0 max-w-prose text-left text-lg text-base-foreground">
+          {{ t('linearMode.arrange.dragHint') }}
+        </p>
+        <DragReorderDemo />
+      </div>
+    </PreviewCard>
   </div>
   <div
     v-else
@@ -57,16 +68,16 @@ const existingOutput = computed(() => {
     data-testid="linear-arrange-no-outputs"
     class="mx-auto flex h-full w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
-    <p class="m-0 text-base-foreground">
+    <p class="m-0 text-3xl font-bold text-base-foreground">
       {{ t('linearMode.arrange.noOutputs') }}
     </p>
 
-    <div class="flex w-lg flex-col gap-1 text-[14px] text-muted-foreground">
+    <div class="flex w-lg flex-col gap-2 text-lg text-base-foreground">
       <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
-          <span class="font-bold italic">
+          <span class="font-bold text-warning-background italic">
             {{ t('linearMode.arrange.atLeastOne') }}
           </span>
         </template>
@@ -74,15 +85,17 @@ const existingOutput = computed(() => {
 
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
-    <div class="flex flex-row gap-2">
-      <Button
-        variant="primary"
-        size="lg"
-        data-testid="linear-arrange-switch-to-outputs"
-        @click="setMode('builder:outputs')"
-      >
-        {{ t('linearMode.arrange.switchToOutputsButton') }}
-      </Button>
-    </div>
+    <Button
+      size="lg"
+      :class="[
+        'border bg-primary-background text-white',
+        'border-primary-background-hover',
+        'hover:bg-primary-background-hover'
+      ]"
+      data-testid="linear-arrange-switch-to-outputs"
+      @click="setMode('builder:outputs')"
+    >
+      {{ t('linearMode.arrange.switchToOutputsButton') }}
+    </Button>
   </div>
 </template>

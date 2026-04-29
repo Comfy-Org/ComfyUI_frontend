@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import OutputWindowList from '@/components/appMode/layout/OutputWindowList.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
@@ -18,6 +20,8 @@ import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
+import { useOutputWindowSync } from '@/renderer/extensions/linearMode/useOutputWindowSync'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
@@ -25,12 +29,61 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
+const executionStore = useExecutionStore()
+
+useOutputWindowSync()
+const windowStore = useOutputWindowStore()
+
+const progressPercent = computed(() => {
+  const p = executionStore._executingNodeProgress
+  if (p && p.max > 0) {
+    return Math.max(0, Math.min(100, (p.value / p.max) * 100))
+  }
+  return 0
+})
+
+// Per-node step + ETA. Reset per (job, node) for accurate extrapolation.
+const stepProgress = ref<{ value: number; max: number } | null>(null)
+const etaSeconds = ref<number | null>(null)
+let samplingStart: { ts: number; firstValue: number; key: string } | null = null
+watch(
+  () => executionStore._executingNodeProgress,
+  (p) => {
+    if (!p || p.max <= 0) {
+      stepProgress.value = null
+      etaSeconds.value = null
+      samplingStart = null
+      return
+    }
+    stepProgress.value = { value: p.value, max: p.max }
+    const key = `${p.prompt_id}::${p.node}`
+    if (!samplingStart || samplingStart.key !== key) {
+      samplingStart = { ts: Date.now(), firstValue: p.value, key }
+      etaSeconds.value = null
+      return
+    }
+    const stepsDone = p.value - samplingStart.firstValue
+    if (stepsDone <= 0) return
+    const msPerStep = (Date.now() - samplingStart.ts) / stepsDone
+    const remaining = p.max - p.value
+    etaSeconds.value = Math.max(0, Math.round((remaining * msPerStep) / 1000))
+  }
+)
+function formatEta(s: number): string {
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  const rem = s % 60
+  return rem > 0 ? `${m}m ${rem}s` : `${m}m`
+}
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
-const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
+const { runButtonClick, mobile, typeformWidgetId, hideChrome } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
   typeformWidgetId?: string
+  /** App Mode renders its own history + action chrome; suppresses
+   *  the standalone top bar + bottom history/feedback strip. */
+  hideChrome?: boolean
 }>()
 
 const selectedItem = ref<AssetItem>()
@@ -38,6 +91,11 @@ const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
+
+// `isWorkflowActive` keeps welcome hidden during the click → skeleton gap.
+const hasMoodboardContent = computed(
+  () => windowStore.windows.length > 0 || isWorkflowActive.value
+)
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -58,7 +116,6 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!workflow) return
 
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
-  //update graph to new version, set old to top of undo queue
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
@@ -73,7 +130,10 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="selectedItem || selectedOutput || showSkeleton || isWorkflowActive"
+    v-if="
+      !hideChrome &&
+      (selectedItem || selectedOutput || showSkeleton || isWorkflowActive)
+    "
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
@@ -133,22 +193,40 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <ImagePreview
-    v-if="canShowPreview && latentPreview"
-    :mobile
-    :src="latentPreview"
-    :show-size="false"
-  />
-  <MediaOutputPreview
-    v-else-if="selectedOutput"
-    :output="selectedOutput"
-    :mobile
-  />
-  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
-  <LinearArrange v-else-if="isArrangeMode" />
-  <LinearWelcome v-else />
+  <template v-if="hideChrome">
+    <OutputWindowList
+      :progress-percent="progressPercent"
+      :step-progress="stepProgress"
+      :eta-seconds="etaSeconds"
+      :format-eta="formatEta"
+    />
+    <LinearArrange v-if="isArrangeMode && !hasMoodboardContent" />
+    <LinearWelcome v-else-if="!hasMoodboardContent" />
+  </template>
+  <Transition v-else name="preview-fade">
+    <ImagePreview
+      v-if="canShowPreview && latentPreview"
+      key="latent"
+      :mobile
+      :src="latentPreview"
+      :show-size="false"
+    />
+    <MediaOutputPreview
+      v-else-if="selectedOutput"
+      key="final"
+      :output="selectedOutput"
+      :mobile
+      :hide-info="hideChrome"
+    />
+    <LatentPreview
+      v-else-if="showSkeleton || isWorkflowActive"
+      key="skeleton"
+    />
+    <LinearArrange v-else-if="isArrangeMode" key="arrange" />
+    <LinearWelcome v-else key="welcome" />
+  </Transition>
   <div
-    v-if="!mobile"
+    v-if="!hideChrome && !mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
   >
     <LinearFeedback
@@ -168,7 +246,24 @@ async function rerun(e: Event) {
     />
   </div>
   <OutputHistory
-    v-else-if="!isBuilderMode"
+    v-else-if="!hideChrome && !isBuilderMode"
     @update-selection="handleSelection"
   />
 </template>
+
+<!-- Unscoped: <Transition> classes apply to slot-child roots. -->
+<style>
+.preview-fade-enter-active,
+.preview-fade-leave-active {
+  transition: opacity 250ms ease;
+}
+.preview-fade-enter-from,
+.preview-fade-leave-to {
+  opacity: 0;
+}
+/* Pin outgoing so incoming fades in without layout collapse. */
+.preview-fade-leave-active {
+  position: absolute;
+  inset: 0;
+}
+</style>

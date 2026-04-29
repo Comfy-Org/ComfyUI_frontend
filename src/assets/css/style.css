@@ -1,7 +1,97 @@
 @import '@comfyorg/design-system/css/style.css';
 
-/* Use 0.001ms instead of 0s so transitionend/animationend events still fire
-   and JS listeners aren't broken. */
+/* Run/Stop button colors — temporary, pending product/design feedback. */
+:root {
+  --app-mode-go-bg: #279252;
+  --app-mode-go-bg-hover: #35a361;
+  --app-mode-go-border: #2c7c49;
+  --app-mode-stop-bg: #ef4444;
+  --app-mode-stop-bg-hover: #f87171;
+  --app-mode-stop-border: #b91c1c;
+}
+
+/* Shared surface for FloatingPanel + Builder toolbars. */
+.panel-chrome {
+  background-color: var(--color-layout-cell);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 10px;
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.4),
+    0 16px 48px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(8px);
+}
+
+/* App Mode widget chrome — NodeWidgets primitives on the panel surface. */
+.floating-panel {
+  --text-layout-md: 14px;
+}
+
+:is(.floating-panel, .app-chrome) textarea,
+:is(.floating-panel, .app-chrome) input {
+  background-color: var(--color-layout-canvas);
+  min-height: 2.25rem;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Browser default system-blue reads as an artifact on dark. */
+:is(.floating-panel, .app-chrome) textarea::selection,
+:is(.floating-panel, .app-chrome) input::selection {
+  background-color: rgb(255 255 255 / 0.18);
+  color: inherit;
+}
+
+/* ScrubableNumberInput pill — match input/textarea baseline. */
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
+  background-color: var(--color-layout-canvas);
+  height: 2.25rem;
+}
+
+/* Uniform 1px border at the same alpha as panel-chrome + cells. */
+:is(.floating-panel, .app-chrome) textarea,
+:is(.floating-panel, .app-chrome) input,
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
+  border: 1px solid rgb(255 255 255 / 0.08);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+/* Inner pill input is inset-0; reset min-height + border to avoid
+   the input border leaking past the pill's rounded corners. */
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background input {
+  min-height: 0;
+}
+:is(.floating-panel, .app-chrome) .bg-component-node-widget-background input,
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background
+  textarea {
+  border: none;
+}
+
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background
+  button:hover {
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+/* Brighter border on focus is the only active/selected signal. */
+:is(.floating-panel, .app-chrome) textarea:focus,
+:is(.floating-panel, .app-chrome) input:focus,
+:is(.floating-panel, .app-chrome)
+  .bg-component-node-widget-background:focus-within {
+  border-color: rgb(255 255 255 / 0.18);
+  outline: none;
+  box-shadow: none;
+}
+
+/* Kill NodeWidgets' focus-within ring; pill border is the focus signal. */
+:is(.floating-panel, .app-chrome) [class*='focus-within']:focus-within {
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 transparent;
+  --tw-ring-offset-shadow: 0 0 transparent;
+}
+
+/* 0.001ms (not 0s) so transitionend/animationend still fire. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
@@ -10,7 +100,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* List transition animations */
   .list-scale-move,
   .list-scale-enter-active,
   .list-scale-leave-active {

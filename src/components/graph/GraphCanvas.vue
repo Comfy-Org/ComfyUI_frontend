@@ -22,7 +22,7 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI && !isBuilderMode" #side-toolbar>
+    <template v-if="showUI" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="showUI" #side-bar-panel>
@@ -38,9 +38,8 @@
     <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
-    <template v-if="showUI" #right-side-panel>
-      <AppBuilder v-if="isBuilderMode" />
-      <NodePropertiesPanel v-else />
+    <template v-if="showUI && !isBuilderMode" #right-side-panel>
+      <NodePropertiesPanel />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
@@ -92,6 +91,15 @@
     @dispose="onLinkOverlayDispose"
   />
 
+  <!-- Builder select-mode scrim. Placed after both bitmap canvases so the
+       grid and link overlay both dim together. Vue nodes each have an
+       explicit inline z-index and paint above this auto-z-index scrim,
+       so node bodies and their selection rings stay bright. -->
+  <div
+    v-if="isSelectMode"
+    class="pointer-events-none absolute inset-0 bg-black/65"
+  />
+
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
@@ -128,7 +136,6 @@ import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
-import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
@@ -209,7 +216,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
-const { isBuilderMode } = useAppMode()
+const { isBuilderMode, isSelectMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const { linearMode } = storeToRefs(canvasStore)
