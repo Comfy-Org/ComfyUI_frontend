@@ -31,8 +31,7 @@ vi.mock('@/utils/loaderNodeUtil', () => ({
 
 const mediaAssetActions = {
   addWorkflow: vi.fn(),
-  downloadAsset: vi.fn(),
-  downloadMultipleAssets: vi.fn(),
+  downloadAssets: vi.fn(),
   openWorkflow: vi.fn(),
   exportWorkflow: vi.fn(),
   copyJobId: vi.fn(),
@@ -185,7 +184,7 @@ describe('MediaAssetContextMenu', () => {
     unmount()
   })
 
-  it('routes Download through downloadMultipleAssets so multi-output jobs zip', async () => {
+  it('routes Download through downloadAssets so multi-output jobs zip', async () => {
     const { container, unmount } = mountComponent()
     await showMenu(container)
 
@@ -195,10 +194,7 @@ describe('MediaAssetContextMenu', () => {
       item: downloadItem
     })
 
-    expect(mediaAssetActions.downloadMultipleAssets).toHaveBeenCalledWith([
-      asset
-    ])
-    expect(mediaAssetActions.downloadAsset).not.toHaveBeenCalled()
+    expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
 
     unmount()
   })
