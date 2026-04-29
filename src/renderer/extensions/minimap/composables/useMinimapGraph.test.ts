@@ -46,7 +46,8 @@ describe('useMinimapGraph', () => {
       links: createMockLinks([createMockLLink({ id: 1 })]),
       onNodeAdded: vi.fn(),
       onNodeRemoved: vi.fn(),
-      onConnectionChange: vi.fn()
+      onConnectionChange: vi.fn(),
+      onTrigger: vi.fn()
     })
 
     onGraphChangedMock = vi.fn()
@@ -152,6 +153,83 @@ describe('useMinimapGraph', () => {
     expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
   })
 
+  it.each([
+    { slot: 'onNodeAdded' as const, fireArg: { id: '99' } },
+    { slot: 'onNodeRemoved' as const, fireArg: { id: '99' } },
+    { slot: 'onNodeRemoved' as const, fireArg: { id: 99 } },
+    { slot: 'onConnectionChange' as const, fireArg: { id: '99' } },
+    {
+      slot: 'onTrigger' as const,
+      fireArg: {
+        type: 'node:property:changed',
+        property: 'mode',
+        nodeId: '99'
+      }
+    },
+    {
+      slot: 'onTrigger' as const,
+      fireArg: {
+        type: 'node:property:changed',
+        property: 'mode',
+        nodeId: 99
+      }
+    }
+  ])(
+    'should not stack a second wrapper after chain-wrap survives cleanup ($slot)',
+    ({ slot, fireArg }) => {
+      const graphRef = ref(mockGraph) as Ref<LGraph | null>
+      const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+      graphManager.setupEventListeners()
+      const minimapWrapper = mockGraph[slot] as unknown as (
+        this: LGraph,
+        ...args: unknown[]
+      ) => void
+
+      mockGraph[slot] = function (this: LGraph, ...args: unknown[]) {
+        minimapWrapper.call(this, ...args)
+      } as never
+      const chainWrapped = mockGraph[slot]
+
+      graphManager.cleanupEventListeners()
+      expect(mockGraph[slot]).toBe(chainWrapped)
+
+      graphManager.setupEventListeners()
+      expect(mockGraph[slot]).toBe(chainWrapped)
+
+      vi.mocked(onGraphChangedMock).mockClear()
+      ;(mockGraph[slot] as unknown as (arg: unknown) => void)(fireArg)
+      expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('invalidates cache when onTrigger fires with a numeric nodeId', () => {
+    // Regression: LiteGraphDataSource.getNodes() stores cache keys as
+    // String(node.id), so onTrigger must stringify nodeId before deletion
+    // or the entry survives and stale state is reported as unchanged.
+    mockGraph._nodes = [
+      {
+        id: 99,
+        pos: [100, 100],
+        size: [150, 80]
+      } as Partial<LGraphNode> as LGraphNode
+    ]
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.checkForChanges()).toBe(false)
+    ;(mockGraph.onTrigger as unknown as (event: unknown) => void)({
+      type: 'node:property:changed',
+      property: 'mode',
+      nodeId: 99
+    })
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
   it('should handle cleanup for never-setup graph', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
@@ -245,6 +323,46 @@ describe('useMinimapGraph', () => {
       'graphChanged',
       expect.any(Function)
     )
+  })
+
+  it('does not fire onGraphChanged from chain-wrapped slots after destroy', () => {
+    // Disposed-flag regression: cleanupEventListeners leaves
+    // chain-wrapped slots in place by design (clobber-guard), so the
+    // installed wrapper remains reachable via the extension's chain.
+    // Without the disposed flag, post-destroy events still trigger
+    // minimap work and keep renderer closures alive.
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    const minimapWrapper = mockGraph.onNodeAdded!
+    mockGraph.onNodeAdded = function (this: LGraph, node: LGraphNode) {
+      minimapWrapper.call(this, node)
+    }
+
+    graphManager.destroy()
+
+    vi.mocked(onGraphChangedMock).mockClear()
+    mockGraph.onNodeAdded!({ id: '99' } as LGraphNode)
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('resets disposed on init so the manager works after destroy + init', () => {
+    // Lifecycle symmetry: useMinimap.ts reuses the same graphManager
+    // across canvas changes (destroy on old canvas + init on new).
+    // Without resetting `disposed = false` in init, the manager would
+    // stay permanently inert after the first destroy and silently
+    // swallow all subsequent events.
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.init()
+    graphManager.destroy()
+    graphManager.init()
+
+    vi.mocked(onGraphChangedMock).mockClear()
+    mockGraph.onNodeAdded!({ id: '99' } as LGraphNode)
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
   })
 
   it('should clear cache', () => {

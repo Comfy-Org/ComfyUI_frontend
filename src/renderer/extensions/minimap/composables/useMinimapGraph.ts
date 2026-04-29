@@ -21,6 +21,15 @@ interface GraphCallbacks {
   onTrigger?: (event: LGraphTriggerEvent) => void
 }
 
+// Per-graph patch record: the originals captured at install time AND
+// the wrappers we installed. Cleanup checks slot identity against the
+// installed wrappers — if something else (e.g. useGraphStructureRevision)
+// chain-wrapped on top, restoring the original here would clobber it.
+interface PatchRecord {
+  original: GraphCallbacks
+  installed: GraphCallbacks
+}
+
 export function useMinimapGraph(
   graph: Ref<LGraph | null>,
   onGraphChanged: () => void
@@ -38,10 +47,28 @@ export function useMinimapGraph(
   // Track LayoutStore version for change detection
   const layoutStoreVersion = layoutStore.getVersion()
 
-  // Map to store original callbacks per graph ID
-  const originalCallbacksMap = new Map<string, GraphCallbacks>()
+  // Per-graph patch record: original callbacks AND the wrappers we
+  // installed. Cleanup uses the installed wrappers to clobber-guard.
+  // Keyed by LGraph instance (not id) so records bind to graph identity
+  // and disappear naturally when the graph is GC'd.
+  const originalCallbacksMap = new WeakMap<LGraph, PatchRecord>()
+
+  // Once destroy() runs, the clobber-guard may have left chain-wrapped
+  // slots in place (the extension's wrapper still calls our installed
+  // wrapper internally). The disposed flag short-circuits the wrapper
+  // body so post-destroy events don't keep firing minimap work and
+  // holding renderer closures alive. init() resets the flag so the
+  // manager can be reused across graph/canvas changes (useMinimap.ts
+  // calls destroy + init when the canvas swaps).
+  let disposed = false
+
+  // Stop fn for the layoutStoreVersion watcher. Kept on the closure so
+  // destroy() can cancel the watcher symmetrically with init() and we
+  // don't leak watchers across reuse cycles.
+  let stopLayoutStoreWatch: (() => void) | undefined
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
+    if (disposed) return
     onGraphChanged()
   }, 500)
 
@@ -49,69 +76,125 @@ export function useMinimapGraph(
     const g = graph.value
     if (!g) return
 
-    // Check if we've already wrapped this graph's callbacks
-    if (originalCallbacksMap.has(g.id)) {
+    // Resubscribe path: a previous cleanup may have restored only the
+    // slots that were not chain-wrapped by an extension, leaving the
+    // record alive because the others are still nested inside an
+    // extension's wrapper. Per-slot repair re-installs ours where the
+    // slot was restored to the original; chain-wrapped slots stay
+    // untouched (the extension's wrapper still calls our wrapper
+    // internally because that closure captured `original`).
+    const existing = originalCallbacksMap.get(g)
+    if (existing) {
+      if (g.onNodeAdded === existing.original.onNodeAdded) {
+        g.onNodeAdded = existing.installed.onNodeAdded
+      }
+      if (g.onNodeRemoved === existing.original.onNodeRemoved) {
+        g.onNodeRemoved = existing.installed.onNodeRemoved
+      }
+      if (g.onConnectionChange === existing.original.onConnectionChange) {
+        g.onConnectionChange = existing.installed.onConnectionChange
+      }
+      if (g.onTrigger === existing.original.onTrigger) {
+        g.onTrigger = existing.installed.onTrigger
+      }
       return
     }
 
     // Store the original callbacks for this graph
-    const originalCallbacks: GraphCallbacks = {
+    const original: GraphCallbacks = {
       onNodeAdded: g.onNodeAdded,
       onNodeRemoved: g.onNodeRemoved,
       onConnectionChange: g.onConnectionChange,
       onTrigger: g.onTrigger
     }
-    originalCallbacksMap.set(g.id, originalCallbacks)
 
-    g.onNodeAdded = function (node: LGraphNode) {
-      originalCallbacks.onNodeAdded?.call(this, node)
-      void handleGraphChangedThrottled()
-    }
-
-    g.onNodeRemoved = function (node: LGraphNode) {
-      originalCallbacks.onNodeRemoved?.call(this, node)
-      nodeStatesCache.delete(node.id)
-      void handleGraphChangedThrottled()
-    }
-
-    g.onConnectionChange = function (node: LGraphNode) {
-      originalCallbacks.onConnectionChange?.call(this, node)
-      void handleGraphChangedThrottled()
-    }
-
-    g.onTrigger = function (event: LGraphTriggerEvent) {
-      originalCallbacks.onTrigger?.call(this, event)
-
-      // Listen for visual property changes that affect minimap rendering
-      if (
-        event.type === 'node:property:changed' &&
-        (event.property === 'mode' ||
-          event.property === 'bgcolor' ||
-          event.property === 'color')
-      ) {
-        // Invalidate cache for this node to force redraw
-        nodeStatesCache.delete(String(event.nodeId))
+    const installed: GraphCallbacks = {
+      onNodeAdded: function (this: LGraph, node: LGraphNode) {
+        original.onNodeAdded?.call(this, node)
+        if (disposed) return
         void handleGraphChangedThrottled()
+      },
+      onNodeRemoved: function (this: LGraph, node: LGraphNode) {
+        original.onNodeRemoved?.call(this, node)
+        if (disposed) return
+        nodeStatesCache.delete(String(node.id))
+        void handleGraphChangedThrottled()
+      },
+      onConnectionChange: function (this: LGraph, node: LGraphNode) {
+        original.onConnectionChange?.call(this, node)
+        if (disposed) return
+        void handleGraphChangedThrottled()
+      },
+      onTrigger: function (this: LGraph, event: LGraphTriggerEvent) {
+        original.onTrigger?.call(this, event)
+        if (disposed) return
+
+        // Listen for visual property changes that affect minimap rendering
+        if (
+          event.type === 'node:property:changed' &&
+          (event.property === 'mode' ||
+            event.property === 'bgcolor' ||
+            event.property === 'color')
+        ) {
+          nodeStatesCache.delete(String(event.nodeId))
+          void handleGraphChangedThrottled()
+        }
       }
     }
+
+    g.onNodeAdded = installed.onNodeAdded
+    g.onNodeRemoved = installed.onNodeRemoved
+    g.onConnectionChange = installed.onConnectionChange
+    g.onTrigger = installed.onTrigger
+    originalCallbacksMap.set(g, { original, installed })
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
     const g = oldGraph || graph.value
     if (!g) return
 
-    const originalCallbacks = originalCallbacksMap.get(g.id)
-    if (!originalCallbacks) {
+    const record = originalCallbacksMap.get(g)
+    if (!record) {
       // Graph was never set up (e.g., minimap destroyed before init) - nothing to clean up
       return
     }
 
-    g.onNodeAdded = originalCallbacks.onNodeAdded
-    g.onNodeRemoved = originalCallbacks.onNodeRemoved
-    g.onConnectionChange = originalCallbacks.onConnectionChange
-    g.onTrigger = originalCallbacks.onTrigger
+    // Clobber-guard: only restore the original on slots that still hold
+    // OUR installed wrapper. If a later patcher (e.g.
+    // useGraphStructureRevision, an extension) chain-wrapped on top,
+    // its wrapper now occupies the slot and calls our wrapper
+    // internally — restoring the original here would silently uninstall
+    // the chain. Leave those slots alone; the chain-wrapper still
+    // forwards through `record.original` because our wrapper closure
+    // captured it.
+    const canRestoreAdded = g.onNodeAdded === record.installed.onNodeAdded
+    const canRestoreRemoved = g.onNodeRemoved === record.installed.onNodeRemoved
+    const canRestoreConn =
+      g.onConnectionChange === record.installed.onConnectionChange
+    const canRestoreTrigger = g.onTrigger === record.installed.onTrigger
 
-    originalCallbacksMap.delete(g.id)
+    if (canRestoreAdded) g.onNodeAdded = record.original.onNodeAdded
+    if (canRestoreRemoved) g.onNodeRemoved = record.original.onNodeRemoved
+    if (canRestoreConn)
+      g.onConnectionChange = record.original.onConnectionChange
+    if (canRestoreTrigger) g.onTrigger = record.original.onTrigger
+
+    // Only drop the record once every slot is back to the captured
+    // original. A chain-wrapped slot still calls our wrapper internally
+    // and that wrapper closure reads `record.original` — deleting the
+    // record now would orphan that closure, AND the next setup would
+    // capture the chain-wrapper as the new "original" and stack a
+    // second minimap wrapper underneath it. Keep the record alive so
+    // setupEventListeners' resubscribe path can repair the restored
+    // slots without re-stacking.
+    if (
+      canRestoreAdded &&
+      canRestoreRemoved &&
+      canRestoreConn &&
+      canRestoreTrigger
+    ) {
+      originalCallbacksMap.delete(g)
+    }
   }
 
   const checkForChangesInternal = () => {
@@ -173,15 +256,20 @@ export function useMinimapGraph(
   }
 
   const init = () => {
+    disposed = false
     setupEventListeners()
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
 
-    watch(layoutStoreVersion, () => {
+    stopLayoutStoreWatch?.()
+    stopLayoutStoreWatch = watch(layoutStoreVersion, () => {
       void handleGraphChangedThrottled()
     })
   }
 
   const destroy = () => {
+    disposed = true
+    stopLayoutStoreWatch?.()
+    stopLayoutStoreWatch = undefined
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     nodeStatesCache.clear()

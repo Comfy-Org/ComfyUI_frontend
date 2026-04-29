@@ -16,6 +16,7 @@ import type { NodeDefLookup } from '@/workbench/extensions/manager/utils/graphHa
 type NodeDefs = NodeDefLookup
 
 let nodeIdCounter = 0
+let subgraphIdCounter = 0
 const mockNodeDef = {} as ComfyNodeDefImpl
 
 const createGraph = (nodes: LGraphNode[] = []): LGraph => {
@@ -23,7 +24,10 @@ const createGraph = (nodes: LGraphNode[] = []): LGraph => {
 }
 
 const createSubgraph = (nodes: LGraphNode[]): Subgraph => {
-  return fromPartial<Subgraph>({ nodes })
+  return fromPartial<Subgraph>({
+    id: `mock-subgraph-${subgraphIdCounter++}`,
+    nodes
+  })
 }
 
 const createNode = (

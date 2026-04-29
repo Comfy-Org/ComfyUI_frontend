@@ -131,21 +131,40 @@ export function mapAllNodes<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
+  return mapAllNodesWithVisited(graph, mapFn, new Set())
+}
+
+function mapAllNodesWithVisited<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<LGraph | Subgraph>
+): T[] {
+  // Path-local cycle guard: seed `visited` with the current graph at
+  // function entry (not from the parent frame), so a self-referential
+  // SubgraphNode (`node.subgraph === graph`) is detected and skipped
+  // instead of recursing into the same graph and double-applying
+  // mapFn to every node. Sibling SubgraphNodes pointing at the same
+  // Subgraph are still visited independently — each is an independent
+  // execution and global dedup would under-count contents.
+  // Object identity rather than `subgraph.id` because LGraph defaults
+  // to the zero UUID until `configure()` assigns a real one.
+  if (visited.has(graph)) return []
+  visited.add(graph)
+
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
-    // Recursively map over subgraphs first
     if (node.isSubgraphNode?.() && node.subgraph) {
-      results.push(...mapAllNodes(node.subgraph, mapFn))
+      results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
     }
 
-    // Apply map function to current node
     const result = mapFn(node)
     if (result !== undefined) {
       results.push(result)
     }
   })
 
+  visited.delete(graph)
   return results
 }
 
@@ -160,15 +179,29 @@ export function forEachNode(
   graph: LGraph | Subgraph,
   fn: (node: LGraphNode) => void
 ): void {
+  forEachNodeWithVisited(graph, fn, new Set())
+}
+
+function forEachNodeWithVisited(
+  graph: LGraph | Subgraph,
+  fn: (node: LGraphNode) => void,
+  visited: Set<LGraph | Subgraph>
+): void {
+  // See `mapAllNodesWithVisited`: seed at function entry so self-cycle
+  // (`node.subgraph === graph`) is short-circuited before fn is called
+  // twice on every node.
+  if (visited.has(graph)) return
+  visited.add(graph)
+
   visitGraphNodes(graph, (node) => {
-    // Recursively process subgraphs first
     if (node.isSubgraphNode?.() && node.subgraph) {
-      forEachNode(node.subgraph, fn)
+      forEachNodeWithVisited(node.subgraph, fn, visited)
     }
 
-    // Execute function on current node
     fn(node)
   })
+
+  visited.delete(graph)
 }
 
 /**
@@ -199,16 +232,23 @@ export function collectAllNodes(
  */
 export function findNodeInHierarchy(
   graph: LGraph | Subgraph,
-  nodeId: string | number
+  nodeId: string | number,
+  visited: Set<LGraph | Subgraph> = new Set()
 ): LGraphNode | null {
   // Check current graph
   const node = graph.getNodeById(nodeId)
   if (node) return node
 
-  // Search in subgraphs
+  // Search in subgraphs. Path-local cycle guard: a malformed A→B→A
+  // subgraph cycle would otherwise stack-overflow. See
+  // `mapAllNodesWithVisited` for the same pattern applied to the
+  // bulk-traversal helpers.
   for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
-      const found = findNodeInHierarchy(node.subgraph, nodeId)
+      if (visited.has(node.subgraph)) continue
+      visited.add(node.subgraph)
+      const found = findNodeInHierarchy(node.subgraph, nodeId, visited)
+      visited.delete(node.subgraph)
       if (found) return found
     }
   }
@@ -225,20 +265,25 @@ export function findNodeInHierarchy(
  */
 export function findSubgraphByUuid(
   graph: LGraph | Subgraph,
-  targetUuid: string
+  targetUuid: string,
+  visited: Set<LGraph | Subgraph> = new Set()
 ): Subgraph | null {
   // Fast O(1) lookup via the root graph's centralized subgraph registry.
   if ('subgraphs' in graph && graph.subgraphs instanceof Map) {
     return graph.subgraphs.get(targetUuid) ?? null
   }
 
-  // Fallback: recursive traversal for non-root graphs without the registry.
+  // Fallback: recursive traversal for non-root graphs without the
+  // registry. Path-local cycle guard mirrors `findNodeInHierarchy`.
   for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
       }
-      const found = findSubgraphByUuid(node.subgraph, targetUuid)
+      if (visited.has(node.subgraph)) continue
+      visited.add(node.subgraph)
+      const found = findSubgraphByUuid(node.subgraph, targetUuid, visited)
+      visited.delete(node.subgraph)
       if (found) return found
     }
   }
@@ -255,12 +300,28 @@ export function findSubgraphPathById(
   rootGraph: LGraph,
   targetId: string
 ): string[] | null {
-  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
-    { graph: rootGraph, path: [] }
-  ]
+  // Cycle guard mirrors traverseNodesDepthFirst: an "exit" sentinel
+  // removes the subgraph from `visited` after its subtree is fully
+  // processed, so a malformed A→B→A cycle short-circuits and a
+  // Subgraph that appears in unrelated subtrees is searched each
+  // time. Sibling SubgraphNodes in the same parent that point at
+  // the same Subgraph object are deduplicated (see inline note
+  // below).
+  type StackItem =
+    | { kind: 'node'; graph: LGraph | Subgraph; path: string[] }
+    | { kind: 'exit'; subgraph: LGraph | Subgraph }
+  const stack: StackItem[] = [{ kind: 'node', graph: rootGraph, path: [] }]
+  const visited = new Set<LGraph | Subgraph>()
 
   while (stack.length > 0) {
-    const { graph, path } = stack.pop()!
+    const item = stack.pop()!
+
+    if (item.kind === 'exit') {
+      visited.delete(item.subgraph)
+      continue
+    }
+
+    const { graph, path } = item
 
     // Check if graph exists and has _nodes property
     if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
@@ -273,7 +334,16 @@ export function findSubgraphPathById(
         if (node.subgraph.id === targetId) {
           return newPath
         }
-        stack.push({ graph: node.subgraph, path: newPath })
+        // Sibling-instance dedupe: identical Subgraph refs in the
+        // same parent are skipped here (the first is already on the
+        // stack with its exit sentinel still pending). Returning the
+        // first match suffices and avoids duplicate paths. Diverges
+        // from mapAllNodesWithVisited, which permits per-instance
+        // descent.
+        if (visited.has(node.subgraph)) continue
+        visited.add(node.subgraph)
+        stack.push({ kind: 'exit', subgraph: node.subgraph })
+        stack.push({ kind: 'node', graph: node.subgraph, path: newPath })
       }
     }
   }
@@ -617,28 +687,47 @@ export function traverseNodesDepthFirst<T = void>(
     initialContext = undefined as T,
     expandSubgraphs = true
   } = options || {}
-  type StackItem = { node: LGraphNode; context: T }
+  // The recursive helpers (mapAllNodes/forEachNode) implement a path-local
+  // visited set by deleting on return from the recursion. The iterative
+  // DFS here gets the same semantics by pushing an "exit-subgraph"
+  // sentinel onto the stack alongside the node items: when the sentinel
+  // pops, the subgraph leaves the visited set. Cycles are blocked
+  // (subgraph still in visited when revisited within its own subtree),
+  // sibling SubgraphNode instances are permitted (subgraph removed from
+  // visited before the next sibling pops). See `mapAllNodesWithVisited`
+  // for the full rationale.
+  type StackItem =
+    | { kind: 'node'; node: LGraphNode; context: T }
+    | { kind: 'exit'; subgraph: LGraph | Subgraph }
   const stack: StackItem[] = []
+  const visited = new Set<LGraph | Subgraph>()
 
-  // Initialize stack with starting nodes
   for (const node of nodes) {
-    stack.push({ node, context: initialContext })
+    stack.push({ kind: 'node', node, context: initialContext })
   }
 
-  // Process stack iteratively (DFS)
   while (stack.length > 0) {
-    const { node, context } = stack.pop()!
+    const item = stack.pop()!
 
-    // Visit node and get updated context for children
+    if (item.kind === 'exit') {
+      visited.delete(item.subgraph)
+      continue
+    }
+
+    const { node, context } = item
     const childContext = visitor(node, context)
 
-    // If it's a subgraph and we should expand, add children to stack
     if (expandSubgraphs && node.isSubgraphNode?.() && node.subgraph) {
-      // Process children in reverse order to maintain left-to-right DFS processing
-      // when popping from stack (LIFO). Iterate backwards to avoid array reversal.
-      const children = node.subgraph.nodes
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], context: childContext })
+      if (!visited.has(node.subgraph)) {
+        visited.add(node.subgraph)
+        // Exit sentinel goes on first so it pops after all children are
+        // processed. Children pushed in reverse to preserve left-to-right
+        // DFS order on LIFO pops.
+        stack.push({ kind: 'exit', subgraph: node.subgraph })
+        const children = node.subgraph.nodes
+        for (let i = children.length - 1; i >= 0; i--) {
+          stack.push({ kind: 'node', node: children[i], context: childContext })
+        }
       }
     }
   }
@@ -770,14 +859,22 @@ export function getActiveGraphNodeIds(
 
 function findPartialExecutionPathToGraph(
   target: LGraph,
-  root: LGraph
+  root: LGraph,
+  visited: Set<LGraph | Subgraph> = new Set()
 ): string | undefined {
   for (const node of root.nodes) {
     if (!node.isSubgraphNode()) continue
 
     if (node.subgraph === target) return `${node.id}`
 
-    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
+    if (visited.has(node.subgraph)) continue
+    visited.add(node.subgraph)
+    const subpath = findPartialExecutionPathToGraph(
+      target,
+      node.subgraph,
+      visited
+    )
+    visited.delete(node.subgraph)
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
