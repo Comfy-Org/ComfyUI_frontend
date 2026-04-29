@@ -6,34 +6,30 @@ const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
 
 type PromotedWidgetPatch = Omit<PromotedWidgetSource, 'sourceNodeId'>
 
-function canResolve(
-  hostNode: SubgraphNode,
-  sourceNodeId: string,
-  widgetName: string,
-  disambiguator?: string
-): boolean {
-  return (
-    resolveConcretePromotedWidget(
-      hostNode,
-      sourceNodeId,
-      widgetName,
-      disambiguator
-    ).status === 'resolved'
-  )
-}
-
-function tryResolveCandidate(
+function resolveCandidate(
   hostNode: SubgraphNode,
   sourceNodeId: string,
   widgetName: string,
   disambiguator?: string
 ): PromotedWidgetPatch | undefined {
-  if (!canResolve(hostNode, sourceNodeId, widgetName, disambiguator))
-    return undefined
+  const result = resolveConcretePromotedWidget(
+    hostNode,
+    sourceNodeId,
+    widgetName,
+    disambiguator
+  )
+  if (result.status !== 'resolved') return undefined
+
+  const sourceNode = hostNode.subgraph.getNodeById(sourceNodeId)
+  const inferredDisambiguator =
+    disambiguator ??
+    (sourceNode?.isSubgraphNode() ? String(result.resolved.node.id) : undefined)
 
   return {
     sourceWidgetName: widgetName,
-    ...(disambiguator && { disambiguatingSourceNodeId: disambiguator })
+    ...(inferredDisambiguator && {
+      disambiguatingSourceNodeId: inferredDisambiguator
+    })
   }
 }
 
@@ -59,7 +55,7 @@ function resolveLegacyPrefixedEntry(
     ]
 
     for (const disambiguator of disambiguators) {
-      const resolved = tryResolveCandidate(
+      const resolved = resolveCandidate(
         hostNode,
         sourceNodeId,
         remaining,
@@ -76,18 +72,19 @@ export function normalizeLegacyProxyWidgetEntry(
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
 ): PromotedWidgetSource {
-  if (
-    canResolve(
-      hostNode,
-      sourceNodeId,
-      sourceWidgetName,
-      disambiguatingSourceNodeId
-    )
-  ) {
+  const exactMatch = resolveCandidate(
+    hostNode,
+    sourceNodeId,
+    sourceWidgetName,
+    disambiguatingSourceNodeId
+  )
+  if (exactMatch) {
     return {
       sourceNodeId,
-      sourceWidgetName,
-      ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
+      sourceWidgetName: exactMatch.sourceWidgetName,
+      ...(exactMatch.disambiguatingSourceNodeId && {
+        disambiguatingSourceNodeId: exactMatch.disambiguatingSourceNodeId
+      })
     }
   }
 
@@ -98,14 +95,14 @@ export function normalizeLegacyProxyWidgetEntry(
     disambiguatingSourceNodeId
   )
 
-  const patchDisambiguatingSourceNodeId =
+  const normalizedDisambiguatingSourceNodeId =
     patch?.disambiguatingSourceNodeId ?? disambiguatingSourceNodeId
 
   return {
     sourceNodeId,
     sourceWidgetName: patch?.sourceWidgetName ?? sourceWidgetName,
-    ...(patchDisambiguatingSourceNodeId && {
-      disambiguatingSourceNodeId: patchDisambiguatingSourceNodeId
+    ...(normalizedDisambiguatingSourceNodeId && {
+      disambiguatingSourceNodeId: normalizedDisambiguatingSourceNodeId
     })
   }
 }

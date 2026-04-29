@@ -272,7 +272,7 @@
             ],
             "properties": {
               "proxyWidgets": [
-                ["5", "string_a"],
+                ["9", "string_a"],
                 ["11", "value"],
                 ["9", "value"],
                 ["10", "string_a"]

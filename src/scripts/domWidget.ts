@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { isWidgetPromoted } from '@/core/graph/subgraph/promotionLookup'
 import {
   LGraphNode,
   LegacyWidget,
@@ -13,7 +14,6 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<
@@ -125,8 +125,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
-  readonly promotionStore = usePromotionStore()
-
   readonly id: string
 
   constructor(obj: {
@@ -189,11 +187,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
 
       const graphId = this.node.graph?.rootGraph.id
       const isPromoted =
-        graphId &&
-        this.promotionStore.isPromotedByAny(graphId, {
-          sourceNodeId: String(this.node.id),
-          sourceWidgetName: this.name
-        })
+        graphId && isWidgetPromoted(graphId, String(this.node.id), this.name)
       if (!isPromoted) {
         this.options.onDraw?.(this)
         return

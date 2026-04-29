@@ -190,4 +190,59 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
       })
     }
   )
+
+  /**
+   * Regression test for #10612: promoted widget indicator ring missing on
+   * nested subgraph nodes.
+   *
+   * Uses the 3-level nested fixture (subgraph-nested-promotion):
+   *   Root → Sub 0 (node 5) → Sub 1 (node 6) → Sub 2 (node 9)
+   *
+   * Node 6 (Sub 1) has proxyWidgets promoting widgets from inner nodes,
+   * and those promotions are also promoted up to node 5 (Sub 0). When
+   * navigating into Sub 0, node 6 should show the promoted ring on its
+   * widgets. The fixture's proxyWidgets entries are scoped to Sub 1's
+   * local graph, so the nested `string_a` promotion correctly points at
+   * inner node 9 instead of the outer SubgraphNode 5.
+   */
+  test.describe(
+    'Promoted indicator on 3-level nested subgraphs (#10612)',
+    { tag: ['@widget', '@vue-nodes'] },
+    () => {
+      const WORKFLOW = 'subgraphs/subgraph-nested-promotion'
+      const PROMOTED_BORDER_CLASS = 'ring-component-node-widget-promoted'
+
+      test('Intermediate SubgraphNode shows promoted ring inside parent subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        // At root level, node 5 (Sub 0) is the outermost SubgraphNode.
+        // Its widgets are not promoted further, so no ring expected.
+        const outerNode = comfyPage.vueNodes.getNodeLocator('5')
+        await comfyExpect(outerNode).toBeVisible()
+
+        const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
+        await comfyExpect(outerRings).toHaveCount(0)
+
+        // Exercise the same enter-subgraph control users click.
+        await comfyPage.vueNodes.enterSubgraph('5')
+        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.waitForNodes()
+
+        // Node 6 (Sub 1) has proxyWidgets promoted up to Sub 0
+        // (node 5). Those promoted widgets should carry the ring.
+        const intermediateNode = comfyPage.vueNodes.getNodeLocator('6')
+        await comfyExpect(intermediateNode).toBeVisible()
+
+        const intermediateRings = intermediateNode.locator(
+          `.${PROMOTED_BORDER_CLASS}`
+        )
+        await comfyExpect(intermediateRings).not.toHaveCount(0, {
+          timeout: 5000
+        })
+      })
+    }
+  )
 })

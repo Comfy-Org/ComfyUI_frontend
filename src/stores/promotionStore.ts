@@ -7,8 +7,12 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 const EMPTY_PROMOTIONS: PromotedWidgetSource[] = []
 
+function makePromotionBaseKey(source: PromotedWidgetSource): string {
+  return `${source.sourceNodeId}:${source.sourceWidgetName}`
+}
+
 export function makePromotionEntryKey(source: PromotedWidgetSource): string {
-  const base = `${source.sourceNodeId}:${source.sourceWidgetName}`
+  const base = makePromotionBaseKey(source)
   return source.disambiguatingSourceNodeId
     ? `${base}:${source.disambiguatingSourceNodeId}`
     : base
@@ -40,14 +44,33 @@ export const usePromotionStore = defineStore('promotion', () => {
     return nextRefCounts
   }
 
+  function _incrementKey(refCounts: Map<string, number>, key: string): void {
+    refCounts.set(key, (refCounts.get(key) ?? 0) + 1)
+  }
+
+  function _decrementKey(refCounts: Map<string, number>, key: string): void {
+    const current = refCounts.get(key)
+    if (current === undefined) return
+
+    if (current <= 1) {
+      refCounts.delete(key)
+    } else {
+      refCounts.set(key, current - 1)
+    }
+  }
+
   function _incrementKeys(
     graphId: UUID,
     entries: PromotedWidgetSource[]
   ): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
-      const key = makePromotionEntryKey(e)
-      refCounts.set(key, (refCounts.get(key) ?? 0) + 1)
+      _incrementKey(refCounts, makePromotionEntryKey(e))
+      // Also index the base key so callers without a disambiguator can
+      // still query whether any widget with this name is promoted.
+      if (e.disambiguatingSourceNodeId) {
+        _incrementKey(refCounts, makePromotionBaseKey(e))
+      }
     }
   }
 
@@ -57,12 +80,9 @@ export const usePromotionStore = defineStore('promotion', () => {
   ): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
-      const key = makePromotionEntryKey(e)
-      const count = (refCounts.get(key) ?? 1) - 1
-      if (count <= 0) {
-        refCounts.delete(key)
-      } else {
-        refCounts.set(key, count)
+      _decrementKey(refCounts, makePromotionEntryKey(e))
+      if (e.disambiguatingSourceNodeId) {
+        _decrementKey(refCounts, makePromotionBaseKey(e))
       }
     }
   }
@@ -190,11 +210,31 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphRefCounts.value.delete(graphId)
   }
 
+  /**
+   * Checks whether a widget is promoted by any subgraph node in the given
+   * graph. When disambiguatingSourceNodeId is provided, does an exact-key
+   * lookup; otherwise falls back to a base-key lookup (which succeeds if
+   * any widget with that name on the source node is promoted).
+   */
+  function isWidgetPromoted(
+    graphId: UUID,
+    sourceNodeId: string,
+    sourceWidgetName: string,
+    disambiguatingSourceNodeId?: string
+  ): boolean {
+    return isPromotedByAny(graphId, {
+      sourceNodeId,
+      sourceWidgetName,
+      ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
+    })
+  }
+
   return {
     getPromotionsRef,
     getPromotions,
     isPromoted,
     isPromotedByAny,
+    isWidgetPromoted,
     setPromotions,
     promote,
     demote,
