@@ -52,8 +52,11 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    thumbnailUrl: null,
     comparisonBeforeFile: null,
+    comparisonBeforeUrl: null,
     comparisonAfterFile: null,
+    comparisonAfterUrl: null,
     exampleImages: [],
     tutorialUrl: '',
     metadata: {}

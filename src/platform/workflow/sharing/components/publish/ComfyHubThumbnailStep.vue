@@ -197,8 +197,16 @@ import { useDropZone, useObjectUrl } from '@vueuse/core'
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { thumbnailType = 'image' } = defineProps<{
+const {
+  thumbnailType = 'image',
+  thumbnailUrl = null,
+  comparisonBeforeUrl = null,
+  comparisonAfterUrl = null
+} = defineProps<{
   thumbnailType?: ThumbnailType
+  thumbnailUrl?: string | null
+  comparisonBeforeUrl?: string | null
+  comparisonAfterUrl?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -206,6 +214,7 @@ const emit = defineEmits<{
   'update:thumbnailFile': [value: File | null]
   'update:comparisonBeforeFile': [value: File | null]
   'update:comparisonAfterFile': [value: File | null]
+  clear: []
 }>()
 
 const { t } = useI18n()
@@ -216,11 +225,9 @@ function isThumbnailType(value: string): value is ThumbnailType {
 
 function handleThumbnailTypeChange(value: unknown) {
   if (typeof value === 'string' && isThumbnailType(value)) {
+    thumbnailFile.value = null
     comparisonBeforeFile.value = null
     comparisonAfterFile.value = null
-    emit('update:thumbnailFile', null)
-    emit('update:comparisonBeforeFile', null)
-    emit('update:comparisonAfterFile', null)
     emit('update:thumbnailType', value)
   }
 }
@@ -258,8 +265,15 @@ const thumbnailOptions = [
 ]
 
 const thumbnailFile = shallowRef<File | null>(null)
-const thumbnailPreviewUrl = useObjectUrl(thumbnailFile)
-const isVideoFile = ref(false)
+const thumbnailObjectUrl = useObjectUrl(thumbnailFile)
+const thumbnailPreviewUrl = computed(
+  () => thumbnailObjectUrl.value ?? thumbnailUrl ?? undefined
+)
+const isVideoFile = computed(() =>
+  thumbnailFile.value
+    ? thumbnailFile.value.type.startsWith('video/')
+    : thumbnailType === 'video'
+)
 
 function setThumbnailPreview(file: File) {
   const maxSize = file.type.startsWith('video/')
@@ -267,15 +281,20 @@ function setThumbnailPreview(file: File) {
     : MAX_IMAGE_SIZE_MB
   if (isFileTooLarge(file, maxSize)) return
   thumbnailFile.value = file
-  isVideoFile.value = file.type.startsWith('video/')
   emit('update:thumbnailFile', file)
 }
 
 const comparisonBeforeFile = shallowRef<File | null>(null)
 const comparisonAfterFile = shallowRef<File | null>(null)
+const comparisonBeforeObjectUrl = useObjectUrl(comparisonBeforeFile)
+const comparisonAfterObjectUrl = useObjectUrl(comparisonAfterFile)
 const comparisonPreviewUrls = reactive({
-  before: useObjectUrl(comparisonBeforeFile),
-  after: useObjectUrl(comparisonAfterFile)
+  before: computed(
+    () => comparisonBeforeObjectUrl.value ?? comparisonBeforeUrl ?? undefined
+  ),
+  after: computed(
+    () => comparisonAfterObjectUrl.value ?? comparisonAfterUrl ?? undefined
+  )
 })
 
 const hasBothComparisonImages = computed(
@@ -296,13 +315,10 @@ function clearAllPreviews() {
   if (thumbnailType === 'imageComparison') {
     comparisonBeforeFile.value = null
     comparisonAfterFile.value = null
-    emit('update:comparisonBeforeFile', null)
-    emit('update:comparisonAfterFile', null)
-    return
+  } else {
+    thumbnailFile.value = null
   }
-
-  thumbnailFile.value = null
-  emit('update:thumbnailFile', null)
+  emit('clear')
 }
 
 function handleFileSelect(event: Event) {

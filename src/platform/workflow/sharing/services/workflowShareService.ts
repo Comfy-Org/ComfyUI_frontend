@@ -39,29 +39,78 @@ function mapApiThumbnailType(
   return value
 }
 
+type LabelRefOrString = string | { name: string; display_name?: string }
+
 interface PrefillMetadataFields {
+  name?: string | null
   description?: string | null
-  tags?: string[] | null
+  tags?: LabelRefOrString[] | null
+  models?: LabelRefOrString[] | null
+  custom_nodes?: LabelRefOrString[] | null
   thumbnail_type?: 'image' | 'video' | 'image_comparison' | null
+  thumbnail_url?: string | null
+  thumbnail_comparison_url?: string | null
   sample_image_urls?: string[] | null
+  tutorial_url?: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+function labelRefsToNames(
+  refs: LabelRefOrString[] | null | undefined
+): string[] | undefined {
+  if (!refs?.length) return undefined
+  const names = refs
+    .map((ref) => (typeof ref === 'string' ? ref : ref.name))
+    .filter((name) => name.length > 0)
+  return names.length > 0 ? names : undefined
 }
 
 function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
+  const name = fields.name ?? undefined
   const description = fields.description ?? undefined
-  const tags = fields.tags ?? undefined
+  const tags = labelRefsToNames(fields.tags)
+  const models = labelRefsToNames(fields.models)
+  const customNodes = labelRefsToNames(fields.custom_nodes)
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
+  const thumbnailUrl = fields.thumbnail_url ?? undefined
+  const thumbnailComparisonUrl = fields.thumbnail_comparison_url ?? undefined
   const sampleImageUrls = fields.sample_image_urls ?? undefined
+  const tutorialUrl = fields.tutorial_url ?? undefined
+  const metadata =
+    fields.metadata && Object.keys(fields.metadata).length > 0
+      ? fields.metadata
+      : undefined
 
-  if (
-    !description &&
-    !tags?.length &&
-    !thumbnailType &&
-    !sampleImageUrls?.length
-  ) {
+  const hasAnything =
+    name ||
+    description ||
+    tags?.length ||
+    models?.length ||
+    customNodes?.length ||
+    thumbnailType ||
+    thumbnailUrl ||
+    thumbnailComparisonUrl ||
+    sampleImageUrls?.length ||
+    tutorialUrl ||
+    metadata
+
+  if (!hasAnything) {
     return null
   }
 
-  return { description, tags, thumbnailType, sampleImageUrls }
+  return {
+    name,
+    description,
+    tags,
+    models,
+    customNodes,
+    thumbnailType,
+    thumbnailUrl,
+    thumbnailComparisonUrl,
+    sampleImageUrls,
+    tutorialUrl,
+    metadata
+  }
 }
 
 function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {

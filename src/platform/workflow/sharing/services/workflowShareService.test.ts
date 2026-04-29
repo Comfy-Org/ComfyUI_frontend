@@ -199,6 +199,91 @@ describe(useWorkflowShareService, () => {
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
   })
 
+  it('maps every prefill field from a full hub workflow detail response', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-full/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-full',
+          share_id: 'wf-full',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-full') {
+        return mockJsonResponse({
+          name: 'Full Workflow',
+          description: 'Everything filled in',
+          tags: [
+            { name: 'art', display_name: 'art' },
+            { name: 'upscale', display_name: 'upscale' }
+          ],
+          models: [{ name: 'sdxl', display_name: 'SDXL' }],
+          custom_nodes: [
+            { name: 'comfyui-impact-pack', display_name: 'Impact Pack' }
+          ],
+          thumbnail_type: 'image',
+          thumbnail_url: 'https://cdn.example.com/thumb.png',
+          thumbnail_comparison_url: 'https://cdn.example.com/after.png',
+          sample_image_urls: ['https://cdn.example.com/sample-1.png'],
+          tutorial_url: 'https://youtube.com/watch?v=abc',
+          metadata: { extended_description: 'long form text' }
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-full')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toEqual({
+      name: 'Full Workflow',
+      description: 'Everything filled in',
+      tags: ['art', 'upscale'],
+      models: ['sdxl'],
+      customNodes: ['comfyui-impact-pack'],
+      thumbnailType: 'image',
+      thumbnailUrl: 'https://cdn.example.com/thumb.png',
+      thumbnailComparisonUrl: 'https://cdn.example.com/after.png',
+      sampleImageUrls: ['https://cdn.example.com/sample-1.png'],
+      tutorialUrl: 'https://youtube.com/watch?v=abc',
+      metadata: { extended_description: 'long form text' }
+    })
+  })
+
+  it('accepts string-shaped tag arrays for backward compatibility', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-strings/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-strings',
+          share_id: 'wf-strings',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-strings') {
+        return mockJsonResponse({
+          tags: ['portrait', 'realism'],
+          models: ['flux'],
+          custom_nodes: []
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-strings')
+
+    expect(status.prefill).toEqual({
+      tags: ['portrait', 'realism'],
+      models: ['flux']
+    })
+  })
+
   it('returns null prefill when hub workflow details are unavailable', async () => {
     mockFetchApi.mockImplementation(async (path: string) => {
       if (path === '/userdata/wf-no-meta/publish') {

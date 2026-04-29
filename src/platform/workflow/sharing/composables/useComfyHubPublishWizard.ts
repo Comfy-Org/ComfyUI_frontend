@@ -32,8 +32,11 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    thumbnailUrl: null,
     comparisonBeforeFile: null,
+    comparisonBeforeUrl: null,
     comparisonAfterFile: null,
+    comparisonAfterUrl: null,
     exampleImages: [],
     tutorialUrl: '',
     metadata: {}
@@ -95,8 +98,18 @@ export function useComfyHubPublishWizard() {
   function applyPrefill(prefill: PublishPrefill) {
     const defaults = createDefaultFormData()
     const current = formData.value
+    const resolvedThumbnailType =
+      current.thumbnailType === defaults.thumbnailType
+        ? (prefill.thumbnailType ?? current.thumbnailType)
+        : current.thumbnailType
+    const isComparison = resolvedThumbnailType === 'imageComparison'
+
     formData.value = {
       ...current,
+      name:
+        current.name === defaults.name
+          ? (prefill.name ?? current.name)
+          : current.name,
       description:
         current.description === defaults.description
           ? (prefill.description ?? current.description)
@@ -105,14 +118,47 @@ export function useComfyHubPublishWizard() {
         current.tags.length === 0 && prefill.tags?.length
           ? prefill.tags
           : current.tags,
-      thumbnailType:
-        current.thumbnailType === defaults.thumbnailType
-          ? (prefill.thumbnailType ?? current.thumbnailType)
-          : current.thumbnailType,
+      models:
+        current.models.length === 0 && prefill.models?.length
+          ? prefill.models
+          : current.models,
+      customNodes:
+        current.customNodes.length === 0 && prefill.customNodes?.length
+          ? prefill.customNodes
+          : current.customNodes,
+      thumbnailType: resolvedThumbnailType,
+      thumbnailUrl:
+        !isComparison &&
+        current.thumbnailFile === null &&
+        current.thumbnailUrl === null
+          ? (prefill.thumbnailUrl ?? null)
+          : current.thumbnailUrl,
+      comparisonBeforeUrl:
+        isComparison &&
+        current.comparisonBeforeFile === null &&
+        current.comparisonBeforeUrl === null
+          ? (prefill.thumbnailUrl ?? null)
+          : current.comparisonBeforeUrl,
+      comparisonAfterUrl:
+        isComparison &&
+        current.comparisonAfterFile === null &&
+        current.comparisonAfterUrl === null
+          ? (prefill.thumbnailComparisonUrl ?? null)
+          : current.comparisonAfterUrl,
       exampleImages:
         current.exampleImages.length === 0 && prefill.sampleImageUrls?.length
           ? createExampleImagesFromUrls(prefill.sampleImageUrls)
-          : current.exampleImages
+          : current.exampleImages,
+      tutorialUrl:
+        current.tutorialUrl === defaults.tutorialUrl
+          ? (prefill.tutorialUrl ?? current.tutorialUrl)
+          : current.tutorialUrl,
+      metadata:
+        Object.keys(current.metadata).length === 0 &&
+        prefill.metadata &&
+        Object.keys(prefill.metadata).length > 0
+          ? prefill.metadata
+          : current.metadata
     }
   }
 
