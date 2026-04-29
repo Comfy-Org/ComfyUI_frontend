@@ -5,7 +5,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { cleanupFakeModel } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
