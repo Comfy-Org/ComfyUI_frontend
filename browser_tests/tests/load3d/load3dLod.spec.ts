@@ -17,12 +17,19 @@ test.describe('Load3D LOD', () => {
         (el: HTMLCanvasElement) => el.width
       )
 
-      // Zoom in — ds.scale increases, triggering appScalePercentage to update,
-      // which fires the watch in useLoad3d that calls handleResize with the
-      // new zoom-based pixel ratio.
-      await comfyPage.canvasOps.zoom(-120, 5)
+      // Set the canvas zoom level programmatically. canvasOps.zoom() scrolls
+      // at (10, 10) which lands in the topbar when the new menu is active, so
+      // wheel events never reach the LiteGraph canvas. Setting ds.scale directly
+      // and marking the canvas dirty forces the render loop to call
+      // computeVisibleArea() → ds.onChanged() → appScalePercentage update →
+      // useLoad3d watch → handleResize() → renderer.setPixelRatio(scale).
+      await comfyPage.page.evaluate(() => {
+        window.app!.canvas.ds.scale = 2.0
+        window.app!.canvas.setDirty(true, true)
+      })
+      await comfyPage.nextFrame()
 
-      // Physical pixel count must grow: canvas.width = clientWidth × ds.scale
+      // canvas.width = Math.floor(clientWidth × ds.scale) — must exceed initial
       await expect
         .poll(() => load3d.canvas.evaluate((el: HTMLCanvasElement) => el.width))
         .toBeGreaterThan(initialWidth)
