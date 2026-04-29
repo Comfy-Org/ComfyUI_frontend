@@ -5,7 +5,12 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
+interface ManifestEntry extends PromotedWidgetSource {
+  promoted: boolean
+}
+
 const EMPTY_PROMOTIONS: PromotedWidgetSource[] = []
+const EMPTY_MANIFEST: readonly ManifestEntry[] = []
 
 export function makePromotionEntryKey(source: PromotedWidgetSource): string {
   const base = `${source.sourceNodeId}:${source.sourceWidgetName}`
@@ -15,20 +20,20 @@ export function makePromotionEntryKey(source: PromotedWidgetSource): string {
 }
 
 export const usePromotionStore = defineStore('promotion', () => {
-  const graphPromotions = ref(
-    new Map<UUID, Map<NodeId, PromotedWidgetSource[]>>()
-  )
+  const graphManifests = ref(new Map<UUID, Map<NodeId, ManifestEntry[]>>())
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
+  const promotedCache = new WeakMap<
+    readonly ManifestEntry[],
+    PromotedWidgetSource[]
+  >()
 
-  function _getPromotionsForGraph(
-    graphId: UUID
-  ): Map<NodeId, PromotedWidgetSource[]> {
-    const promotions = graphPromotions.value.get(graphId)
-    if (promotions) return promotions
+  function _getManifestForGraph(graphId: UUID): Map<NodeId, ManifestEntry[]> {
+    const manifests = graphManifests.value.get(graphId)
+    if (manifests) return manifests
 
-    const nextPromotions = new Map<NodeId, PromotedWidgetSource[]>()
-    graphPromotions.value.set(graphId, nextPromotions)
-    return nextPromotions
+    const nextManifests = new Map<NodeId, ManifestEntry[]>()
+    graphManifests.value.set(graphId, nextManifests)
+    return nextManifests
   }
 
   function _getRefCountsForGraph(graphId: UUID): Map<string, number> {
@@ -40,9 +45,42 @@ export const usePromotionStore = defineStore('promotion', () => {
     return nextRefCounts
   }
 
+  function _matchesEntry(
+    entry: PromotedWidgetSource,
+    source: PromotedWidgetSource
+  ): boolean {
+    return (
+      entry.sourceNodeId === source.sourceNodeId &&
+      entry.sourceWidgetName === source.sourceWidgetName &&
+      entry.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
+    )
+  }
+
+  function _getPromotedEntries(
+    manifest: readonly ManifestEntry[]
+  ): PromotedWidgetSource[] {
+    const cached = promotedCache.get(manifest)
+    if (cached) return cached
+
+    const promoted: PromotedWidgetSource[] = []
+    for (const e of manifest) {
+      if (!e.promoted) continue
+      const entry: PromotedWidgetSource = {
+        sourceNodeId: e.sourceNodeId,
+        sourceWidgetName: e.sourceWidgetName
+      }
+      if (e.disambiguatingSourceNodeId)
+        entry.disambiguatingSourceNodeId = e.disambiguatingSourceNodeId
+      promoted.push(entry)
+    }
+
+    promotedCache.set(manifest, promoted)
+    return promoted
+  }
+
   function _incrementKeys(
     graphId: UUID,
-    entries: PromotedWidgetSource[]
+    entries: readonly PromotedWidgetSource[]
   ): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
@@ -53,27 +91,50 @@ export const usePromotionStore = defineStore('promotion', () => {
 
   function _decrementKeys(
     graphId: UUID,
-    entries: PromotedWidgetSource[]
+    entries: readonly PromotedWidgetSource[]
   ): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
       const key = makePromotionEntryKey(e)
       const count = (refCounts.get(key) ?? 1) - 1
-      if (count <= 0) {
-        refCounts.delete(key)
-      } else {
-        refCounts.set(key, count)
-      }
+      if (count <= 0) refCounts.delete(key)
+      else refCounts.set(key, count)
     }
+  }
+
+  function _commitManifest(
+    graphId: UUID,
+    subgraphNodeId: NodeId,
+    nextManifest: ManifestEntry[]
+  ): void {
+    const manifests = _getManifestForGraph(graphId)
+    const prevManifest = manifests.get(subgraphNodeId) ?? EMPTY_MANIFEST
+
+    if (prevManifest === nextManifest) return
+
+    _decrementKeys(graphId, _getPromotedEntries(prevManifest))
+    _incrementKeys(graphId, _getPromotedEntries(nextManifest))
+
+    if (nextManifest.length === 0) manifests.delete(subgraphNodeId)
+    else manifests.set(subgraphNodeId, nextManifest)
+  }
+
+  function _updateManifest(
+    graphId: UUID,
+    subgraphNodeId: NodeId,
+    updater: (manifest: readonly ManifestEntry[]) => ManifestEntry[]
+  ): void {
+    const manifests = _getManifestForGraph(graphId)
+    const prevManifest = manifests.get(subgraphNodeId) ?? EMPTY_MANIFEST
+    _commitManifest(graphId, subgraphNodeId, updater(prevManifest))
   }
 
   function getPromotionsRef(
     graphId: UUID,
     subgraphNodeId: NodeId
   ): PromotedWidgetSource[] {
-    return (
-      _getPromotionsForGraph(graphId).get(subgraphNodeId) ?? EMPTY_PROMOTIONS
-    )
+    const manifest = _getManifestForGraph(graphId).get(subgraphNodeId)
+    return manifest ? _getPromotedEntries(manifest) : EMPTY_PROMOTIONS
   }
 
   function getPromotions(
@@ -88,12 +149,9 @@ export const usePromotionStore = defineStore('promotion', () => {
     subgraphNodeId: NodeId,
     source: PromotedWidgetSource
   ): boolean {
-    return getPromotionsRef(graphId, subgraphNodeId).some(
-      (e) =>
-        e.sourceNodeId === source.sourceNodeId &&
-        e.sourceWidgetName === source.sourceWidgetName &&
-        e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
-    )
+    const manifest = _getManifestForGraph(graphId).get(subgraphNodeId)
+    if (!manifest) return false
+    return manifest.some((e) => e.promoted && _matchesEntry(e, source))
   }
 
   function isPromotedByAny(
@@ -109,17 +167,11 @@ export const usePromotionStore = defineStore('promotion', () => {
     subgraphNodeId: NodeId,
     entries: PromotedWidgetSource[]
   ): void {
-    const promotions = _getPromotionsForGraph(graphId)
-    const oldEntries = promotions.get(subgraphNodeId) ?? []
-
-    _decrementKeys(graphId, oldEntries)
-    _incrementKeys(graphId, entries)
-
-    if (entries.length === 0) {
-      promotions.delete(subgraphNodeId)
-    } else {
-      promotions.set(subgraphNodeId, [...entries])
-    }
+    _commitManifest(
+      graphId,
+      subgraphNodeId,
+      entries.map((e) => ({ ...e, promoted: true }))
+    )
   }
 
   function promote(
@@ -127,16 +179,17 @@ export const usePromotionStore = defineStore('promotion', () => {
     subgraphNodeId: NodeId,
     source: PromotedWidgetSource
   ): void {
-    if (isPromoted(graphId, subgraphNodeId, source)) return
+    _updateManifest(graphId, subgraphNodeId, (manifest) => {
+      const index = manifest.findIndex((e) => _matchesEntry(e, source))
 
-    const entries = getPromotionsRef(graphId, subgraphNodeId)
-    const entry: PromotedWidgetSource = {
-      sourceNodeId: source.sourceNodeId,
-      sourceWidgetName: source.sourceWidgetName
-    }
-    if (source.disambiguatingSourceNodeId)
-      entry.disambiguatingSourceNodeId = source.disambiguatingSourceNodeId
-    setPromotions(graphId, subgraphNodeId, [...entries, entry])
+      if (index === -1) return [...manifest, { ...source, promoted: true }]
+
+      if (manifest[index].promoted) return manifest as ManifestEntry[]
+
+      const next = [...manifest]
+      next[index] = { ...next[index], promoted: true }
+      return next
+    })
   }
 
   function demote(
@@ -144,19 +197,17 @@ export const usePromotionStore = defineStore('promotion', () => {
     subgraphNodeId: NodeId,
     source: PromotedWidgetSource
   ): void {
-    const entries = getPromotionsRef(graphId, subgraphNodeId)
-    setPromotions(
-      graphId,
-      subgraphNodeId,
-      entries.filter(
-        (e) =>
-          !(
-            e.sourceNodeId === source.sourceNodeId &&
-            e.sourceWidgetName === source.sourceWidgetName &&
-            e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
-          )
+    _updateManifest(graphId, subgraphNodeId, (manifest) => {
+      const index = manifest.findIndex(
+        (e) => e.promoted && _matchesEntry(e, source)
       )
-    )
+
+      if (index === -1) return manifest as ManifestEntry[]
+
+      const next = [...manifest]
+      next[index] = { ...next[index], promoted: false }
+      return next
+    })
   }
 
   function movePromotion(
@@ -165,28 +216,35 @@ export const usePromotionStore = defineStore('promotion', () => {
     fromIndex: number,
     toIndex: number
   ): void {
-    const promotions = _getPromotionsForGraph(graphId)
-    const currentEntries = promotions.get(subgraphNodeId)
-    if (!currentEntries?.length) return
+    _updateManifest(graphId, subgraphNodeId, (manifest) => {
+      const promotedIndices: number[] = []
+      for (let i = 0; i < manifest.length; i++) {
+        if (manifest[i].promoted) promotedIndices.push(i)
+      }
 
-    const entries = [...currentEntries]
-    if (
-      fromIndex < 0 ||
-      fromIndex >= entries.length ||
-      toIndex < 0 ||
-      toIndex >= entries.length ||
-      fromIndex === toIndex
-    )
-      return
+      if (
+        fromIndex < 0 ||
+        fromIndex >= promotedIndices.length ||
+        toIndex < 0 ||
+        toIndex >= promotedIndices.length ||
+        fromIndex === toIndex
+      )
+        return manifest as ManifestEntry[]
 
-    const [entry] = entries.splice(fromIndex, 1)
-    entries.splice(toIndex, 0, entry)
+      const promotedEntries = promotedIndices.map((i) => manifest[i])
+      const [moved] = promotedEntries.splice(fromIndex, 1)
+      promotedEntries.splice(toIndex, 0, moved)
 
-    promotions.set(subgraphNodeId, entries)
+      const next = [...manifest]
+      promotedIndices.forEach((manifestIndex, i) => {
+        next[manifestIndex] = promotedEntries[i]
+      })
+      return next
+    })
   }
 
   function clearGraph(graphId: UUID): void {
-    graphPromotions.value.delete(graphId)
+    graphManifests.value.delete(graphId)
     graphRefCounts.value.delete(graphId)
   }
 
