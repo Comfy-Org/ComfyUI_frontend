@@ -58,15 +58,11 @@ export function useBrushAdjustment(initialSettings?: {
       }
     }
 
-    const cappedDeltaX = Math.max(-100, Math.min(100, finalDeltaX))
-    const cappedDeltaY = Math.max(-100, Math.min(100, finalDeltaY))
-
     const newSize = Math.max(
       1,
       Math.min(
         500,
-        initialBrushSize.value +
-          (cappedDeltaX / 35) * brushAdjustmentSpeed.value
+        initialBrushSize.value + (finalDeltaX / 35) * brushAdjustmentSpeed.value
       )
     )
 
@@ -75,7 +71,7 @@ export function useBrushAdjustment(initialSettings?: {
       Math.min(
         1,
         initialBrushHardness.value -
-          (cappedDeltaY / 4000) * brushAdjustmentSpeed.value
+          (finalDeltaY / 4000) * brushAdjustmentSpeed.value
       )
     )
 

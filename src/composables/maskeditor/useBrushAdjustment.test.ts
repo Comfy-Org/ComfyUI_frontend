@@ -79,6 +79,20 @@ describe('handleBrushAdjustment', () => {
     expect(store.brushSettings.size).toBe(sizeAfterFirstMove)
   })
 
+  it('continues increasing size beyond 100px drag (no delta saturation)', async () => {
+    const store = useMaskEditorStore()
+    const { startBrushAdjustment, handleBrushAdjustment } = useBrushAdjustment()
+    await startBrushAdjustment(makePointerEvent(0, 0))
+
+    await handleBrushAdjustment(makePointerEvent(100, 0))
+    const sizeAt100px = store.brushSettings.size
+
+    await handleBrushAdjustment(makePointerEvent(300, 0))
+    const sizeAt300px = store.brushSettings.size
+
+    expect(sizeAt300px).toBeGreaterThan(sizeAt100px)
+  })
+
   it('clamps size to minimum 1 when dragging far left', async () => {
     const store = useMaskEditorStore()
     store.brushSettings.size = 2
