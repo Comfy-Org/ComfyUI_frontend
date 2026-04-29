@@ -151,16 +151,17 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
     }
 
     test('false preserves the graph insertion order', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+
       await comfyPage.settings.setSetting(
         'Comfy.Workflow.SortNodeIdOnSave',
         false
       )
       const ids = await getSerializedNodeIds(comfyPage)
 
-      expect(
-        ids,
-        'Default workflow expected to expose a non-trivial sort case'
-      ).not.toEqual(ascendingById(ids))
+      expect(ids, 'default workflow nodes already sorted').not.toEqual(
+        ascendingById(ids)
+      )
     })
 
     test('true sorts nodes by id ascending', async ({ comfyPage }) => {
