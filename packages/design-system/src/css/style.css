@@ -16,7 +16,7 @@
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver-ai}]");
+@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
 @source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent,i-tools-preview-image,i-tools-compare-image,canny-to-image,image-edit,text-to-image,pose-to-image,depth-to-video,image-to-image,canny-to-video,depth-to-image,image-to-video,pose-to-video,text-to-video,image-inpainting,image-outpainting}]");
@@ -72,10 +72,6 @@
 
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
-
-  --color-coral-red-600: #973a40;
-  --color-coral-red-500: #c53f49;
-  --color-coral-red-400: #dd424e;
 
   --color-bypass: #6a246a;
   --color-error: #962a2a;
@@ -589,8 +585,6 @@
   background-color: color-mix(in srgb, currentColor 20%, transparent);
   font-weight: 700;
   border-radius: 0.25rem;
-  padding: 0 0.125rem;
-  margin: -0.125rem 0.125rem;
 }
 
 @utility scrollbar-hide {

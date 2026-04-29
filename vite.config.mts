@@ -63,7 +63,10 @@ const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
 let GIT_COMMIT = process.env.FRONTEND_COMMIT_HASH || ''
 if (!GIT_COMMIT) {
   try {
-    GIT_COMMIT = execSync('git rev-parse HEAD', { timeout: 5000 })
+    GIT_COMMIT = execSync('git rev-parse HEAD', {
+      timeout: 5000,
+      windowsHide: true
+    })
       .toString()
       .trim()
   } catch {
@@ -161,7 +164,6 @@ export default defineConfig({
       ignored: [
         './browser_tests/**',
         './node_modules/**',
-        './tests-ui/**',
         '.eslintcache',
         '.oxlintrc.json',
         '*.config.{ts,mts}',

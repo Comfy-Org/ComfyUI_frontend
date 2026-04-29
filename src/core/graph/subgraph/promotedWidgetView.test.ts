@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
@@ -97,11 +98,12 @@ function promotedWidgets(node: SubgraphNode): PromotedWidgetView[] {
 }
 
 function callSyncPromotions(node: SubgraphNode) {
-  ;(
-    node as unknown as {
+  fromAny<
+    {
       _syncPromotions: () => void
-    }
-  )._syncPromotions()
+    },
+    unknown
+  >(node)._syncPromotions()
 }
 
 describe(createPromotedWidgetView, () => {
@@ -156,7 +158,9 @@ describe(createPromotedWidgetView, () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(subgraphNode, '1', 'myWidget')
     // node is defined via Object.defineProperty at runtime but not on the TS interface
-    expect((view as unknown as Record<string, unknown>).node).toBe(subgraphNode)
+    expect(fromAny<Record<string, unknown>, unknown>(view).node).toBe(
+      subgraphNode
+    )
   })
 
   test('serialize is false', () => {
@@ -289,7 +293,7 @@ describe(createPromotedWidgetView, () => {
       value: 'initial',
       options: {}
     } satisfies Pick<IBaseWidget, 'name' | 'type' | 'value' | 'options'>
-    const fallbackWidget = fallbackWidgetShape as unknown as IBaseWidget
+    const fallbackWidget = fromPartial<IBaseWidget>(fallbackWidgetShape)
     innerNode.widgets = [fallbackWidget]
 
     const widgetValueStore = useWidgetValueStore()
@@ -398,13 +402,13 @@ describe(createPromotedWidgetView, () => {
     subgraphNode.pos = [10, 20]
     const innerNode = firstInnerNode(innerNodes)
     const mouse = vi.fn(() => true)
-    const legacyWidget = {
+    const legacyWidget = fromAny<IBaseWidget, unknown>({
       name: 'legacyMouse',
       type: 'mystery-legacy',
       value: 'val',
       options: {},
       mouse
-    } as unknown as IBaseWidget
+    })
     innerNode.widgets = [legacyWidget]
 
     const view = createPromotedWidgetView(
@@ -443,6 +447,243 @@ describe(createPromotedWidgetView, () => {
     pointer.finally?.()
 
     expect(mouse).toHaveBeenCalledWith(pointer.eUp, [120, 120], subgraphNode)
+  })
+
+  test('tooltip delegates to interior widget', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const widget = innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    widget.tooltip = 'Help text'
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myWidget'
+    )
+    expect(view.tooltip).toBe('Help text')
+  })
+
+  test('hidden delegates to interior widget', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const widget = innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    widget.hidden = true
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myWidget'
+    )
+    expect(view.hidden).toBe(true)
+  })
+
+  test('label setter persists to widget state', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myWidget'
+    )
+    view.label = 'Renamed'
+    expect(view.label).toBe('Renamed')
+  })
+
+  test('value getter handles number values via isWidgetValue', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('number', 'myNum', 42, () => {})
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myNum'
+    )
+    expect(view.value).toBe(42)
+  })
+
+  test('value getter handles boolean values via isWidgetValue', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('toggle', 'myToggle', true, () => {})
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myToggle'
+    )
+    expect(view.value).toBe(true)
+  })
+
+  test('value setter handles object values via isWidgetValue', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const fallbackWidget = {
+      name: 'objWidget',
+      type: 'text',
+      value: 'old',
+      options: {}
+    } as unknown as IBaseWidget
+    innerNode.widgets = [fallbackWidget]
+
+    const widgetValueStore = useWidgetValueStore()
+    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'objWidget'
+    )
+
+    const objValue = { key: 'data' }
+    view.value = objValue
+    expect(fallbackWidget.value).toBe(objValue)
+  })
+
+  test('onPointerDown returns true when interior widget onPointerDown handles it', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const widget = innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    widget.onPointerDown = vi.fn(() => true)
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myWidget'
+    )
+
+    const pointer = new CanvasPointer(document.createElement('div'))
+    pointer.eDown = {
+      canvasX: 50,
+      canvasY: 60,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: 0,
+      safeOffsetY: 0
+    } as CanvasPointerEvent
+
+    const handled = view.onPointerDown?.(
+      pointer,
+      subgraphNode,
+      {} as Parameters<NonNullable<typeof view.onPointerDown>>[2]
+    )
+    expect(handled).toBe(true)
+    expect(widget.onPointerDown).toHaveBeenCalled()
+  })
+
+  test('onPointerDown binds concrete pointer handlers for known widget types', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'picker'
+    )
+
+    const pointer = new CanvasPointer(document.createElement('div'))
+    pointer.eDown = {
+      canvasX: 50,
+      canvasY: 60,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: 0,
+      safeOffsetY: 0
+    } as CanvasPointerEvent
+
+    const canvas = {} as Parameters<NonNullable<typeof view.onPointerDown>>[2]
+    const handled = view.onPointerDown?.(pointer, subgraphNode, canvas)
+    expect(handled).toBe(true)
+    expect(typeof pointer.onClick).toBe('function')
+    expect(typeof pointer.onDrag).toBe('function')
+
+    // Invoke the bound handlers to cover lambda bodies
+    pointer.onClick?.(pointer.eDown!)
+    pointer.onDrag?.({
+      canvasX: 55,
+      canvasY: 65
+    } as CanvasPointerEvent)
+  })
+
+  test('onPointerDown returns false when no handler matches', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const unknownWidget = {
+      name: 'noHandler',
+      type: 'unknown-type-xyz',
+      value: 'val',
+      options: {}
+    } as unknown as IBaseWidget
+    innerNode.widgets = [unknownWidget]
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'noHandler'
+    )
+
+    const pointer = new CanvasPointer(document.createElement('div'))
+    pointer.eDown = {
+      canvasX: 50,
+      canvasY: 60,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: 0,
+      safeOffsetY: 0
+    } as CanvasPointerEvent
+
+    const handled = view.onPointerDown?.(
+      pointer,
+      subgraphNode,
+      {} as Parameters<NonNullable<typeof view.onPointerDown>>[2]
+    )
+    expect(handled).toBe(false)
+  })
+
+  test('draw calls drawDisconnectedPlaceholder when source is disconnected', () => {
+    const [subgraphNode] = setupSubgraph(0)
+
+    // Create a view pointing at a non-existent node so resolveDeepest
+    // returns undefined — the disconnected path.
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      'nonexistent-node-id',
+      'noWidget'
+    )
+
+    const fillText = vi.fn()
+    const ctx = createInspectableCanvasContext(fillText)
+    view.draw!(ctx, subgraphNode, 200, 0, 30)
+
+    expect(fillText).toHaveBeenCalledOnce()
+  })
+
+  test('resolveDeepest uses frame cache on repeated access', async () => {
+    const resolve =
+      await import('@/core/graph/subgraph/resolveConcretePromotedWidget')
+    const spy = vi.spyOn(resolve, 'resolveConcretePromotedWidget')
+
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'cached', 'val', () => {})
+
+    // Set up primaryCanvas with a stable frame so the cache can be hit
+    const rootGraph = subgraphNode.rootGraph
+    rootGraph.primaryCanvas = { frame: 5 } as unknown as LGraphCanvas
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'cached'
+    )
+
+    // First access populates the cache
+    void view.type
+    // Second access should hit the cache — resolver must not be called again
+    void view.type
+    expect(spy).toHaveBeenCalledOnce()
+
+    spy.mockRestore()
   })
 })
 
@@ -1448,17 +1689,20 @@ describe('widgets getter caching', () => {
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
     const reconcileSpy = vi.spyOn(
-      subgraphNode as unknown as {
-        _buildPromotionReconcileState: (
-          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
-          linkedEntries: Array<{
-            inputName: string
-            inputKey: string
-            sourceNodeId: string
-            sourceWidgetName: string
-          }>
-        ) => unknown
-      },
+      fromAny<
+        {
+          _buildPromotionReconcileState: (
+            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
+            linkedEntries: Array<{
+              inputName: string
+              inputKey: string
+              sourceNodeId: string
+              sourceWidgetName: string
+            }>
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
       '_buildPromotionReconcileState'
     )
 
@@ -1478,17 +1722,20 @@ describe('widgets getter caching', () => {
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
     const reconcileSpy = vi.spyOn(
-      subgraphNode as unknown as {
-        _buildPromotionReconcileState: (
-          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
-          linkedEntries: Array<{
-            inputName: string
-            inputKey: string
-            sourceNodeId: string
-            sourceWidgetName: string
-          }>
-        ) => unknown
-      },
+      fromAny<
+        {
+          _buildPromotionReconcileState: (
+            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
+            linkedEntries: Array<{
+              inputName: string
+              inputKey: string
+              sourceNodeId: string
+              sourceWidgetName: string
+            }>
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
       '_buildPromotionReconcileState'
     )
 
@@ -1522,9 +1769,14 @@ describe('widgets getter caching', () => {
     subgraph.inputNode.slots[0].connect(linkedInputB, linkedNodeB)
 
     const resolveSpy = vi.spyOn(
-      subgraphNode as unknown as {
-        _resolveLinkedPromotionBySubgraphInput: (...args: unknown[]) => unknown
-      },
+      fromAny<
+        {
+          _resolveLinkedPromotionBySubgraphInput: (
+            ...args: unknown[]
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
       '_resolveLinkedPromotionBySubgraphInput'
     )
 
@@ -1923,32 +2175,34 @@ function createFakeCanvasContext() {
 
 function createInspectableCanvasContext(fillText = vi.fn()) {
   const fallback = vi.fn()
-  return new Proxy(
-    {
-      fillText,
-      beginPath: vi.fn(),
-      roundRect: vi.fn(),
-      rect: vi.fn(),
-      fill: vi.fn(),
-      stroke: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      arc: vi.fn(),
-      measureText: (text: string) => ({ width: text.length * 8 }),
-      fillStyle: '#fff',
-      strokeStyle: '#fff',
-      textAlign: 'left',
-      globalAlpha: 1,
-      lineWidth: 1
-    } as Record<string, unknown>,
-    {
-      get(target, key) {
-        if (typeof key === 'string' && key in target)
-          return target[key as keyof typeof target]
-        return fallback
+  return fromAny<CanvasRenderingContext2D, unknown>(
+    new Proxy(
+      {
+        fillText,
+        beginPath: vi.fn(),
+        roundRect: vi.fn(),
+        rect: vi.fn(),
+        fill: vi.fn(),
+        stroke: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        arc: vi.fn(),
+        measureText: (text: string) => ({ width: text.length * 8 }),
+        fillStyle: '#fff',
+        strokeStyle: '#fff',
+        textAlign: 'left',
+        globalAlpha: 1,
+        lineWidth: 1
+      } as Record<string, unknown>,
+      {
+        get(target, key) {
+          if (typeof key === 'string' && key in target)
+            return target[key as keyof typeof target]
+          return fallback
+        }
       }
-    }
-  ) as unknown as CanvasRenderingContext2D
+    )
+  )
 }
 
 function createTwoLevelNestedSubgraph() {

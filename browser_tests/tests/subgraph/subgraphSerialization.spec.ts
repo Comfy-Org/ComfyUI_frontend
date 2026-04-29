@@ -1,22 +1,29 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../../fixtures/ComfyPage'
-import type { PromotedWidgetEntry } from '../../helpers/promotedWidgets'
-
-import { comfyPageFixture as test, comfyExpect } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
-import { TestIds } from '../../fixtures/selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 import {
-  getPromotedWidgets,
+  getPromotedWidgetCount,
   getPromotedWidgetNames,
-  getPromotedWidgetCount
-} from '../../helpers/promotedWidgets'
+  getPromotedWidgets
+} from '@e2e/fixtures/utils/promotedWidgets'
 
-const expectPromotedWidgetsToResolveToInteriorNodes = async (
+const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
+const LEGACY_PREFIXED_WORKFLOW =
+  'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
+const MULTI_INSTANCE_WORKFLOW =
+  'subgraphs/subgraph-multi-instance-promoted-text-values'
+
+async function expectPromotedWidgetsToResolveToInteriorNodes(
   comfyPage: ComfyPage,
   hostSubgraphNodeId: string,
   widgets: PromotedWidgetEntry[]
-) => {
+) {
+  expect(widgets.length).toBeGreaterThan(0)
+
   const interiorNodeIds = widgets.map(([id]) => id)
   const results = await comfyPage.page.evaluate(
     ([hostId, ids]) => {
@@ -32,12 +39,87 @@ const expectPromotedWidgetsToResolveToInteriorNodes = async (
     [hostSubgraphNodeId, interiorNodeIds] as const
   )
 
-  for (const exists of results) {
-    expect(exists).toBe(true)
-  }
+  expect(results).toEqual(widgets.map(() => true))
+}
+
+async function getPromotedHostWidgetValues(
+  comfyPage: ComfyPage,
+  nodeIds: string[]
+) {
+  return comfyPage.page.evaluate((ids) => {
+    const graph = window.app!.canvas.graph!
+
+    return ids.map((id) => {
+      const node = graph.getNodeById(id)
+      if (
+        !node ||
+        typeof node.isSubgraphNode !== 'function' ||
+        !node.isSubgraphNode()
+      ) {
+        return { id, values: [] as unknown[] }
+      }
+
+      return {
+        id,
+        values: (node.widgets ?? []).map((widget) => widget.value)
+      }
+    })
+  }, nodeIds)
 }
 
 test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
+  test('Promoted widget remains usable after serialize and reload', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-with-promoted-text-widget'
+    )
+
+    const beforeReload = comfyPage.page.locator('.comfy-multiline-input')
+    await expect(beforeReload).toHaveCount(1)
+    await expect(beforeReload).toBeVisible()
+
+    await comfyPage.subgraph.serializeAndReload()
+
+    const afterReload = comfyPage.page.locator('.comfy-multiline-input')
+    await expect(afterReload).toHaveCount(1)
+    await expect(afterReload).toBeVisible()
+  })
+
+  test('Compressed target_slot workflow boots into a usable promoted widget state', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-compressed-target-slot'
+    )
+
+    await expect
+      .poll(async () => {
+        const widgets = await getPromotedWidgets(comfyPage, '2')
+        return widgets.some(([, widgetName]) => widgetName === 'batch_size')
+      })
+      .toBe(true)
+  })
+
+  test('Duplicate ID remap workflow remains navigable after a full reload boot path', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
+
+    await comfyPage.page.reload()
+    await comfyPage.page.waitForFunction(() => !!window.app)
+    await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
+
+    const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
+    await subgraphNode.navigateIntoSubgraph()
+
+    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+
+    await comfyPage.keyboard.press('Escape')
+
+    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
+  })
+
   test.describe('Deterministic proxyWidgets Hydrate', () => {
     test('proxyWidgets entries map to real interior node IDs after load', async ({
       comfyPage
@@ -45,7 +127,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const widgets = await getPromotedWidgets(comfyPage, '11')
       expect(widgets.length).toBeGreaterThan(0)
@@ -67,7 +148,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-multiple-promoted-widgets'
       )
-      await comfyPage.nextFrame()
 
       const initialWidgets = await getPromotedWidgets(comfyPage, '11')
       expect(initialWidgets.length).toBeGreaterThan(0)
@@ -105,7 +185,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-compressed-target-slot'
       )
-      await comfyPage.nextFrame()
 
       const widgets = await getPromotedWidgets(comfyPage, '2')
       expect(widgets.length).toBeGreaterThan(0)
@@ -124,8 +203,19 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
   })
 
   test.describe('Legacy And Round-Trip Coverage', () => {
+    let previousUseNewMenu: unknown
+
     test.beforeEach(async ({ comfyPage }) => {
+      previousUseNewMenu =
+        await comfyPage.settings.getSetting('Comfy.UseNewMenu')
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.UseNewMenu',
+        previousUseNewMenu
+      )
     })
 
     test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
@@ -134,7 +224,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-compressed-target-slot'
       )
-      await comfyPage.nextFrame()
 
       const promotedWidgets = await getPromotedWidgets(comfyPage, '2')
       expect(promotedWidgets.length).toBeGreaterThan(0)
@@ -155,7 +244,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const beforePromoted = await getPromotedWidgetNames(comfyPage, '11')
       expect(beforePromoted).toContain('text')
@@ -175,7 +263,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-multiple-promoted-widgets'
       )
-      await comfyPage.nextFrame()
 
       const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
       expect(beforeSnapshot.length).toBeGreaterThan(0)
@@ -192,30 +279,37 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const originalNode = await comfyPage.nodeOps.getNodeRefById('11')
       const originalPos = await originalNode.getPosition()
 
       await comfyPage.page.mouse.move(originalPos.x + 16, originalPos.y + 16)
       await comfyPage.page.keyboard.down('Alt')
-      await comfyPage.page.mouse.down()
-      await comfyPage.nextFrame()
-      await comfyPage.page.mouse.move(originalPos.x + 72, originalPos.y + 72)
-      await comfyPage.page.mouse.up()
-      await comfyPage.page.keyboard.up('Alt')
-      await comfyPage.nextFrame()
+      try {
+        await comfyPage.page.mouse.down()
+        await comfyPage.page.mouse.move(originalPos.x + 72, originalPos.y + 72)
+        await comfyPage.page.mouse.up()
+      } finally {
+        await comfyPage.page.keyboard.up('Alt')
+      }
 
-      const subgraphNodeIds = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        return graph.nodes
-          .filter(
-            (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-          )
-          .map((n) => String(n.id))
-      })
+      async function collectSubgraphNodeIds() {
+        return comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph!
+          return graph.nodes
+            .filter(
+              (n) =>
+                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+            )
+            .map((n) => String(n.id))
+        })
+      }
 
-      expect(subgraphNodeIds.length).toBeGreaterThan(1)
+      await expect
+        .poll(async () => (await collectSubgraphNodeIds()).length)
+        .toBeGreaterThan(1)
+
+      const subgraphNodeIds = await collectSubgraphNodeIds()
       for (const nodeId of subgraphNodeIds) {
         const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
         expect(promotedWidgets.length).toBeGreaterThan(0)
@@ -226,18 +320,14 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     })
   })
 
-  test.describe('Duplicate ID Remapping', { tag: ['@subgraph'] }, () => {
-    const WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
-
+  test.describe('Duplicate ID Remapping', () => {
     test('All node IDs are globally unique after loading', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
       const result = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
-        // TODO: Extract allGraphs accessor (root + subgraphs) into LGraph
-        // TODO: Extract allNodeIds accessor into LGraph
         const allGraphs = [graph, ...graph.subgraphs.values()]
         const allIds = allGraphs
           .flatMap((g) => g._nodes)
@@ -254,7 +344,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     test('Root graph node IDs are preserved as canonical', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
       const rootIds = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
@@ -270,8 +360,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     test('Promoted widget tuples are stable after full page reload boot path', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.nextFrame()
+      await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
       const beforeSnapshot =
         await comfyPage.subgraph.getHostPromotedTupleSnapshot()
@@ -282,20 +371,19 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
 
       await comfyPage.page.reload()
       await comfyPage.page.waitForFunction(() => !!window.app)
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.nextFrame()
+      await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
-      await expect(async () => {
-        const afterSnapshot =
-          await comfyPage.subgraph.getHostPromotedTupleSnapshot()
-        expect(afterSnapshot).toEqual(beforeSnapshot)
-      }).toPass({ timeout: 5_000 })
+      await expect
+        .poll(() => comfyPage.subgraph.getHostPromotedTupleSnapshot(), {
+          timeout: 5_000
+        })
+        .toEqual(beforeSnapshot)
     })
 
     test('All links reference valid nodes in their graph', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
       const invalidLinks = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
@@ -306,19 +394,29 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           )
         ]
 
-        const isNonNegative = (id: number | string) =>
-          typeof id === 'number' && id >= 0
+        const SENTINEL_IDS = new Set([-1, -10, -20])
+        const isSentinelNodeId = (id: number | string): id is number =>
+          typeof id === 'number' && SENTINEL_IDS.has(id)
+
+        const checkEndpoint = (
+          label: string,
+          kind: 'origin_id' | 'target_id',
+          id: number | string,
+          g: typeof graph
+        ): string | null => {
+          if (isSentinelNodeId(id)) return null
+          if (typeof id !== 'number' || !g._nodes_by_id[id]) {
+            return `${label}: ${kind} ${id} invalid or not found`
+          }
+          return null
+        }
 
         return labeledGraphs.flatMap(([label, g]) =>
           [...g._links.values()].flatMap((link) =>
             [
-              isNonNegative(link.origin_id) &&
-                !g._nodes_by_id[link.origin_id] &&
-                `${label}: origin_id ${link.origin_id} not found`,
-              isNonNegative(link.target_id) &&
-                !g._nodes_by_id[link.target_id] &&
-                `${label}: target_id ${link.target_id} not found`
-            ].filter(Boolean)
+              checkEndpoint(label, 'origin_id', link.origin_id, g),
+              checkEndpoint(label, 'target_id', link.target_id, g)
+            ].filter((e): e is string => e !== null)
           )
         )
       })
@@ -329,17 +427,16 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     test('Subgraph navigation works after ID remapping', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
       await subgraphNode.navigateIntoSubgraph()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
   })
 
@@ -360,52 +457,63 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     'Legacy Prefixed proxyWidget Normalization',
     { tag: ['@subgraph', '@widget'] },
     () => {
-      const WORKFLOW = 'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
+      let previousVueNodesEnabled: unknown
 
       test.beforeEach(async ({ comfyPage }) => {
+        previousVueNodesEnabled = await comfyPage.settings.getSetting(
+          'Comfy.VueNodes.Enabled'
+        )
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      })
+
+      test.afterEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          previousVueNodesEnabled
+        )
       })
 
       test('Loads without console warnings about failed widget resolution', async ({
         comfyPage
       }) => {
-        const { warnings } = SubgraphHelper.collectConsoleWarnings(
+        const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
           comfyPage.page
         )
 
-        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        try {
+          await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
 
-        comfyExpect(warnings).toEqual([])
+          comfyExpect(warnings).toEqual([])
+        } finally {
+          dispose()
+        }
       })
 
-      test('Promoted widget renders with normalized name, not legacy prefix', async ({
+      test('Legacy-prefixed promoted widget renders with the normalized label after load', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
         await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
-        // The promoted widget should render with the clean name "string_a",
-        // not the legacy-prefixed "6: 3: string_a".
-        const promotedWidget = outerNode
-          .getByLabel('string_a', { exact: true })
+        const textarea = outerNode
+          .getByRole('textbox', { name: 'string_a' })
           .first()
-        await expect(promotedWidget).toBeVisible()
+        await expect(textarea).toBeVisible()
+        await expect(textarea).toBeDisabled()
       })
 
       test('No legacy-prefixed or disconnected widgets remain on the node', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
         await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
-        // Both widget rows should be valid "string_a" widgets — no stale
-        // "Disconnected" placeholders from unresolved legacy entries.
         const widgetRows = outerNode.getByTestId(TestIds.widgets.widget)
         await expect(widgetRows).toHaveCount(2)
 
@@ -415,19 +523,31 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           ).toBeVisible()
         }
       })
-
-      test('Promoted widget value is editable as a text input', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
-
-        const outerNode = comfyPage.vueNodes.getNodeLocator('5')
-        const textarea = outerNode
-          .getByRole('textbox', { name: 'string_a' })
-          .first()
-        await expect(textarea).toBeVisible()
-      })
     }
   )
+
+  test('Multiple instances of the same subgraph keep distinct promoted widget values after load and reload', async ({
+    comfyPage
+  }) => {
+    const hostNodeIds = ['11', '12', '13']
+    const expectedValues = ['Alpha\n', 'Beta\n', 'Gamma\n']
+
+    await comfyPage.workflow.loadWorkflow(MULTI_INSTANCE_WORKFLOW)
+
+    const initialValues = await getPromotedHostWidgetValues(
+      comfyPage,
+      hostNodeIds
+    )
+    expect(initialValues.map(({ values }) => values[0])).toEqual(expectedValues)
+
+    await comfyPage.subgraph.serializeAndReload()
+
+    const reloadedValues = await getPromotedHostWidgetValues(
+      comfyPage,
+      hostNodeIds
+    )
+    expect(reloadedValues.map(({ values }) => values[0])).toEqual(
+      expectedValues
+    )
+  })
 })

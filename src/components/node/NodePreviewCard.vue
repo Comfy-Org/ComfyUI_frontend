@@ -1,9 +1,14 @@
 <template>
   <div
-    class="flex w-50 flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
+    class="flex flex-col overflow-hidden rounded-lg border border-border-default bg-base-background"
+    :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
-      <div ref="previewWrapperRef" class="origin-top-left scale-50">
+      <div
+        ref="previewWrapperRef"
+        class="origin-top-left"
+        :style="{ transform: `scale(${scaleFactor})` }"
+      >
         <LGraphNodePreview :node-def="nodeDef" position="relative" />
       </div>
     </div>
@@ -18,21 +23,21 @@
       <!-- Category Path -->
       <p
         v-if="showCategoryPath && nodeDef.category"
-        class="-mt-1 text-xs text-muted-foreground"
+        class="-mt-1 truncate text-xs text-muted-foreground"
       >
-        {{ nodeDef.category.replaceAll('/', ' > ') }}
+        {{ categoryPath }}
       </p>
 
       <!-- Badges -->
-      <div class="flex flex-wrap gap-2 empty:hidden">
-        <NodePricingBadge :node-def="nodeDef" />
+      <div class="flex flex-wrap gap-2 overflow-hidden empty:hidden">
+        <NodePricingBadge class="max-w-full truncate" :node-def="nodeDef" />
         <NodeProviderBadge :node-def="nodeDef" />
       </div>
 
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="m-0 text-2xs/normal font-normal text-muted-foreground"
+        class="m-0 max-h-[30vh] overflow-y-auto text-2xs/normal font-normal text-muted-foreground"
       >
         {{ nodeDef.description }}
       </p>
@@ -99,17 +104,20 @@ import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const SCALE_FACTOR = 0.5
+const BASE_WIDTH_PX = 200
+const BASE_SCALE = 0.5
 const PREVIEW_CONTAINER_PADDING_PX = 24
 
 const {
   nodeDef,
   showInputsAndOutputs = true,
-  showCategoryPath = false
+  showCategoryPath = false,
+  scaleFactor = 0.5
 } = defineProps<{
   nodeDef: ComfyNodeDefImpl
   showInputsAndOutputs?: boolean
   showCategoryPath?: boolean
+  scaleFactor?: number
 }>()
 
 const previewContainerRef = ref<HTMLElement>()
@@ -118,10 +126,12 @@ const previewWrapperRef = ref<HTMLElement>()
 useResizeObserver(previewWrapperRef, (entries) => {
   const entry = entries[0]
   if (entry && previewContainerRef.value) {
-    const scaledHeight = entry.contentRect.height * SCALE_FACTOR
+    const scaledHeight = entry.contentRect.height * scaleFactor
     previewContainerRef.value.style.height = `${scaledHeight + PREVIEW_CONTAINER_PADDING_PX}px`
   }
 })
+
+const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
 
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []

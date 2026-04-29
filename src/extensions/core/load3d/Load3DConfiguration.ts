@@ -3,6 +3,7 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
   CameraState,
+  HDRIConfig,
   LightConfig,
   ModelConfig,
   SceneConfig
@@ -113,6 +114,7 @@ class Load3DConfiguration {
 
     const lightConfig = this.loadLightConfig()
     this.applyLightConfig(lightConfig)
+    if (lightConfig.hdri) this.applyHDRISettings(lightConfig.hdri)
   }
 
   private loadSceneConfig(): SceneConfig {
@@ -140,24 +142,57 @@ class Load3DConfiguration {
   }
 
   private loadLightConfig(): LightConfig {
+    const hdriDefaults: HDRIConfig = {
+      enabled: false,
+      hdriPath: '',
+      showAsBackground: false,
+      intensity: 1
+    }
+
     if (this.properties && 'Light Config' in this.properties) {
-      return this.properties['Light Config'] as LightConfig
+      const saved = this.properties['Light Config'] as Partial<LightConfig>
+      return {
+        intensity:
+          saved.intensity ??
+          (useSettingStore().get('Comfy.Load3D.LightIntensity') as number),
+        hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
+      }
     }
 
     return {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity')
-    } as LightConfig
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity') as number,
+      hdri: hdriDefaults
+    }
   }
 
   private loadModelConfig(): ModelConfig {
     if (this.properties && 'Model Config' in this.properties) {
-      return this.properties['Model Config'] as ModelConfig
+      const config = this.properties['Model Config'] as ModelConfig
+      if (!config.gizmo) {
+        config.gizmo = {
+          enabled: false,
+          mode: 'translate',
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
+      } else if (!config.gizmo.scale) {
+        config.gizmo.scale = { x: 1, y: 1, z: 1 }
+      }
+      return config
     }
 
     return {
       upDirection: 'original',
       materialMode: 'original',
-      showSkeleton: false
+      showSkeleton: false,
+      gizmo: {
+        enabled: false,
+        mode: 'translate',
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      }
     }
   }
 
@@ -188,6 +223,15 @@ class Load3DConfiguration {
 
   private applyLightConfig(config: LightConfig) {
     this.load3d.setLightIntensity(config.intensity)
+  }
+
+  private applyHDRISettings(config: HDRIConfig) {
+    if (!config.hdriPath) return
+    this.load3d.setHDRIIntensity(config.intensity)
+    this.load3d.setHDRIAsBackground(config.showAsBackground)
+    if (config.enabled) {
+      this.load3d.setHDRIEnabled(true)
+    }
   }
 
   private applyModelConfig(config: ModelConfig) {

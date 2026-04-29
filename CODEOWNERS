@@ -69,6 +69,9 @@
 /src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts @jtydhr88
 /src/lib/litegraph/src/widgets/PainterWidget.ts   @jtydhr88
 
+# GLSL
+/src/renderer/glsl/                               @jtydhr88 @pythongosssss @christian-byrne
+
 # 3D
 /src/extensions/core/load3d.ts                    @jtydhr88
 /src/extensions/core/load3dLazy.ts                @jtydhr88

@@ -343,6 +343,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  function getWorkspaceToken(): string | undefined {
+    return workspaceToken.value ?? undefined
+  }
+
   function clearWorkspaceContext(): void {
     // Increment request ID to invalidate any in-flight stale refresh operations
     refreshRequestId++
@@ -370,6 +374,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     switchWorkspace,
     refreshToken,
     getWorkspaceAuthHeader,
+    getWorkspaceToken,
     clearWorkspaceContext
   }
 })

@@ -15,6 +15,15 @@ const zRendererType = z.enum([
 export const zNodeId = z.union([z.number().int(), z.string()])
 const zNodeInputName = z.string()
 export type NodeId = z.infer<typeof zNodeId>
+
+/**
+ * UUID identifier for a saved workflow.
+ *
+ * Workflow files persist their identity as `id: z.string().uuid()` on the
+ * graph schema. This alias names that primitive at use sites (services,
+ * stores, share types) without changing structural typing.
+ */
+export type WorkflowId = string
 const zSlotIndex = z.union([
   z.number().int(),
   z
@@ -285,7 +294,18 @@ const zExtra = z
     linearMode: z.boolean().optional(),
     linearData: z
       .object({
-        inputs: z.array(z.tuple([zNodeId, z.string()])).optional(),
+        inputs: z
+          .array(
+            z.union([
+              z.tuple([
+                zNodeId,
+                z.string(),
+                z.object({ height: z.number().optional() }).passthrough()
+              ]),
+              z.tuple([zNodeId, z.string()])
+            ])
+          )
+          .optional(),
         outputs: z.array(zNodeId).optional()
       })
       .optional()

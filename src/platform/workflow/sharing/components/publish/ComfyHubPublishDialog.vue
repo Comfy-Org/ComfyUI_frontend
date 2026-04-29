@@ -21,7 +21,11 @@
 
     <template #header />
     <template #content>
-      <div v-if="needsSave" class="flex flex-col gap-4 p-6">
+      <div
+        v-if="needsSave"
+        data-testid="publish-save-prompt"
+        class="flex flex-col gap-4 p-6"
+      >
         <p class="m-0 text-sm text-muted-foreground">
           {{ $t('comfyHubPublish.unsavedDescription') }}
         </p>
@@ -213,6 +217,12 @@ async function handlePublish(): Promise<void> {
     if (path) {
       cachePublishPrefill(path, formData.value)
     }
+    toast.add({
+      severity: 'success',
+      summary: t('comfyHubPublish.publishSuccessTitle'),
+      detail: t('comfyHubPublish.publishSuccessDescription'),
+      life: 5000
+    })
     onClose()
   } catch (error) {
     console.error('Failed to publish workflow:', error)
