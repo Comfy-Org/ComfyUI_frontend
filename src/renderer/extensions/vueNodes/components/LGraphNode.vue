@@ -817,12 +817,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-async function handleDrop(event: DragEvent) {
+function handleDrop() {
   isDraggingOver.value = false
-
-  const node = lgraphNode.value
-  if (!node?.onDragDrop) return
-
-  await node.onDragDrop(event, true)
+  app.dragOverNode = lgraphNode.value
 }
 </script>

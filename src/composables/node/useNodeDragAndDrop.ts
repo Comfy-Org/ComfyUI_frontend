@@ -1,5 +1,8 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { zResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -7,7 +10,16 @@ type DropHandler<T> = (files: File[]) => Promise<T[]>
 interface DragAndDropOptions<T> {
   onDragOver?: DragHandler
   onDrop: DropHandler<T>
+  onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
+}
+
+function parseAssetInfo(assetString?: string) {
+  try {
+    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
+  } catch {
+    // output was not parsable, allow fallthrough and return undefined
+  }
 }
 
 /**
@@ -47,26 +59,22 @@ export const useNodeDragAndDrop = <T>(
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
-  const installedDragDrop = async function (e: DragEvent, claimEvent = false) {
+  const installedDragDrop = async function (e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
     if (files.length) {
-      if (claimEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
       await onDrop(files)
+      return true
+    }
+    const asset = parseAssetInfo(e?.dataTransfer?.getData(MIME_ASSET_INFO))
+    if (asset?.filename && options.onResultItemDrop) {
+      await options.onResultItemDrop(asset)
       return true
     }
 
     const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
     if (!uri || uri.origin !== location.origin) return false
-
-    if (claimEvent) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
 
     try {
       const resp = await fetch(uri)
