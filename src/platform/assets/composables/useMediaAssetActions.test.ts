@@ -569,24 +569,18 @@ describe('useMediaAssetActions', () => {
       })
     }
 
-    function getExportToastDetail(): string | undefined {
-      const { add } = useToast()
-      const exportToastCall = vi
-        .mocked(add)
-        .mock.calls.find(
-          ([arg]) =>
-            typeof arg?.detail === 'string' &&
-            arg.detail.startsWith('mediaAsset.selection.exportStarted')
-        )
-      return exportToastCall?.[0]?.detail
-    }
-
     async function expectExportToastFileCount(count: number) {
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
+
+      const { add } = useToast()
       await vi.waitFor(() => {
-        expect(getExportToastDetail()).toBeDefined()
+        expect(add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: 'mediaAsset.selection.exportStarted'
+          })
+        )
       })
 
       const { t } = useI18n()
