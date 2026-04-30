@@ -5,7 +5,6 @@
 import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
@@ -581,58 +580,23 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     originalCallback?: (node: LGraphNode) => void
   ) => {
     const id = String(node.id)
-
-    // Store non-reactive reference to original node
     nodeRefs.set(id, node)
-
-    // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
 
-    const initializeVueNodeLayout = () => {
-      // Check if the node was removed mid-sequence
-      if (!nodeRefs.has(id)) return
+    const existingLayout = layoutStore.getNodeLayoutRef(id).value
+    if (existingLayout) return
 
-      // Extract actual positions after configure() has potentially updated them
-      const nodePosition = { x: node.pos[0], y: node.pos[1] }
-      const nodeSize = { width: node.size[0], height: node.size[1] }
+    const nodePosition = { x: node.pos[0], y: node.pos[1] }
+    const nodeSize = { width: node.size[0], height: node.size[1] }
+    setSource(LayoutSource.Canvas)
+    void createNode(id, {
+      position: nodePosition,
+      size: nodeSize,
+      zIndex: node.order || 0,
+      visible: true
+    })
 
-      // Skip layout creation if it already exists
-      // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
-      const existingLayout = layoutStore.getNodeLayoutRef(id).value
-      if (existingLayout) return
-
-      // Add node to layout store with final positions
-      setSource(LayoutSource.Canvas)
-      void createNode(id, {
-        position: nodePosition,
-        size: nodeSize,
-        zIndex: node.order || 0,
-        visible: true
-      })
-    }
-
-    // Check if we're in the middle of configuring the graph (workflow loading)
-    if (window.app?.configuringGraph) {
-      // During workflow loading - defer layout initialization until configure completes
-      // Chain our callback with any existing onAfterGraphConfigured callback
-      node.onAfterGraphConfigured = useChainCallback(
-        node.onAfterGraphConfigured,
-        () => {
-          // Re-extract data now that configure() has populated title/slots/widgets/etc.
-          vueNodeData.set(id, extractVueNodeData(node))
-          initializeVueNodeLayout()
-        }
-      )
-    } else {
-      // Not during workflow loading - initialize layout immediately
-      // This handles individual node additions during normal operation
-      initializeVueNodeLayout()
-    }
-
-    // Call original callback if provided
-    if (originalCallback) {
-      void originalCallback(node)
-    }
+    if (originalCallback) void originalCallback(node)
   }
 
   /**
