@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -140,6 +140,13 @@ describe('useImagePreviewWidget', () => {
     mockCanvas.canvas.style.cursor = ''
   })
 
+  // Restore real timers unconditionally so a thrown assertion in any
+  // useFakeTimers() test does not leak fake timers into later tests.
+  // Idempotent when timers are already real.
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   describe('widget construction', () => {
     it('returns a widget constructor function', () => {
       const constructor = useImagePreviewWidget()
@@ -216,8 +223,6 @@ describe('useImagePreviewWidget', () => {
       expect(ctx.stroke).toHaveBeenCalled()
       expect(ctx.restore).toHaveBeenCalled()
       expect(node.graph!.setDirtyCanvas).toHaveBeenCalledWith(true)
-
-      vi.useRealTimers()
     })
 
     it('uses LiteGraph.NODE_TEXT_COLOR for spinner stroke', () => {
@@ -234,8 +239,6 @@ describe('useImagePreviewWidget', () => {
       widget.drawWidget(ctx, { width: 300 })
 
       expect(ctx.strokeStyle).toBe(LiteGraph.NODE_TEXT_COLOR)
-
-      vi.useRealTimers()
     })
   })
 
