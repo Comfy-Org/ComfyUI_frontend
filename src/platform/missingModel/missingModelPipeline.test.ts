@@ -74,6 +74,7 @@ const { mockHandles, createMocks } = vi.hoisted(() => {
       api: {
         getFolderPaths: vi.fn()
       },
+      fetchModelMetadata: vi.fn(),
       isAncestorPathActive: vi.fn((_graph: LGraph, _nodeId: string) => true),
       isMissingCandidateActive: vi.fn(
         (_graph: LGraph, _candidate: MissingModelCandidate) => true
@@ -151,6 +152,10 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+  fetchModelMetadata: (url: string) => mockHandles.fetchModelMetadata(url)
+}))
+
 vi.mock('@/utils/graphTraversalUtil', () => ({
   isAncestorPathActive: (graph: LGraph, nodeId: string) =>
     mockHandles.isAncestorPathActive(graph, nodeId),
@@ -187,6 +192,7 @@ describe('missingModelPipeline', () => {
     )
     mockHandles.scanAllModelCandidates.mockReturnValue([])
     mockHandles.api.getFolderPaths.mockResolvedValue({})
+    mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: null })
     mockHandles.isAncestorPathActive.mockReturnValue(true)
     mockHandles.isMissingCandidateActive.mockReturnValue(true)
   })
@@ -374,6 +380,7 @@ describe('missingModelPipeline', () => {
         missingModelStore: mockHandles.missingModelStore,
         missingNodeTypes: ['MissingCustomNode']
       })
+      await vi.dynamicImportSettled()
 
       expect(result).toEqual({
         missingModels: [
@@ -415,6 +422,47 @@ describe('missingModelPipeline', () => {
         missingModels: [],
         confirmedCandidates: [confirmedCandidate]
       })
+    })
+
+    it('fetches file sizes only for candidates with complete download metadata', async () => {
+      const downloadableCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'downloadable.safetensors',
+        url: 'https://example.com/downloadable.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      const urlOnlyCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'url-only.safetensors',
+        url: 'https://example.com/url-only.safetensors',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [
+        downloadableCandidate,
+        urlOnlyCandidate
+      ]
+      mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: 1024 })
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledOnce()
+      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
+        'https://example.com/downloadable.safetensors'
+      )
+      expect(mockHandles.missingModelStore.setFileSize).toHaveBeenCalledWith(
+        'https://example.com/downloadable.safetensors',
+        1024
+      )
     })
 
     it('clears surfaced and cached missing models when no candidates are confirmed missing', async () => {

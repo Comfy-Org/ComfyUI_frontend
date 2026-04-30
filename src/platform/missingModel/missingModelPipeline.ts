@@ -150,10 +150,9 @@ export async function runMissingModelPipeline({
   const confirmedCandidates = enrichedCandidates.filter(
     (c) => c.isMissing === true
   )
+  const downloadableCandidates = confirmedCandidates.filter(hasDownloadMetadata)
 
-  const missingModels: ModelFile[] = confirmedCandidates
-    .filter(hasDownloadMetadata)
-    .map(toModelFile)
+  const missingModels: ModelFile[] = downloadableCandidates.map(toModelFile)
 
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
   updatePendingWarnings(activeWf, {
@@ -221,7 +220,7 @@ export async function runMissingModelPipeline({
       const missingModelDownload =
         import('@/platform/missingModel/missingModelDownload')
       void Promise.allSettled(
-        confirmedCandidates.filter(hasDownloadMetadata).map(async (c) => {
+        downloadableCandidates.map(async (c) => {
           const { fetchModelMetadata } = await missingModelDownload
           const metadata = await fetchModelMetadata(c.url)
           if (!controller.signal.aborted && metadata.fileSize !== null) {

@@ -38,7 +38,6 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   collectSubgraphDefinitions,
-  isSubgraphDefinition,
   buildSubgraphExecutionPaths
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
@@ -1217,7 +1216,7 @@ export class ComfyApp {
 
     // Collect missing node types from all nodes (root + subgraphs)
     const collectMissingNodes = (
-      nodes: FlattenableWorkflowNode[] | readonly FlattenableWorkflowNode[],
+      nodes: readonly FlattenableWorkflowNode[],
       pathPrefix: string = '',
       displayName: string = ''
     ) => {
@@ -1270,15 +1269,13 @@ export class ComfyApp {
       subgraphDefs
     )
     for (const subgraph of subgraphDefs) {
-      if (isSubgraphDefinition(subgraph)) {
-        const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
-        for (const pathPrefix of paths) {
-          collectMissingNodes(
-            subgraph.nodes,
-            pathPrefix,
-            subgraph.name || subgraph.id
-          )
-        }
+      const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+      for (const pathPrefix of paths) {
+        collectMissingNodes(
+          subgraph.nodes,
+          pathPrefix,
+          subgraph.name || subgraph.id
+        )
       }
     }
 

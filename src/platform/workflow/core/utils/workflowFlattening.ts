@@ -42,7 +42,7 @@ function isFlattenableWorkflowNode(
  * Type guard to check if an object is a subgraph definition.
  * This helps TypeScript understand the type when recursive definitions are unknown.
  */
-export function isSubgraphDefinition(
+function isSubgraphDefinition(
   obj: unknown
 ): obj is FlattenableSubgraphDefinition {
   if (obj === null || typeof obj !== 'object') return false
