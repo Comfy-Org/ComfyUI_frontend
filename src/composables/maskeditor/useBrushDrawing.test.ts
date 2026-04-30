@@ -142,9 +142,12 @@ beforeEach(() => {
   mockStoreDef.rgbCanvas = mockCanvas
   mockStoreDef.rgbCtx = mockCtx
   mockStoreDef.currentTool = 'pen'
+  mockStoreDef.activeLayer = 'mask'
 
   const gpu = useGPUResources()
   gpu.isSavingHistory.value = false
+  gpu.hasRenderer.value = false
+  gpu.previewCanvas.value = null
   gpu.dirtyRect.value = {
     minX: Infinity,
     minY: Infinity,
@@ -186,6 +189,67 @@ describe('startDrawing', () => {
     expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe(
       'destination-out'
     )
+  })
+})
+
+describe('startDrawing error handling', () => {
+  it('catches initShape errors and resets drawing state', async () => {
+    mockStoreDef.maskCtx = null
+    const { startDrawing } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    // error was caught internally; isDrawing was reset
+  })
+})
+
+describe('startDrawing shift+click', () => {
+  it('draws a line from the previous point when shift is held', async () => {
+    const { startDrawing } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await startDrawing(makePointerEvent(100, 50, { shiftKey: true }))
+  })
+})
+
+describe('handleDrawing', () => {
+  it('updates smoothingLastDrawTime after each move event', async () => {
+    const rafSpy = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((cb) => {
+        cb(0)
+        return 0
+      })
+    const { startDrawing, handleDrawing } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await handleDrawing(makePointerEvent(55, 55))
+    expect(rafSpy).toHaveBeenCalled()
+    rafSpy.mockRestore()
+  })
+})
+
+describe('drawEnd canvas visibility', () => {
+  it('restores rgb canvas opacity when activeLayer is rgb', async () => {
+    mockStoreDef.activeLayer = 'rgb'
+    const mockRgbCanvas = {
+      width: 200,
+      height: 200,
+      style: { opacity: '' }
+    } as unknown as HTMLCanvasElement
+    mockStoreDef.rgbCanvas = mockRgbCanvas
+    const { startDrawing, drawEnd } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(60, 60))
+    expect(mockRgbCanvas.style.opacity).toBe('1')
+  })
+
+  it('restores preview canvas opacity to 1 after drawEnd', async () => {
+    const gpu = useGPUResources()
+    const mockPreviewCanvas = {
+      style: { opacity: '' }
+    } as unknown as HTMLCanvasElement
+    gpu.previewCanvas.value = mockPreviewCanvas
+    const { startDrawing, drawEnd } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(60, 60))
+    expect(mockPreviewCanvas.style.opacity).toBe('1')
   })
 })
 

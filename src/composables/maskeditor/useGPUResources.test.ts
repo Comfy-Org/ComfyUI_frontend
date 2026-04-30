@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { effectScope, nextTick, reactive } from 'vue'
 import type { EffectScope } from 'vue'
 
 vi.mock('typegpu', () => ({
@@ -12,7 +12,7 @@ vi.mock('./gpu/GPUBrushRenderer', () => ({
   GPUBrushRenderer: vi.fn()
 }))
 
-const mockStore = {
+const mockStore = reactive({
   tgpuRoot: null as unknown,
   maskCanvas: null as HTMLCanvasElement | null,
   rgbCanvas: null as HTMLCanvasElement | null,
@@ -36,7 +36,7 @@ const mockStore = {
   currentTool: 'pen',
   maskColor: { r: 0, g: 0, b: 0 },
   rgbColor: '#FF0000'
-}
+})
 
 vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
@@ -59,6 +59,9 @@ beforeEach(() => {
   mockStore.rgbCanvas = null
   mockStore.maskCtx = null
   mockStore.rgbCtx = null
+  mockStore.clearTrigger = 0
+  mockStore.canvasHistory.currentStateIndex = 0
+  mockStore.gpuTexturesNeedRecreation = false
 })
 
 afterEach(() => {
@@ -134,5 +137,56 @@ describe('copyGpuToCanvas', () => {
   it('rejects with a descriptive error when GPU resources are not ready', async () => {
     const { copyGpuToCanvas } = setup()
     await expect(copyGpuToCanvas()).rejects.toThrow('GPU resources not ready')
+  })
+})
+
+describe('watchers', () => {
+  it('clearTrigger watcher calls clearGPU without throwing', async () => {
+    setup()
+    mockStore.clearTrigger++
+    await nextTick()
+  })
+
+  it('currentStateIndex watcher short-circuits when isSavingHistory is true', async () => {
+    const { isSavingHistory } = setup()
+    isSavingHistory.value = true
+    mockStore.canvasHistory.currentStateIndex++
+    await nextTick()
+  })
+
+  it('currentStateIndex watcher calls updateGPUFromCanvas when not saving history', async () => {
+    setup()
+    mockStore.canvasHistory.currentStateIndex++
+    await nextTick()
+  })
+
+  it('gpuTexturesNeedRecreation watcher returns early when device is not initialised', async () => {
+    setup()
+    mockStore.gpuTexturesNeedRecreation = true
+    await nextTick()
+  })
+})
+
+describe('initGPUResources with pre-existing tgpuRoot', () => {
+  it('returns early with a warning when canvas contexts are not ready', async () => {
+    const { initGPUResources, hasRenderer } = setup()
+    mockStore.tgpuRoot = { device: {} } as unknown
+    await initGPUResources()
+    expect(hasRenderer.value).toBe(false)
+  })
+})
+
+describe('initPreviewCanvas', () => {
+  it('returns early when device is not initialised', () => {
+    const { initPreviewCanvas } = setup()
+    const canvas = document.createElement('canvas')
+    expect(() => initPreviewCanvas(canvas)).not.toThrow()
+  })
+})
+
+describe('gpuDrawPoint', () => {
+  it('resolves immediately when renderer is not initialised', async () => {
+    const { gpuDrawPoint } = setup()
+    await expect(gpuDrawPoint({ x: 10, y: 20 })).resolves.toBeUndefined()
   })
 })

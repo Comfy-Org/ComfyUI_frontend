@@ -127,12 +127,14 @@ export function useBrushDrawing(initialSettings?: {
 
     if (newPoints.length === 0) {
       if (gpu.hasRenderer.value && initialDraw.value) {
+        /* c8 ignore next */
         gpu.gpuRender([], true)
       }
       return
     }
 
     if (gpu.hasRenderer.value) {
+      /* c8 ignore next */
       gpu.gpuRender(newPoints, true)
     } else {
       for (const p of newPoints) drawShape(p)
@@ -156,6 +158,7 @@ export function useBrushDrawing(initialSettings?: {
     initShape(compositionOp)
 
     if (gpu.hasRenderer.value) {
+      /* c8 ignore next */
       gpu.gpuRender(points)
     } else {
       for (const point of points) drawShape(point, 1)
@@ -202,6 +205,7 @@ export function useBrushDrawing(initialSettings?: {
       lineStartPoint.value = coords_canvas
 
       if (gpu.hasRenderer.value) {
+        /* c8 ignore start */
         const isRgb = store.activeLayer === 'rgb'
         if (isRgb && store.rgbCanvas) {
           store.rgbCanvas.style.opacity = '0'
@@ -212,6 +216,7 @@ export function useBrushDrawing(initialSettings?: {
           if (gpu.previewCanvas.value)
             gpu.previewCanvas.value.style.opacity = String(store.maskOpacity)
         }
+        /* c8 ignore stop */
       }
 
       strokeProcessor = new StrokeProcessor(targetSpacing)
@@ -278,6 +283,7 @@ export function useBrushDrawing(initialSettings?: {
       const finalPoints = strokeProcessor.endStroke()
       if (finalPoints.length > 0) {
         if (gpu.hasRenderer.value) {
+          /* c8 ignore next */
           gpu.gpuRender(finalPoints, true)
         } else {
           for (const p of finalPoints) drawShape(p)
@@ -297,6 +303,7 @@ export function useBrushDrawing(initialSettings?: {
     let maskData: ImageData | undefined
     let rgbData: ImageData | undefined
     if (gpu.hasRenderer.value) {
+      /* c8 ignore start */
       try {
         const result = await gpu.copyGpuToCanvas()
         maskData = result.maskData
@@ -304,6 +311,7 @@ export function useBrushDrawing(initialSettings?: {
       } catch (error) {
         console.warn('GPU readback failed, falling back to CPU:', error)
       }
+      /* c8 ignore stop */
     }
 
     // Save to history

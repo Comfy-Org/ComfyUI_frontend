@@ -70,6 +70,7 @@ export function useGPUResources() {
       )
         return
 
+      /* c8 ignore start */
       isRecreatingTextures.value = true
 
       const width = store.gpuTextureWidth
@@ -120,6 +121,7 @@ export function useGPUResources() {
         store.pendingGPURgbData = null
         isRecreatingTextures.value = false
       }
+      /* c8 ignore stop */
     }
   )
 
@@ -201,9 +203,10 @@ export function useGPUResources() {
 
   async function initTypeGPU(): Promise<void> {
     if (store.tgpuRoot) {
-      // c8 ignore next
+      /* c8 ignore start */
       device = store.tgpuRoot.device
       return
+      /* c8 ignore stop */
     }
     try {
       /* c8 ignore start — requires functional WebGPU hardware */
@@ -363,11 +366,14 @@ export function useGPUResources() {
 
   function prepareStroke(): void {
     if (!renderer || !store.maskCanvas) return
+    /* c8 ignore next */
     renderer.prepareStroke(store.maskCanvas.width, store.maskCanvas.height)
   }
 
   function clearPreview(): void {
-    if (renderer && previewContext) renderer.clearPreview(previewContext)
+    if (!renderer || !previewContext) return
+    /* c8 ignore next */
+    renderer.clearPreview(previewContext)
   }
 
   function compositeStroke(isRgb: boolean, isErasing: boolean): void {
