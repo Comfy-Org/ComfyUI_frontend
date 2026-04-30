@@ -1,0 +1,262 @@
+name: 'CI: Website E2E'
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  website-e2e:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.tests.outcome }}
+      report-url: ${{ steps.deploy.outputs.url }}
+      screenshot-failures: ${{ steps.failures.outputs.screenshot }}
+      other-failures: ${{ steps.failures.outputs.other }}
+      # Evaluated at job level (not from a step) — static expression.
+      is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        env:
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+        run: pnpm --filter @comfyorg/website build
+
+      - name: Run Playwright tests
+        id: tests
+        run: pnpm --filter @comfyorg/website test:e2e
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-playwright-report
+          path: apps/website/playwright-report/
+          retention-days: 30
+
+      - name: Deploy report to Cloudflare
+        id: deploy
+        if: always() && !cancelled()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          BRANCH=$(echo "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
+          DEPLOY_OK=false
+          for i in 1 2 3; do
+            echo "Deployment attempt $i of 3..."
+            OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+              --project-name=comfyui-website-e2e \
+              --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
+            [ $i -lt 3 ] && sleep 10
+          done
+          echo "$OUTPUT"
+          if [ "$DEPLOY_OK" != "true" ]; then
+            echo "::error::All 3 deployment attempts failed"
+            exit 1
+          fi
+          URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Categorize failures
+        id: failures
+        if: always() && !cancelled() && steps.tests.outcome != 'success'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs')
+            const report = JSON.parse(fs.readFileSync('apps/website/results.json', 'utf8'))
+
+            function isFailed(t) { return t.status === 'unexpected' || t.status === 'flaky' }
+            function isVisual(spec) {
+              return spec.file?.includes('visual') ||
+                spec.tests?.some(t => t.results?.some(r => r.error?.message?.includes('toHaveScreenshot')))
+            }
+            function specsOf(suite) {
+              return [
+                ...(suite.specs || []),
+                ...(suite.suites || []).flatMap(specsOf)
+              ]
+            }
+
+            // True:  Visual
+            // False: Other
+            const failed = specsOf(report)
+              .flatMap(spec => (spec.tests || [])
+              .filter(isFailed)
+              .map(() => isVisual(spec)))
+
+            const screenshotFailures = failed.filter(Boolean).length
+            core.setOutput('screenshot', screenshotFailures)
+            core.setOutput('other', failed.length - screenshotFailures)
+
+      - name: Write job summary
+        if: always() && !cancelled()
+        uses: actions/github-script@v8
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          REPORT_URL: ${{ steps.deploy.outputs.url }}
+          SCREENSHOT_FAILURES: ${{ steps.failures.outputs.screenshot }}
+          OTHER_FAILURES: ${{ steps.failures.outputs.other }}
+        with:
+          script: |
+            const passed = process.env.TEST_OUTCOME === 'success'
+            const reportUrl = process.env.REPORT_URL
+            const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
+            const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
+
+            const lines = ['## 🌐 Website E2E', '']
+
+            if (passed) {
+              lines.push('> [!TIP]', '> All tests passed.')
+            } else {
+              lines.push('> [!CAUTION]', '> Some tests failed.')
+            }
+
+            const rows = [
+              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
+            ]
+            if (!passed) {
+              rows.push(
+                ['Screenshot diffs', String(screenshotFailures)],
+                ['Other failures', String(otherFailures)]
+              )
+            }
+            lines.push(
+              '',
+              '| | |',
+              '|---|---|',
+              ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
+            )
+
+            await core.summary.addRaw(lines.join('\n')).write()
+
+  post-starting-comment:
+    # Safe to comment from pull_request trigger: fork PRs are excluded by the guard below.
+    # This avoids a ci-*/pr-* workflow_run split for a comment that must appear immediately.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: website-pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: e2e
+          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## 🌐 Website E2E
+            <!-- WEBSITE_E2E_STATUS -->
+
+            > [!NOTE]
+            > Tests are running… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  post-result-comment:
+    needs: website-e2e
+    if: always() && !cancelled() && needs.website-e2e.outputs.is-pr == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: website-pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build e2e section content
+        id: content
+        uses: actions/github-script@v8
+        env:
+          TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
+          REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
+          SCREENSHOT_FAILURES: ${{ needs.website-e2e.outputs.screenshot-failures }}
+          OTHER_FAILURES: ${{ needs.website-e2e.outputs.other-failures }}
+        with:
+          script: |
+            const passed = process.env.TEST_OUTCOME === 'success'
+            const reportUrl = process.env.REPORT_URL
+            const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
+            const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
+
+            const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
+
+            if (passed) {
+              lines.push('> [!TIP]', '> All tests passed.')
+            } else {
+              lines.push('> [!CAUTION]', '> Some tests failed.')
+            }
+
+            const rows = [
+              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
+            ]
+            if (!passed) {
+              rows.push(
+                ['Screenshot diffs', String(screenshotFailures)],
+                ['Other failures', String(otherFailures)]
+              )
+            }
+            lines.push(
+              '',
+              '| | |',
+              '|---|---|',
+              ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
+            )
+
+            if (screenshotFailures > 0) {
+              const s = screenshotFailures === 1 ? '' : 's'
+              lines.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
+            }
+            if (otherFailures > 0) {
+              lines.push(
+                '',
+                '> [!WARNING]',
+                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
+              )
+            }
+
+            core.setOutput('section-content', lines.join('\n'))
+
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: e2e
+          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: ${{ steps.content.outputs.section-content }}

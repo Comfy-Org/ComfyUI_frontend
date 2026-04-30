@@ -33,7 +33,7 @@ const ToggleSwitchStub = defineComponent({
     modelValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations -- used in template $emit
+
   emits: ['update:modelValue'],
   template: `<input type="checkbox" role="switch" :checked="modelValue" :disabled="disabled" @change="$emit('update:modelValue', $event.target.checked)" />`
 })

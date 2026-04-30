@@ -56,8 +56,7 @@
             <ModelControls
               v-model:up-direction="viewer.upDirection.value"
               v-model:material-mode="viewer.materialMode.value"
-              :hide-material-mode="viewer.isSplatModel.value"
-              :is-ply-model="viewer.isPlyModel.value"
+              :material-modes="viewer.materialModes.value"
             />
           </div>
 
@@ -68,13 +67,13 @@
             />
           </div>
 
-          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
+          <div v-if="viewer.canUseLighting.value" class="space-y-4 p-2">
             <LightControls
               v-model:light-intensity="viewer.lightIntensity.value"
             />
           </div>
 
-          <div class="space-y-4 p-2">
+          <div v-if="viewer.canUseGizmo.value" class="space-y-4 p-2">
             <GizmoControls
               v-model:gizmo-enabled="viewer.gizmoEnabled.value"
               v-model:gizmo-mode="viewer.gizmoMode.value"
@@ -82,7 +81,7 @@
             />
           </div>
 
-          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
+          <div v-if="viewer.canExport.value" class="space-y-4 p-2">
             <ExportControls @export-model="viewer.exportModel" />
           </div>
         </div>
