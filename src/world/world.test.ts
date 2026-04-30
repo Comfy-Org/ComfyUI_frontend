@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { defineComponentKey } from './componentKey'
@@ -77,9 +77,18 @@ describe('createWorld', () => {
     const nodeId = nodeEntityId(graphId, 1)
     world.setComponent(nodeId, TestNodeThing, { tag: 'foo' })
     expect(world.getComponent(nodeId, TestNodeThing)?.tag).toBe('foo')
-    // Cross-kind access is a compile error, asserted via @ts-expect-error
-    // @ts-expect-error WidgetEntityId is not assignable to NodeEntityId
-    world.getComponent(widgetEntityId(graphId, 1, 'x'), TestNodeThing)
+
+    // Cross-kind access is rejected at compile time. The type-level assertion
+    // below fails to compile if `widgetEntityId(...)` ever becomes assignable
+    // to a parameter expecting `NodeEntityId`, locking in the brand isolation
+    // contract without resorting to `@ts-expect-error`.
+    type CrossKindGetComponent = Parameters<
+      typeof world.getComponent<{ tag: string }, NodeEntityId>
+    >[0]
+    type WidgetIsNotAssignableToNode =
+      WidgetEntityId extends CrossKindGetComponent ? false : true
+    const _crossKindIsRejected: WidgetIsNotAssignableToNode = true
+    expect(_crossKindIsRejected).toBe(true)
   })
 })
 
@@ -96,5 +105,72 @@ describe('widgetEntityId', () => {
     const fromRoot = widgetEntityId(g, 42, 'seed')
     const fromNested = widgetEntityId(g, 42, 'seed')
     expect(fromRoot).toBe(fromNested)
+  })
+})
+
+describe('ComponentKey identity', () => {
+  it('keys component buckets by reference, not by name string', () => {
+    // Suppress the dev-time collision warning emitted by defineComponentKey.
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    interface PayloadA {
+      a: number
+    }
+    interface PayloadB {
+      b: number
+    }
+    const keyA = defineComponentKey<PayloadA, NodeEntityId>('Collision')
+    const keyB = defineComponentKey<PayloadB, NodeEntityId>('Collision')
+    expect(keyA).not.toBe(keyB)
+    expect(keyA.name).toBe(keyB.name)
+
+    const world = createWorld()
+    const id = nodeEntityId(
+      asGraphId('00000000-0000-0000-0000-000000000001'),
+      1
+    )
+
+    world.setComponent(id, keyA, { a: 1 })
+    world.setComponent(id, keyB, { b: 2 })
+
+    expect(world.getComponent(id, keyA)).toEqual({ a: 1 })
+    expect(world.getComponent(id, keyB)).toEqual({ b: 2 })
+
+    errorSpy.mockRestore()
+  })
+})
+
+describe('World type shapes', () => {
+  const world = createWorld()
+  const WidgetThing = defineComponentKey<{ value: number }, WidgetEntityId>(
+    'TypeShapeWidgetThing'
+  )
+
+  it('getComponent narrows to TData | undefined for the key', () => {
+    expectTypeOf(
+      world.getComponent<{ value: number }, WidgetEntityId>
+    ).returns.toEqualTypeOf<{ value: number } | undefined>()
+  })
+
+  it('setComponent third parameter matches the key TData', () => {
+    expectTypeOf(world.setComponent<{ value: number }, WidgetEntityId>)
+      .parameter(2)
+      .toEqualTypeOf<{ value: number }>()
+  })
+
+  it('entitiesWith returns TEntity[] for the key', () => {
+    expectTypeOf(
+      world.entitiesWith<{ value: number }, WidgetEntityId>
+    ).returns.toEqualTypeOf<WidgetEntityId[]>()
+  })
+
+  it('rejects cross-kind entity ids at the call site', () => {
+    // A widget-keyed read demands a WidgetEntityId. NodeEntityId must not
+    // be assignable, otherwise a NodeEntityId could be passed to a
+    // ComponentKey<_, WidgetEntityId>.
+    expectTypeOf<
+      NodeEntityId extends WidgetEntityId ? true : false
+    >().toEqualTypeOf<false>()
+    void WidgetThing
   })
 })

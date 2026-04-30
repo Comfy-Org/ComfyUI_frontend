@@ -1,9 +1,5 @@
 # Appendix: ECS Pattern Survey
 
-_Note: cross-references to `temp/plans/world-consolidation.md` point to a
-working planning document that may not be present in all checkouts. The
-load-bearing claims are reproduced inline below._
-
 _A survey of mainstream Entity Component System libraries — bitECS, miniplex,
 koota, ECSY, and Bevy — captured during the world-consolidation analysis that
 shipped slice 1 of [ADR 0008](../adr/0008-entity-component-system.md). This
@@ -11,12 +7,10 @@ appendix records which structural patterns our `src/world/` substrate adopts,
 which it deliberately departs from, and where the trade-offs are load-bearing
 rather than incidental._
 
-The source material is [temp/plans/world-consolidation.md §C "ECS pattern
-alignment"](../../temp/plans/world-consolidation.md). The in-code anchors for
-the load-bearing constraints discussed below are the doc-comments in
-[src/world/world.ts](../../src/world/world.ts) (storage strategy) and
-[src/world/entityIds.ts](../../src/world/entityIds.ts) (identity contract) —
-see §3 below.
+The in-code anchors for the load-bearing constraints discussed below are the
+doc-comments in [src/world/world.ts](../../src/world/world.ts) (storage
+strategy) and [src/world/entityIds.ts](../../src/world/entityIds.ts) (identity
+contract) — see §3 below.
 
 ---
 
@@ -46,8 +40,7 @@ Two structural patterns are unanimous across the surveyed libraries:
 
 Our slice-1 end state — five source files under
 [src/world/](../../src/world/), ~14 exported names total — sits squarely in
-this band. See [temp/plans/world-consolidation.md
-§1](../../temp/plans/world-consolidation.md) for the file-by-file breakdown.
+this band.
 
 ---
 
@@ -74,9 +67,7 @@ and look up arbitrary components keyed by entity ID; the domain layer
 knows what a "widget value" is. It also aligns with the AGENTS.md DDD
 guidance to group code by bounded context. Future components follow the
 same rule — `PositionComponent`, when it lands, will live with the layout
-domain rather than inside the substrate
-([temp/plans/world-consolidation.md
-§4.1](../../temp/plans/world-consolidation.md)).
+domain rather than inside the substrate.
 
 ### 2.2 Small public API
 
@@ -87,9 +78,7 @@ before extending the World, and every export is a potential migration
 cost when the substrate evolves.
 
 The `Brand` / `EntityId` / `ComponentKey` / `World` / `worldInstance`
-split keeps each module single-purpose
-([temp/plans/world-consolidation.md
-§A.F5–F9](../../temp/plans/world-consolidation.md)). `Brand<T,Tag>` is 5
+split keeps each module single-purpose. `Brand<T,Tag>` is 5
 LOC and shared across all branded ID kinds. `ComponentKey<TData,TEntity>`
 carries a two-parameter phantom that enables cross-kind compile-time
 checking. `asGraphId` is a single named boundary cast. The two explicit
@@ -118,7 +107,7 @@ storage choice rather than being layered on top.
 No surveyed TypeScript ECS uses branded IDs. bitECS uses unbranded
 `number`, miniplex uses plain object references, koota uses a numeric
 `.id()`. Our `Brand<T, Tag>` over each entity kind enables the
-`@ts-expect-error` cross-kind test in
+type-level cross-kind isolation assertion in
 [world.test.ts](../../src/world/world.test.ts) and documents slice-2/3/4
 entity kinds at compile time.
 
@@ -149,9 +138,10 @@ entity-component pair: every `getComponent` returns the same proxy,
 regardless of how many writes intervene. `widgetValueStore.registerWidget`
 returns that proxy (not the caller's input ref), so `BaseWidget._state`
 and every other reader observe the same object. Replace-on-write idioms
-would swap the cached proxy on each write and break that stability
-([temp/plans/world-consolidation.md §3.1 step
-6](../../temp/plans/world-consolidation.md), reactive-identity test).
+would swap the cached proxy on each write and break that stability —
+the reactive-identity test in
+[widgetValueStore.test.ts](../../src/stores/widgetValueStore.test.ts)
+locks in the contract.
 
 ### 3.2 SoA / archetype storage
 
@@ -169,8 +159,8 @@ the shared-reactive-identity contract that `BaseWidget._state` and the
 just a perf optimization decision.
 
 The contract is pinned in the doc-comment at the top of
-[src/world/world.ts](../../src/world/world.ts) (Appendix D.1 of the
-world-consolidation plan — copied here for proximity):
+[src/world/world.ts](../../src/world/world.ts) — copied here for
+proximity:
 
 ```ts
 /**
@@ -204,8 +194,7 @@ the same widget at depth 0 and depth 2 would receive different IDs and
 diverge.
 
 The contract is pinned in the doc-comment at the top of
-[src/world/entityIds.ts](../../src/world/entityIds.ts) (Appendix D.2 of
-the plan):
+[src/world/entityIds.ts](../../src/world/entityIds.ts):
 
 ```ts
 /**
@@ -266,9 +255,7 @@ ecosystem moves off `BaseWidget._state` shared identity entirely — a
 separate, larger slice with explicit cost analysis (re-entry, DOM widget
 options.getValue overrides, `linkedWidgets` fan-out,
 `useProcessedWidgets` memoization invalidation), out of scope for the
-current ADR 0008 implementation
-([temp/plans/world-consolidation.md
-§F](../../temp/plans/world-consolidation.md)).
+current ADR 0008 implementation.
 
 **Opaque entity IDs.** Revisitable only if the cross-subgraph identity
 contract is dropped. Today widget value sharing across subgraph depths
@@ -290,8 +277,3 @@ need parent traversal. At one consumer it stays domain-local.
 - [ECS Migration Plan](./ecs-migration-plan.md) for shipping milestones.
 - [Appendix: Critical Analysis](./appendix-critical-analysis.md) for the
   independent verification of the architecture documents.
-- [temp/plans/world-consolidation.md
-  §C](../../temp/plans/world-consolidation.md) — the source material for
-  this appendix; §A.F5–F9 explains the kept-as-is substrate choices,
-  §D.1/§D.2 hold the canonical doc-comment wording for the in-code
-  contracts.
