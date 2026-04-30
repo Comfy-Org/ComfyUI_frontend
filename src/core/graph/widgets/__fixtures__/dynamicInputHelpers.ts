@@ -3,30 +3,33 @@ import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
 
-type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
+type MockInputs = ('INT' | 'STRING' | 'IMAGE' | MockInputs)[][]
 
-export function addDynamicCombo(node: LGraphNode, testInputs: DynamicInputs) {
+export function addDynamicCombo(node: LGraphNode, rootMockInputs: MockInputs) {
   const namePrefix = `${node.widgets?.length ?? 0}`
   function getSpec(
-    inputs: DynamicInputs,
+    mockInputs: MockInputs,
     depth: number = 0
   ): { key: string; inputs: object }[] {
-    return inputs.map((group, groupIndex) => {
-      const inputs = group.map((input, inputIndex) => [
+    return mockInputs.map((mockGroup, groupIndex) => {
+      const inputSpec = mockGroup.map((mockInput, inputIndex) => [
         `${namePrefix}.${depth}.${inputIndex}`,
-        Array.isArray(input)
-          ? ['COMFY_DYNAMICCOMBO_V3', { options: getSpec(input, depth + 1) }]
-          : [input, { tooltip: `${groupIndex}` }]
+        Array.isArray(mockInput)
+          ? [
+              'COMFY_DYNAMICCOMBO_V3',
+              { options: getSpec(mockInput, depth + 1) }
+            ]
+          : [mockInput, { tooltip: `${groupIndex}` }]
       ])
       return {
         key: `${groupIndex}`,
-        inputs: { required: Object.fromEntries(inputs) }
+        inputs: { required: Object.fromEntries(inputSpec) }
       }
     })
   }
   const inputSpec: Required<InputSpec> = [
     'COMFY_DYNAMICCOMBO_V3',
-    { options: getSpec(testInputs) }
+    { options: getSpec(rootMockInputs) }
   ]
   useLitegraphService().addNodeInput(
     node,
