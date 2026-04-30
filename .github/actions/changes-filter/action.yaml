@@ -35,6 +35,9 @@ outputs:
   packages-changes:
     description: 'Shared deps or `packages/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
+  storybook-changes:
+    description: 'Shared deps or `.storybook/**` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
   docs-changes:
     description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
@@ -59,6 +62,8 @@ runs:
             - 'src/**'
           packages:
             - 'packages/**'
+          storybook:
+            - '.storybook/**'
           docs:
             - 'docs/**'
             - '**/*.md'
