@@ -305,7 +305,7 @@ describe('LGraphNode', () => {
     })
 
     expect(screen.getByText('Error')).toBeTruthy()
-    expect(screen.queryByText('Show Advanced')).toBeNull()
+    expect(screen.queryByText(/show advanced/i)).toBeNull()
   })
 
   describe('Reroute node sizing', () => {
