@@ -7,7 +7,7 @@
       <!-- Native drag area for Electron when workflow tabs are not in the topbar -->
       <div
         v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-        class="app-drag pointer-events-auto fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
+        class="app-drag pointer-events-auto h-(--comfy-topbar-height) w-full"
       />
       <div
         v-if="workflowTabsPosition === 'Topbar'"
