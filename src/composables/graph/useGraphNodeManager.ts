@@ -584,7 +584,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     vueNodeData.set(id, extractVueNodeData(node))
 
     const existingLayout = layoutStore.getNodeLayoutRef(id).value
-    if (existingLayout) return
+    if (existingLayout) return originalCallback?.(node)
 
     const nodePosition = { x: node.pos[0], y: node.pos[1] }
     const nodeSize = { width: node.size[0], height: node.size[1] }
@@ -596,7 +596,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       visible: true
     })
 
-    if (originalCallback) void originalCallback(node)
+    return originalCallback?.(node)
   }
 
   /**
