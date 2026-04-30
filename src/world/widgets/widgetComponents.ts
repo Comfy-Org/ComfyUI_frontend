@@ -1,24 +1,16 @@
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { defineComponentKeys, slot } from '@/world/componentKey'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
 
-interface WidgetValue {
-  value: unknown
-}
-
-interface WidgetDisplay {
-  label?: string
-  disabled?: boolean
-}
-
-interface WidgetSchema {
-  type: string
-  options: IWidgetOptions
-}
-
-interface WidgetSerialize {
-  serialize?: boolean
-}
+/**
+ * Per-bucket widget component shapes. Each bucket carves a disjoint slice
+ * of {@link IBaseWidget} so the component stores stay in sync with the
+ * source of truth in `src/lib/litegraph/src/types/widgets.ts`.
+ */
+type WidgetValue = Pick<IBaseWidget<unknown>, 'value'>
+type WidgetDisplay = Pick<IBaseWidget, 'label' | 'disabled'>
+type WidgetSchema = Pick<IBaseWidget, 'type' | 'options'>
+type WidgetSerialize = Pick<IBaseWidget, 'serialize'>
 
 interface WidgetContainer {
   widgetIds: WidgetEntityId[]

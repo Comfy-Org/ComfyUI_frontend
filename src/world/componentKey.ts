@@ -34,8 +34,9 @@ interface Slot<TData, TEntity extends EntityId> {
   readonly [slotEntity]?: TEntity
 }
 
-export const slot = <TData, TEntity extends EntityId>(): Slot<TData, TEntity> =>
-  ({}) as Slot<TData, TEntity>
+export function slot<TData, TEntity extends EntityId>(): Slot<TData, TEntity> {
+  return {} as Slot<TData, TEntity>
+}
 
 const registeredNames = new Set<string>()
 
