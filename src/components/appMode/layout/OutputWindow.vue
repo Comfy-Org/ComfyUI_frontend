@@ -51,22 +51,26 @@ function toggleMaximized() {
 }
 
 const appModeStore = useAppModeStore()
-const { viewportScale } = storeToRefs(appModeStore)
+const { viewportScale, noZoomMode } = storeToRefs(appModeStore)
 
+// Bigger snap (chrome cell + gutter) in dashboard mode so windows
+// align with the input panel and other chrome cells.
 const GRID = 16
-const snap = (v: number) => Math.round(v / GRID) * GRID
+const NO_ZOOM_GRID = 56
+const snap = (v: number) => {
+  const g = noZoomMode.value ? NO_ZOOM_GRID : GRID
+  return Math.round(v / g) * g
+}
 
-const wx = ref(0)
-const wy = ref(0)
+// Initialize from the spawn coordinate so the first paint already has
+// the right transform — no (0,0) flash before onMounted.
+const wx = ref(initialPosition?.x ?? 0)
+const wy = ref(initialPosition?.y ?? 0)
 const ww = ref(initialWidth ?? defaultWidth)
 const wh = ref(initialHeight ?? defaultHeight)
 
 onMounted(() => {
-  if (initialPosition) {
-    wx.value = snap(initialPosition.x)
-    wy.value = snap(initialPosition.y)
-    return
-  }
+  if (initialPosition) return
   wx.value = snap(Math.max(0, (window.innerWidth - ww.value) / 2))
   wy.value = snap(Math.max(0, (window.innerHeight - wh.value) / 2 - 32))
 })
@@ -77,8 +81,8 @@ watch(
   (next) => {
     if (!next || dragging.value) return
     if (next.x === wx.value && next.y === wy.value) return
-    wx.value = snap(next.x)
-    wy.value = snap(next.y)
+    wx.value = next.x
+    wy.value = next.y
   }
 )
 watch(

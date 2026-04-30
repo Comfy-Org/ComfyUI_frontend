@@ -55,6 +55,8 @@ export const useAppModeStore = defineStore('appMode', () => {
   const viewportScale = ref(1)
   const viewportOffsetX = ref(0)
   const viewportOffsetY = ref(0)
+  // No-zoom dashboard mode: locks viewport, lays out outputs in a grid.
+  const noZoomMode = ref(false)
   // Clamp range — zoom-out past 0.1x makes the image a dot; past 8x the
   // pixels get blocky and pan math becomes unwieldy. These bounds cover
   // every realistic inspection use case.
@@ -74,6 +76,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     deltaY: number,
     rect: { left: number; top: number; width: number; height: number }
   ) {
+    if (noZoomMode.value) return
     cancelFlyTo()
     const prevScale = viewportScale.value
     // 1.1 ** (delta / -30) matches ZoomPane's original responsiveness so
@@ -90,6 +93,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function panBy(dx: number, dy: number) {
+    if (noZoomMode.value) return
     cancelFlyTo()
     viewportOffsetX.value += dx
     viewportOffsetY.value += dy
@@ -99,6 +103,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   // is the natural focal point when there's no cursor position driving
   // the change.
   function zoomStep(factor: number) {
+    if (noZoomMode.value) return
     cancelFlyTo()
     const prevScale = viewportScale.value
     const nextScale = clampScale(prevScale * factor)
@@ -124,6 +129,11 @@ export const useAppModeStore = defineStore('appMode', () => {
     viewportOffsetY.value = 0
   }
 
+  function toggleNoZoomMode() {
+    noZoomMode.value = !noZoomMode.value
+    if (noZoomMode.value) resetView()
+  }
+
   // Mid-flight handle so a second flyTo / manual pan can cancel.
   let flyAnimationId: number | null = null
   function cancelFlyTo() {
@@ -143,6 +153,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       viewportHeight?: number
     }
   ) {
+    if (noZoomMode.value) return
     cancelFlyTo()
     const duration = options?.duration ?? 450
     const vw = options?.viewportWidth ?? window.innerWidth
@@ -409,6 +420,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     hasNodes,
     hasOutputs,
     loadSelections,
+    noZoomMode,
     panelCollapsed,
     panelPreset,
     panelRows,
@@ -422,6 +434,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     selectedInputs,
     selectedOutputs,
     showVueNodeSwitchPopup,
+    toggleNoZoomMode,
     toggleSelectedInput,
     toggleSelectedOutput,
     updateInputConfig,

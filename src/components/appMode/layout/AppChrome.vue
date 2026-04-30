@@ -36,6 +36,7 @@ type ChromeCellKind =
   | 'nav-zoom-out'
   | 'nav-zoom-percent'
   | 'nav-zoom-fit'
+  | 'nav-no-zoom'
 
 interface ChromeCell {
   id: string
@@ -54,8 +55,9 @@ const { variant = 'app-mode' } = defineProps<{
 const { t } = useI18n()
 const { enableAppBuilder, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
-const { enterBuilder, zoomIn, zoomOut, resetView } = appModeStore
-const { hasNodes, viewportScale } = storeToRefs(appModeStore)
+const { enterBuilder, zoomIn, zoomOut, resetView, toggleNoZoomMode } =
+  appModeStore
+const { hasNodes, viewportScale, noZoomMode } = storeToRefs(appModeStore)
 
 const canvasStore = useCanvasStore()
 const { appScalePercentage } = storeToRefs(canvasStore)
@@ -161,6 +163,9 @@ const bottomLeftCells = computed<ChromeCell[]>(() => {
 
 const bottomRightCells = computed<ChromeCell[]>(() => {
   const out: ChromeCell[] = []
+  if (variant !== 'builder') {
+    include(out, { id: 'nav-no-zoom', kind: 'nav-no-zoom', span: 1 })
+  }
   include(out, { id: 'nav-zoom-out', kind: 'nav-zoom-out', span: 1 })
   include(out, { id: 'nav-zoom-percent', kind: 'nav-zoom-percent', span: 2 })
   include(out, { id: 'nav-zoom-in', kind: 'nav-zoom-in', span: 1 })
@@ -296,7 +301,18 @@ function cellClass(cell: ChromeCell): string {
         :data-cell-kind="cell.kind"
       >
         <IconCell
-          v-if="cell.kind === 'nav-zoom-out'"
+          v-if="cell.kind === 'nav-no-zoom'"
+          :icon="
+            noZoomMode
+              ? 'icon-[lucide--layout-grid]'
+              : 'icon-[lucide--maximize-2]'
+          "
+          :active="noZoomMode"
+          :label="t('linearMode.toggleNoZoom')"
+          @activate="toggleNoZoomMode"
+        />
+        <IconCell
+          v-else-if="cell.kind === 'nav-zoom-out'"
           icon="icon-[lucide--zoom-out]"
           :label="t('linearMode.zoomOut')"
           @activate="navZoomOut"

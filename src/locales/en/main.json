@@ -3351,6 +3351,7 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "resetView": "Reset view",
+    "toggleNoZoom": "Toggle dashboard mode",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",

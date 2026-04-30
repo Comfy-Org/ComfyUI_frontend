@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, useTemplateRef, watch } from 'vue'
+import { computed, useTemplateRef, watch, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useEventListener } from '@vueuse/core'
+import { useElementSize, useEventListener } from '@vueuse/core'
 
 import AppChrome from './AppChrome.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
+import { isDockPreset, panelSide } from './panels/panelTypes'
 import { useAppPanelLayout } from './panels/useAppPanelLayout'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
@@ -17,17 +18,19 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const appModeStore = useAppModeStore()
 const workflowStore = useWorkflowStore()
 const windowStore = useOutputWindowStore()
-const { viewportScale, viewportOffsetX, viewportOffsetY } =
+const { viewportScale, viewportOffsetX, viewportOffsetY, noZoomMode } =
   storeToRefs(appModeStore)
 
 // Smooth-pan to each new output window so prior run's transform doesn't
 // leave it off-screen. flyTo preserves zoom unless it's far off.
+// Skipped in dashboard mode — viewport is locked, tile lives where it spawned.
 const FALLBACK_W = 512
 const FALLBACK_H = 560
 watch(
   () => windowStore.windows.length,
   (next, prev) => {
     if (next <= (prev ?? 0)) return
+    if (noZoomMode.value) return
     const latest = windowStore.windows[windowStore.windows.length - 1]
     if (!latest) return
     appModeStore.flyTo({
@@ -42,6 +45,51 @@ watch(
 // Pan/zoom binds to .layout-view (full viewport), not the transformed
 // bgRef — otherwise zoom-out shrinks the hit area.
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
+const layoutRef = useTemplateRef<HTMLElement>('layoutRef')
+
+// Dashboard mode: re-flow tiles whenever the view size, tile count,
+// or mode changes. Reading the LayoutView rect avoids assumptions
+// about sidebar widths.
+const { width: layoutW, height: layoutH } = useElementSize(layoutRef)
+
+// Reserve the input panel's column so tiles never slide under it,
+// whether the panel is docked or floating in a corner.
+// Mirrors FloatingPanel's widthStyle math (cells × cell + (cells−1) × gutter)
+// when docked, and the fixed --panel-dock-width default (440px) when floating.
+const PANEL_CELL_PX = 48
+const PANEL_GUTTER_PX = 8
+const FLOATING_PANEL_WIDTH_PX = 440
+const dashboardInsets = computed(() => {
+  const preset = appModeStore.panelPreset
+  let panelW: number
+  if (isDockPreset(preset)) {
+    const cells = appModeStore.panelWidthCells
+    panelW = cells * PANEL_CELL_PX + Math.max(0, cells - 1) * PANEL_GUTTER_PX
+  } else {
+    panelW = FLOATING_PANEL_WIDTH_PX
+  }
+  const inset = panelW + PANEL_GUTTER_PX
+  return panelSide(preset) === 'right' ? { right: inset } : { left: inset }
+})
+
+watchEffect(
+  () => {
+    // Read length first so the effect tracks spawn/remove regardless
+    // of which branch we take.
+    const count = windowStore.windows.length
+    if (!noZoomMode.value) return
+    if (count > 0 && layoutW.value > 0 && layoutH.value > 0) {
+      windowStore.relayoutDashboard(
+        layoutW.value,
+        layoutH.value,
+        dashboardInsets.value
+      )
+    }
+  },
+  // sync flush: re-flow runs in the same tick as the spawn, so the
+  // new tile renders directly at its dashboard slot.
+  { flush: 'sync' }
+)
 
 function handleWheel(e: WheelEvent) {
   e.preventDefault()
@@ -121,6 +169,7 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 
 <template>
   <div
+    ref="layoutRef"
     class="layout-view"
     :style="{
       '--viewport-scale': viewportScale,

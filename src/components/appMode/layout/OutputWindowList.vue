@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -72,10 +72,6 @@ const HEADER_ACTION_CLASS =
   'focus-visible:ring-2 focus-visible:ring-base-foreground/40 ' +
   '[&>i]:size-[18px]'
 
-const imageAspects = ref<Record<string, number>>({})
-function aspectFor(entry: OutputWindowEntry): number | undefined {
-  return imageAspects.value[entry.id]
-}
 function aspectSourceUrl(entry: OutputWindowEntry): string | undefined {
   return resolvedOutput(entry)?.url ?? entry.latentPreviewUrl
 }
@@ -90,9 +86,7 @@ watch(
         const current = windowStore.windows.find((w) => w.id === id)
         if (!current || aspectSourceUrl(current) !== url) return
         if (probe.naturalWidth <= 0 || probe.naturalHeight <= 0) return
-        const next = probe.naturalWidth / probe.naturalHeight
-        if (imageAspects.value[id] === next) return
-        imageAspects.value = { ...imageAspects.value, [id]: next }
+        windowStore.attachAspect(id, probe.naturalWidth / probe.naturalHeight)
       }
       probe.src = url
     }
@@ -187,7 +181,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     :initial-width="entry.width"
     :initial-height="entry.height"
     :z-index="entry.zIndex"
-    :body-aspect="aspectFor(entry)"
+    :body-aspect="entry.aspect"
     @update:position="(pos) => windowStore.move(entry.id, pos)"
     @update:size="(size) => windowStore.resize(entry.id, size)"
     @promote="windowStore.promote(entry.id)"
