@@ -142,7 +142,7 @@ Each language has 4 translation files:
 
 ### Issue: Language not appearing in dropdown
 
-**Solution**: Check that the language code in `coreSettings.ts` matches your other files exactly
+**Solution**: Check that the language code in `src/locales/localeConfig.ts` matches your other files exactly
 
 ### Issue: Rate limits during local translation
 
