@@ -1,8 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -27,24 +29,22 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
-  })
-}))
+vi.mock('primevue/usetoast', () => {
+  const add = vi.fn()
+  return {
+    useToast: () => ({ add })
+  }
+})
 
-const mockT = vi.hoisted(() => vi.fn((key: string) => key))
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: mockT
-  }),
-  createI18n: () => ({
-    global: {
-      t: mockT
-    }
-  })
-}))
+vi.mock('vue-i18n', () => {
+  const t = vi.fn((key: string) => key)
+  return {
+    useI18n: () => ({ t }),
+    createI18n: () => ({
+      global: { t }
+    })
+  }
+})
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/dialogStore', () => ({
@@ -185,6 +185,14 @@ function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
     src: 'https://example.com/default-preview.png',
     ...overrides
   }
+}
+
+function getToastAddMock(): ReturnType<typeof vi.fn> {
+  return useToast().add as ReturnType<typeof vi.fn>
+}
+
+function getI18nTMock(): ReturnType<typeof vi.fn> {
+  return useI18n().t as ReturnType<typeof vi.fn>
 }
 
 function mountMediaActions(asset?: AssetMeta) {
@@ -548,7 +556,6 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockCreateAssetExport.mockClear()
-      mockToastAdd.mockClear()
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockImplementation(
         (meta: Record<string, unknown> | undefined) =>
@@ -571,7 +578,7 @@ describe('useMediaAssetActions', () => {
     }
 
     function getExportToastDetail(): string | undefined {
-      const exportToastCall = mockToastAdd.mock.calls.find(
+      const exportToastCall = getToastAddMock().mock.calls.find(
         ([arg]) =>
           typeof arg?.detail === 'string' &&
           arg.detail.startsWith('mediaAsset.selection.exportStarted')
@@ -587,7 +594,7 @@ describe('useMediaAssetActions', () => {
         expect(getExportToastDetail()).toBeDefined()
       })
 
-      expect(mockT).toHaveBeenCalledWith(
+      expect(getI18nTMock()).toHaveBeenCalledWith(
         'mediaAsset.selection.exportStarted',
         { count },
         count
