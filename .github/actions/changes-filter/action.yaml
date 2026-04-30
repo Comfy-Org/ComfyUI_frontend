@@ -1,0 +1,82 @@
+# Outputs default to 'true' for non-pull_request events (push, merge_group):
+# granular path filtering is a PR-only optimization. This avoids the silent
+# skip footgun where a job gated on e.g. `app-website-changes == 'true'`
+# would never run on push.
+#
+# Shared dependency files (root package.json, pnpm-lock.yaml,
+# pnpm-workspace.yaml) are folded into every app-* and packages-changes
+# output so a lockfile bump correctly invalidates each granular gate. They
+# are NOT folded into docs-changes.
+#
+# Two paths-filter steps are needed because predicate-quantifier=every is
+# required for the negated globs in `should-run` but breaks multi-pattern
+# OR filters like `docs:` and `deps:`.
+#
+# Requires the caller to have checked out the repository.
+
+name: 'Detect Path Changes'
+description: >
+  Computes typed *-changes outputs and a back-compat should-run for
+  path-gated CI jobs.
+
+outputs:
+  should-run:
+    description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
+  app-website-changes:
+    description: 'Shared deps or `apps/website/**` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
+  app-desktop-changes:
+    description: 'Shared deps or `apps/desktop-ui/**` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_desktop == 'true' }}
+  app-frontend-changes:
+    description: 'Shared deps or `src/**` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
+  packages-changes:
+    description: 'Shared deps or `packages/**` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
+  docs-changes:
+    description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+  dependency-changes:
+    description: 'Root `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' }}
+
+runs:
+  using: composite
+  steps:
+    - name: Filter typed changes
+      if: ${{ github.event_name == 'pull_request' }}
+      id: filter
+      uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      with:
+        filters: |
+          app_website:
+            - 'apps/website/**'
+          app_desktop:
+            - 'apps/desktop-ui/**'
+          app_frontend:
+            - 'src/**'
+          packages:
+            - 'packages/**'
+          docs:
+            - 'docs/**'
+            - '**/*.md'
+          deps:
+            - 'package.json'
+            - 'pnpm-lock.yaml'
+            - 'pnpm-workspace.yaml'
+
+    - name: Filter relevant changes
+      if: ${{ github.event_name == 'pull_request' }}
+      id: relevant
+      uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      with:
+        predicate-quantifier: 'every'
+        filters: |
+          relevant:
+            - '**'
+            - '!apps/**'
+            - '!docs/**'
+            - '!.storybook/**'
+            - '!**/*.md'

@@ -3,10 +3,8 @@ name: 'CI: Performance Report'
 on:
   push:
     branches: [main, core/*]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
 
 concurrency:
   group: perf-${{ github.ref }}
@@ -16,8 +14,20 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   perf-tests:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
