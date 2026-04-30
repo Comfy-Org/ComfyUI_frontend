@@ -24,9 +24,9 @@ interface FakeMediaWidget {
   computeLayoutSize?: () => { minHeight: number; minWidth: number }
 }
 
-export function createMockDOMWidgetNode(
-  overrides: Record<string, unknown> = {}
-) {
+type NodeOverrides = Record<string, unknown> & { widgets?: never }
+
+export function createMockDOMWidgetNode(overrides: NodeOverrides = {}) {
   const widgets: FakeDOMWidget[] = []
   return fromAny<LGraphNode & { widgets: FakeDOMWidget[] }, unknown>({
     id: 1,
@@ -46,7 +46,7 @@ export function createMockDOMWidgetNode(
   })
 }
 
-export function createMockMediaNode(overrides: Record<string, unknown> = {}) {
+export function createMockMediaNode(overrides: NodeOverrides = {}) {
   const widgets: FakeMediaWidget[] = []
   return fromAny<LGraphNode & { widgets: FakeMediaWidget[] }, unknown>({
     widgets,
