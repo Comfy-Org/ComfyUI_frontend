@@ -2,7 +2,7 @@ name: 'CI: Website E2E'
 
 on:
   push:
-    branches: [main, website/*]
+    branches: [main]
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
@@ -17,7 +17,7 @@ on:
       - 'pnpm-lock.yaml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -45,6 +45,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build website
+        env:
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
         run: pnpm --filter @comfyorg/website build
 
       - name: Run Playwright tests

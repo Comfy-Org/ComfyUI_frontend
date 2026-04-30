@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "使用 HappyHorse 模型根据首帧图像生成视频。",
+    "display_name": "HappyHorse 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首帧图像。输出视频的宽高比将根据该图像确定。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "使用 HappyHorse 模型根据参考素材生成包含人物或物体的视频。支持单角色表演和多角色互动。",
+    "display_name": "HappyHorse 参考转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "使用 HappyHorse 模型根据文本提示生成视频。",
+    "display_name": "HappyHorse 文本转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "使用 HappyHorse 模型通过文本指令或参考图像编辑视频。输出时长为 3-15 秒，并与输入视频一致；超过 15 秒的输入将被截断。",
+    "display_name": "HappyHorse 视频编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要编辑的视频。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "将低分辨率图像放大至超分辨率，消除伪影和噪点。最大输出：3200万像素。",
     "display_name": "HitPaw 通用图像增强",

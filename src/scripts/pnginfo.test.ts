@@ -2,7 +2,26 @@ import fs from 'fs'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getLatentMetadata, getWebpMetadata } from './pnginfo'
+import { getFromAvifFile } from './metadata/avif'
+import { getFromFlacFile } from './metadata/flac'
+import { getFromPngFile } from './metadata/png'
+import {
+  getAvifMetadata,
+  getFlacMetadata,
+  getLatentMetadata,
+  getPngMetadata,
+  getWebpMetadata
+} from './pnginfo'
+
+vi.mock('./metadata/png', () => ({
+  getFromPngFile: vi.fn()
+}))
+vi.mock('./metadata/flac', () => ({
+  getFromFlacFile: vi.fn()
+}))
+vi.mock('./metadata/avif', () => ({
+  getFromAvifFile: vi.fn()
+}))
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -181,5 +200,37 @@ describe('getLatentMetadata', () => {
     const metadata = await getLatentMetadata(file)
 
     expect(metadata).toBeUndefined()
+  })
+})
+
+describe('format-specific metadata wrappers', () => {
+  it('getPngMetadata delegates to getFromPngFile', async () => {
+    const file = new File([], 'a.png', { type: 'image/png' })
+    vi.mocked(getFromPngFile).mockResolvedValue({ workflow: '{"png":1}' })
+
+    const result = await getPngMetadata(file)
+
+    expect(getFromPngFile).toHaveBeenCalledWith(file)
+    expect(result).toEqual({ workflow: '{"png":1}' })
+  })
+
+  it('getFlacMetadata delegates to getFromFlacFile', async () => {
+    const file = new File([], 'a.flac', { type: 'audio/flac' })
+    vi.mocked(getFromFlacFile).mockResolvedValue({ workflow: '{"flac":1}' })
+
+    const result = await getFlacMetadata(file)
+
+    expect(getFromFlacFile).toHaveBeenCalledWith(file)
+    expect(result).toEqual({ workflow: '{"flac":1}' })
+  })
+
+  it('getAvifMetadata delegates to getFromAvifFile', async () => {
+    const file = new File([], 'a.avif', { type: 'image/avif' })
+    vi.mocked(getFromAvifFile).mockResolvedValue({ workflow: '{"avif":1}' })
+
+    const result = await getAvifMetadata(file)
+
+    expect(getFromAvifFile).toHaveBeenCalledWith(file)
+    expect(result).toEqual({ workflow: '{"avif":1}' })
   })
 })
