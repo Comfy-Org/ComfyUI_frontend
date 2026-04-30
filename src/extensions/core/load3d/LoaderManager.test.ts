@@ -345,6 +345,29 @@ describe('LoaderManager', () => {
       expect(meshLoad).not.toHaveBeenCalled()
     })
 
+    it('emits modelLoadError and skips toast when suppressErrors is true and extension cannot be determined', async () => {
+      const modelManager = makeModelManagerStub()
+      const eventManager = makeEventManagerStub()
+      const lm = new LoaderManager(
+        modelManager as unknown as ConstructorParameters<
+          typeof LoaderManager
+        >[0],
+        eventManager,
+        undefined,
+        undefined,
+        true
+      )
+
+      await lm.loadModel('api/view?other=1')
+
+      expect(addAlert).not.toHaveBeenCalled()
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadError',
+        'toastMessages.couldNotDetermineFileType'
+      )
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+    })
+
     it('passes setupModel the object returned by the adapter', async () => {
       const { lm, modelManager } = makeLoaderManager()
       const loaded = new THREE.Object3D()
