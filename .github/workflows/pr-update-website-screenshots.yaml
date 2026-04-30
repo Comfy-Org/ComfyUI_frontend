@@ -86,6 +86,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build website
+        env:
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
         run: pnpm --filter @comfyorg/website build
 
       - name: Update screenshots
