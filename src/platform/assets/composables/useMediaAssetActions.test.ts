@@ -34,15 +34,14 @@ vi.mock('primevue/usetoast', () => ({
   })
 }))
 
+const mockT = vi.hoisted(() => vi.fn((key: string) => key))
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string, count?: number) =>
-      count !== undefined ? `${key}:${count}` : key
+    t: mockT
   }),
   createI18n: () => ({
     global: {
-      t: (key: string, count?: number) =>
-        count !== undefined ? `${key}:${count}` : key
+      t: mockT
     }
   })
 }))
@@ -580,13 +579,7 @@ describe('useMediaAssetActions', () => {
       return exportToastCall?.[0]?.detail
     }
 
-    it('should report total file count, not job count, for multi-output jobs', async () => {
-      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
-      const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
-
-      const actions = useMediaAssetActions()
-      actions.downloadAssets([j1, j2])
-
+    async function expectExportToastFileCount(count: number) {
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
@@ -594,9 +587,21 @@ describe('useMediaAssetActions', () => {
         expect(getExportToastDetail()).toBeDefined()
       })
 
-      expect(getExportToastDetail()).toBe(
-        'mediaAsset.selection.exportStarted:6'
+      expect(mockT).toHaveBeenCalledWith(
+        'mediaAsset.selection.exportStarted',
+        { count },
+        count
       )
+    }
+
+    it('should report total file count, not job count, for multi-output jobs', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
+      const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, j2])
+
+      await expectExportToastFileCount(6)
     })
 
     it('should treat assets without outputCount as a single file', async () => {
@@ -606,16 +611,7 @@ describe('useMediaAssetActions', () => {
       const actions = useMediaAssetActions()
       actions.downloadAssets([a1, a2])
 
-      await vi.waitFor(() => {
-        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
-      })
-      await vi.waitFor(() => {
-        expect(getExportToastDetail()).toBeDefined()
-      })
-
-      expect(getExportToastDetail()).toBe(
-        'mediaAsset.selection.exportStarted:2'
-      )
+      await expectExportToastFileCount(2)
     })
 
     it('should mix multi-output and single-output assets correctly', async () => {
@@ -625,16 +621,17 @@ describe('useMediaAssetActions', () => {
       const actions = useMediaAssetActions()
       actions.downloadAssets([j1, a2])
 
-      await vi.waitFor(() => {
-        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
-      })
-      await vi.waitFor(() => {
-        expect(getExportToastDetail()).toBeDefined()
-      })
+      await expectExportToastFileCount(4)
+    })
 
-      expect(getExportToastDetail()).toBe(
-        'mediaAsset.selection.exportStarted:4'
-      )
+    it('should only count duplicate job-level output selections once', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const j1Duplicate = createOutputAsset('a2', 'img2.png', 'job1', 3)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, j1Duplicate])
+
+      await expectExportToastFileCount(3)
     })
   })
 

@@ -17,6 +17,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetOutputCount } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -116,6 +117,8 @@ export function useMediaAssetActions() {
       const jobIds: string[] = []
       const assetIds: string[] = []
       const jobAssetNameFilters: Record<string, string[]> = {}
+      const countedOutputJobIds = new Set<string>()
+      let fileCount = 0
 
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
@@ -127,6 +130,15 @@ export function useMediaAssetActions() {
           // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
+          if (metadata?.outputCount != null) {
+            if (!countedOutputJobIds.has(jobId)) {
+              countedOutputJobIds.add(jobId)
+              fileCount += getAssetOutputCount(asset)
+            }
+          } else {
+            fileCount += 1
+          }
+
           if (metadata?.jobId && asset.name && metadata.outputCount == null) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
@@ -137,6 +149,7 @@ export function useMediaAssetActions() {
           }
         } else {
           assetIds.push(asset.id)
+          fileCount += 1
         }
       }
 
@@ -156,15 +169,14 @@ export function useMediaAssetActions() {
 
       assetExportStore.trackExport(result.task_id)
 
-      const fileCount = assets.reduce((sum, a) => {
-        const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
-        return sum + (typeof count === 'number' && count > 1 ? count : 1)
-      }, 0)
-
       toast.add({
         severity: 'info',
         summary: t('exportToast.exportStarted'),
-        detail: t('mediaAsset.selection.exportStarted', fileCount),
+        detail: t(
+          'mediaAsset.selection.exportStarted',
+          { count: fileCount },
+          fileCount
+        ),
         life: 3000
       })
     } catch (error) {
