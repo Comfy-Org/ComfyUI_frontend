@@ -12,17 +12,25 @@ let initialized = false
 
 export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
-  posthog.init(POSTHOG_KEY, {
-    api_host: POSTHOG_API_HOST,
-    ui_host: POSTHOG_UI_HOST,
-    capture_pageview: false,
-    capture_pageleave: true,
-    person_profiles: 'identified_only'
-  })
-  initialized = true
+  try {
+    posthog.init(POSTHOG_KEY, {
+      api_host: POSTHOG_API_HOST,
+      ui_host: POSTHOG_UI_HOST,
+      capture_pageview: false,
+      capture_pageleave: true,
+      person_profiles: 'identified_only'
+    })
+    initialized = true
+  } catch (error) {
+    console.error('PostHog init failed', error)
+  }
 }
 
 export function capturePageview() {
   if (!initialized) return
-  posthog.capture('$pageview')
+  try {
+    posthog.capture('$pageview')
+  } catch (error) {
+    console.error('PostHog pageview capture failed', error)
+  }
 }
