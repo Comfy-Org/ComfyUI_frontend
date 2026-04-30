@@ -1,10 +1,6 @@
 import { defineStore } from 'pinia'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { ComponentKey } from '@/world/componentKey'
 import {
@@ -16,15 +12,20 @@ import {
   widgetEntityId
 } from '@/world/entityIds'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { getWorld } from '@/world/worldInstance'
-
 import {
   WidgetComponentContainer,
   WidgetComponentDisplay,
   WidgetComponentSchema,
   WidgetComponentSerialize,
   WidgetComponentValue
-} from './widgetComponents'
+} from '@/world/widgets/widgetComponents'
+import type {
+  WidgetRegistration,
+  WidgetState
+} from '@/world/widgets/widgetState'
+import { getWorld } from '@/world/worldInstance'
+
+export type { WidgetState } from '@/world/widgets/widgetState'
 
 /**
  * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
@@ -32,42 +33,6 @@ import {
  */
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
-}
-
-/**
- * `WidgetState` is a *derived view* over the four widget-side components
- * (`WidgetComponentValue` / `Display` / `Schema` / `Serialize`). Property
- * accessors are installed via `Object.defineProperty` and delegate live
- * to the world; reads always hit the underlying reactive proxies, so
- * Vue tracking propagates through the view.
- *
- * Object identity is **not** preserved across `getWidget` calls — each
- * call constructs a fresh view. Data semantics round-trip; identity does
- * not. Do not cache views or rely on `===`.
- *
- * `name` and `nodeId` are not present on the view: they live in the
- * underlying `WidgetEntityId` and would be a redundant copy here. Callers
- * that need them should derive from the entity id (or from the BaseWidget
- * instance, which still owns them).
- */
-export type WidgetState<
-  TValue = unknown,
-  TType extends string = string,
-  TOptions extends IWidgetOptions = IWidgetOptions
-> = Pick<
-  IBaseWidget<TValue, TType, TOptions>,
-  'value' | 'options' | 'label' | 'serialize' | 'disabled' | 'type'
->
-
-/**
- * Input shape for `registerWidget`: a `WidgetState` view augmented with the
- * identity fields (`name`, `nodeId`) needed to construct the widget's
- * `WidgetEntityId`. The view returned from `registerWidget` is the
- * un-augmented `WidgetState` because identity fields live in the entity id.
- */
-interface WidgetRegistration<TValue = unknown> extends WidgetState<TValue> {
-  name: string
-  nodeId: NodeId
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
@@ -159,7 +124,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   /** First registration wins; later `state` seeds are discarded. */
-  function getOrRegister(graphId: UUID, state: WidgetState): WidgetState {
+  function getOrRegister(
+    graphId: UUID,
+    state: WidgetRegistration
+  ): WidgetState {
     const existing = getWidget(graphId, state.nodeId, state.name)
     if (existing) return existing
     return registerWidget(graphId, state)

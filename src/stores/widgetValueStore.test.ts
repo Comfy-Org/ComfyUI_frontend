@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { asGraphId, widgetEntityId } from '@/world/entityIds'
-import { getWorld, resetWorldInstance } from '@/world/worldInstance'
-
 import {
   WidgetComponentDisplay,
   WidgetComponentValue
-} from './widgetComponents'
+} from '@/world/widgets/widgetComponents'
+import { getWorld, resetWorldInstance } from '@/world/worldInstance'
+
 import type { WidgetState } from './widgetValueStore'
 import { useWidgetValueStore } from './widgetValueStore'
 
