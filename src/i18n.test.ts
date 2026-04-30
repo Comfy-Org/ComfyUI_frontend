@@ -1,6 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const { i18n, loadLocale, mergeCustomNodesI18n, resolveSupportedLocale } =
-  await import('./i18n')
+
+import type * as I18nModule from './i18n'
+
+let i18n: typeof I18nModule.i18n
+let loadLocale: typeof I18nModule.loadLocale
+let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
+let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
+
+async function importI18nModule() {
+  const i18nModule = await import('./i18n')
+  i18n = i18nModule.i18n
+  loadLocale = i18nModule.loadLocale
+  mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
+  resolveSupportedLocale = i18nModule.resolveSupportedLocale
+}
 
 // Mock the JSON imports before importing i18n module
 vi.mock('./locales/en/main.json', () => ({ default: { welcome: 'Welcome' } }))
@@ -25,6 +38,7 @@ vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
 describe('i18n', () => {
   beforeEach(async () => {
     vi.resetModules()
+    await importI18nModule()
   })
 
   describe('mergeCustomNodesI18n', () => {
@@ -47,8 +61,6 @@ describe('i18n', () => {
     })
 
     it('should store data for not-yet-loaded locales', async () => {
-      const { i18n, mergeCustomNodesI18n } = await import('./i18n')
-
       // Chinese is not pre-loaded, data should be stored but not merged yet
       mergeCustomNodesI18n({
         zh: {
@@ -149,7 +161,7 @@ describe('i18n', () => {
     it('should handle calling mergeCustomNodesI18n multiple times', async () => {
       // Use fresh module instance to ensure clean state
       vi.resetModules()
-      const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
+      await importI18nModule()
 
       mergeCustomNodesI18n({
         zh: { plugin1: { name: '插件1' } }
@@ -190,12 +202,19 @@ describe('i18n', () => {
       expect(resolved).toBe('zh-TW')
     })
 
-    it('should fall back from pt-BR base tag pt to pt-BR', async () => {
-      // pt is not shipped on its own, but pt-BR is.
-      // resolveSupportedLocale only fires the base-tag fallback for inputs
-      // whose full tag isn't shipped — verifying the standalone helper here.
-      expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
-      expect(resolveSupportedLocale('pt')).toBe('en')
+    it('should preserve shipped pt-BR locale through loadLocale', async () => {
+      const resolved = await loadLocale('pt-BR')
+
+      expect(resolved).toBe('pt-BR')
+      expect(i18n.global.getLocaleMessage('pt-BR')).toEqual(
+        expect.objectContaining({
+          commands: expect.any(Object),
+          nodeDefs: expect.any(Object),
+          settings: expect.any(Object)
+        })
+      )
+
+      expect(await loadLocale('pt')).toBe('en')
     })
 
     it('should handle concurrent load requests for same locale', async () => {

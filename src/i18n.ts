@@ -1,13 +1,18 @@
 import { createI18n } from 'vue-i18n'
 
-// ESLint cannot statically resolve dynamic imports with relative paths in template strings,
-// but these are valid ES module imports that Vite processes correctly at build time.
+import {
+  localeDefinitions,
+  resolveSupportedLocale
+} from '@/locales/localeConfig'
+import type { SupportedLocale } from '@/locales/localeConfig'
 
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
 import en from './locales/en/main.json' with { type: 'json' }
 import enNodes from './locales/en/nodeDefs.json' with { type: 'json' }
 import enSettings from './locales/en/settings.json' with { type: 'json' }
+
+export { resolveSupportedLocale }
 
 function buildLocale<
   M extends Record<string, unknown>,
@@ -23,75 +28,6 @@ function buildLocale<
   } as M & { nodeDefs: N; commands: C; settings: S }
 }
 
-// Locale loader map - dynamically import locales only when needed
-const localeLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/main.json'),
-  es: () => import('./locales/es/main.json'),
-  fa: () => import('./locales/fa/main.json'),
-  fr: () => import('./locales/fr/main.json'),
-  ja: () => import('./locales/ja/main.json'),
-  ko: () => import('./locales/ko/main.json'),
-  ru: () => import('./locales/ru/main.json'),
-  tr: () => import('./locales/tr/main.json'),
-  zh: () => import('./locales/zh/main.json'),
-  'zh-TW': () => import('./locales/zh-TW/main.json'),
-  'pt-BR': () => import('./locales/pt-BR/main.json')
-}
-
-const nodeDefsLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/nodeDefs.json'),
-  es: () => import('./locales/es/nodeDefs.json'),
-  fa: () => import('./locales/fa/nodeDefs.json'),
-  fr: () => import('./locales/fr/nodeDefs.json'),
-  ja: () => import('./locales/ja/nodeDefs.json'),
-  ko: () => import('./locales/ko/nodeDefs.json'),
-  ru: () => import('./locales/ru/nodeDefs.json'),
-  tr: () => import('./locales/tr/nodeDefs.json'),
-  zh: () => import('./locales/zh/nodeDefs.json'),
-  'zh-TW': () => import('./locales/zh-TW/nodeDefs.json'),
-  'pt-BR': () => import('./locales/pt-BR/nodeDefs.json')
-}
-
-const commandsLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/commands.json'),
-  es: () => import('./locales/es/commands.json'),
-  fa: () => import('./locales/fa/commands.json'),
-  fr: () => import('./locales/fr/commands.json'),
-  ja: () => import('./locales/ja/commands.json'),
-  ko: () => import('./locales/ko/commands.json'),
-  ru: () => import('./locales/ru/commands.json'),
-  tr: () => import('./locales/tr/commands.json'),
-  zh: () => import('./locales/zh/commands.json'),
-  'zh-TW': () => import('./locales/zh-TW/commands.json'),
-  'pt-BR': () => import('./locales/pt-BR/commands.json')
-}
-
-const settingsLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/settings.json'),
-  es: () => import('./locales/es/settings.json'),
-  fa: () => import('./locales/fa/settings.json'),
-  fr: () => import('./locales/fr/settings.json'),
-  ja: () => import('./locales/ja/settings.json'),
-  ko: () => import('./locales/ko/settings.json'),
-  ru: () => import('./locales/ru/settings.json'),
-  tr: () => import('./locales/tr/settings.json'),
-  zh: () => import('./locales/zh/settings.json'),
-  'zh-TW': () => import('./locales/zh-TW/settings.json'),
-  'pt-BR': () => import('./locales/pt-BR/settings.json')
-}
-
 // Track which locales have been loaded
 const loadedLocales = new Set<string>(['en'])
 
@@ -100,48 +36,6 @@ const loadingLocales = new Map<string, Promise<void>>()
 
 // Store custom nodes i18n data for merging when locales are lazily loaded
 const customNodesI18nData: Record<string, unknown> = {}
-
-const SUPPORTED_LOCALES = [
-  'en',
-  'ar',
-  'es',
-  'fa',
-  'fr',
-  'ja',
-  'ko',
-  'ru',
-  'tr',
-  'zh',
-  'zh-TW',
-  'pt-BR'
-] as const
-
-type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
-
-// Lowercased lookup map → canonical tag, since BCP-47 matching is
-// case-insensitive (e.g. `pt-br` from older browsers must match `pt-BR`).
-const supportedLocaleByLower = new Map<string, SupportedLocale>(
-  SUPPORTED_LOCALES.map((locale) => [locale.toLowerCase(), locale])
-)
-
-/**
- * Resolve a BCP-47 language tag to a locale we ship messages for, with
- * graceful fallback. Tries the full tag (preserves `zh-TW`, `pt-BR`),
- * then the base tag (`zh`, `pt`), then `'en'`. Matching is case-insensitive
- * but the returned tag is always in canonical casing.
- */
-export function resolveSupportedLocale(
-  input: string | undefined | null
-): SupportedLocale {
-  if (!input) return 'en'
-  const normalized = input.toLowerCase()
-  const exact = supportedLocaleByLower.get(normalized)
-  if (exact) return exact
-  const base = normalized.split('-')[0]
-  const baseMatch = supportedLocaleByLower.get(base)
-  if (baseMatch) return baseMatch
-  return 'en'
-}
 
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings).
@@ -160,19 +54,19 @@ export async function loadLocale(locale: string): Promise<SupportedLocale> {
     return resolved
   }
 
-  const loader = localeLoaders[resolved]
-  const nodeDefsLoader = nodeDefsLoaders[resolved]
-  const commandsLoader = commandsLoaders[resolved]
-  const settingsLoader = settingsLoaders[resolved]
+  const loaders = localeDefinitions[resolved].loaders
+  if (!loaders) {
+    return resolved
+  }
 
   // Create and track the loading promise
   const loadPromise = (async () => {
     try {
       const [main, nodes, commands, settings] = await Promise.all([
-        loader(),
-        nodeDefsLoader(),
-        commandsLoader(),
-        settingsLoader()
+        loaders.main(),
+        loaders.nodeDefs(),
+        loaders.commands(),
+        loaders.settings()
       ])
 
       const messages = buildLocale(
