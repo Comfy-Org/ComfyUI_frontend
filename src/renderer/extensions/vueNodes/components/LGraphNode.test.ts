@@ -9,7 +9,6 @@ import { createI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
@@ -47,13 +46,6 @@ vi.mock(
     const handleNodeSelect = vi.fn()
     return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
   }
-)
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
-  () => ({
-    useVueElementTracking: vi.fn()
-  })
 )
 
 vi.mock('@/scripts/app', () => ({
@@ -186,12 +178,6 @@ describe('LGraphNode', () => {
       if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
       if (key === 'Comfy.Node.Opacity') return 1
     })
-  })
-
-  it('should call resize tracking composable with node ID', () => {
-    renderLGraphNode({ nodeData: mockNodeData })
-
-    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
   })
 
   it('should render with data-node-id attribute', () => {

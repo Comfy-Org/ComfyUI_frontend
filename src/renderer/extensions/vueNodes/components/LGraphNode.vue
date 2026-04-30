@@ -293,7 +293,6 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -342,8 +341,6 @@ const settingStore = useSettingStore()
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
-
-useVueElementTracking(String(nodeData.id), 'node')
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
@@ -517,10 +514,9 @@ const { startResize } = useNodeResize((result, element) => {
   element.style.setProperty('--node-height', `${result.size.height}px`)
 
   // Update position for non-SE corner resizing
-  if (result.position) {
-    mutations.setSource(LayoutSource.Vue)
-    mutations.moveNode(nodeData.id, result.position)
-  }
+  mutations.setSource(LayoutSource.Vue)
+  mutations.resizeNode(nodeData.id, result.size)
+  if (result.position) mutations.moveNode(nodeData.id, result.position)
 })
 
 const handleResizePointerDown = (
