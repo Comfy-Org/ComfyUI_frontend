@@ -1,184 +1,156 @@
 ---
 name: reviewing-unit-tests
-description: 'Reviews Vitest unit tests in PR diffs for ComfyUI_frontend. Use when reviewing changes to *.test.ts, evaluating test refactors, or auditing new mock setups against documented patterns. Triggers on: review unit test, review .test.ts, review vitest, code review test diff, audit test mocks.'
+description: Use when reviewing Vitest unit-test diffs in ComfyUI_frontend, especially new mocks, store tests, component tests, or bugfix regression tests.
 ---
 
 # Reviewing Unit Tests for ComfyUI_frontend
 
-## Golden Rules
+## Overview
 
-1. **Compare structure to docs, not to prior diff.** Motion ≠ fix. Read [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) and [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md) before judging a mock setup.
-2. **State verdict before asking how to proceed.** No leading-close framings (`LGTM, just one nit`, `approve and move on?`) — they bias toward thread-closure before evaluation finishes. Surface analysis upfront; if the user must pry, the review failed.
-3. **Documented-rule violation is never a nit.** Severity tracks the doc, not the line count.
-4. **`Barely earns its abstraction` = fail.** Don't grade indirection on a curve.
-5. **For bugfix PRs, confirm new tests would fail against pre-fix code.** A regression test that passes on broken HEAD proves nothing.
+Review for behavior and current repo rules, not motion. Compare to authoritative rules, not prior diffs or legacy snippets.
 
-## Renaming ≠ Restructuring
+## Review Workflow
 
-A wrapper with a new name is the same wrapper. The most common smell that gets rubber-stamped is **alias-by-renaming**: a refactor that swaps one indirection layer for another wrapping the same value.
+1. Identify the test type: component, store, composable, util, or bugfix regression.
+2. Name the behavior the test proves. If you cannot say it in one sentence, request changes.
+3. Open the authoritative doc section before judging structure.
+4. Scan the red flags below.
+5. State the verdict first. Name the failure mode. Cite the doc or rule.
+
+## Source of Truth / Precedence
+
+When docs and examples conflict, use this order:
+
+1. Explicit repo rules, lint rules, and note blocks.
+2. [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)
+3. Rule sections in [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md), [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md), and [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)
+4. Example snippets
+5. Prior diffs
+
+Apply these repo-specific clarifications:
+
+- [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md) starts with the authoritative rule: new component tests use `@testing-library/vue` with `@testing-library/user-event`. The `@vue/test-utils` snippets below it are legacy examples.
+- [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md) still contains `as any` examples. Treat them as legacy snippets, not approval for new or edited test code.
+- If docs conflict, prefer the stricter newer rule and call out the doc ambiguity. Do not approve through it.
+- Motion != fix.
+
+## 30-Second Red Flags
+
+| If you see...                                                                             | Failure mode                    | Default action                                                |
+| ----------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
+| New `@vue/test-utils` import in a new component test                                      | legacy test API                 | Request changes                                               |
+| `vi.mock('vue-i18n', ...)`                                                                | mocked i18n                     | Request changes                                               |
+| `as any`, `@ts-expect-error`, `as Mock`, `as ReturnType<typeof vi.fn>`, `as unknown as X` | unnecessary cast or type escape | Request changes unless the author proves no safer type exists |
+| `getXMock()`, renamed wrapper, or helper that only returns a mocked value                 | alias-by-renaming               | Request changes                                               |
+| `beforeEach` recreates the return object for a module-mocked composable or service        | shared mock setup drift         | Request changes                                               |
+| Assertions only check defaults, mock plumbing, or CSS hooks                               | non-behavioral test             | Request changes                                               |
+| Bugfix test has no proof it fails on pre-fix code                                         | unproven regression             | Request changes                                               |
+
+## Rationalization Table
+
+| Excuse                              | Reality                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| "I restructured the mocks"          | If the indirection stayed, nothing improved. Flag `alias-by-renaming`.                                 |
+| "The docs do it"                    | Rule, note, and lint beat legacy snippet. Compare to the current rule, not the nearest example.        |
+| "TypeScript required the cast"      | `vi.mocked()` usually narrows mock methods. Assertion-only references need no cast.                    |
+| "Putting it in `beforeEach` is DRY" | Recreating module mock state in hooks hides singleton behavior and drifts from the documented pattern. |
+| "It is only a nit"                  | Explicit repo-rule violations are never nits.                                                          |
+| "No behavior changed, just cleanup" | Motion != fix. Ask what behavior got stronger.                                                         |
+| "Mental revert is enough"           | For bugfix tests, establish red on pre-fix code or ask the author to show it.                          |
+
+## Mocking Rules
+
+- Fail helpers that do not remove repeated setup, encode domain meaning, or simplify assertions. Barely earning the abstraction is not enough.
+- For composables with reactive or singleton state, define stable mock state inside the `vi.mock()` factory. Access it per test via the composable itself. See [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) "Mocking Composables with Reactive State".
+- This does not ban local test data builders or per-test `vi.spyOn(...)`.
+- Mock seams, not the project-owned module you are trying to exercise. For store tests, prefer real Pinia plus `createTestingPinia({ stubActions: false })` per [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) and [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md).
+
+### Alias-by-Renaming
 
 ```ts
-// Before — module-level alias `const`
-const getStore = () => useFooStore()
-
-// After — module-level helper `function`. SAME indirection.
-function getStore() {
-  return useFooStore()
-}
-```
-
-```ts
-// Before — vi.hoisted() module-scope alias
+// Before
 const mockAdd = vi.hoisted(() => vi.fn())
-vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: mockAdd }) }))
 
-// After — module-level helper returning the wrapped value. SAME indirection.
-function getToastAddMock(): ReturnType<typeof vi.fn> {
-  return useToast().add as ReturnType<typeof vi.fn>
+// After: same indirection, new name
+function getToastAddMock() {
+  return useToast().add
 }
 ```
 
-If the indirection is preserved, flag it. The fix is to **define mocks in the `vi.mock()` factory and access them inline via destructuring** (`const { add } = useToast()`) per the "Mocking Composables with Reactive State" pattern in `docs/testing/unit-testing.md`.
+If the wrapper only renames or relays a mocked value, fail it. Inline the lookup at the call site or fetch the singleton mock via the documented pattern.
 
-## `vi.mocked()` Scope
+### `vi.mocked()` Scope
 
-`vi.mocked()` is **only** required when you call `MockInstance` methods or read mock state:
+| Use case                                                        | `vi.mocked()` required? |
+| --------------------------------------------------------------- | ----------------------- |
+| `.mockReturnValue`, `.mockResolvedValue`, `.mockImplementation` | Yes                     |
+| `.mock.calls`, `.mock.results`                                  | Yes                     |
+| `expect(fn).toHaveBeenCalled()`                                 | No                      |
+| `expect(fn).toHaveBeenCalledWith(...)`                          | No                      |
 
-| Use case                                                          | `vi.mocked()` required?                   |
-| ----------------------------------------------------------------- | ----------------------------------------- |
-| `.mockReturnValue` / `.mockResolvedValue` / `.mockImplementation` | Yes                                       |
-| `.mock.calls` / `.mock.results`                                   | Yes                                       |
-| `expect(fn).toHaveBeenCalled()`                                   | **No** — plain reference type-checks fine |
-| `expect(fn).toHaveBeenCalledWith(...)`                            | **No**                                    |
+- Flag casts whenever `vi.mocked()` would narrow correctly.
+- Do not add `vi.mocked()` around assertion-only references just for style.
 
-```ts
-vi.mocked(api.fetch).mockResolvedValue(data) // needed: mock method
-expect(api.fetch).toHaveBeenCalledWith(id) // NOT needed: assertion only
-```
+### Reset Hygiene
 
-Flag stray `as Mock`, `as ReturnType<typeof vi.fn>`, or `as unknown as X` casts whenever `vi.mocked()` would narrow correctly. Type assertions are a last resort (see [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) "Type Assertion Hierarchy").
+- Flag per-mock `mockClear()` or `mockReset()` when `vi.clearAllMocks()` or `vi.resetAllMocks()` already runs in the relevant hook chain.
+- Review for redundancy or broken state management. Do not bikeshed `clearAllMocks` vs `resetAllMocks` unless behavior depends on it.
 
-## Mocking Smells Checklist
+### Third-Party Seams
 
-Run this checklist against every mock-touching diff:
+- Distinguish trivial hooks from behavior-rich APIs.
+- Mocking single-method third-party hooks like `primevue/usetoast` is usually acceptable.
+- That exception does not justify mocking behavior-rich third-party modules.
 
-| Smell                                                                                         | Fix / Reference                                                                                                                                                                                                                                |
-| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mocks defined in `beforeEach` with shared module-scope variables                              | Move mock instances into `vi.mock()` factory; access via singleton lookup. See `unit-testing.md` "Mocking Composables with Reactive State".                                                                                                    |
-| Module-level helper functions wrapping mocked composable returns (`getXMock()`)               | Alias-by-renaming. Inline `const { x } = useY()` at call site.                                                                                                                                                                                 |
-| `as Mock` / `as ReturnType<typeof vi.fn>` / `as unknown as ...` to access mock methods        | Use `vi.mocked()` for type narrowing. No cast needed for assertions.                                                                                                                                                                           |
-| `vi.mock('vue-i18n', ...)` — mocking i18n entirely                                            | **Don't mock vue-i18n.** Mount real `createI18n` plugin. See `docs/testing/vitest-patterns.md` and the shared `testI18n` in [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts). |
-| `mockClear()` / `mockReset()` inside test bodies when `vi.clearAllMocks()` is in `beforeEach` | Redundant — drop the inner reset.                                                                                                                                                                                                              |
-| Mocking modules the project owns (own composables, own stores) without justification          | Mock seams, not internals. Prefer real Pinia + `createTestingPinia({ stubActions: false })`. See `store-testing.md`.                                                                                                                           |
+### `vue-i18n`
 
-**Distinguish:** mocking trivially-shaped third-party hooks like `primevue/usetoast` is acceptable — that surface is owned-by-third-party but cheap to fake. The principle "Don't Mock What You Don't Own" applies to _behavior-rich_ third-party APIs, not single-method composables.
+- Never mock `vue-i18n` in component tests.
+- Use real `createI18n` per [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) and the shared [`testI18n`](../../../src/components/searchbox/v2/__test__/testUtils.ts) setup.
 
-## Test-Body Smells
+## Test-Body Rules
 
-| Smell                                                 | What to flag                                                                                                                                   |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Change-detector tests                                 | Asserts default values exist. No behavior covered. Reject.                                                                                     |
-| Mock-only assertions                                  | Test only verifies the mock was called with what the test set up. Verify real behavior.                                                        |
-| Non-behavioral assertions                             | CSS classes, utility class presence, internal style hooks. Assert observable behavior instead.                                                 |
-| Component tests using `@vue/test-utils` for new files | New component tests must use `@testing-library/vue` + `@testing-library/user-event` (per `docs/testing/component-testing.md` and ESLint rule). |
-| `import { foo, type Bar }` mixed import               | Split: `import type { Bar }` + `import { foo }` (project lint rule).                                                                           |
-| `any` / `as any` / `@ts-expect-error` in test code    | Same TS rules apply to tests. Fix the underlying type.                                                                                         |
+| Smell                                                             | Review bar                                                                                                                                    |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Change-detector test                                              | Reject. Default values alone prove nothing.                                                                                                   |
+| Mock-only assertion                                               | Accept collaborator-call assertions only when the call is the meaningful external effect and the test also exercises the triggering behavior. |
+| Non-behavioral assertion                                          | Reject tests that only check classes, utility hooks, or styling internals.                                                                    |
+| New component test using `@vue/test-utils`                        | Request changes. Use `@testing-library/vue` plus `@testing-library/user-event`.                                                               |
+| `any`, `as any`, or `@ts-expect-error` in new or edited test code | Request changes unless the author proves no safer type exists. Legacy doc snippets do not authorize it.                                       |
 
-## Bugfix Regression Validity
+## Bugfix Regression Proof
 
-For PRs labeled `fix:` or addressing a bug:
+For `fix:` PRs or bugfix diffs:
 
-1. Identify the production code change that fixes the bug.
-2. Mentally (or actually) revert the fix.
-3. Confirm the new test fails against the pre-fix code.
+1. Identify the production change that fixes the bug.
+2. Verify the new test fails on pre-fix code, or ask the author to show it.
+3. If the test passes on broken code, request changes.
 
-If the new test passes against broken code, the test does not pin the regression. Reject the test.
+A regression test that never proves red does not pin the bug.
 
-## Review-Framing Anti-Patterns
+## Review Output Rules
 
-These framings bias the thread toward closure before evaluation completes. Don't use them; flag them when authors echo them back:
+- State verdict before procedural questions.
+- Do not lead with approval language like `LGTM, just one nit` or `approve and move on?`.
+- Name the failure mode directly: `alias-by-renaming`, `unnecessary cast`, `mocked i18n`, `mock-only assertion`, `unproven regression`.
+- Link the authoritative doc section in the review comment.
+- If an explicit repo rule, lint rule, or authoritative doc note is violated, do not downgrade it to "minor deviation" or "nit".
 
-- `LGTM, just one nit` (anchors approval)
-- `approve and move on?` (leading-close)
-- `Minor deviation` applied to a documented-rule violation (mislabeled severity)
-- Deferring to a subagent verdict without auditing it against the doc
+## Quick Reference
 
-State the verdict (approve / request changes / comment) **before** any procedural question.
-
-## Quick Reference: Doc → Rule
-
-| When you see…                       | Read this section                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| New `vi.mock(...)` for a composable | `unit-testing.md` → "Mocking Composables with Reactive State"                   |
-| New Pinia store test or store mock  | `store-testing.md` → "Setting Up Store Tests", "Mocking Dependencies in Stores" |
-| New component test                  | `component-testing.md` → testing-library examples                               |
-| `vue-i18n` references               | `docs/testing/vitest-patterns.md` → real `createI18n` rule                      |
-| Cast around a mock                  | `docs/guidance/typescript.md` → "Type Assertion Hierarchy"                      |
-
-## Anti-Patterns Cheat Sheet
-
-```ts
-// ❌ Module-level helper aliasing a mocked return value
-function getToastAddMock(): ReturnType<typeof vi.fn> {
-  return useToast().add as ReturnType<typeof vi.fn>
-}
-
-// ✅ Inline destructuring at call site
-const { add } = useToast()
-expect(add).toHaveBeenCalledWith(...)
-```
-
-```ts
-// ❌ Mocking vue-i18n
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (k: string) => k }) }))
-
-// ✅ Mount real i18n plugin
-import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
-mount(MyComponent, { global: { plugins: [testI18n] } })
-```
-
-```ts
-// ❌ Cast for type narrowing
-const fetchMock = api.fetch as ReturnType<typeof vi.fn>
-fetchMock.mockResolvedValue(data)
-
-// ✅ vi.mocked() narrows correctly
-vi.mocked(api.fetch).mockResolvedValue(data)
-```
-
-```ts
-// ❌ Redundant reset
-beforeEach(() => {
-  vi.clearAllMocks()
-  mockAdd.mockClear() // already cleared above
-})
-
-// ✅ Drop the inner clear
-beforeEach(() => {
-  vi.clearAllMocks()
-})
-```
-
-## Verdict Heuristic
-
-A test diff passes review when:
-
-- Mock setup matches a documented pattern (link the section in your review comment).
-- Indirection layers shrink or stay flat — never grow without justification.
-- Casts are absent or each one earns its place against the assertion hierarchy.
-- New tests for bugfix PRs would fail on pre-fix code.
-- Test bodies assert observable behavior, not mock plumbing.
-
-If any rule above fails: request changes. State the failure mode by name (`alias-by-renaming`, `unnecessary cast`, `vue-i18n mocked`, etc.) and reference the doc section.
+| When you see...                     | Read this                                                                                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New `vi.mock(...)` for a composable | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) -> "Mocking Composables with Reactive State"                                                                              |
+| New store test or store mock        | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) setup + [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                   |
+| New component test                  | Top note in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                                                                                     |
+| `vue-i18n` in a component test      | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) + [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
+| Cast around a mock                  | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) -> "Type Assertion Hierarchy"                                                                                               |
 
 ## Key Files to Read
 
-| Purpose                                        | Path                                                                                                              |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Composable mocking patterns                    | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md)                                           |
-| Pinia store testing                            | [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                         |
-| Component testing (testing-library)            | [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                 |
-| Vitest project patterns (incl. real i18n rule) | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)                                     |
-| TS rules (cast hierarchy, `any`)               | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md)                                             |
-| Real-i18n example                              | [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
-| Peer skill (e2e review)                        | [`.claude/skills/writing-playwright-tests/SKILL.md`](../writing-playwright-tests/SKILL.md)                        |
+| Purpose                              | Path                                                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Composable mocking patterns          | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md)                                           |
+| Store testing patterns               | [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                         |
+| Repo-wide Vitest setup defaults      | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)                                     |
+| Component testing rule for new tests | [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                 |
+| Real i18n setup                      | [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
