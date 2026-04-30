@@ -11,7 +11,8 @@ defineOptions({ inheritAttrs: false })
 const {
   src,
   showSize = true,
-  hideInfo = false
+  hideInfo = false,
+  fit = 'contain'
 } = defineProps<{
   src: string
   mobile?: boolean
@@ -19,6 +20,8 @@ const {
   showSize?: boolean
   /** Hide the bottom size+label overlay (App Mode layout renders its own). */
   hideInfo?: boolean
+  /** `cover` crops to fill the container; `contain` letterboxes. */
+  fit?: 'contain' | 'cover'
 }>()
 
 const imageRef = useTemplateRef('imageRef')
@@ -44,14 +47,20 @@ function onImageLoad() {
     <img
       ref="imageRef"
       :src
-      class="size-full object-contain"
+      :class="[
+        'size-full',
+        fit === 'cover' ? 'object-cover' : 'object-contain'
+      ]"
       @load="onImageLoad"
     />
   </div>
   <img
     v-else
     ref="imageRef"
-    class="grow object-contain contain-size"
+    :class="[
+      'grow contain-size',
+      fit === 'cover' ? 'object-cover' : 'object-contain'
+    ]"
     :src
     @load="onImageLoad"
   />

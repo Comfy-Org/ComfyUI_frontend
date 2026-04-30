@@ -13,6 +13,7 @@ import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import type { OutputWindowEntry } from '@/renderer/extensions/linearMode/outputWindowStore'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
@@ -22,6 +23,8 @@ import OutputWindow from './OutputWindow.vue'
 const { t } = useI18n()
 const windowStore = useOutputWindowStore()
 const { sortedWindows, windows } = storeToRefs(windowStore)
+const appModeStore = useAppModeStore()
+const { noZoomMode } = storeToRefs(appModeStore)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
@@ -205,6 +208,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       <MediaOutputPreview
         :output="resolvedOutput(entry) ?? entry.output"
         :hide-info="true"
+        :fit="noZoomMode ? 'cover' : 'contain'"
         class="size-full"
       />
     </template>

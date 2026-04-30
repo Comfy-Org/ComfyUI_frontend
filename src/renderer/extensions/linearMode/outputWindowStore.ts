@@ -118,20 +118,19 @@ function dashboardSlots(
     .map(roundRect)
 }
 
-// Bento: 1 feature tile + (N−1) stack tiles inside availW × availH.
-// Each tile body matches its image aspect (no letterbox). Anchored
-// top-left so slack collapses toward the bottom-right where the panel
-// and bottom chrome cluster already sit.
+// Bento: pack N tiles to fill availW × availH exactly. We pick the
+// slicing-tree topology whose natural aspect (under image-aspect-
+// preserving fitting) is closest to the canvas aspect, then stretch
+// anisotropically to fill the canvas. Bodies absorb the stretch as
+// non-image aspect; the image renders with object-fit: cover so it
+// fills the body and crops edges (no letterbox, no distortion).
 //
-// We generate three candidates and pick whichever yields the most
-// total visible tile area:
-//   • grid     — feature@availH + uniform cols×rows stack grid
-//   • legacy   — feature shrunk to fit availW, single stack column
-//   • slice    — feature@availH + slicing-tree (guillotine) stack
-//                packing in the remaining box (stackCount ≤ 6)
-// The slicing tree explores topologies the uniform grid can't (rows,
-// asymmetric splits, mixed-aspect interlocks) — see
-// bento-layout-research.md in the context repo.
+// For small N (≤ FULL_TREE_MAX_LEAVES) we enumerate every binary
+// tree shape × V/H cut assignment for fixed leaf order [0..N−1] and
+// pick the one with the smallest stretch deviation. For larger N we
+// fall back to the feature@availH + uniform grid heuristic.
+const FULL_TREE_MAX_LEAVES = 7
+
 function bentoAspectRects(
   N: number,
   aspects: (number | undefined)[],
@@ -140,68 +139,109 @@ function bentoAspectRects(
   gutter: number
 ): Rect[] {
   if (N === 0) return []
-  const featureA = aspects[0] && aspects[0] > 0 ? aspects[0] : 1
-  if (N === 1) return [centerAspectInRect(featureA, availW, availH)]
+  if (N === 1) return [{ x: 0, y: 0, w: availW, h: availH }]
 
-  const stackCount = N - 1
-  const stackAspects: number[] = []
-  for (let i = 1; i < N; i++) {
+  const aspectArr: number[] = []
+  for (let i = 0; i < N; i++) {
     const a = aspects[i]
-    stackAspects.push(a && a > 0 ? a : 1)
+    aspectArr.push(a && a > 0 ? a : 1)
   }
   const h = TILE_HEADER_PX
 
-  const candidates: Rect[][] = []
-  const grid = layoutGridCandidate(
-    stackCount,
-    featureA,
-    stackAspects,
-    availW,
-    availH,
-    h,
-    gutter
-  )
-  if (grid) candidates.push(grid)
-  const legacy = layoutLegacyCandidate(
-    stackCount,
-    featureA,
-    stackAspects,
-    availW,
-    availH,
-    h,
-    gutter
-  )
-  if (legacy) candidates.push(legacy)
-  const slice = layoutSliceTreeCandidate(
-    featureA,
-    stackAspects,
-    availW,
-    availH,
-    h,
-    gutter
-  )
-  if (slice) candidates.push(slice)
-
-  if (candidates.length === 0) {
-    return [centerAspectInRect(featureA, availW, availH)]
+  let layout: Rect[] | null = null
+  if (N <= FULL_TREE_MAX_LEAVES) {
+    layout = bestSliceTreeForFill(aspectArr, availW, availH, h, gutter)
   }
-
-  let best = candidates[0]
-  let bestArea = sumRectArea(best)
-  for (let i = 1; i < candidates.length; i++) {
-    const area = sumRectArea(candidates[i])
-    if (area > bestArea) {
-      best = candidates[i]
-      bestArea = area
-    }
+  if (!layout) {
+    // N > FULL_TREE_MAX_LEAVES: feature + uniform-grid stack.
+    layout = layoutGridCandidate(
+      N - 1,
+      aspectArr[0],
+      aspectArr.slice(1),
+      availW,
+      availH,
+      h,
+      gutter
+    )
   }
-  return best
+  if (!layout) return [{ x: 0, y: 0, w: availW, h: availH }]
+
+  return stretchToFill(layout, availW, availH)
 }
 
-function sumRectArea(rects: Rect[]): number {
-  let total = 0
-  for (const r of rects) total += r.w * r.h
-  return total
+// Enumerate every slicing tree for the given leaves (fixed order),
+// score by 1D stretch deviation needed to fill canvas, return the
+// aspect-preserving rects of the best tree (pre-stretch).
+function bestSliceTreeForFill(
+  aspects: number[],
+  availW: number,
+  availH: number,
+  h: number,
+  g: number
+): Rect[] | null {
+  let best: { rects: Rect[]; deviation: number } | null = null
+  const leafIdxs = Array.from({ length: aspects.length }, (_, i) => i)
+
+  for (const tree of enumerateTrees(leafIdxs)) {
+    const shape = treeShape(tree, aspects, h, g)
+    if (!Number.isFinite(shape.c) || shape.c <= 0) continue
+
+    let w = availW
+    let totH = shape.c * w + shape.d
+    if (totH > availH) {
+      totH = availH
+      w = (totH - shape.d) / shape.c
+    }
+    if (w <= 0 || totH <= 0) continue
+
+    // Stretch deviation = how much we'd anisotropically scale to fill
+    // the canvas. 0 means the natural layout already matches canvas
+    // aspect; higher = more crop after object-fit: cover.
+    const sx = availW / w
+    const sy = availH / totH
+    const deviation = Math.max(sx, sy) / Math.min(sx, sy) - 1
+
+    if (!best || deviation < best.deviation) {
+      const tiles = layoutTreeInBox(tree, 0, 0, w, totH, aspects, h, g)
+      let valid = true
+      for (const t of tiles) {
+        if (t.w <= 0 || t.h <= 0) {
+          valid = false
+          break
+        }
+      }
+      if (!valid) continue
+      const rects: Rect[] = new Array(aspects.length)
+      for (const t of tiles) {
+        rects[t.idx] = { x: t.x, y: t.y, w: t.w, h: t.h }
+      }
+      best = { rects, deviation }
+    }
+  }
+  return best?.rects ?? null
+}
+
+// Anisotropically scale rects so the bounding box fills exactly
+// (availW, availH). Gutters scale with everything; for the small
+// stretch factors picked by bestSliceTreeForFill (typically <1.3×),
+// the gutter widening is imperceptible.
+function stretchToFill(rects: Rect[], availW: number, availH: number): Rect[] {
+  if (rects.length === 0) return rects
+  let layoutW = 0
+  let layoutH = 0
+  for (const r of rects) {
+    if (r.x + r.w > layoutW) layoutW = r.x + r.w
+    if (r.y + r.h > layoutH) layoutH = r.y + r.h
+  }
+  if (layoutW <= 0 || layoutH <= 0) return rects
+  const sx = availW / layoutW
+  const sy = availH / layoutH
+  return rects.map((r) => ({
+    x: r.x * sx,
+    y: r.y * sy,
+    w: r.w * sx,
+    h: r.h * sy
+  }))
 }
 
 // Feature@availH + uniform cols×rows stack grid, searching cols for
@@ -280,91 +320,10 @@ function layoutGridCandidate(
   return rects
 }
 
-// Legacy: feature shrunk so feature + single-column stack exactly
-// fills availW. Stack tiles centered in their column at own aspect.
-function layoutLegacyCandidate(
-  stackCount: number,
-  featureA: number,
-  stackAspects: number[],
-  availW: number,
-  availH: number,
-  h: number,
-  gutter: number
-): Rect[] | null {
-  const avgA = stackAspects.reduce((s, a) => s + a, 0) / stackCount
-  const calcWidthAt = (lh: number): number => {
-    const fw = featureA * (lh - h)
-    const sth = (lh - (stackCount - 1) * gutter) / stackCount
-    const sw = avgA * (sth - h)
-    return fw + gutter + sw
-  }
-  let layoutH = availH
-  if (calcWidthAt(layoutH) > availW) {
-    const slope = featureA + avgA / stackCount
-    const w0 = calcWidthAt(0)
-    layoutH = (availW - w0) / slope
-  }
-  if (layoutH <= h) return null
-
-  const fH = layoutH
-  const fW = featureA * (fH - h)
-  const sH = (layoutH - (stackCount - 1) * gutter) / stackCount
-  const sBodyH = sH - h
-  if (sBodyH <= 0) return null
-
-  const stackTileWs = stackAspects.map((a) => Math.max(0, a * sBodyH))
-  const maxStackW = Math.max(...stackTileWs, 0)
-
-  const rects: Rect[] = [{ x: 0, y: 0, w: fW, h: fH }]
-  let stackY = 0
-  for (let i = 0; i < stackCount; i++) {
-    const w = stackTileWs[i]
-    rects.push({
-      x: fW + gutter + (maxStackW - w) / 2,
-      y: stackY,
-      w,
-      h: sH
-    })
-    stackY += sH + gutter
-  }
-  return rects
-}
-
-// Feature@availH + slicing-tree (guillotine) stack packing in remW ×
-// availH. The slicing tree composes leaf aspects via the V/H rules
-// (Stockmeyer 1983; Wu & Aizawa 2013), giving an aspect-preserving
-// layout whose canvas dimensions emerge from leaf aspects exactly.
-// Capped at SLICE_TREE_MAX_LEAVES to keep enumeration ≤ ~10k trees.
-const SLICE_TREE_MAX_LEAVES = 6
-
-function layoutSliceTreeCandidate(
-  featureA: number,
-  stackAspects: number[],
-  availW: number,
-  availH: number,
-  h: number,
-  gutter: number
-): Rect[] | null {
-  if (stackAspects.length === 0) return null
-  if (stackAspects.length > SLICE_TREE_MAX_LEAVES) return null
-
-  const fH = availH
-  const fW = featureA * (fH - h)
-  if (fW <= 0 || fW + gutter >= availW) return null
-  const remW = availW - fW - gutter
-
-  const sub = bestSliceTreeInBox(stackAspects, remW, availH, h, gutter)
-  if (!sub) return null
-
-  const rects: Rect[] = [{ x: 0, y: 0, w: fW, h: fH }]
-  const offsetX = fW + gutter
-  for (const r of sub.rects) {
-    rects.push({ x: r.x + offsetX, y: r.y, w: r.w, h: r.h })
-  }
-  return rects
-}
-
 // ---- Slicing tree helpers ----
+// References: Stockmeyer 1983 (VLSI floorplanning); Wu & Aizawa
+// "PicWall" 2013 (photo collage). See bento-layout-research.md in
+// the context repo.
 
 type SliceTree =
   | { type: 'leaf'; leafIdx: number }
@@ -453,76 +412,6 @@ function layoutTreeInBox(
     ...layoutTreeInBox(t.left, x, y, w, hL, aspects, h, g),
     ...layoutTreeInBox(t.right, x, y + hL + g, w, hR, aspects, h, g)
   ]
-}
-
-// Enumerate all (binary tree shape × cut assignment) combinations for
-// leaves in fixed order [0..N−1] and pick the one with the largest
-// total tile area inside (boxW × boxH). Returns rects in slot order.
-function bestSliceTreeInBox(
-  aspects: number[],
-  boxW: number,
-  boxH: number,
-  h: number,
-  g: number
-): { rects: Rect[]; area: number } | null {
-  const N = aspects.length
-  if (N === 0) return null
-  if (N === 1) {
-    const r = centerAspectInRect(aspects[0] || 1, boxW, boxH)
-    return { rects: [r], area: r.w * r.h }
-  }
-
-  let best: { rects: Rect[]; area: number } | null = null
-  const leafIdxs = Array.from({ length: N }, (_, i) => i)
-
-  for (const tree of enumerateTrees(leafIdxs)) {
-    const shape = treeShape(tree, aspects, h, g)
-    if (!Number.isFinite(shape.c) || shape.c <= 0) continue
-    // Bind whichever axis runs out first; layout fits inside the box.
-    let w = boxW
-    let totH = shape.c * w + shape.d
-    if (totH > boxH) {
-      totH = boxH
-      w = (totH - shape.d) / shape.c
-    }
-    if (w <= 0 || totH <= 0) continue
-
-    const tiles = layoutTreeInBox(tree, 0, 0, w, totH, aspects, h, g)
-    let valid = true
-    let area = 0
-    for (const t of tiles) {
-      if (t.w <= 0 || t.h <= 0) {
-        valid = false
-        break
-      }
-      area += t.w * t.h
-    }
-    if (!valid) continue
-    if (!best || area > best.area) {
-      const rects: Rect[] = new Array(N)
-      for (const t of tiles) {
-        rects[t.idx] = { x: t.x, y: t.y, w: t.w, h: t.h }
-      }
-      best = { rects, area }
-    }
-  }
-  return best
-}
-
-function centerAspectInRect(
-  aspect: number,
-  availW: number,
-  availH: number
-): Rect {
-  // Largest tile at `aspect` (body match) fitting in availW × availH.
-  // Top-left anchor matches bentoAspectRects: slack collapses toward
-  // bottom-right rather than carving out a visible left/right band.
-  const wByH = aspect * (availH - TILE_HEADER_PX)
-  if (wByH <= availW) {
-    return { x: 0, y: 0, w: wByH, h: availH }
-  }
-  const hByW = availW / aspect + TILE_HEADER_PX
-  return { x: 0, y: 0, w: availW, h: hByW }
 }
 
 function roundRect(r: Rect): DashboardSlot {
