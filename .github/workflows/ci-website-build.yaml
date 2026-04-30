@@ -4,23 +4,29 @@ name: 'CI: Website Build'
 on:
   push:
     branches: [main, master, website/*]
-    paths:
-      - 'apps/website/**'
-      - 'packages/design-system/**'
-      - 'pnpm-lock.yaml'
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths:
-      - 'apps/website/**'
-      - 'packages/design-system/**'
-      - 'pnpm-lock.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   build:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
