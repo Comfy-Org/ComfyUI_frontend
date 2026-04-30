@@ -949,6 +949,9 @@ importers:
       lenis:
         specifier: 'catalog:'
         version: 1.3.21(react@19.2.4)(vue@3.5.13(typescript@5.9.3))
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.358.1
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.9.3)
