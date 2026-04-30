@@ -19,8 +19,9 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
+type Matrix = number[][]
 type Load3dPreviewOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, string?]
+  result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
@@ -516,6 +517,8 @@ useExtensionService().registerExtension({
 
           const cameraState = result?.[1]
           const bgImagePath = result?.[2]
+          const extrinsics = result?.[3]
+          const intrinsics = result?.[4]
 
           modelWidget.value = filePath?.replaceAll('\\', '/')
 
@@ -532,6 +535,27 @@ useExtensionService().registerExtension({
 
           if (bgImagePath) {
             load3d.setBackgroundImage(bgImagePath)
+          }
+
+          if (filePath && extrinsics && intrinsics) {
+            // configure(settings) above triggered loadModel for this
+            // execution; capture its generation so that if a newer
+            // execution queues another load before whenLoadIdle resolves,
+            // we don't apply this execution's matrices on top of that
+            // newer model.
+            const targetGeneration = load3d.currentLoadGeneration
+            void load3d
+              .whenLoadIdle()
+              .then(() => {
+                if (load3d.currentLoadGeneration !== targetGeneration) return
+                load3d.setCameraFromMatrices(extrinsics, intrinsics)
+              })
+              .catch((error) => {
+                console.error(
+                  'Failed to apply camera matrices from Preview3D output:',
+                  error
+                )
+              })
           }
         }
       }
