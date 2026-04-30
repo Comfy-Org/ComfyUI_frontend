@@ -71,8 +71,8 @@ async function runButtonClick(e: Event) {
     pendingJobQueues.value -= 1
   }
 }
-function handleDragDrop(e: DragEvent) {
-  return widgetListRef.value?.handleDragDrop(e)
+function handleDragDrop() {
+  return widgetListRef.value?.handleDragDrop()
 }
 </script>
 <template>
