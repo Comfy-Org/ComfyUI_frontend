@@ -3920,7 +3920,13 @@
       "reasoningMinimal": "minimal",
       "reasoningLow": "low",
       "reasoningMedium": "medium",
-      "reasoningHigh": "high"
+      "reasoningHigh": "high",
+      "localBridge": "Local agent bridge",
+      "bridgeConnected": "Daemon connected (ws://127.0.0.1:7437)",
+      "bridgeDisconnected": "Daemon not running — start with: comfy-ai serve",
+      "bridgePair": "Generate pair code",
+      "bridgePairHint": "Run in your terminal:",
+      "bridgePairWaiting": "Waiting for CLI to claim the code…"
     }
   }
 }

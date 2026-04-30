@@ -91,6 +91,51 @@
       </p>
     </section>
 
+    <!-- Local agent bridge -->
+    <section class="border-default border-t pt-3">
+      <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+        {{ t('agent.settings.localBridge') }}
+      </p>
+      <div class="flex items-center gap-2">
+        <span
+          :class="
+            cn(
+              'inline-flex size-2 shrink-0 rounded-full',
+              connected ? 'bg-emerald-400' : 'bg-muted-foreground/40'
+            )
+          "
+        />
+        <span class="text-xs text-muted-foreground">
+          {{
+            connected
+              ? t('agent.settings.bridgeConnected')
+              : t('agent.settings.bridgeDisconnected')
+          }}
+        </span>
+        <button
+          v-if="connected && !activePairCode"
+          class="ml-auto rounded-sm border border-azure-600/40 bg-azure-600/10 px-2 py-0.5 text-xs text-azure-400 hover:bg-azure-600/20"
+          @click="requestPair()"
+        >
+          {{ t('agent.settings.bridgePair') }}
+        </button>
+      </div>
+      <div
+        v-if="activePairCode"
+        class="border-default mt-2 rounded-sm border bg-secondary-background/60 p-2 text-xs"
+      >
+        <p class="mb-1 text-muted-foreground">
+          {{ t('agent.settings.bridgePairHint') }}
+        </p>
+        <code class="block font-mono break-all text-azure-300 select-all"
+          >comfy-ai pair http://127.0.0.1:7437/pair/{{ activePairCode }}</code
+        >
+        <p class="mt-1.5 text-muted-foreground/70">
+          {{ t('agent.settings.bridgePairWaiting') }}
+        </p>
+      </div>
+    </section>
+
     <details class="border-default border-t pt-3 text-sm">
       <summary
         class="cursor-pointer text-xs font-medium text-muted-foreground select-none"
@@ -152,11 +197,15 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { useBridgeStatus } from '../composables/useLocalBridge'
 import { useAgentSession } from '../composables/useAgentSession'
 
 const { t } = useI18n()
 const { apiKey, baseURL, model, reasoningEffort, systemPromptAppend } =
   useAgentSession()
+const { connected, activePairCode, requestPair } = useBridgeStatus()
 
 const apiKeyPlaceholder = computed(() =>
   apiKey.value ? '•••••• (stored)' : 'sk-... or sk-or-...'

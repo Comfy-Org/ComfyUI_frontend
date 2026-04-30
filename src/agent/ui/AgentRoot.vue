@@ -12,9 +12,12 @@ import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 
+import { useLocalBridge } from '../composables/useLocalBridge'
 import { useAgentStore } from '../stores/agentStore'
 import AgentFab from './AgentFab.vue'
 import FoldablePanel from './FoldablePanel.vue'
+
+useLocalBridge()
 
 onMounted(() => {
   const commandStore = useCommandStore()
