@@ -7,7 +7,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
 
 type ValueExtractor<T = unknown> = (
-  widgets: WidgetState[],
+  widgets: Map<string, WidgetState>,
   outputName: string | undefined
 ) => T | undefined
 
@@ -23,7 +23,10 @@ export function useUpstreamValue<T>(
     if (!upstream) return undefined
     const graphId = canvasStore.canvas?.graph?.rootGraph.id
     if (!graphId) return undefined
-    const widgets = widgetValueStore.getNodeWidgets(graphId, upstream.nodeId)
+    const widgets = widgetValueStore.getNodeWidgetsByName(
+      graphId,
+      upstream.nodeId
+    )
     return extractValue(widgets, upstream.outputName)
   })
 }
@@ -33,10 +36,12 @@ export function singleValueExtractor<T>(
 ): ValueExtractor<T> {
   return (widgets, outputName) => {
     if (outputName) {
-      const matched = widgets.find((w) => w.name === outputName)
+      const matched = widgets.get(outputName)
       if (matched && isValid(matched.value)) return matched.value
     }
-    const validValues = widgets.map((w) => w.value).filter(isValid)
+    const validValues = [...widgets.values()]
+      .map((w) => w.value)
+      .filter(isValid)
     return validValues.length === 1 ? validValues[0] : undefined
   }
 }
@@ -60,7 +65,7 @@ export function boundsExtractor(): ValueExtractor<Bounds> {
 
     // Fallback: assemble from individual widgets matching BoundingBoxInputSpec field names
     const getNum = (name: string): number | undefined => {
-      const w = widgets.find((w) => w.name === name)
+      const w = widgets.get(name)
       return typeof w?.value === 'number' ? w.value : undefined
     }
     const x = getNum('x')
