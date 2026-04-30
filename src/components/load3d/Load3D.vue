@@ -13,6 +13,7 @@
       :cleanup="cleanup"
       :loading="loading"
       :loading-message="loadingMessage"
+      :load-error="loadError"
       :on-model-drop="isPreview ? undefined : handleModelDrop"
       :is-preview="isPreview"
     />
@@ -143,6 +144,7 @@ const {
   // other state
   isRecording,
   isPreview,
+  loadError,
   canFitToViewer,
   canUseGizmo,
   canUseLighting,

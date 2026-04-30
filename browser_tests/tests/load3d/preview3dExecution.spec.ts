@@ -6,7 +6,7 @@ import {
 } from '@e2e/fixtures/helpers/Preview3DPipelineFixture'
 
 test.describe('Preview3D execution flow', { tag: ['@slow', '@node'] }, () => {
-  test('Preview3D shows no error toast when execution output has no model file', async ({
+  test('Preview3D shows inline error and no toast when execution output has no model file', async ({
     preview3dPipeline: pipeline
   }) => {
     // nextFrame ensures the nodeCreated nextTick has settled and onExecuted
@@ -22,18 +22,21 @@ test.describe('Preview3D execution flow', { tag: ['@slow', '@node'] }, () => {
 
     await pipeline.comfyPage.nextFrame()
     await expect(
+      pipeline.comfyPage.page.getByTestId('load3d-error-overlay')
+    ).toBeVisible()
+    await expect(
       pipeline.comfyPage.page.locator('.p-toast-message')
     ).toHaveCount(0)
   })
 
-  test('Preview3D shows no error toast when model file cannot be loaded', async ({
+  test('Preview3D shows inline error and no toast when model file cannot be loaded', async ({
     preview3dPipeline: pipeline
   }) => {
     await pipeline.comfyPage.nextFrame()
 
     // Simulate an execution result pointing to a file that does not exist on
-    // the server. The LoaderManager should swallow the load error silently for
-    // preview nodes (suppressErrors = true).
+    // the server. The LoaderManager emits modelLoadError for preview nodes
+    // (suppressErrors = true) so the error appears inline, not as a toast.
     const responsePromise = pipeline.comfyPage.page.waitForResponse((r) =>
       r.url().includes('nonexistent_preview_model.glb')
     )
@@ -45,6 +48,9 @@ test.describe('Preview3D execution flow', { tag: ['@slow', '@node'] }, () => {
 
     await responsePromise
     await pipeline.comfyPage.nextFrame()
+    await expect(
+      pipeline.comfyPage.page.getByTestId('load3d-error-overlay')
+    ).toBeVisible()
     await expect(
       pipeline.comfyPage.page.locator('.p-toast-message')
     ).toHaveCount(0)

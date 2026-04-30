@@ -108,7 +108,12 @@ export class LoaderManager implements LoaderManagerInterface {
       if (loadId === this.currentLoadId) {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
-        if (!this.suppressErrors) {
+        if (this.suppressErrors) {
+          this.eventManager.emitEvent(
+            'modelLoadError',
+            t('toastMessages.errorLoadingModel')
+          )
+        } else {
           useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
         }
       }

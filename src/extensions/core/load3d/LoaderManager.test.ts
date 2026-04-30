@@ -521,7 +521,7 @@ describe('LoaderManager', () => {
       expect(capturedCtx!.materialMode).toBe('wireframe')
     })
 
-    it('does not show a toast when suppressErrors is true and the adapter throws', async () => {
+    it('emits modelLoadError and skips toast when suppressErrors is true and the adapter throws', async () => {
       const modelManager = makeModelManagerStub()
       const eventManager = makeEventManagerStub()
       const lm = new LoaderManager(
@@ -539,6 +539,10 @@ describe('LoaderManager', () => {
       await lm.loadModel('api/view?filename=cube.glb')
 
       expect(addAlert).not.toHaveBeenCalled()
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadError',
+        expect.any(String)
+      )
     })
 
     it('suppresses alerts and modelLoadingEnd when a stale load throws', async () => {

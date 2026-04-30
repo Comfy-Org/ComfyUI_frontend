@@ -16,6 +16,20 @@
     @drop.prevent.stop="handleDrop"
   >
     <LoadingOverlay :loading="loading" :loading-message="loadingMessage" />
+    <Transition name="fade">
+      <div
+        v-if="loadError && !loading"
+        class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"
+        data-testid="load3d-error-overlay"
+      >
+        <div
+          class="mx-4 flex items-center gap-2 rounded-lg bg-error/10 px-4 py-3 text-sm text-error"
+        >
+          <i class="pi pi-exclamation-triangle shrink-0" />
+          {{ loadError }}
+        </div>
+      </div>
+    </Transition>
     <div
       v-if="!isPreview && isDragging"
       class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -40,6 +54,7 @@ const props = defineProps<{
   cleanup: () => void
   loading: boolean
   loadingMessage: string
+  loadError?: string | null
   onModelDrop?: (file: File) => void | Promise<void>
   isPreview: boolean
 }>()

@@ -755,7 +755,8 @@ describe('useLoad3d', () => {
         'recordingStatusChange',
         'animationListChange',
         'animationProgressChange',
-        'cameraChanged'
+        'cameraChanged',
+        'modelLoadError'
       ]
 
       expectedEvents.forEach((event) => {
@@ -813,6 +814,34 @@ describe('useLoad3d', () => {
       modelLoadingEndHandler?.()
       expect(composable.loading.value).toBe(false)
       expect(composable.loadingMessage.value).toBe('')
+    })
+
+    it('modelLoadError event sets loadError and modelLoadingStart clears it', async () => {
+      let modelLoadErrorHandler: ((msg: string) => void) | undefined
+      let modelLoadingStartHandler: (() => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadError') {
+            modelLoadErrorHandler = handler as (msg: string) => void
+          } else if (event === 'modelLoadingStart') {
+            modelLoadingStartHandler = handler as () => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(composable.loadError.value).toBeNull()
+
+      modelLoadErrorHandler?.('No model received from connected node')
+      expect(composable.loadError.value).toBe(
+        'No model received from connected node'
+      )
+
+      modelLoadingStartHandler?.()
+      expect(composable.loadError.value).toBeNull()
     })
 
     it('should handle recordingStatusChange event', async () => {

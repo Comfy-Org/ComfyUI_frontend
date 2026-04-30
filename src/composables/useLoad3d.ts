@@ -94,6 +94,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const animationDuration = ref(0)
   const loading = ref(false)
   const loadingMessage = ref('')
+  const loadError = ref<string | null>(null)
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
@@ -775,6 +776,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingStart: () => {
       loadingMessage.value = t('load3d.loadingModel')
       loading.value = true
+      loadError.value = null
       if (!isFirstModelLoad) {
         modelConfig.value = {
           upDirection: 'original',
@@ -883,6 +885,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         modelConfig.value.gizmo.enabled = data.enabled
         modelConfig.value.gizmo.mode = data.mode
       }
+    },
+    modelLoadError: (message: string) => {
+      loadError.value = message
     }
   } as const
 
@@ -943,6 +948,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     lightConfig,
     isRecording,
     isPreview,
+    loadError,
     isSplatModel,
     isPlyModel,
     canFitToViewer,

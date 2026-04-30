@@ -511,6 +511,10 @@ useExtensionService().registerExtension({
 
           if (!filePath) {
             console.error(t('toastMessages.unableToGetModelFilePath'))
+            load3d.eventManager.emitEvent(
+              'modelLoadError',
+              t('load3d.noModelReceived')
+            )
           }
 
           const cameraState = result?.[1]

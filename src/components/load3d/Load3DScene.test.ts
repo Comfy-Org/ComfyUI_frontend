@@ -45,6 +45,7 @@ vi.mock('@/components/common/LoadingOverlay.vue', () => ({
 type RenderOpts = {
   loading?: boolean
   loadingMessage?: string
+  loadError?: string | null
   isPreview?: boolean
   onModelDrop?: (file: File) => void | Promise<void>
   initializeLoad3d?: (container: HTMLElement) => Promise<void>
@@ -62,6 +63,7 @@ function renderComponent(opts: RenderOpts = {}) {
       cleanup,
       loading: opts.loading ?? false,
       loadingMessage: opts.loadingMessage ?? '',
+      loadError: opts.loadError ?? null,
       onModelDrop: opts.onModelDrop,
       isPreview: opts.isPreview ?? false
     }
@@ -149,5 +151,32 @@ describe('Load3DScene', () => {
     await expect(
       dragState.capturedOptions!.onModelDrop!(file)
     ).resolves.toBeUndefined()
+  })
+
+  describe('error overlay', () => {
+    it('shows the error overlay when loadError is set and not loading', () => {
+      renderComponent({ loadError: 'No model received from connected node' })
+
+      expect(screen.getByTestId('load3d-error-overlay')).toBeInTheDocument()
+      expect(
+        screen.getByText('No model received from connected node')
+      ).toBeInTheDocument()
+    })
+
+    it('hides the error overlay when loadError is null', () => {
+      renderComponent({ loadError: null })
+
+      expect(
+        screen.queryByTestId('load3d-error-overlay')
+      ).not.toBeInTheDocument()
+    })
+
+    it('hides the error overlay while loading even if loadError is set', () => {
+      renderComponent({ loadError: 'some error', loading: true })
+
+      expect(
+        screen.queryByTestId('load3d-error-overlay')
+      ).not.toBeInTheDocument()
+    })
   })
 })

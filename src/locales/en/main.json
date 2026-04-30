@@ -1951,6 +1951,7 @@
     "tiledMode": "Tiled",
     "panoramaMode": "Panorama",
     "loadingModel": "Loading 3D Model...",
+    "noModelReceived": "No model received from connected node",
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
