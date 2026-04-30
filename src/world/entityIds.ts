@@ -22,7 +22,7 @@ export function asGraphId(id: UUID): GraphId {
 
 export type NodeEntityId = Brand<string, 'NodeEntityId'>
 
-export function graphNodePrefix(graphId: GraphId): string {
+function graphNodePrefix(graphId: GraphId): string {
   return `node:${graphId}:`
 }
 
@@ -32,7 +32,7 @@ export function nodeEntityId(graphId: GraphId, nodeId: NodeId): NodeEntityId {
 
 export type WidgetEntityId = Brand<string, 'WidgetEntityId'>
 
-export function graphWidgetPrefix(graphId: GraphId): string {
+function graphWidgetPrefix(graphId: GraphId): string {
   return `widget:${graphId}:`
 }
 
