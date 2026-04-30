@@ -41,7 +41,6 @@ export interface SurveyResponses {
   useCase?: string
   making?: string[]
   role?: string
-  workflowRelationship?: string
   teamSize?: string
   source?: string
   usage?: string
