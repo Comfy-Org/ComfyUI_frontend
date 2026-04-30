@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { DOMWidget } from '@/scripts/domWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/__tests__/domWidgetTestUtils'
+import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
 const { canvasMock } = vi.hoisted(() => ({
   canvasMock: {
@@ -36,35 +37,34 @@ function createStringWidget(node: LGraphNode) {
     default: '',
     multiline: true
   }
-  return useStringWidget()(node, inputSpec) as ReturnType<
-    ReturnType<typeof useStringWidget>
-  > & { element: HTMLTextAreaElement }
+  return useStringWidget()(node, inputSpec) as DOMWidget<
+    HTMLTextAreaElement,
+    string
+  >
 }
 
 describe('useStringWidget (multiline)', () => {
-  let widget: ReturnType<typeof createStringWidget>
-  let inputEl: HTMLTextAreaElement
-  let callback: ReturnType<typeof vi.fn<(value: string) => void>>
-
-  beforeEach(() => {
+  function setup() {
     vi.clearAllMocks()
     const node = createMockDOMWidgetNode()
-    widget = createStringWidget(node)
-    callback = vi.fn<(value: string) => void>()
+    const widget = createStringWidget(node)
+    const callback = vi.fn<(value: string) => void>()
     widget.callback = callback
-    inputEl = widget.element
+    const inputEl = widget.element
     document.body.append(inputEl)
-  })
-
-  afterEach(() => inputEl.remove())
+    onTestFinished(() => inputEl.remove())
+    return { widget, inputEl, callback }
+  }
 
   it('fires the widget callback on input', () => {
+    const { inputEl, callback } = setup()
     inputEl.value = 'hello'
     inputEl.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(1)
   })
 
   it('forwards middle-click pointer events and ctrl+wheel to the canvas while alive', () => {
+    const { inputEl } = setup()
     inputEl.dispatchEvent(new PointerEvent('pointerdown', { button: 1 }))
     inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 4 }))
     inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
@@ -77,6 +77,7 @@ describe('useStringWidget (multiline)', () => {
   })
 
   it('detaches every listener when the widget is removed', () => {
+    const { widget, inputEl, callback } = setup()
     widget.onRemove?.()
 
     inputEl.value = 'after'

@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
-import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/__tests__/domWidgetTestUtils'
+import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
 const { canvasInteractionsMock } = vi.hoisted(() => ({
   canvasInteractionsMock: {
@@ -21,23 +21,20 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 describe('useNodeAnimatedImage', () => {
-  let node: ReturnType<typeof createMockMediaNode>
-  let element: HTMLElement
-  let showAnimatedPreview: (n: typeof node) => void
-  let removeAnimatedPreview: (n: typeof node) => void
-
-  beforeEach(() => {
+  function setup() {
     vi.clearAllMocks()
-    node = createMockMediaNode({ imgs: [document.createElement('img')] })
-    ;({ showAnimatedPreview, removeAnimatedPreview } = useNodeAnimatedImage())
+    const node = createMockMediaNode({ imgs: [document.createElement('img')] })
+    const { showAnimatedPreview, removeAnimatedPreview } =
+      useNodeAnimatedImage()
     showAnimatedPreview(node)
-    element = node.widgets[0].element
+    const element = node.widgets[0].element
     document.body.append(element)
-  })
-
-  afterEach(() => element.remove())
+    onTestFinished(() => element.remove())
+    return { node, element, showAnimatedPreview, removeAnimatedPreview }
+  }
 
   it('forwards non-right-click pointer events and wheel to the canvas while alive', () => {
+    const { element } = setup()
     element.dispatchEvent(new WheelEvent('wheel'))
     element.dispatchEvent(new PointerEvent('pointermove'))
     element.dispatchEvent(new PointerEvent('pointerup'))
@@ -49,6 +46,7 @@ describe('useNodeAnimatedImage', () => {
   })
 
   it('routes right-click pointerdown through forwardEventToCanvas, not handlePointer', () => {
+    const { element } = setup()
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 2 }))
 
     expect(canvasInteractionsMock.forwardEventToCanvas).toHaveBeenCalledTimes(1)
@@ -56,6 +54,7 @@ describe('useNodeAnimatedImage', () => {
   })
 
   it('detaches every listener when the preview is removed', () => {
+    const { node, element, removeAnimatedPreview } = setup()
     removeAnimatedPreview(node)
 
     element.dispatchEvent(new WheelEvent('wheel'))

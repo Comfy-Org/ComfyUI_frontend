@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { DOMWidget } from '@/scripts/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/__tests__/domWidgetTestUtils'
+import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
 const { canvasMock } = vi.hoisted(() => ({
   canvasMock: {
@@ -31,37 +32,30 @@ function createMarkdownWidget(node: LGraphNode) {
     name: 'note',
     default: ''
   }
-  return useMarkdownWidget()(node, inputSpec) as ReturnType<
-    ReturnType<typeof useMarkdownWidget>
-  > & { element: HTMLElement }
+  return useMarkdownWidget()(node, inputSpec) as DOMWidget<HTMLElement, string>
 }
 
 describe('useMarkdownWidget', () => {
-  let widget: ReturnType<typeof createMarkdownWidget>
-  let inputEl: HTMLElement
-  let textarea: HTMLTextAreaElement
-  let callback: ReturnType<typeof vi.fn<(value: string) => void>>
-  let parentKeydown: ReturnType<typeof vi.fn<(ev: KeyboardEvent) => void>>
-
-  beforeEach(() => {
+  function setup() {
     vi.clearAllMocks()
     const node = createMockDOMWidgetNode()
-    widget = createMarkdownWidget(node)
-    callback = vi.fn<(value: string) => void>()
+    const widget = createMarkdownWidget(node)
+    const callback = vi.fn<(value: string) => void>()
     widget.callback = callback
-    inputEl = widget.element
-    textarea = inputEl.querySelector('textarea')!
-    parentKeydown = vi.fn<(ev: KeyboardEvent) => void>()
+    const inputEl = widget.element
+    const textarea = inputEl.querySelector('textarea')!
+    const parentKeydown = vi.fn<(ev: KeyboardEvent) => void>()
     document.body.append(inputEl)
     document.body.addEventListener('keydown', parentKeydown)
-  })
-
-  afterEach(() => {
-    document.body.removeEventListener('keydown', parentKeydown)
-    inputEl.remove()
-  })
+    onTestFinished(() => {
+      document.body.removeEventListener('keydown', parentKeydown)
+      inputEl.remove()
+    })
+    return { widget, inputEl, textarea, callback, parentKeydown }
+  }
 
   it('fires the widget callback on textarea input and change', () => {
+    const { textarea, callback } = setup()
     textarea.value = 'hello'
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
@@ -69,6 +63,7 @@ describe('useMarkdownWidget', () => {
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {
+    const { inputEl, textarea, parentKeydown } = setup()
     inputEl.dispatchEvent(new Event('dblclick', { bubbles: true }))
     expect(inputEl.classList.contains('editing')).toBe(true)
 
@@ -80,6 +75,7 @@ describe('useMarkdownWidget', () => {
   })
 
   it('forwards middle-click pointer events to the canvas while alive', () => {
+    const { inputEl } = setup()
     inputEl.dispatchEvent(new PointerEvent('pointerdown', { button: 1 }))
     inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 4 }))
     inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
@@ -90,6 +86,7 @@ describe('useMarkdownWidget', () => {
   })
 
   it('detaches every listener and lets keydown bubble after removal', () => {
+    const { widget, inputEl, textarea, callback, parentKeydown } = setup()
     widget.onRemove?.()
 
     textarea.value = 'after'
@@ -109,5 +106,11 @@ describe('useMarkdownWidget', () => {
     // keydown listener (which called stopPropagation) is gone, so the event
     // now bubbles to the parent.
     expect(parentKeydown).toHaveBeenCalledTimes(1)
+  })
+
+  it('survives onRemove being invoked twice', () => {
+    const { widget } = setup()
+    widget.onRemove?.()
+    expect(() => widget.onRemove?.()).not.toThrow()
   })
 })

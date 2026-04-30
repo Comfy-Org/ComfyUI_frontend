@@ -131,7 +131,7 @@ function addMarkdownWidget(
 
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     controller.abort()
-    editor.destroy()
+    if (!editor.isDestroyed) editor.destroy()
   })
 
   return widget
