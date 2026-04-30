@@ -53,13 +53,25 @@ function toggleMaximized() {
 const appModeStore = useAppModeStore()
 const { viewportScale, noZoomMode } = storeToRefs(appModeStore)
 
-// Bigger snap (chrome cell + gutter) in dashboard mode so windows
-// align with the input panel and other chrome cells.
+// Dashboard-mode snap targets the chrome cell grid so tile edges line
+// up with the input panel and corner clusters. Positions sit at
+// outer + N·step (8, 64, 120, ...); sizes are N·step − gutter (48,
+// 104, 160, ...) so adjacent tiles' gutters fall on a chrome edge.
 const GRID = 16
-const NO_ZOOM_GRID = 56
-const snap = (v: number) => {
-  const g = noZoomMode.value ? NO_ZOOM_GRID : GRID
-  return Math.round(v / g) * g
+const NO_ZOOM_OUTER = 8
+const NO_ZOOM_GUTTER = 8
+const NO_ZOOM_STEP = 56
+const snapPos = (v: number) => {
+  if (!noZoomMode.value) return Math.round(v / GRID) * GRID
+  return (
+    Math.round((v - NO_ZOOM_OUTER) / NO_ZOOM_STEP) * NO_ZOOM_STEP +
+    NO_ZOOM_OUTER
+  )
+}
+const snapSize = (v: number) => {
+  if (!noZoomMode.value) return Math.round(v / GRID) * GRID
+  const cells = Math.max(1, Math.round((v + NO_ZOOM_GUTTER) / NO_ZOOM_STEP))
+  return cells * NO_ZOOM_STEP - NO_ZOOM_GUTTER
 }
 
 // Initialize from the spawn coordinate so the first paint already has
@@ -71,8 +83,8 @@ const wh = ref(initialHeight ?? defaultHeight)
 
 onMounted(() => {
   if (initialPosition) return
-  wx.value = snap(Math.max(0, (window.innerWidth - ww.value) / 2))
-  wy.value = snap(Math.max(0, (window.innerHeight - wh.value) / 2 - 32))
+  wx.value = snapPos(Math.max(0, (window.innerWidth - ww.value) / 2))
+  wy.value = snapPos(Math.max(0, (window.innerHeight - wh.value) / 2 - 32))
 })
 
 // Skip while dragging so the pointer wins over stale prop values.
@@ -110,8 +122,8 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
       if (!dragStart) return
       // Divide by scale: pointer is screen px, position is workspace px.
       const s = viewportScale.value || 1
-      wx.value = snap(dragStart.bx + (e.clientX - dragStart.px) / s)
-      wy.value = snap(dragStart.by + (e.clientY - dragStart.py) / s)
+      wx.value = snapPos(dragStart.bx + (e.clientX - dragStart.px) / s)
+      wy.value = snapPos(dragStart.by + (e.clientY - dragStart.py) / s)
     },
     onCommit: () => {
       emit('update:position', { x: wx.value, y: wy.value })
@@ -232,10 +244,10 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
       const nx = anchorEast ? bx + bw - nw_ : bx
       const ny = anchorSouth ? by + bh - nh_ : by
 
-      ww.value = snap(nw_)
-      wh.value = snap(nh_)
-      wx.value = snap(nx)
-      wy.value = snap(ny)
+      ww.value = snapSize(nw_)
+      wh.value = snapSize(nh_)
+      wx.value = snapPos(nx)
+      wy.value = snapPos(ny)
     },
     onCommit: () => {
       emit('update:size', { width: ww.value, height: wh.value })
