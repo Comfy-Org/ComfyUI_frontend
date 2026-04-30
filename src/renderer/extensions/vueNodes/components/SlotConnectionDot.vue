@@ -46,7 +46,7 @@ const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
 
 const slotClass = computed(() =>
   cn(
-    'slot-dot bg-slate-300',
+    'slot-dot bg-ink-100',
     isListShape.value ? 'rounded-[1px]' : 'rounded-full',
     'transition-all duration-150',
     'border border-solid border-node-component-slot-dot-outline',
