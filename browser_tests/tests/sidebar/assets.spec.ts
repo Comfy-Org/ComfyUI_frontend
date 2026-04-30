@@ -5,7 +5,10 @@ import {
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -61,6 +64,37 @@ const SAMPLE_IMPORTED_FILES = [
   'background.jpg',
   'audio_clip.wav'
 ]
+
+const JOB_GAMMA_DETAIL: JobDetail = {
+  ...SAMPLE_JOBS[2],
+  outputs: {
+    '3': {
+      images: [
+        {
+          filename: 'abstract_art.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'abstract_art_alt.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
+const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
+  mockCloudAssetSidebarData: async ({ comfyPage }, use) => {
+    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+    await comfyPage.assets.mockEmptyCloudAssets()
+
+    await use()
+
+    await comfyPage.assets.clearMocks()
+  }
+})
 
 // ==========================================================================
 // 1. Empty states
@@ -633,6 +667,96 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 })
 
+cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
+  cloudTest(
+    'Single job selection uses preserve naming strategy',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.first().click()
+      await expect(tab.downloadSelectedButton).toBeVisible()
+
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('preserve')
+    }
+  )
+
+  cloudTest(
+    'Multiple selected assets from one job use preserve naming strategy',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+      await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards
+        .first()
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+      await expect(tab.backToAssetsButton).toBeVisible()
+      await expect.poll(() => tab.assetCards.count()).toBe(2)
+
+      await tab.assetCards.first().click()
+      await comfyPage.page.keyboard.down('Control')
+      await tab.assetCards.nth(1).click()
+      await comfyPage.page.keyboard.up('Control')
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_asset_name_filters?.['job-gamma']?.toSorted()).toEqual(
+        ['abstract_art.png', 'abstract_art_alt.png']
+      )
+      expect(payload.naming_strategy).toBe('preserve')
+    }
+  )
+
+  cloudTest(
+    'Multiple selected jobs use job-time naming strategy',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await tab.waitForAssets()
+
+      await tab.assetCards.nth(1).click()
+      await comfyPage.page.keyboard.down('Control')
+      await tab.assetCards.nth(2).click()
+      await comfyPage.page.keyboard.up('Control')
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await tab.downloadSelectedButton.click()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids?.toSorted()).toEqual(['job-alpha', 'job-beta'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload.naming_strategy).toBe('group_by_job_time')
+    }
+  )
+})
+
 // ==========================================================================
 // 9. Pagination
 // ==========================================================================
@@ -886,5 +1010,44 @@ test.describe('Assets sidebar - media type filter', () => {
     // Uncheck image filter to remove all filters (restores all assets)
     await tab.filterCheckbox('Image').click()
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
+  })
+})
+
+test.describe('Assets sidebar - drag and drop', () => {
+  test('Dragging outputs from assets skips upload', async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({
+        id: 'job',
+        preview_output: {
+          filename: `test.png`,
+          type: 'temp',
+          nodeId: '1',
+          mediaType: 'images'
+        }
+      })
+    ])
+    await comfyPage.page.route('**/upload/image', (route) => {
+      expect(true, 'file is not uploaded').toBe(false)
+      return route.fulfill({ status: 405 })
+    })
+
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+
+    await comfyPage.canvas.focus()
+    await comfyPage.page.keyboard.press('.')
+    const { assetsTab } = comfyPage.menu
+    await assetsTab.open()
+    await assetsTab.waitForAssets()
+    await expect(assetsTab.assetCards).toHaveCount(1)
+
+    const targetPosition =
+      (await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')) ??
+      undefined
+
+    await assetsTab.assetCards.dragTo(comfyPage.canvas, { targetPosition })
+
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const fileComboWidget = await nodes[0].getWidget(0)
+    await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
   })
 })

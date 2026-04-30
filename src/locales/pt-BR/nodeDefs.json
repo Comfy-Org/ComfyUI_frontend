@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "Gere um vídeo a partir de uma imagem do primeiro quadro usando o modelo HappyHorse.",
+    "display_name": "HappyHorse Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagem do primeiro quadro. A proporção de aspecto de saída é derivada desta imagem."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Gere um vídeo apresentando uma pessoa ou objeto a partir de materiais de referência com o modelo HappyHorse. Suporta performances de personagem único e interações entre múltiplos personagens.",
+    "display_name": "HappyHorse Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Gera um vídeo com base em um prompt de texto usando o modelo HappyHorse.",
+    "display_name": "HappyHorse Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Edite um vídeo usando instruções de texto ou imagens de referência com o modelo HappyHorse. A duração de saída é de 3 a 15s e corresponde ao vídeo de entrada; entradas com mais de 15s são cortadas.",
+    "display_name": "HappyHorse Edição de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "O vídeo a ser editado."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Aumente imagens de baixa resolução para super-resolução, eliminando artefatos e ruídos. Saída máxima: 32 megapixels.",
     "display_name": "HitPaw General Image Enhance",
