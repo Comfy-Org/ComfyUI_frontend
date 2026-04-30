@@ -4,11 +4,6 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI" #workflow-tabs>
-      <!-- Native drag area for Electron when workflow tabs are not in the topbar -->
-      <div
-        v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-        class="app-drag pointer-events-auto h-(--comfy-topbar-height) w-full"
-      />
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
@@ -189,7 +184,6 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
