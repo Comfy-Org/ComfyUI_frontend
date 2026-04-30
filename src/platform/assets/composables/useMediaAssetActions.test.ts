@@ -187,14 +187,6 @@ function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   }
 }
 
-function getToastAddMock(): ReturnType<typeof vi.fn> {
-  return useToast().add as ReturnType<typeof vi.fn>
-}
-
-function getI18nTMock(): ReturnType<typeof vi.fn> {
-  return useI18n().t as ReturnType<typeof vi.fn>
-}
-
 function mountMediaActions(asset?: AssetMeta) {
   let actions: ReturnType<typeof useMediaAssetActions> | undefined
 
@@ -578,11 +570,14 @@ describe('useMediaAssetActions', () => {
     }
 
     function getExportToastDetail(): string | undefined {
-      const exportToastCall = getToastAddMock().mock.calls.find(
-        ([arg]) =>
-          typeof arg?.detail === 'string' &&
-          arg.detail.startsWith('mediaAsset.selection.exportStarted')
-      )
+      const { add } = useToast()
+      const exportToastCall = vi
+        .mocked(add)
+        .mock.calls.find(
+          ([arg]) =>
+            typeof arg?.detail === 'string' &&
+            arg.detail.startsWith('mediaAsset.selection.exportStarted')
+        )
       return exportToastCall?.[0]?.detail
     }
 
@@ -594,7 +589,8 @@ describe('useMediaAssetActions', () => {
         expect(getExportToastDetail()).toBeDefined()
       })
 
-      expect(getI18nTMock()).toHaveBeenCalledWith(
+      const { t } = useI18n()
+      expect(t).toHaveBeenCalledWith(
         'mediaAsset.selection.exportStarted',
         { count },
         count
