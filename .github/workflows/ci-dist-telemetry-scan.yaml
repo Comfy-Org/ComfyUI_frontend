@@ -12,7 +12,20 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   scan:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
