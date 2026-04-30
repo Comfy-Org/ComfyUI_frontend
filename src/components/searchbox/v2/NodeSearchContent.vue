@@ -13,11 +13,13 @@
         @navigate-down="navigateResults(1)"
         @navigate-up="navigateResults(-1)"
         @select-current="selectCurrentResult"
+        @focusin="onSearchFocus"
       />
 
       <!-- Filter header row -->
       <div class="flex items-center">
         <NodeSearchFilterBar
+          v-model:is-sidebar-open="isSidebarOpen"
           class="flex-1"
           :filters="filters"
           :active-category="rootFilter"
@@ -34,17 +36,27 @@
       </div>
 
       <!-- Content area -->
-      <div class="flex min-h-0 flex-1 overflow-hidden">
-        <!-- Category sidebar -->
+      <div class="relative flex min-h-0 flex-1 overflow-hidden">
         <NodeSearchCategorySidebar
+          v-show="isSidebarOpen"
+          id="node-search-category-sidebar"
           v-model:selected-category="sidebarCategory"
-          class="w-52 shrink-0"
+          :aria-label="isMobile ? t('g.categories') : undefined"
+          class="w-52 shrink-0 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:bg-base-background max-md:shadow-interface"
           :hide-chevrons="!anyTreeCategoryHasChildren"
           :hide-presets="rootFilter !== null"
           :node-defs="rootFilteredNodeDefs"
           :root-label="rootFilterLabel"
           :root-key="rootFilter ?? undefined"
           @auto-expand="selectedCategory = $event"
+        />
+
+        <!-- Mobile overlay backdrop to close sidebar on outside click -->
+        <div
+          v-if="isMobile && isSidebarOpen"
+          data-testid="sidebar-backdrop"
+          class="absolute inset-0 z-10 md:hidden"
+          @click="isSidebarOpen = false"
         />
 
         <!-- Results list -->
@@ -78,8 +90,8 @@
               :node-def="node"
               :current-query="searchQuery"
               show-description
-              :show-source-badge="rootFilter !== 'essentials'"
-              :hide-bookmark-icon="selectedCategory === 'favorites'"
+              :show-source-badge="rootFilter !== RootCategory.Essentials"
+              :hide-bookmark-icon="selectedCategory === RootCategory.Favorites"
             />
           </div>
           <div
@@ -96,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -106,6 +119,8 @@ import NodeSearchCategorySidebar, {
 } from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
+import { RootCategory } from '@/components/searchbox/v2/rootCategories'
+import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -121,9 +136,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
-    essentials: isEssentialNode,
-    comfy: (n) => n.nodeSource.type === NodeSourceType.Core,
-    custom: isCustomNode
+    [RootCategory.Essentials]: isEssentialNode,
+    [RootCategory.Comfy]: (n) => n.nodeSource.type === NodeSourceType.Core,
+    [RootCategory.Custom]: isCustomNode
   }
 
 const { filters } = defineProps<{
@@ -167,22 +182,33 @@ const searchQuery = ref('')
 const selectedCategory = ref(DEFAULT_CATEGORY)
 const selectedIndex = ref(0)
 
+const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
+const isSidebarOpen = ref(!isMobile.value)
+watch(isMobile, (mobile) => {
+  // On transitioning to mobile state, close the sidebar
+  if (mobile) isSidebarOpen.value = false
+})
+
+function onSearchFocus() {
+  if (isMobile.value) isSidebarOpen.value = false
+}
+
 // Root filter from filter bar category buttons (radio toggle)
-const rootFilter = ref<string | null>(null)
+const rootFilter = ref<RootCategoryId | null>(null)
 
 const rootFilterLabel = computed(() => {
   switch (rootFilter.value) {
-    case 'favorites':
+    case RootCategory.Favorites:
       return t('g.bookmarked')
-    case BLUEPRINT_CATEGORY:
+    case RootCategory.Blueprint:
       return t('g.blueprints')
-    case 'partner-nodes':
+    case RootCategory.PartnerNodes:
       return t('g.partner')
-    case 'essentials':
+    case RootCategory.Essentials:
       return t('g.essentials')
-    case 'comfy':
+    case RootCategory.Comfy:
       return t('g.comfy')
-    case 'custom':
+    case RootCategory.Custom:
       return t('g.extensions')
     default:
       return undefined
@@ -195,11 +221,11 @@ const rootFilteredNodeDefs = computed(() => {
   const sourceFilter = sourceCategoryFilters[rootFilter.value]
   if (sourceFilter) return allNodes.filter(sourceFilter)
   switch (rootFilter.value) {
-    case 'favorites':
+    case RootCategory.Favorites:
       return allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
-    case BLUEPRINT_CATEGORY:
-      return allNodes.filter((n) => n.category.startsWith(rootFilter.value!))
-    case 'partner-nodes':
+    case RootCategory.Blueprint:
+      return allNodes.filter((n) => n.category.startsWith(BLUEPRINT_CATEGORY))
+    case RootCategory.PartnerNodes:
       return allNodes.filter((n) => n.api_node)
     default:
       return allNodes
@@ -226,7 +252,7 @@ function onClearFilterGroup(filterId: string) {
   }
 }
 
-function onSelectCategory(category: string) {
+function onSelectCategory(category: RootCategoryId) {
   if (rootFilter.value === category) {
     rootFilter.value = null
   } else {
