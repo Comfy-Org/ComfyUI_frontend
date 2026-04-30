@@ -2,10 +2,12 @@ import type { MaybeRef } from 'vue'
 
 import { toRef } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
-import { nextTick, ref, toRaw, watch } from 'vue'
+import { ref, toRaw, watch } from 'vue'
 
-import Load3d from '@/extensions/core/load3d/Load3d'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -16,6 +18,8 @@ import type {
   CameraState,
   CameraType,
   EventCallback,
+  GizmoConfig,
+  GizmoMode,
   LightConfig,
   MaterialMode,
   ModelConfig,
@@ -38,6 +42,7 @@ const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
+  let isFirstModelLoad = true
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
@@ -49,7 +54,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const modelConfig = ref<ModelConfig>({
     upDirection: 'original',
     materialMode: 'original',
-    showSkeleton: false
+    showSkeleton: false,
+    gizmo: {
+      enabled: false,
+      mode: 'translate',
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1, z: 1 }
+    }
   })
 
   const hasSkeleton = ref(false)
@@ -85,6 +97,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const canFitToViewer = ref(true)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'normal',
+    'wireframe'
+  ])
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -100,7 +121,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         isPreview.value = true
       }
 
-      load3d = new Load3d(containerRef, {
+      load3d = createLoad3d(containerRef, {
         width: widthWidget?.value as number | undefined,
         height: heightWidget?.value as number | undefined,
         // Provide dynamic dimension getter for reactive updates
@@ -123,30 +144,32 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       await restoreConfigurationsFromNode(node)
 
-      node.onMouseEnter = function () {
+      node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
-
         load3d?.updateStatusMouseOnNode(true)
-      }
+      })
 
-      node.onMouseLeave = function () {
+      node.onMouseLeave = useChainCallback(node.onMouseLeave, () => {
         load3d?.updateStatusMouseOnNode(false)
-      }
+      })
 
-      node.onResize = function () {
+      node.onResize = useChainCallback(node.onResize, () => {
         load3d?.handleResize()
-      }
+      })
 
-      node.onDrawBackground = function () {
-        if (load3d) {
-          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+      node.onDrawBackground = useChainCallback(
+        node.onDrawBackground,
+        function (this: LGraphNode) {
+          if (load3d) {
+            load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+          }
         }
-      }
+      )
 
-      node.onRemoved = function () {
+      node.onRemoved = useChainCallback(node.onRemoved, () => {
         useLoad3dService().removeLoad3d(node)
         pendingCallbacks.delete(node)
-      }
+      })
 
       nodeToLoad3dMap.set(node, load3d)
 
@@ -164,7 +187,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       handleEvents('add')
     } catch (error) {
       console.error('Error initializing Load3d:', error)
-      useToastStore().addAlert(t('toastMessages.failedToInitializeLoad3d'))
+      useToastStore().addAlert(
+        t('toastMessages.failedToInitializeLoad3dViewer')
+      )
     }
   }
 
@@ -183,11 +208,24 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
     const savedModelConfig = node.properties['Model Config'] as ModelConfig
     if (savedModelConfig) {
-      modelConfig.value = savedModelConfig
+      modelConfig.value = {
+        ...savedModelConfig,
+        gizmo: savedModelConfig.gizmo
+          ? {
+              ...savedModelConfig.gizmo,
+              scale: savedModelConfig.gizmo.scale ?? { x: 1, y: 1, z: 1 }
+            }
+          : {
+              enabled: false,
+              mode: 'translate',
+              position: { x: 0, y: 0, z: 0 },
+              rotation: { x: 0, y: 0, z: 0 },
+              scale: { x: 1, y: 1, z: 1 }
+            }
+      }
     }
 
     const savedCameraConfig = node.properties['Camera Config'] as CameraConfig
-    const cameraStateToRestore = savedCameraConfig?.state
 
     if (savedCameraConfig) {
       cameraConfig.value = savedCameraConfig
@@ -235,31 +273,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     }
 
-    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-    if (modelWidget?.value) {
-      const modelUrl = getModelUrl(modelWidget.value as string)
-      if (modelUrl) {
-        loading.value = true
-        loadingMessage.value = t('load3d.reloadingModel')
-        try {
-          await load3d.loadModel(modelUrl)
-
-          if (cameraStateToRestore) {
-            await nextTick()
-            load3d.setCameraState(cameraStateToRestore)
-          }
-        } catch (error) {
-          console.error('Failed to reload model:', error)
-          useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
-        } finally {
-          loading.value = false
-          loadingMessage.value = ''
-        }
-      }
-    } else if (cameraStateToRestore) {
-      load3d.setCameraState(cameraStateToRestore)
-    }
-
     applySceneConfigToLoad3d()
     applyLightConfigToLoad3d()
   }
@@ -273,6 +286,31 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
     if (cfg.backgroundRenderMode) {
       load3d.setBackgroundRenderMode(cfg.backgroundRenderMode)
+    }
+  }
+
+  const applyGizmoConfigToLoad3d = () => {
+    if (!load3d) return
+    const gizmo = modelConfig.value.gizmo
+    if (!gizmo) return
+    const hasTransform =
+      gizmo.position.x !== 0 ||
+      gizmo.position.y !== 0 ||
+      gizmo.position.z !== 0 ||
+      gizmo.rotation.x !== 0 ||
+      gizmo.rotation.y !== 0 ||
+      gizmo.rotation.z !== 0 ||
+      gizmo.scale.x !== 1 ||
+      gizmo.scale.y !== 1 ||
+      gizmo.scale.z !== 1
+    if (hasTransform) {
+      load3d.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
+    }
+    if (gizmo.enabled) {
+      load3d.setGizmoEnabled(true)
+    }
+    if (gizmo.mode !== 'translate') {
+      load3d.setGizmoMode(gizmo.mode)
     }
   }
 
@@ -291,29 +329,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const n = nodeRef.value
     if (n) {
       n.properties['Light Config'] = lightConfig.value
-    }
-  }
-
-  const getModelUrl = (modelPath: string): string | null => {
-    if (!modelPath) return null
-
-    try {
-      if (modelPath.startsWith('http')) {
-        return modelPath
-      }
-
-      const trimmed = modelPath.trim()
-      const hasOutputSuffix = trimmed.endsWith('[output]')
-      const cleanPath = hasOutputSuffix
-        ? trimmed.replace(/\s*\[output\]$/, '')
-        : trimmed
-      const type = hasOutputSuffix || isPreview.value ? 'output' : 'input'
-
-      const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
-      return api.apiURL(Load3dUtils.getResourceURL(subfolder, filename, type))
-    } catch (error) {
-      console.error('Failed to construct model URL:', error)
-      return null
     }
   }
 
@@ -380,14 +395,32 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   watch(
     modelConfig,
     (newValue) => {
-      if (load3d && nodeRef.value) {
+      if (nodeRef.value) {
         nodeRef.value.properties['Model Config'] = newValue
-        load3d.setUpDirection(newValue.upDirection)
-        load3d.setMaterialMode(newValue.materialMode)
-        load3d.setShowSkeleton(newValue.showSkeleton)
       }
     },
     { deep: true }
+  )
+
+  watch(
+    () => modelConfig.value.upDirection,
+    (newValue) => {
+      if (load3d) load3d.setUpDirection(newValue)
+    }
+  )
+
+  watch(
+    () => modelConfig.value.materialMode,
+    (newValue) => {
+      if (load3d) load3d.setMaterialMode(newValue)
+    }
+  )
+
+  watch(
+    () => modelConfig.value.showSkeleton,
+    (newValue) => {
+      if (load3d) load3d.setShowSkeleton(newValue)
+    }
   )
 
   watch(
@@ -741,15 +774,39 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingStart: () => {
       loadingMessage.value = t('load3d.loadingModel')
       loading.value = true
+      if (!isFirstModelLoad) {
+        modelConfig.value = {
+          upDirection: 'original',
+          materialMode: 'original',
+          showSkeleton: false,
+          gizmo: {
+            enabled: false,
+            mode: 'translate',
+            position: { x: 0, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 }
+          }
+        }
+      }
     },
     modelLoadingEnd: () => {
       loadingMessage.value = ''
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      const caps = load3d?.getCurrentModelCapabilities()
+      canFitToViewer.value = caps?.fitToViewer ?? true
+      canUseGizmo.value = caps?.gizmoTransform ?? true
+      canUseLighting.value = caps?.lighting ?? true
+      canExport.value = caps?.exportable ?? true
+      materialModes.value = caps?.materialModes ?? [
+        'original',
+        'normal',
+        'wireframe'
+      ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
-      // Reset skeleton visibility when loading new model
-      modelConfig.value.showSkeleton = false
+      applyGizmoConfigToLoad3d()
+      isFirstModelLoad = false
 
       if (load3d && isAssetPreviewSupported()) {
         const node = nodeRef.value
@@ -816,8 +873,43 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           }
         }
       }
+    },
+    gizmoTransformChange: (data: GizmoConfig) => {
+      if (modelConfig.value.gizmo && nodeRef.value) {
+        modelConfig.value.gizmo.position = data.position
+        modelConfig.value.gizmo.rotation = data.rotation
+        modelConfig.value.gizmo.scale = data.scale
+        modelConfig.value.gizmo.enabled = data.enabled
+        modelConfig.value.gizmo.mode = data.mode
+      }
     }
   } as const
+
+  const handleToggleGizmo = (enabled: boolean) => {
+    if (load3d && modelConfig.value.gizmo) {
+      modelConfig.value.gizmo.enabled = enabled
+      load3d.setGizmoEnabled(enabled)
+    }
+  }
+
+  const handleSetGizmoMode = (mode: GizmoMode) => {
+    if (load3d && modelConfig.value.gizmo) {
+      modelConfig.value.gizmo.mode = mode
+      load3d.setGizmoMode(mode)
+    }
+  }
+
+  const handleFitToViewer = () => {
+    if (load3d) {
+      load3d.fitToViewer()
+    }
+  }
+
+  const handleResetGizmoTransform = () => {
+    if (load3d) {
+      load3d.resetGizmoTransform()
+    }
+  }
 
   const handleEvents = (action: 'add' | 'remove') => {
     Object.entries(eventConfig).forEach(([event, handler]) => {
@@ -852,6 +944,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    canFitToViewer,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
     hasSkeleton,
     hasRecording,
     recordingDuration,
@@ -878,6 +975,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleHDRIFileUpdate,
     handleExportModel,
     handleModelDrop,
+    handleToggleGizmo,
+    handleSetGizmoMode,
+    handleResetGizmoTransform,
+    handleFitToViewer,
     cleanup
   }
 }

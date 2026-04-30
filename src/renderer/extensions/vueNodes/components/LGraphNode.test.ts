@@ -1,7 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -10,7 +11,7 @@ import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setActivePinia } from 'pinia'
+import { app } from '@/scripts/app'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -176,13 +177,7 @@ describe('LGraphNode', () => {
   it('should call resize tracking composable with node ID', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(useVueElementTracking).toHaveBeenCalledWith(
-      expect.any(Function),
-      'node'
-    )
-    const idArg = vi.mocked(useVueElementTracking).mock.calls[0]?.[0]
-    const id = toValue(idArg)
-    expect(id).toEqual('test-node-123')
+    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
   })
 
   it('should render with data-node-id attribute', () => {
@@ -312,10 +307,8 @@ describe('LGraphNode', () => {
   })
 
   describe('handleDrop', () => {
-    it('should stop propagation when onDragDrop returns true', async () => {
-      const onDragDrop = vi.fn().mockReturnValue(true)
+    it('should set app.dragOverNode and let event bubble', async () => {
       mockData.mockLgraphNode = {
-        onDragDrop,
         onDragOver: vi.fn(),
         isSubgraphNode: () => false
       }
@@ -333,33 +326,8 @@ describe('LGraphNode', () => {
         new Event('drop', { bubbles: true, cancelable: true })
       )
 
-      expect(onDragDrop).toHaveBeenCalled()
-      expect(parentListener).not.toHaveBeenCalled()
-    })
-
-    it('should not stop propagation when onDragDrop returns false', async () => {
-      const onDragDrop = vi.fn().mockReturnValue(false)
-      mockData.mockLgraphNode = {
-        onDragDrop,
-        onDragOver: vi.fn(),
-        isSubgraphNode: () => false
-      }
-
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
-      const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
-      const parent = nodeEl.parentElement!
-
-      const parentListener = vi.fn()
-      expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
-
-      nodeEl.dispatchEvent(
-        new Event('drop', { bubbles: true, cancelable: true })
-      )
-
-      expect(onDragDrop).toHaveBeenCalled()
       expect(parentListener).toHaveBeenCalled()
+      expect(app.dragOverNode).toBe(mockData.mockLgraphNode)
     })
   })
 })

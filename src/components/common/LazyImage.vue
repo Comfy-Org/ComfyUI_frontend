@@ -42,7 +42,7 @@ import type { StyleValue } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
-import type { ClassValue } from '@/utils/tailwindUtil'
+import type { ClassValue } from '@comfyorg/tailwind-utils'
 
 const {
   src,

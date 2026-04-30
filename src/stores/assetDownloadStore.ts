@@ -2,12 +2,13 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 export interface AssetDownload {
-  taskId: string
+  taskId: TaskId
   assetName: string
   bytesTotal: number
   bytesDownloaded: number
@@ -21,7 +22,7 @@ export interface AssetDownload {
 }
 
 interface CompletedDownload {
-  taskId: string
+  taskId: TaskId
   modelType: string
   timestamp: number
 }
@@ -29,7 +30,7 @@ const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
 
 function generateDownloadTrackingPlaceholder(
-  taskId: string,
+  taskId: TaskId,
   modelType: string,
   assetName: string
 ): AssetDownload {
@@ -83,7 +84,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
-  function trackDownload(taskId: string, modelType: string, assetName: string) {
+  function trackDownload(taskId: TaskId, modelType: string, assetName: string) {
     if (downloads.value.has(taskId)) return
 
     downloads.value.set(
