@@ -6,9 +6,24 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
+  LayoutOperation,
   NodeLayout,
   SlotLayout
 } from '@/renderer/core/layout/types'
+
+function getOperationsAddedBy(action: () => void): LayoutOperation[] {
+  const operationCount = layoutStore.getOperationsSince(0).length
+  action()
+  return layoutStore.getOperationsSince(0).slice(operationCount)
+}
+
+function expectSingleOperation(
+  operations: LayoutOperation[],
+  expectedOperation: Record<string, unknown>
+): void {
+  expect(operations).toHaveLength(1)
+  expect(operations[0]).toEqual(expect.objectContaining(expectedOperation))
+}
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -576,9 +591,15 @@ describe('layoutStore CRDT operations', () => {
       actor: 'test'
     })
 
-    const originalTitleHeight = LiteGraph.NODE_TITLE_HEIGHT
-    // @ts-expect-error – intentionally simulate undefined runtime value
-    LiteGraph.NODE_TITLE_HEIGHT = undefined
+    const originalTitleHeightDescriptor = Object.getOwnPropertyDescriptor(
+      LiteGraph,
+      'NODE_TITLE_HEIGHT'
+    )
+    Object.defineProperty(LiteGraph, 'NODE_TITLE_HEIGHT', {
+      configurable: true,
+      value: undefined,
+      writable: true
+    })
 
     try {
       layoutStore.setSource(LayoutSource.DOM)
@@ -597,7 +618,13 @@ describe('layoutStore CRDT operations', () => {
       const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
       expect(nodeRef.value?.size.height).toBe(layout.size.height)
     } finally {
-      LiteGraph.NODE_TITLE_HEIGHT = originalTitleHeight
+      if (originalTitleHeightDescriptor) {
+        Object.defineProperty(
+          LiteGraph,
+          'NODE_TITLE_HEIGHT',
+          originalTitleHeightDescriptor
+        )
+      }
     }
   })
 
@@ -652,70 +679,106 @@ describe('layoutStore getNodeLayoutRef setter', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
-  const baseLayout = (): NodeLayout => ({
-    id: 'ref-node',
-    position: { x: 10, y: 20 },
-    size: { width: 100, height: 50 },
-    zIndex: 0,
-    visible: true,
-    bounds: { x: 10, y: 20, width: 100, height: 50 }
-  })
+  function baseLayout(): NodeLayout {
+    return {
+      id: 'ref-node',
+      position: { x: 10, y: 20 },
+      size: { width: 100, height: 50 },
+      zIndex: 0,
+      visible: true,
+      bounds: { x: 10, y: 20, width: 100, height: 50 }
+    }
+  }
 
   it('creates a node when setter receives a layout for an unknown id', () => {
     const ref = layoutStore.getNodeLayoutRef('ref-node')
+    const layout = baseLayout()
     expect(ref.value).toBeNull()
 
-    ref.value = baseLayout()
+    const operations = getOperationsAddedBy(() => {
+      ref.value = layout
+    })
 
-    expect(ref.value).toEqual(baseLayout())
+    expectSingleOperation(operations, {
+      type: 'createNode',
+      nodeId: 'ref-node',
+      layout
+    })
+    expect(ref.value).toEqual(layout)
   })
 
-  it('emits a moveNode operation when only position changes', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
-    ref.value = baseLayout()
-    const before = Date.now()
-    const moved = { ...baseLayout(), position: { x: 99, y: 88 } }
+  it.for<{
+    name: string
+    nextLayout: NodeLayout
+    expectedOperation: Record<string, unknown>
+  }>([
+    {
+      name: 'moveNode',
+      nextLayout: {
+        ...baseLayout(),
+        position: { x: 99, y: 88 },
+        bounds: { x: 99, y: 88, width: 100, height: 50 }
+      },
+      expectedOperation: {
+        type: 'moveNode',
+        nodeId: 'ref-node',
+        position: { x: 99, y: 88 },
+        previousPosition: baseLayout().position
+      }
+    },
+    {
+      name: 'resizeNode',
+      nextLayout: {
+        ...baseLayout(),
+        size: { width: 200, height: 80 },
+        bounds: { x: 10, y: 20, width: 200, height: 80 }
+      },
+      expectedOperation: {
+        type: 'resizeNode',
+        nodeId: 'ref-node',
+        size: { width: 200, height: 80 },
+        previousSize: baseLayout().size
+      }
+    },
+    {
+      name: 'setNodeZIndex',
+      nextLayout: { ...baseLayout(), zIndex: 5 },
+      expectedOperation: {
+        type: 'setNodeZIndex',
+        nodeId: 'ref-node',
+        zIndex: 5,
+        previousZIndex: 0
+      }
+    }
+  ])(
+    'emits a $name operation for layout-only updates',
+    ({ nextLayout, expectedOperation }) => {
+      const ref = layoutStore.getNodeLayoutRef('ref-node')
+      ref.value = baseLayout()
 
-    ref.value = moved
+      const operations = getOperationsAddedBy(() => {
+        ref.value = nextLayout
+      })
 
-    const ops = layoutStore.getOperationsSince(before - 1)
-    expect(ops.some((op) => op.type === 'moveNode')).toBe(true)
-    expect(ref.value?.position).toEqual({ x: 99, y: 88 })
-  })
-
-  it('emits a resizeNode operation when only size changes', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
-    ref.value = baseLayout()
-    const before = Date.now()
-    const resized = { ...baseLayout(), size: { width: 200, height: 80 } }
-
-    ref.value = resized
-
-    const ops = layoutStore.getOperationsSince(before - 1)
-    expect(ops.some((op) => op.type === 'resizeNode')).toBe(true)
-  })
-
-  it('emits a setNodeZIndex operation when only zIndex changes', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
-    ref.value = baseLayout()
-    const before = Date.now()
-    const restacked = { ...baseLayout(), zIndex: 5 }
-
-    ref.value = restacked
-
-    const ops = layoutStore.getOperationsSince(before - 1)
-    expect(ops.some((op) => op.type === 'setNodeZIndex')).toBe(true)
-  })
+      expectSingleOperation(operations, expectedOperation)
+      expect(ref.value).toEqual(nextLayout)
+    }
+  )
 
   it('emits a deleteNode operation when setter receives null', () => {
     const ref = layoutStore.getNodeLayoutRef('ref-node')
-    ref.value = baseLayout()
-    const before = Date.now()
+    const layout = baseLayout()
+    ref.value = layout
 
-    ref.value = null
+    const operations = getOperationsAddedBy(() => {
+      ref.value = null
+    })
 
-    const ops = layoutStore.getOperationsSince(before - 1)
-    expect(ops.some((op) => op.type === 'deleteNode')).toBe(true)
+    expectSingleOperation(operations, {
+      type: 'deleteNode',
+      nodeId: 'ref-node',
+      previousLayout: layout
+    })
     expect(ref.value).toBeNull()
   })
 })
@@ -824,8 +887,14 @@ describe('layoutStore link layout updates', () => {
       centerPos: { x: 1, y: 1 }
     })
 
+    expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toEqual({
+      linkId: 1,
+      rerouteId: null
+    })
+
     layoutStore.deleteLinkLayout(1)
 
     expect(layoutStore.getLinkLayout(1)).toBeNull()
+    expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
   })
 })
