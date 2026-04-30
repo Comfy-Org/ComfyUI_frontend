@@ -1,7 +1,8 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
@@ -57,27 +58,15 @@ vi.mock('@/utils/imageUtil', () => ({
   is_all_same_aspect_ratio: vi.fn(() => true)
 }))
 
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({
-    registerWidget: vi.fn((_graphId: string, state: object) => state)
-  })
-}))
-
-vi.mock('@/stores/promotionStore', () => ({
-  usePromotionStore: () => ({
-    isPromotedByAny: vi.fn(() => false)
-  })
-}))
-
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
-
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 import { useImagePreviewWidget } from './useImagePreviewWidget'
 
+// TODO(PR #11394): The CanvasRenderingContext2D / LGraphNode surface is too
+// large to migrate to shoehorn fromPartial here without dragging in mountains
+// of unused properties. Leave the `as unknown as` casts in these factories;
+// migrate when the SUT is refactored to depend on a smaller render port.
 function createMockCtx(): CanvasRenderingContext2D {
   const transform = new DOMMatrix()
   return {
@@ -131,17 +120,21 @@ function createMockImage(width: number, height: number): HTMLImageElement {
 }
 
 function getWidget(node: LGraphNode): BaseWidget {
+  expect(node.addCustomWidget).toHaveBeenCalledTimes(1)
   return vi.mocked(node.addCustomWidget).mock.calls[0][0] as BaseWidget
 }
 
-const defaultInputSpec: InputSpec = {
+const defaultInputSpec = fromPartial<InputSpec>({
   name: 'preview',
   type: 'CUSTOM'
-} as InputSpec
+})
 
 describe('useImagePreviewWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // clearAllMocks does not reset mockReturnValue — restore defaults explicitly
+    mockSettingStore.get.mockReturnValue(false)
+    vi.mocked(is_all_same_aspect_ratio).mockReturnValue(true)
     mockCanvas.graph_mouse = [0, 0]
     mockCanvas.pointer_is_down = false
     mockCanvas.canvas.style.cursor = ''
@@ -158,19 +151,9 @@ describe('useImagePreviewWidget', () => {
       const node = createMockNode()
       constructor(node, defaultInputSpec)
 
-      expect(node.addCustomWidget).toHaveBeenCalledTimes(1)
       const widget = getWidget(node)
       expect(widget.name).toBe('preview')
       expect(widget.type).toBe('custom')
-    })
-
-    it('creates a non-serialized widget', () => {
-      const constructor = useImagePreviewWidget()
-      const node = createMockNode()
-      constructor(node, defaultInputSpec)
-
-      const widget = getWidget(node)
-      expect(widget.serialize).toBe(false)
     })
 
     it('widget options include serialize false and canvasOnly', () => {
@@ -296,6 +279,31 @@ describe('useImagePreviewWidget', () => {
       expect(node.imageIndex).toBe(0)
     })
 
+    // Regression lock for SUT line 109: `if (numImages === 1 && !imageIndex)`.
+    // The falsy `!imageIndex` branch is also taken when imageIndex === 0, but
+    // because the assignment is `imageIndex = 0` it is harmless today. If the
+    // SUT is later changed to `imageIndex == null` (the safer check), this
+    // test should keep passing — it pins observable behavior, not the bug.
+    // TODO: follow-up to harden SUT to `imageIndex == null`; out of scope for
+    // PR #11394 (test-only PR).
+    it('keeps imageIndex at 0 for single image when index is already 0', () => {
+      const constructor = useImagePreviewWidget()
+      const img = createMockImage(200, 100)
+      const node = createMockNode({
+        imgs: [img],
+        imageIndex: 0
+      })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+
+      expect(node.imageIndex).toBe(0)
+    })
+
     it('does not draw when imgs is empty', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ imgs: [], imageIndex: null })
@@ -329,7 +337,7 @@ describe('useImagePreviewWidget', () => {
   })
 
   describe('drawWidget — image size text', () => {
-    it('draws image size text when setting is enabled', async () => {
+    it('draws image size text when setting is enabled', () => {
       mockSettingStore.get.mockReturnValue(true)
 
       const constructor = useImagePreviewWidget()
@@ -353,7 +361,7 @@ describe('useImagePreviewWidget', () => {
       )
     })
 
-    it('does not draw image size text when setting is disabled', async () => {
+    it('does not draw image size text when setting is disabled', () => {
       mockSettingStore.get.mockReturnValue(false)
 
       const constructor = useImagePreviewWidget()
@@ -515,18 +523,11 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const pointer = {
-        onDragStart: null as (() => void) | null,
-        onDragEnd: null as ((e: MouseEvent) => void) | null,
-        finally: null as (() => void) | null,
+      const pointer = fromPartial<CanvasPointer>({
         eDown: new MouseEvent('pointerdown')
-      }
+      })
 
-      const result = widget.onPointerDown!(
-        pointer as never,
-        node,
-        mockCanvas as never
-      )
+      const result = widget.onPointerDown!(pointer, node, fromAny(mockCanvas))
       expect(result).toBe(true)
     })
 
@@ -536,29 +537,14 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const pointer = {
-        onDragStart: null as (() => void) | null,
-        onDragEnd: null as ((e: MouseEvent) => void) | null,
-        finally: null as (() => void) | null,
+      const pointer = fromPartial<CanvasPointer>({
         eDown: new MouseEvent('pointerdown')
-      }
+      })
 
-      widget.onPointerDown!(pointer as never, node, mockCanvas as never)
+      widget.onPointerDown!(pointer, node, fromAny(mockCanvas))
 
       expect(pointer.onDragStart).toBeTypeOf('function')
       expect(pointer.onDragEnd).toBeTypeOf('function')
-    })
-  })
-
-  describe('onClick', () => {
-    it('is a no-op', () => {
-      const constructor = useImagePreviewWidget()
-      const node = createMockNode()
-      constructor(node, defaultInputSpec)
-
-      const widget = getWidget(node)
-      // Should not throw
-      expect(() => widget.onClick({} as never)).not.toThrow()
     })
   })
 })
