@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, ref, computed } from 'vue'
+import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
 // vi.hoisted runs before imports — only vi.fn() is safe here (no Vue)
@@ -36,7 +36,7 @@ vi.mock('./useGPUResources', () => {
     maxX: -Infinity,
     maxY: -Infinity
   })
-  const hasRenderer = computed(() => false)
+  const hasRenderer = ref(false)
   const previewCanvas = ref<HTMLCanvasElement | null>(null)
   const prepareStroke = vi.fn()
   const clearPreview = vi.fn()

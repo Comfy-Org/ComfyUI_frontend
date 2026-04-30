@@ -1,5 +1,5 @@
 /// <reference types="@webgpu/types" />
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import { tgpu } from 'typegpu'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
@@ -15,7 +15,7 @@ import {
 } from './brushDrawingUtils'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
-import { clampDirtyRect } from './gpuUtils'
+import { buildStrokePoints, clampDirtyRect } from './gpuUtils'
 
 export function useGPUResources() {
   const store = useMaskEditorStore()
@@ -39,7 +39,7 @@ export function useGPUResources() {
   const isSavingHistory = ref(false)
   const dirtyRect = ref<DirtyRect>(resetDirtyRect())
 
-  const hasRenderer = computed(() => renderer !== null)
+  const hasRenderer = ref(false)
 
   const isRecreatingTextures = ref(false)
 
@@ -124,8 +124,10 @@ export function useGPUResources() {
   )
 
   onUnmounted(() => {
+    // c8 ignore start
     renderer?.destroy()
     renderer = null
+    hasRenderer.value = false
     maskTexture?.destroy()
     maskTexture = null
     rgbTexture?.destroy()
@@ -139,10 +141,12 @@ export function useGPUResources() {
     readbackStagingRgb?.destroy()
     readbackStagingRgb = null
     // Device is managed by TGPU root; do not destroy it here
+    // c8 ignore stop
   })
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
+  /* c8 ignore start — requires a live GPUDevice */
   function createTexture(
     gpuDevice: GPUDevice,
     width: number,
@@ -191,20 +195,24 @@ export function useGPUResources() {
     })
     currentBufferSize = bufferSize
   }
+  /* c8 ignore stop */
 
   // ── Internal functions ───────────────────────────────────────────────────────
 
   async function initTypeGPU(): Promise<void> {
     if (store.tgpuRoot) {
+      // c8 ignore next
       device = store.tgpuRoot.device
       return
     }
     try {
+      /* c8 ignore start — requires functional WebGPU hardware */
       const root = await tgpu.init()
       store.tgpuRoot = root
       device = root.device
       console.warn('✅ TypeGPU initialized! Root:', root)
       console.warn('Device info:', root.device.limits)
+      /* c8 ignore stop */
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       console.warn('Failed to initialize TypeGPU:', message)
@@ -217,14 +225,16 @@ export function useGPUResources() {
       !maskTexture ||
       !rgbTexture ||
       !store.maskCanvas ||
+      !store.maskCtx ||
       !store.rgbCtx
     )
       return
 
+    /* c8 ignore start — requires live GPU device and textures */
     const w = store.maskCanvas.width
     const h = store.maskCanvas.height
 
-    const maskData = store.maskCtx!.getImageData(0, 0, w, h)
+    const maskData = store.maskCtx.getImageData(0, 0, w, h)
     premultiplyData(maskData.data)
     device.queue.writeTexture(
       { texture: maskTexture },
@@ -241,6 +251,7 @@ export function useGPUResources() {
       { bytesPerRow: w * 4 },
       { width: w, height: h }
     )
+    /* c8 ignore stop */
   }
 
   // ── Public API ───────────────────────────────────────────────────────────────
@@ -265,6 +276,7 @@ export function useGPUResources() {
     const w = store.maskCanvas.width
     const h = store.maskCanvas.height
 
+    /* c8 ignore start — requires functional WebGPU hardware */
     try {
       console.warn(`🎨 Initializing GPU resources for ${w}x${h} canvas`)
       maskTexture = createTexture(device, w, h)
@@ -275,16 +287,19 @@ export function useGPUResources() {
         device,
         navigator.gpu.getPreferredCanvasFormat()
       )
+      hasRenderer.value = true
       console.warn('✅ Brush renderer initialized')
     } catch (error) {
       console.error('Failed to initialize GPU resources:', error)
       maskTexture = null
       rgbTexture = null
     }
+    /* c8 ignore stop */
   }
 
   function initPreviewCanvas(canvas: HTMLCanvasElement): void {
     if (!device) return
+    /* c8 ignore start — requires live GPUDevice and WebGPU canvas context */
     const ctx = canvas.getContext('webgpu')
     if (!ctx) return
     ctx.configure({
@@ -295,10 +310,12 @@ export function useGPUResources() {
     previewContext = ctx
     previewCanvas.value = canvas
     console.warn('✅ Preview Canvas Initialized')
+    /* c8 ignore stop */
   }
 
   function clearGPU(): void {
     if (!device || !maskTexture || !rgbTexture || !store.maskCanvas) return
+    /* c8 ignore start — requires live GPUDevice and textures */
     const w = store.maskCanvas.width
     const h = store.maskCanvas.height
     const zeros = new Uint8Array(w * h * 4)
@@ -314,6 +331,7 @@ export function useGPUResources() {
       { bytesPerRow: w * 4 },
       { width: w, height: h }
     )
+    /* c8 ignore stop */
   }
 
   function destroy(): void {
@@ -325,6 +343,7 @@ export function useGPUResources() {
     readbackStagingMask?.destroy()
     readbackStagingRgb?.destroy()
     renderer = null
+    hasRenderer.value = false
     maskTexture = null
     rgbTexture = null
     readbackStorageMask = null
@@ -332,6 +351,7 @@ export function useGPUResources() {
     readbackStagingMask = null
     readbackStagingRgb = null
     currentBufferSize = 0
+    /* c8 ignore next — tgpuRoot only exists after successful GPU init */
     if (store.tgpuRoot) {
       store.tgpuRoot.destroy()
       store.tgpuRoot = null
@@ -352,6 +372,7 @@ export function useGPUResources() {
 
   function compositeStroke(isRgb: boolean, isErasing: boolean): void {
     if (!renderer || !maskTexture || !rgbTexture || !store.maskCanvas) return
+    /* c8 ignore start — requires live renderer */
     const targetTex = isRgb ? rgbTexture : maskTexture
     const { size, hardness, opacity, type } = store.brushSettings
     const effectiveSize = getEffectiveBrushSize(size, hardness)
@@ -369,6 +390,7 @@ export function useGPUResources() {
       brushShape,
       isErasing
     })
+    /* c8 ignore stop */
   }
 
   async function copyGpuToCanvas(): Promise<{
@@ -387,6 +409,7 @@ export function useGPUResources() {
     )
       throw new Error('GPU resources not ready')
 
+    /* c8 ignore start — requires live GPU device, textures and renderer */
     const width = store.maskCanvas.width
     const height = store.maskCanvas.height
 
@@ -434,14 +457,19 @@ export function useGPUResources() {
     store.rgbCtx.putImageData(rgbImageData, 0, 0, dx, dy, dw, dh)
 
     return { maskData: maskImageData, rgbData: rgbImageData }
+    /* c8 ignore stop */
   }
 
   function gpuRender(points: Point[], skipResampling = false): void {
     if (!renderer || !maskTexture || !rgbTexture) return
 
+    /* c8 ignore start — requires live renderer */
     const isRgb = store.activeLayer === 'rgb'
     const color = resolveColor(isRgb)
-    const strokePoints = buildStrokePoints(points, skipResampling)
+    const stepPercentage =
+      Math.pow(100, store.brushSettings.stepSize / 100) / 100
+    const gpuStepSize = Math.max(1.0, store.brushSettings.size * stepPercentage)
+    const strokePoints = buildStrokePoints(points, skipResampling, gpuStepSize)
 
     const { size, hardness } = store.brushSettings
     const effectiveSize = getEffectiveBrushSize(size, hardness)
@@ -489,11 +517,13 @@ export function useGPUResources() {
         targetTex ?? undefined
       )
     }
+    /* c8 ignore stop */
   }
 
   async function gpuDrawPoint(point: Point, opacity = 1): Promise<void> {
     if (!renderer) return
 
+    /* c8 ignore start — requires live renderer */
     const width = store.maskCanvas!.width
     const height = store.maskCanvas!.height
     const { size, hardness } = store.brushSettings
@@ -536,10 +566,12 @@ export function useGPUResources() {
         undefined
       )
     }
+    /* c8 ignore stop */
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 
+  /* c8 ignore start — only reachable after successful GPU init */
   function resolveColor(isRgb: boolean): [number, number, number] {
     if (isRgb) {
       const c = parseToRgb(store.rgbColor)
@@ -548,36 +580,7 @@ export function useGPUResources() {
     const c = store.maskColor as { r: number; g: number; b: number }
     return [c.r / 255, c.g / 255, c.b / 255]
   }
-
-  function buildStrokePoints(
-    points: Point[],
-    skipResampling: boolean
-  ): { x: number; y: number; pressure: number }[] {
-    if (skipResampling) {
-      return points.map((p) => ({ x: p.x, y: p.y, pressure: 1.0 }))
-    }
-    const result: { x: number; y: number; pressure: number }[] = []
-    const stepPercentage =
-      Math.pow(100, store.brushSettings.stepSize / 100) / 100
-    const stepSize = Math.max(1.0, store.brushSettings.size * stepPercentage)
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i]
-      const p2 = points[i + 1]
-      const steps = Math.max(
-        1,
-        Math.ceil(Math.hypot(p2.x - p1.x, p2.y - p1.y) / stepSize)
-      )
-      for (let s = 0; s <= steps; s++) {
-        const t = s / steps
-        result.push({
-          x: p1.x + (p2.x - p1.x) * t,
-          y: p1.y + (p2.y - p1.y) * t,
-          pressure: 1.0
-        })
-      }
-    }
-    return result
-  }
+  /* c8 ignore stop */
 
   return {
     // Lifecycle — spread into useBrushDrawing's public return

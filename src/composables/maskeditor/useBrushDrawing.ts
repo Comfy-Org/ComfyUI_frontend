@@ -308,9 +308,12 @@ export function useBrushDrawing(initialSettings?: {
 
     // Save to history
     gpu.isSavingHistory.value = true
-    store.canvasHistory.saveState(maskData, rgbData)
-    await nextTick()
-    gpu.isSavingHistory.value = false
+    try {
+      store.canvasHistory.saveState(maskData, rgbData)
+      await nextTick()
+    } finally {
+      gpu.isSavingHistory.value = false
+    }
 
     gpu.clearPreview()
 
