@@ -15,6 +15,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const TOTAL_MOCK_JOBS = 20
+const MAX_HISTORY_ITEMS_SETTING = 'Comfy.Queue.MaxHistoryItems'
 const overflowJobsListRoutePattern = '**/api/jobs?*'
 
 function isHistoryJobsRequest(url: string): boolean {
@@ -59,7 +60,7 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
       }) => {
         const TARGET_LIMIT = 6
         await comfyPage.settings.setSetting(
-          'Comfy.Queue.MaxHistoryItems',
+          MAX_HISTORY_ITEMS_SETTING,
           TARGET_LIMIT
         )
 
@@ -106,7 +107,7 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
 
       const VISIBLE_LIMIT = 6
       await comfyPage.settings.setSetting(
-        'Comfy.Queue.MaxHistoryItems',
+        MAX_HISTORY_ITEMS_SETTING,
         VISIBLE_LIMIT
       )
       const exec = new ExecutionHelper(comfyPage, await getWebSocket())

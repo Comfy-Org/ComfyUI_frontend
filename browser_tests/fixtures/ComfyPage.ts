@@ -505,6 +505,7 @@ export const comfyPageFixture = base.extend<{
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
+        'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
         'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
