@@ -65,9 +65,7 @@ export type WidgetState<
  * `WidgetEntityId`. The view returned from `registerWidget` is the
  * un-augmented `WidgetState` because identity fields live in the entity id.
  */
-export interface WidgetRegistration<
-  TValue = unknown
-> extends WidgetState<TValue> {
+interface WidgetRegistration<TValue = unknown> extends WidgetState<TValue> {
   name: string
   nodeId: NodeId
 }
