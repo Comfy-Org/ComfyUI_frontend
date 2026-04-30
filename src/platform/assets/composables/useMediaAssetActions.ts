@@ -64,52 +64,30 @@ export function useMediaAssetActions() {
     }
   }
 
-  const downloadAsset = (asset?: AssetItem) => {
-    const targetAsset = asset ?? mediaContext?.asset.value
-    if (!targetAsset) return
-
-    try {
-      const filename = getAssetDisplayName(targetAsset)
-      // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
-      const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
-
-      downloadFile(downloadUrl, filename)
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', 1),
-        life: 2000
-      })
-    } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
-  }
-
   /**
-   * Download multiple assets at once.
-   * In cloud mode with 2+ assets, creates a ZIP export via the backend.
-   * Falls back to individual downloads in OSS mode or for single assets.
+   * Download one or more assets.
+   * In cloud mode, creates a ZIP export via the backend when called with
+   * 2+ assets or with any asset whose job has `outputCount > 1`.
+   * Falls back to direct downloads in OSS mode and for single single-output
+   * assets. With no argument, uses the asset from `MediaAssetKey` context.
    */
-  const downloadMultipleAssets = (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
+  const downloadAssets = (assets?: AssetItem[]) => {
+    const targetAssets =
+      assets ?? (mediaContext?.asset.value ? [mediaContext.asset.value] : [])
+    if (targetAssets.length === 0) return
 
-    const hasMultiOutputJobs = assets.some((a) => {
+    const hasMultiOutputJobs = targetAssets.some((a) => {
       const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
       return typeof count === 'number' && count > 1
     })
 
-    if (isCloud && (assets.length > 1 || hasMultiOutputJobs)) {
-      void downloadMultipleAssetsAsZip(assets)
+    if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
+      void downloadAssetsAsZip(targetAssets)
       return
     }
 
     try {
-      assets.forEach((asset) => {
+      targetAssets.forEach((asset) => {
         const filename = getAssetDisplayName(asset)
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
@@ -118,7 +96,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', assets.length),
+        detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
         life: 2000
       })
     } catch (error) {
@@ -131,7 +109,7 @@ export function useMediaAssetActions() {
     }
   }
 
-  async function downloadMultipleAssetsAsZip(assets: AssetItem[]) {
+  async function downloadAssetsAsZip(assets: AssetItem[]) {
     const assetExportStore = useAssetExportStore()
 
     try {
@@ -720,8 +698,7 @@ export function useMediaAssetActions() {
   }
 
   return {
-    downloadAsset,
-    downloadMultipleAssets,
+    downloadAssets,
     deleteAssets,
     copyJobId,
     addWorkflow,
