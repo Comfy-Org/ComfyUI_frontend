@@ -18,7 +18,7 @@ const backendUrl = localStorage.getItem('comfyui-preview-backend-url') ?? '—'
 const tooltipLines = [
   author ? `@${author}` : null,
   commitShort ? commitShort : null,
-  t('prPreview.badge.tooltipBackend', { url: backendUrl }),
+  `${t('prPreview.badge.tooltipBackendLabel')}${backendUrl}`,
   apiNodesEnabled
     ? t('prPreview.badge.tooltipCloudApiNote')
     : t('prPreview.badge.tooltipCloudApiDisabled')

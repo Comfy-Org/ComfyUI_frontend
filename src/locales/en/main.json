@@ -3860,7 +3860,7 @@
   "prPreview": {
     "badge": {
       "label": "PR",
-      "tooltipBackend": "Backend: {url}",
+      "tooltipBackendLabel": "Backend: ",
       "tooltipCloudApiNote": "Cloud API: see Settings → About",
       "tooltipCloudApiDisabled": "Cloud API: disabled",
       "configureBackend": "Configure backend →"
