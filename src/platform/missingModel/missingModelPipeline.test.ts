@@ -11,64 +11,79 @@ import {
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
 
-const {
-  mockMissingModelStore,
-  mockWorkspaceWorkflow,
-  mockExecutionErrorStore,
-  mockModelStore,
-  mockModelToNodeStore,
-  mockScanAllModelCandidates,
-  mockEnrichWithEmbeddedMetadata,
-  mockVerifyAssetSupportedCandidates,
-  mockToastStore,
-  mockAssetService,
-  mockApi,
-  mockIsAncestorPathActive,
-  mockIsMissingCandidateActive,
-  state
-} = vi.hoisted(() => {
-  const state = {
-    enrichedCandidates: [] as MissingModelCandidate[]
+const { mockHandles, createMocks } = vi.hoisted(() => {
+  function createMocks() {
+    const state = {
+      enrichedCandidates: [] as MissingModelCandidate[]
+    }
+
+    return {
+      state,
+      missingModelStore: {
+        missingModelCandidates: null as MissingModelCandidate[] | null,
+        createVerificationAbortController: vi.fn(() => new AbortController()),
+        setFolderPaths: vi.fn(),
+        setFileSize: vi.fn()
+      },
+      workspaceWorkflow: {
+        activeWorkflow: null as {
+          activeState?: Pick<ComfyWorkflowJSON, 'models'> | null
+          pendingWarnings?: unknown
+        } | null
+      },
+      executionErrorStore: {
+        surfaceMissingModels: vi.fn()
+      },
+      modelStore: {
+        loadModelFolders: vi.fn(),
+        getLoadedModelFolder: vi.fn()
+      },
+      modelToNodeStore: {
+        getCategoryForNodeType: vi.fn()
+      },
+      scanAllModelCandidates: vi.fn(
+        (
+          _graph: LGraph,
+          _isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+          _getDirectory?: (nodeType: string) => string | undefined
+        ): MissingModelCandidate[] => []
+      ),
+      enrichWithEmbeddedMetadata: vi.fn(
+        async (
+          _candidates: readonly MissingModelCandidate[],
+          _graphData: ComfyWorkflowJSON,
+          _checkModelInstalled: (
+            name: string,
+            directory: string
+          ) => Promise<boolean>,
+          _isAssetSupported?: (nodeType: string, widgetName: string) => boolean
+        ) => state.enrichedCandidates
+      ),
+      verifyAssetSupportedCandidates: vi.fn(
+        async (
+          _candidates: readonly MissingModelCandidate[],
+          _signal: AbortSignal
+        ) => undefined
+      ),
+      toastStore: {
+        add: vi.fn()
+      },
+      assetService: {
+        shouldUseAssetBrowser: vi.fn()
+      },
+      api: {
+        getFolderPaths: vi.fn()
+      },
+      isAncestorPathActive: vi.fn((_graph: LGraph, _nodeId: string) => true),
+      isMissingCandidateActive: vi.fn(
+        (_graph: LGraph, _candidate: MissingModelCandidate) => true
+      )
+    }
   }
 
   return {
-    state,
-    mockMissingModelStore: {
-      missingModelCandidates: null as MissingModelCandidate[] | null,
-      createVerificationAbortController: vi.fn(() => new AbortController()),
-      setFolderPaths: vi.fn(),
-      setFileSize: vi.fn()
-    },
-    mockWorkspaceWorkflow: {
-      activeWorkflow: null as {
-        activeState?: Pick<ComfyWorkflowJSON, 'models'> | null
-        pendingWarnings?: unknown
-      } | null
-    },
-    mockExecutionErrorStore: {
-      surfaceMissingModels: vi.fn()
-    },
-    mockModelStore: {
-      loadModelFolders: vi.fn(),
-      getLoadedModelFolder: vi.fn()
-    },
-    mockModelToNodeStore: {
-      getCategoryForNodeType: vi.fn()
-    },
-    mockScanAllModelCandidates: vi.fn(),
-    mockEnrichWithEmbeddedMetadata: vi.fn(async () => state.enrichedCandidates),
-    mockVerifyAssetSupportedCandidates: vi.fn(),
-    mockToastStore: {
-      add: vi.fn()
-    },
-    mockAssetService: {
-      shouldUseAssetBrowser: vi.fn()
-    },
-    mockApi: {
-      getFolderPaths: vi.fn()
-    },
-    mockIsAncestorPathActive: vi.fn(),
-    mockIsMissingCandidateActive: vi.fn()
+    createMocks,
+    mockHandles: createMocks()
   }
 })
 
@@ -77,44 +92,70 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: mockAssetService
+  assetService: {
+    shouldUseAssetBrowser: (nodeType: string, widgetName: string) =>
+      mockHandles.assetService.shouldUseAssetBrowser(nodeType, widgetName)
+  }
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({
-    workflow: mockWorkspaceWorkflow
+    workflow: mockHandles.workspaceWorkflow
   })
 }))
 
 vi.mock('@/stores/executionErrorStore', () => ({
-  useExecutionErrorStore: () => mockExecutionErrorStore
+  useExecutionErrorStore: () => mockHandles.executionErrorStore
 }))
 
 vi.mock('@/stores/modelStore', () => ({
-  useModelStore: () => mockModelStore
+  useModelStore: () => mockHandles.modelStore
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => mockModelToNodeStore
+  useModelToNodeStore: () => mockHandles.modelToNodeStore
 }))
 
 vi.mock('@/platform/missingModel/missingModelScan', () => ({
-  scanAllModelCandidates: mockScanAllModelCandidates,
-  enrichWithEmbeddedMetadata: mockEnrichWithEmbeddedMetadata,
-  verifyAssetSupportedCandidates: mockVerifyAssetSupportedCandidates
+  scanAllModelCandidates: (
+    graph: LGraph,
+    isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+    getDirectory?: (nodeType: string) => string | undefined
+  ) =>
+    mockHandles.scanAllModelCandidates(graph, isAssetSupported, getDirectory),
+  enrichWithEmbeddedMetadata: (
+    candidates: readonly MissingModelCandidate[],
+    graphData: ComfyWorkflowJSON,
+    checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
+    isAssetSupported?: (nodeType: string, widgetName: string) => boolean
+  ) =>
+    mockHandles.enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      checkModelInstalled,
+      isAssetSupported
+    ),
+  verifyAssetSupportedCandidates: (
+    candidates: readonly MissingModelCandidate[],
+    signal: AbortSignal
+  ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => mockToastStore
+  useToastStore: () => mockHandles.toastStore
 }))
 
 vi.mock('@/scripts/api', () => ({
-  api: mockApi
+  api: {
+    getFolderPaths: () => mockHandles.api.getFolderPaths()
+  }
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
-  isAncestorPathActive: mockIsAncestorPathActive,
-  isMissingCandidateActive: mockIsMissingCandidateActive
+  isAncestorPathActive: (graph: LGraph, nodeId: string) =>
+    mockHandles.isAncestorPathActive(graph, nodeId),
+  isMissingCandidateActive: (graph: LGraph, candidate: MissingModelCandidate) =>
+    mockHandles.isMissingCandidateActive(graph, candidate)
 }))
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -138,17 +179,16 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 
 describe('missingModelPipeline', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    state.enrichedCandidates = []
-    mockMissingModelStore.missingModelCandidates = null
-    mockWorkspaceWorkflow.activeWorkflow = null
-    mockModelStore.loadModelFolders.mockResolvedValue(undefined)
-    mockModelStore.getLoadedModelFolder.mockResolvedValue(undefined)
-    mockModelToNodeStore.getCategoryForNodeType.mockReturnValue(undefined)
-    mockScanAllModelCandidates.mockReturnValue([])
-    mockApi.getFolderPaths.mockResolvedValue({})
-    mockIsAncestorPathActive.mockReturnValue(true)
-    mockIsMissingCandidateActive.mockReturnValue(true)
+    Object.assign(mockHandles, createMocks())
+    mockHandles.modelStore.loadModelFolders.mockResolvedValue(undefined)
+    mockHandles.modelStore.getLoadedModelFolder.mockResolvedValue(undefined)
+    mockHandles.modelToNodeStore.getCategoryForNodeType.mockReturnValue(
+      undefined
+    )
+    mockHandles.scanAllModelCandidates.mockReturnValue([])
+    mockHandles.api.getFolderPaths.mockResolvedValue({})
+    mockHandles.isAncestorPathActive.mockReturnValue(true)
+    mockHandles.isMissingCandidateActive.mockReturnValue(true)
   })
 
   describe('refreshMissingModelPipeline', () => {
@@ -158,7 +198,7 @@ describe('missingModelPipeline', () => {
       const reloadNodeDefs = vi.fn(async () => {
         order.push('reload')
       })
-      mockScanAllModelCandidates.mockImplementation(() => {
+      mockHandles.scanAllModelCandidates.mockImplementation(() => {
         order.push('scan')
         return []
       })
@@ -166,7 +206,7 @@ describe('missingModelPipeline', () => {
       await refreshMissingModelPipeline({
         graph,
         reloadNodeDefs,
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
       expect(order).toEqual(['reload', 'scan'])
@@ -180,11 +220,11 @@ describe('missingModelPipeline', () => {
           directory: 'checkpoints'
         }
       ]
-      mockWorkspaceWorkflow.activeWorkflow = {
+      mockHandles.workspaceWorkflow.activeWorkflow = {
         activeState: { models: activeModels },
         pendingWarnings: null
       }
-      mockMissingModelStore.missingModelCandidates = [
+      mockHandles.missingModelStore.missingModelCandidates = [
         {
           nodeId: '1',
           nodeType: 'CheckpointLoaderSimple',
@@ -200,24 +240,23 @@ describe('missingModelPipeline', () => {
       await refreshMissingModelPipeline({
         graph: createGraph(),
         reloadNodeDefs: vi.fn(),
-        missingModelStore: mockMissingModelStore,
+        missingModelStore: mockHandles.missingModelStore,
         silent: false
       })
 
-      expect(mockEnrichWithEmbeddedMetadata).toHaveBeenCalledWith(
+      expect(mockHandles.enrichWithEmbeddedMetadata).toHaveBeenCalledWith(
         expect.any(Array),
         expect.objectContaining({ models: activeModels }),
         expect.any(Function),
         undefined
       )
-      expect(mockExecutionErrorStore.surfaceMissingModels).toHaveBeenCalledWith(
-        [],
-        { silent: false }
-      )
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenCalledWith([], { silent: false })
     })
 
     it('falls back to current missing model metadata when workflow state has no models', async () => {
-      mockMissingModelStore.missingModelCandidates = [
+      mockHandles.missingModelStore.missingModelCandidates = [
         {
           nodeId: '1',
           nodeType: 'CheckpointLoaderSimple',
@@ -244,10 +283,10 @@ describe('missingModelPipeline', () => {
       await refreshMissingModelPipeline({
         graph: createGraph(),
         reloadNodeDefs: vi.fn(),
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
-      expect(mockEnrichWithEmbeddedMetadata).toHaveBeenCalledWith(
+      expect(mockHandles.enrichWithEmbeddedMetadata).toHaveBeenCalledWith(
         expect.any(Array),
         expect.objectContaining({
           models: [
@@ -263,10 +302,9 @@ describe('missingModelPipeline', () => {
         expect.any(Function),
         undefined
       )
-      expect(mockExecutionErrorStore.surfaceMissingModels).toHaveBeenCalledWith(
-        [],
-        { silent: true }
-      )
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenCalledWith([], { silent: true })
     })
 
     it('does not add model metadata when no active workflow or current candidate metadata exists', async () => {
@@ -275,10 +313,10 @@ describe('missingModelPipeline', () => {
       await refreshMissingModelPipeline({
         graph: createGraph(graphData),
         reloadNodeDefs: vi.fn(),
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
-      expect(mockEnrichWithEmbeddedMetadata).toHaveBeenCalledWith(
+      expect(mockHandles.enrichWithEmbeddedMetadata).toHaveBeenCalledWith(
         expect.any(Array),
         graphData,
         expect.any(Function),
@@ -293,11 +331,11 @@ describe('missingModelPipeline', () => {
         refreshMissingModelPipeline({
           graph: createGraph(),
           reloadNodeDefs: vi.fn().mockRejectedValue(error),
-          missingModelStore: mockMissingModelStore
+          missingModelStore: mockHandles.missingModelStore
         })
       ).rejects.toThrow(error)
 
-      expect(mockScanAllModelCandidates).not.toHaveBeenCalled()
+      expect(mockHandles.scanAllModelCandidates).not.toHaveBeenCalled()
     })
   })
 
@@ -324,13 +362,16 @@ describe('missingModelPipeline', () => {
         activeState: null,
         pendingWarnings: null
       }
-      state.enrichedCandidates = [confirmedCandidate, installedCandidate]
-      mockWorkspaceWorkflow.activeWorkflow = activeWorkflow
+      mockHandles.state.enrichedCandidates = [
+        confirmedCandidate,
+        installedCandidate
+      ]
+      mockHandles.workspaceWorkflow.activeWorkflow = activeWorkflow
 
       const result = await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
-        missingModelStore: mockMissingModelStore,
+        missingModelStore: mockHandles.missingModelStore,
         missingNodeTypes: ['MissingCustomNode']
       })
 
@@ -362,12 +403,12 @@ describe('missingModelPipeline', () => {
         isMissing: true,
         isAssetSupported: true
       } satisfies MissingModelCandidate
-      state.enrichedCandidates = [confirmedCandidate]
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
 
       const result = await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
       expect(result).toEqual({
@@ -402,19 +443,18 @@ describe('missingModelPipeline', () => {
           missingMediaCandidates: undefined
         }
       }
-      state.enrichedCandidates = [installedCandidate]
-      mockWorkspaceWorkflow.activeWorkflow = activeWorkflow
+      mockHandles.state.enrichedCandidates = [installedCandidate]
+      mockHandles.workspaceWorkflow.activeWorkflow = activeWorkflow
 
       await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
-      expect(mockExecutionErrorStore.surfaceMissingModels).toHaveBeenCalledWith(
-        [],
-        { silent: false }
-      )
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenCalledWith([], { silent: false })
       expect(activeWorkflow.pendingWarnings).toBeNull()
     })
 
@@ -442,16 +482,19 @@ describe('missingModelPipeline', () => {
         pendingWarnings: null
       }
       const graph = createGraph()
-      state.enrichedCandidates = [activeCandidate, inactiveCandidate]
-      mockWorkspaceWorkflow.activeWorkflow = activeWorkflow
-      mockIsAncestorPathActive.mockImplementation(
+      mockHandles.state.enrichedCandidates = [
+        activeCandidate,
+        inactiveCandidate
+      ]
+      mockHandles.workspaceWorkflow.activeWorkflow = activeWorkflow
+      mockHandles.isAncestorPathActive.mockImplementation(
         (_graph: LGraph, nodeId: string) => nodeId !== '2'
       )
 
       const result = await runMissingModelPipeline({
         graph,
         graphData: createWorkflowGraphData(),
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
       expect(result.confirmedCandidates).toEqual([activeCandidate])
@@ -479,16 +522,16 @@ describe('missingModelPipeline', () => {
           resolveFolderPaths = resolve
         }
       )
-      state.enrichedCandidates = [confirmedCandidate]
-      mockMissingModelStore.createVerificationAbortController.mockReturnValueOnce(
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
+      mockHandles.missingModelStore.createVerificationAbortController.mockReturnValueOnce(
         controller
       )
-      mockApi.getFolderPaths.mockReturnValueOnce(folderPathsPromise)
+      mockHandles.api.getFolderPaths.mockReturnValueOnce(folderPathsPromise)
 
       await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
-        missingModelStore: mockMissingModelStore
+        missingModelStore: mockHandles.missingModelStore
       })
 
       controller.abort()
@@ -498,9 +541,11 @@ describe('missingModelPipeline', () => {
       // if the abort guards are removed from either continuation.
       await new Promise((resolve) => setTimeout(resolve, 0))
 
-      expect(mockMissingModelStore.setFolderPaths).not.toHaveBeenCalled()
       expect(
-        mockExecutionErrorStore.surfaceMissingModels
+        mockHandles.missingModelStore.setFolderPaths
+      ).not.toHaveBeenCalled()
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
       ).not.toHaveBeenCalled()
     })
   })

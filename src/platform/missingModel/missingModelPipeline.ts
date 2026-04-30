@@ -66,6 +66,14 @@ function cacheModelCandidates(
   })
 }
 
+function clearMissingModels(
+  wf: Pick<ComfyWorkflow, 'pendingWarnings'> | null | undefined,
+  silent: boolean
+) {
+  useExecutionErrorStore().surfaceMissingModels([], { silent })
+  cacheModelCandidates(wf, [])
+}
+
 function hasDownloadMetadata(
   candidate: MissingModelCandidate
 ): candidate is MissingModelCandidateWithDownloadMetadata {
@@ -104,8 +112,7 @@ export async function runMissingModelPipeline({
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
   const isAssetBrowserWidget = isCloud
-    ? (nodeType: string, widgetName: string) =>
-        assetService.shouldUseAssetBrowser(nodeType, widgetName)
+    ? assetService.shouldUseAssetBrowser
     : () => false
 
   const candidates = scanAllModelCandidates(
@@ -187,45 +194,44 @@ export async function runMissingModelPipeline({
         })
     } else {
       if (!confirmedCandidates.length) {
-        useExecutionErrorStore().surfaceMissingModels([], { silent })
-        cacheModelCandidates(activeWf, [])
-      } else {
-        void api
-          .getFolderPaths()
-          .then((paths) => {
-            if (controller.signal.aborted) return
-            missingModelStore.setFolderPaths(paths)
-          })
-          .catch((err) => {
-            console.warn(
-              '[Missing Model Pipeline] Failed to fetch folder paths:',
-              err
-            )
-          })
-          .finally(() => {
-            if (controller.signal.aborted) return
-            useExecutionErrorStore().surfaceMissingModels(confirmedCandidates, {
-              silent
-            })
-            cacheModelCandidates(activeWf, confirmedCandidates)
-          })
-
-        const missingModelDownload =
-          import('@/platform/missingModel/missingModelDownload')
-        void Promise.allSettled(
-          confirmedCandidates.filter(hasDownloadMetadata).map(async (c) => {
-            const { fetchModelMetadata } = await missingModelDownload
-            const metadata = await fetchModelMetadata(c.url)
-            if (!controller.signal.aborted && metadata.fileSize !== null) {
-              missingModelStore.setFileSize(c.url, metadata.fileSize)
-            }
-          })
-        )
+        clearMissingModels(activeWf, silent)
+        return { missingModels, confirmedCandidates }
       }
+
+      void api
+        .getFolderPaths()
+        .then((paths) => {
+          if (controller.signal.aborted) return
+          missingModelStore.setFolderPaths(paths)
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Model Pipeline] Failed to fetch folder paths:',
+            err
+          )
+        })
+        .finally(() => {
+          if (controller.signal.aborted) return
+          useExecutionErrorStore().surfaceMissingModels(confirmedCandidates, {
+            silent
+          })
+          cacheModelCandidates(activeWf, confirmedCandidates)
+        })
+
+      const missingModelDownload =
+        import('@/platform/missingModel/missingModelDownload')
+      void Promise.allSettled(
+        confirmedCandidates.filter(hasDownloadMetadata).map(async (c) => {
+          const { fetchModelMetadata } = await missingModelDownload
+          const metadata = await fetchModelMetadata(c.url)
+          if (!controller.signal.aborted && metadata.fileSize !== null) {
+            missingModelStore.setFileSize(c.url, metadata.fileSize)
+          }
+        })
+      )
     }
   } else {
-    useExecutionErrorStore().surfaceMissingModels([], { silent })
-    cacheModelCandidates(activeWf, [])
+    clearMissingModels(activeWf, silent)
   }
 
   return { missingModels, confirmedCandidates }
