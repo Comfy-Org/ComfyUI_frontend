@@ -574,6 +574,10 @@ describe('LoaderManager', () => {
         'modelLoadError',
         expect.any(String)
       )
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
     })
 
     it('suppresses alerts and modelLoadingEnd when a stale load throws', async () => {
