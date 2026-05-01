@@ -28,6 +28,7 @@ export function usePromotedPreviews(
   const promotedPreviews = computed((): PromotedPreview[] => {
     const node = toValue(lgraphNode)
     if (!(node instanceof SubgraphNode)) return []
+    if (!node.graph) return []
 
     const entries = promotionStore.getPromotions(node.rootGraph.id, node.id)
     const pseudoEntries = entries.filter((e) =>

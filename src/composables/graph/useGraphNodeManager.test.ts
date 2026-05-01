@@ -872,3 +872,30 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(subgraphNode.has_errors).toBe(true)
   })
 })
+
+describe('Pre-remove vueNodeData drain', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('drops vueNodeData entry before node.onRemoved fires', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    expect(vueNodeData.has(String(node.id))).toBe(true)
+
+    let dataPresentInOnRemoved: boolean | undefined
+    node.onRemoved = () => {
+      dataPresentInOnRemoved = vueNodeData.has(String(node.id))
+    }
+
+    graph.remove(node)
+
+    expect(
+      dataPresentInOnRemoved,
+      'vueNodeData entry must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
+    ).toBe(false)
+  })
+})

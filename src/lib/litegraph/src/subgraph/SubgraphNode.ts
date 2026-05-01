@@ -257,6 +257,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _getPromotedViews(): PromotedWidgetView[] {
+    if (!this.graph) return []
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
     const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
@@ -302,6 +303,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _syncPromotions(): void {
     if (this.id === -1) return
+    if (!this.graph) return
 
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)

@@ -1079,6 +1079,8 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
+    this.events.dispatch('node:before-removed', { node })
+
     const { inputs, outputs } = node
 
     // disconnect inputs
@@ -1115,6 +1117,11 @@ export class LGraph
 
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, (innerNode) => {
+          if (innerNode.graph) {
+            ;(
+              innerNode.graph.events as CustomEventTarget<LGraphEventMap>
+            ).dispatch('node:before-removed', { node: innerNode })
+          }
           innerNode.onRemoved?.()
           innerNode.graph?.onNodeRemoved?.(innerNode)
         })

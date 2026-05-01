@@ -132,6 +132,15 @@ export const useCanvasStore = defineStore('canvas', () => {
     () => canvas.value,
     (newCanvas) => {
       useEventListener(
+        () => (currentGraph.value ?? newCanvas.graph)?.events,
+        'node:before-removed',
+        (e: CustomEvent<{ node: LGraphNode }>) => {
+          newCanvas.deselect(e.detail.node)
+          updateSelectedItems()
+        }
+      )
+
+      useEventListener(
         newCanvas.canvas,
         'litegraph:set-graph',
         (event: CustomEvent<{ newGraph: LGraph; oldGraph: LGraph }>) => {
