@@ -35,9 +35,11 @@ const SPAWN_GRID = 16
 const DEFAULT_SPAWN_W = 512
 const DEFAULT_SPAWN_H = 560
 
-// No-zoom dashboard: oldest evicts beyond MAX_TILES, layout adapts to
-// any count via squarified treemap.
-const MAX_TILES = 12
+// No-zoom dashboard: oldest evicts beyond MAX_TILES so layout always
+// stays on the asymmetric slicing-tree path (≤ FULL_TREE_MAX_LEAVES).
+// 9 keeps the slicing-tree enumeration tractable while leaving room
+// for a hero + 8 supporting tiles.
+const MAX_TILES = 9
 // Mirrors --spacing-layout-outer (8px), --spacing-layout-cell (48px),
 // --spacing-layout-gutter (8px). Hardcoded to avoid reading the DOM.
 const CHROME_OUTER = 8
@@ -131,11 +133,16 @@ function dashboardSlots(
 // uncropped tile is the freshest output; slots 1..N−1 fill the
 // remaining tiles in descending area.
 //
-// For small N (≤ FULL_TREE_MAX_LEAVES) we enumerate every binary
-// tree shape × V/H cut assignment for fixed leaf order [0..N−1] and
-// pick the one with the smallest stretch deviation. For larger N we
-// fall back to feature@availH + uniform grid (uniform stretch).
-const FULL_TREE_MAX_LEAVES = 7
+// We enumerate every binary tree shape × V/H cut assignment for
+// fixed leaf order [0..N−1] and pick the one with the smallest
+// stretch deviation. MAX_TILES caps N so we always reach this path;
+// the grid fallback below is a safety net for unexpected over-cap.
+//
+// Enumeration cost grows as Catalan(N−1) × 2^(N−1):
+//   N=7  → 8,448 trees   (~few ms)
+//   N=8  → 54,912 trees  (~10 ms)
+//   N=9  → 366k trees    (~50–150 ms; only fires on relayout)
+const FULL_TREE_MAX_LEAVES = 9
 
 function bentoAspectRects(
   N: number,
