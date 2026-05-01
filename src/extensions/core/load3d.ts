@@ -484,23 +484,31 @@ useExtensionService().registerExtension({
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
       if (modelWidget) {
-        const lastTimeModelFile = node.properties['Last Time Model File']
+        const lastTimeModelFile = node.properties['Last Time Model File'] as
+          | string
+          | undefined
 
         if (lastTimeModelFile) {
-          modelWidget.value = lastTimeModelFile
+          void Load3dUtils.resourceExists(lastTimeModelFile, 'output').then(
+            (exists) => {
+              if (!exists) return
 
-          const cameraConfig = node.properties['Camera Config'] as
-            | CameraConfig
-            | undefined
-          const cameraState = cameraConfig?.state
+              modelWidget.value = lastTimeModelFile
 
-          const settings = {
-            loadFolder: 'output',
-            modelWidget: modelWidget,
-            cameraState: cameraState
-          }
+              const cameraConfig = node.properties['Camera Config'] as
+                | CameraConfig
+                | undefined
+              const cameraState = cameraConfig?.state
 
-          config.configure(settings)
+              const settings = {
+                loadFolder: 'output',
+                modelWidget: modelWidget,
+                cameraState: cameraState
+              }
+
+              config.configure(settings)
+            }
+          )
         }
 
         node.onExecuted = function (output: Load3dPreviewOutput) {

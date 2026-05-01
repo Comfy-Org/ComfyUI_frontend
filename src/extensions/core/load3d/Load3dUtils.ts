@@ -124,6 +124,20 @@ class Load3dUtils {
     return `/view?${params}`
   }
 
+  static async resourceExists(
+    filePath: string,
+    type: 'input' | 'output' | 'temp'
+  ): Promise<boolean> {
+    try {
+      const [subfolder, filename] = this.splitFilePath(filePath)
+      const url = this.getResourceURL(subfolder, filename, type)
+      const resp = await api.fetchApi(url, { method: 'HEAD' })
+      return resp.ok
+    } catch {
+      return false
+    }
+  }
+
   static async uploadMultipleFiles(files: FileList, subfolder: string = '3d') {
     const uploadPromises = Array.from(files).map((file) =>
       this.uploadFile(file, subfolder)
