@@ -20,6 +20,7 @@ import {
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import {
+  applySubgraphIoHoverHighlight,
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
@@ -406,8 +407,19 @@ export function useSlotLinkInteraction({
       }
     }
 
-    const shouldRedraw = candidateChanged || snapPosChanged
-    if (shouldRedraw) app.canvas?.setDirty(true, true)
+    let ioHoverChanged = false
+    const graph = activeAdapter ? app.canvas?.graph : null
+    if (graph) {
+      ioHoverChanged = applySubgraphIoHoverHighlight(
+        graph,
+        state.pointer.canvas.x,
+        state.pointer.canvas.y
+      )
+    }
+
+    if (candidateChanged || snapPosChanged || ioHoverChanged) {
+      app.canvas?.setDirty(true, true)
+    }
   }
   const raf = createRafBatch(processPointerMoveFrame)
 

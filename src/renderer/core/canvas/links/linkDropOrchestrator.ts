@@ -1,11 +1,15 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null
@@ -116,4 +120,42 @@ export const resolveNodeSurfaceSlotCandidate = (
   session.preferredSlotForNode.set(nodeId, preferred)
 
   return { layout, compatible: true }
+}
+
+type IoNode = SubgraphInputNode | SubgraphOutputNode
+
+interface IoHoverSnapshot {
+  node: boolean
+  slots: boolean[]
+}
+
+const captureIoHover = (ioNode: IoNode): IoHoverSnapshot => ({
+  node: ioNode.isPointerOver,
+  slots: ioNode.allSlots.map((slot) => slot.isPointerOver)
+})
+
+const ioHoverChanged = (before: IoHoverSnapshot, ioNode: IoNode): boolean => {
+  if (before.node !== ioNode.isPointerOver) return true
+  const slots = ioNode.allSlots
+  if (before.slots.length !== slots.length) return true
+  return slots.some((slot, i) => before.slots[i] !== slot.isPointerOver)
+}
+
+export const applySubgraphIoHoverHighlight = (
+  graph: LGraph,
+  canvasX: number,
+  canvasY: number
+): boolean => {
+  if (!isSubgraph(graph)) return false
+
+  const event = { canvasX, canvasY } as Partial<CanvasPointerEvent>
+  const hoverEvent = event as CanvasPointerEvent
+
+  let changed = false
+  for (const ioNode of [graph.inputNode, graph.outputNode]) {
+    const before = captureIoHover(ioNode)
+    ioNode.onPointerMove(hoverEvent)
+    if (ioHoverChanged(before, ioNode)) changed = true
+  }
+  return changed
 }

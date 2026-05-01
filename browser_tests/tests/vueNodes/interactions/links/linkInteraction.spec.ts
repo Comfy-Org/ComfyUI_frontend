@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -83,6 +84,48 @@ async function getSlotCenter(
   const locator = slotLocator(page, nodeId, slotIndex, isInput)
   await expect(locator).toBeVisible()
   return await getCenter(locator)
+}
+
+async function enterBasicSubgraphWithKSampler(comfyPage: ComfyPage) {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+  await subgraphNode.navigateIntoSubgraph()
+  await fitToViewInstant(comfyPage)
+  return (await comfyPage.nodeOps.getNodeRefsByType('KSampler', true))[0]
+}
+
+async function getSubgraphSlotLinkCount(
+  page: Page,
+  direction: 'input' | 'output',
+  slotName: string
+): Promise<number> {
+  return await page.evaluate(
+    ([dir, name]) => {
+      const graph = window.app!.canvas.graph!
+      if (dir === 'input' && 'inputs' in graph) {
+        return graph.inputs.find((s) => s.name === name)?.linkIds?.length ?? 0
+      }
+      if (dir === 'output' && 'outputs' in graph) {
+        return graph.outputs.find((s) => s.name === name)?.linkIds?.length ?? 0
+      }
+      return 0
+    },
+    [direction, slotName] as const
+  )
+}
+
+async function getKSamplerInputName(
+  page: Page,
+  nodeId: NodeId,
+  slotIndex: number
+): Promise<string | null> {
+  return await page.evaluate(
+    ([id, idx]) => {
+      const graph = window.app!.canvas.graph!
+      return graph.getNodeById(id)?.inputs?.[idx]?.name ?? null
+    },
+    [nodeId, slotIndex] as const
+  )
 }
 
 async function connectSlots(
@@ -1130,6 +1173,126 @@ test.describe(
       // Verify connection went to the correct slot
       await expect.poll(() => positiveInput.getLinkCount()).toBe(1)
       await expect.poll(() => negativeInput.getLinkCount()).toBe(0)
+    })
+
+    test('Dropping a link onto an existing subgraph output slot connects it', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      const ksamplerNode = await enterBasicSubgraphWithKSampler(comfyPage)
+      const ksamplerLatentOutputCenter = await getSlotCenter(
+        comfyPage.page,
+        ksamplerNode.id,
+        0,
+        false
+      )
+      const slotPos = await comfyPage.subgraph
+        .getOutputSlot('LATENT')
+        .getPosition()
+      const outputCountBefore = await comfyPage.subgraph.getSlotCount('output')
+
+      await comfyMouse.move(ksamplerLatentOutputCenter)
+      await comfyMouse.drag(slotPos)
+      await comfyMouse.drop()
+
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('output'))
+        .toBe(outputCountBefore)
+      await expect
+        .poll(() =>
+          getSubgraphSlotLinkCount(comfyPage.page, 'output', 'LATENT')
+        )
+        .toBe(1)
+    })
+
+    test('Dropping a link onto the empty subgraph output slot creates a new slot', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      const ksamplerNode = await enterBasicSubgraphWithKSampler(comfyPage)
+      const ksamplerLatentOutputCenter = await getSlotCenter(
+        comfyPage.page,
+        ksamplerNode.id,
+        0,
+        false
+      )
+      const emptyOutputPos = await comfyPage.subgraph
+        .getOutputSlot()
+        .getOpenSlotPosition()
+      const outputCountBefore = await comfyPage.subgraph.getSlotCount('output')
+
+      await comfyMouse.move(ksamplerLatentOutputCenter)
+      await comfyMouse.drag(emptyOutputPos)
+      await comfyMouse.drop()
+
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('output'))
+        .toBe(outputCountBefore + 1)
+    })
+
+    test('Dropping a link onto an existing subgraph input slot connects it', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      const ksamplerNode = await enterBasicSubgraphWithKSampler(comfyPage)
+      // Sanity-check the workflow asset's slot ordering before relying on it.
+      // The 'negative' input must be unconnected so the new link is observable
+      // on the 'positive' boundary slot.
+      expect(
+        await getKSamplerInputName(comfyPage.page, ksamplerNode.id, 2)
+      ).toBe('negative')
+      const ksamplerNegativeCenter = await getSlotCenter(
+        comfyPage.page,
+        ksamplerNode.id,
+        2,
+        true
+      )
+      const positiveInputPos = await comfyPage.subgraph
+        .getInputSlot('positive')
+        .getPosition()
+      const positiveLinkCountBefore = await getSubgraphSlotLinkCount(
+        comfyPage.page,
+        'input',
+        'positive'
+      )
+
+      await comfyMouse.move(ksamplerNegativeCenter)
+      await comfyMouse.drag(positiveInputPos)
+      await comfyMouse.drop()
+
+      await expect
+        .poll(() =>
+          getSubgraphSlotLinkCount(comfyPage.page, 'input', 'positive')
+        )
+        .toBe(positiveLinkCountBefore + 1)
+    })
+
+    test('Dropping a link onto the empty subgraph input slot creates a new slot', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      const ksamplerNode = await enterBasicSubgraphWithKSampler(comfyPage)
+      expect(
+        await getKSamplerInputName(comfyPage.page, ksamplerNode.id, 2)
+      ).toBe('negative')
+      const ksamplerNegativeCenter = await getSlotCenter(
+        comfyPage.page,
+        ksamplerNode.id,
+        2,
+        true
+      )
+      const emptyInputPos = await comfyPage.subgraph
+        .getInputSlot()
+        .getOpenSlotPosition()
+      const inputCountBefore = await comfyPage.subgraph.getSlotCount('input')
+
+      await comfyMouse.move(ksamplerNegativeCenter)
+      await comfyMouse.drag(emptyInputPos)
+      await comfyMouse.drop()
+
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('input'))
+        .toBe(inputCountBefore + 1)
     })
   }
 )
