@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "إنشاء فيديو من صورة الإطار الأول باستخدام نموذج HappyHorse.",
+    "display_name": "HappyHorse تحويل صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول. يتم اشتقاق نسبة العرض إلى الارتفاع من هذه الصورة."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "إنشاء فيديو يعرض شخصًا أو كائنًا من مواد مرجعية باستخدام نموذج HappyHorse. يدعم أداء شخصية واحدة وتفاعل عدة شخصيات.",
+    "display_name": "HappyHorse تحويل مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "إنشاء فيديو بناءً على موجه نصي باستخدام نموذج HappyHorse.",
+    "display_name": "HappyHorse تحويل نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "تحرير فيديو باستخدام تعليمات نصية أو صور مرجعية مع نموذج HappyHorse. مدة الإخراج من ٣ إلى ١٥ ثانية وتطابق الفيديو المدخل؛ يتم اقتطاع المدخلات التي تتجاوز ١٥ ثانية.",
+    "display_name": "HappyHorse تحرير فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المراد تحريره."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "تكبير الصور منخفضة الدقة إلى دقة فائقة، إزالة الشوائب والضوضاء. الحد الأقصى للإخراج: ٣٢ ميغابيكسل.",
     "display_name": "تحسين الصورة العام من HitPaw",
@@ -11685,6 +11835,14 @@
       "control_after_generate": {
         "name": "التحكم بعد الإنشاء"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "يُستخدم فقط عندما تكون القيمة 'مخصص'. يجب أن يكون من مضاعفات ١٦ (GPT Image 2 فقط)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "يُستخدم فقط عندما تكون القيمة 'مخصص'. يجب أن يكون من مضاعفات ١٦ (GPT Image 2 فقط)."
+      },
       "image": {
         "name": "الصورة",
         "tooltip": "صورة مرجعية اختيارية لتحرير الصور."
@@ -13883,6 +14041,127 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_Detect": {
+    "display_name": "SAM3 كشف",
+    "inputs": {
+      "bboxes": {
+        "name": "مربعات الإحاطة",
+        "tooltip": "مربعات الإحاطة للتقسيم ضمنها"
+      },
+      "conditioning": {
+        "name": "التهيئة",
+        "tooltip": "تهيئة نصية من CLIPTextEncode"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "individual_masks": {
+        "name": "أقنعة فردية",
+        "tooltip": "إخراج أقنعة لكل كائن بدلاً من الاتحاد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "negative_coords": {
+        "name": "إحداثيات سلبية",
+        "tooltip": "مطالبات نقاط سلبية بصيغة JSON [{\"x\": int, \"y\": int}, ...] (إحداثيات بكسل)"
+      },
+      "positive_coords": {
+        "name": "إحداثيات إيجابية",
+        "tooltip": "مطالبات نقاط إيجابية بصيغة JSON [{\"x\": int, \"y\": int}, ...] (إحداثيات بكسل)"
+      },
+      "refine_iterations": {
+        "name": "تكرارات التحسين",
+        "tooltip": "تمريرات تحسين مفكك ترميز SAM (٠=استخدام أقنعة الكاشف الخام)"
+      },
+      "threshold": {
+        "name": "العَتَبة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الأقنعة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "مربعات الإحاطة",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "معاينة تتبع SAM3",
+    "inputs": {
+      "fps": {
+        "name": "الإطارات في الثانية"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "opacity": {
+        "name": "الشفافية"
+      },
+      "track_data": {
+        "name": "بيانات التتبع"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "تتبع SAM3 إلى قناع",
+    "inputs": {
+      "object_indices": {
+        "name": "مؤشرات الكائنات",
+        "tooltip": "مؤشرات الكائنات مفصولة بفواصل (مثال: '0,2,3'). فارغ = جميع الكائنات."
+      },
+      "track_data": {
+        "name": "بيانات التتبع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الأقنعة",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "تتبع فيديو SAM3",
+    "inputs": {
+      "conditioning": {
+        "name": "التهيئة",
+        "tooltip": "تهيئة نصية لاكتشاف كائنات جديدة أثناء التتبع"
+      },
+      "detect_interval": {
+        "name": "فاصل الكشف",
+        "tooltip": "تشغيل الكشف كل N إطار (١=كل إطار). القيم الأعلى توفر في الحساب."
+      },
+      "detection_threshold": {
+        "name": "عَتَبة الكشف",
+        "tooltip": "عَتَبة النتيجة للكشف بناءً على النص"
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "إطارات الفيديو كصور مجمعة"
+      },
+      "initial_mask": {
+        "name": "القناع الأولي",
+        "tooltip": "قناع(أقنعة) للإطار الأول للتتبع (واحد لكل كائن)"
+      },
+      "max_objects": {
+        "name": "أقصى عدد للكائنات",
+        "tooltip": "أقصى عدد للكائنات المتتبعة (٠=غير محدود). الأقنعة الأولية تُحتسب ضمن هذا الحد."
+      },
+      "model": {
+        "name": "النموذج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "بيانات التتبع",
         "tooltip": null
       }
     }

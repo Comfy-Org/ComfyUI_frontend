@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update-screenshots:
@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      issues: write
       pull-requests: read
     # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
     # ⚠️ This condition is duplicated on `post-starting-comment` — keep them in sync.
@@ -86,6 +87,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build website
+        env:
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
         run: pnpm --filter @comfyorg/website build
 
       - name: Update screenshots
@@ -137,7 +140,10 @@ jobs:
                 name: 'Update Website Screenshots'
               })
             } catch (e) {
-              // Label may already be removed
+              if (e.status !== 404) {
+                throw e
+              }
+              core.info('Label "Update Website Screenshots" was already removed')
             }
 
   post-starting-comment:

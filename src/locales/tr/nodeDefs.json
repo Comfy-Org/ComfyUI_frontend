@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "HappyHorse modeliyle ilk kare görüntüsünden bir video oluşturun.",
+    "display_name": "HappyHorse Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "first_frame": {
+        "name": "ilk_kare",
+        "tooltip": "İlk kare görüntüsü. Çıktı en-boy oranı bu görüntüden alınır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "HappyHorse modeliyle referans materyallerden bir kişi veya nesne içeren video oluşturun. Tek karakter performanslarını ve çok karakterli etkileşimleri destekler.",
+    "display_name": "HappyHorse Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "HappyHorse modeliyle metin istemine dayalı bir video oluşturur.",
+    "display_name": "HappyHorse Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "HappyHorse modeliyle metin talimatları veya referans görüntüler kullanarak bir videoyu düzenleyin. Çıktı süresi 3-15 saniyedir ve giriş videosuyla eşleşir; 15 saniyeden uzun girişler kısaltılır.",
+    "display_name": "HappyHorse Video Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek video."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Düşük çözünürlüklü görüntüleri süper çözünürlüğe yükseltin, bozulmaları ve gürültüyü ortadan kaldırın. Maksimum çıktı: 32 megapiksel.",
     "display_name": "HitPaw Genel Görüntü İyileştirme",
@@ -11685,6 +11835,14 @@
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
+      "custom_height": {
+        "name": "özel_yükseklik",
+        "tooltip": "`boyut` 'Özel' olarak ayarlandığında kullanılır. Yalnızca 16'nın katı olmalıdır (yalnızca GPT Image 2 için)."
+      },
+      "custom_width": {
+        "name": "özel_genişlik",
+        "tooltip": "`boyut` 'Özel' olarak ayarlandığında kullanılır. Yalnızca 16'nın katı olmalıdır (yalnızca GPT Image 2 için)."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Görüntü düzenleme için isteğe bağlı referans görüntü."
@@ -13883,6 +14041,127 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Tespit",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "İçinde segmentasyon yapılacak sınırlayıcı kutular"
+      },
+      "conditioning": {
+        "name": "koşullandırma",
+        "tooltip": "CLIPTextEncode'dan metin koşullandırması"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "individual_masks": {
+        "name": "bireysel_maskeler",
+        "tooltip": "Birleşim yerine nesne başına maske çıktısı"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negatif_koordinatlar",
+        "tooltip": "JSON olarak negatif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+      },
+      "positive_coords": {
+        "name": "pozitif_koordinatlar",
+        "tooltip": "JSON olarak pozitif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+      },
+      "refine_iterations": {
+        "name": "iyileştirme_iterasyonları",
+        "tooltip": "SAM kod çözücü iyileştirme geçişleri (0=ham dedektör maskelerini kullan)"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 İz Önizleme",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "görüntüler"
+      },
+      "opacity": {
+        "name": "opaklık"
+      },
+      "track_data": {
+        "name": "iz_verisi"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 İzden Maskeye",
+    "inputs": {
+      "object_indices": {
+        "name": "nesne_indeksleri",
+        "tooltip": "Dahil edilecek nesne indeksleri virgülle ayrılmış şekilde (örn. '0,2,3'). Boş = tüm nesneler."
+      },
+      "track_data": {
+        "name": "iz_verisi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video İzleme",
+    "inputs": {
+      "conditioning": {
+        "name": "koşullandırma",
+        "tooltip": "İzleme sırasında yeni nesneleri tespit etmek için metin koşullandırması"
+      },
+      "detect_interval": {
+        "name": "tespit_aralığı",
+        "tooltip": "Her N karede bir tespit çalıştır (1=her karede). Daha yüksek değerler işlem tasarrufu sağlar."
+      },
+      "detection_threshold": {
+        "name": "tespit_eşiği",
+        "tooltip": "Metin istemli tespit için skor eşiği"
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Toplu görüntüler olarak video kareleri"
+      },
+      "initial_mask": {
+        "name": "ilk_maske",
+        "tooltip": "İlk kare için izlenecek maske(ler) (her nesne için bir tane)"
+      },
+      "max_objects": {
+        "name": "maks_nesne",
+        "tooltip": "Maksimum izlenen nesne (0=sınırsız). İlk maskeler bu sınıra dahildir."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iz_verisi",
         "tooltip": null
       }
     }
