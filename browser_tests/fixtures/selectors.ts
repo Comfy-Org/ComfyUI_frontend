@@ -99,14 +99,16 @@ export const TestIds = {
     errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
-    toggle: 'subgraph-editor-toggle',
-    shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
-    widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label',
-    iconLink: 'icon-link',
     iconEye: 'icon-eye',
-    widgetActionsMenuButton: 'widget-actions-menu-button'
+    iconLink: 'icon-link',
+    nodeName: 'subgraph-widget-node-name',
+    shownSection: 'subgraph-editor-shown-section',
+    toggle: 'subgraph-editor-toggle',
+    widgetActionsMenuButton: 'widget-actions-menu-button',
+    widgetItem: 'subgraph-widget-item',
+    widgetLabel: 'subgraph-widget-label',
+    widgetToggle: 'subgraph-widget-toggle'
   },
   node: {
     titleInput: 'node-title-input',
