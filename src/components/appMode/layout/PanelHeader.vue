@@ -19,9 +19,9 @@ const {
   dragging?: boolean
   collapsible?: boolean
   menuEntries: MenuItem[]
-  /** Required so icon-only buttons always have accessible names. */
-  expandLabel: string
-  collapseLabel: string
+  /** Required when `collapsible` is true so icon-only buttons have accessible names. */
+  expandLabel?: string
+  collapseLabel?: string
   menuLabel: string
 }>()
 
@@ -72,6 +72,8 @@ const CONTROL_CLASS =
       />
     </button>
 
+    <slot name="leading" />
+
     <span
       v-if="title"
       class="truncate text-layout-md font-semibold text-layout-text"
@@ -82,6 +84,7 @@ const CONTROL_CLASS =
     <slot name="actions" />
 
     <Popover
+      v-if="menuEntries.length > 0"
       :entries="menuEntries"
       :show-arrow="false"
       to="body"

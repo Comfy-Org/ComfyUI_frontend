@@ -85,25 +85,44 @@ const dashboardInsets = computed(() => {
   }
 })
 
-watchEffect(
+// Quantize the panel rect to cell-grid buckets so a panel drag
+// only triggers a relayout when it crosses a cell boundary.
+// useElementBounding fires on every pixel of movement; without
+// this, every mousemove during a panel drag re-runs the dashboard
+// packer + re-renders every output window — looks like a freeze.
+const CHROME_STEP_PX = 56
+const dashboardInsetsKey = computed(() => {
+  const pr = dashboardInsets.value.panelRect
+  if (!pr) return 'no-panel'
+  const pStart = Math.round(pr.x / CHROME_STEP_PX)
+  const pEnd = Math.round((pr.x + pr.w) / CHROME_STEP_PX)
+  return `${pStart},${pEnd}`
+})
+
+watch(
+  [
+    () => windowStore.windows.length,
+    () => windowStore.windows.map((w) => w.aspect ?? 0).join(','),
+    layoutW,
+    layoutH,
+    dashboardInsetsKey,
+    noZoomMode
+  ],
   () => {
-    // Read every reactive dep up front so the effect re-fires on a
-    // mode toggle even when it bailed early last time. (If we
-    // checked noZoomMode first and short-circuited, layoutW /
-    // dashboardInsets / aspects wouldn't be tracked, and toggling
-    // back into dashboard mode would silently miss the relayout.)
-    const count = windowStore.windows.length
-    void windowStore.windows.map((w) => w.aspect)
-    const lw = layoutW.value
-    const lh = layoutH.value
-    const insets = dashboardInsets.value
     if (!noZoomMode.value) return
-    if (count === 0 || lw <= 0 || lh <= 0) return
-    windowStore.relayoutDashboard(lw, lh, insets)
+    const count = windowStore.windows.length
+    if (count === 0 || layoutW.value <= 0 || layoutH.value <= 0) return
+    // Pass the full pixel-accurate insets so boundary-snap math
+    // still aligns to the panel's actual edge.
+    windowStore.relayoutDashboard(
+      layoutW.value,
+      layoutH.value,
+      dashboardInsets.value
+    )
   },
   // sync flush: re-flow runs in the same tick as the spawn, so the
   // new tile renders directly at its dashboard slot.
-  { flush: 'sync' }
+  { flush: 'sync', immediate: true }
 )
 
 function handleWheel(e: WheelEvent) {
@@ -186,12 +205,18 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
     <AppChrome variant="app-mode" />
 
     <!-- `appear` for cold-start only; preset/collapse changes bypass. -->
+    <!-- TODO: dragging the panel in no-zoom mode crashes the app
+         (some interaction between the panel preset transition,
+         useElementBounding, and the dashboard relayout). Movement
+         in no-zoom is disabled until that's fixed; in zoom mode
+         dragging works. Should be re-enabled once the dashboard
+         layout can absorb a panel side-switch cleanly. -->
     <Transition name="panel-enter" appear>
       <FloatingPanel
         v-model:preset="panelPreset"
         v-model:collapsed="panelCollapsed"
         :title="panelTitle"
-        movable
+        :movable="!noZoomMode"
       >
         <PanelBlockList
           :rows="panelRows"

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -22,7 +21,7 @@ import OutputWindow from './OutputWindow.vue'
 
 const { t } = useI18n()
 const windowStore = useOutputWindowStore()
-const { sortedWindows, windows } = storeToRefs(windowStore)
+const { sortedWindows } = storeToRefs(windowStore)
 const appModeStore = useAppModeStore()
 const { noZoomMode } = storeToRefs(appModeStore)
 const commandStore = useCommandStore()
@@ -154,24 +153,11 @@ async function reuseParams(entry: OutputWindowEntry): Promise<void> {
   }
 }
 
-function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
-  const entries: MenuItem[] = [
-    {
-      icon: 'icon-[lucide--x] size-[18px]',
-      label: t('linearMode.outputs.closeWindow'),
-      command: () => windowStore.remove(entry.id)
-    }
-  ]
-  if (windows.value.length > 1) {
-    entries.push({ separator: true })
-    entries.push({
-      icon: 'icon-[lucide--trash-2] size-[18px]',
-      label: t('linearMode.outputs.clearAll'),
-      command: () => windowStore.clear()
-    })
-  }
-  return entries
-}
+// TODO: "Clear all output windows" used to live in a per-tile ⋯ menu
+// alongside "Close window". The ⋯ menu is gone now (closing one tile
+// is a single-click ✕ in the header). Resurface clear-all somewhere
+// chrome-level — likely the bottom corner cluster or the App-mode
+// settings menu — instead of duplicating it on every tile.
 </script>
 
 <template>
@@ -179,7 +165,6 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     v-for="entry in sortedWindows"
     :key="entry.id"
     :title="filenameFor(entry)"
-    :menu-entries="menuEntriesFor(entry)"
     :initial-position="entry.position"
     :initial-width="entry.width"
     :initial-height="entry.height"
@@ -189,7 +174,7 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
     @update:size="(size) => windowStore.resize(entry.id, size)"
     @promote="windowStore.promote(entry.id)"
   >
-    <template #header-actions-right>
+    <template #header-actions-left>
       <button
         v-if="entry.output"
         type="button"
@@ -201,6 +186,19 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
         @click="downloadOutput(entry)"
       >
         <i class="icon-[lucide--download]" />
+      </button>
+    </template>
+    <template #header-actions-right>
+      <button
+        type="button"
+        data-header-control
+        :class="HEADER_ACTION_CLASS"
+        :title="t('linearMode.outputs.closeWindow')"
+        :aria-label="t('linearMode.outputs.closeWindow')"
+        @pointerdown.stop
+        @click="windowStore.remove(entry.id)"
+      >
+        <i class="icon-[lucide--x]" />
       </button>
     </template>
 

@@ -19,6 +19,7 @@ import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
+import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -27,6 +28,7 @@ import { useQueueStore } from '@/stores/queueStore'
 type ChromeCellKind =
   | 'system-mode-toggle'
   | 'system-builder'
+  | 'system-clear-outputs'
   | 'system-share'
   | 'system-feedback'
   | 'system-batch-count'
@@ -107,6 +109,13 @@ const queueStore = useQueueStore()
 const { activeJobsCount } = storeToRefs(queueStore)
 const showJobQueue = computed(() => activeJobsCount.value > 0)
 
+// Clear-all is workspace-scoped (was per-tile in the old ⋯ menu, but
+// scope mismatch — closing one window vs closing all). Hidden when
+// there's nothing to clear so the cluster doesn't carry a dead icon.
+const outputWindowStore = useOutputWindowStore()
+const { windows: outputWindows } = storeToRefs(outputWindowStore)
+const showClearOutputs = computed(() => outputWindows.value.length > 0)
+
 function openShare() {
   openShareDialog().catch(toastErrorHandler)
 }
@@ -135,6 +144,11 @@ const topLeftCells = computed<ChromeCell[]>(() => {
   include(out, { id: 'mode-toggle', kind: 'system-mode-toggle', span: 2 })
   if (enableAppBuilder.value) {
     include(out, { id: 'builder', kind: 'system-builder', span: 1 })
+  }
+  // Conditional cell goes rightmost in this left-anchored cluster so
+  // appearing/disappearing doesn't shift mode-toggle's position.
+  if (showClearOutputs.value && variant !== 'builder') {
+    include(out, { id: 'clear-outputs', kind: 'system-clear-outputs', span: 1 })
   }
   return out
 })
@@ -232,6 +246,12 @@ function cellClass(cell: ChromeCell): string {
           :label="t('linearMode.appModeToolbar.appBuilder')"
           :disabled="!hasNodes"
           @activate="enterBuilder"
+        />
+        <IconCell
+          v-else-if="cell.kind === 'system-clear-outputs'"
+          icon="icon-[lucide--trash-2]"
+          :label="t('linearMode.outputs.clearAll')"
+          @activate="outputWindowStore.clear"
         />
         <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
       </div>

@@ -44,11 +44,17 @@ const emit = defineEmits<{
 
 const userSized = computed(() => initialWidth != null || initialHeight != null)
 
-const collapsed = ref(false)
+// TODO: maximize-to-workspace is buggy — UI removed but state +
+// toggle handler kept so we can re-add the menu entry once fixed:
+//   { icon: 'icon-[lucide--maximize] size-[18px]',
+//     label: t('linearMode.outputs.maximize'),
+//     command: _toggleMaximized }
+// (rename back to `toggleMaximized` when re-wired.)
 const maximized = ref(false)
-function toggleMaximized() {
+function _toggleMaximized() {
   maximized.value = !maximized.value
 }
+void _toggleMaximized
 
 const appModeStore = useAppModeStore()
 const { viewportScale, noZoomMode } = storeToRefs(appModeStore)
@@ -268,22 +274,6 @@ const showHeader = computed(() => {
     ww.value >= HEADERLESS_THRESHOLD_W && wh.value >= HEADERLESS_THRESHOLD_H
   )
 })
-
-const combinedMenuEntries = computed<MenuItem[]>(() => {
-  const own: MenuItem[] = [
-    {
-      icon: maximized.value
-        ? 'icon-[lucide--minimize] size-[18px]'
-        : 'icon-[lucide--maximize] size-[18px]',
-      label: maximized.value
-        ? t('linearMode.outputs.restore')
-        : t('linearMode.outputs.maximize'),
-      command: toggleMaximized
-    }
-  ]
-  if (menuEntries.length === 0) return own
-  return [...own, { separator: true }, ...menuEntries]
-})
 </script>
 
 <template>
@@ -298,33 +288,28 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
             transform: `translate3d(${wx}px, ${wy}px, 0)`,
             width: `${ww}px`,
             zIndex: zIndex ?? 30,
-            ...(collapsed
-              ? {}
-              : userSized || bodyAspect == null
-                ? { height: `${wh}px` }
-                : {})
+            ...(userSized || bodyAspect == null ? { height: `${wh}px` } : {})
           }
     "
   >
     <PanelHeader
       v-if="showHeader"
-      v-model:collapsed="collapsed"
       :title="title || t('linearMode.outputs.title')"
       :draggable="!maximized"
       :dragging="dragging"
-      :collapsible="!maximized"
-      :menu-entries="combinedMenuEntries"
-      :collapse-label="t('linearMode.floatingPanel.collapse')"
-      :expand-label="t('linearMode.floatingPanel.expand')"
+      :collapsible="false"
+      :menu-entries="menuEntries"
       :menu-label="t('linearMode.floatingPanel.menu')"
       @pointerdown="handleHeaderPointerDown"
     >
+      <template #leading>
+        <slot name="header-actions-left" />
+      </template>
       <template #actions>
         <slot name="header-actions-right" />
       </template>
     </PanelHeader>
     <div
-      v-show="!collapsed"
       class="group/output relative flex min-h-0 flex-1 flex-col overflow-hidden"
     >
       <!-- bodyAspect drives auto-fit only when the user hasn't resized. -->
@@ -353,7 +338,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
       </div>
     </div>
     <!-- Resize hit-zones — corners (z-40) stack above edges (z-30). -->
-    <template v-if="!maximized && !collapsed">
+    <template v-if="!maximized">
       <div
         data-resize-dir="n"
         class="absolute inset-x-3 -top-1 z-30 h-1.5 cursor-n-resize"
