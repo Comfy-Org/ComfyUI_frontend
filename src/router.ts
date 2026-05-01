@@ -17,6 +17,7 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { buildCloudLoginRedirectQuery } from '@/platform/cloud/onboarding/utils/attributionRedirectQuery'
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
@@ -177,10 +178,7 @@ if (isCloud) {
       return next()
     }
 
-    const query =
-      to.fullPath === '/'
-        ? undefined
-        : { previousFullPath: encodeURIComponent(to.fullPath) }
+    const query = buildCloudLoginRedirectQuery(to.fullPath, to.query)
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
