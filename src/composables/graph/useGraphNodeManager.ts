@@ -647,6 +647,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
+    // Ensure refs are cleared if node:before-removed didn't fire
+    handleBeforeNodeRemoved(node)
     const id = String(node.id)
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
