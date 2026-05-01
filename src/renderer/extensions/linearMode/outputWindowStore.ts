@@ -120,15 +120,21 @@ function dashboardSlots(
 
 // Bento: pack N tiles to fill availW × availH exactly. We pick the
 // slicing-tree topology whose natural aspect (under image-aspect-
-// preserving fitting) is closest to the canvas aspect, then stretch
-// anisotropically to fill the canvas. Bodies absorb the stretch as
-// non-image aspect; the image renders with object-fit: cover so it
-// fills the body and crops edges (no letterbox, no distortion).
+// preserving fitting) is closest to the canvas aspect, then lay it
+// out asymmetrically: the largest leaf in that topology stays at its
+// natural aspect (no crop), and every other subtree absorbs the
+// stretch needed to fill the canvas. The image renders with
+// object-fit: cover so stretched bodies crop their edges instead of
+// distorting.
+//
+// Slot 0 (newest) is always assigned to the largest tile so the
+// uncropped tile is the freshest output; slots 1..N−1 fill the
+// remaining tiles in descending area.
 //
 // For small N (≤ FULL_TREE_MAX_LEAVES) we enumerate every binary
 // tree shape × V/H cut assignment for fixed leaf order [0..N−1] and
 // pick the one with the smallest stretch deviation. For larger N we
-// fall back to the feature@availH + uniform grid heuristic.
+// fall back to feature@availH + uniform grid (uniform stretch).
 const FULL_TREE_MAX_LEAVES = 7
 
 function bentoAspectRects(
@@ -148,38 +154,56 @@ function bentoAspectRects(
   }
   const h = TILE_HEADER_PX
 
-  let layout: Rect[] | null = null
   if (N <= FULL_TREE_MAX_LEAVES) {
-    layout = bestSliceTreeForFill(aspectArr, availW, availH, h, gutter)
+    const best = bestSliceTreeForFill(aspectArr, availW, availH, h, gutter)
+    if (best) {
+      const tiles = layoutTreeFeatureNatural(
+        best.tree,
+        0,
+        0,
+        availW,
+        availH,
+        aspectArr,
+        h,
+        gutter,
+        best.featureLeafIdx
+      )
+      // Slot order = tile area descending, ties broken by tree leaf
+      // index. Slot 0 lands on the unstretched feature.
+      tiles.sort((a, b) => b.w * b.h - a.w * a.h || a.idx - b.idx)
+      return tiles.map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h }))
+    }
   }
-  if (!layout) {
-    // N > FULL_TREE_MAX_LEAVES: feature + uniform-grid stack.
-    layout = layoutGridCandidate(
-      N - 1,
-      aspectArr[0],
-      aspectArr.slice(1),
-      availW,
-      availH,
-      h,
-      gutter
-    )
-  }
-  if (!layout) return [{ x: 0, y: 0, w: availW, h: availH }]
 
-  return stretchToFill(layout, availW, availH)
+  const grid = layoutGridCandidate(
+    N - 1,
+    aspectArr[0],
+    aspectArr.slice(1),
+    availW,
+    availH,
+    h,
+    gutter
+  )
+  if (!grid) return [{ x: 0, y: 0, w: availW, h: availH }]
+  return stretchToFill(grid, availW, availH)
 }
 
 // Enumerate every slicing tree for the given leaves (fixed order),
 // score by 1D stretch deviation needed to fill canvas, return the
-// aspect-preserving rects of the best tree (pre-stretch).
+// best tree along with which leaf index ends up largest under the
+// aspect-preserving fit (= the "feature" we'll keep unstretched).
 function bestSliceTreeForFill(
   aspects: number[],
   availW: number,
   availH: number,
   h: number,
   g: number
-): Rect[] | null {
-  let best: { rects: Rect[]; deviation: number } | null = null
+): { tree: SliceTree; featureLeafIdx: number } | null {
+  let best: {
+    tree: SliceTree
+    featureLeafIdx: number
+    deviation: number
+  } | null = null
   const leafIdxs = Array.from({ length: aspects.length }, (_, i) => i)
 
   for (const tree of enumerateTrees(leafIdxs)) {
@@ -200,31 +224,211 @@ function bestSliceTreeForFill(
     const sx = availW / w
     const sy = availH / totH
     const deviation = Math.max(sx, sy) / Math.min(sx, sy) - 1
+    if (best && deviation >= best.deviation) continue
 
-    if (!best || deviation < best.deviation) {
-      const tiles = layoutTreeInBox(tree, 0, 0, w, totH, aspects, h, g)
-      let valid = true
-      for (const t of tiles) {
-        if (t.w <= 0 || t.h <= 0) {
-          valid = false
-          break
-        }
+    const tiles = layoutTreeInBox(tree, 0, 0, w, totH, aspects, h, g)
+    let valid = true
+    let featureIdx = tiles[0].idx
+    let maxArea = tiles[0].w * tiles[0].h
+    for (const t of tiles) {
+      if (t.w <= 0 || t.h <= 0) {
+        valid = false
+        break
       }
-      if (!valid) continue
-      const rects: Rect[] = new Array(aspects.length)
-      for (const t of tiles) {
-        rects[t.idx] = { x: t.x, y: t.y, w: t.w, h: t.h }
+      const a = t.w * t.h
+      if (a > maxArea) {
+        maxArea = a
+        featureIdx = t.idx
       }
-      best = { rects, deviation }
     }
+    if (!valid) continue
+    best = { tree, featureLeafIdx: featureIdx, deviation }
   }
-  return best?.rects ?? null
+  return best && { tree: best.tree, featureLeafIdx: best.featureLeafIdx }
+}
+
+// Lay out `tree` inside (x, y, w, h) with the subtree containing
+// `featureLeafIdx` at its aspect-preserving size and the sibling
+// subtree stretched anisotropically to fill the remaining space.
+// Recurses into the feature subtree so the same rule applies all
+// the way down: only the path from root to the feature leaf is
+// natural; everything else picks up the slack via cover-fit crop.
+function layoutTreeFeatureNatural(
+  tree: SliceTree,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  aspects: number[],
+  header: number,
+  g: number,
+  featureLeafIdx: number
+): IndexedRect[] {
+  if (tree.type === 'leaf') {
+    return [{ idx: tree.leafIdx, x, y, w, h }]
+  }
+
+  const featureInLeft = treeContains(tree.left, featureLeafIdx)
+
+  if (tree.type === 'V') {
+    // Subtrees share total height = h; widths add (with gutter).
+    const featSide = featureInLeft ? tree.left : tree.right
+    const featShape = treeShape(featSide, aspects, header, g)
+    const wFeat = (h - featShape.d) / featShape.c
+    if (!Number.isFinite(wFeat) || wFeat <= 0 || wFeat + g >= w) {
+      // Feature subtree can't fit alongside its sibling; fall back to
+      // uniform stretch of the whole subtree.
+      return layoutSubtreeStretchedToBox(tree, x, y, w, h, aspects, header, g)
+    }
+    const wOther = w - wFeat - g
+    if (featureInLeft) {
+      return [
+        ...layoutTreeFeatureNatural(
+          tree.left,
+          x,
+          y,
+          wFeat,
+          h,
+          aspects,
+          header,
+          g,
+          featureLeafIdx
+        ),
+        ...layoutSubtreeStretchedToBox(
+          tree.right,
+          x + wFeat + g,
+          y,
+          wOther,
+          h,
+          aspects,
+          header,
+          g
+        )
+      ]
+    }
+    return [
+      ...layoutSubtreeStretchedToBox(
+        tree.left,
+        x,
+        y,
+        wOther,
+        h,
+        aspects,
+        header,
+        g
+      ),
+      ...layoutTreeFeatureNatural(
+        tree.right,
+        x + wOther + g,
+        y,
+        wFeat,
+        h,
+        aspects,
+        header,
+        g,
+        featureLeafIdx
+      )
+    ]
+  }
+
+  // H-cut: subtrees share width = w; heights add.
+  const featSide = featureInLeft ? tree.left : tree.right
+  const featShape = treeShape(featSide, aspects, header, g)
+  const hFeat = featShape.c * w + featShape.d
+  if (!Number.isFinite(hFeat) || hFeat <= 0 || hFeat + g >= h) {
+    return layoutSubtreeStretchedToBox(tree, x, y, w, h, aspects, header, g)
+  }
+  const hOther = h - hFeat - g
+  if (featureInLeft) {
+    return [
+      ...layoutTreeFeatureNatural(
+        tree.left,
+        x,
+        y,
+        w,
+        hFeat,
+        aspects,
+        header,
+        g,
+        featureLeafIdx
+      ),
+      ...layoutSubtreeStretchedToBox(
+        tree.right,
+        x,
+        y + hFeat + g,
+        w,
+        hOther,
+        aspects,
+        header,
+        g
+      )
+    ]
+  }
+  return [
+    ...layoutSubtreeStretchedToBox(
+      tree.left,
+      x,
+      y,
+      w,
+      hOther,
+      aspects,
+      header,
+      g
+    ),
+    ...layoutTreeFeatureNatural(
+      tree.right,
+      x,
+      y + hOther + g,
+      w,
+      hFeat,
+      aspects,
+      header,
+      g,
+      featureLeafIdx
+    )
+  ]
+}
+
+// Lay out subtree aspect-preserving into the largest box that fits
+// in (w, h), then anisotropically stretch each tile so the subtree
+// fills (w, h) exactly. Used for the non-feature side of every cut.
+function layoutSubtreeStretchedToBox(
+  tree: SliceTree,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  aspects: number[],
+  header: number,
+  g: number
+): IndexedRect[] {
+  const shape = treeShape(tree, aspects, header, g)
+  let natW = w
+  let natH = shape.c * natW + shape.d
+  if (natH > h) {
+    natH = h
+    natW = (natH - shape.d) / shape.c
+  }
+  if (natW <= 0 || natH <= 0) return []
+  const natTiles = layoutTreeInBox(tree, 0, 0, natW, natH, aspects, header, g)
+  const sx = w / natW
+  const sy = h / natH
+  return natTiles.map((t) => ({
+    idx: t.idx,
+    x: x + t.x * sx,
+    y: y + t.y * sy,
+    w: t.w * sx,
+    h: t.h * sy
+  }))
+}
+
+function treeContains(tree: SliceTree, leafIdx: number): boolean {
+  if (tree.type === 'leaf') return tree.leafIdx === leafIdx
+  return treeContains(tree.left, leafIdx) || treeContains(tree.right, leafIdx)
 }
 
 // Anisotropically scale rects so the bounding box fills exactly
-// (availW, availH). Gutters scale with everything; for the small
-// stretch factors picked by bestSliceTreeForFill (typically <1.3×),
-// the gutter widening is imperceptible.
+// (availW, availH). Used by the N>7 fallback path.
 function stretchToFill(rects: Rect[], availW: number, availH: number): Rect[] {
   if (rects.length === 0) return rects
   let layoutW = 0
