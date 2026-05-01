@@ -60,12 +60,14 @@ function cancelRename() {
     <!-- px-1.5 matches widget text inset so label aligns with input. -->
     <div class="flex min-h-4 shrink-0 items-center gap-1 px-1.5">
       <!-- Builder variant: dblclick-to-rename. app-mode: plain span. -->
+      <!-- Label and subtitle share font-size + weight; hierarchy is
+           by color (text vs mute), not by type scale. -->
       <EditableText
         :model-value="entry.widget.label || entry.widget.name"
         :is-editing="isEditingLabel"
         :class="
           cn(
-            'min-w-0 truncate text-layout-md text-layout-text',
+            'min-w-0 truncate text-layout-md font-medium text-layout-text',
             variant === 'builder' && 'cursor-text'
           )
         "
@@ -75,7 +77,9 @@ function cancelRename() {
         @cancel="cancelRename"
       />
       <!-- Type/semantic descriptor (text, number, size, seed, list, …). -->
-      <span class="flex-1 truncate text-right text-layout-md text-layout-mute">
+      <span
+        class="flex-1 truncate text-right text-layout-md font-medium text-layout-mute"
+      >
         {{ entry.subtitle }}
       </span>
     </div>

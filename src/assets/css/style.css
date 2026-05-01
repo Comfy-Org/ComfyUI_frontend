@@ -34,6 +34,13 @@
   padding-right: 6px;
 }
 
+/* Textarea (prompt cell) gets generous all-around padding so long
+   wrapped lines don't crowd the rounded edges. Inputs stay tight
+   because they're single-line and short (numbers). */
+:is(.floating-panel, .app-chrome) textarea {
+  padding: 16px;
+}
+
 /* Browser default system-blue reads as an artifact on dark. */
 :is(.floating-panel, .app-chrome) textarea::selection,
 :is(.floating-panel, .app-chrome) input::selection {
