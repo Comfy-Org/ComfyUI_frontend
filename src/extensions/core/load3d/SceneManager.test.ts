@@ -81,6 +81,12 @@ function makeRenderer() {
     domElement: canvas,
     setClearColor: vi.fn(),
     setSize: vi.fn(),
+    getSize: vi.fn((v: THREE.Vector2) => {
+      v.set(800, 600)
+      return v
+    }),
+    getPixelRatio: vi.fn().mockReturnValue(1),
+    setPixelRatio: vi.fn(),
     render: vi.fn(),
     clear: vi.fn(),
     getClearColor: vi.fn().mockReturnValue(new THREE.Color(0xffffff)),
