@@ -9,12 +9,8 @@ test.describe('Preview3D execution flow', { tag: ['@slow', '@node'] }, () => {
   test('Preview3D shows inline error and no toast when execution output has no model file', async ({
     preview3dPipeline: pipeline
   }) => {
-    // nextFrame ensures the nodeCreated nextTick has settled and onExecuted
-    // is wired up before we call it.
     await pipeline.comfyPage.nextFrame()
 
-    // Simulate onExecuted with an empty result — the scenario that previously
-    // produced a spurious warning toast when filePath was missing.
     await pipeline.comfyPage.page.evaluate((previewId) => {
       const node = window.app!.graph.getNodeById(Number(previewId))
       node?.onExecuted?.({ result: [] })
@@ -34,9 +30,6 @@ test.describe('Preview3D execution flow', { tag: ['@slow', '@node'] }, () => {
   }) => {
     await pipeline.comfyPage.nextFrame()
 
-    // Simulate an execution result pointing to a file that does not exist on
-    // the server. The LoaderManager emits modelLoadError for preview nodes
-    // (suppressErrors = true) so the error appears inline, not as a toast.
     const responsePromise = pipeline.comfyPage.page.waitForResponse((r) =>
       r.url().includes('nonexistent_preview_model.glb')
     )

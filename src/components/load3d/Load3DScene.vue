@@ -19,6 +19,7 @@
     <Transition name="fade">
       <div
         v-if="loadError && !loading"
+        role="alert"
         class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"
         data-testid="load3d-error-overlay"
       >
