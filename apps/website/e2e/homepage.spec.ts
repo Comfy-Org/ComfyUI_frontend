@@ -178,3 +178,43 @@ test.describe('Get started section links @smoke', () => {
     await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
   })
 })
+
+test.describe('Attribution preservation @smoke', () => {
+  test('decorates owned Comfy links with ad attribution', async ({ page }) => {
+    await page.goto(
+      '/?utm_source=google&utm_medium=cpc&utm_campaign=spring&gclid=abc123'
+    )
+
+    await expect(
+      page
+        .getByTestId('desktop-nav-cta')
+        .locator(
+          'a[href="https://cloud.comfy.org/?utm_source=google&utm_medium=cpc&utm_campaign=spring&gclid=abc123"]'
+        )
+    ).toBeVisible()
+
+    const productCardsSection = page.locator('section', {
+      has: page.getByRole('heading', { name: /The AI creation/ })
+    })
+    await expect(
+      productCardsSection.locator(
+        'a[href="/cloud?utm_source=google&utm_medium=cpc&utm_campaign=spring&gclid=abc123"]'
+      )
+    ).toBeVisible()
+  })
+
+  test('uses stored attribution after same-origin navigation', async ({
+    page
+  }) => {
+    await page.goto('/?utm_source=google&utm_medium=cpc')
+    await page.goto('/cloud')
+
+    const cloudCta = page.getByRole('link', {
+      name: /TRY COMFY CLOUD FOR FREE/i
+    })
+    await expect(cloudCta).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?utm_source=google&utm_medium=cpc'
+    )
+  })
+})
