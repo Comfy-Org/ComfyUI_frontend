@@ -1,4 +1,3 @@
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -12,7 +11,6 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/interfaces'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
@@ -42,35 +40,11 @@ export class SubgraphOutputNode
     return x + SubgraphIONodeBase.roundedRadius
   }
 
-  override onPointerDown(
-    e: CanvasPointerEvent,
-    pointer: CanvasPointer,
-    linkConnector: LinkConnector
+  protected override beginLinkDrag(
+    linkConnector: LinkConnector,
+    slot: SubgraphOutput
   ): void {
-    // Left-click handling for dragging connections
-    if (e.button === 0) {
-      for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
-        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          pointer.onDragStart = () => {
-            linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
-          }
-          pointer.onDragEnd = (eUp) => {
-            linkConnector.dropLinks(this.subgraph, eUp)
-          }
-          pointer.onDoubleClick = () => {
-            this.handleSlotDoubleClick(slot, e)
-          }
-          pointer.finally = () => {
-            linkConnector.reset(true)
-          }
-        }
-      }
-      // Check for right-click
-    } else if (e.button === 2) {
-      const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
-      if (slot) this.showSlotContextMenu(slot, e)
-    }
+    linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
   }
 
   /** @inheritdoc */

@@ -2479,7 +2479,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ) {
           if (!ioNode.containsPoint([x, y])) return false
 
-          ioNode.onPointerDown(e, pointer, linkConnector)
+          if (ioNode.onPointerDown(e, pointer, linkConnector)) {
+            canvas._linkConnectorDrop()
+            return true
+          }
           pointer.onClick ??= () => canvas.processSelect(ioNode, e)
           pointer.onDragStart ??= () =>
             canvas._startDraggingItems(ioNode, pointer, true)

@@ -96,10 +96,25 @@ export abstract class SubgraphIONodeBase<
     return this.pinned ? false : snapPoint(this.pos, snapTo)
   }
 
-  abstract onPointerDown(
+  onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
     linkConnector: LinkConnector
+  ): boolean {
+    const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
+    if (!slot) return false
+    if (e.button === 0) {
+      pointer.onDragStart = () => this.beginLinkDrag(linkConnector, slot)
+      pointer.onDoubleClick = () => this.handleSlotDoubleClick(slot, e)
+      return true
+    }
+    if (e.button === 2) this.showSlotContextMenu(slot, e)
+    return false
+  }
+
+  protected abstract beginLinkDrag(
+    linkConnector: LinkConnector,
+    slot: TSlot
   ): void
 
   // #region Hoverable

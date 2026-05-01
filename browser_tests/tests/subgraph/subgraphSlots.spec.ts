@@ -631,4 +631,52 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       }
     })
   })
+
+  test.describe('IO slot link drag edge panning', () => {
+    const cases = [
+      { side: 'input', slot: 'positive', edge: 'right', sign: -1 },
+      { side: 'output', slot: 'LATENT', edge: 'left', sign: 1 }
+    ] as const
+
+    for (const { side, slot: slotName, edge, sign } of cases) {
+      test(`Pans canvas while dragging a new link from a subgraph ${side} slot near the ${edge} edge`, async ({
+        comfyPage,
+        comfyMouse
+      }) => {
+        await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+        const node = await comfyPage.nodeOps.getNodeRefById('2')
+        await node.navigateIntoSubgraph()
+
+        const slot =
+          side === 'input'
+            ? comfyPage.subgraph.getInputSlot(slotName)
+            : comfyPage.subgraph.getOutputSlot(slotName)
+        const slotPos = await slot.getPosition()
+        const canvasBox = await comfyPage.canvas.boundingBox()
+        if (!canvasBox) throw new Error('canvas has no bounding box')
+
+        try {
+          const [initialOffsetX] = await comfyPage.canvasOps.getOffset()
+          await comfyMouse.move(slotPos)
+          await comfyMouse.drag({
+            x:
+              edge === 'left'
+                ? canvasBox.x + 5
+                : canvasBox.x + canvasBox.width - 5,
+            y: slotPos.y
+          })
+
+          await expect
+            .poll(async () => {
+              const diff =
+                (await comfyPage.canvasOps.getOffset())[0] - initialOffsetX
+              return Math.abs(diff) > 20 ? Math.sign(diff) : null
+            })
+            .toBe(sign)
+        } finally {
+          await comfyMouse.drop()
+        }
+      })
+    }
+  })
 })
