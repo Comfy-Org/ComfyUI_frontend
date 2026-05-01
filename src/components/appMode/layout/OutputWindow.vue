@@ -51,27 +51,20 @@ function toggleMaximized() {
 }
 
 const appModeStore = useAppModeStore()
-const { viewportScale, noZoomMode } = storeToRefs(appModeStore)
+const { viewportScale } = storeToRefs(appModeStore)
 
-// Dashboard-mode snap targets the chrome cell grid so tile edges line
-// up with the input panel and corner clusters. Positions sit at
+// Snap to the chrome cell grid in every mode so tiles line up with
+// the input panel and chrome corner clusters. Positions sit at
 // outer + N·step (8, 64, 120, ...); sizes are N·step − gutter (48,
 // 104, 160, ...) so adjacent tiles' gutters fall on a chrome edge.
-const GRID = 16
-const NO_ZOOM_OUTER = 8
-const NO_ZOOM_GUTTER = 8
-const NO_ZOOM_STEP = 56
-const snapPos = (v: number) => {
-  if (!noZoomMode.value) return Math.round(v / GRID) * GRID
-  return (
-    Math.round((v - NO_ZOOM_OUTER) / NO_ZOOM_STEP) * NO_ZOOM_STEP +
-    NO_ZOOM_OUTER
-  )
-}
+const CHROME_OUTER = 8
+const CHROME_GUTTER = 8
+const CHROME_STEP = 56
+const snapPos = (v: number) =>
+  Math.round((v - CHROME_OUTER) / CHROME_STEP) * CHROME_STEP + CHROME_OUTER
 const snapSize = (v: number) => {
-  if (!noZoomMode.value) return Math.round(v / GRID) * GRID
-  const cells = Math.max(1, Math.round((v + NO_ZOOM_GUTTER) / NO_ZOOM_STEP))
-  return cells * NO_ZOOM_STEP - NO_ZOOM_GUTTER
+  const cells = Math.max(1, Math.round((v + CHROME_GUTTER) / CHROME_STEP))
+  return cells * CHROME_STEP - CHROME_GUTTER
 }
 
 // Initialize from the spawn coordinate so the first paint already has

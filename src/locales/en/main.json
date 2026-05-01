@@ -3354,6 +3354,7 @@
     "toggleNoZoom": "Toggle dashboard mode",
     "welcome": {
       "title": "App Mode",
+      "header": "Getting Started",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
@@ -3388,6 +3389,9 @@
       "etaRemaining": "{eta} remaining",
       "closeWindow": "Close window",
       "clearAll": "Clear all output windows"
+    },
+    "inputs": {
+      "title": "Input"
     },
     "builder": {
       "title": "App builder mode",

@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -25,6 +25,14 @@ export interface OutputWindowEntry {
   /** Image natural aspect (w/h); populated when the output url loads. */
   aspect?: number
   zIndex: number
+  /**
+   * Monotonic creation order; never modified after spawn. Distinct
+   * from `zIndex` (which `promote` rewrites) so dashboard layout can
+   * find the newest tile without being thrown off by user clicks or
+   * by sync-watch tick batching that pushes items in newest-first
+   * iteration order.
+   */
+  createdSeq: number
 }
 
 const SPAWN_ANCHOR_X = 80
@@ -35,10 +43,8 @@ const SPAWN_GRID = 16
 const DEFAULT_SPAWN_W = 512
 const DEFAULT_SPAWN_H = 560
 
-// No-zoom dashboard: oldest evicts beyond MAX_TILES so layout always
-// stays on the asymmetric slicing-tree path (≤ FULL_TREE_MAX_LEAVES).
-// 9 keeps the slicing-tree enumeration tractable while leaving room
-// for a hero + 8 supporting tiles.
+// Dashboard cap — keeps the cell-grid first-fit search small and
+// avoids cramming tiles when too many accumulate. Oldest evicts first.
 const MAX_TILES = 9
 // Mirrors --spacing-layout-outer (8px), --spacing-layout-cell (48px),
 // --spacing-layout-gutter (8px). Hardcoded to avoid reading the DOM.
@@ -46,11 +52,10 @@ const CHROME_OUTER = 8
 const CHROME_CELL = 48
 const CHROME_GUTTER = 8
 const CHROME_STEP = CHROME_CELL + CHROME_GUTTER
-// OutputWindow header strip — sized so the body height calc matches
-// what the user actually sees inside each tile.
-const TILE_HEADER_PX = 40
-// Flush with the chrome rail: same outer margin as the icon row, one
-// chrome-row + gutter below the top cluster so tiles sit on the grid.
+
+// First-spawn anchor used before the first relayout fires; matches
+// the chrome rail offset so there's no flash before LayoutView reports
+// its size.
 const NO_ZOOM_ANCHOR_X = CHROME_OUTER
 const NO_ZOOM_ANCHOR_Y = CHROME_OUTER + CHROME_CELL + CHROME_GUTTER
 
@@ -64,10 +69,12 @@ interface DashboardSlot {
 }
 
 interface DashboardInsets {
-  /** Extra inset from the left edge (e.g. left-docked input panel). */
-  left?: number
-  /** Extra inset from the right edge (e.g. right-docked input panel). */
-  right?: number
+  /**
+   * Panel rect in canvas coords (relative to LayoutView origin).
+   * The cells overlapping it are reserved so tiles flow around the
+   * panel — same code path for full-height docks and corner floats.
+   */
+  panelRect?: { x: number; y: number; w: number; h: number }
 }
 
 interface Rect {
@@ -87,566 +94,290 @@ function evictionScore(w: OutputWindowEntry): number {
   return tier + w.zIndex
 }
 
+// Place tiles on the chrome cell grid: feature on the side opposite
+// the panel, stacks fill the remaining cells. Tile sizes adapt to
+// the available cell area so a small N gets large tiles and a full
+// dashboard gets compact tiles. Each tile body matches its image
+// aspect (or as close as the integer cell grid allows) — no stretch,
+// no crop.
 function dashboardSlots(
   count: number,
   viewW: number,
   viewH: number,
   insets: DashboardInsets = {},
-  /** Per-slot image aspect (slot order, 0 = feature). Default 1:1. */
+  /** Per-slot image aspect (slot 0 = newest). Default 1:1. */
   aspects: (number | undefined)[] = []
 ): DashboardSlot[] {
   const N = Math.max(1, Math.min(count, MAX_TILES))
 
-  const startX = NO_ZOOM_ANCHOR_X + (insets.left ?? 0)
-  const startY = NO_ZOOM_ANCHOR_Y
-  const availW = Math.max(
-    CHROME_STEP,
-    viewW - 2 * CHROME_OUTER - (insets.left ?? 0) - (insets.right ?? 0)
+  const cols = Math.max(
+    1,
+    Math.floor((viewW - 2 * CHROME_OUTER + CHROME_GUTTER) / CHROME_STEP)
   )
-  // Reserve a chrome row at the bottom for the zoom + feedback clusters.
-  const availH = Math.max(
-    CHROME_STEP,
-    viewH - startY - (CHROME_OUTER + CHROME_CELL + CHROME_GUTTER)
+  const rows = Math.max(
+    1,
+    Math.floor((viewH - 2 * CHROME_OUTER + CHROME_GUTTER) / CHROME_STEP)
   )
 
-  const localRects = bentoAspectRects(N, aspects, availW, availH, CHROME_GUTTER)
-
-  // N=1 stays at natural aspect (no crop). Anchor it opposite the
-  // input panel: panel-on-right → tile flush with the chrome rail
-  // (already at x=0); panel-on-left → tile shifts to availW − w so
-  // it sits on the far side of the canvas.
-  if (
-    N === 1 &&
-    localRects.length === 1 &&
-    (insets.left ?? 0) > 0 &&
-    localRects[0].w < availW
-  ) {
-    localRects[0].x = availW - localRects[0].w
-  }
-
-  return localRects
-    .map((r) => ({
-      x: startX + r.x,
-      y: startY + r.y,
-      w: r.w,
-      h: r.h
-    }))
-    .map(roundRect)
-}
-
-// Bento: pack N tiles to fill availW × availH exactly. We pick the
-// slicing-tree topology whose natural aspect (under image-aspect-
-// preserving fitting) is closest to the canvas aspect, then lay it
-// out asymmetrically: the largest leaf in that topology stays at its
-// natural aspect (no crop), and every other subtree absorbs the
-// stretch needed to fill the canvas. The image renders with
-// object-fit: cover so stretched bodies crop their edges instead of
-// distorting.
-//
-// Slot 0 (newest) is always assigned to the largest tile so the
-// uncropped tile is the freshest output; slots 1..N−1 fill the
-// remaining tiles in descending area.
-//
-// We enumerate every binary tree shape × V/H cut assignment for
-// fixed leaf order [0..N−1] and pick the one with the smallest
-// stretch deviation. MAX_TILES caps N so we always reach this path;
-// the grid fallback below is a safety net for unexpected over-cap.
-//
-// Enumeration cost grows as Catalan(N−1) × 2^(N−1):
-//   N=7  → 8,448 trees   (~few ms)
-//   N=8  → 54,912 trees  (~10 ms)
-//   N=9  → 366k trees    (~50–150 ms; only fires on relayout)
-const FULL_TREE_MAX_LEAVES = 9
-
-function bentoAspectRects(
-  N: number,
-  aspects: (number | undefined)[],
-  availW: number,
-  availH: number,
-  gutter: number
-): Rect[] {
-  if (N === 0) return []
-  if (N === 1) {
-    // Natural-aspect, top-left anchored. Caller (dashboardSlots)
-    // shifts horizontally to anchor opposite the input panel.
-    const a = aspects[0] && aspects[0] > 0 ? aspects[0] : 1
-    const wByH = a * (availH - TILE_HEADER_PX)
-    if (wByH <= availW) {
-      return [{ x: 0, y: 0, w: wByH, h: availH }]
-    }
-    const hByW = availW / a + TILE_HEADER_PX
-    return [{ x: 0, y: 0, w: availW, h: hByW }]
-  }
+  const avail = computeAvailRect(insets, cols, rows)
+  if (avail.cols < 2 || avail.rows < 2) return []
 
   const aspectArr: number[] = []
   for (let i = 0; i < N; i++) {
     const a = aspects[i]
     aspectArr.push(a && a > 0 ? a : 1)
   }
-  const h = TILE_HEADER_PX
 
-  if (N <= FULL_TREE_MAX_LEAVES) {
-    const best = bestSliceTreeForFill(aspectArr, availW, availH, h, gutter)
-    if (best) {
-      const tiles = layoutTreeFeatureNatural(
-        best.tree,
-        0,
-        0,
-        availW,
-        availH,
-        aspectArr,
-        h,
-        gutter,
-        best.featureLeafIdx
-      )
-      // Slot order = tile area descending, ties broken by tree leaf
-      // index. Slot 0 lands on the unstretched feature.
-      tiles.sort((a, b) => b.w * b.h - a.w * a.h || a.idx - b.idx)
-      return tiles.map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h }))
+  const placements = computePlacements(N, avail.cols, avail.rows, aspectArr)
+
+  // Pixel boundaries to snap edge-touching tiles to. The cell grid
+  // floors the panel's column position, so when the panel doesn't sit
+  // on a cell boundary there's a sub-cell sliver between the last
+  // avail cell and the panel/canvas edge. Tiles in the last avail
+  // column or row stretch to consume that sliver, leaving exactly
+  // one standard gutter to the chrome.
+  const rightBoundaryWithPanel =
+    insets.panelRect && insets.panelRect.x > 0
+      ? insets.panelRect.x - CHROME_GUTTER
+      : viewW - CHROME_OUTER
+  const leftBoundaryWithPanel =
+    insets.panelRect && insets.panelRect.x === 0
+      ? insets.panelRect.x + insets.panelRect.w + CHROME_GUTTER
+      : CHROME_OUTER
+  const bottomBoundary = viewH - CHROME_OUTER - CHROME_CELL - CHROME_GUTTER
+
+  return placements.map((p) => {
+    let x = CHROME_OUTER + (avail.startCol + p.col) * CHROME_STEP
+    const y = CHROME_OUTER + (avail.startRow + p.row) * CHROME_STEP
+    let w = p.cellsW * CHROME_STEP - CHROME_GUTTER
+    let h = p.cellsH * CHROME_STEP - CHROME_GUTTER
+
+    if (p.col + p.cellsW === avail.cols && rightBoundaryWithPanel > x + w) {
+      w = rightBoundaryWithPanel - x
     }
-  }
+    if (p.col === 0 && leftBoundaryWithPanel < x) {
+      w += x - leftBoundaryWithPanel
+      x = leftBoundaryWithPanel
+    }
+    if (p.row + p.cellsH === avail.rows && bottomBoundary > y + h) {
+      h = bottomBoundary - y
+    }
 
-  const grid = layoutGridCandidate(
-    N - 1,
-    aspectArr[0],
-    aspectArr.slice(1),
-    availW,
-    availH,
-    h,
-    gutter
-  )
-  if (!grid) return [{ x: 0, y: 0, w: availW, h: availH }]
-  return stretchToFill(grid, availW, availH)
+    return roundRect({ x, y, w, h })
+  })
 }
 
-// Enumerate every slicing tree for the given leaves (fixed order),
-// score by 1D stretch deviation needed to fill canvas, return the
-// best tree along with which leaf index ends up largest under the
-// aspect-preserving fit (= the "feature" we'll keep unstretched).
-function bestSliceTreeForFill(
-  aspects: number[],
-  availW: number,
-  availH: number,
-  h: number,
-  g: number
-): { tree: SliceTree; featureLeafIdx: number } | null {
-  let best: {
-    tree: SliceTree
-    featureLeafIdx: number
-    deviation: number
-  } | null = null
-  const leafIdxs = Array.from({ length: aspects.length }, (_, i) => i)
-
-  for (const tree of enumerateTrees(leafIdxs)) {
-    const shape = treeShape(tree, aspects, h, g)
-    if (!Number.isFinite(shape.c) || shape.c <= 0) continue
-
-    let w = availW
-    let totH = shape.c * w + shape.d
-    if (totH > availH) {
-      totH = availH
-      w = (totH - shape.d) / shape.c
-    }
-    if (w <= 0 || totH <= 0) continue
-
-    // Stretch deviation = how much we'd anisotropically scale to fill
-    // the canvas. 0 means the natural layout already matches canvas
-    // aspect; higher = more crop after object-fit: cover.
-    const sx = availW / w
-    const sy = availH / totH
-    const deviation = Math.max(sx, sy) / Math.min(sx, sy) - 1
-    if (best && deviation >= best.deviation) continue
-
-    const tiles = layoutTreeInBox(tree, 0, 0, w, totH, aspects, h, g)
-    let valid = true
-    let featureIdx = tiles[0].idx
-    let maxArea = tiles[0].w * tiles[0].h
-    for (const t of tiles) {
-      if (t.w <= 0 || t.h <= 0) {
-        valid = false
-        break
-      }
-      const a = t.w * t.h
-      if (a > maxArea) {
-        maxArea = a
-        featureIdx = t.idx
-      }
-    }
-    if (!valid) continue
-    best = { tree, featureLeafIdx: featureIdx, deviation }
-  }
-  return best && { tree: best.tree, featureLeafIdx: best.featureLeafIdx }
+interface CellPlacement {
+  col: number
+  row: number
+  cellsW: number
+  cellsH: number
 }
 
-// Lay out `tree` inside (x, y, w, h) with the subtree containing
-// `featureLeafIdx` at its aspect-preserving size and the sibling
-// subtree stretched anisotropically to fill the remaining space.
-// Recurses into the feature subtree so the same rule applies all
-// the way down: only the path from root to the feature leaf is
-// natural; everything else picks up the slack via cover-fit crop.
-function layoutTreeFeatureNatural(
-  tree: SliceTree,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  aspects: number[],
-  header: number,
-  g: number,
-  featureLeafIdx: number
-): IndexedRect[] {
-  if (tree.type === 'leaf') {
-    return [{ idx: tree.leafIdx, x, y, w, h }]
+// Single-shot layout: feature on the left at its natural aspect,
+// stacks tiled in the remaining cells. We try every feature width
+// and stack-grid arrangement, scoring by total tile area, and pick
+// the winner. Body cells always match the image aspect so there's
+// no stretch or letterbox.
+function computePlacements(
+  N: number,
+  cols: number,
+  rows: number,
+  aspects: number[]
+): CellPlacement[] {
+  if (N === 0 || cols < 1 || rows < 2) return []
+
+  const aspectAt = (i: number) => aspects[i] ?? 1
+
+  if (N === 1) {
+    // Aspect-locked tile that grows toward the avail boundary, but
+    // only until the body aspect deviates from the image aspect by
+    // SOLO_TILE_ASPECT_CAP — past that, image-cover crop becomes
+    // visually excessive (a square in a 1.32:1 avail loses ~24% to
+    // crop; with the cap it's ~13% before the bottom edge-snap
+    // pulls the body closer to image aspect again).
+    return [boundedFitTile(aspectAt(0), cols, rows, 0, 0)]
   }
 
-  const featureInLeft = treeContains(tree.left, featureLeafIdx)
+  const featureA = aspectAt(0)
+  const stackCount = N - 1
+  // Stacks share an aspect; mixed-aspect runs use the average so
+  // the grid is uniform. (Per-tile sizes still match each image
+  // aspect inside the chosen cell.)
+  const avgStackA = aspects.slice(1).reduce((s, a) => s + a, 0) / stackCount
 
-  if (tree.type === 'V') {
-    // Subtrees share total height = h; widths add (with gutter).
-    const featSide = featureInLeft ? tree.left : tree.right
-    const featShape = treeShape(featSide, aspects, header, g)
-    const wFeat = (h - featShape.d) / featShape.c
-    if (!Number.isFinite(wFeat) || wFeat <= 0 || wFeat + g >= w) {
-      // Feature subtree can't fit alongside its sibling; fall back to
-      // uniform stretch of the whole subtree.
-      return layoutSubtreeStretchedToBox(tree, x, y, w, h, aspects, header, g)
-    }
-    const wOther = w - wFeat - g
-    if (featureInLeft) {
-      return [
-        ...layoutTreeFeatureNatural(
-          tree.left,
-          x,
-          y,
-          wFeat,
-          h,
-          aspects,
-          header,
-          g,
-          featureLeafIdx
-        ),
-        ...layoutSubtreeStretchedToBox(
-          tree.right,
-          x + wFeat + g,
-          y,
-          wOther,
-          h,
-          aspects,
-          header,
-          g
-        )
+  let best: CellPlacement[] | null = null
+  let bestArea = -1
+
+  // Iterate feature body height (so aspect stays locked) and look for
+  // the (sc, sr) stack grid that maximizes total tile area.
+  for (let featBodyH = 1; featBodyH < rows; featBodyH++) {
+    const featBodyW = Math.max(1, Math.round(featureA * featBodyH))
+    const featW = featBodyW
+    const featH = featBodyH + 1
+    if (featW > cols - 2) continue
+    const stackCols = cols - featW
+    if (stackCols < 2) continue
+
+    for (let sc = 1; sc <= stackCount; sc++) {
+      const sr = Math.ceil(stackCount / sc)
+      if (sr > rows) continue
+      const tileMaxW = Math.floor(stackCols / sc)
+      const tileMaxH = Math.floor(rows / sr)
+      if (tileMaxW < 1 || tileMaxH < 2) continue
+
+      // Body cells match avgStackA inside the (tileMaxW × tileMaxH-1)
+      // budget; whichever side runs out first sets the size.
+      let bodyH = Math.min(tileMaxH - 1, Math.round(tileMaxW / avgStackA))
+      let bodyW = Math.round(avgStackA * bodyH)
+      if (bodyW > tileMaxW) {
+        bodyW = tileMaxW
+        bodyH = Math.round(bodyW / avgStackA)
+      }
+      if (bodyW < 1 || bodyH < 1) continue
+
+      const stackCellsW = bodyW
+      const stackCellsH = bodyH + 1
+      // Weight the feature area 2× so the algorithm prefers
+      // configurations where the newest (feature) tile dominates.
+      // Otherwise total-area scoring ties between "tiny feature +
+      // huge stack" and "huge feature + tiny stack", and the
+      // ascending featBodyH loop locks in the wrong one.
+      const score = featW * featH * 2 + stackCount * stackCellsW * stackCellsH
+      if (score <= bestArea) continue
+      bestArea = score
+
+      const tiles: CellPlacement[] = [
+        { col: 0, row: 0, cellsW: featW, cellsH: featH }
       ]
+      // Place each stack tile at its own aspect inside the uniform
+      // cell so a mixed-aspect run doesn't get squashed into the avg.
+      for (let i = 0; i < stackCount; i++) {
+        const ssc = i % sc
+        const ssr = Math.floor(i / sc)
+        tiles.push(
+          largestTile(
+            aspectAt(i + 1),
+            stackCellsW,
+            stackCellsH,
+            featW + ssc * stackCellsW,
+            ssr * stackCellsH
+          )
+        )
+      }
+      best = tiles
     }
-    return [
-      ...layoutSubtreeStretchedToBox(
-        tree.left,
-        x,
-        y,
-        wOther,
-        h,
-        aspects,
-        header,
-        g
-      ),
-      ...layoutTreeFeatureNatural(
-        tree.right,
-        x + wOther + g,
-        y,
-        wFeat,
-        h,
-        aspects,
-        header,
-        g,
-        featureLeafIdx
-      )
-    ]
   }
 
-  // H-cut: subtrees share width = w; heights add.
-  const featSide = featureInLeft ? tree.left : tree.right
-  const featShape = treeShape(featSide, aspects, header, g)
-  const hFeat = featShape.c * w + featShape.d
-  if (!Number.isFinite(hFeat) || hFeat <= 0 || hFeat + g >= h) {
-    return layoutSubtreeStretchedToBox(tree, x, y, w, h, aspects, header, g)
+  if (best) return best
+
+  // Last-resort fallback: a single feature filling the available area.
+  return [largestTile(featureA, cols, rows, 0, 0)]
+}
+
+// Max body-aspect / image-aspect ratio for the solo-tile case. A
+// value of 1.2 caps image-cover cropping at ~17% on each side (the
+// bottom edge-snap usually shaves it further by extending the body
+// height). Larger = closer to fill-avail with more crop; smaller =
+// tighter aspect match with bigger gaps along the slack dimension.
+const SOLO_TILE_ASPECT_CAP = 1.2
+
+// Aspect-locked tile that expands toward the avail boundary up to
+// SOLO_TILE_ASPECT_CAP. Used for N=1 where the alternative (full
+// avail fill) over-crops the image when avail and image aspects
+// diverge.
+function boundedFitTile(
+  aspect: number,
+  cols: number,
+  rows: number,
+  col: number,
+  row: number
+): CellPlacement {
+  const bodyRows = Math.max(1, rows - 1)
+  let bodyW = Math.max(1, Math.round(aspect * bodyRows))
+  let bodyH = bodyRows
+  if (bodyW > cols) {
+    bodyW = cols
+    bodyH = Math.max(1, Math.round(bodyW / aspect))
   }
-  const hOther = h - hFeat - g
-  if (featureInLeft) {
-    return [
-      ...layoutTreeFeatureNatural(
-        tree.left,
-        x,
-        y,
-        w,
-        hFeat,
-        aspects,
-        header,
-        g,
-        featureLeafIdx
-      ),
-      ...layoutSubtreeStretchedToBox(
-        tree.right,
-        x,
-        y + hFeat + g,
-        w,
-        hOther,
-        aspects,
-        header,
-        g
-      )
-    ]
-  }
-  return [
-    ...layoutSubtreeStretchedToBox(
-      tree.left,
-      x,
-      y,
-      w,
-      hOther,
-      aspects,
-      header,
-      g
-    ),
-    ...layoutTreeFeatureNatural(
-      tree.right,
-      x,
-      y + hOther + g,
-      w,
-      hFeat,
-      aspects,
-      header,
-      g,
-      featureLeafIdx
+  if (cols > bodyW) {
+    bodyW = Math.min(cols, Math.round(aspect * bodyH * SOLO_TILE_ASPECT_CAP))
+  } else if (bodyRows > bodyH) {
+    bodyH = Math.min(
+      bodyRows,
+      Math.round((bodyW / aspect) * SOLO_TILE_ASPECT_CAP)
     )
-  ]
-}
-
-// Lay out subtree aspect-preserving into the largest box that fits
-// in (w, h), then anisotropically stretch each tile so the subtree
-// fills (w, h) exactly. Used for the non-feature side of every cut.
-function layoutSubtreeStretchedToBox(
-  tree: SliceTree,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  aspects: number[],
-  header: number,
-  g: number
-): IndexedRect[] {
-  const shape = treeShape(tree, aspects, header, g)
-  let natW = w
-  let natH = shape.c * natW + shape.d
-  if (natH > h) {
-    natH = h
-    natW = (natH - shape.d) / shape.c
   }
-  if (natW <= 0 || natH <= 0) return []
-  const natTiles = layoutTreeInBox(tree, 0, 0, natW, natH, aspects, header, g)
-  const sx = w / natW
-  const sy = h / natH
-  return natTiles.map((t) => ({
-    idx: t.idx,
-    x: x + t.x * sx,
-    y: y + t.y * sy,
-    w: t.w * sx,
-    h: t.h * sy
-  }))
+  return { col, row, cellsW: bodyW, cellsH: bodyH + 1 }
 }
 
-function treeContains(tree: SliceTree, leafIdx: number): boolean {
-  if (tree.type === 'leaf') return tree.leafIdx === leafIdx
-  return treeContains(tree.left, leafIdx) || treeContains(tree.right, leafIdx)
-}
-
-// Anisotropically scale rects so the bounding box fills exactly
-// (availW, availH). Used by the N>7 fallback path.
-function stretchToFill(rects: Rect[], availW: number, availH: number): Rect[] {
-  if (rects.length === 0) return rects
-  let layoutW = 0
-  let layoutH = 0
-  for (const r of rects) {
-    if (r.x + r.w > layoutW) layoutW = r.x + r.w
-    if (r.y + r.h > layoutH) layoutH = r.y + r.h
+// Largest aspect-matched tile that fits in (cols × rows) cells,
+// anchored at (col, row). Body height + 1 cell of header = tile
+// height; body width follows the aspect.
+function largestTile(
+  aspect: number,
+  cols: number,
+  rows: number,
+  col: number,
+  row: number
+): CellPlacement {
+  let bodyH = Math.max(1, rows - 1)
+  let bodyW = Math.max(1, Math.round(aspect * bodyH))
+  if (bodyW > cols) {
+    bodyW = cols
+    bodyH = Math.max(1, Math.round(bodyW / aspect))
   }
-  if (layoutW <= 0 || layoutH <= 0) return rects
-  const sx = availW / layoutW
-  const sy = availH / layoutH
-  return rects.map((r) => ({
-    x: r.x * sx,
-    y: r.y * sy,
-    w: r.w * sx,
-    h: r.h * sy
-  }))
+  return { col, row, cellsW: bodyW, cellsH: bodyH + 1 }
 }
 
-// Feature@availH + uniform cols×rows stack grid, searching cols for
-// max stack-cell area. Each stack tile re-applies its own aspect
-// inside its cell so mixed-aspect runs don't stretch.
-function layoutGridCandidate(
-  stackCount: number,
-  featureA: number,
-  stackAspects: number[],
-  availW: number,
-  availH: number,
-  h: number,
-  gutter: number
-): Rect[] | null {
-  const fH = availH
-  const fW = featureA * (fH - h)
-  if (fW <= 0 || fW + gutter >= availW) return null
-  const remW = availW - fW - gutter
-  const avgA = stackAspects.reduce((s, a) => s + a, 0) / stackCount
+interface AvailRect {
+  startCol: number
+  startRow: number
+  cols: number
+  rows: number
+}
 
-  let best: {
-    cols: number
-    rows: number
-    cellW: number
-    cellH: number
-  } | null = null
-  for (let cols = 1; cols <= stackCount; cols++) {
-    const rows = Math.ceil(stackCount / cols)
-    const hH = (availH - (rows - 1) * gutter) / rows
-    const hW = avgA * (hH - h)
-    if (
-      hW > 0 &&
-      cols * hW + (cols - 1) * gutter <= remW &&
-      (!best || hW * hH > best.cellW * best.cellH)
-    ) {
-      best = { cols, rows, cellW: hW, cellH: hH }
-    }
-    const wW = (remW - (cols - 1) * gutter) / cols
-    if (wW > 0) {
-      const wH = wW / avgA + h
-      if (
-        rows * wH + (rows - 1) * gutter <= availH &&
-        (!best || wW * wH > best.cellW * best.cellH)
-      ) {
-        best = { cols, rows, cellW: wW, cellH: wH }
-      }
+// Compute the rectangular cell region available for tiles, after
+// reserving the chrome top/bottom rows and the panel column. For
+// floating panels that don't reach an edge, this overestimates the
+// reservation (treats them as full-height) — simpler than splitting
+// the canvas into an L-shape and good enough for most layouts.
+function computeAvailRect(
+  insets: DashboardInsets,
+  cols: number,
+  rows: number
+): AvailRect {
+  let startCol = 0
+  let endCol = cols
+  // Top and bottom rows host the chrome corner clusters.
+  const startRow = 1
+  const endRow = rows - 1
+
+  if (insets.panelRect) {
+    const pr = insets.panelRect
+    const pStart = Math.max(0, Math.floor((pr.x - CHROME_OUTER) / CHROME_STEP))
+    const pEnd = Math.min(
+      cols,
+      Math.ceil((pr.x + pr.w - CHROME_OUTER) / CHROME_STEP)
+    )
+    if (pEnd >= cols && pStart > 0) {
+      // Panel hugs the right edge — shrink the right side.
+      endCol = pStart
+    } else if (pStart === 0 && pEnd < cols) {
+      // Panel hugs the left edge — shrink the left side.
+      startCol = pEnd
+    } else if (pEnd >= cols) {
+      // Panel covers the full width somehow — nothing usable.
+      endCol = startCol
     }
   }
-  if (!best) return null
 
-  const rects: Rect[] = [{ x: 0, y: 0, w: fW, h: fH }]
-  const stackOriginX = fW + gutter
-  for (let i = 0; i < stackCount; i++) {
-    const col = i % best.cols
-    const row = Math.floor(i / best.cols)
-    const cellX = stackOriginX + col * (best.cellW + gutter)
-    const cellY = row * (best.cellH + gutter)
-    const a = stackAspects[i]
-    const wByCellH = a * (best.cellH - h)
-    let renderW: number
-    let renderH: number
-    if (wByCellH <= best.cellW) {
-      renderW = wByCellH
-      renderH = best.cellH
-    } else {
-      renderW = best.cellW
-      renderH = best.cellW / a + h
-    }
-    rects.push({
-      x: cellX + (best.cellW - renderW) / 2,
-      y: cellY + (best.cellH - renderH) / 2,
-      w: renderW,
-      h: renderH
-    })
+  return {
+    startCol,
+    startRow,
+    cols: Math.max(0, endCol - startCol),
+    rows: Math.max(0, endRow - startRow)
   }
-  return rects
-}
-
-// ---- Slicing tree helpers ----
-// References: Stockmeyer 1983 (VLSI floorplanning); Wu & Aizawa
-// "PicWall" 2013 (photo collage). See bento-layout-research.md in
-// the context repo.
-
-type SliceTree =
-  | { type: 'leaf'; leafIdx: number }
-  | { type: 'V' | 'H'; left: SliceTree; right: SliceTree }
-
-interface TreeShape {
-  /** H = c·W + d for the bounding rectangle of this subtree. */
-  c: number
-  d: number
-}
-
-// V-cut (side-by-side, share H, sum W with gutter):
-//   1/c_V = 1/c_L + 1/c_R
-//   d_V   = c_V · (d_L/c_L + d_R/c_R − gutter)
-// H-cut (stacked, share W, sum H with gutter):
-//   c_H = c_L + c_R
-//   d_H = d_L + d_R + gutter
-function treeShape(
-  t: SliceTree,
-  aspects: number[],
-  h: number,
-  g: number
-): TreeShape {
-  if (t.type === 'leaf') {
-    const a =
-      aspects[t.leafIdx] && aspects[t.leafIdx] > 0 ? aspects[t.leafIdx] : 1
-    return { c: 1 / a, d: h }
-  }
-  const L = treeShape(t.left, aspects, h, g)
-  const R = treeShape(t.right, aspects, h, g)
-  if (t.type === 'H') {
-    return { c: L.c + R.c, d: L.d + R.d + g }
-  }
-  const cV = 1 / (1 / L.c + 1 / R.c)
-  const dV = cV * (L.d / L.c + R.d / R.c - g)
-  return { c: cV, d: dV }
-}
-
-function* enumerateTrees(leaves: number[]): Generator<SliceTree> {
-  if (leaves.length === 1) {
-    yield { type: 'leaf', leafIdx: leaves[0] }
-    return
-  }
-  for (let split = 1; split < leaves.length; split++) {
-    const lefts = [...enumerateTrees(leaves.slice(0, split))]
-    const rights = [...enumerateTrees(leaves.slice(split))]
-    for (const left of lefts) {
-      for (const right of rights) {
-        yield { type: 'V', left, right }
-        yield { type: 'H', left, right }
-      }
-    }
-  }
-}
-
-interface IndexedRect extends Rect {
-  idx: number
-}
-
-function layoutTreeInBox(
-  t: SliceTree,
-  x: number,
-  y: number,
-  w: number,
-  totH: number,
-  aspects: number[],
-  h: number,
-  g: number
-): IndexedRect[] {
-  if (t.type === 'leaf') {
-    return [{ idx: t.leafIdx, x, y, w, h: totH }]
-  }
-  const L = treeShape(t.left, aspects, h, g)
-  const R = treeShape(t.right, aspects, h, g)
-  if (t.type === 'V') {
-    const wL = (totH - L.d) / L.c
-    const wR = (totH - R.d) / R.c
-    return [
-      ...layoutTreeInBox(t.left, x, y, wL, totH, aspects, h, g),
-      ...layoutTreeInBox(t.right, x + wL + g, y, wR, totH, aspects, h, g)
-    ]
-  }
-  const hL = L.c * w + L.d
-  const hR = R.c * w + R.d
-  return [
-    ...layoutTreeInBox(t.left, x, y, w, hL, aspects, h, g),
-    ...layoutTreeInBox(t.right, x, y + hL + g, w, hR, aspects, h, g)
-  ]
 }
 
 function roundRect(r: Rect): DashboardSlot {
@@ -657,6 +388,7 @@ function roundRect(r: Rect): DashboardSlot {
     h: Math.round(r.h)
   }
 }
+
 function entryRect(w: OutputWindowEntry): Rect {
   return {
     x: w.position.x,
@@ -665,6 +397,7 @@ function entryRect(w: OutputWindowEntry): Rect {
     h: w.height ?? DEFAULT_SPAWN_H
   }
 }
+
 function rectsOverlap(a: Rect, b: Rect): boolean {
   return !(
     a.x + a.w <= b.x ||
@@ -677,6 +410,7 @@ function rectsOverlap(a: Rect, b: Rect): boolean {
 export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   const windows = ref<OutputWindowEntry[]>([])
   let nextZ = 1
+  let nextSeq = 1
 
   const sortedWindows = computed(() =>
     [...windows.value].sort((a, b) => a.zIndex - b.zIndex)
@@ -724,7 +458,10 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
 
   function upsert(
     id: string,
-    patch: Omit<Partial<OutputWindowEntry>, 'id' | 'position' | 'zIndex'>
+    patch: Omit<
+      Partial<OutputWindowEntry>,
+      'id' | 'position' | 'zIndex' | 'createdSeq'
+    >
   ): void {
     const existing = windows.value.find((w) => w.id === id)
     if (existing) {
@@ -736,6 +473,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
       state: 'skeleton',
       position: nextSpawnPosition(),
       zIndex: nextZ++,
+      createdSeq: nextSeq++,
       ...patch
     })
     // Prune (after push so the new tile's high zIndex protects it).
@@ -802,12 +540,15 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     nextZ = 1
   }
 
-  // Re-flow all tiles into a bento grid sized to the LayoutView.
-  // Caller (LayoutView) provides dimensions and panel insets so we
-  // don't reach into the DOM here. Newest window (last in the array)
-  // gets the feature slot; older ones fall into the shrinking stack.
-  // Prunes first so entering bento mode with > MAX_TILES windows
-  // can't leave orphaned tiles in stale zoom-mode positions.
+  // Re-flow all tiles into the cell grid sized to the LayoutView.
+  // Caller (LayoutView) provides dimensions and the panel rect so we
+  // don't reach into the DOM here. Newest tile (highest createdSeq)
+  // gets slot 0 — the biggest tier — and older tiles take subsequent
+  // slots in descending recency. Sorting by createdSeq instead of
+  // trusting windows.value order matters because useOutputWindowSync
+  // can push newest-first when multiple items appear in a single
+  // reactive tick, leaving the newest at windows[0] rather than the
+  // end.
   function relayoutDashboard(
     viewW: number,
     viewH: number,
@@ -815,17 +556,24 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   ): void {
     if (!useAppModeStore().noZoomMode) return
     pruneToCapacity()
-    const N = windows.value.length
-    // Slot 0 is the feature (newest). Walk windows in reverse so each
-    // slot index lines up with that window's image aspect.
-    const aspectsBySlot: (number | undefined)[] = []
-    for (let i = N - 1; i >= 0; i--) {
-      aspectsBySlot.push(windows.value[i].aspect)
-    }
-    const slots = dashboardSlots(N, viewW, viewH, insets, aspectsBySlot)
-    windows.value.forEach((w, i) => {
-      // Reverse map: windows[N-1] → slots[0] (feature), windows[0] → last.
-      const slot = slots[N - 1 - i]
+    // Fall back to zIndex when createdSeq is missing — undefined
+    // arithmetic produces NaN, which makes the sort non-deterministic
+    // and was masking this fix when Vite HMR carried over store state
+    // from an earlier build.
+    const newnessOf = (w: OutputWindowEntry) => w.createdSeq ?? w.zIndex
+    const byNewness = [...windows.value].sort(
+      (a, b) => newnessOf(b) - newnessOf(a)
+    )
+    const aspectsBySlot = byNewness.map((w) => w.aspect)
+    const slots = dashboardSlots(
+      byNewness.length,
+      viewW,
+      viewH,
+      insets,
+      aspectsBySlot
+    )
+    byNewness.forEach((w, i) => {
+      const slot = slots[i]
       if (!slot) return
       w.position = { x: slot.x, y: slot.y }
       w.width = slot.w
@@ -847,3 +595,10 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     relayoutDashboard
   }
 })
+
+// Lets Vite drop the existing store instance on HMR rather than
+// keeping stale entries around (e.g., entries from before
+// `createdSeq` was added, which break the dashboard newness sort).
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useOutputWindowStore, import.meta.hot))
+}

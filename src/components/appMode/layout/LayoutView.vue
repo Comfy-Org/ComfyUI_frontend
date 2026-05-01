@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import { computed, useTemplateRef, watch, watchEffect } from 'vue'
+import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useElementSize, useEventListener } from '@vueuse/core'
+import {
+  useElementBounding,
+  useElementSize,
+  useEventListener
+} from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 
 import AppChrome from './AppChrome.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
-import { isDockPreset, panelSide } from './panels/panelTypes'
 import { useAppPanelLayout } from './panels/useAppPanelLayout'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { getPathDetails } from '@/utils/formatUtil'
 import { useAppModeStore } from '@/stores/appModeStore'
 
+const { t } = useI18n()
 const appModeStore = useAppModeStore()
-const workflowStore = useWorkflowStore()
 const windowStore = useOutputWindowStore()
 const { viewportScale, viewportOffsetX, viewportOffsetY, noZoomMode } =
   storeToRefs(appModeStore)
@@ -52,39 +54,52 @@ const layoutRef = useTemplateRef<HTMLElement>('layoutRef')
 // about sidebar widths.
 const { width: layoutW, height: layoutH } = useElementSize(layoutRef)
 
-// Reserve the input panel's column so tiles never slide under it,
-// whether the panel is docked or floating in a corner.
-// Mirrors FloatingPanel's widthStyle math (cells × cell + (cells−1) × gutter)
-// when docked, and the fixed --panel-dock-width default (440px) when floating.
-const PANEL_CELL_PX = 48
-const PANEL_GUTTER_PX = 8
-const FLOATING_PANEL_WIDTH_PX = 440
+// Measure the input panel's actual rendered rect so the dashboard
+// packer reserves exactly the cells it covers — same code path for
+// full-height docks and corner floats. Re-measures whenever the
+// panel preset or collapsed state changes (which can re-mount it).
+const panelDomEl = ref<HTMLElement | null>(null)
+watchEffect(() => {
+  void appModeStore.panelPreset
+  void appModeStore.panelCollapsed
+  panelDomEl.value =
+    layoutRef.value?.querySelector<HTMLElement>('.floating-panel') ?? null
+})
+const {
+  x: panelX,
+  y: panelY,
+  width: panelWidth,
+  height: panelHeight
+} = useElementBounding(panelDomEl)
+const { x: layoutLeft, y: layoutTop } = useElementBounding(layoutRef)
+
 const dashboardInsets = computed(() => {
-  const preset = appModeStore.panelPreset
-  let panelW: number
-  if (isDockPreset(preset)) {
-    const cells = appModeStore.panelWidthCells
-    panelW = cells * PANEL_CELL_PX + Math.max(0, cells - 1) * PANEL_GUTTER_PX
-  } else {
-    panelW = FLOATING_PANEL_WIDTH_PX
+  if (!panelDomEl.value || panelWidth.value === 0) return {}
+  return {
+    panelRect: {
+      x: panelX.value - layoutLeft.value,
+      y: panelY.value - layoutTop.value,
+      w: panelWidth.value,
+      h: panelHeight.value
+    }
   }
-  const inset = panelW + PANEL_GUTTER_PX
-  return panelSide(preset) === 'right' ? { right: inset } : { left: inset }
 })
 
 watchEffect(
   () => {
-    // Read length first so the effect tracks spawn/remove regardless
-    // of which branch we take.
+    // Read every reactive dep up front so the effect re-fires on a
+    // mode toggle even when it bailed early last time. (If we
+    // checked noZoomMode first and short-circuited, layoutW /
+    // dashboardInsets / aspects wouldn't be tracked, and toggling
+    // back into dashboard mode would silently miss the relayout.)
     const count = windowStore.windows.length
+    void windowStore.windows.map((w) => w.aspect)
+    const lw = layoutW.value
+    const lh = layoutH.value
+    const insets = dashboardInsets.value
     if (!noZoomMode.value) return
-    if (count > 0 && layoutW.value > 0 && layoutH.value > 0) {
-      windowStore.relayoutDashboard(
-        layoutW.value,
-        layoutH.value,
-        dashboardInsets.value
-      )
-    }
+    if (count === 0 || lw <= 0 || lh <= 0) return
+    windowStore.relayoutDashboard(lw, lh, insets)
   },
   // sync flush: re-flow runs in the same tick as the spawn, so the
   // new tile renders directly at its dashboard slot.
@@ -138,31 +153,9 @@ const workspaceTransform = computed(
     `scale(${viewportScale.value})`
 )
 
-// Dot grid: opacity cross-fade between fine 1× and coarse 2× layers.
-const DOT_SIZE_PX = 24
-
-const gridSpacing = computed(() => {
-  const s = DOT_SIZE_PX * viewportScale.value
-  return s > 0 ? s : DOT_SIZE_PX
-})
-
-const gridFineAlpha = computed(() => {
-  const s = viewportScale.value
-  if (s >= 1) return 1
-  if (s <= 0.5) return 0
-  return (s - 0.5) * 2
-})
-
-// Inverse of fine; otherwise AA edges leak the coarse layer through.
-const gridCoarseAlpha = computed(() => 1 - gridFineAlpha.value)
-
 const { inputEntryMap, moveBlock } = useAppPanelLayout()
 
-const panelTitle = computed(() => {
-  const path = workflowStore.activeWorkflow?.path
-  if (!path) return ''
-  return getPathDetails(path).filename
-})
+const panelTitle = computed(() => t('linearMode.inputs.title'))
 
 const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 </script>
@@ -174,10 +167,7 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
     :style="{
       '--viewport-scale': viewportScale,
       '--viewport-offset-x': `${viewportOffsetX}px`,
-      '--viewport-offset-y': `${viewportOffsetY}px`,
-      '--grid-spacing': `${gridSpacing}px`,
-      '--grid-fine-alpha': gridFineAlpha,
-      '--grid-coarse-alpha': gridCoarseAlpha
+      '--viewport-offset-y': `${viewportOffsetY}px`
     }"
     @wheel="handleWheel"
     @pointerdown="handlePointerDown"
@@ -218,43 +208,39 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
   position: absolute;
   inset: 0;
   background-color: var(--color-layout-canvas);
-  /* Dot grid: shares workspace pivot, floors at 0.6× for legibility. */
+  overflow: hidden;
+  isolation: isolate;
+  /* Dot grid: one dot per chrome cell center. Lives on .layout-view
+     (not .layout-view__background) so the pattern always tiles to
+     the viewport edges, and the canvas transform is mirrored
+     manually below so the dots stay aligned with bgRef's content
+     when the user zooms or pans. The first dot lands at canvas
+     (outer + cell/2) and the spacing is one chrome step. */
+  --cell-anchor: calc(
+    var(--spacing-layout-outer) + var(--spacing-layout-cell) / 2
+  );
+  --cell-step: calc(var(--spacing-layout-cell) + var(--spacing-layout-gutter));
   --dot-scale: max(0.6, var(--viewport-scale, 1));
   --dot-radius: calc(1px * var(--dot-scale));
   --dot-fade-radius: calc(var(--dot-radius) + 0.5px);
-  background-image:
-    radial-gradient(
-      circle,
-      color-mix(
-          in srgb,
-          var(--color-layout-grid-dot) calc(100% * var(--grid-fine-alpha, 1)),
-          transparent
-        )
-        var(--dot-radius),
-      transparent var(--dot-fade-radius)
-    ),
-    radial-gradient(
-      circle,
-      color-mix(
-          in srgb,
-          var(--color-layout-grid-dot) calc(100% * var(--grid-coarse-alpha, 0)),
-          transparent
-        )
-        var(--dot-radius),
-      transparent var(--dot-fade-radius)
+  background-image: radial-gradient(
+    circle,
+    var(--color-layout-grid-dot) var(--dot-radius),
+    transparent var(--dot-fade-radius)
+  );
+  background-size: calc(var(--cell-step) * var(--viewport-scale, 1))
+    calc(var(--cell-step) * var(--viewport-scale, 1));
+  /* Mirror bgRef's `translate(offset) scale(s)` with origin = center.
+     Canvas (anchor, anchor) lands at viewport
+     ((1 − s)·50% + s·anchor + offset). */
+  background-position: calc(
+      (1 - var(--viewport-scale, 1)) * 50% + var(--cell-anchor) *
+        var(--viewport-scale, 1) + var(--viewport-offset-x, 0)
+    )
+    calc(
+      (1 - var(--viewport-scale, 1)) * 50% + var(--cell-anchor) *
+        var(--viewport-scale, 1) + var(--viewport-offset-y, 0)
     );
-  background-size:
-    var(--grid-spacing, var(--spacing-layout-dot))
-      var(--grid-spacing, var(--spacing-layout-dot)),
-    calc(var(--grid-spacing, var(--spacing-layout-dot)) * 2)
-      calc(var(--grid-spacing, var(--spacing-layout-dot)) * 2);
-  background-position:
-    calc(50% + var(--viewport-offset-x, 0))
-      calc(50% + var(--viewport-offset-y, 0)),
-    calc(50% + var(--viewport-offset-x, 0))
-      calc(50% + var(--viewport-offset-y, 0));
-  overflow: hidden;
-  isolation: isolate;
 }
 
 .layout-view__background {

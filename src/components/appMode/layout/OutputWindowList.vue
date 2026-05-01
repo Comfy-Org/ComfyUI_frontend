@@ -213,10 +213,13 @@ function menuEntriesFor(entry: OutputWindowEntry): MenuItem[] {
       />
     </template>
     <template v-else-if="entry.state === 'latent' && entry.latentPreviewUrl">
-      <!-- object-fill — distortion invisible at latent resolution. -->
+      <!-- Match MediaOutputPreview's fit so the latent → final swap
+           is visually seamless: cover (with edge crop) in dashboard
+           mode where tiles snap to the cell grid; contain in zoom
+           mode where tiles are aspect-locked to the image. -->
       <img
         :src="entry.latentPreviewUrl"
-        class="size-full rounded-lg border border-white/8 object-fill"
+        :class="['size-full', noZoomMode ? 'object-cover' : 'object-contain']"
         alt=""
       />
     </template>
