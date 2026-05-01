@@ -3,6 +3,7 @@ import { toValue } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphInteractionHooks } from '@/renderer/core/canvas/hooks/graphInteractionHooks'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -50,6 +51,7 @@ function useNodeDragIndividual() {
   let autoPan: AutoPanController | null = null
   let lastPointerX = 0
   let lastPointerY = 0
+  let lastPointerEvent: PointerEvent | null = null
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
@@ -206,15 +208,42 @@ function useNodeDragIndividual() {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
+    lastPointerEvent = event
     autoPan?.updatePointer(event.clientX, event.clientY)
 
     rafId = requestAnimationFrame(() => {
       rafId = null
       updateNodePositions(nodeId)
+      emitNodeDragMove(nodeId)
+    })
+  }
+
+  function emitNodeDragMove(nodeId: NodeId) {
+    if (!lastPointerEvent) return
+    graphInteractionHooks.emit('nodeDragMove', {
+      nodeId,
+      canvasPos: transformState.screenToCanvas({
+        x: lastPointerX,
+        y: lastPointerY
+      }),
+      pointerEvent: lastPointerEvent,
+      selectionSize: toValue(selectedNodeIds)?.size ?? 1
     })
   }
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
+    if (nodeId && dragStartPos) {
+      graphInteractionHooks.emit('nodeDragEnd', {
+        nodeId,
+        canvasPos: transformState.screenToCanvas({
+          x: event.clientX,
+          y: event.clientY
+        }),
+        pointerEvent: event,
+        selectionSize: toValue(selectedNodeIds)?.size ?? 1
+      })
+    }
+
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
     if (shouldSnap(event) && nodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
@@ -281,6 +310,7 @@ function useNodeDragIndividual() {
     otherSelectedNodesStartPositions = null
     selectedGroups = null
     lastCanvasDelta = null
+    lastPointerEvent = null
 
     // Stop auto-pan
     autoPan?.stop()

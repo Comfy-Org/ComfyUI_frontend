@@ -170,6 +170,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useDropOnLink } from '@/renderer/extensions/vueNodes/composables/useDropOnLink'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -251,6 +252,8 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
+
+useDropOnLink()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
