@@ -333,19 +333,23 @@ describe('LoaderManager', () => {
       expect(modelManager.originalFileName).toBe('model')
     })
 
-    it('alerts when the file extension cannot be determined', async () => {
-      const { lm, modelManager } = makeLoaderManager()
+    it('alerts and emits modelLoadingEnd when the file extension cannot be determined', async () => {
+      const { lm, modelManager, eventManager } = makeLoaderManager()
 
       await lm.loadModel('api/view?other=1')
 
       expect(addAlert).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
     })
 
-    it('emits modelLoadError and skips toast when suppressErrors is true and extension cannot be determined', async () => {
+    it('emits modelLoadError and modelLoadingEnd (no toast) when suppressErrors is true and extension cannot be determined', async () => {
       const modelManager = makeModelManagerStub()
       const eventManager = makeEventManagerStub()
       const lm = new LoaderManager(
@@ -364,6 +368,10 @@ describe('LoaderManager', () => {
       expect(eventManager.emitEvent).toHaveBeenCalledWith(
         'modelLoadError',
         'toastMessages.couldNotDetermineFileType'
+      )
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
     })

@@ -82,14 +82,13 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
+        const message = t('toastMessages.couldNotDetermineFileType')
         if (this.suppressErrors) {
-          this.eventManager.emitEvent(
-            'modelLoadError',
-            t('toastMessages.couldNotDetermineFileType')
-          )
+          this.eventManager.emitEvent('modelLoadError', message)
         } else {
-          useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
+          useToastStore().addAlert(message)
         }
+        this.eventManager.emitEvent('modelLoadingEnd', null)
         return
       }
 
