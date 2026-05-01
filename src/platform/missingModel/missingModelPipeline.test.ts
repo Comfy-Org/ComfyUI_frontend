@@ -11,13 +11,13 @@ import {
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
 
-const { mockHandles, createMocks } = vi.hoisted(() => {
-  function createMocks() {
-    const state = {
-      enrichedCandidates: [] as MissingModelCandidate[]
-    }
+const { mockHandles } = vi.hoisted(() => {
+  const state = {
+    enrichedCandidates: [] as MissingModelCandidate[]
+  }
 
-    return {
+  return {
+    mockHandles: {
       state,
       missingModelStore: {
         missingModelCandidates: null as MissingModelCandidate[] | null,
@@ -80,11 +80,6 @@ const { mockHandles, createMocks } = vi.hoisted(() => {
         (_graph: LGraph, _candidate: MissingModelCandidate) => true
       )
     }
-  }
-
-  return {
-    createMocks,
-    mockHandles: createMocks()
   }
 })
 
@@ -184,7 +179,13 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 
 describe('missingModelPipeline', () => {
   beforeEach(() => {
-    Object.assign(mockHandles, createMocks())
+    vi.clearAllMocks()
+    mockHandles.state.enrichedCandidates = []
+    mockHandles.missingModelStore.missingModelCandidates = null
+    mockHandles.workspaceWorkflow.activeWorkflow = null
+    mockHandles.missingModelStore.createVerificationAbortController.mockImplementation(
+      () => new AbortController()
+    )
     mockHandles.modelStore.loadModelFolders.mockResolvedValue(undefined)
     mockHandles.modelStore.getLoadedModelFolder.mockResolvedValue(undefined)
     mockHandles.modelToNodeStore.getCategoryForNodeType.mockReturnValue(
@@ -585,9 +586,9 @@ describe('missingModelPipeline', () => {
       controller.abort()
       resolveFolderPaths({ checkpoints: ['/models/checkpoints'] })
       await folderPathsPromise
-      // Let the getFolderPaths().then().finally() chain settle so this fails
-      // if the abort guards are removed from either continuation.
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      // Settle both .then() and .finally() microtasks on getFolderPaths().
+      await Promise.resolve()
+      await Promise.resolve()
 
       expect(
         mockHandles.missingModelStore.setFolderPaths

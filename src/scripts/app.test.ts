@@ -136,7 +136,7 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
