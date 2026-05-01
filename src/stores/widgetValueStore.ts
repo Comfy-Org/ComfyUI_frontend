@@ -60,6 +60,18 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetStates.get(key) as WidgetState<TValue>
   }
 
+  function getOrRegister<TValue = unknown>(
+    graphId: UUID,
+    state: WidgetState<TValue>
+  ): WidgetState<TValue> {
+    const widgetStates = getWidgetStateMap(graphId)
+    const key = makeKey(state.nodeId, state.name)
+    const existing = widgetStates.get(key)
+    if (existing) return existing as WidgetState<TValue>
+    widgetStates.set(key, state)
+    return state
+  }
+
   function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
     const widgetStates = getWidgetStateMap(graphId)
     const prefix = `${nodeId}:`
@@ -82,6 +94,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   return {
     registerWidget,
+    getOrRegister,
     getWidget,
     getNodeWidgets,
     clearGraph

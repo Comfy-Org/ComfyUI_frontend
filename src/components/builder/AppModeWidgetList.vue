@@ -85,17 +85,15 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
       if (!node.isSubgraphNode()) return vueWidget.name === widget.name
 
-      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+      if (!isPromotedWidgetView(widget) || !vueWidget.source) return false
       return (
-        isPromotedWidgetView(widget) &&
-        widget.sourceNodeId == storeNodeId &&
-        widget.sourceWidgetName === vueWidget.storeName
+        widget.sourceNodeId == vueWidget.source.sourceNodeId &&
+        widget.sourceWidgetName === vueWidget.source.sourceWidgetName
       )
     })
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
 
     return [
       {

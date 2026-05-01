@@ -1,3 +1,5 @@
+import { toRaw } from 'vue'
+
 import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -28,7 +30,10 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
   isPromotedWidgetView
@@ -1042,6 +1047,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
+
+    // Replay widgets_values through promoted views to restore promoted-view
+    // values that super.configure() skips.
+    if (info.widgets_values) {
+      const views = this.widgets ?? []
+      const limit = Math.min(views.length, info.widgets_values.length)
+      for (let i = 0; i < limit; i++) {
+        views[i].value = info.widgets_values[i]
+      }
+    }
   }
 
   override _internalConfigureAfterSlots() {
@@ -1572,28 +1587,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     ctx.restore()
   }
 
-  /**
-   * Synchronizes widget values from this SubgraphNode instance to the
-   * corresponding widgets in the subgraph definition before serialization.
-   * This ensures nested subgraph widget values are preserved when saving.
-   */
+  /** Projects per-instance promoted widget values into `widgets_values`. */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization.
-    // Only sync for inputs that are linked to a promoted widget via _widget.
-    for (const input of this.inputs) {
-      if (!input._widget) continue
-
-      const subgraphInput =
-        input._subgraphSlot ??
-        this.subgraph.inputNode.slots.find((slot) => slot.name === input.name)
-      if (!subgraphInput) continue
-
-      const connectedWidgets = subgraphInput.getConnectedWidgets()
-      for (const connectedWidget of connectedWidgets) {
-        connectedWidget.value = input._widget.value
-      }
-    }
-
     // Write promotion store state back to properties for serialization
     const entries = usePromotionStore().getPromotions(
       this.rootGraph.id,
@@ -1601,8 +1596,41 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
     this.properties.proxyWidgets = this._serializeEntries(entries)
 
-    return super.serialize()
+    const serialized = super.serialize()
+
+    // Promoted views are skipped by super.serialize() (`serialize = false`),
+    // so project their per-instance values back into widgets_values.
+    // Respect the resolved concrete source widget's serialize flag so
+    // transient widgets stay unsaved through nested promotions too.
+    const views = this.widgets ?? []
+    const existing = serialized.widgets_values ?? []
+    const merged: TWidgetValue[] = [...existing]
+    views.forEach((view, idx) => {
+      if (isPromotedWidgetView(view)) {
+        const resolved = resolveConcretePromotedWidget(
+          this,
+          view.sourceNodeId,
+          view.sourceWidgetName,
+          view.disambiguatingSourceNodeId
+        )
+        if (
+          resolved.status === 'resolved' &&
+          resolved.resolved.widget.serialize === false
+        ) {
+          return
+        }
+      }
+      const value = view.value
+      merged[idx] =
+        value != null && typeof value === 'object'
+          ? (structuredClone(toRaw(value)) as TWidgetValue)
+          : (value ?? undefined)
+    })
+    if (merged.length > 0) serialized.widgets_values = merged
+
+    return serialized
   }
+
   override clone() {
     const clone = super.clone()
 

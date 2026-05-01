@@ -126,8 +126,8 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
-  const storeWidgetName = widget.storeName ?? widget.name
+  const rawWidgetId = widget.nodeId ?? nodeId
+  const storeWidgetName = widget.instanceWidgetName ?? widget.name
   const slotNameForIdentity = widget.slotName ?? widget.name
   const stableIdentityRoot = rawWidgetId
     ? `node:${String(stripGraphPrefix(rawWidgetId))}`
@@ -195,10 +195,8 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const storeWidgetName = widget.storeName ?? widget.name
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
+    const storeWidgetName = widget.instanceWidgetName ?? widget.name
+    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
     const widgetState = graphId
       ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
@@ -250,12 +248,13 @@ export function computeProcessedWidgets({
     identity: { renderKey }
   } of uniqueWidgets) {
     const hostNodeId = String(nodeId ?? '')
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const promotionSourceNodeId = widget.storeName
-      ? String(bareWidgetId)
-      : undefined
+    // Promotion-store grouping keys off the interior source identity.
+    // For promoted views: use the source local id; for non-promoted
+    // widgets: the host node id stands in (a non-promoted widget acts as
+    // its own source for border-style purposes).
+    const sourceBareId =
+      widget.source?.sourceNodeId ?? String(stripGraphPrefix(nodeId ?? ''))
+    const promotionSourceNodeId = widget.source ? sourceBareId : undefined
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -274,7 +273,7 @@ export function computeProcessedWidgets({
       graphId &&
       promotionStore.isPromotedByAny(graphId, {
         sourceNodeId: hostNodeId,
-        sourceWidgetName: widget.storeName ?? widget.name,
+        sourceWidgetName: widget.name,
         disambiguatingSourceNodeId: promotionSourceNodeId
       })
         ? 'ring ring-component-node-widget-promoted'
@@ -290,11 +289,12 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = widget.nodeId
-      ? widget.nodeId
-      : nodeData
-        ? getLocatorIdFromNodeData(nodeData)
-        : undefined
+    // Locator points at the source node for promoted views (canvas/save
+    // flows resolve through the interior identity), and falls back to
+    // the host node's locator for non-promoted widgets.
+    const nodeLocatorId =
+      widget.sourceNodeLocatorId ??
+      (nodeData ? getLocatorIdFromNodeData(nodeData) : undefined)
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -323,13 +323,7 @@ export function computeProcessedWidgets({
       e.preventDefault()
       e.stopPropagation()
       if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
-      showNodeOptions(
-        e,
-        widget.name,
-        widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
-          : undefined
-      )
+      showNodeOptions(e, widget.name, widget.source?.sourceNodeId)
     }
 
     result.push({
@@ -344,7 +338,7 @@ export function computeProcessedWidgets({
         missingModelStore
       ),
       hidden: mergedOptions.hidden ?? false,
-      id: String(bareWidgetId),
+      id: sourceBareId,
       name: widget.name,
       renderKey,
       type: widget.type,

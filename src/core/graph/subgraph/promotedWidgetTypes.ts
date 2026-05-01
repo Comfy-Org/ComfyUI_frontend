@@ -24,6 +24,8 @@ export interface PromotedWidgetView extends IBaseWidget {
    * origin.
    */
   readonly disambiguatingSourceNodeId?: string
+  /** Opaque widget-store name paired with the host SubgraphNode; do not parse. */
+  readonly storeName: string
 }
 
 export function isPromotedWidgetView(
