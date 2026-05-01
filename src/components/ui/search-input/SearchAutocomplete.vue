@@ -99,7 +99,7 @@
 <script setup lang="ts" generic="T">
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   ComboboxAnchor,
   ComboboxContent,

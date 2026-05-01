@@ -148,4 +148,166 @@ test.describe('Load3D', () => {
       )
     }
   )
+
+  test(
+    'Uploading a background image populates Scene Config and surfaces panorama/remove controls',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage, load3d }) => {
+      await expect(load3d.uploadBackgroundImageButton).toBeVisible()
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const readBackgroundImage = async () => {
+        const properties =
+          await node.getProperty<Record<string, { backgroundImage?: string }>>(
+            'properties'
+          )
+        return properties['Scene Config']?.backgroundImage ?? ''
+      }
+
+      expect(
+        await readBackgroundImage(),
+        'Scene Config.backgroundImage should start empty'
+      ).toBe('')
+
+      await test.step('Upload an image via file picker', async () => {
+        const uploadResponse = comfyPage.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200
+        )
+        const fileChooser = comfyPage.page.waitForEvent('filechooser')
+        await load3d.uploadBackgroundImageButton.click()
+        await (await fileChooser).setFiles(assetPath('image64x64.webp'))
+        await uploadResponse
+      })
+
+      await expect.poll(readBackgroundImage).not.toBe('')
+      await expect(load3d.panoramaModeButton).toBeVisible()
+      await expect(load3d.removeBackgroundImageButton).toBeVisible()
+
+      await comfyPage.expectScreenshot(
+        load3d.node,
+        'load3d-background-image-tiled.png',
+        { maxDiffPixelRatio: 0.05 }
+      )
+
+      await test.step('Toggling panorama mode updates Scene Config.backgroundRenderMode', async () => {
+        await load3d.panoramaModeButton.click()
+        await expect
+          .poll(async () => {
+            const properties =
+              await node.getProperty<
+                Record<string, { backgroundRenderMode?: string }>
+              >('properties')
+            return properties['Scene Config']?.backgroundRenderMode
+          })
+          .toBe('panorama')
+        await comfyPage.expectScreenshot(
+          load3d.node,
+          'load3d-background-image-panorama.png',
+          { maxDiffPixelRatio: 0.05 }
+        )
+      })
+
+      await test.step('Remove background image clears the Scene Config', async () => {
+        await load3d.removeBackgroundImageButton.click()
+        await expect.poll(readBackgroundImage).toBe('')
+        await expect(load3d.removeBackgroundImageButton).toHaveCount(0)
+        await expect(load3d.panoramaModeButton).toHaveCount(0)
+      })
+    }
+  )
+
+  test(
+    'Grid toggle hides and restores the Scene grid helper',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage, load3d }) => {
+      await expect(load3d.gridToggleButton).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const readShowGrid = async () => {
+        const properties =
+          await node.getProperty<Record<string, { showGrid?: boolean }>>(
+            'properties'
+          )
+        return properties['Scene Config']?.showGrid
+      }
+
+      expect(
+        await readShowGrid(),
+        'Load3D workflow should start with grid visible (true or undefined)'
+      ).not.toBe(false)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+        maxDiffPixelRatio: 0.05
+      })
+
+      await load3d.gridToggleButton.click()
+      await expect.poll(readShowGrid).toBe(false)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-hidden.png', {
+        maxDiffPixelRatio: 0.05
+      })
+
+      await load3d.gridToggleButton.click()
+      await expect.poll(readShowGrid).toBe(true)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+        maxDiffPixelRatio: 0.05
+      })
+    }
+  )
+
+  test('Recording controls show stop/export/clear buttons after a recording', async ({
+    comfyPage,
+    load3d
+  }) => {
+    await expect(load3d.recordingButton).toBeVisible()
+    await expect(load3d.stopRecordingButton).toHaveCount(0)
+
+    await test.step('Start recording flips button to stop-recording', async () => {
+      await load3d.recordingButton.click()
+      await expect(load3d.stopRecordingButton).toBeVisible()
+    })
+
+    await test.step('Stop recording surfaces export/clear controls and a 1s duration', async () => {
+      // Record for 1s wall-clock so the duration display settles on 00:01.
+      await comfyPage.delay(1000)
+      await load3d.stopRecordingButton.click()
+      await expect(load3d.recordingButton).toBeVisible()
+      await expect(load3d.exportRecordingButton).toBeVisible()
+      await expect(load3d.clearRecordingButton).toBeVisible()
+      await expect(load3d.recordingDuration).toHaveText('00:01')
+    })
+
+    await test.step('Clear recording removes export and clear controls', async () => {
+      await load3d.clearRecordingButton.click()
+      await expect(load3d.exportRecordingButton).toHaveCount(0)
+      await expect(load3d.clearRecordingButton).toHaveCount(0)
+    })
+  })
+})
+
+test.describe('Load3D initialization failure', () => {
+  test('Surfaces a toast when the THREE.WebGLRenderer cannot be created', async ({
+    comfyPage
+  }) => {
+    // Force `new THREE.WebGLRenderer(...)` inside Load3d to throw by making
+    // WebGL getContext() calls return null.
+    await comfyPage.page.evaluate(() => {
+      const proto = HTMLCanvasElement.prototype as {
+        getContext: (
+          this: HTMLCanvasElement,
+          type: string,
+          options?: unknown
+        ) => unknown
+      }
+      const original = proto.getContext
+      proto.getContext = function (type, options) {
+        if (type === 'webgl' || type === 'webgl2') return null
+        return original.call(this, type, options)
+      }
+    })
+    await comfyPage.workflow.loadWorkflow('3d/load3d_node')
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({
+        hasText: 'Failed to initialize 3D Viewer'
+      })
+    ).not.toHaveCount(0)
+  })
 })

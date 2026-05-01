@@ -63,8 +63,7 @@
         v-model:material-mode="modelConfig!.materialMode"
         v-model:up-direction="modelConfig!.upDirection"
         v-model:show-skeleton="modelConfig!.showSkeleton"
-        :hide-material-mode="isSplatModel"
-        :is-ply-model="isPlyModel"
+        :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
       />
 
@@ -92,16 +91,25 @@
         v-if="showExportControls"
         @export-model="handleExportModel"
       />
+
+      <GizmoControls
+        v-if="showGizmoControls"
+        v-model:gizmo-config="modelConfig!.gizmo"
+        @toggle-gizmo="handleToggleGizmo"
+        @set-gizmo-mode="handleSetGizmoMode"
+        @reset-gizmo-transform="handleResetGizmoTransform"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
+import GizmoControls from '@/components/load3d/controls/GizmoControls.vue'
 import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
@@ -109,19 +117,25 @@ import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   CameraConfig,
+  GizmoMode,
   LightConfig,
+  MaterialMode,
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
-  isSplatModel = false,
-  isPlyModel = false,
+  canUseGizmo = true,
+  canUseLighting = true,
+  canExport = true,
+  materialModes = ['original', 'normal', 'wireframe'],
   hasSkeleton = false
 } = defineProps<{
-  isSplatModel?: boolean
-  isPlyModel?: boolean
+  canUseGizmo?: boolean
+  canUseLighting?: boolean
+  canExport?: boolean
+  materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
 }>()
 
@@ -148,16 +162,27 @@ const categoryLabels: Record<string, string> = {
   model: 'load3d.model',
   camera: 'load3d.camera',
   light: 'load3d.light',
+  gizmo: 'load3d.gizmo.label',
   export: 'load3d.export'
 }
 
 const availableCategories = computed(() => {
-  if (isSplatModel) {
-    return ['scene', 'model', 'camera']
-  }
-
-  return ['scene', 'model', 'camera', 'light', 'export']
+  const categories = ['scene', 'model', 'camera']
+  if (canUseLighting) categories.push('light')
+  if (canUseGizmo) categories.push('gizmo')
+  if (canExport) categories.push('export')
+  return categories
 })
+
+watch(
+  availableCategories,
+  (categories) => {
+    if (!categories.includes(activeCategory.value)) {
+      activeCategory.value = 'scene'
+    }
+  },
+  { immediate: true }
+)
 
 const showSceneControls = computed(
   () => activeCategory.value === 'scene' && !!sceneConfig.value
@@ -170,11 +195,17 @@ const showCameraControls = computed(
 )
 const showLightControls = computed(
   () =>
+    canUseLighting &&
     activeCategory.value === 'light' &&
     !!lightConfig.value &&
     !!modelConfig.value
 )
-const showExportControls = computed(() => activeCategory.value === 'export')
+const showExportControls = computed(
+  () => canExport && activeCategory.value === 'export'
+)
+const showGizmoControls = computed(
+  () => canUseGizmo && activeCategory.value === 'gizmo' && !!modelConfig.value
+)
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -190,6 +221,7 @@ const categoryIcons = {
   model: 'icon-[lucide--box]',
   camera: 'icon-[lucide--camera]',
   light: 'icon-[lucide--sun]',
+  gizmo: 'icon-[lucide--move-3d]',
   export: 'icon-[lucide--download]'
 } as const
 
@@ -205,6 +237,9 @@ const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
   (e: 'exportModel', format: string): void
   (e: 'updateHdriFile', file: File | null): void
+  (e: 'toggleGizmo', enabled: boolean): void
+  (e: 'setGizmoMode', mode: GizmoMode): void
+  (e: 'resetGizmoTransform'): void
 }>()
 
 const handleBackgroundImageUpdate = (file: File | null) => {
@@ -217,5 +252,17 @@ const handleExportModel = (format: string) => {
 
 const handleHDRIFileUpdate = (file: File | null) => {
   emit('updateHdriFile', file)
+}
+
+const handleToggleGizmo = (enabled: boolean) => {
+  emit('toggleGizmo', enabled)
+}
+
+const handleSetGizmoMode = (mode: GizmoMode) => {
+  emit('setGizmoMode', mode)
+}
+
+const handleResetGizmoTransform = () => {
+  emit('resetGizmoTransform')
 }
 </script>

@@ -59,9 +59,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MultiSelect from '@/components/input/MultiSelect.vue'
-import SingleSelect from '@/components/input/SingleSelect.vue'
-import type { SelectOption } from '@/components/input/types'
+import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import type { SelectOption } from '@/components/ui/select/types'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type {
