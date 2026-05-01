@@ -26,6 +26,7 @@
     "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
+    "posthog-js": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
   },
