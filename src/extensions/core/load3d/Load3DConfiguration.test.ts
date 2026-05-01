@@ -1,11 +1,13 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   GizmoConfig,
   ModelConfig
 } from '@/extensions/core/load3d/interfaces'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
@@ -160,5 +162,90 @@ describe('Load3DConfiguration.loadModelConfig', () => {
     const result = createConfig(properties).loadModelConfig()
 
     expect(result.gizmo).toEqual(fullGizmo)
+  })
+})
+
+describe('Load3DConfiguration.silentOnNotFound propagation', () => {
+  let loadModelSpy: ReturnType<typeof vi.fn>
+
+  function makeLoad3dMock(): Load3d {
+    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    return {
+      loadModel: loadModelSpy,
+      setUpDirection: vi.fn(),
+      setMaterialMode: vi.fn(),
+      setTargetSize: vi.fn(),
+      setCameraState: vi.fn(),
+      toggleGrid: vi.fn(),
+      setBackgroundColor: vi.fn(),
+      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
+      toggleCamera: vi.fn(),
+      setFOV: vi.fn(),
+      setLightIntensity: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIEnabled: vi.fn()
+    } as unknown as Load3d
+  }
+
+  async function flush() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+
+  beforeEach(() => {
+    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
+    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+      '/view?filename=model.glb'
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('configureForSaveMesh forwards silentOnNotFound: true to loadModel', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configureForSaveMesh('output', 'model.glb', {
+      silentOnNotFound: true
+    })
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: true
+    })
+  })
+
+  it('configureForSaveMesh uses silentOnNotFound: false when option is omitted', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configureForSaveMesh('output', 'model.glb')
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: false
+    })
+  })
+
+  it('configure forwards silentOnNotFound: true from settings to loadModel', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output',
+      silentOnNotFound: true
+    })
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: true
+    })
+  })
+
+  it('configure uses silentOnNotFound: false when setting is omitted', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output'
+    })
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: false
+    })
   })
 })
