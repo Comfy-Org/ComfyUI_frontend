@@ -359,7 +359,7 @@ export class SubgraphHelper {
       const idLocator = this.comfyPage.page.locator(
         `[data-nodeid="${options.nodeId}"]`
       )
-      return item.filter({ has: idLocator })
+      return named.filter({ has: idLocator })
     }
     const item = resolvePromotionItem()
 

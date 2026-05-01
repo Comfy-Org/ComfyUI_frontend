@@ -1824,8 +1824,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
-    for (const node of Object.values(this.selected_nodes))
-      node.selected = undefined
+    for (const item of this.selectedItems.keys()) item.selected = undefined
     this.selected_nodes = {}
     this.selected_group = null
     this.selectedItems.clear()
