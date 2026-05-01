@@ -91,6 +91,9 @@ export class VueNodeHelpers {
       .locator(`[data-node-id="${nodeId}"] .lg-node-header`)
       .click()
   }
+  async selectNodeByLocator(node: Locator) {
+    await node.locator('.lg-node-header').click()
+  }
 
   /**
    * Select multiple Vue nodes by IDs using Ctrl+click
