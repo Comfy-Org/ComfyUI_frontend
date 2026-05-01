@@ -120,6 +120,7 @@ const i18n = createI18n({
         error: 'Error'
       },
       rightSidePanel: {
+        showAdvancedShort: 'Show Advanced',
         showAdvancedInputsButton: 'Show Advanced Inputs'
       },
       'Node Render Error': 'Node Render Error'
@@ -285,7 +286,9 @@ describe('LGraphNode', () => {
       }
     })
 
-    expect(screen.queryByText('Show Advanced Inputs')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
   })
 
   it('should show error-only footer for collapsed nodes with advanced widgets', () => {
@@ -304,8 +307,10 @@ describe('LGraphNode', () => {
       }
     })
 
-    expect(screen.getByText('Error')).toBeTruthy()
-    expect(screen.queryByText(/show advanced/i)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
   })
 
   describe('Reroute node sizing', () => {
