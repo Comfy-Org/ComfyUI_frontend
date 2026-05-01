@@ -110,6 +110,20 @@ function dashboardSlots(
   )
 
   const localRects = bentoAspectRects(N, aspects, availW, availH, CHROME_GUTTER)
+
+  // N=1 stays at natural aspect (no crop). Anchor it opposite the
+  // input panel: panel-on-right → tile flush with the chrome rail
+  // (already at x=0); panel-on-left → tile shifts to availW − w so
+  // it sits on the far side of the canvas.
+  if (
+    N === 1 &&
+    localRects.length === 1 &&
+    (insets.left ?? 0) > 0 &&
+    localRects[0].w < availW
+  ) {
+    localRects[0].x = availW - localRects[0].w
+  }
+
   return localRects
     .map((r) => ({
       x: startX + r.x,
@@ -152,7 +166,17 @@ function bentoAspectRects(
   gutter: number
 ): Rect[] {
   if (N === 0) return []
-  if (N === 1) return [{ x: 0, y: 0, w: availW, h: availH }]
+  if (N === 1) {
+    // Natural-aspect, top-left anchored. Caller (dashboardSlots)
+    // shifts horizontally to anchor opposite the input panel.
+    const a = aspects[0] && aspects[0] > 0 ? aspects[0] : 1
+    const wByH = a * (availH - TILE_HEADER_PX)
+    if (wByH <= availW) {
+      return [{ x: 0, y: 0, w: wByH, h: availH }]
+    }
+    const hByW = availW / a + TILE_HEADER_PX
+    return [{ x: 0, y: 0, w: availW, h: hByW }]
+  }
 
   const aspectArr: number[] = []
   for (let i = 0; i < N; i++) {
