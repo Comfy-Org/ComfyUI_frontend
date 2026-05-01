@@ -576,9 +576,12 @@ describe('SceneManager', () => {
   })
 })
 
-function makeSceneManager(pixelRatio = 1) {
+function makeSceneManager(
+  pixelRatio = 1,
+  cameraOverride?: THREE.PerspectiveCamera | THREE.OrthographicCamera
+) {
   const renderer = makeMockRenderer(pixelRatio)
-  const camera = new THREE.PerspectiveCamera()
+  const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
   const manager = new SceneManager(
     renderer,
@@ -629,5 +632,33 @@ describe('SceneManager.captureScene', () => {
     await manager.captureScene(1920, 1080)
     const calls = vi.mocked(renderer.setSize).mock.calls
     expect(calls.at(-1)).toEqual([400, 300])
+  })
+
+  it('restores perspective camera aspect after capture', async () => {
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
+    const { manager } = makeSceneManager(1, camera)
+    const originalAspect = camera.aspect
+    await manager.captureScene(800, 600)
+    expect(camera.aspect).toBe(originalAspect)
+  })
+
+  it('restores orthographic camera bounds after capture', async () => {
+    const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 1000)
+    const { manager } = makeSceneManager(1, camera)
+    await manager.captureScene(800, 600)
+    expect(camera.left).toBe(-5)
+    expect(camera.right).toBe(5)
+    expect(camera.top).toBe(5)
+    expect(camera.bottom).toBe(-5)
+  })
+
+  it('disposes each temporary MeshNormalMaterial after the normal pass', async () => {
+    const { manager } = makeSceneManager()
+    manager.scene.add(
+      new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+    )
+    const disposeSpy = vi.spyOn(THREE.MeshNormalMaterial.prototype, 'dispose')
+    await manager.captureScene(800, 600)
+    expect(disposeSpy).toHaveBeenCalledOnce()
   })
 })
