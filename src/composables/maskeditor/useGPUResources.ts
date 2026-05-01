@@ -142,6 +142,9 @@ export function useGPUResources() {
     readbackStagingMask = null
     readbackStagingRgb?.destroy()
     readbackStagingRgb = null
+    previewContext = null
+    previewCanvas.value = null
+    dirtyRect.value = resetDirtyRect()
     // Device is managed by TGPU root; do not destroy it here
     // c8 ignore stop
   })
@@ -354,6 +357,9 @@ export function useGPUResources() {
     readbackStagingMask = null
     readbackStagingRgb = null
     currentBufferSize = 0
+    previewContext = null
+    previewCanvas.value = null
+    dirtyRect.value = resetDirtyRect()
     /* c8 ignore next — tgpuRoot only exists after successful GPU init */
     if (store.tgpuRoot) {
       store.tgpuRoot.destroy()
@@ -540,6 +546,13 @@ export function useGPUResources() {
       effectiveSize
     )
     const brushShape = store.brushSettings.type === BrushShape.Rect ? 1 : 0
+
+    dirtyRect.value = updateDirtyRect(
+      dirtyRect.value,
+      point.x,
+      point.y,
+      effectiveSize
+    )
 
     renderer.renderStrokeToAccumulator(
       [{ x: point.x, y: point.y, pressure: opacity }],

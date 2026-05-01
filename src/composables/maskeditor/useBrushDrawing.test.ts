@@ -195,9 +195,15 @@ describe('startDrawing', () => {
 describe('startDrawing error handling', () => {
   it('catches initShape errors and resets drawing state', async () => {
     mockStoreDef.maskCtx = null
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { startDrawing } = setup()
     await startDrawing(makePointerEvent(50, 50))
-    // error was caught internally; isDrawing was reset
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[useBrushDrawing] Failed to start drawing:',
+      expect.any(Error)
+    )
+    expect(mockStoreDef.maskCtx).toBeNull()
+    consoleSpy.mockRestore()
   })
 })
 
@@ -206,6 +212,10 @@ describe('startDrawing shift+click', () => {
     const { startDrawing } = setup()
     await startDrawing(makePointerEvent(50, 50))
     await startDrawing(makePointerEvent(100, 50, { shiftKey: true }))
+    expect(
+      (mockStoreDef.maskCtx as unknown as ReturnType<typeof makeMockCtx>)
+        .beginPath
+    ).toHaveBeenCalled()
   })
 })
 

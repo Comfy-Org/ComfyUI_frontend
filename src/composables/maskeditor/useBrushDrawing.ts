@@ -204,17 +204,15 @@ export function useBrushDrawing(initialSettings?: {
 
       lineStartPoint.value = coords_canvas
 
-      if (gpu.hasRenderer.value) {
+      if (gpu.hasRenderer.value && gpu.previewCanvas.value) {
         /* c8 ignore start */
         const isRgb = store.activeLayer === 'rgb'
         if (isRgb && store.rgbCanvas) {
           store.rgbCanvas.style.opacity = '0'
-          if (gpu.previewCanvas.value)
-            gpu.previewCanvas.value.style.opacity = '1'
+          gpu.previewCanvas.value.style.opacity = '1'
         } else if (!isRgb && store.maskCanvas) {
           store.maskCanvas.style.opacity = '0'
-          if (gpu.previewCanvas.value)
-            gpu.previewCanvas.value.style.opacity = String(store.maskOpacity)
+          gpu.previewCanvas.value.style.opacity = String(store.maskOpacity)
         }
         /* c8 ignore stop */
       }
@@ -223,6 +221,14 @@ export function useBrushDrawing(initialSettings?: {
       await drawWithBetterSmoothing(coords_canvas)
       smoothingLastDrawTime.value = new Date()
     } catch (error) {
+      /* c8 ignore start */
+      const isRgb = store.activeLayer === 'rgb'
+      if (isRgb && store.rgbCanvas) store.rgbCanvas.style.opacity = '1'
+      else if (!isRgb && store.maskCanvas)
+        store.maskCanvas.style.opacity = String(store.maskOpacity)
+      if (gpu.previewCanvas.value) gpu.previewCanvas.value.style.opacity = '1'
+      gpu.clearPreview()
+      /* c8 ignore stop */
       console.error('[useBrushDrawing] Failed to start drawing:', error)
       isDrawing.value = false
       isDrawingLine.value = false
