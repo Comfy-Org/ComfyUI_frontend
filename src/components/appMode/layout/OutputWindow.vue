@@ -161,7 +161,7 @@ type ResizeStart = {
 let resizeStart: ResizeStart | null = null
 const activeDir = ref<ResizeDir | null>(null)
 
-const BODY_PAD_PX = 8
+const BODY_PAD_PX = 0
 
 const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
   {
@@ -319,7 +319,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
     >
       <!-- bodyAspect drives auto-fit only when the user hasn't resized. -->
       <div
-        class="flex min-h-0 p-2"
+        class="flex min-h-0"
         :class="(bodyAspect == null || userSized) && !maximized ? 'flex-1' : ''"
         :style="
           bodyAspect != null && !userSized && !maximized
