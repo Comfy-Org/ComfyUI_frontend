@@ -4,23 +4,19 @@
   "nodes": [
     {
       "id": 1,
-      "type": "Load3D",
+      "type": "Preview3D",
       "pos": [50, 50],
-      "size": [400, 650],
+      "size": [450, 600],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
-      "outputs": [
-        { "name": "IMAGE", "type": "IMAGE", "links": null },
-        { "name": "MASK", "type": "MASK", "links": null },
-        { "name": "MESH", "type": "MESH", "links": null }
-      ],
+      "outputs": [],
       "properties": {
-        "Node name for S&R": "Load3D",
+        "Node name for S&R": "Preview3D",
         "Last Time Model File": "nonexistent_model.glb"
       },
-      "widgets_values": ["", 1024, 1024, "#000000"]
+      "widgets_values": ["nonexistent_model.glb"]
     }
   ],
   "links": [],

@@ -292,8 +292,8 @@ test.describe('Load3D silent 404 on missing output model', () => {
       route.fulfill({ status: 404, body: 'Not Found' })
     )
 
-    // This workflow has Last Time Model File set, which triggers the
-    // loadFolder: 'output' + silentOnNotFound: true path in load3d.ts
+    // This workflow has a Preview3D node with Last Time Model File set,
+    // triggering the loadFolder: 'output' + silentOnNotFound: true path.
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
     // Wait for the 404 response before asserting — gives the load attempt time
@@ -310,7 +310,7 @@ test.describe('Load3D silent 404 on missing output model', () => {
   test('Shows an error toast when a non-404 error occurs loading the output model', async ({
     comfyPage
   }) => {
-    // Intercept with a 500 to simulate a real server error — toast must appear
+    // Intercept with a 500 to simulate a real server error (not 404) — toast must appear
     await comfyPage.page.route('**/view?**', (route) =>
       route.fulfill({ status: 500, body: 'Internal Server Error' })
     )
