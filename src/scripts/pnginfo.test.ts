@@ -1,6 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { getWebpMetadata } from './pnginfo'
+import { getFromAvifFile } from './metadata/avif'
+import { getFromFlacFile } from './metadata/flac'
+import { getFromPngFile } from './metadata/png'
+import {
+  getAvifMetadata,
+  getFlacMetadata,
+  getLatentMetadata,
+  getPngMetadata,
+  getWebpMetadata
+} from './pnginfo'
+
+vi.mock('./metadata/png', () => ({
+  getFromPngFile: vi.fn()
+}))
+vi.mock('./metadata/flac', () => ({
+  getFromFlacFile: vi.fn()
+}))
+vi.mock('./metadata/avif', () => ({
+  getFromAvifFile: vi.fn()
+}))
 
 function buildExifPayload(workflowJson: string): Uint8Array {
   const fullStr = `workflow:${workflowJson}\0`
@@ -63,5 +82,71 @@ describe('getWebpMetadata', () => {
     const metadata = await getWebpMetadata(file)
 
     expect(metadata.workflow).toBe(workflow)
+  })
+})
+
+describe('format-specific metadata wrappers', () => {
+  it('getPngMetadata delegates to getFromPngFile', async () => {
+    const file = new File([], 'a.png', { type: 'image/png' })
+    vi.mocked(getFromPngFile).mockResolvedValue({ workflow: '{"png":1}' })
+
+    const result = await getPngMetadata(file)
+
+    expect(getFromPngFile).toHaveBeenCalledWith(file)
+    expect(result).toEqual({ workflow: '{"png":1}' })
+  })
+
+  it('getFlacMetadata delegates to getFromFlacFile', async () => {
+    const file = new File([], 'a.flac', { type: 'audio/flac' })
+    vi.mocked(getFromFlacFile).mockResolvedValue({ workflow: '{"flac":1}' })
+
+    const result = await getFlacMetadata(file)
+
+    expect(getFromFlacFile).toHaveBeenCalledWith(file)
+    expect(result).toEqual({ workflow: '{"flac":1}' })
+  })
+
+  it('getAvifMetadata delegates to getFromAvifFile', async () => {
+    const file = new File([], 'a.avif', { type: 'image/avif' })
+    vi.mocked(getFromAvifFile).mockResolvedValue({ workflow: '{"avif":1}' })
+
+    const result = await getAvifMetadata(file)
+
+    expect(getFromAvifFile).toHaveBeenCalledWith(file)
+    expect(result).toEqual({ workflow: '{"avif":1}' })
+  })
+})
+
+const buildSafetensors = (header: Record<string, unknown>): File => {
+  const headerJson = JSON.stringify(header)
+  const headerBytes = new TextEncoder().encode(headerJson)
+  const buf = new ArrayBuffer(8 + headerBytes.length)
+  const dv = new DataView(buf)
+  dv.setUint32(0, headerBytes.length, true)
+  dv.setUint32(4, 0, true)
+  new Uint8Array(buf, 8).set(headerBytes)
+  return new File([buf], 'x.safetensors')
+}
+
+describe('getLatentMetadata', () => {
+  it('returns the __metadata__ object from a safetensors header', async () => {
+    const file = buildSafetensors({
+      __metadata__: { workflow: '{"nodes":[]}', extra: 'value' },
+      'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
+    })
+
+    const result = await getLatentMetadata(file)
+
+    expect(result).toEqual({ workflow: '{"nodes":[]}', extra: 'value' })
+  })
+
+  it('resolves undefined when header has no __metadata__ entry', async () => {
+    const file = buildSafetensors({
+      'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
+    })
+
+    const result = await getLatentMetadata(file)
+
+    expect(result).toBeUndefined()
   })
 })
