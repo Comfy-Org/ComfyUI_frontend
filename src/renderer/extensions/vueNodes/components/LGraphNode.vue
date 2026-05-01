@@ -719,6 +719,7 @@ useGLSLPreview(lgraphNode)
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
+  if (isCollapsed.value) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {

@@ -11,6 +11,7 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setActivePinia } from 'pinia'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -114,6 +115,13 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        error: 'Error'
+      },
+      rightSidePanel: {
+        showAdvancedShort: 'Show Advanced',
+        showAdvancedInputsButton: 'Show Advanced Inputs'
+      },
       'Node Render Error': 'Node Render Error'
     }
   }
@@ -171,6 +179,12 @@ describe('LGraphNode', () => {
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) => {
+      if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+      if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
+      if (key === 'Comfy.Node.Opacity') return 1
+    })
   })
 
   it('should call resize tracking composable with node ID', () => {
@@ -254,6 +268,48 @@ describe('LGraphNode', () => {
 
     expect(root.style.getPropertyValue('--node-height')).toBe('130px')
     expect(root.style.getPropertyValue('--node-height-x')).toBe('')
+  })
+
+  it('should hide advanced footer button while the node is collapsed', () => {
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true },
+        widgets: [
+          {
+            name: 'advancedWidget',
+            type: 'number',
+            options: { advanced: true }
+          }
+        ]
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('should show error-only footer for collapsed nodes with advanced widgets', () => {
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true },
+        hasErrors: true,
+        widgets: [
+          {
+            name: 'advancedWidget',
+            type: 'number',
+            options: { advanced: true }
+          }
+        ]
+      }
+    })
+
+    expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
   })
 
   describe('Reroute node sizing', () => {
