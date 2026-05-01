@@ -1,4 +1,3 @@
-import type * as VueModule from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockMixpanel = vi.hoisted(() => ({
@@ -12,14 +11,6 @@ const mockMixpanel = vi.hoisted(() => ({
 vi.mock('mixpanel-browser', () => ({
   default: mockMixpanel
 }))
-
-// Required: the provider constructor calls watch(remoteConfig, ...) which
-// would otherwise create a real Vue effect and racily delay the dynamic
-// import resolution that drives mockMixpanel.init.
-vi.mock('vue', async () => {
-  const actual = await vi.importActual<typeof VueModule>('vue')
-  return { ...actual, watch: vi.fn() }
-})
 
 const mockOnUserResolved = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -80,7 +71,8 @@ import type {
 } from '@/platform/telemetry/types'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 
-const flushDynamicImport = () => new Promise((r) => setTimeout(r, 0))
+const waitForMixpanelInit = () =>
+  vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
@@ -122,7 +114,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
   it('initializes Mixpanel and tracks events synchronously after the loaded callback fires', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
 
     provider.trackUserLoggedIn()
 
@@ -143,7 +135,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     })
 
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
 
     provider.trackSignupOpened()
     provider.trackUserLoggedIn()
@@ -163,7 +155,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
   it('skips events that are in the default disabled set', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
     const metadata: WorkflowImportMetadata = {
@@ -183,7 +175,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     'trackEmailVerification(%s) dispatches %s',
     async (stage, expectedEvent) => {
       const provider = new MixpanelTelemetryProvider()
-      await flushDynamicImport()
+      await waitForMixpanelInit()
       mockMixpanel.track.mockClear()
 
       provider.trackEmailVerification(stage)
@@ -200,7 +192,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     ['subscribe_clicked' as const, TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED]
   ])('trackSubscription(%s) dispatches %s', async (event, expectedEvent) => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
     provider.trackSubscription(event)
@@ -210,7 +202,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
   it('writes normalized survey properties to Mixpanel.people on submit', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
 
     const normalized = {
       industry: 'tech',
@@ -231,7 +223,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
   it('does not write to Mixpanel.people for survey "opened"', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.people.set.mockClear()
 
     provider.trackSurvey('opened')
@@ -241,7 +233,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
   it('forwards user identification when onUserResolved callback fires with a user id', async () => {
     new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
 
     expect(mockOnUserResolved).toHaveBeenCalled()
     const callback = mockOnUserResolved.mock.calls[0]?.[0] as (user: {
@@ -375,7 +367,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     ]
   ])('%s dispatches %s', async (_name, invoke, expectedEvent) => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
     invoke(provider)
@@ -388,7 +380,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
 
   it('trackApiCreditTopupButtonPurchaseClicked includes the credit_amount payload', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
     provider.trackApiCreditTopupButtonPurchaseClicked(42)
@@ -401,7 +393,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
 
   it('trackRunButton populates RunButtonProperties from the execution context', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
     provider.trackRunButton({
@@ -423,7 +415,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
 
   it('trackWorkflowExecution forwards the latest trigger_source from trackRunButton', async () => {
     const provider = new MixpanelTelemetryProvider()
-    await flushDynamicImport()
+    await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
     provider.trackRunButton({ trigger_source: 'keybinding' })
