@@ -461,6 +461,25 @@ function initSizeStyles() {
   el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
 }
 
+function syncSizeToLayoutStore() {
+  //Write size back to layout store
+  //This happens prior to layout subscription so feedback loops can not occur
+  //Still dangerous
+  const el = nodeContainerRef.value
+  if (!el) return
+
+  const bounds = el.getBoundingClientRect()
+  const width = Math.max(bounds.width - 1, size.value.width)
+  const height = Math.max(
+    bounds.height - 1 - LiteGraph.NODE_TITLE_HEIGHT,
+    size.value.height
+  )
+  if (size.value.height !== height || size.value.width !== width) {
+    mutations.setSource(LayoutSource.Vue)
+    mutations.resizeNode(nodeData.id, { width, height })
+  }
+}
+
 /**
  * Handle external size changes (e.g., from extensions calling node.setSize()).
  * Updates CSS variables when layoutStore changes from Canvas/External source.
@@ -488,6 +507,8 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
+  syncSizeToLayoutStore()
+
   unsubscribeLayoutChange = layoutStore.onNodeChange(
     nodeData.id,
     handleLayoutChange
