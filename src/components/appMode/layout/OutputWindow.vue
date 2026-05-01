@@ -51,7 +51,16 @@ function toggleMaximized() {
 }
 
 const appModeStore = useAppModeStore()
-const { viewportScale } = storeToRefs(appModeStore)
+const { viewportScale, noZoomMode } = storeToRefs(appModeStore)
+
+// In dashboard mode, small auto-placed tiles drop the header — the
+// filename is unreadable at thumbnail size and the drag-handle role
+// is moot when tiles can't be moved by hand. Zoom mode keeps the
+// header at every size.
+// TODO: surface download/close/menu via a hover overlay on
+// headerless tiles so those actions stay reachable.
+const HEADERLESS_THRESHOLD_W = 360
+const HEADERLESS_THRESHOLD_H = 300
 
 // Snap to the chrome cell grid in every mode so tiles line up with
 // the input panel and chrome corner clusters. Positions sit at
@@ -253,6 +262,13 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
   }
 )
 
+const showHeader = computed(() => {
+  if (!noZoomMode.value || maximized.value) return true
+  return (
+    ww.value >= HEADERLESS_THRESHOLD_W && wh.value >= HEADERLESS_THRESHOLD_H
+  )
+})
+
 const combinedMenuEntries = computed<MenuItem[]>(() => {
   const own: MenuItem[] = [
     {
@@ -291,6 +307,7 @@ const combinedMenuEntries = computed<MenuItem[]>(() => {
     "
   >
     <PanelHeader
+      v-if="showHeader"
       v-model:collapsed="collapsed"
       :title="title || t('linearMode.outputs.title')"
       :draggable="!maximized"

@@ -95,11 +95,10 @@ function evictionScore(w: OutputWindowEntry): number {
 }
 
 // Place tiles on the chrome cell grid: feature on the side opposite
-// the panel, stacks fill the remaining cells. Tile sizes adapt to
-// the available cell area so a small N gets large tiles and a full
-// dashboard gets compact tiles. Each tile body matches its image
-// aspect (or as close as the integer cell grid allows) — no stretch,
-// no crop.
+// the panel, stacks pack the remaining cells in a near-square grid.
+// The avail rect is fully covered (zero slack); image aspect is
+// handled by `object-cover` inside each slot rather than by sizing
+// the slot to the image.
 function dashboardSlots(
   count: number,
   viewW: number,
@@ -128,7 +127,18 @@ function dashboardSlots(
     aspectArr.push(a && a > 0 ? a : 1)
   }
 
-  const placements = computePlacements(N, avail.cols, avail.rows, aspectArr)
+  // Feature anchors on the side opposite the panel so the panel and
+  // newest output don't crowd each other. With no panel, default left.
+  const panelOnLeft = !!insets.panelRect && insets.panelRect.x === 0
+  const featureOnRight = panelOnLeft
+
+  const placements = templatePlacements(
+    N,
+    avail.cols,
+    avail.rows,
+    aspectArr,
+    featureOnRight
+  )
 
   // Pixel boundaries to snap edge-touching tiles to. The cell grid
   // floors the panel's column position, so when the panel doesn't sit
@@ -152,6 +162,11 @@ function dashboardSlots(
     let w = p.cellsW * CHROME_STEP - CHROME_GUTTER
     let h = p.cellsH * CHROME_STEP - CHROME_GUTTER
 
+    // Tiles touching an avail edge absorb any sub-cell sliver so the
+    // dashboard fills exactly to the chrome / panel margins. Safe to
+    // apply to stack tiles too because the 0.55 feature split keeps
+    // the feature wider than any stack column even with full
+    // sliver absorption (max sliver ~47px, feature lead ≥56px).
     if (p.col + p.cellsW === avail.cols && rightBoundaryWithPanel > x + w) {
       w = rightBoundaryWithPanel - x
     }
@@ -174,105 +189,105 @@ interface CellPlacement {
   cellsH: number
 }
 
-// Single-shot layout: feature on the left at its natural aspect,
-// stacks tiled in the remaining cells. We try every feature width
-// and stack-grid arrangement, scoring by total tile area, and pick
-// the winner. Body cells always match the image aspect so there's
-// no stretch or letterbox.
-function computePlacements(
+// TODO(bento-templates): Demo-grade hand-tuned layout. Feature tile
+// fills 50% of the avail width on the side opposite the panel; the
+// remaining stacks tile a near-square grid that fully covers the
+// rest. The last stack tile spans any leftover slots in its row so
+// the avail rect has zero slack. Image aspect is ignored — slots
+// are filled by `object-cover`. Replace with the hero-split +
+// slicing-tree + justified-rows hybrid in
+// github-prs/pr-11317/bento-layout-research.md once aspect-preserving
+// packing is back on the roadmap.
+function templatePlacements(
   N: number,
   cols: number,
   rows: number,
-  aspects: number[]
+  aspects: number[],
+  featureOnRight: boolean
 ): CellPlacement[] {
-  if (N === 0 || cols < 1 || rows < 2) return []
-
-  const aspectAt = (i: number) => aspects[i] ?? 1
+  if (N === 0 || cols < 1 || rows < 1) return []
 
   if (N === 1) {
-    // Aspect-locked tile that grows toward the avail boundary, but
-    // only until the body aspect deviates from the image aspect by
-    // SOLO_TILE_ASPECT_CAP — past that, image-cover crop becomes
-    // visually excessive (a square in a 1.32:1 avail loses ~24% to
-    // crop; with the cap it's ~13% before the bottom edge-snap
-    // pulls the body closer to image aspect again).
-    return [boundedFitTile(aspectAt(0), cols, rows, 0, 0)]
+    // Bounded-fit feature so a square image in a landscape avail
+    // doesn't lose ~24% to cover-crop. Anchored opposite the panel.
+    const fit = boundedFitTile(aspects[0] ?? 1, cols, rows, 0, 0)
+    if (featureOnRight) fit.col = cols - fit.cellsW
+    return [fit]
   }
 
-  const featureA = aspectAt(0)
+  // 0.55 (not 0.5) so feature is always at least one cell wider
+  // than the stack region. With 0.5 + even cols, both halves are
+  // equal cells; the panel-side sliver-stretch then makes the
+  // stack tile visibly bigger than the feature, which inverts the
+  // "newest dominates" intent.
+  const featW = Math.max(2, Math.ceil(cols * 0.55))
+  const stackCols = cols - featW
+  if (stackCols < 1) {
+    return [{ col: 0, row: 0, cellsW: cols, cellsH: rows }]
+  }
+
   const stackCount = N - 1
-  // Stacks share an aspect; mixed-aspect runs use the average so
-  // the grid is uniform. (Per-tile sizes still match each image
-  // aspect inside the chosen cell.)
-  const avgStackA = aspects.slice(1).reduce((s, a) => s + a, 0) / stackCount
-
-  let best: CellPlacement[] | null = null
-  let bestArea = -1
-
-  // Iterate feature body height (so aspect stays locked) and look for
-  // the (sc, sr) stack grid that maximizes total tile area.
-  for (let featBodyH = 1; featBodyH < rows; featBodyH++) {
-    const featBodyW = Math.max(1, Math.round(featureA * featBodyH))
-    const featW = featBodyW
-    const featH = featBodyH + 1
-    if (featW > cols - 2) continue
-    const stackCols = cols - featW
-    if (stackCols < 2) continue
-
-    for (let sc = 1; sc <= stackCount; sc++) {
-      const sr = Math.ceil(stackCount / sc)
-      if (sr > rows) continue
-      const tileMaxW = Math.floor(stackCols / sc)
-      const tileMaxH = Math.floor(rows / sr)
-      if (tileMaxW < 1 || tileMaxH < 2) continue
-
-      // Body cells match avgStackA inside the (tileMaxW × tileMaxH-1)
-      // budget; whichever side runs out first sets the size.
-      let bodyH = Math.min(tileMaxH - 1, Math.round(tileMaxW / avgStackA))
-      let bodyW = Math.round(avgStackA * bodyH)
-      if (bodyW > tileMaxW) {
-        bodyW = tileMaxW
-        bodyH = Math.round(bodyW / avgStackA)
-      }
-      if (bodyW < 1 || bodyH < 1) continue
-
-      const stackCellsW = bodyW
-      const stackCellsH = bodyH + 1
-      // Weight the feature area 2× so the algorithm prefers
-      // configurations where the newest (feature) tile dominates.
-      // Otherwise total-area scoring ties between "tiny feature +
-      // huge stack" and "huge feature + tiny stack", and the
-      // ascending featBodyH loop locks in the wrong one.
-      const score = featW * featH * 2 + stackCount * stackCellsW * stackCellsH
-      if (score <= bestArea) continue
-      bestArea = score
-
-      const tiles: CellPlacement[] = [
-        { col: 0, row: 0, cellsW: featW, cellsH: featH }
-      ]
-      // Place each stack tile at its own aspect inside the uniform
-      // cell so a mixed-aspect run doesn't get squashed into the avg.
-      for (let i = 0; i < stackCount; i++) {
-        const ssc = i % sc
-        const ssr = Math.floor(i / sc)
-        tiles.push(
-          largestTile(
-            aspectAt(i + 1),
-            stackCellsW,
-            stackCellsH,
-            featW + ssc * stackCellsW,
-            ssr * stackCellsH
-          )
-        )
-      }
-      best = tiles
-    }
+  // Pick (sc × sr) so the stack cells are as close to square as
+  // possible. Score is |log(cellW/cellH)| — symmetric around 1:1.
+  let best = { sc: 1, sr: stackCount, score: Infinity }
+  for (let sc = 1; sc <= stackCount; sc++) {
+    const sr = Math.ceil(stackCount / sc)
+    const cellW = stackCols / sc
+    const cellH = rows / sr
+    if (cellW < 1 || cellH < 1) continue
+    const score = Math.abs(Math.log(cellW / cellH))
+    if (score < best.score) best = { sc, sr, score }
+  }
+  if (best.score === Infinity) {
+    return [{ col: 0, row: 0, cellsW: cols, cellsH: rows }]
   }
 
-  if (best) return best
+  const { sc, sr } = best
+  const colWidths = distributeCells(stackCols, sc)
+  const rowHeights = distributeCells(rows, sr)
+  const colXs = cumOffsets(colWidths)
+  const rowYs = cumOffsets(rowHeights)
 
-  // Last-resort fallback: a single feature filling the available area.
-  return [largestTile(featureA, cols, rows, 0, 0)]
+  const featCol = featureOnRight ? stackCols : 0
+  const stackBaseCol = featureOnRight ? 0 : featW
+  const tiles: CellPlacement[] = [
+    { col: featCol, row: 0, cellsW: featW, cellsH: rows }
+  ]
+
+  // Stack tiles in row-major order. The last tile spans any leftover
+  // slots in its row to keep the avail rect fully covered.
+  const totalSlots = sc * sr
+  const leftover = totalSlots - stackCount
+  for (let i = 0; i < stackCount; i++) {
+    const r = Math.floor(i / sc)
+    const c = i % sc
+    const isLast = i === stackCount - 1
+    const span = isLast && r === sr - 1 && leftover > 0 ? 1 + leftover : 1
+    let w = 0
+    for (let k = 0; k < span; k++) w += colWidths[c + k]
+    tiles.push({
+      col: stackBaseCol + colXs[c],
+      row: rowYs[r],
+      cellsW: w,
+      cellsH: rowHeights[r]
+    })
+  }
+
+  return tiles
+}
+
+// e.g. distributeCells(13, 3) → [5, 4, 4]. Extras land in the
+// earliest rows/cols so the avail rect is fully covered.
+function distributeCells(total: number, count: number): number[] {
+  const base = Math.floor(total / count)
+  const extra = total - base * count
+  return Array.from({ length: count }, (_, i) => base + (i < extra ? 1 : 0))
+}
+
+function cumOffsets(sizes: number[]): number[] {
+  const out: number[] = [0]
+  for (let i = 0; i < sizes.length; i++) out.push(out[i] + sizes[i])
+  return out
 }
 
 // Max body-aspect / image-aspect ratio for the solo-tile case. A
@@ -307,25 +322,6 @@ function boundedFitTile(
       bodyRows,
       Math.round((bodyW / aspect) * SOLO_TILE_ASPECT_CAP)
     )
-  }
-  return { col, row, cellsW: bodyW, cellsH: bodyH + 1 }
-}
-
-// Largest aspect-matched tile that fits in (cols × rows) cells,
-// anchored at (col, row). Body height + 1 cell of header = tile
-// height; body width follows the aspect.
-function largestTile(
-  aspect: number,
-  cols: number,
-  rows: number,
-  col: number,
-  row: number
-): CellPlacement {
-  let bodyH = Math.max(1, rows - 1)
-  let bodyW = Math.max(1, Math.round(aspect * bodyH))
-  if (bodyW > cols) {
-    bodyW = cols
-    bodyH = Math.max(1, Math.round(bodyW / aspect))
   }
   return { col, row, cellsW: bodyW, cellsH: bodyH + 1 }
 }

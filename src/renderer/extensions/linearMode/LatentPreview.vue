@@ -2,5 +2,5 @@
 // Pre-execution placeholder.
 </script>
 <template>
-  <div class="size-full rounded-lg border border-white/8 bg-layout-canvas" />
+  <div class="size-full bg-layout-canvas" />
 </template>
