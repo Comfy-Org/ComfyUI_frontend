@@ -22,6 +22,7 @@ import type {
   EventCallback,
   GizmoMode,
   Load3DOptions,
+  LoadModelOptions,
   MaterialMode,
   UpDirection
 } from './interfaces'
@@ -500,7 +501,11 @@ class Load3d {
     return this._loadGeneration
   }
 
-  async loadModel(url: string, originalFileName?: string): Promise<void> {
+  async loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<void> {
     this._loadGeneration += 1
 
     if (this.loadingPromise) {
@@ -509,7 +514,11 @@ class Load3d {
       } catch (e) {}
     }
 
-    this.loadingPromise = this._loadModelInternal(url, originalFileName)
+    this.loadingPromise = this._loadModelInternal(
+      url,
+      originalFileName,
+      options
+    )
     return this.loadingPromise
   }
 
@@ -525,7 +534,8 @@ class Load3d {
 
   private async _loadModelInternal(
     url: string,
-    originalFileName?: string
+    originalFileName?: string,
+    options?: LoadModelOptions
   ): Promise<void> {
     this.cameraManager.reset()
     this.controlsManager.reset()
@@ -533,7 +543,7 @@ class Load3d {
     this.modelManager.clearModel()
     this.animationManager.dispose()
 
-    await this.loaderManager.loadModel(url, originalFileName)
+    await this.loaderManager.loadModel(url, originalFileName, options)
 
     // Auto-detect and setup animations if present
     if (this.modelManager.currentModel) {
