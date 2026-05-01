@@ -13,8 +13,9 @@ const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
 const jobIdToWorkflowPathRef = ref(new Map<string, string>())
 const selectedOutputsRef = ref<string[]>([])
 
-const { apiTarget } = vi.hoisted(() => ({
-  apiTarget: new EventTarget()
+const { apiTarget, getJobDetailMock } = vi.hoisted(() => ({
+  apiTarget: new EventTarget(),
+  getJobDetailMock: vi.fn()
 }))
 
 vi.mock('@/composables/useAppMode', () => ({
@@ -64,6 +65,10 @@ vi.mock('@/scripts/api', () => ({
   })
 }))
 
+vi.mock('@/services/jobOutputCache', () => ({
+  getJobDetail: (...args: unknown[]) => getJobDetailMock(...args)
+}))
+
 vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
   flattenNodeOutput: ([nodeId, output]: [
     string | number,
@@ -111,6 +116,7 @@ describe('linearOutputStore', () => {
     activeWorkflowPathRef.value = 'workflows/test-workflow.json'
     jobIdToWorkflowPathRef.value = new Map()
     selectedOutputsRef.value = []
+    getJobDetailMock.mockReset()
   })
 
   it('creates a skeleton item when a job starts', () => {
@@ -1310,6 +1316,115 @@ describe('linearOutputStore', () => {
       expect(
         store.inProgressItems.filter((i) => i.state === 'image')
       ).toHaveLength(2)
+    })
+  })
+
+  describe('cached execution', () => {
+    function dispatchCachedEvent(promptId: string, nodes: string[]) {
+      apiTarget.dispatchEvent(
+        new CustomEvent('execution_cached', {
+          detail: { prompt_id: promptId, timestamp: Date.now(), nodes }
+        })
+      )
+    }
+
+    it('keeps skeleton visible while fetching cached job outputs', async () => {
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      let resolveJobDetail!: (v: unknown) => void
+      getJobDetailMock.mockReturnValue(
+        new Promise((resolve) => {
+          resolveJobDetail = resolve
+        })
+      )
+
+      store.onJobStart('job-1')
+      dispatchCachedEvent('job-1', ['1'])
+      store.onJobComplete('job-1')
+
+      // Skeleton should still be present while awaiting job detail
+      expect(store.inProgressItems).toHaveLength(1)
+      expect(store.inProgressItems[0].state).toBe('skeleton')
+
+      // Resolve to unblock async work
+      resolveJobDetail(null)
+    })
+
+    it('replaces skeleton with image items once cached job detail resolves', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      let resolveJobDetail!: (v: unknown) => void
+      getJobDetailMock.mockReturnValue(
+        new Promise((resolve) => {
+          resolveJobDetail = resolve
+        })
+      )
+
+      store.onJobStart('job-1')
+      dispatchCachedEvent('job-1', ['1'])
+      store.onJobComplete('job-1')
+
+      resolveJobDetail({
+        id: 'job-1',
+        status: 'completed',
+        create_time: Date.now(),
+        outputs: {
+          '1': {
+            images: [{ filename: 'cached.png', subfolder: '', type: 'output' }]
+          }
+        }
+      })
+      await nextTick()
+
+      const imageItems = store.inProgressItems.filter(
+        (i) => i.state === 'image'
+      )
+      expect(imageItems).toHaveLength(1)
+      expect(imageItems[0].output).toBeDefined()
+      expect(store.pendingResolve.has('job-1')).toBe(true)
+    })
+
+    it('removes skeleton when cached job detail has no previewable outputs', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      getJobDetailMock.mockResolvedValue({
+        id: 'job-1',
+        status: 'completed',
+        create_time: Date.now(),
+        outputs: {}
+      })
+
+      store.onJobStart('job-1')
+      dispatchCachedEvent('job-1', ['1'])
+      store.onJobComplete('job-1')
+      await nextTick()
+
+      expect(store.inProgressItems).toHaveLength(0)
+    })
+
+    it('removes skeleton when cached job detail fetch fails', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      getJobDetailMock.mockResolvedValue(undefined)
+
+      store.onJobStart('job-1')
+      dispatchCachedEvent('job-1', ['1'])
+      store.onJobComplete('job-1')
+      await nextTick()
+
+      expect(store.inProgressItems).toHaveLength(0)
+    })
+
+    it('does not defer removal for jobs without cached nodes', () => {
+      const store = useLinearOutputStore()
+      store.onJobStart('job-1')
+      store.onJobComplete('job-1')
+
+      expect(store.inProgressItems).toHaveLength(0)
+      expect(getJobDetailMock).not.toHaveBeenCalled()
     })
   })
 

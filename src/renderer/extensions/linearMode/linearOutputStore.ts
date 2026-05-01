@@ -6,8 +6,13 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
+import type {
+  ExecutedWsMessage,
+  ExecutionCachedWsMessage,
+  JobId
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -26,6 +31,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const trackedJobId = ref<JobId | null>(null)
   const pendingResolve = ref(new Set<JobId>())
   const executedNodeIds = new Set<string>()
+  const cachedJobIds = new Set<JobId>()
 
   const activeWorkflowInProgressItems = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -166,6 +172,51 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     inProgressItems.value = [...newItems, ...inProgressItems.value]
   }
 
+  async function populateCachedOutputs(jobId: JobId) {
+    const jobDetail = await getJobDetail(jobId)
+    if (!jobDetail?.outputs) {
+      removeJobItems(jobId)
+      return
+    }
+
+    const outputNodeIds = appModeStore.selectedOutputs
+    const allOutputs: ResultItemImpl[] = []
+    for (const [nodeId, output] of Object.entries(jobDetail.outputs)) {
+      if (
+        outputNodeIds.length > 0 &&
+        !outputNodeIds.some((id) => String(id) === nodeId)
+      )
+        continue
+      allOutputs.push(...flattenNodeOutput([nodeId, output]))
+    }
+
+    if (allOutputs.length === 0) {
+      removeJobItems(jobId)
+      return
+    }
+
+    const skeletonItem = inProgressItems.value.find(
+      (i) => i.jobId === jobId && i.state === 'skeleton'
+    )
+    const newItems: InProgressItem[] = allOutputs.map((o, idx) => ({
+      id: skeletonItem && idx === 0 ? skeletonItem.id : makeItemId(jobId),
+      jobId,
+      state: 'image' as const,
+      output: o
+    }))
+
+    if (skeletonItem) {
+      const idx = inProgressItems.value.indexOf(skeletonItem)
+      const arr = [...inProgressItems.value]
+      arr.splice(idx, 1, ...newItems)
+      inProgressItems.value = arr
+    } else {
+      inProgressItems.value = [...newItems, ...inProgressItems.value]
+    }
+    autoSelect(`slot:${newItems[0].id}`, jobId)
+    pendingResolve.value = new Set([...pendingResolve.value, jobId])
+  }
+
   function onJobComplete(jobId: JobId) {
     // On any job complete, remove all pending resolve items.
     if (pendingResolve.value.size > 0) {
@@ -194,6 +245,11 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
         (i) => i.jobId !== jobId || i.state === 'image'
       )
       pendingResolve.value = new Set([...pendingResolve.value, jobId])
+    } else if (cachedJobIds.has(jobId)) {
+      // No executed nodes produced images, but some nodes were cached.
+      // Keep the skeleton visible while we fetch outputs from job history.
+      cachedJobIds.delete(jobId)
+      void populateCachedOutputs(jobId)
     } else {
       removeJobItems(jobId)
     }
@@ -260,6 +316,14 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const jobId = detail.prompt_id
     if (jobId !== executionStore.activeJobId) return
     onNodeExecuted(jobId, detail)
+  }
+
+  function handleExecutionCached({
+    detail
+  }: CustomEvent<ExecutionCachedWsMessage>) {
+    if (detail.nodes.length > 0) {
+      cachedJobIds.add(detail.prompt_id)
+    }
   }
 
   // Watch both activeJobId and the path mapping together. The path mapping
@@ -356,9 +420,11 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     (active, wasActive) => {
       if (active) {
         api.addEventListener('executed', handleExecuted)
+        api.addEventListener('execution_cached', handleExecutionCached)
         reconcileOnEnter()
       } else if (wasActive) {
         api.removeEventListener('executed', handleExecuted)
+        api.removeEventListener('execution_cached', handleExecutionCached)
         cleanupOnLeave()
       }
     },

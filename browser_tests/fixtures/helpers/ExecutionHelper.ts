@@ -131,6 +131,16 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `execution_cached` WS event with the list of cached node IDs. */
+  executionCached(jobId: string, nodes: string[]): void {
+    this.ws.send(
+      JSON.stringify({
+        type: 'execution_cached',
+        data: { prompt_id: jobId, timestamp: Date.now(), nodes }
+      })
+    )
+  }
+
   /** Send `execution_success` WS event. */
   executionSuccess(jobId: string): void {
     this.ws.send(
@@ -196,6 +206,48 @@ export class ExecutionHelper {
     await this.assets.mockOutputHistory(this.completedJobs)
     this.executionSuccess(jobId)
     // Trigger queue/history refresh
+    this.status(0)
+  }
+
+  /**
+   * Complete a fully-cached job: mock the job detail endpoint with full
+   * outputs, send execution_cached + execution_success, and trigger a
+   * history refresh. The store will fetch job detail to populate outputs.
+   */
+  async completeWithCachedHistory(
+    jobId: string,
+    cachedNodeIds: string[],
+    nodeId: string,
+    filename: string
+  ): Promise<void> {
+    this.completedJobs.push(
+      createMockJob({
+        id: jobId,
+        preview_output: {
+          filename,
+          subfolder: '',
+          type: 'output',
+          nodeId,
+          mediaType: 'images'
+        }
+      })
+    )
+
+    await this.assets.mockOutputHistory(this.completedJobs)
+    await this.assets.mockJobDetail(jobId, {
+      id: jobId,
+      status: 'completed',
+      create_time: Date.now() / 1000,
+      priority: 0,
+      outputs: {
+        [nodeId]: {
+          images: [{ filename, subfolder: '', type: 'output' as const }]
+        }
+      }
+    })
+
+    this.executionCached(jobId, cachedNodeIds)
+    this.executionSuccess(jobId)
     this.status(0)
   }
 

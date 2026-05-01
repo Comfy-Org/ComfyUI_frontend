@@ -339,6 +339,32 @@ test.describe('Output History', { tag: '@ui' }, () => {
     ).toBeInViewport()
   })
 
+  test('Cached execution shows image output (not permanent skeleton)', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
+
+    await expect(
+      comfyPage.appMode.outputHistory.skeletons.first()
+    ).toBeVisible()
+
+    // All nodes return cached results — no `executed` events fire
+    await exec.completeWithCachedHistory(
+      jobId,
+      ALL_NODE_IDS,
+      SAVE_IMAGE_NODE,
+      'cached_output.png'
+    )
+
+    // Skeleton must resolve to an image, not remain stuck
+    await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
+    await expect(
+      comfyPage.appMode.outputHistory.imageOutputs.first()
+    ).toBeVisible()
+  })
+
   test('Execution error cleans up in-progress items', async ({
     comfyPage,
     getWebSocket
