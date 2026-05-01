@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://comfy.org/sitemap-index.xml
+Sitemap: https://comfy.org/sitemap-0.xml
