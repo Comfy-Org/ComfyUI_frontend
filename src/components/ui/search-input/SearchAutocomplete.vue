@@ -72,7 +72,7 @@
         :side-offset="4"
         :class="
           cn(
-            'z-50 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
+            'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
             'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
           )
         "
