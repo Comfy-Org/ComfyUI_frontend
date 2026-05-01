@@ -639,18 +639,17 @@ export const useAssetsStore = defineStore('assets', () => {
                 'Failed to restore tags after partial failure; invalidating cache to force refetch:',
                 compensationError
               )
-              const categoriesToInvalidate: string[] = []
-              if (cacheKey) {
-                const resolved = resolveCategory(cacheKey)
-                if (resolved) categoriesToInvalidate.push(resolved)
-              } else {
-                for (const [
-                  category,
-                  state
-                ] of modelStateByCategory.value.entries()) {
-                  if (state.assets?.has(asset.id)) {
-                    categoriesToInvalidate.push(category)
-                  }
+              const categoriesToInvalidate = new Set<string>()
+              const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
+              if (resolved) {
+                categoriesToInvalidate.add(resolved)
+              }
+              for (const [
+                category,
+                state
+              ] of modelStateByCategory.value.entries()) {
+                if (state.assets?.has(asset.id)) {
+                  categoriesToInvalidate.add(category)
                 }
               }
               for (const category of categoriesToInvalidate) {
