@@ -11846,7 +11846,7 @@
       },
       "size": {
         "name": "size",
-        "tooltip": "Image size"
+        "tooltip": "Image size. Select 'Custom' to use the custom width and height (GPT Image 2 only)."
       },
       "n": {
         "name": "n",
@@ -11862,6 +11862,14 @@
       },
       "model": {
         "name": "model"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
       },
       "control_after_generate": {
         "name": "control after generate"
