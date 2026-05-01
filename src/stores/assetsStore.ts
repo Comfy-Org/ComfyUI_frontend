@@ -6,7 +6,10 @@ import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  TagsOperationResult
+} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -606,11 +609,14 @@ export const useAssetsStore = defineStore('assets', () => {
 
         let removedTagsOnServer: string[] = []
         try {
-          const removeResult =
-            tagsToRemove.length > 0
-              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
-              : undefined
-          if (removeResult) removedTagsOnServer = tagsToRemove
+          let removeResult: TagsOperationResult | undefined
+          if (tagsToRemove.length > 0) {
+            removeResult = await assetService.removeAssetTags(
+              asset.id,
+              tagsToRemove
+            )
+            removedTagsOnServer = removeResult.removed ?? tagsToRemove
+          }
 
           const addResult =
             tagsToAdd.length > 0
@@ -633,8 +639,23 @@ export const useAssetsStore = defineStore('assets', () => {
                 'Failed to restore tags after partial failure; invalidating cache to force refetch:',
                 compensationError
               )
-              const category = cacheKey ? resolveCategory(cacheKey) : undefined
-              if (category) invalidateCategory(category)
+              const categoriesToInvalidate: string[] = []
+              if (cacheKey) {
+                const resolved = resolveCategory(cacheKey)
+                if (resolved) categoriesToInvalidate.push(resolved)
+              } else {
+                for (const [
+                  category,
+                  state
+                ] of modelStateByCategory.value.entries()) {
+                  if (state.assets?.has(asset.id)) {
+                    categoriesToInvalidate.push(category)
+                  }
+                }
+              }
+              for (const category of categoriesToInvalidate) {
+                invalidateCategory(category)
+              }
             }
           }
         }

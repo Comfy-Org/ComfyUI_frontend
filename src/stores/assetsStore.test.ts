@@ -1253,6 +1253,62 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'models'
       ])
     })
+
+    it('treats removeAssetTags resolution as success even when removed is empty', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-empty-removed', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: [],
+        not_present: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
+      expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
+    })
+
+    it('invalidates every category containing the asset when no cacheKey is provided', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-no-cachekey', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      await store.updateModelsForTag('models')
+
+      expect(store.hasCategory('loras')).toBe(true)
+      expect(store.hasCategory('tag:models')).toBe(true)
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(asset, ['models', 'checkpoints'])
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(store.hasCategory('tag:models')).toBe(false)
+    })
   })
 })
 
