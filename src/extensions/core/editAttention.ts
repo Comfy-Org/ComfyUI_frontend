@@ -50,9 +50,11 @@ export function addWeightToParentheses(text: string): string {
   const parenMatch = text.match(/^\((.*)\)$/)
   if (!parenMatch) return text
   const innerText = parenMatch[1]
-  const hasTrailingWeight = /(?<!\d):[+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?$/.test(
-    innerText
-  )
+  // A time-like pattern (e.g. "12:30") is preceded by whitespace or string-start;
+  // everything else ending in ":number" is a weight, including digit-ending names like "v2:1.5".
+  const looksLikeTime = /(?:^|\s)\d{1,2}:\d{2}$/.test(innerText)
+  const hasTrailingWeight =
+    !looksLikeTime && /:[+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?$/.test(innerText)
   return hasTrailingWeight ? text : `(${innerText}:1.0)`
 }
 

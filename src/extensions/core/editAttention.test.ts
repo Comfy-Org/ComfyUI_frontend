@@ -107,6 +107,16 @@ describe('addWeightToParentheses', () => {
       'adds weight when colon-number appears in content but no trailing weight exists',
       '(time 12:30)',
       '(time 12:30:1.0)'
+    ],
+    [
+      'preserves existing weight on a digit-ending token name',
+      '(v2:1.5)',
+      '(v2:1.5)'
+    ],
+    [
+      'preserves existing weight on a LoRA name ending in a digit',
+      '(sdxl1:0.8)',
+      '(sdxl1:0.8)'
     ]
   ])('%s', (_, input, expected) => {
     expect(addWeightToParentheses(input)).toBe(expected)
