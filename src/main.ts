@@ -59,46 +59,54 @@ const sentryDsn = isCloud
 // Spotlight (https://spotlightjs.com) is the local Sentry dev overlay. When
 // opted-in via SPOTLIGHT=true in dev, initialize Sentry so events forward to
 // the local sidecar; production wiring is unchanged.
+//
+// Spotlight requires a DSN to initialize; this local placeholder is fine
+// because events are redirected to the sidecar and never leave the machine.
+const SPOTLIGHT_PLACEHOLDER_DSN = 'https://spotlight@local/0'
+
+const cloudSentryOpts = {
+  integrations: [
+    // Disable event target wrapping to reduce overhead on high-frequency
+    // DOM events (pointermove, mousemove, wheel). Sentry still captures
+    // errors via window.onerror and unhandledrejection.
+    Sentry.browserApiErrorsIntegration({ eventTarget: false })
+  ]
+}
+
+const spotlightSentryOpts = {
+  integrations: [
+    Sentry.spotlightBrowserIntegration(),
+    Sentry.browserTracingIntegration(),
+    Sentry.consoleLoggingIntegration({
+      levels: ['log', 'info', 'warn', 'error', 'debug']
+    })
+  ],
+  enableLogs: true
+}
+
+const silentSentryOpts = {
+  integrations: [],
+  autoSessionTracking: false,
+  defaultIntegrations: false
+}
+
+const sentryEnvironmentOpts = isCloud
+  ? cloudSentryOpts
+  : __SPOTLIGHT_ENABLED__
+    ? spotlightSentryOpts
+    : silentSentryOpts
+
 Sentry.init({
   app,
-  // Spotlight requires a DSN to initialize; a local placeholder is fine because
-  // events are redirected to the sidecar and never leave the machine.
   dsn:
-    __SPOTLIGHT_ENABLED__ && !sentryDsn
-      ? 'https://spotlight@local/0'
-      : sentryDsn,
+    __SPOTLIGHT_ENABLED__ && !sentryDsn ? SPOTLIGHT_PLACEHOLDER_DSN : sentryDsn,
   enabled: __SENTRY_ENABLED__ || __SPOTLIGHT_ENABLED__,
   release: __COMFYUI_FRONTEND_VERSION__,
   normalizeDepth: 8,
   tracesSampleRate: isCloud || __SPOTLIGHT_ENABLED__ ? 1.0 : 0,
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
-  enableLogs: __SPOTLIGHT_ENABLED__,
-  // Only set these for non-cloud builds
-  ...(isCloud
-    ? {
-        integrations: [
-          // Disable event target wrapping to reduce overhead on high-frequency
-          // DOM events (pointermove, mousemove, wheel). Sentry still captures
-          // errors via window.onerror and unhandledrejection.
-          Sentry.browserApiErrorsIntegration({ eventTarget: false })
-        ]
-      }
-    : __SPOTLIGHT_ENABLED__
-      ? {
-          integrations: [
-            Sentry.spotlightBrowserIntegration(),
-            Sentry.browserTracingIntegration(),
-            Sentry.consoleLoggingIntegration({
-              levels: ['log', 'info', 'warn', 'error', 'debug']
-            })
-          ]
-        }
-      : {
-          integrations: [],
-          autoSessionTracking: false,
-          defaultIntegrations: false
-        })
+  ...sentryEnvironmentOpts
 })
 app.directive('tooltip', Tooltip)
 app

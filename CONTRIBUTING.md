@@ -135,7 +135,13 @@ To enable it:
 2. In another terminal, start the dev server with Spotlight enabled:
 
    ```bash
+   # macOS / Linux
    SPOTLIGHT=true pnpm dev
+   ```
+
+   ```powershell
+   # Windows (PowerShell)
+   $env:SPOTLIGHT='true'; pnpm dev
    ```
 
 3. Open `http://localhost:8969` to inspect events captured from your dev session.

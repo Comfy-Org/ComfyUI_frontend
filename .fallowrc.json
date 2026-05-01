@@ -15,12 +15,15 @@
     "lint-staged.config.ts",
     "apps/*/src/main.ts",
     "packages/*/src/index.ts",
+    "**/.storybook/{main,preview}.{ts,tsx}",
+    "packages/*/*.config.{ts,mts}",
     "browser_tests/**/*.spec.ts",
     "src/**/*.test.ts",
     "src/**/*.stories.ts"
   ],
   "ignorePatterns": [
     "**/*.generated.ts",
+    "**/*.gen.ts",
     "**/*.d.ts",
     "**/dist/**",
     "**/.nx/**",
@@ -28,8 +31,12 @@
     "**/coverage/**",
     "src/lib/litegraph/**",
     "src/locales/**",
+    "packages/registry-types/src/comfyRegistryTypes.ts",
+    "**/generatedManagerTypes.ts",
+    "tools/**",
     "public/**",
-    "temp/**"
+    "temp/**",
+    ".github/**"
   ],
   "rules": {
     "unused-files": "warn",
