@@ -11835,6 +11835,14 @@
       "control_after_generate": {
         "name": "control after generate"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Se utiliza solo cuando el valor de `size` es 'Custom'. Debe ser un múltiplo de 16 (solo para GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Se utiliza solo cuando el valor de `size` es 'Custom'. Debe ser un múltiplo de 16 (solo para GPT Image 2)."
+      },
       "image": {
         "name": "image",
         "tooltip": "Imagen de referencia opcional para edición de imagen."
