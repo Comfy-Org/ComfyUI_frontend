@@ -51,7 +51,9 @@ describe('formatRefillsDate', () => {
     expect(formatRefillsDate(null)).toBe('')
   })
 
-  it('formats as MM/DD/YY', () => {
+  it('formats as MM/DD/YY using UTC (timezone-agnostic)', () => {
+    // Input has explicit `Z` (UTC); formatRefillsDate uses UTC methods,
+    // so the result is stable across local timezones.
     const result = formatRefillsDate('2026-06-15T12:00:00Z')
     expect(result).toBe('06/15/26')
   })
