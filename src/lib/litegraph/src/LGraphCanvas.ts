@@ -2540,8 +2540,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.ctx.lineWidth = this.connections_width + 7
       const dpi = this.dpr
 
-      // Try layout store for segment hit testing first (more precise)
-      const hitSegment = layoutStore.queryLinkSegmentAtPoint({ x, y }, this.ctx)
+      // Try layout store for segment hit testing first (more precise).
+      // Pass this.dpr so the layout-store hit-test uses the same DPR as the
+      // isPointInStroke fallback below; otherwise the two paths can disagree
+      // on low-DPR displays (e.g. chromium-0.5x).
+      const hitSegment = layoutStore.queryLinkSegmentAtPoint(
+        { x, y },
+        this.ctx,
+        this.dpr
+      )
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos

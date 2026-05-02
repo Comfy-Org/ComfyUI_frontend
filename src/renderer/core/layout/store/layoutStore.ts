@@ -661,10 +661,17 @@ class LayoutStoreImpl implements LayoutStore {
 
   /**
    * Query link segment at point (returns structured data)
+   *
+   * @param dpr Device pixel ratio used to map the CSS-space point into the
+   *   canvas's device-pixel-scaled stroke space. Pass the active
+   *   `LGraphCanvas.dpr` so this hit-test agrees with `processMouseDown`'s
+   *   `isPointInStroke` fallback. Falls back to `window.devicePixelRatio`
+   *   for legacy callers without a canvas reference.
    */
   queryLinkSegmentAtPoint(
     point: Point,
-    ctx?: CanvasRenderingContext2D
+    ctx?: CanvasRenderingContext2D,
+    dpr?: number
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null {
     // Determine tolerance from current canvas state (if available)
     // - Use the caller-provided ctx.lineWidth (LGraphCanvas sets this to connections_width + padding)
@@ -695,9 +702,12 @@ class LayoutStoreImpl implements LayoutStore {
       if (!segmentLayout) continue
 
       if (ctx && segmentLayout.path) {
-        // TODO: Migrate to canvas.dpr once layoutStore has access to the active viewport
+        // Prefer the caller-supplied DPR (the active LGraphCanvas.dpr) so
+        // this hit-test stays in lockstep with processMouseDown's fallback
+        // path; fall back to window.devicePixelRatio for legacy callers.
         const dpi =
-          (typeof window !== 'undefined' && window?.devicePixelRatio) || 1
+          dpr ??
+          ((typeof window !== 'undefined' && window?.devicePixelRatio) || 1)
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
           point.x * dpi,
@@ -732,10 +742,11 @@ class LayoutStoreImpl implements LayoutStore {
    */
   queryLinkAtPoint(
     point: Point,
-    ctx?: CanvasRenderingContext2D
+    ctx?: CanvasRenderingContext2D,
+    dpr?: number
   ): LinkId | null {
     // Invoke segment query and return just the linkId
-    const segment = this.queryLinkSegmentAtPoint(point, ctx)
+    const segment = this.queryLinkSegmentAtPoint(point, ctx, dpr)
     return segment ? segment.linkId : null
   }
 
