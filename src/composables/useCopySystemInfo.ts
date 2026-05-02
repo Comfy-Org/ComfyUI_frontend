@@ -1,4 +1,4 @@
-import { computed, toValue } from 'vue'
+import { toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import {
@@ -36,10 +36,9 @@ function formatSystemInfoText(stats: SystemStats): string {
 
 export function useCopySystemInfo(stats: MaybeRefOrGetter<SystemStats>) {
   const { copyToClipboard } = useCopyToClipboard()
-  const formattedText = computed(() => formatSystemInfoText(toValue(stats)))
 
   function copySystemInfo() {
-    return copyToClipboard(formattedText.value)
+    return copyToClipboard(formatSystemInfoText(toValue(stats)))
   }
 
   return { copySystemInfo }
