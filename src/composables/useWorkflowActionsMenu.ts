@@ -237,7 +237,7 @@ export function useWorkflowActionsMenu(
         await commandStore.execute('Comfy.ToggleCompactMode')
       },
       visible: !isLinearMode && isVueNodesEnabled,
-      prependSeparator: true,
+      prependSeparator: !showAppModeItems,
       isNew: true
     })
 
