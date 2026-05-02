@@ -760,4 +760,74 @@ describe('SceneModelManager', () => {
       expect(mainModels).toHaveLength(1)
     })
   })
+
+  describe('fitToViewer', () => {
+    it('does nothing when there is no current model', () => {
+      const { manager, setupCamera, setupGizmo } = createManager()
+
+      manager.fitToViewer()
+
+      expect(setupCamera).not.toHaveBeenCalled()
+      expect(setupGizmo).not.toHaveBeenCalled()
+    })
+
+    it('scales and centers the model', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      model.scale.set(0.1, 0.1, 0.1)
+      manager.fitToViewer()
+
+      expect(model.scale.x).toBeGreaterThan(0.1)
+      expect(model.scale.y).toBeGreaterThan(0.1)
+      expect(model.scale.z).toBeGreaterThan(0.1)
+    })
+
+    it('reapplies non-original up-direction after fitting', async () => {
+      const { manager, eventManager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('+z')
+      vi.mocked(eventManager.emitEvent).mockClear()
+
+      manager.fitToViewer()
+
+      expect(manager.currentUpDirection).toBe('+z')
+      expect(model.rotation.x).toBeCloseTo(-Math.PI / 2)
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'upDirectionChange',
+        '+z'
+      )
+    })
+
+    it('does not call setUpDirection when up-direction is original', async () => {
+      const { manager, eventManager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+      vi.mocked(eventManager.emitEvent).mockClear()
+
+      manager.fitToViewer()
+
+      expect(eventManager.emitEvent).not.toHaveBeenCalledWith(
+        'upDirectionChange',
+        expect.anything()
+      )
+    })
+
+    it('resets originalRotation so up-direction is not compounded after fit', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('+x')
+      const rotationAfterFirstSet = model.rotation.z
+
+      manager.fitToViewer()
+      manager.setUpDirection('+x')
+
+      expect(model.rotation.z).toBeCloseTo(rotationAfterFirstSet)
+    })
+  })
 })
