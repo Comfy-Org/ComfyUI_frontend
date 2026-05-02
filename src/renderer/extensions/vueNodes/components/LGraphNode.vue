@@ -304,6 +304,7 @@ import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -338,6 +339,7 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const compactModeStore = useCompactModeStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
@@ -442,6 +444,8 @@ const handleContextMenu = (event: MouseEvent) => {
   event.preventDefault()
   event.stopPropagation()
 
+  if (compactModeStore.isCompactMode) return
+
   // First handle the standard right-click behavior (selection)
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
@@ -529,6 +533,7 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0) return
   if (!shouldHandleNodePointerEvents.value) return
+  if (compactModeStore.isCompactMode) return
   if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
   startResize(event, corner)
