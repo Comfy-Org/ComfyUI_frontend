@@ -30,9 +30,15 @@ describe('assert', () => {
 
   it('throws in DEV mode when condition is false', () => {
     vi.stubEnv('DEV', true)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
     expect(() => assert(false, 'dev error')).toThrow(
       '[Assertion failed]: dev error'
     )
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Assertion failed]: dev error'
+    )
+    expect(reporter).not.toHaveBeenCalled()
   })
 
   it('does not throw in non-DEV mode when condition is false', () => {
