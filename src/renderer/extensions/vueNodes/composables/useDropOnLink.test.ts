@@ -444,6 +444,33 @@ describe('useDropOnLink', () => {
     expect(afterChange).toHaveBeenCalledTimes(1)
   })
 
+  it('logs an error when the rollback connect also fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    makeNode({
+      id: 'src',
+      outputs: [{ type: 'IMAGE', links: [1] }],
+      connect: vi.fn(() => null)
+    })
+    makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })
+    makeLink(1, 'src', 'sink', 'IMAGE')
+
+    const dragged = makeNode({
+      id: 'dragged',
+      inputs: [{ type: 'IMAGE', link: null }],
+      outputs: [{ type: 'IMAGE', links: null }]
+    })
+    queryLinkAtPoint.mockReturnValue(1)
+
+    startComposable()
+    emitEnd(dragged.id)
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('failed to restore original link')
+    )
+    consoleSpy.mockRestore()
+  })
+
   it('does not stomp a pre-existing highlight from another source', async () => {
     makeNode({ id: 'src', outputs: [{ type: 'IMAGE', links: [1] }] })
     makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })

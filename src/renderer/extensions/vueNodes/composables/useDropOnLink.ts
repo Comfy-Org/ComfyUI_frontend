@@ -102,7 +102,11 @@ export function useDropOnLink() {
     const canvas = canvasStore.canvas
     if (canvas) {
       const previous = hoveredLinkId.value
-      if (previous != null && highlightOwned) {
+      if (
+        previous != null &&
+        highlightOwned &&
+        canvas.highlighted_links[previous]
+      ) {
         delete canvas.highlighted_links[previous]
       }
       highlightOwned = false
@@ -114,6 +118,20 @@ export function useDropOnLink() {
     }
 
     hoveredLinkId.value = linkId
+  }
+
+  function rollbackOriginalLink(
+    sourceNode: LGraphNode,
+    sinkNode: LGraphNode,
+    originSlot: number,
+    targetSlot: number
+  ): void {
+    const restored = sourceNode.connect(originSlot, sinkNode, targetSlot)
+    if (!restored) {
+      console.error(
+        'useDropOnLink: failed to restore original link after rollback'
+      )
+    }
   }
 
   function applyDrop(draggedNode: LGraphNode, target: DropTarget): boolean {
@@ -137,7 +155,12 @@ export function useDropOnLink() {
         target.inputSlotIndex
       )
       if (!inLink) {
-        sourceNode.connect(restoreOriginSlot, sinkNode, restoreTargetSlot)
+        rollbackOriginalLink(
+          sourceNode,
+          sinkNode,
+          restoreOriginSlot,
+          restoreTargetSlot
+        )
         return false
       }
 
@@ -148,7 +171,12 @@ export function useDropOnLink() {
       )
       if (!outLink) {
         draggedNode.disconnectInput(target.inputSlotIndex, true)
-        sourceNode.connect(restoreOriginSlot, sinkNode, restoreTargetSlot)
+        rollbackOriginalLink(
+          sourceNode,
+          sinkNode,
+          restoreOriginSlot,
+          restoreTargetSlot
+        )
         return false
       }
 
