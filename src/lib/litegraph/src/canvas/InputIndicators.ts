@@ -1,4 +1,4 @@
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleButtonHeld } from '@/base/pointerUtils'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
 /**
@@ -6,10 +6,12 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
  *
  * Used to create videos of feature changes.
  *
- * Example usage with ComfyUI_frontend, via console / devtools:
+ * Example usage with ComfyUI_frontend, via console / devtools. The class is
+ * reachable as `LiteGraph.Classes.InputIndicators`, not at the top level of
+ * `LiteGraph`:
  *
  * ```ts
- * const inputIndicators = new InputIndicators(canvas)
+ * const inputIndicators = new LiteGraph.Classes.InputIndicators(window.app.canvas)
  * // Dispose:
  * inputIndicators.dispose()
  * ```
@@ -72,7 +74,7 @@ export class InputIndicators implements Disposable {
   private _onPointerDownOrMove = this.onPointerDownOrMove.bind(this)
   onPointerDownOrMove(e: MouseEvent): void {
     this.mouse0Down = (e.buttons & 1) === 1
-    this.mouse1Down = isMiddlePointerInput(e)
+    this.mouse1Down = isMiddleButtonHeld(e)
     this.mouse2Down = (e.buttons & 2) === 2
 
     this.x = e.clientX

@@ -36,9 +36,12 @@ function createMockLGraphCanvas(read_only = true): LGraphCanvas {
 }
 
 function createMockPointerEvent(
-  buttons: PointerEvent['buttons'] = 1
+  buttons: PointerEvent['buttons'] = 1,
+  { type = 'pointerdown', button = 0 }: { type?: string; button?: number } = {}
 ): PointerEvent {
   const mockEvent: Partial<PointerEvent> = {
+    type,
+    button,
     buttons,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
@@ -76,13 +79,30 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
     })
 
-    it('should forward middle mouse button events to canvas', () => {
+    it('should forward middle-button pointerdown to canvas', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(false)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent(4) // Middle mouse button
+      const mockEvent = createMockPointerEvent(4, {
+        type: 'pointerdown',
+        button: 1
+      })
+      handlePointer(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+    })
+
+    it('should forward middle-held pointermove to canvas even when chorded with left', () => {
+      const { getCanvas } = useCanvasStore()
+      const mockCanvas = createMockLGraphCanvas(false)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
+      const { handlePointer } = useCanvasInteractions()
+
+      // buttons=5 = middle + left held simultaneously.
+      const mockEvent = createMockPointerEvent(5, { type: 'pointermove' })
       handlePointer(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()

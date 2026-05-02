@@ -1,11 +1,10 @@
-import { isMiddlePointerInput } from '@/base/pointerUtils'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -20,12 +19,13 @@ function addMultilineWidget(
   opts: { defaultVal: string; placeholder?: string }
 ) {
   const widgetStore = useWidgetValueStore()
+  const settingStore = useSettingStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.dataset.testid = 'dom-widget-textarea'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
-  inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
+  inputEl.spellcheck = settingStore.get('Comfy.TextareaWidget.Spellcheck')
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
@@ -53,101 +53,64 @@ function addMultilineWidget(
   )
   widget.options.minNodeSize = [400, 200]
 
-  const controller = new AbortController()
-  const { signal } = controller
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
+    widget.callback?.(widget.value)
+  })
 
-  inputEl.addEventListener(
-    'input',
-    (event) => {
-      if (event.target instanceof HTMLTextAreaElement) {
-        widget.value = event.target.value
-      }
-      widget.callback?.(widget.value)
-    },
-    { signal }
-  )
+  forwardMiddleButtonToCanvas(inputEl)
 
-  inputEl.addEventListener(
-    'pointerdown',
-    (event: PointerEvent) => {
-      if (isMiddlePointerInput(event)) app.canvas.processMouseDown(event)
-    },
-    { signal }
-  )
+  inputEl.addEventListener('wheel', (event: WheelEvent) => {
+    const gesturesEnabled = settingStore.get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+    const deltaX = event.deltaX
+    const deltaY = event.deltaY
 
-  inputEl.addEventListener(
-    'pointermove',
-    (event: PointerEvent) => {
-      if (isMiddlePointerInput(event)) app.canvas.processMouseMove(event)
-    },
-    { signal }
-  )
+    const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
 
-  inputEl.addEventListener(
-    'pointerup',
-    (event: PointerEvent) => {
-      if (event.button === 1) app.canvas.processMouseUp(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'wheel',
-    (event: WheelEvent) => {
-      const gesturesEnabled = useSettingStore().get(
-        'LiteGraph.Pointer.TrackpadGestures'
-      )
-      const deltaX = event.deltaX
-      const deltaY = event.deltaY
-
-      const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
-      const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
-
-      // Prevent pinch zoom from zooming the page
-      if (event.ctrlKey) {
-        event.preventDefault()
-        event.stopPropagation()
-        app.canvas.processMouseWheel(event)
-        return
-      }
-
-      // Detect if this is likely a trackpad gesture vs mouse wheel
-      // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
-      // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
-      const isLikelyTrackpad =
-        Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
-
-      // Trackpad gestures: when enabled, trackpad panning goes to canvas
-      if (gesturesEnabled && isLikelyTrackpad) {
-        event.preventDefault()
-        event.stopPropagation()
-        app.canvas.processMouseWheel(event)
-        return
-      }
-
-      // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
-      if (isHorizontal) {
-        event.preventDefault()
-        event.stopPropagation()
-        app.canvas.processMouseWheel(event)
-        return
-      }
-
-      // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
-      if (canScrollY) {
-        event.stopPropagation()
-        return
-      }
-
-      // If textarea can't scroll vertically, pass to canvas
+    // Prevent pinch zoom from zooming the page
+    if (event.ctrlKey) {
       event.preventDefault()
+      event.stopPropagation()
       app.canvas.processMouseWheel(event)
-    },
-    { signal }
-  )
+      return
+    }
 
-  widget.onRemove = useChainCallback(widget.onRemove, () => {
-    controller.abort()
+    // Detect if this is likely a trackpad gesture vs mouse wheel
+    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
+    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
+    const isLikelyTrackpad =
+      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
+
+    // Trackpad gestures: when enabled, trackpad panning goes to canvas
+    if (gesturesEnabled && isLikelyTrackpad) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+    if (isHorizontal) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+    if (canScrollY) {
+      event.stopPropagation()
+      return
+    }
+
+    // If textarea can't scroll vertically, pass to canvas
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   })
 
   return widget

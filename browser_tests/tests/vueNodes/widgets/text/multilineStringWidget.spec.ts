@@ -57,19 +57,14 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
 
   test(
     'Middle-click drag on textarea should pan canvas',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
+    { tag: ['@screenshot', '@canvas'] },
+    async ({ comfyPage, comfyMouse }) => {
       const textarea = getFirstMultilineStringWidget(comfyPage)
-      await expect(textarea).toBeVisible()
-      const box = await textarea.boundingBox()
-      if (!box) throw new Error('Textarea bounding box not found')
-
-      const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-      await comfyPage.canvasOps.middleClickDrag(center, {
-        x: center.x + 120,
-        y: center.y + 80
-      })
-      await comfyPage.nextFrame()
+      await comfyMouse.mmbDragFromCenter(
+        textarea,
+        { dx: 120, dy: 80 },
+        { steps: 10 }
+      )
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-nodes-paned-with-mmb-over-textarea.png'
@@ -79,22 +74,16 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
 
   test(
     'Middle-click drag on markdown widget should pan canvas',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
+    { tag: ['@screenshot', '@canvas'] },
+    async ({ comfyPage, comfyMouse }) => {
       await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
       const markdownWidget = comfyPage.page.locator('.widget-markdown').first()
-      await expect(markdownWidget).toBeVisible()
-
-      const box = await markdownWidget.boundingBox()
-      if (!box) throw new Error('Markdown widget bounding box not found')
-
-      const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-      await comfyPage.canvasOps.middleClickDrag(center, {
-        x: center.x + 120,
-        y: center.y + 80
-      })
-      await comfyPage.nextFrame()
+      await comfyMouse.mmbDragFromCenter(
+        markdownWidget,
+        { dx: 120, dy: 80 },
+        { steps: 10 }
+      )
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-nodes-paned-with-mmb-over-markdown.png'

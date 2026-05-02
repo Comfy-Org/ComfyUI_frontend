@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -72,7 +72,11 @@ export function useCanvasInteractions() {
    * be forwarded to canvas (e.g., space+drag for panning)
    */
   const handlePointer = (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
+    // Route through the shared type-dispatcher so pointerdown uses strict
+    // semantics (chorded left-click with middle held is NOT middle input),
+    // pointermove uses the bitmask held check to survive chords, and
+    // pointerup identifies the released button via `button`.
+    if (isMiddleForPointerEvent(event)) {
       forwardEventToCanvas(event)
       return
     }
@@ -86,7 +90,6 @@ export function useCanvasInteractions() {
       event.preventDefault()
       event.stopPropagation()
       forwardEventToCanvas(event)
-      return
     }
   }
 

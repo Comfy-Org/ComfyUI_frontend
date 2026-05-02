@@ -111,6 +111,15 @@ export function useToolManager(
     }
   )
 
+  // Pan gate shared by pointerdown and pointermove: middle-button (strict so
+  // chorded pointerdown on a non-middle button is not misclassified) OR
+  // space-held left-drag. Extracting keeps both handlers as a single
+  // early-exit against one named contract instead of a repeated boolean.
+  const shouldPan = (event: PointerEvent): boolean => {
+    if (isMiddlePointerInput(event)) return true
+    return event.buttons === 1 && keyboard.isKeyDown(' ')
+  }
+
   const handlePointerDown = async (event: PointerEvent): Promise<void> => {
     event.preventDefault()
     if (event.pointerType === 'touch') return
@@ -119,21 +128,14 @@ export function useToolManager(
       panZoom.addPenPointerId(event.pointerId)
     }
 
-    const isSpacePressed = keyboard.isKeyDown(' ')
-
-    if (
-      isMiddlePointerInput(event) ||
-      (event.buttons === 1 && isSpacePressed)
-    ) {
+    if (shouldPan(event)) {
       panZoom.handlePanStart(event)
-
       store.brushVisible = false
       return
     }
 
     if (store.currentTool === Tools.PaintPen && event.button === 0) {
       await brushDrawing.startDrawing(event)
-
       return
     }
 
@@ -170,7 +172,6 @@ export function useToolManager(
 
     if ([0, 2].includes(event.button) && isDrawingTool) {
       await brushDrawing.startDrawing(event)
-      return
     }
   }
 
@@ -181,12 +182,7 @@ export function useToolManager(
     const newCursorPoint = { x: event.clientX, y: event.clientY }
     panZoom.updateCursorPosition(newCursorPoint)
 
-    const isSpacePressed = keyboard.isKeyDown(' ')
-
-    if (
-      isMiddlePointerInput(event) ||
-      (event.buttons === 1 && isSpacePressed)
-    ) {
+    if (shouldPan(event)) {
       await panZoom.handlePanMove(event)
       return
     }
@@ -211,7 +207,6 @@ export function useToolManager(
 
     if (event.buttons === 1 || event.buttons === 2) {
       await brushDrawing.handleDrawing(event)
-      return
     }
   }
 
