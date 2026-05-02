@@ -13,9 +13,7 @@
       "has": [
         { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
       ],
-      "headers": [
-        { "key": "X-Robots-Tag", "value": "index, follow" }
-      ]
+      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
     }
   ],
   "redirects": [
