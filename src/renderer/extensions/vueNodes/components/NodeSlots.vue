@@ -14,6 +14,7 @@
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :index="getActualInputIndex(input, index)"
+        :dot-only="compactModeStore.isCompactMode"
       />
     </div>
 
@@ -28,6 +29,7 @@
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :index="index"
+        :dot-only="compactModeStore.isCompactMode"
       />
     </div>
   </div>
@@ -40,6 +42,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs
@@ -55,6 +58,8 @@ interface NodeSlotsProps {
 }
 
 const { nodeData, unified = false } = defineProps<NodeSlotsProps>()
+
+const compactModeStore = useCompactModeStore()
 
 const linkedWidgetInputs = computed(() =>
   unified ? linkedWidgetedInputs(nodeData) : []

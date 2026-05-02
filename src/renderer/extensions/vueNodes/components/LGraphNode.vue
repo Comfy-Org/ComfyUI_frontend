@@ -139,7 +139,20 @@
         <div class="relative">
           <!-- Progress bar for executing state -->
           <div
-            v-if="executing && progress !== undefined"
+            v-if="
+              executing &&
+              progress !== undefined &&
+              compactModeStore.isCompactMode
+            "
+            class="pointer-events-none absolute inset-x-3 top-1 h-2 overflow-hidden rounded-full bg-primary-500/20"
+          >
+            <div
+              class="h-full rounded-full bg-primary-500 transition-all duration-300"
+              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+            />
+          </div>
+          <div
+            v-else-if="executing && progress !== undefined"
             :class="
               cn(
                 'absolute inset-x-0 top-1/2 -translate-y-1/2',
@@ -154,13 +167,17 @@
         <div
           :class="
             cn(
-              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
+              'flex flex-1 flex-col bg-component-node-background',
+              compactModeStore.isCompactMode ? 'gap-1 py-4' : 'gap-1 pt-1 pb-3',
               bodyRoundingClass
             )
           "
           :data-testid="`node-body-${nodeData.id}`"
         >
-          <NodeSlots :node-data="nodeData" />
+          <NodeSlots
+            v-if="!compactModeStore.isCompactMode"
+            :node-data="nodeData"
+          />
 
           <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
@@ -183,7 +200,7 @@
             :image-url="latestPreviewUrl"
           />
           <NodeBadges
-            v-if="!isTransparentHeaderless"
+            v-if="!isTransparentHeaderless && !compactModeStore.isCompactMode"
             v-bind="badges"
             :pricing="undefined"
             class="mt-auto"
@@ -209,7 +226,8 @@
         !isCollapsed &&
         !isRerouteNode &&
         nodeData.resizable !== false &&
-        !isSelectMode
+        !isSelectMode &&
+        !compactModeStore.isCompactMode
       "
     >
       <div
@@ -379,7 +397,10 @@ const showErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
 )
 
-const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+const displayHeader = computed(
+  () =>
+    !compactModeStore.isCompactMode && nodeData.titleMode !== TitleMode.NO_TITLE
+)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
@@ -576,6 +597,16 @@ const cursorClass = computed(() => {
 })
 
 const bodyRoundingClass = computed(() => {
+  if (compactModeStore.isCompactMode) {
+    switch (nodeData.shape) {
+      case RenderShape.BOX:
+        return ''
+      case RenderShape.CARD:
+        return 'rounded-tl-2xl rounded-br-2xl'
+      default:
+        return 'rounded-2xl'
+    }
+  }
   switch (nodeData.shape) {
     case RenderShape.BOX:
       return ''

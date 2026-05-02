@@ -4,6 +4,7 @@ import { computed, useTemplateRef } from 'vue'
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -13,6 +14,8 @@ const props = defineProps<{
   hasError?: boolean
   multi?: boolean
 }>()
+
+const compactModeStore = useCompactModeStore()
 
 const clipPath = computed(() => {
   switch (props.slotData?.shape) {
@@ -61,7 +64,8 @@ const slotClass = computed(() =>
   <div
     :class="
       cn(
-        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        'group/slot relative flex items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        compactModeStore.isCompactMode ? 'size-3' : 'size-6',
         props.class
       )
     "
