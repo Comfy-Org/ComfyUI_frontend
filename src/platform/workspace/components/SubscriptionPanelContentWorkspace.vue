@@ -563,7 +563,9 @@ async function handleResubscribe() {
     await Promise.all([fetchStatus(), fetchBalance()])
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Failed to resubscribe'
+      error instanceof Error
+        ? error.message
+        : t('subscription.resubscribeFailed')
     toast.add({
       severity: 'error',
       summary: t('g.error'),
