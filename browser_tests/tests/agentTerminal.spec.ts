@@ -32,7 +32,7 @@ async function typeAndEnter(comfyPage: ComfyPage, text: string): Promise<void> {
   await comfyPage.page.keyboard.press('Enter')
 }
 
-test.describe('Agent terminal', { tag: '@ui' }, () => {
+test.describe('Agent terminal', { tag: ['@ui', '@agent'] }, () => {
   test('FAB opens the panel and shows the COMFY-AI title + prompt', async ({
     comfyPage
   }) => {

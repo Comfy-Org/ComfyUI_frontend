@@ -8,6 +8,7 @@ const BACKEND_URL_KEY = 'comfyui-preview-backend-url'
 const PROBE_TIMEOUT_MS = 3000
 
 function resolveProbeBase(): string {
+  if (typeof window === 'undefined' || !('localStorage' in window)) return ''
   const stored = localStorage.getItem(BACKEND_URL_KEY)
   if (stored) {
     try {
@@ -22,7 +23,6 @@ function resolveProbeBase(): string {
   }
   // Mirror ComfyApi's same-origin base so subpath deployments probe the
   // backend that would actually serve the app.
-  if (typeof window === 'undefined') return ''
   return window.location.pathname.split('/').slice(0, -1).join('/')
 }
 
