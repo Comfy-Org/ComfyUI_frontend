@@ -218,6 +218,12 @@ function useNodeDragIndividual() {
     })
   }
 
+  function computeDraggedItemCount(): number {
+    const nodeCount = toValue(selectedNodeIds)?.size ?? 1
+    const groupCount = selectedGroups?.length ?? 0
+    return Math.max(nodeCount, 1) + groupCount
+  }
+
   function emitNodeDragMove(nodeId: NodeId) {
     if (!lastPointerEvent) return
     graphInteractionHooks.emit('nodeDragMove', {
@@ -227,7 +233,7 @@ function useNodeDragIndividual() {
         y: lastPointerY
       }),
       pointerEvent: lastPointerEvent,
-      selectionSize: toValue(selectedNodeIds)?.size ?? 1
+      selectionSize: computeDraggedItemCount()
     })
   }
 
@@ -240,7 +246,7 @@ function useNodeDragIndividual() {
           y: event.clientY
         }),
         pointerEvent: event,
-        selectionSize: toValue(selectedNodeIds)?.size ?? 1
+        selectionSize: computeDraggedItemCount()
       })
     }
 

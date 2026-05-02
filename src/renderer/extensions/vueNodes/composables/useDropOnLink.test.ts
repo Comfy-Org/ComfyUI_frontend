@@ -111,7 +111,7 @@ function makeNode(partial: Partial<TestNode> & { id: TestNodeId }): LGraphNode {
   const node: TestNode = {
     inputs: [],
     outputs: [],
-    connect: vi.fn(() => null),
+    connect: vi.fn(() => ({})),
     disconnectInput: vi.fn(() => true),
     ...partial
   }
@@ -374,5 +374,120 @@ describe('useDropOnLink', () => {
     emitMove(dragged.id)
 
     expect(api.hoveredLinkId.value).toBeNull()
+  })
+
+  it('rejects a rerouted link', async () => {
+    makeNode({ id: 'src', outputs: [{ type: 'IMAGE', links: [1] }] })
+    makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })
+    const link = makeLink(1, 'src', 'sink', 'IMAGE')
+    ;(link as { parentId?: number }).parentId = 42
+
+    const dragged = makeNode({
+      id: 'dragged',
+      inputs: [{ type: 'IMAGE', link: null }],
+      outputs: [{ type: 'IMAGE', links: null }]
+    })
+    queryLinkAtPoint.mockReturnValue(1)
+
+    const api = startComposable()
+    emitMove(dragged.id)
+
+    expect(api.hoveredLinkId.value).toBeNull()
+  })
+
+  it('rejects subgraph IO links', async () => {
+    makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })
+    const link = makeLink(1, 'src', 'sink', 'IMAGE')
+    Object.defineProperty(link, 'originIsIoNode', { value: true })
+
+    const dragged = makeNode({
+      id: 'dragged',
+      inputs: [{ type: 'IMAGE', link: null }],
+      outputs: [{ type: 'IMAGE', links: null }]
+    })
+    queryLinkAtPoint.mockReturnValue(1)
+
+    const api = startComposable()
+    emitMove(dragged.id)
+
+    expect(api.hoveredLinkId.value).toBeNull()
+  })
+
+  it('rolls back when the second connect call fails', async () => {
+    const src = makeNode({
+      id: 'src',
+      outputs: [{ type: 'IMAGE', links: [1] }],
+      connect: vi.fn(() => ({}))
+    })
+    const sink = makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })
+    makeLink(1, 'src', 'sink', 'IMAGE')
+
+    const dragged = makeNode({
+      id: 'dragged',
+      inputs: [{ type: 'IMAGE', link: null }],
+      outputs: [{ type: 'IMAGE', links: null }],
+      connect: vi.fn(() => null),
+      disconnectInput: vi.fn(() => true)
+    })
+    queryLinkAtPoint.mockReturnValue(1)
+
+    startComposable()
+    emitEnd(dragged.id)
+
+    const draggedConnect = (dragged as unknown as TestNode).connect
+    const draggedDisconnect = (dragged as unknown as TestNode).disconnectInput
+    const srcConnect = (src as unknown as TestNode).connect
+
+    expect(draggedConnect).toHaveBeenCalledTimes(1)
+    expect(draggedDisconnect).toHaveBeenCalledWith(0, true)
+    expect(srcConnect).toHaveBeenLastCalledWith(0, sink, 0)
+    expect(afterChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not stomp a pre-existing highlight from another source', async () => {
+    makeNode({ id: 'src', outputs: [{ type: 'IMAGE', links: [1] }] })
+    makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })
+    makeLink(1, 'src', 'sink', 'IMAGE')
+
+    canvas.highlighted_links[1] = true
+
+    const dragged = makeNode({
+      id: 'dragged',
+      inputs: [{ type: 'IMAGE', link: null }],
+      outputs: [{ type: 'IMAGE', links: null }]
+    })
+    queryLinkAtPoint.mockReturnValue(1)
+
+    startComposable()
+    emitMove(dragged.id)
+    emitMove(dragged.id)
+
+    queryLinkAtPoint.mockReturnValue(null)
+    emitMove(dragged.id)
+
+    expect(canvas.highlighted_links[1]).toBe(true)
+  })
+
+  it('skips on drag end when groups push effective drag count above 1', async () => {
+    makeNode({ id: 'src', outputs: [{ type: 'IMAGE', links: [1] }] })
+    makeNode({ id: 'sink', inputs: [{ type: 'IMAGE', link: 1 }] })
+    makeLink(1, 'src', 'sink', 'IMAGE')
+
+    const dragged = makeNode({
+      id: 'dragged',
+      inputs: [{ type: 'IMAGE', link: null }],
+      outputs: [{ type: 'IMAGE', links: null }]
+    })
+    queryLinkAtPoint.mockReturnValue(1)
+
+    startComposable()
+    graphInteractionHooks.emit('nodeDragEnd', {
+      nodeId: String(dragged.id),
+      canvasPos: { x: 100, y: 100 },
+      pointerEvent: new PointerEvent('pointerup'),
+      selectionSize: 2
+    })
+
+    expect(beforeChange).not.toHaveBeenCalled()
   })
 })
