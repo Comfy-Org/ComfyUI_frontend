@@ -24,15 +24,15 @@ import {
  * 1. The screenshot test runs unconditionally and captures the current
  *    rendered state at the trigger point so unrelated visual regressions are
  *    diffed against a known baseline.
- * 2. The behavioral test asserts the *intended* post-fix state (no
- *    `:focus-visible`, no UA outline) and is annotated `test.fail()` only on
- *    Chromium (the non-Chromium engines do not exhibit the bug, so the
- *    annotation would otherwise produce an unexpected-pass failure on those
- *    projects). The Chromium run is expected to fail until the bug is fixed;
- *    when the fix lands the test will start passing, which Playwright
- *    surfaces as a hard failure of the `test.fail()` annotation, prompting
- *    removal of the annotation **and** regeneration of the screenshot
- *    baseline.
+ * 2. The behavioral test asserts the *user-visible* post-fix contract — no
+ *    extra UA outline on the node root after Shift is held — and is annotated
+ *    `test.fail()` only on Chromium (the non-Chromium engines do not exhibit
+ *    the bug, so the annotation would otherwise produce an unexpected-pass
+ *    failure on those projects). The Chromium run is expected to fail until
+ *    the bug is fixed; when the fix lands the test will start passing, which
+ *    Playwright surfaces as a hard failure of the `test.fail()` annotation,
+ *    prompting removal of the annotation **and** regeneration of the
+ *    screenshot baseline.
  */
 async function selectCheckpointNode(comfyPage: ComfyPage): Promise<Locator> {
   const node = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint').first()
@@ -52,12 +52,12 @@ test.describe(
       'snapshots node appearance when Shift is held on a selected node',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
-        const node = await selectCheckpointNode(comfyPage)
+        await selectCheckpointNode(comfyPage)
 
         await comfyPage.page.keyboard.down('Shift')
         try {
           await comfyPage.expectScreenshot(
-            node,
+            comfyPage.canvas,
             'vue-node-shift-focus-outline.png'
           )
         } finally {
@@ -66,32 +66,31 @@ test.describe(
       }
     )
 
-    test('does not promote selected node to :focus-visible when Shift is held (Chrome-only regression)', async ({
+    test('does not paint an extra focus outline on a selected node when Shift is held (Chrome-only regression)', async ({
       comfyPage,
       browserName
     }) => {
       test.fail(
         browserName === 'chromium',
-        'Chromium promotes a focused element to :focus-visible on a bare Shift keypress; WebKit/Firefox do not. Remove this annotation when the underlying UI bug is fixed.'
+        'Chromium paints a UA focus outline on a focused element after a bare Shift keypress; WebKit/Firefox do not. Remove this annotation when the underlying UI bug is fixed.'
       )
 
       const node = await selectCheckpointNode(comfyPage)
       await expect
         .poll(() =>
-          node.evaluate((el: HTMLElement) => el.matches(':focus-visible'))
+          node.evaluate((el: HTMLElement) => getComputedStyle(el).outlineStyle)
         )
-        .toBe(false)
+        .toBe('none')
 
       await comfyPage.page.keyboard.down('Shift')
       try {
         await expect
           .poll(() =>
-            node.evaluate((el: HTMLElement) => ({
-              matchesFocusVisible: el.matches(':focus-visible'),
-              outlineStyle: getComputedStyle(el).outlineStyle
-            }))
+            node.evaluate(
+              (el: HTMLElement) => getComputedStyle(el).outlineStyle
+            )
           )
-          .toEqual({ matchesFocusVisible: false, outlineStyle: 'none' })
+          .toBe('none')
       } finally {
         await comfyPage.page.keyboard.up('Shift')
       }
