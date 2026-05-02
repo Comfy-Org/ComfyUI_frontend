@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 
