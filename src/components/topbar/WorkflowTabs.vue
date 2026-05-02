@@ -118,7 +118,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackUrl } from '@/platform/support/config'
+import { FEEDBACK_TYPEFORM_URL } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -151,9 +151,8 @@ const isIntegratedTabBar = computed(
 )
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
-const feedbackUrl = buildFeedbackUrl()
 function openFeedback() {
-  window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+  window.open(FEEDBACK_TYPEFORM_URL, '_blank', 'noopener,noreferrer')
 }
 
 const containerRef = ref<HTMLElement | null>(null)

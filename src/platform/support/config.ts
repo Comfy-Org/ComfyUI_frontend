@@ -25,18 +25,9 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 }
 
 const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
-const ZENDESK_FEEDBACK_FORM_ID = '43066738713236'
 
-/**
- * Builds the feedback form URL with the appropriate distribution tag.
- */
-export function buildFeedbackUrl(): string {
-  const params = new URLSearchParams({
-    ticket_form_id: ZENDESK_FEEDBACK_FORM_ID,
-    [ZENDESK_FIELDS.DISTRIBUTION]: getDistribution()
-  })
-  return `${SUPPORT_BASE_URL}?${params.toString()}`
-}
+/** Shared Typeform feedback survey URL for all Cloud/Nightly feedback buttons. */
+export const FEEDBACK_TYPEFORM_URL = 'https://form.typeform.com/to/q7azbWPi'
 
 /**
  * Builds the support URL with optional user information for pre-filling.

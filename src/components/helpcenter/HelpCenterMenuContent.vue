@@ -163,6 +163,7 @@ import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { FEEDBACK_TYPEFORM_URL } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -305,11 +306,7 @@ const menuItems = computed<MenuItem[]>(() => {
       action: () => {
         trackResourceClick('help_feedback', isCloud || isNightly)
         if (isCloud || isNightly) {
-          window.open(
-            'https://form.typeform.com/to/q7azbWPi',
-            '_blank',
-            'noopener,noreferrer'
-          )
+          window.open(FEEDBACK_TYPEFORM_URL, '_blank', 'noopener,noreferrer')
         } else {
           void commandStore.execute('Comfy.ContactSupport')
         }
