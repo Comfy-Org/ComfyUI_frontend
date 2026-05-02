@@ -31,6 +31,13 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get the inner wrapper element of a Vue node.
+   */
+  getNodeInnerWrapper(nodeId: string): Locator {
+    return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
@@ -122,10 +129,9 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Return a DOM-focused VueNodeFixture for the first node matching the title.
-   * Resolves the node id up front so subsequent interactions survive title changes.
+   * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getNodeIdByTitle(title: string): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -136,6 +142,15 @@ export class VueNodeHelpers {
       )
     }
 
+    return nodeId
+  }
+
+  /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
+   */
+  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+    const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 

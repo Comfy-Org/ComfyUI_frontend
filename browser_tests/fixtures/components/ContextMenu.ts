@@ -4,11 +4,13 @@ import type { Locator, Page } from '@playwright/test'
 export class ContextMenu {
   public readonly primeVueMenu: Locator
   public readonly litegraphMenu: Locator
+  public readonly litegraphContextMenu: Locator
   public readonly menuItems: Locator
 
   constructor(public readonly page: Page) {
     this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
     this.litegraphMenu = page.locator('.litemenu')
+    this.litegraphContextMenu = page.locator('.litecontextmenu')
     this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
   }
 
@@ -39,7 +41,10 @@ export class ContextMenu {
     const litegraphVisible = await this.litegraphMenu
       .isVisible()
       .catch(() => false)
-    return primeVueVisible || litegraphVisible
+    const litegraphContextVisible = await this.litegraphContextMenu
+      .isVisible()
+      .catch(() => false)
+    return primeVueVisible || litegraphVisible || litegraphContextVisible
   }
 
   async assertHasItems(items: string[]): Promise<void> {
@@ -77,7 +82,8 @@ export class ContextMenu {
   async waitForHidden(): Promise<void> {
     await Promise.all([
       this.primeVueMenu.waitFor({ state: 'hidden' }),
-      this.litegraphMenu.waitFor({ state: 'hidden' })
+      this.litegraphMenu.waitFor({ state: 'hidden' }),
+      this.litegraphContextMenu.waitFor({ state: 'hidden' })
     ])
   }
 }
