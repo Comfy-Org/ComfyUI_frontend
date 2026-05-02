@@ -321,12 +321,16 @@ export const useWorkflowService = () => {
 
     workflowDraftStore.removeDraft(workflow.path)
 
-    // If this is the last workflow, create a new default temporary workflow
+    // If this is the last workflow, create a new default temporary workflow.
+    // Route through trySwitch so a rejection from loadGraphData
+    // (validation / extension hooks / node-replacement loading) keeps the tab
+    // open instead of throwing, matching the multi-tab contract below.
     if (workflowStore.openWorkflows.length === 1) {
-      await loadDefaultWorkflow()
+      const switched = await trySwitch(() => loadDefaultWorkflow(), workflow)
+      if (!switched) return false
     }
     // If this is the active workflow, switch to another before closing
-    if (workflowStore.isActive(workflow)) {
+    else if (workflowStore.isActive(workflow)) {
       const didSwitch = await switchAwayFrom(workflow)
       if (!didSwitch) return false
     }
