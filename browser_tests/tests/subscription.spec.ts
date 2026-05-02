@@ -25,6 +25,25 @@ async function clickPopoverSubscribe(page: Page): Promise<void> {
     .click()
 }
 
+// Closes the auto-opened subscription-required dialog if present.
+// Polls briefly because the dialog opens asynchronously after the
+// `isLoggedIn` watcher fires on app boot.
+async function dismissSubscriptionDialogIfOpen(page: Page): Promise<void> {
+  const dialog = page.getByRole('dialog')
+  try {
+    await dialog.waitFor({ state: 'visible', timeout: 2000 })
+  } catch {
+    return
+  }
+  const closeButton = dialog.getByRole('button', { name: /close/i }).first()
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click()
+  } else {
+    await page.keyboard.press('Escape')
+  }
+  await dialog.waitFor({ state: 'hidden' }).catch(() => {})
+}
+
 // Installs subscription mocks AFTER comfyPage.setup() and reloads the page
 // so `addInitScript` (which sets `window.__CONFIG__.subscription_required`)
 // applies before module-level reads in `ComfyRunButton/index.ts` evaluate.
@@ -41,13 +60,12 @@ function createSubscriptionTest(
       async ({ comfyPage }, use) => {
         const helper = createSubscriptionHelper(comfyPage.page, ...defaultOps)
         await helper.mock()
-        // Disable the cloud-subscription extension so it doesn't auto-open
-        // the subscription-required modal on app load (which would block
-        // clicks on the topbar buttons we're testing).
-        await comfyPage.setupSettings({
-          'Comfy.Extension.Disabled': ['Comfy.Cloud.Subscription']
-        })
         await comfyPage.page.reload()
+        // For unsubscribed status, the cloud build auto-opens the
+        // subscription-required modal whose backdrop intercepts pointer
+        // events on the topbar. Dismiss it so tests can interact with
+        // the buttons under test.
+        await dismissSubscriptionDialogIfOpen(comfyPage.page)
         await use(helper)
         await helper.clearMocks()
       },
