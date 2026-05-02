@@ -48,7 +48,7 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
     await expect(items.nth(2)).toHaveText('Run (Instant)')
   })
 
-  test('Queue mode menu closes after selecting a mode', async ({
+  test('Selecting a non-default mode updates the Run button label', async ({
     comfyPage
   }) => {
     const trigger = comfyPage.page.getByTestId(
@@ -59,10 +59,11 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
     const menu = comfyPage.page.getByRole('menu')
     await expect(menu).toBeVisible()
 
-    const firstItem = menu.getByRole('menuitem').first()
-    await firstItem.click()
+    // Select "Run (On Change)" — a non-default mode so we observe a real change
+    const onChangeItem = menu.getByRole('menuitem').nth(1)
+    await onChangeItem.click()
 
-    await expect(menu).toBeHidden()
+    await expect(comfyPage.runButton).toContainText('Run (On Change)')
   })
 
   test('Run button sends prompt when clicked', async ({ comfyPage }) => {
