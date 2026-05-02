@@ -1289,5 +1289,28 @@ describe('useWorkflowService', () => {
       expect(result).toBe(true)
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
     })
+
+    // Regression for #7840 silent path: loadGraphData() resolves but the active
+    // workflow stays unchanged because configure() errors are caught internally.
+    // closeWorkflow must still refuse to remove the tab. This test exists to
+    // pin the !workflowStore.isActive(workflow) postcondition in trySwitch().
+    it('does not close tab when loadGraphData resolves but active workflow does not change', async () => {
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      // Both the replacement switch and the default-workflow fallback resolve
+      // without changing activeWorkflow — simulating loadGraphData swallowing
+      // configure() errors internally.
+      vi.mocked(app.loadGraphData).mockResolvedValue(undefined)
+
+      const result = await service.closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.isOpen(active)).toBe(true)
+      expect(workflowStore.isActive(active)).toBe(true)
+    })
   })
 })
