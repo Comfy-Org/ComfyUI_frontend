@@ -45,6 +45,11 @@ describe('isMiddlePointerInput', () => {
       const event = new MouseEvent('mousemove', { button: 0, buttons: 2 })
       expect(isMiddlePointerInput(event)).toBe(false)
     })
+
+    it('returns false when the event has no button state', () => {
+      const event = {} as MouseEvent
+      expect(isMiddlePointerInput(event)).toBe(false)
+    })
   })
 
   describe('chorded buttons (strict equality, not bitmask)', () => {
@@ -143,6 +148,11 @@ describe('isMiddleButtonHeld', () => {
   it('works for PointerEvent with buttons=4', () => {
     const event = new PointerEvent('pointermove', { buttons: 4 })
     expect(isMiddleButtonHeld(event)).toBe(true)
+  })
+
+  it('returns false when the event has no buttons bitmask', () => {
+    const event = {} as MouseEvent
+    expect(isMiddleButtonHeld(event)).toBe(false)
   })
 })
 

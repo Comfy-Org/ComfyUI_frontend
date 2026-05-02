@@ -6,12 +6,24 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 
-// Capture the inputEl the widget attaches listeners to, so tests can dispatch
-// synthetic pointer events directly on it without mounting into the real DOM.
+type TestWidget = {
+  element: HTMLTextAreaElement
+  options: {
+    getValue?: () => string
+    setValue?: (value: string) => void
+    minNodeSize?: [number, number]
+  }
+  value: string
+  callback: ReturnType<typeof vi.fn>
+  dynamicPrompts?: boolean
+}
+
 const processMouseDown = vi.fn()
 const processMouseMove = vi.fn()
 const processMouseUp = vi.fn()
 const processMouseWheel = vi.fn()
+const settings = new Map<string, boolean>()
+let widgetState: { value: unknown } | undefined
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -27,17 +39,13 @@ vi.mock('@/scripts/app', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: (key: string) => {
-      if (key === 'Comfy.TextareaWidget.Spellcheck') return false
-      if (key === 'LiteGraph.Pointer.TrackpadGestures') return false
-      return undefined
-    }
+    get: (key: string) => settings.get(key)
   })
 }))
 
 vi.mock('@/stores/widgetValueStore', () => ({
   useWidgetValueStore: () => ({
-    getWidget: () => undefined
+    getWidget: () => widgetState
   })
 }))
 
@@ -57,23 +65,54 @@ vi.mock('@/lib/litegraph/src/utils/feedback', async (importOriginal) => {
   }
 })
 
+function resetMocks() {
+  vi.clearAllMocks()
+  settings.clear()
+  settings.set('Comfy.TextareaWidget.Spellcheck', false)
+  settings.set('LiteGraph.Pointer.TrackpadGestures', false)
+  widgetState = undefined
+}
+
 function createNodeMock(): {
   node: LGraphNode
   getInputEl: () => HTMLTextAreaElement
+  getWidget: () => TestWidget
+  addWidget: ReturnType<typeof vi.fn>
 } {
   let capturedEl: HTMLTextAreaElement | undefined
+  let capturedWidget: TestWidget | undefined
+
+  const addWidget = vi.fn(
+    (
+      _type: string,
+      _name: string,
+      value: string,
+      _callback: () => void,
+      _options: object
+    ) => ({
+      value,
+      options: {}
+    })
+  )
 
   const node = {
     id: 1,
+    addWidget,
     addDOMWidget: vi.fn(
-      (_name: string, _type: string, el: HTMLTextAreaElement) => {
+      (
+        _name: string,
+        _type: string,
+        el: HTMLTextAreaElement,
+        options: TestWidget['options']
+      ) => {
         capturedEl = el
-        return {
+        capturedWidget = {
           element: el,
-          options: {},
+          options,
           value: '',
           callback: vi.fn()
         }
+        return capturedWidget
       }
     )
   } as unknown as LGraphNode
@@ -83,8 +122,41 @@ function createNodeMock(): {
     getInputEl: () => {
       if (!capturedEl) throw new Error('addDOMWidget was not invoked')
       return capturedEl
-    }
+    },
+    getWidget: () => {
+      if (!capturedWidget) throw new Error('addDOMWidget was not invoked')
+      return capturedWidget
+    },
+    addWidget
   }
+}
+
+function setScrollMetrics(
+  inputEl: HTMLTextAreaElement,
+  metrics: { scrollHeight: number; clientHeight: number }
+) {
+  Object.defineProperties(inputEl, {
+    scrollHeight: { configurable: true, value: metrics.scrollHeight },
+    clientHeight: { configurable: true, value: metrics.clientHeight }
+  })
+}
+
+function dispatchWheel(
+  inputEl: HTMLTextAreaElement,
+  init: WheelEventInit
+): WheelEvent {
+  const event = new WheelEvent('wheel', {
+    bubbles: true,
+    cancelable: true,
+    ...init
+  })
+  inputEl.dispatchEvent(event)
+  return event
+}
+
+function expectWheelForwarded(event: WheelEvent) {
+  expect(event.defaultPrevented).toBe(true)
+  expect(processMouseWheel).toHaveBeenCalledTimes(1)
 }
 
 const multilineInputSpec: InputSpec = {
@@ -94,11 +166,145 @@ const multilineInputSpec: InputSpec = {
   default: ''
 } as InputSpec
 
+describe('useStringWidget', () => {
+  beforeEach(resetMocks)
+
+  it('creates a single-line text widget for non-multiline inputs', () => {
+    const { node, addWidget } = createNodeMock()
+
+    const widget = useStringWidget()(node, {
+      type: 'STRING',
+      name: 'text',
+      default: 'hello'
+    } as InputSpec)
+
+    expect(addWidget).toHaveBeenCalledWith(
+      'text',
+      'text',
+      'hello',
+      expect.any(Function),
+      {}
+    )
+    expect(widget.value).toBe('hello')
+  })
+
+  it('copies dynamic prompt metadata when present', () => {
+    const { node } = createNodeMock()
+
+    const widget = useStringWidget()(node, {
+      type: 'STRING',
+      name: 'text',
+      default: 'hello',
+      dynamicPrompts: true
+    } as InputSpec)
+
+    expect(widget.dynamicPrompts).toBe(true)
+  })
+
+  it('throws for non-string input specs', () => {
+    const { node } = createNodeMock()
+
+    expect(() =>
+      useStringWidget()(node, {
+        type: 'INT',
+        name: 'text'
+      } as InputSpec)
+    ).toThrow('Invalid input data')
+  })
+
+  it('syncs multiline DOM widget value with widget state when available', () => {
+    widgetState = { value: 'stored' }
+    const { node, getInputEl, getWidget } = createNodeMock()
+
+    useStringWidget()(node, multilineInputSpec)
+    const inputEl = getInputEl()
+    const widget = getWidget()
+
+    expect(widget.options.getValue?.()).toBe('stored')
+
+    widget.options.setValue?.('updated')
+
+    expect(inputEl.value).toBe('updated')
+    expect(widgetState.value).toBe('updated')
+  })
+
+  it('falls back to textarea value when no widget state exists', () => {
+    const { node, getInputEl, getWidget } = createNodeMock()
+
+    useStringWidget()(node, multilineInputSpec)
+    const inputEl = getInputEl()
+    const widget = getWidget()
+    inputEl.value = 'typed'
+
+    expect(widget.options.getValue?.()).toBe('typed')
+  })
+
+  it('updates widget value and invokes callback on textarea input', () => {
+    const { node, getInputEl, getWidget } = createNodeMock()
+
+    useStringWidget()(node, multilineInputSpec)
+    const inputEl = getInputEl()
+    const widget = getWidget()
+    inputEl.value = 'typed'
+    inputEl.dispatchEvent(new InputEvent('input', { bubbles: true }))
+
+    expect(widget.value).toBe('typed')
+    expect(widget.callback).toHaveBeenCalledWith('typed')
+  })
+})
+
+describe('useStringWidget wheel handling', () => {
+  let inputEl: HTMLTextAreaElement
+
+  beforeEach(() => {
+    resetMocks()
+    const { node, getInputEl } = createNodeMock()
+    useStringWidget()(node, multilineInputSpec)
+    inputEl = getInputEl()
+    setScrollMetrics(inputEl, { scrollHeight: 100, clientHeight: 100 })
+  })
+
+  it('forwards ctrl-wheel pinch gestures to the canvas', () => {
+    const event = dispatchWheel(inputEl, { ctrlKey: true, deltaY: 10 })
+
+    expectWheelForwarded(event)
+  })
+
+  it('forwards likely trackpad gestures when trackpad gestures are enabled', () => {
+    settings.set('LiteGraph.Pointer.TrackpadGestures', true)
+
+    const event = dispatchWheel(inputEl, { deltaY: 10 })
+
+    expectWheelForwarded(event)
+  })
+
+  it('forwards horizontal wheel gestures to the canvas', () => {
+    const event = dispatchWheel(inputEl, { deltaX: 120, deltaY: 10 })
+
+    expectWheelForwarded(event)
+  })
+
+  it('keeps vertical wheel events inside a scrollable textarea', () => {
+    setScrollMetrics(inputEl, { scrollHeight: 200, clientHeight: 100 })
+
+    const event = dispatchWheel(inputEl, { deltaY: 120 })
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(processMouseWheel).not.toHaveBeenCalled()
+  })
+
+  it('forwards vertical wheel events when the textarea cannot scroll', () => {
+    const event = dispatchWheel(inputEl, { deltaY: 120 })
+
+    expectWheelForwarded(event)
+  })
+})
+
 describe('useStringWidget multiline pointer handlers', () => {
   let inputEl: HTMLTextAreaElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    resetMocks()
     const { node, getInputEl } = createNodeMock()
     useStringWidget()(node, multilineInputSpec)
     inputEl = getInputEl()
@@ -121,9 +327,6 @@ describe('useStringWidget multiline pointer handlers', () => {
     })
 
     it('ignores left-click pointerdown even when middle is incidentally held', () => {
-      // Chorded pointerdown — user left-clicks while middle is held. The
-      // strict semantics in isMiddlePointerInput are what prevents this from
-      // being misclassified as a middle-button event.
       inputEl.dispatchEvent(
         new PointerEvent('pointerdown', { button: 0, buttons: 5 })
       )
