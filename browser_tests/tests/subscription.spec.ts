@@ -34,7 +34,10 @@ async function clickPopoverSubscribe(page: Page): Promise<void> {
 // Polls briefly because the dialog opens asynchronously after the
 // `isLoggedIn` watcher fires on app boot.
 async function dismissSubscriptionDialogIfOpen(page: Page): Promise<void> {
-  const dialog = page.getByRole('dialog')
+  // Target only the subscription-required dialog by its known aria-labelledby
+  // key — avoids strict-mode violations when multiple GlobalDialog items are
+  // on the stack simultaneously.
+  const dialog = page.locator('[aria-labelledby="subscription-required"]')
   try {
     await dialog.waitFor({ state: 'visible', timeout: 2000 })
   } catch {
@@ -107,7 +110,9 @@ unsubscribedTest.describe(
         await comfyPage.page
           .getByTestId(TestIds.topbar.subscribeToRunButton)
           .click()
-        await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+        await expect(
+          comfyPage.page.locator('[aria-labelledby="subscription-required"]')
+        ).toBeVisible()
       }
     )
 
@@ -137,7 +142,9 @@ unsubscribedTest.describe(
       'User popover subscribe click opens dialog',
       async ({ comfyPage }) => {
         await clickPopoverSubscribe(comfyPage.page)
-        await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+        await expect(
+          comfyPage.page.locator('[aria-labelledby="subscription-required"]')
+        ).toBeVisible()
       }
     )
 
@@ -168,7 +175,11 @@ unsubscribedTest.describe(
       'Cleanup prevents stale subscription state after dialog close',
       async ({ comfyPage, subscriptionHelper }) => {
         await clickPopoverSubscribe(comfyPage.page)
-        const dialog = comfyPage.page.getByRole('dialog')
+        // Use the aria-labelledby key to target only the subscription dialog —
+        // avoids strict-mode violations when a second GlobalDialog is stacked.
+        const dialog = comfyPage.page.locator(
+          '[aria-labelledby="subscription-required"]'
+        )
         await expect(dialog).toBeVisible()
 
         await dialog.getByRole('button', { name: /close/i }).first().click()
