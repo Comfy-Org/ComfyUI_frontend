@@ -65,7 +65,7 @@ export class PrimitiveNode extends LGraphNode {
     if (widget?.type !== 'combo') return
 
     const newValues = this._resolveComboValues(defs)
-    if (!newValues?.length) return
+    if (newValues === undefined) return
 
     widget.options.values = newValues
 
@@ -79,17 +79,15 @@ export class PrimitiveNode extends LGraphNode {
     defs?: Record<string, ComfyNodeDef>
   ): (string | number)[] | undefined {
     const fromDefs = defs ? this._comboValuesFromDefs(defs) : undefined
-    if (fromDefs?.length) return fromDefs
+    if (fromDefs !== undefined) return fromDefs
 
     const slotWidget = this.outputs?.[0]?.widget
     const config = (
       slotWidget?.[GET_CONFIG] as (() => InputSpec) | undefined
     )?.()
-    if (!config) return undefined
+    if (!config || !isComboInputSpec(config)) return undefined
 
-    return isComboInputSpec(config)
-      ? getComboSpecComboOptions(config)
-      : undefined
+    return getComboSpecComboOptions(config)
   }
 
   private _comboValuesFromDefs(
@@ -103,12 +101,12 @@ export class PrimitiveNode extends LGraphNode {
     if (!targetType) return undefined
 
     const targetInput = targetNode?.inputs?.[link.target_slot]
-    const widgetName = targetInput?.widget?.name
-    if (!widgetName) return undefined
+    const inputName = targetInput?.widget?.name ?? targetInput?.name
+    if (!inputName) return undefined
 
     const def = defs[targetType]
     const inputSpec =
-      def?.input?.required?.[widgetName] ?? def?.input?.optional?.[widgetName]
+      def?.input?.required?.[inputName] ?? def?.input?.optional?.[inputName]
     if (!inputSpec || !isComboInputSpec(inputSpec)) return undefined
 
     return getComboSpecComboOptions(inputSpec)
