@@ -207,7 +207,8 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
-          comfyPage.page
+          comfyPage.page,
+          ['No link found', 'Failed to resolve legacy -1']
         )
 
         try {
