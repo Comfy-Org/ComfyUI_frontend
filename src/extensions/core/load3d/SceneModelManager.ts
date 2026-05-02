@@ -491,8 +491,8 @@ export class SceneModelManager implements ModelManagerInterface {
 
     model.position.set(-center.x, -scaledBox.min.y, -center.z)
 
+    this.originalRotation = null
     if (this.currentUpDirection !== 'original') {
-      this.originalRotation = null
       this.setUpDirection(this.currentUpDirection)
     }
 
