@@ -257,12 +257,15 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         await comfyPage.vueNodes.waitForNodes()
 
         await expect
-          .poll(() => getPromotedWidgets(comfyPage, OUTER_NODE_ID))
-          .toEqual(
-            expect.arrayContaining([
-              [INNER_SUBGRAPH_NODE_ID, expect.any(String)]
-            ])
-          )
+          .poll(async () => {
+            const widgets = await getPromotedWidgets(comfyPage, OUTER_NODE_ID)
+            return widgets
+              .filter(
+                ([sourceNodeId]) => sourceNodeId === INNER_SUBGRAPH_NODE_ID
+              )
+              .map(([, sourceWidgetName]) => sourceWidgetName)
+          })
+          .toContain('value')
       })
 
       test('Serialize and reload preserves nested promoted widget visibility', async ({
