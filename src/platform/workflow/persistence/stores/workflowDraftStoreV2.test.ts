@@ -237,6 +237,70 @@ describe('workflowDraftStoreV2', () => {
         })
       )
     })
+
+    it('reports payload byte size measured against the serialized envelope', () => {
+      const store = useWorkflowDraftStoreV2()
+      const data = '{"emoji":"🚀","note":"€"}'
+
+      const setItemSpy = spyQuotaOnPayloadWrite()
+      try {
+        store.saveDraft('workflows/multibyte.json', data, {
+          name: 'mb',
+          isTemporary: true
+        })
+      } finally {
+        setItemSpy.mockRestore()
+      }
+
+      const envelope = JSON.stringify({ data, updatedAt: 0 })
+      const expectedBytes = new TextEncoder().encode(envelope).length
+      expect(expectedBytes).toBeGreaterThan(data.length)
+
+      const call = captureMessageMock.mock.calls.find(
+        ([msg]) =>
+          typeof msg === 'string' &&
+          msg.includes('localStorage quota exhausted')
+      )
+      expect(call?.[1]?.extra?.incomingPayloadBytes).toBe(expectedBytes)
+    })
+
+    it('rolls the persisted index back when the final index write fails after eviction', () => {
+      const store = useWorkflowDraftStoreV2()
+      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
+
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      let payloadFailures = 0
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key.startsWith(payloadPrefix) && payloadFailures === 0) {
+            payloadFailures++
+            throw quotaError()
+          }
+          if (
+            key === indexKey &&
+            JSON.parse(value).entries[hashPath('workflows/incoming.json')]
+          ) {
+            throw quotaError()
+          }
+          return realSetItem(key, value)
+        })
+
+      try {
+        const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+        expect(ok).toBe(false)
+      } finally {
+        setItemSpy.mockRestore()
+      }
+
+      const persisted = JSON.parse(localStorage.getItem(indexKey)!)
+      expect(persisted.order).not.toContain(hashPath('workflows/incoming.json'))
+      expect(persisted.order).not.toContain(hashPath('workflows/a.json'))
+      expect(store.getDraft('workflows/incoming.json')).toBeNull()
+    })
   })
 
   describe('removeDraft', () => {

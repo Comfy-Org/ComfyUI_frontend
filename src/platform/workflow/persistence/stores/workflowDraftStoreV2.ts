@@ -135,10 +135,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     // Delete evicted payloads
     deletePayloads(workspaceId, evicted)
 
-    // Persist index
     if (!persistIndex(newIndex)) {
-      // Index write failed - try to recover
       deletePayload(workspaceId, draftKey)
+      persistIndex(index)
       return false
     }
 
@@ -191,6 +190,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         )
         if (!persistIndex(finalIndex)) {
           deletePayload(workspaceId, draftKey)
+          persistIndex(currentIndex)
           return false
         }
         return true
@@ -198,9 +198,14 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
 
     persistIndex(currentIndex)
-    reportQuotaExhausted(currentIndex, evictedCount, data.length)
+    reportQuotaExhausted(currentIndex, evictedCount, payloadByteSize(data))
     markStorageUnavailable()
     return false
+  }
+
+  function payloadByteSize(data: string): number {
+    return new TextEncoder().encode(JSON.stringify({ data, updatedAt: 0 }))
+      .length
   }
 
   function stripOrderKey(index: DraftIndexV2, orphanKey: string): DraftIndexV2 {
