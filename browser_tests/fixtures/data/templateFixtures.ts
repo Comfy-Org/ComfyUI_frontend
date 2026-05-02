@@ -61,20 +61,3 @@ export const ALL_DISTRIBUTION_TEMPLATES: TemplateInfo[] = [
   STABLE_LOCAL_TEMPLATE,
   STABLE_UNRESTRICTED_TEMPLATE
 ]
-
-/**
- * Generate N deterministic templates, optionally restricted to a distribution.
- */
-export function generateTemplates(
-  count: number,
-  distribution?: TemplateIncludeOnDistributionEnum
-): TemplateInfo[] {
-  const slug = distribution ?? 'unrestricted'
-  return Array.from({ length: count }, (_, i) =>
-    makeTemplate({
-      name: `gen-${slug}-${String(i + 1).padStart(3, '0')}`,
-      title: `Generated ${slug} ${i + 1}`,
-      ...(distribution ? { includeOnDistributions: [distribution] } : {})
-    })
-  )
-}

@@ -6,9 +6,29 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import {
-  generateTemplates,
+  makeTemplate,
   mockTemplateIndex
 } from '@e2e/fixtures/data/templateFixtures'
+
+/**
+ * Generate N deterministic templates, optionally restricted to a distribution.
+ *
+ * Lives here (not in `fixtures/data/`) because `fixtures/data/` is reserved
+ * for static test data with no executable fixture logic.
+ */
+function generateTemplates(
+  count: number,
+  distribution?: TemplateIncludeOnDistributionEnum
+): TemplateInfo[] {
+  const slug = distribution ?? 'unrestricted'
+  return Array.from({ length: count }, (_, i) =>
+    makeTemplate({
+      name: `gen-${slug}-${String(i + 1).padStart(3, '0')}`,
+      title: `Generated ${slug} ${i + 1}`,
+      ...(distribution ? { includeOnDistributions: [distribution] } : {})
+    })
+  )
+}
 
 export interface TemplateConfig {
   readonly templates: readonly TemplateInfo[]
