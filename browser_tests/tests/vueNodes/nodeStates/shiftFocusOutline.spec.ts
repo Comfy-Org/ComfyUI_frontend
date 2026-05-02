@@ -25,11 +25,14 @@ import {
  *    rendered state at the trigger point so unrelated visual regressions are
  *    diffed against a known baseline.
  * 2. The behavioral test asserts the *intended* post-fix state (no
- *    `:focus-visible`, no UA outline) and is annotated `test.fail()`. It is
- *    expected to fail until the bug is fixed; when the fix lands the test
- *    will start passing, which Playwright surfaces as a hard failure of the
- *    `test.fail()` annotation, prompting removal of the annotation **and**
- *    regeneration of the screenshot baseline.
+ *    `:focus-visible`, no UA outline) and is annotated `test.fail()` only on
+ *    Chromium (the non-Chromium engines do not exhibit the bug, so the
+ *    annotation would otherwise produce an unexpected-pass failure on those
+ *    projects). The Chromium run is expected to fail until the bug is fixed;
+ *    when the fix lands the test will start passing, which Playwright
+ *    surfaces as a hard failure of the `test.fail()` annotation, prompting
+ *    removal of the annotation **and** regeneration of the screenshot
+ *    baseline.
  */
 async function selectCheckpointNode(comfyPage: ComfyPage): Promise<Locator> {
   const node = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint').first()
@@ -63,30 +66,35 @@ test.describe(
       }
     )
 
-    test.fail(
-      'does not promote selected node to :focus-visible when Shift is held (Chrome-only regression)',
-      async ({ comfyPage }) => {
-        const node = await selectCheckpointNode(comfyPage)
+    test('does not promote selected node to :focus-visible when Shift is held (Chrome-only regression)', async ({
+      comfyPage,
+      browserName
+    }) => {
+      test.fail(
+        browserName === 'chromium',
+        'Chromium promotes a focused element to :focus-visible on a bare Shift keypress; WebKit/Firefox do not. Remove this annotation when the underlying UI bug is fixed.'
+      )
+
+      const node = await selectCheckpointNode(comfyPage)
+      await expect
+        .poll(() =>
+          node.evaluate((el: HTMLElement) => el.matches(':focus-visible'))
+        )
+        .toBe(false)
+
+      await comfyPage.page.keyboard.down('Shift')
+      try {
         await expect
           .poll(() =>
-            node.evaluate((el: HTMLElement) => el.matches(':focus-visible'))
+            node.evaluate((el: HTMLElement) => ({
+              matchesFocusVisible: el.matches(':focus-visible'),
+              outlineStyle: getComputedStyle(el).outlineStyle
+            }))
           )
-          .toBe(false)
-
-        await comfyPage.page.keyboard.down('Shift')
-        try {
-          await expect
-            .poll(() =>
-              node.evaluate((el: HTMLElement) => ({
-                matchesFocusVisible: el.matches(':focus-visible'),
-                outlineStyle: getComputedStyle(el).outlineStyle
-              }))
-            )
-            .toEqual({ matchesFocusVisible: false, outlineStyle: 'none' })
-        } finally {
-          await comfyPage.page.keyboard.up('Shift')
-        }
+          .toEqual({ matchesFocusVisible: false, outlineStyle: 'none' })
+      } finally {
+        await comfyPage.page.keyboard.up('Shift')
       }
-    )
+    })
   }
 )
