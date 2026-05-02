@@ -11,6 +11,10 @@ const translations = {
     'zh-CN':
       'Comfy 是面向专业视觉人士的 AI 创作引擎。您可以精确掌控每个模型、每个参数和每个输出。'
   },
+  'hero.runFirstWorkflow': {
+    en: 'Run your first workflow',
+    'zh-CN': '运行你的第一个工作流'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {
