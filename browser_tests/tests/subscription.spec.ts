@@ -14,9 +14,7 @@ async function openUserPopover(page: Page): Promise<Locator> {
   // Use dispatchEvent instead of click() to bypass Playwright's actionability
   // check — in the cloud environment a subscription dialog backdrop can be
   // present during initial page load and would block a standard click.
-  await page
-    .getByTestId(TestIds.user.currentUserButton)
-    .dispatchEvent('click')
+  await page.getByTestId(TestIds.user.currentUserButton).dispatchEvent('click')
   const popover = page.getByTestId(TestIds.user.currentUserPopover)
   await expect(popover).toBeVisible()
   return popover
