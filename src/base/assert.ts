@@ -27,5 +27,9 @@ export function assert(condition: boolean, message: string): void {
     throw new Error(`[Assertion failed]: ${message}`)
   }
 
-  reporter?.(message)
+  try {
+    reporter?.(message)
+  } catch (error) {
+    console.error('[Assertion reporter failed]', error)
+  }
 }

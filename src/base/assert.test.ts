@@ -55,4 +55,20 @@ describe('assert', () => {
     assert(true, 'no call')
     expect(reporter).not.toHaveBeenCalled()
   })
+
+  it('swallows reporter exceptions in non-DEV mode', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn(() => {
+      throw new Error('reporter blew up')
+    })
+    setAssertReporter(reporter)
+    expect(() => assert(false, 'safe under reporter failure')).not.toThrow()
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Assertion failed]: safe under reporter failure'
+    )
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Assertion reporter failed]',
+      expect.any(Error)
+    )
+  })
 })
