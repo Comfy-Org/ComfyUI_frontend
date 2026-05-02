@@ -35,9 +35,19 @@ export function useOutputWindowSync(): void {
       const currentIds = new Set(items.map((i) => i.id))
       for (const old of oldItems) {
         if (currentIds.has(old.id)) continue
-        // Pre-image disappearance is cancellation; image-state
-        // disappearance is absorption (window keeps its output).
-        if (old.state !== 'image') windowStore.remove(old.id)
+        // Conservative cancellation check: only treat a disappearance
+        // as cancellation if the window never made it past the
+        // skeleton stage AND has no output / asset attached. The
+        // state transition to 'image' and the removeJobItems call
+        // can land in the same reactive tick when the asset arrives
+        // late, so reading `old.state` alone is unreliable —
+        // checking the window's accumulated state is the safe path.
+        const win = windowStore.windows.find((w) => w.id === old.id)
+        if (!win) continue
+        if (win.state === 'image' || win.output || win.asset) continue
+        if (old.state === 'skeleton' && win.state === 'skeleton') {
+          windowStore.remove(old.id)
+        }
       }
     },
     { immediate: true }

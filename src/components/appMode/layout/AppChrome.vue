@@ -216,7 +216,10 @@ function cellClass(cell: ChromeCell): string {
   <div
     :class="
       cn(
-        'app-chrome pointer-events-none absolute inset-0 z-1',
+        // `app-mode-themed` toggles the App Mode widget overrides in
+        // src/assets/css/style.css. Drop the class to fall back to
+        // primevue / design-system widget defaults.
+        'app-mode-themed app-chrome pointer-events-none absolute inset-0 z-1',
         variant === 'builder' && [
           'fixed top-(--workflow-tabs-height) right-0 bottom-0',
           'left-(--sidebar-width,0px) z-90 cursor-not-allowed'

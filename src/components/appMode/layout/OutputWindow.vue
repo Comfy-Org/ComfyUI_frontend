@@ -337,52 +337,56 @@ const showHeader = computed(() => {
         <slot name="body-overlay" />
       </div>
     </div>
-    <!-- Resize hit-zones — corners (z-40) stack above edges (z-30). -->
+    <!-- Resize hit-zones — corners (z-40) stack above edges (z-30).
+         Zones are 12px (edges) and 20px (corners), centered across
+         the tile edge so half is inside the tile and half overhangs;
+         this widens the click target without making the visible
+         border feel thicker. -->
     <template v-if="!maximized">
       <div
         data-resize-dir="n"
-        class="absolute inset-x-3 -top-1 z-30 h-1.5 cursor-n-resize"
+        class="absolute inset-x-5 -top-1.5 z-30 h-3 cursor-n-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="s"
-        class="absolute inset-x-3 -bottom-1 z-30 h-1.5 cursor-s-resize"
+        class="absolute inset-x-5 -bottom-1.5 z-30 h-3 cursor-s-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="e"
-        class="absolute inset-y-3 -right-1 z-30 w-1.5 cursor-e-resize"
+        class="absolute inset-y-5 -right-1.5 z-30 w-3 cursor-e-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="w"
-        class="absolute inset-y-3 -left-1 z-30 w-1.5 cursor-w-resize"
+        class="absolute inset-y-5 -left-1.5 z-30 w-3 cursor-w-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="nw"
-        class="absolute -top-1 -left-1 z-40 size-3 cursor-nw-resize"
+        class="absolute -top-2 -left-2 z-40 size-5 cursor-nw-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="ne"
-        class="absolute -top-1 -right-1 z-40 size-3 cursor-ne-resize"
+        class="absolute -top-2 -right-2 z-40 size-5 cursor-ne-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="sw"
-        class="absolute -bottom-1 -left-1 z-40 size-3 cursor-sw-resize"
+        class="absolute -bottom-2 -left-2 z-40 size-5 cursor-sw-resize"
         @pointerdown="handleResizePointerDown"
       />
       <div
         data-resize-dir="se"
-        class="group/resize absolute -right-1 -bottom-1 z-40 size-3 cursor-se-resize"
+        class="group/resize absolute -right-2 -bottom-2 z-40 size-5 cursor-se-resize"
         @pointerdown="handleResizePointerDown"
       >
         <!-- Visible cue on the SE corner. -->
         <div
           :class="[
-            'pointer-events-none absolute right-1 bottom-1 size-1.5 rounded-full bg-base-foreground/30',
+            'pointer-events-none absolute right-2 bottom-2 size-1.5 rounded-full bg-base-foreground/30',
             'opacity-0 transition-opacity duration-150',
             'group-hover/resize:opacity-100',
             resizing && 'opacity-100'

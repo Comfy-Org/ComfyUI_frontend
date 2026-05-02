@@ -12,7 +12,6 @@ import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import type { OutputWindowEntry } from '@/renderer/extensions/linearMode/outputWindowStore'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
@@ -22,8 +21,6 @@ import OutputWindow from './OutputWindow.vue'
 const { t } = useI18n()
 const windowStore = useOutputWindowStore()
 const { sortedWindows } = storeToRefs(windowStore)
-const appModeStore = useAppModeStore()
-const { noZoomMode } = storeToRefs(appModeStore)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
 
@@ -203,26 +200,27 @@ async function reuseParams(entry: OutputWindowEntry): Promise<void> {
     </template>
 
     <template v-if="entry.state === 'image' && entry.output">
+      <!-- `cover` in both modes — bounded-fit placement caps aspect
+           mismatch at ~20% so the crop stays small, and avoiding
+           letterbox bars reads more polished than the alternative. -->
       <MediaOutputPreview
         :output="resolvedOutput(entry) ?? entry.output"
         :hide-info="true"
-        :fit="noZoomMode ? 'cover' : 'contain'"
+        fit="cover"
         class="size-full"
       />
     </template>
     <template v-else-if="entry.state === 'latent' && entry.latentPreviewUrl">
-      <!-- Match MediaOutputPreview's fit so the latent → final swap
-           is visually seamless: cover (with edge crop) in dashboard
-           mode where tiles snap to the cell grid; contain in zoom
-           mode where tiles are aspect-locked to the image. -->
+      <!-- `object-cover` matches MediaOutputPreview so the latent →
+           final swap stays visually seamless. -->
       <img
         :src="entry.latentPreviewUrl"
-        :class="['size-full', noZoomMode ? 'object-cover' : 'object-contain']"
+        class="size-full object-cover"
         alt=""
       />
     </template>
     <template v-else>
-      <LatentPreview class="size-full" />
+      <LatentPreview class="size-full" :variant="entry.createdSeq" />
     </template>
 
     <template #body-actions>

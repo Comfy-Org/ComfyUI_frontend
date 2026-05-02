@@ -21,82 +21,126 @@
   backdrop-filter: blur(8px);
 }
 
-/* App Mode widget chrome — NodeWidgets primitives on the panel surface. */
-.floating-panel {
+/* === App Mode widget theme — togglable layer ============================
+ *
+ * `.app-mode-themed` is applied to FloatingPanel and AppChrome roots when
+ * the custom widget theme is active. Removing the class binding from
+ * those two components disables every rule below in one move; widgets
+ * fall back to primevue / design-system defaults (lighter backgrounds,
+ * default borders, default padding).
+ *
+ * All magic numbers live in `--app-mode-widget-*` tokens declared once
+ * below — change a value here and every gated rule picks it up.
+ * ====================================================================== */
+
+.app-mode-themed {
+  --app-mode-widget-bg: var(--color-layout-canvas);
+  --app-mode-widget-border: rgb(255 255 255 / 0.08);
+  --app-mode-widget-border-focus: rgb(255 255 255 / 0.18);
+  /* 2.5rem (40px = Tailwind h-10) — matches NodeWidgets' responsive
+     `not-md:**:[.h-7]:h-10` bump on the number-input pill, so the
+     dropdown / textarea / input baseline stays consistent inside
+     the docked input panel (which always triggers the not-md break). */
+  --app-mode-widget-min-h: 2.5rem;
+  --app-mode-widget-input-pad-x: 6px;
+  --app-mode-widget-textarea-pad: 16px;
+  --app-mode-widget-selection-bg: rgb(255 255 255 / 0.18);
+  --app-mode-widget-button-hover-bg: rgb(255 255 255 / 0.1);
+}
+
+/* Reduced label size on the input panel (design-system default = 15px). */
+.app-mode-themed.floating-panel {
   --text-layout-md: 14px;
 }
 
-:is(.floating-panel, .app-chrome) textarea,
-:is(.floating-panel, .app-chrome) input {
-  background-color: var(--color-layout-canvas);
-  min-height: 2.25rem;
-  padding-left: 6px;
-  padding-right: 6px;
-}
-
-/* Textarea (prompt cell) gets generous all-around padding so long
-   wrapped lines don't crowd the rounded edges. Inputs stay tight
-   because they're single-line and short (numbers). */
-:is(.floating-panel, .app-chrome) textarea {
-  padding: 16px;
-}
-
-/* Browser default system-blue reads as an artifact on dark. */
-:is(.floating-panel, .app-chrome) textarea::selection,
-:is(.floating-panel, .app-chrome) input::selection {
-  background-color: rgb(255 255 255 / 0.18);
-  color: inherit;
-}
-
-/* ScrubableNumberInput pill — match input/textarea baseline. */
-:is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
-  background-color: var(--color-layout-canvas);
-  height: 2.25rem;
-}
-
-/* Uniform 1px border at the same alpha as panel-chrome + cells. */
-:is(.floating-panel, .app-chrome) textarea,
-:is(.floating-panel, .app-chrome) input,
-:is(.floating-panel, .app-chrome) .bg-component-node-widget-background {
-  border: 1px solid rgb(255 255 255 / 0.08);
+/* Widget surfaces — shared bg + border + focus transition. */
+.app-mode-themed textarea,
+.app-mode-themed input,
+.app-mode-themed .bg-component-node-widget-background,
+.app-mode-themed .p-select {
+  background-color: var(--app-mode-widget-bg);
+  border: 1px solid var(--app-mode-widget-border);
   outline: none;
   transition: border-color 150ms ease;
 }
 
-/* Inner pill input is inset-0; reset min-height + border to avoid
-   the input border leaking past the pill's rounded corners. */
-:is(.floating-panel, .app-chrome) .bg-component-node-widget-background input {
+/* Select container matches the input/pill baseline height + radius.
+   Flex-center keeps the label vertically aligned when our height
+   override (40px) exceeds the size="small" inner label height. */
+.app-mode-themed .p-select {
+  height: var(--app-mode-widget-min-h);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+.app-mode-themed .p-select .p-select-label {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.app-mode-themed .p-select:focus-within,
+.app-mode-themed .p-select.p-focus {
+  border-color: var(--app-mode-widget-border-focus);
+}
+
+/* Single-line widgets share a min-height and tight horizontal padding. */
+.app-mode-themed textarea,
+.app-mode-themed input {
+  min-height: var(--app-mode-widget-min-h);
+  padding-left: var(--app-mode-widget-input-pad-x);
+  padding-right: var(--app-mode-widget-input-pad-x);
+}
+
+/* Multi-line textarea wants room around wrapped lines. */
+.app-mode-themed textarea {
+  padding: var(--app-mode-widget-textarea-pad);
+}
+
+/* Custom selection color — browser default system-blue reads as an
+   artifact on a dark surface. */
+.app-mode-themed textarea::selection,
+.app-mode-themed input::selection {
+  background-color: var(--app-mode-widget-selection-bg);
+  color: inherit;
+}
+
+/* ScrubableNumberInput pill matches the input/textarea baseline. */
+.app-mode-themed .bg-component-node-widget-background {
+  height: var(--app-mode-widget-min-h);
+}
+
+/* Inner pill input is inset-0; reset min-height + border so the
+   pill's rounded corners stay clean. */
+.app-mode-themed .bg-component-node-widget-background input {
   min-height: 0;
 }
-:is(.floating-panel, .app-chrome) .bg-component-node-widget-background input,
-:is(.floating-panel, .app-chrome)
-  .bg-component-node-widget-background
-  textarea {
+.app-mode-themed .bg-component-node-widget-background input,
+.app-mode-themed .bg-component-node-widget-background textarea {
   border: none;
 }
 
-:is(.floating-panel, .app-chrome)
-  .bg-component-node-widget-background
-  button:hover {
-  background-color: rgb(255 255 255 / 0.1);
+.app-mode-themed .bg-component-node-widget-background button:hover {
+  background-color: var(--app-mode-widget-button-hover-bg);
 }
 
-/* Brighter border on focus is the only active/selected signal. */
-:is(.floating-panel, .app-chrome) textarea:focus,
-:is(.floating-panel, .app-chrome) input:focus,
-:is(.floating-panel, .app-chrome)
-  .bg-component-node-widget-background:focus-within {
-  border-color: rgb(255 255 255 / 0.18);
+/* Brighter border on focus — the pill border is the only active /
+   selected signal. */
+.app-mode-themed textarea:focus,
+.app-mode-themed input:focus,
+.app-mode-themed .bg-component-node-widget-background:focus-within {
+  border-color: var(--app-mode-widget-border-focus);
   outline: none;
   box-shadow: none;
 }
 
-/* Kill NodeWidgets' focus-within ring; pill border is the focus signal. */
-:is(.floating-panel, .app-chrome) [class*='focus-within']:focus-within {
+/* Kill NodeWidgets' focus-within ring; the pill border is the focus signal. */
+.app-mode-themed [class*='focus-within']:focus-within {
   box-shadow: none !important;
   --tw-ring-shadow: 0 0 transparent;
   --tw-ring-offset-shadow: 0 0 transparent;
 }
+
+/* === End App Mode widget theme ======================================== */
 
 /* 0.001ms (not 0s) so transitionend/animationend still fire. */
 .disable-animations *,

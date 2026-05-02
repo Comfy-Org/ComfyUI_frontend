@@ -4,6 +4,7 @@ import { provide, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import type { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
@@ -35,6 +36,12 @@ const isEditingLabel = ref(false)
 // NodeWidgets / AppInput would otherwise render inside the cell.
 provide(HideLayoutFieldKey, true)
 provide(HideInputSelectionKey, true)
+// Teleport Select / MultiSelect / dropdown overlays to <body> so the
+// floating panel's `overflow: hidden` doesn't clip the option list.
+// Default is 'self' (Vue node graph needs that for transform
+// inheritance); the App Mode panel doesn't have a transform, so
+// 'body' is the right call here.
+provide(OverlayAppendToKey, 'body')
 
 function startEditing() {
   if (variant !== 'builder') return

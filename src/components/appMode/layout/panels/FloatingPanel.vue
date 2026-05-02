@@ -70,7 +70,10 @@ const { startResize } = usePanelResize({
 
 const sectionClass = computed(() =>
   cn(
-    'floating-panel pointer-events-auto absolute z-10 flex flex-col overflow-hidden',
+    // `app-mode-themed` toggles the App Mode widget overrides in
+    // src/assets/css/style.css. Drop the class to fall back to
+    // primevue / design-system widget defaults.
+    'app-mode-themed floating-panel pointer-events-auto absolute z-10 flex flex-col overflow-hidden',
     !isDocked.value && 'w-(--panel-dock-width,440px)',
     'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
     'rounded-[10px] border border-white/8 bg-layout-cell',

@@ -35,10 +35,6 @@ export interface OutputWindowEntry {
   createdSeq: number
 }
 
-const SPAWN_ANCHOR_X = 80
-const SPAWN_ANCHOR_Y = 60
-const SPAWN_GAP = 16
-const SPAWN_GRID = 16
 // Match OutputWindow's pre-image defaults so placement stays stable.
 const DEFAULT_SPAWN_W = 512
 const DEFAULT_SPAWN_H = 560
@@ -53,13 +49,22 @@ const CHROME_CELL = 48
 const CHROME_GUTTER = 8
 const CHROME_STEP = CHROME_CELL + CHROME_GUTTER
 
+// Align zoom-mode spawn to the same chrome cell grid that
+// OutputWindow's drag/resize snapping uses (CHROME_STEP=56 with an
+// CHROME_OUTER=8 origin). Mismatched 16px snap drift would leave
+// non-uniform gaps after OutputWindow re-snapped on mount.
+const SPAWN_ANCHOR_X = CHROME_OUTER + CHROME_STEP
+const SPAWN_ANCHOR_Y = CHROME_OUTER + CHROME_STEP
+const SPAWN_GAP = CHROME_GUTTER
+
 // First-spawn anchor used before the first relayout fires; matches
 // the chrome rail offset so there's no flash before LayoutView reports
 // its size.
 const NO_ZOOM_ANCHOR_X = CHROME_OUTER
 const NO_ZOOM_ANCHOR_Y = CHROME_OUTER + CHROME_CELL + CHROME_GUTTER
 
-const snapSpawn = (v: number) => Math.round(v / SPAWN_GRID) * SPAWN_GRID
+const snapSpawn = (v: number) =>
+  Math.round((v - CHROME_OUTER) / CHROME_STEP) * CHROME_STEP + CHROME_OUTER
 
 interface DashboardSlot {
   x: number
@@ -412,7 +417,10 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     [...windows.value].sort((a, b) => a.zIndex - b.zIndex)
   )
 
-  function nextSpawnPosition(): { x: number; y: number } {
+  function nextSpawnPosition(
+    newW: number = DEFAULT_SPAWN_W,
+    newH: number = DEFAULT_SPAWN_H
+  ): { x: number; y: number } {
     if (useAppModeStore().noZoomMode) {
       // Position is overwritten by relayoutDashboard once the LayoutView
       // reports its size; this anchor avoids a (0,0) flash before then.
@@ -424,8 +432,6 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
 
     // Anchor on the most recently spawned window.
     const last = entryRect(windows.value[windows.value.length - 1])
-    const newW = DEFAULT_SPAWN_W
-    const newH = DEFAULT_SPAWN_H
 
     // Try each side; first non-colliding wins.
     const candidates = [
@@ -464,10 +470,25 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
       Object.assign(existing, patch)
       return
     }
+    // In zoom mode, new tiles inherit the most recent tile's
+    // dimensions so a sequence reads as one consistent canvas
+    // instead of cascading to the default 512×560 (smaller than
+    // the first tile's bounded-fit slot from placeFirstZoomTile).
+    // No-zoom dashboard relayout will overwrite size anyway.
+    const inheritFrom = !useAppModeStore().noZoomMode
+      ? windows.value[windows.value.length - 1]
+      : undefined
+    const inheritW = inheritFrom?.width
+    const inheritH = inheritFrom?.height
     windows.value.push({
       id,
       state: 'skeleton',
-      position: nextSpawnPosition(),
+      position: nextSpawnPosition(
+        inheritW ?? DEFAULT_SPAWN_W,
+        inheritH ?? DEFAULT_SPAWN_H
+      ),
+      width: inheritW,
+      height: inheritH,
       zIndex: nextZ++,
       createdSeq: nextSeq++,
       ...patch
@@ -577,6 +598,26 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     })
   }
 
+  // Place the first zoom-mode tile in the corner opposite the input
+  // panel, bounded-fit to the avail rect — same shape as no-zoom
+  // N=1 — so a single output reads as the focus tile in either
+  // mode. Subsequent zoom-mode tiles fall back to cluster spawn
+  // (`nextSpawnPosition`) so the user can drag them freely.
+  function placeFirstZoomTile(
+    viewW: number,
+    viewH: number,
+    insets?: DashboardInsets
+  ): void {
+    if (windows.value.length !== 1) return
+    const win = windows.value[0]
+    const slots = dashboardSlots(1, viewW, viewH, insets, [win.aspect])
+    const slot = slots[0]
+    if (!slot) return
+    win.position = { x: slot.x, y: slot.y }
+    win.width = slot.w
+    win.height = slot.h
+  }
+
   return {
     windows,
     sortedWindows,
@@ -588,7 +629,8 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     resize,
     promote,
     clear,
-    relayoutDashboard
+    relayoutDashboard,
+    placeFirstZoomTile
   }
 })
 

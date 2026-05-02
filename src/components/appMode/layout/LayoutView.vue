@@ -23,27 +23,6 @@ const windowStore = useOutputWindowStore()
 const { viewportScale, viewportOffsetX, viewportOffsetY, noZoomMode } =
   storeToRefs(appModeStore)
 
-// Smooth-pan to each new output window so prior run's transform doesn't
-// leave it off-screen. flyTo preserves zoom unless it's far off.
-// Skipped in dashboard mode — viewport is locked, tile lives where it spawned.
-const FALLBACK_W = 512
-const FALLBACK_H = 560
-watch(
-  () => windowStore.windows.length,
-  (next, prev) => {
-    if (next <= (prev ?? 0)) return
-    if (noZoomMode.value) return
-    const latest = windowStore.windows[windowStore.windows.length - 1]
-    if (!latest) return
-    appModeStore.flyTo({
-      x: latest.position.x,
-      y: latest.position.y,
-      width: latest.width ?? FALLBACK_W,
-      height: latest.height ?? FALLBACK_H
-    })
-  }
-)
-
 // Pan/zoom binds to .layout-view (full viewport), not the transformed
 // bgRef — otherwise zoom-out shrinks the hit area.
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
@@ -84,6 +63,52 @@ const dashboardInsets = computed(() => {
     }
   }
 })
+
+// Smooth-pan to each new output window so prior run's transform
+// doesn't leave it off-screen. flyTo preserves zoom unless it's far
+// off. Skipped in dashboard mode — viewport is locked, tile lives
+// where it spawned.
+//
+// First-tile zoom-mode placement matches no-zoom N=1: corner
+// opposite the panel, bounded-fit to avail. So a single output
+// reads as the focus tile in either mode.
+const FALLBACK_W = 512
+const FALLBACK_H = 560
+watch(
+  () => windowStore.windows.length,
+  (next, prev) => {
+    if (next <= (prev ?? 0)) return
+    if (noZoomMode.value) return
+    const isFirstTile = next === 1 && (prev ?? 0) === 0
+    if (
+      isFirstTile &&
+      layoutW.value > 0 &&
+      layoutH.value > 0 &&
+      dashboardInsets.value.panelRect
+    ) {
+      windowStore.placeFirstZoomTile(
+        layoutW.value,
+        layoutH.value,
+        dashboardInsets.value
+      )
+      // Skip flyTo here: the tile is already in its panel-opposite
+      // corner slot. flyTo would pan to center it in the viewport,
+      // and "viewport center" partially lands under the input panel
+      // (~440px wide on the right). Leaving the viewport at its
+      // default transform keeps the tile flush in the same position
+      // it would occupy in no-zoom mode.
+      return
+    }
+    const latest = windowStore.windows[windowStore.windows.length - 1]
+    if (!latest) return
+    appModeStore.flyTo({
+      x: latest.position.x,
+      y: latest.position.y,
+      width: latest.width ?? FALLBACK_W,
+      height: latest.height ?? FALLBACK_H
+    })
+  }
+)
 
 // Quantize the panel rect to cell-grid buckets so a panel drag
 // only triggers a relayout when it crosses a cell boundary.
