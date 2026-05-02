@@ -3,10 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import {
-  getPromotedWidgetCount,
-  getPromotedWidgets
-} from '@e2e/helpers/promotedWidgets'
+import { getPromotedWidgets } from '@e2e/helpers/promotedWidgets'
 
 test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
   test.describe('Nested subgraph configure order', () => {
@@ -275,12 +272,11 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         const widgets = outerNode.getByTestId(TestIds.widgets.widget)
-        await comfyExpect(widgets).toHaveCount(4)
-
-        const initialCount = await getPromotedWidgetCount(
-          comfyPage,
-          OUTER_NODE_ID
-        )
+        await comfyExpect(
+          widgets,
+          'asset has 4 promoted widgets on outer subgraph node'
+        ).toHaveCount(4)
+        const initialCount = await widgets.count()
 
         await comfyPage.subgraph.serializeAndReload()
         await comfyPage.vueNodes.waitForNodes()
