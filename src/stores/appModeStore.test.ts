@@ -342,6 +342,78 @@ describe('appModeStore', () => {
       }
     })
 
+    it('preserves selected promoted-widget identity per instance across save/reload', async () => {
+      // Build one subgraph definition with one promoted widget,
+      // then create two SubgraphNode instances of that definition.
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: '*' }]
+      })
+      const inner = new LiteGraphNode('Inner')
+      const input = inner.addInput('value', '*')
+      inner.addWidget('text', 'value', 'a', () => {})
+      input.widget = { name: 'value' }
+      subgraph.add(inner)
+      subgraph.inputNode.slots[0].connect(input, inner)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 701 })
+      hostA._internalConfigureAfterSlots()
+      hostA.graph!.add(hostA)
+
+      const hostB = createTestSubgraphNode(subgraph, { id: 702 })
+      hostB._internalConfigureAfterSlots()
+      hostB.graph!.add(hostB)
+
+      const promotionStore = usePromotionStore()
+      promotionStore.setPromotions(hostA.rootGraph.id, hostA.id, [
+        { sourceNodeId: String(inner.id), sourceWidgetName: 'value' }
+      ])
+      promotionStore.setPromotions(hostB.rootGraph.id, hostB.id, [
+        { sourceNodeId: String(inner.id), sourceWidgetName: 'value' }
+      ])
+
+      const promotedA = hostA.widgets.find(isPromotedWidgetView)
+      const promotedB = hostB.widgets.find(isPromotedWidgetView)
+      if (!promotedA || !promotedB) throw new Error('Expected promoted views')
+
+      // Precondition: storeNames are equal (interior identity matches),
+      // host ids differ.
+      expect(promotedA.storeName).toBe(promotedB.storeName)
+      expect(hostA.id).not.toBe(hostB.id)
+
+      const { resolveNode: actualResolveNode } = (await vi.importActual(
+        '@/utils/litegraphUtil'
+      )) as {
+        resolveNode: (nodeId: NodeId, graph: LGraph) => LGraphNode | undefined
+      }
+      const graph = hostA.graph!
+      const originalRootGraph = app.rootGraph
+      mockResolveNode.mockImplementation((id) => actualResolveNode(id, graph))
+      Object.defineProperty(app, 'rootGraph', { value: graph, writable: true })
+
+      try {
+        store.loadSelections({
+          inputs: [
+            [hostA.id, promotedA.storeName],
+            [hostB.id, promotedB.storeName]
+          ],
+          outputs: []
+        })
+
+        expect(store.selectedInputs).toHaveLength(2)
+        expect(store.selectedInputs).toEqual(
+          expect.arrayContaining([
+            [hostA.id, promotedA.storeName],
+            [hostB.id, promotedB.storeName]
+          ])
+        )
+      } finally {
+        Object.defineProperty(app, 'rootGraph', {
+          value: originalRootGraph,
+          writable: true
+        })
+      }
+    })
+
     it('keeps inputs for existing nodes even if widget is missing', async () => {
       const node1 = mockNode(1)
       mockResolveNode.mockImplementation((id) =>
