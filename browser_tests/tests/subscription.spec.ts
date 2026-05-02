@@ -38,18 +38,24 @@ async function dismissSubscriptionDialogIfOpen(page: Page): Promise<void> {
   // key — avoids strict-mode violations when multiple GlobalDialog items are
   // on the stack simultaneously.
   const dialog = page.locator('[aria-labelledby="subscription-required"]')
-  try {
-    await dialog.waitFor({ state: 'visible', timeout: 2000 })
-  } catch {
-    return
-  }
+  // Use expect with a short timeout: this is intentionally a "dismiss if open"
+  // helper, so absence of the dialog (TimeoutError) is not a failure — we
+  // discard only the timeout error, not any other unexpected exception.
+  const appeared = await expect(dialog)
+    .toBeVisible({ timeout: 2000 })
+    .then(() => true)
+    .catch((e: Error) => {
+      if (e.message.includes('Timeout')) return false
+      throw e
+    })
+  if (!appeared) return
   const closeButton = dialog.getByRole('button', { name: /close/i }).first()
-  if (await closeButton.isVisible().catch(() => false)) {
+  if (await closeButton.isVisible()) {
     await closeButton.click()
   } else {
     await page.keyboard.press('Escape')
   }
-  await dialog.waitFor({ state: 'hidden' }).catch(() => {})
+  await expect(dialog).toBeHidden()
 }
 
 // Installs subscription mocks AFTER comfyPage.setup() and reloads the page
