@@ -11,7 +11,7 @@ import {
 } from '@e2e/fixtures/data/nodeReplacements'
 import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { loadWorkflowAndOpenErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 /**
  * Mock the `/api/node_replacements` endpoint and enable the feature flag +
