@@ -15,7 +15,9 @@ function measureViewport(
   rawDpr: number,
   prevGeneration?: number
 ): CanvasViewport {
-  const dpr = Math.max(rawDpr, 1)
+  // Preserve raw DPR so sub-1 displays (e.g. chromium-0.5x) keep their
+  // native scale. Only fall back to 1 for invalid (<= 0 / NaN) values.
+  const dpr = rawDpr > 0 ? rawDpr : 1
   return Object.freeze({
     cssWidth,
     cssHeight,

@@ -1956,7 +1956,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.bgcanvas = document.createElement('canvas')
     this.bgcanvas.width = this.canvas.width
     this.bgcanvas.height = this.canvas.height
-    this.dpr = Math.max(window.devicePixelRatio ?? 1, 1)
+    this.dpr = window.devicePixelRatio ?? 1
 
     const ctx = element.getContext?.('2d')
     if (ctx == null) {
