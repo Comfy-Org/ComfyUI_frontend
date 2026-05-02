@@ -4,7 +4,7 @@ import { formatCommitHash, formatSize } from '@/utils/formatUtil'
 
 const frontendCommit = __COMFYUI_FRONTEND_COMMIT__
 
-export type SystemInfoKey = keyof SystemStats['system']
+type SystemInfoKey = keyof SystemStats['system']
 
 export type SystemStatsColumn = {
   field: SystemInfoKey
