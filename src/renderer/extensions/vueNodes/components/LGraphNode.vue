@@ -34,7 +34,9 @@
     }"
     :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
+    @pointerdown.capture="onCompactCtrlClickCapture"
     @pointerdown="nodeOnPointerdown"
+    @click.capture="onCompactCtrlClickCapture"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -322,6 +324,7 @@ import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -358,6 +361,7 @@ const { t } = useI18n()
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
 const compactModeStore = useCompactModeStore()
+const commandStore = useCommandStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
@@ -365,7 +369,8 @@ const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(String(nodeData.id), 'node')
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
+const canvasStore = useCanvasStore()
+const { selectedNodeIds, isGhostPlacing } = storeToRefs(canvasStore)
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
@@ -400,6 +405,9 @@ const showErrorsTabEnabled = computed(() =>
 const displayHeader = computed(
   () =>
     !compactModeStore.isCompactMode && nodeData.titleMode !== TitleMode.NO_TITLE
+)
+const isOutputNode = computed(
+  () => !!lgraphNode.value?.constructor?.nodeData?.output_node
 )
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
@@ -445,7 +453,35 @@ const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
 
+function isCompactCtrlClickExecute(event: PointerEvent | MouseEvent): boolean {
+  return (
+    compactModeStore.isCompactMode &&
+    (event.ctrlKey || event.metaKey) &&
+    (event as MouseEvent).button === 0 &&
+    isOutputNode.value &&
+    !!lgraphNode.value
+  )
+}
+
+async function onCompactCtrlClickCapture(event: PointerEvent | MouseEvent) {
+  if (!isCompactCtrlClickExecute(event)) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (event.type !== 'pointerdown') return
+  if (!lgraphNode.value) return
+  app.canvas.select(lgraphNode.value)
+  canvasStore.updateSelectedItems()
+  await commandStore.execute('Comfy.QueueSelectedOutputNodes', {
+    metadata: { trigger_source: 'compact_mode_ctrl_click' }
+  })
+}
+
 async function nodeOnPointerdown(event: PointerEvent) {
+  if (isCompactCtrlClickExecute(event)) return
+  if (compactModeStore.isCompactMode) {
+    onPointerdown(event)
+    return
+  }
   if (event.altKey && lgraphNode.value) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
