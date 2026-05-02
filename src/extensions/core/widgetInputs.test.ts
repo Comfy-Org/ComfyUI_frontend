@@ -122,6 +122,18 @@ function defsWithCombo(
   }
 }
 
+function defsWithV2Combo(
+  values: (string | number)[]
+): Record<string, ComfyNodeDef> {
+  return {
+    [TARGET_NODE_TYPE]: fromPartial<ComfyNodeDef>({
+      input: {
+        required: { [TARGET_INPUT_NAME]: ['COMBO', { options: values }] }
+      }
+    })
+  }
+}
+
 describe('PrimitiveNode.refreshComboInNode', () => {
   it('updates combo options from the freshly passed defs', () => {
     const widget = createComboWidget('euler', ORIGINAL_OPTIONS)
@@ -194,6 +206,49 @@ describe('PrimitiveNode.refreshComboInNode', () => {
 
     expect(widget.value).toBe('euler')
     expect(widget.callback).not.toHaveBeenCalled()
+  })
+
+  it('updates combo options from V2 combo specs in defs', () => {
+    const widget = createComboWidget('euler', ORIGINAL_OPTIONS)
+    const stub = createPrimitiveStub({
+      widget,
+      slotWidget: createSlotWidget([ORIGINAL_OPTIONS, {}])
+    })
+
+    refreshOnStub(stub, defsWithV2Combo(FRESH_OPTIONS))
+
+    expect(widget.options.values).toEqual(FRESH_OPTIONS)
+  })
+
+  it('propagates an empty option list when defs return one', () => {
+    const widget = createComboWidget('euler', ORIGINAL_OPTIONS)
+    const stub = createPrimitiveStub({
+      widget,
+      slotWidget: createSlotWidget([ORIGINAL_OPTIONS, {}])
+    })
+
+    refreshOnStub(stub, defsWithCombo([]))
+
+    expect(widget.options.values).toEqual([])
+    expect(widget.value).toBeUndefined()
+  })
+
+  it('falls back to input.name when the target input has no widget locator', () => {
+    const widget = createComboWidget('euler', [])
+    const targetNode = fromPartial<TargetNode>({
+      id: 9,
+      type: TARGET_NODE_TYPE,
+      inputs: [
+        fromPartial<INodeInputSlot>({
+          name: TARGET_INPUT_NAME
+        })
+      ]
+    })
+    const stub = createPrimitiveStub({ widget, targetNode })
+
+    refreshOnStub(stub, defsWithCombo(FRESH_OPTIONS))
+
+    expect(widget.options.values).toEqual(FRESH_OPTIONS)
   })
 
   it('skips non-combo widgets', () => {
