@@ -36,7 +36,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-nodes-mmb-pan-on-node.png'
+        'vue-nodes-paned-with-mmb-over-node.png'
       )
     }
   )

@@ -72,7 +72,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
-        'mmb-pan-through-textarea.png'
+        'vue-nodes-paned-with-mmb-over-textarea.png'
       )
     }
   )
@@ -97,7 +97,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
-        'mmb-pan-through-markdown.png'
+        'vue-nodes-paned-with-mmb-over-markdown.png'
       )
     }
   )
