@@ -11835,6 +11835,14 @@
       "control_after_generate": {
         "name": "control after generate"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
+      },
       "image": {
         "name": "image",
         "tooltip": "Необязательное референсное изображение для редактирования."

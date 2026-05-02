@@ -11835,6 +11835,14 @@
       "control_after_generate": {
         "name": "生成后控制"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "仅当 `size` 为“自定义”时使用。（仅限 GPT Image 2）必须为 16 的倍数。"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "仅当 `size` 为“自定义”时使用。（仅限 GPT Image 2）必须为 16 的倍数。"
+      },
       "image": {
         "name": "参考图像",
         "tooltip": "用于图像编辑的可选参考图像。"

@@ -210,7 +210,9 @@ export const TestIds = {
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
-    clearHistoryAction: 'clear-history-action'
+    clearHistoryAction: 'clear-history-action',
+    jobAssetsList: 'job-assets-list',
+    notificationBanner: 'queue-notification-banner'
   },
   errors: {
     imageLoadError: 'error-loading-image',
@@ -261,6 +263,9 @@ export const TestIds = {
     chipDelete: 'chip-delete',
     noResults: 'no-results',
     nodeIdBadge: 'node-id-badge',
+    sidebarToggle: 'toggle-category-sidebar',
+    sidebarBackdrop: 'sidebar-backdrop',
+    filterChipsScroll: 'filter-chips-scroll',
     category: (id: string) => `category-${id}`,
     rootCategory: (id: string) => `search-category-${id}`,
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
