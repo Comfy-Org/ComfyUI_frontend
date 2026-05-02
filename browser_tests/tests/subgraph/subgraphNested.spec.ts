@@ -197,15 +197,11 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
   test.describe(
     'Nested subgraph input target resolution',
-    { tag: ['@widget'] },
+    { tag: ['@widget', '@vue-nodes'] },
     () => {
       const WORKFLOW = 'subgraphs/subgraph-nested-promotion'
       const OUTER_NODE_ID = '5'
       const INNER_SUBGRAPH_NODE_ID = '6'
-
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      })
 
       test('Nested SubgraphNode promoted widgets render without resolution failures', async ({
         comfyPage
