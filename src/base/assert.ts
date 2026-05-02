@@ -1,6 +1,6 @@
-type AssertReporter = (message: string) => void;
+type AssertReporter = (message: string) => void
 
-let reporter: AssertReporter | null = null;
+let reporter: AssertReporter | null = null
 
 /**
  * Register a reporter for assertion failures in non-DEV environments.
@@ -8,7 +8,7 @@ let reporter: AssertReporter | null = null;
  * Sentry, toast notifications, etc.
  */
 export function setAssertReporter(fn: AssertReporter): void {
-  reporter = fn;
+  reporter = fn
 }
 
 /**
@@ -19,13 +19,13 @@ export function setAssertReporter(fn: AssertReporter): void {
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
  */
 export function assert(condition: boolean, message: string): void {
-  if (condition) return;
+  if (condition) return
 
-  console.error(`[Assertion failed]: ${message}`);
+  console.error(`[Assertion failed]: ${message}`)
 
   if (import.meta.env.DEV) {
-    throw new Error(`[Assertion failed]: ${message}`);
+    throw new Error(`[Assertion failed]: ${message}`)
   }
 
-  reporter?.(message);
+  reporter?.(message)
 }
