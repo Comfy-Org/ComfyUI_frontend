@@ -314,7 +314,16 @@ const zExtra = z
   .passthrough()
 
 const zGraphDefinitions = z.object({
-  subgraphs: z.lazy(() => z.array(zSubgraphDefinition))
+  subgraphs: z.lazy(
+    (): z.ZodArray<
+      z.ZodType<
+        SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
+        z.ZodTypeDef,
+        SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
+      >,
+      'many'
+    > => z.array(zSubgraphDefinition)
+  )
 })
 
 const zBaseExportableGraph = z.object({
