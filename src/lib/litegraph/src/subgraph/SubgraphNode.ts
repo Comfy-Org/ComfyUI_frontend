@@ -1634,24 +1634,34 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     ctx.restore()
   }
 
-  /** Projects per-instance promoted widget values into `widgets_values`. */
+  /**
+   * Projects per-instance promoted widget values into `widgets_values`
+   * and the canonical promotion-store snapshot into
+   * `properties.proxyWidgets` — both written onto the serialized output.
+   * The live node's `properties.proxyWidgets` is not mutated; the
+   * promotion store is the source of truth at runtime.
+   */
   override serialize(): ISerialisedNode {
-    // Write promotion store state back to properties for serialization
     const entries = usePromotionStore().getPromotions(
       this.rootGraph.id,
       this.id
     )
-    this.properties.proxyWidgets = this._serializeEntries(entries)
 
     const serialized = super.serialize()
+
+    // Write the promotion-store snapshot directly onto the serialized
+    // output so the live properties.proxyWidgets stays untouched.
+    serialized.properties ??= {}
+    serialized.properties.proxyWidgets = this._serializeEntries(entries)
 
     // Promoted views are skipped by super.serialize() (`serialize = false`),
     // so project their per-instance values back into widgets_values.
     // Respect the resolved concrete source widget's serialize flag so
     // transient widgets stay unsaved through nested promotions too.
+    // SubgraphNode never sets `serialize_widgets`, so super.serialize()
+    // never produces `widgets_values` — start from an empty array.
     const views = this.widgets ?? []
-    const existing = serialized.widgets_values ?? []
-    const merged: TWidgetValue[] = [...existing]
+    const merged: TWidgetValue[] = []
     views.forEach((view, idx) => {
       if (isPromotedWidgetView(view)) {
         const resolved = resolveConcretePromotedWidget(

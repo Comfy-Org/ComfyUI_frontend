@@ -295,6 +295,28 @@ describe('Subgraph proxyWidgets', () => {
     ])
   })
 
+  test('serialize() does not mutate the live properties.proxyWidgets', () => {
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [
+        { sourceNodeId: innerIds[0], sourceWidgetName: 'widgetA' },
+        { sourceNodeId: innerIds[0], sourceWidgetName: 'widgetB' }
+      ]
+    )
+
+    const before = subgraphNode.properties.proxyWidgets
+    const beforeSnapshot = JSON.parse(JSON.stringify(before))
+
+    subgraphNode.serialize()
+
+    expect(subgraphNode.properties.proxyWidgets).toBe(before)
+    expect(subgraphNode.properties.proxyWidgets).toStrictEqual(beforeSnapshot)
+  })
+
   test('multi-link representative is deterministic across repeated reads', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'shared_input', type: '*' }]
