@@ -54,6 +54,7 @@ catalog:
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
   '@types/three': ^0.169.0
+  '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
@@ -118,6 +119,7 @@ catalog:
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
+  vee-validate: ^4.15.1
   vite: ^8.0.0
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
