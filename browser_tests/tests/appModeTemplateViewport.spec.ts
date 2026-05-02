@@ -25,7 +25,10 @@ test.describe('App Mode Template Viewport', { tag: ['@canvas', '@ui'] }, () => {
     await comfyExpect(comfyPage.canvas).toBeHidden()
 
     // Load a template while canvas is hidden — this is the scenario
-    // that previously caused scale=0 / offset=NaN corruption
+    // that previously caused scale=0 / offset=NaN corruption.
+    // Note: loadGraphData(..., null, { openSource: 'template' }) creates a new
+    // temporary workflow tab in graph mode (see workflowService.afterLoadNewGraph),
+    // which switches the active workflow and re-shows the canvas automatically.
     await comfyPage.page.evaluate(async () => {
       const app = window.app!
       const workflow = app.graph.serialize()
@@ -35,8 +38,8 @@ test.describe('App Mode Template Viewport', { tag: ['@canvas', '@ui'] }, () => {
       })
     })
 
-    // Exit app mode so the canvas becomes visible and queued ops flush
-    await comfyPage.appMode.toggleAppMode()
+    // Loading the template switched to a new graph-mode workflow, so the
+    // canvas should become visible and queued scheduler ops should flush.
     await comfyExpect(comfyPage.canvas).toBeVisible()
 
     // Wait a frame for the scheduler to flush
@@ -68,7 +71,8 @@ test.describe('App Mode Template Viewport', { tag: ['@canvas', '@ui'] }, () => {
     await comfyPage.appMode.toggleAppMode()
     await comfyExpect(comfyPage.canvas).toBeHidden()
 
-    // Load template while canvas is hidden
+    // Load template while canvas is hidden — see note in the previous test
+    // about the new graph-mode workflow tab that this opens.
     await comfyPage.page.evaluate(async () => {
       const app = window.app!
       const workflow = app.graph.serialize()
@@ -78,8 +82,8 @@ test.describe('App Mode Template Viewport', { tag: ['@canvas', '@ui'] }, () => {
       })
     })
 
-    // Return to graph mode
-    await comfyPage.appMode.toggleAppMode()
+    // The template load switches to a new graph-mode workflow, so the canvas
+    // should become visible without requiring a manual app-mode toggle.
     await comfyExpect(comfyPage.canvas).toBeVisible()
     await comfyPage.nextFrame()
 
