@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { externalLinks } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
@@ -22,7 +23,7 @@ const primaryCtaKey =
 const secondaryCtaKey =
   `payment.${status}.secondaryCta` as const satisfies TranslationKey
 
-const primaryHref = 'https://platform.comfy.org/'
+const primaryHref = externalLinks.apiKeys
 
 const localePrefix = locale === 'zh-CN' ? '/zh-CN' : ''
 const secondaryHref =

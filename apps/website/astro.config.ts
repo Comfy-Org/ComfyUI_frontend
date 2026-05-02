@@ -17,7 +17,12 @@ export default defineConfig({
     assets: '_website'
   },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
-  integrations: [vue(), sitemap()],
+  integrations: [
+    vue(),
+    sitemap({
+      filter: (page) => !/\/payment\/(success|failed)\/?$/.test(page)
+    })
+  ],
   vite: {
     plugins: [tailwindcss()],
     server: {
