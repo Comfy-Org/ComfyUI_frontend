@@ -531,7 +531,9 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
 
-      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalled()
+      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'litegraph:no-items-selected' })
+      )
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
     })
   })
