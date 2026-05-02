@@ -207,6 +207,7 @@ export const TestIds = {
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
+    currentUserButton: 'current-user-button',
     currentUserIndicator: 'current-user-indicator',
     currentUserPopover: 'current-user-popover'
   },
