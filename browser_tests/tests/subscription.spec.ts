@@ -11,7 +11,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
 
 async function openUserPopover(page: Page): Promise<Locator> {
-  await page.getByTestId(TestIds.user.currentUserIndicator).click()
+  await page.getByTestId(TestIds.user.currentUserButton).click()
   const popover = page.getByTestId(TestIds.user.currentUserPopover)
   await expect(popover).toBeVisible()
   return popover
@@ -25,24 +25,31 @@ async function clickPopoverSubscribe(page: Page): Promise<void> {
     .click()
 }
 
-// Installs subscription mocks BEFORE comfyPage's first navigation via an
-// auto-fixture that depends on `page` (resolved before `comfyPage`).
+// Installs subscription mocks AFTER comfyPage.setup() and reloads the page
+// so `addInitScript` (which sets `window.__CONFIG__.subscription_required`)
+// applies before module-level reads in `ComfyRunButton/index.ts` evaluate.
+// Depending on `comfyPage` here forces ordering: comfyPage's auth + setup
+// runs first, then mocks are installed, then the page reloads with the
+// mocked config + intercepted endpoints in place.
 function createSubscriptionTest(
   ...defaultOps: Parameters<typeof createSubscriptionHelper>[1][]
 ) {
   return comfyPageFixture.extend<{
     subscriptionHelper: SubscriptionHelper
-    _subscriptionMocks: void
   }>({
-    subscriptionHelper: async ({ page }, use) => {
-      const helper = createSubscriptionHelper(page, ...defaultOps)
-      await use(helper)
-      await helper.clearMocks()
-    },
-    _subscriptionMocks: [
-      async ({ subscriptionHelper }, use) => {
-        await subscriptionHelper.mock()
-        await use()
+    subscriptionHelper: [
+      async ({ comfyPage }, use) => {
+        const helper = createSubscriptionHelper(comfyPage.page, ...defaultOps)
+        await helper.mock()
+        // Disable the cloud-subscription extension so it doesn't auto-open
+        // the subscription-required modal on app load (which would block
+        // clicks on the topbar buttons we're testing).
+        await comfyPage.setupSettings({
+          'Comfy.Extension.Disabled': ['Comfy.Cloud.Subscription']
+        })
+        await comfyPage.page.reload()
+        await use(helper)
+        await helper.clearMocks()
       },
       { auto: true }
     ]
