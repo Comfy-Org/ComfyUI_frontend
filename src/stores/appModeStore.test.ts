@@ -538,6 +538,7 @@ describe('appModeStore', () => {
       await nextTick()
 
       const originalRootGraph = app.rootGraph
+      const dataBefore = originalRootGraph.extra.linearData
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
 
       store.selectedOutputs.push(1)
@@ -547,6 +548,9 @@ describe('appModeStore', () => {
         value: originalRootGraph,
         writable: true
       })
+
+      // linearData unchanged — watcher did not fire while rootGraph was null
+      expect(originalRootGraph.extra.linearData).toEqual(dataBefore)
     })
 
     it('calls captureCanvasState when input is selected', async () => {
