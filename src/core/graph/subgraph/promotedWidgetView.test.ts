@@ -2838,7 +2838,7 @@ describe('DOM widget promotion', () => {
     expect(cells).toHaveLength(0)
   })
 
-  test('label setter does not register a per-instance cell when no value override exists', () => {
+  test('label setter materializes a per-instance cell when no slot is bound', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'labelOnly', 'initial', () => {})
@@ -2851,12 +2851,17 @@ describe('DOM widget promotion', () => {
 
     view.label = 'My Label'
 
-    // No per-instance value cell created (slot label persists separately).
+    // Without a bound subgraph slot the per-instance cell is the only
+    // place the new label can live; the setter must materialize it so
+    // the rename actually takes effect (the getter falls back to
+    // state?.label when no slot is found).
     const cells = useWidgetValueStore().getNodeWidgets(
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
-    expect(cells).toHaveLength(0)
+    expect(cells).toHaveLength(1)
+    expect(cells[0].label).toBe('My Label')
+    expect(view.label).toBe('My Label')
   })
 
   test('label setter updates an existing per-instance cell when a value override is present', () => {

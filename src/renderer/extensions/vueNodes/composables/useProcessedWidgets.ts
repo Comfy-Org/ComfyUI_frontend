@@ -126,7 +126,11 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  const rawWidgetId = widget.nodeId ?? nodeId
+  // Only widgets that carry their own identity (promoted widget views set
+  // `widget.nodeId`) get a stable dedupe identity. Ordinary widgets must
+  // fall through to the transient renderKey form so duplicate refs in
+  // `node.widgets[]` are not collapsed into one entry.
+  const rawWidgetId = widget.nodeId
   const storeWidgetName = widget.instanceWidgetName ?? widget.name
   const slotNameForIdentity = widget.slotName ?? widget.name
   const stableIdentityRoot = rawWidgetId
@@ -187,6 +191,7 @@ export function computeProcessedWidgets({
     identity: ReturnType<typeof getWidgetIdentity>
     mergedOptions: IWidgetOptions
     widgetState: WidgetState | undefined
+    perInstanceWidgetState: WidgetState | undefined
     isVisible: boolean
   }> = []
   const dedupeIndexByIdentity = new Map<string, number>()
@@ -197,9 +202,21 @@ export function computeProcessedWidgets({
     const identity = getWidgetIdentity(widget, nodeId, index)
     const storeWidgetName = widget.instanceWidgetName ?? widget.name
     const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
-    const widgetState = graphId
+    const perInstanceWidgetState = graphId
       ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
+    // For freshly-created promoted widget views the per-instance host cell
+    // may not be registered yet. Fall back to the interior source cell for
+    // reads only — the write path keeps using the per-instance cell.
+    const widgetState =
+      perInstanceWidgetState ??
+      (graphId && widget.source
+        ? widgetValueStore.getWidget(
+            graphId,
+            widget.source.sourceNodeId,
+            widget.source.sourceWidgetName
+          )
+        : undefined)
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
@@ -211,6 +228,7 @@ export function computeProcessedWidgets({
         identity,
         mergedOptions,
         widgetState,
+        perInstanceWidgetState,
         isVisible: visible
       })
       continue
@@ -224,6 +242,7 @@ export function computeProcessedWidgets({
         identity,
         mergedOptions,
         widgetState,
+        perInstanceWidgetState,
         isVisible: visible
       })
       continue
@@ -236,6 +255,7 @@ export function computeProcessedWidgets({
         identity,
         mergedOptions,
         widgetState,
+        perInstanceWidgetState,
         isVisible: true
       }
     }
@@ -245,6 +265,7 @@ export function computeProcessedWidgets({
     widget,
     mergedOptions,
     widgetState,
+    perInstanceWidgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
     const hostNodeId = String(nodeId ?? '')
@@ -311,7 +332,7 @@ export function computeProcessedWidgets({
     }
 
     const updateHandler = createWidgetUpdateHandler(
-      widgetState,
+      perInstanceWidgetState,
       widget,
       nodeExecId,
       widgetOptions,

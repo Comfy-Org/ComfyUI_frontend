@@ -444,6 +444,74 @@ describe('per-instance value lookup for promoted widgets', () => {
 
     expect(identityA.dedupeIdentity).not.toBe(identityB.dedupeIdentity)
   })
+
+  it('falls back to interior cell value when per-instance cell is absent for a promoted widget', () => {
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: INTERIOR_NODE_ID,
+      name: INTERIOR_WIDGET_NAME,
+      type: 'text',
+      value: 'interior-value',
+      options: {}
+    })
+
+    const promotedWidget = createMockWidget({
+      name: INTERIOR_WIDGET_NAME,
+      type: 'text',
+      slotName: INTERIOR_WIDGET_NAME,
+      nodeId: '57',
+      instanceWidgetName: 'STORE',
+      source: {
+        sourceNodeId: INTERIOR_NODE_ID,
+        sourceWidgetName: INTERIOR_WIDGET_NAME
+      }
+    })
+
+    const [result] = processInstance('57', promotedWidget)
+
+    expect(result.value).toBe('interior-value')
+  })
+})
+
+describe('ordinary widget dedupe', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('does not collapse duplicate ordinary widget refs in node.widgets[]', () => {
+    // Ordinary widgets do NOT carry their own identity (no widget.nodeId,
+    // no instanceWidgetName). When a host node legitimately renders the
+    // same widget twice, both must produce distinct entries with distinct
+    // renderKeys.
+    const ordinaryWidget = createMockWidget({
+      name: 'seed',
+      type: 'number',
+      nodeId: undefined,
+      instanceWidgetName: undefined
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '1',
+        type: 'TestNode',
+        widgets: [ordinaryWidget, ordinaryWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result).toHaveLength(2)
+    expect(result[0].renderKey).not.toBe(result[1].renderKey)
+  })
 })
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {

@@ -178,10 +178,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
     // Pre-attach sentinel guard: skip per-instance cell write before LGraph.add().
     if (this.subgraphNode.id === -1) return
 
-    // Only update existing per-instance cell—do not materialize just for label.
-    // The slot's label is the durable home for label-only state.
-    const existing = this.getWidgetState()
-    if (existing) existing.label = value
+    // When a slot exists it is the durable home for the label, so only update
+    // an already-materialized per-instance cell. When no slot is bound (e.g.
+    // a freshly selected promoted widget that has no subgraph IO yet), the
+    // per-instance cell is the only place the new label can live, so
+    // materialize it on demand. Without this the rename would silently no-op
+    // and the getter would return `displayName` after the slot-fallback.
+    if (slot) {
+      const existing = this.getWidgetState()
+      if (existing) existing.label = value
+    } else {
+      this.ensureInstanceState().label = value
+    }
   }
 
   /**
