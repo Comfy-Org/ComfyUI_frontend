@@ -41,6 +41,16 @@ function emptyConfig(): TemplateConfig {
 
 export type TemplateOperator = (config: TemplateConfig) => TemplateConfig
 
+function cloneTemplates(templates: readonly TemplateInfo[]): TemplateInfo[] {
+  return templates.map((t) => structuredClone(t))
+}
+
+function cloneIndex(
+  index: readonly WorkflowTemplates[] | null
+): WorkflowTemplates[] | null {
+  return index ? index.map((m) => structuredClone(m)) : null
+}
+
 function addTemplates(
   config: TemplateConfig,
   templates: TemplateInfo[]
@@ -104,8 +114,8 @@ export class TemplateHelper {
     private readonly page: Page,
     config: TemplateConfig = emptyConfig()
   ) {
-    this.templates = [...config.templates]
-    this.index = config.index ? [...config.index] : null
+    this.templates = cloneTemplates(config.templates)
+    this.index = cloneIndex(config.index)
   }
 
   configure(...operators: TemplateOperator[]): void {
@@ -113,8 +123,8 @@ export class TemplateHelper {
       (cfg, op) => op(cfg),
       emptyConfig()
     )
-    this.templates = [...config.templates]
-    this.index = config.index ? [...config.index] : null
+    this.templates = cloneTemplates(config.templates)
+    this.index = cloneIndex(config.index)
   }
 
   async mock(): Promise<void> {
@@ -159,7 +169,7 @@ export class TemplateHelper {
   }
 
   getTemplates(): TemplateInfo[] {
-    return [...this.templates]
+    return cloneTemplates(this.templates)
   }
 
   get templateCount(): number {
