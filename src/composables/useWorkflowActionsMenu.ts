@@ -12,6 +12,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -58,6 +59,7 @@ export function useWorkflowActionsMenu(
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
   const compactModeStore = useCompactModeStore()
+  const settingStore = useSettingStore()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -222,6 +224,8 @@ export function useWorkflowActionsMenu(
       prependSeparator: true
     })
 
+    const isVueNodesEnabled =
+      settingStore.get('Comfy.VueNodes.Enabled') ?? false
     addItem({
       id: 'toggle-compact-mode',
       label: compactModeStore.isCompactMode
@@ -232,7 +236,7 @@ export function useWorkflowActionsMenu(
         await ensureWorkflowActive(targetWorkflow.value)
         await commandStore.execute('Comfy.ToggleCompactMode')
       },
-      visible: !isLinearMode,
+      visible: !isLinearMode && isVueNodesEnabled,
       prependSeparator: true,
       isNew: true
     })

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 export const useCompactModeStore = defineStore('compactMode', () => {
   const isCompactMode = ref(false)
+  const savedLinkRenderMode = ref<number | null>(null)
 
   function toggle() {
     isCompactMode.value = !isCompactMode.value
@@ -14,6 +15,7 @@ export const useCompactModeStore = defineStore('compactMode', () => {
 
   return {
     isCompactMode,
+    savedLinkRenderMode,
     toggle,
     set
   }
