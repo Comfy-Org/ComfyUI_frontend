@@ -111,6 +111,48 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft('workflows/draft0.json')).toBeNull()
       expect(store.getDraft('workflows/new.json')).not.toBeNull()
     })
+
+    it('keeps overflow-evicted payloads on disk when the index write fails', () => {
+      const indexKey = 'Comfy.Workflow.DraftIndex.v2:personal'
+      const payloadPrefix = 'Comfy.Workflow.Draft.v2:personal:'
+      const store = useWorkflowDraftStoreV2()
+
+      for (let i = 0; i < MAX_DRAFTS; i++) {
+        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
+          name: `draft${i}`,
+          isTemporary: true
+        })
+      }
+      const evictedPayloadKey = `${payloadPrefix}${hashPath('workflows/draft0.json')}`
+      expect(localStorage.getItem(evictedPayloadKey)).not.toBeNull()
+
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (
+            key === indexKey &&
+            JSON.parse(value).entries[hashPath('workflows/overflow.json')]
+          ) {
+            throw quotaError()
+          }
+          return realSetItem(key, value)
+        })
+
+      try {
+        const ok = store.saveDraft('workflows/overflow.json', '{"id":"new"}', {
+          name: 'overflow',
+          isTemporary: true
+        })
+        expect(ok).toBe(false)
+      } finally {
+        setItemSpy.mockRestore()
+      }
+
+      expect(localStorage.getItem(evictedPayloadKey)).not.toBeNull()
+      expect(store.getDraft('workflows/draft0.json')).not.toBeNull()
+      expect(store.getDraft('workflows/overflow.json')).toBeNull()
+    })
   })
 
   describe('handleQuotaExceeded', () => {

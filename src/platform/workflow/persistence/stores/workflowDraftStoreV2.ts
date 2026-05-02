@@ -132,15 +132,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       MAX_DRAFTS
     )
 
-    // Delete evicted payloads
-    deletePayloads(workspaceId, evicted)
-
     if (!persistIndex(newIndex)) {
       deletePayload(workspaceId, draftKey)
       persistIndex(index)
       return false
     }
 
+    deletePayloads(workspaceId, evicted)
     return true
   }
 
