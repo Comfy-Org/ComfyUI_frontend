@@ -192,7 +192,17 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       })
       await comfyPage.nextFrame()
 
-      await comfyPage.expectScreenshot(dialog, 'mask-editor-mmb-pan.png')
+      // Move cursor outside the pointer zone so the brush cursor overlay is
+      // hidden (PointerZone's pointerleave clears store.brushVisible). Without
+      // this the brush circle lands on slightly different pixels between runs
+      // and causes flaky screenshot diffs.
+      await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.nextFrame()
+
+      await comfyPage.expectScreenshot(
+        canvasContainer,
+        'mask-editor-paned-with-mmb.png'
+      )
     }
   )
 
