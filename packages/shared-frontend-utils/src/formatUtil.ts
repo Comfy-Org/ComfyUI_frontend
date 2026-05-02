@@ -355,6 +355,22 @@ export const generateUUID = (): string => {
   })
 }
 
+const isCivitaiHost = (hostname: string): boolean =>
+  hostname === 'civitai.com' ||
+  hostname.endsWith('.civitai.com') ||
+  hostname === 'civitai.red' ||
+  hostname.endsWith('.civitai.red')
+
+/**
+ * Checks if a URL belongs to any Civitai domain (civitai.com or civitai.red).
+ * Use this for source-name detection; use `isCivitaiModelUrl` when the URL
+ * must also match a specific model API path format.
+ */
+export const isCivitaiUrl = (url: string): boolean => {
+  if (!isValidUrl(url)) return false
+  return isCivitaiHost(new URL(url).hostname.toLowerCase())
+}
+
 /**
  * Checks if a URL is a Civitai model URL
  * @example
@@ -367,17 +383,9 @@ export const isCivitaiModelUrl = (url: string): boolean => {
   if (!isValidUrl(url)) return false
 
   const urlObj = new URL(url)
-  const hostname = urlObj.hostname.toLowerCase()
-  const isCivitaiHost =
-    hostname === 'civitai.com' ||
-    hostname.endsWith('.civitai.com') ||
-    hostname === 'civitai.red' ||
-    hostname.endsWith('.civitai.red')
-  if (!isCivitaiHost) {
-    return false
-  }
-  const pathname = urlObj.pathname
+  if (!isCivitaiHost(urlObj.hostname.toLowerCase())) return false
 
+  const pathname = urlObj.pathname
   return (
     /^\/api\/download\/models\/(\d+)$/.test(pathname) ||
     /^\/api\/v1\/models\/(\d+)$/.test(pathname) ||
