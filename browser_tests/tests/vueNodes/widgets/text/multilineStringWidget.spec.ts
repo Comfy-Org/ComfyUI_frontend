@@ -83,7 +83,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
-      const markdownWidget = comfyPage.page.locator('.comfy-markdown').first()
+      const markdownWidget = comfyPage.page.locator('.widget-markdown').first()
       await expect(markdownWidget).toBeVisible()
 
       const box = await markdownWidget.boundingBox()
