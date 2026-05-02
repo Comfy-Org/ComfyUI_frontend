@@ -82,6 +82,14 @@ function createSubscriptionTest(
           'Comfy.Extension.Disabled': ['Comfy.Cloud.Subscription']
         })
         await comfyPage.page.reload()
+        // Wait for Firebase auth to resolve: the user button is v-if="isLoggedIn"
+        // and only renders after onAuthStateChanged fires with the mock user from
+        // IndexedDB. waitForAppReady() does not wait for this — Firebase resolves
+        // asynchronously after app boot. Waiting here ensures the button is
+        // present before any test body tries to click it.
+        await expect(
+          comfyPage.page.getByTestId(TestIds.user.currentUserButton)
+        ).toBeVisible()
         // Defense-in-depth: if the dialog still surfaces (e.g. via a
         // different code path), dismiss it before the test runs.
         await dismissSubscriptionDialogIfOpen(comfyPage.page)
