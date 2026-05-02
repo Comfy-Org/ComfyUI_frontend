@@ -13,6 +13,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -56,6 +57,7 @@ export function useWorkflowActionsMenu(
   const { flags } = useFeatureFlags()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
+  const compactModeStore = useCompactModeStore()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -218,6 +220,21 @@ export function useWorkflowActionsMenu(
       command: toggleLinear,
       visible: isLinearMode,
       prependSeparator: true
+    })
+
+    addItem({
+      id: 'toggle-compact-mode',
+      label: compactModeStore.isCompactMode
+        ? t('breadcrumbsMenu.exitCompactMode')
+        : t('breadcrumbsMenu.enterCompactMode'),
+      icon: 'icon-[lucide--minimize-2]',
+      command: async () => {
+        await ensureWorkflowActive(targetWorkflow.value)
+        await commandStore.execute('Comfy.ToggleCompactMode')
+      },
+      visible: !isLinearMode,
+      prependSeparator: true,
+      isNew: true
     })
 
     const isActive = workflow === workflowStore.activeWorkflow

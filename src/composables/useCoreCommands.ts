@@ -19,6 +19,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -90,6 +91,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
+  const compactModeStore = useCompactModeStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -1349,6 +1351,30 @@ export function useCoreCommands(): ComfyCommand[] {
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
         canvasStore.linearMode = newMode
       }
+    },
+    {
+      id: 'Comfy.ToggleCompactMode',
+      icon: 'pi pi-th-large',
+      label: 'Toggle Compact Mode',
+      category: 'view-controls' as const,
+      active: () => compactModeStore.isCompactMode,
+      function: (() => {
+        let savedLinkRenderMode: number | null = null
+        return async () => {
+          const enteringCompact = !compactModeStore.isCompactMode
+          if (enteringCompact) {
+            savedLinkRenderMode = settingStore.get('Comfy.LinkRenderMode')
+            await settingStore.set(
+              'Comfy.LinkRenderMode',
+              LiteGraph.HIDDEN_LINK
+            )
+          } else if (savedLinkRenderMode != null) {
+            await settingStore.set('Comfy.LinkRenderMode', savedLinkRenderMode)
+            savedLinkRenderMode = null
+          }
+          compactModeStore.toggle()
+        }
+      })()
     }
   ]
 
