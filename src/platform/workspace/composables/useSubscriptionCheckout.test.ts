@@ -122,19 +122,21 @@ vi.mock('vue-i18n', async (importOriginal) => {
 })
 
 describe('useSubscriptionCheckout', () => {
-  let emit: ReturnType<typeof vi.fn>
+  type CloseEmit = (e: 'close', subscribed: boolean) => void
+
+  let emit: ReturnType<typeof vi.fn<CloseEmit>>
 
   async function setup() {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
-    return useSubscriptionCheckout(emit as never)
+    return useSubscriptionCheckout(emit)
   }
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockPlans.value = allPlans()
-    emit = vi.fn()
+    emit = vi.fn<CloseEmit>()
   })
 
   describe('handleSubscribeClick', () => {
