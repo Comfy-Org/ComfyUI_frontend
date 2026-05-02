@@ -1,6 +1,7 @@
 import _ from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { getCanvasViewportInsets } from '@/composables/canvas/useCanvasViewportInsets'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -990,7 +991,8 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds)
+    const insets = getCanvasViewportInsets()
+    canvas.ds.fitToBounds(bounds, { insets })
     canvas.setDirty(true, true)
   }
 

@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { getCanvasViewportInsets } from '@/composables/canvas/useCanvasViewportInsets'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -401,7 +402,9 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        app.canvas.fitViewToSelectionAnimated()
+        app.canvas.fitViewToSelectionAnimated({
+          insets: getCanvasViewportInsets()
+        })
       }
     },
     {
