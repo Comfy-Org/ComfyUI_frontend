@@ -1,60 +1,102 @@
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import {
+  describeTopologyError,
+  LinkRepairAbortedError,
+  repairLinks,
+  validateLinkTopology
+} from '@comfyorg/workflow-validation'
+import type {
+  SerialisedGraph,
+  TopologyError
+} from '@comfyorg/workflow-validation'
+
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { fixBadLinks } from '@/utils/linkFixer'
 
 interface ValidationResult {
   graphData: ComfyWorkflowJSON | null
 }
 
+const TOPOLOGY_TOAST_LIMIT = 5
+
+function summariseTopologyErrors(errors: TopologyError[]): string {
+  const lines = errors.slice(0, TOPOLOGY_TOAST_LIMIT).map(describeTopologyError)
+  if (errors.length > TOPOLOGY_TOAST_LIMIT) {
+    lines.push(
+      `…and ${errors.length - TOPOLOGY_TOAST_LIMIT} more (see console for full list)`
+    )
+  }
+  return lines.join('\n')
+}
+
 export function useWorkflowValidation() {
   const toastStore = useToastStore()
+
+  function reportTopology(errors: TopologyError[], silent: boolean) {
+    if (silent || errors.length === 0) return
+    for (const e of errors) console.warn('[topology]', describeTopologyError(e))
+    toastStore.add({
+      severity: 'warn',
+      summary: `Workflow has ${errors.length} invalid link${errors.length === 1 ? '' : 's'}`,
+      detail: summariseTopologyErrors(errors),
+      life: 10_000
+    })
+  }
 
   function tryFixLinks(
     graphData: ComfyWorkflowJSON,
     options: { silent?: boolean } = {}
-  ) {
+  ): { graph: ComfyWorkflowJSON; aborted: boolean } {
     const { silent = false } = options
+    const topologyErrors = validateLinkTopology(graphData as SerialisedGraph)
+    reportTopology(topologyErrors, silent)
 
-    // Collect all logs in an array
     const logs: string[] = []
-    // Then validate and fix links if schema validation passed
-    const linkValidation = fixBadLinks(graphData as ISerialisedGraph, {
-      fix: true,
-      silent,
-      logger: {
-        log: (...args: unknown[]) => {
-          logs.push(args.join(' '))
+    try {
+      const linkValidation = repairLinks(graphData as SerialisedGraph, {
+        fix: true,
+        silent,
+        logger: {
+          log: (...args: unknown[]) => logs.push(args.join(' '))
         }
-      }
-    })
-
-    if (!silent && logs.length > 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: 'Workflow Validation',
-        detail: logs.join('\n')
       })
-    }
 
-    // If links were fixed, notify the user
-    if (linkValidation.fixed) {
-      if (!silent) {
+      if (!silent && logs.length > 0) {
+        toastStore.add({
+          severity: 'warn',
+          summary: 'Workflow Validation',
+          detail: logs.join('\n')
+        })
+      }
+      if (linkValidation.fixed && !silent) {
         toastStore.add({
           severity: 'success',
           summary: 'Workflow Links Fixed',
           detail: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
         })
       }
+      return {
+        graph: linkValidation.graph as ComfyWorkflowJSON,
+        aborted: false
+      }
+    } catch (err: unknown) {
+      if (err instanceof LinkRepairAbortedError) {
+        if (!silent) {
+          toastStore.add({
+            severity: 'error',
+            summary: 'Workflow has unrepairable invalid links',
+            detail: err.message,
+            life: 15_000
+          })
+        }
+        console.error('[linkFixer aborted]', err.topologyError, err)
+      } else {
+        console.error(err)
+      }
+      return { graph: graphData, aborted: true }
     }
-
-    return linkValidation.graph
   }
 
-  /**
-   * Validates a workflow, including link validation and schema validation
-   */
   async function validateWorkflow(
     graphData: ComfyWorkflowJSON,
     options: {
@@ -63,32 +105,16 @@ export function useWorkflowValidation() {
   ): Promise<ValidationResult> {
     const { silent = false } = options
 
-    let validatedData: ComfyWorkflowJSON | null = null
+    const validatedGraphData = await validateComfyWorkflow(graphData, (err) => {
+      if (!silent) toastStore.addAlert(err)
+    })
 
-    // First do schema validation
-    const validatedGraphData = await validateComfyWorkflow(
-      graphData,
-      /* onError=*/ (err) => {
-        if (!silent) {
-          toastStore.addAlert(err)
-        }
-      }
-    )
-
-    if (validatedGraphData) {
-      try {
-        validatedData = tryFixLinks(validatedGraphData, {
-          silent
-        }) as ComfyWorkflowJSON
-      } catch (err) {
-        // Link fixer itself is throwing an error
-        console.error(err)
-      }
+    if (!validatedGraphData) {
+      return { graphData: null }
     }
 
-    return {
-      graphData: validatedData
-    }
+    const { graph, aborted } = tryFixLinks(validatedGraphData, { silent })
+    return { graphData: aborted ? null : graph }
   }
 
   return {

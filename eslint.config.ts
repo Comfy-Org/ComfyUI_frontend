@@ -198,7 +198,8 @@ export default defineConfig([
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'vitest.matrix.config.mts',
-            'vitest.timer.setup.ts'
+            'vitest.timer.setup.ts',
+            'packages/workflow-validation/vite.config.mts'
           ]
         }
       }

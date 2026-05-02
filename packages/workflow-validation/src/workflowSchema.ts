@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
-import type { RendererType } from '@/lib/litegraph/src/LGraph'
+
+type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 const zRendererType = z.enum([
   'LG',

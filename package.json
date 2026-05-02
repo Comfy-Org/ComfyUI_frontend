@@ -91,6 +91,7 @@
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@comfyorg/workflow-validation": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
     "@datadog/browser-rum": "catalog:",
     "@floating-ui/vue": "catalog:",
