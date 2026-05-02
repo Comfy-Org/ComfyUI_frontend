@@ -383,11 +383,17 @@ describe('appModeStore', () => {
   })
 
   describe('loadSelections edge cases', () => {
-    it('handles empty or undefined data', () => {
+    it('clears existing selections on undefined or empty data', () => {
+      store.selectedInputs = [[1, 'seed']]
+      store.selectedOutputs = [1]
+
       store.loadSelections(undefined)
 
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs).toEqual([])
+
+      store.selectedInputs = [[1, 'seed']]
+      store.selectedOutputs = [1]
 
       store.loadSelections({})
 
@@ -408,20 +414,22 @@ describe('appModeStore', () => {
       const originalRootGraph = app.rootGraph
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
 
-      expect(
-        store.pruneLinearData({
+      try {
+        expect(
+          store.pruneLinearData({
+            inputs: [[1, 'seed']],
+            outputs: [1]
+          })
+        ).toEqual({
           inputs: [[1, 'seed']],
           outputs: [1]
         })
-      ).toEqual({
-        inputs: [[1, 'seed']],
-        outputs: [1]
-      })
-
-      Object.defineProperty(app, 'rootGraph', {
-        value: originalRootGraph,
-        writable: true
-      })
+      } finally {
+        Object.defineProperty(app, 'rootGraph', {
+          value: originalRootGraph,
+          writable: true
+        })
+      }
     })
   })
 
@@ -538,18 +546,21 @@ describe('appModeStore', () => {
       await nextTick()
 
       const originalRootGraph = app.rootGraph
-      const dataBefore = originalRootGraph.extra.linearData
+      const dataBefore = JSON.parse(
+        JSON.stringify(originalRootGraph.extra.linearData)
+      )
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
 
-      store.selectedOutputs.push(1)
-      await nextTick()
+      try {
+        store.selectedOutputs.push(1)
+        await nextTick()
+      } finally {
+        Object.defineProperty(app, 'rootGraph', {
+          value: originalRootGraph,
+          writable: true
+        })
+      }
 
-      Object.defineProperty(app, 'rootGraph', {
-        value: originalRootGraph,
-        writable: true
-      })
-
-      // linearData unchanged — watcher did not fire while rootGraph was null
       expect(originalRootGraph.extra.linearData).toEqual(dataBefore)
     })
 
