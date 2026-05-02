@@ -25,6 +25,7 @@ import {
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
@@ -123,6 +124,7 @@ export function useSlotLinkInteraction({
     clearCompatible
   } = useSlotLinkDragUIState()
   const conversion = useSharedCanvasPositionConversion()
+  const compactModeStore = useCompactModeStore()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
   let autoPan: AutoPanController | null = null
@@ -589,6 +591,7 @@ export function useSlotLinkInteraction({
   const onPointerDown = (event: PointerEvent) => {
     if (event.button !== 0) return
     if (!nodeId) return
+    if (compactModeStore.isCompactMode) return
     if (pointerSession.isActive()) return
     event.preventDefault()
     event.stopPropagation()
