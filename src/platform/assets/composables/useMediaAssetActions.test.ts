@@ -1,8 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -27,22 +29,22 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: vi.fn()
-  })
-}))
+vi.mock('primevue/usetoast', () => {
+  const add = vi.fn()
+  return {
+    useToast: () => ({ add })
+  }
+})
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  })
-}))
+vi.mock('vue-i18n', () => {
+  const t = vi.fn((key: string) => key)
+  return {
+    useI18n: () => ({ t }),
+    createI18n: () => ({
+      global: { t }
+    })
+  }
+})
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/dialogStore', () => ({
@@ -539,6 +541,94 @@ describe('useMediaAssetActions', () => {
         job1: ['img1.png', 'img2.png']
       })
       expect(payload.naming_strategy).toBe('preserve')
+    })
+  })
+
+  describe('downloadAssets - export toast file count', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockCreateAssetExport.mockClear()
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    function createOutputAsset(
+      id: string,
+      name: string,
+      jobId: string,
+      outputCount?: number
+    ): AssetItem {
+      return createMockAsset({
+        id,
+        name,
+        tags: ['output'],
+        user_metadata: { jobId, nodeId: '1', subfolder: '', outputCount }
+      })
+    }
+
+    async function expectExportToastFileCount(count: number) {
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const { add } = useToast()
+      await vi.waitFor(() => {
+        expect(add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: 'mediaAsset.selection.exportStarted'
+          })
+        )
+      })
+
+      const { t } = useI18n()
+      expect(t).toHaveBeenCalledWith(
+        'mediaAsset.selection.exportStarted',
+        { count },
+        count
+      )
+    }
+
+    it('should report total file count, not job count, for multi-output jobs', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
+      const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, j2])
+
+      await expectExportToastFileCount(6)
+    })
+
+    it('should treat assets without outputCount as a single file', async () => {
+      const a1 = createOutputAsset('a1', 'img1.png', 'job1')
+      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([a1, a2])
+
+      await expectExportToastFileCount(2)
+    })
+
+    it('should mix multi-output and single-output assets correctly', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, a2])
+
+      await expectExportToastFileCount(4)
+    })
+
+    it('should only count duplicate job-level output selections once', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const j1Duplicate = createOutputAsset('a2', 'img2.png', 'job1', 3)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, j1Duplicate])
+
+      await expectExportToastFileCount(3)
     })
   })
 

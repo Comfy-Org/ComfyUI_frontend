@@ -103,7 +103,9 @@ useExtensionService().registerExtension({
 
           const loadFolder = fileInfo.type as 'input' | 'output'
 
-          config.configureForSaveMesh(loadFolder, filePath)
+          config.configureForSaveMesh(loadFolder, filePath, {
+            silentOnNotFound: true
+          })
 
           if (isAssetPreviewSupported()) {
             const filename = fileInfo.filename ?? ''

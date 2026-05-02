@@ -436,6 +436,55 @@ describe('LoaderManager', () => {
       expect(consoleError).toHaveBeenCalled()
     })
 
+    it('suppresses the alert on a 404 when silentOnNotFound is set', async () => {
+      const { lm } = makeLoaderManager()
+      const notFound = new Error(
+        'fetch for "..." responded with 404: Not Found'
+      )
+      meshLoad.mockRejectedValueOnce(notFound)
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silentOnNotFound: true
+      })
+
+      expect(consoleError).toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
+    })
+
+    it('detects a 404 from the response status field on three.js HttpError', async () => {
+      const { lm } = makeLoaderManager()
+      const httpError = Object.assign(new Error('not found'), {
+        response: { status: 404 }
+      })
+      meshLoad.mockRejectedValueOnce(httpError)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silentOnNotFound: true
+      })
+
+      expect(addAlert).not.toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
+    })
+
+    it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
+      const { lm } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silentOnNotFound: true
+      })
+
+      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+    })
+
     it('discards the result of a stale load when a newer one has started', async () => {
       const { lm, modelManager, eventManager } = makeLoaderManager()
 
