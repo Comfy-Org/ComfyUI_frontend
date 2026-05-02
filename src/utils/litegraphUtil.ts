@@ -342,7 +342,7 @@ export function resolveNodeWidget(
   widgetName?: string,
   graph: LGraph | null | undefined = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
-  if (!graph) return []
+  if (!graph || typeof graph.getNodeById !== 'function') return []
 
   const node = graph.getNodeById(nodeId)
   if (!widgetName) return node ? [node] : []
@@ -357,7 +357,8 @@ export function resolveNodeWidget(
   }
 
   for (const node of graph.nodes) {
-    if (!node.isSubgraphNode()) continue
+    if (typeof node.isSubgraphNode !== 'function' || !node.isSubgraphNode())
+      continue
     const widget = node.widgets?.find(
       (w) =>
         isPromotedWidgetView(w) &&
