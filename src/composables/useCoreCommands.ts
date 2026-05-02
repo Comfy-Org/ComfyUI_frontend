@@ -1364,23 +1364,28 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Toggle Compact Mode',
       category: 'view-controls' as const,
       active: () => compactModeStore.isCompactMode,
-      function: (() => {
-        let savedLinkRenderMode: number | null = null
-        return async () => {
-          const enteringCompact = !compactModeStore.isCompactMode
-          if (enteringCompact) {
-            savedLinkRenderMode = settingStore.get('Comfy.LinkRenderMode')
-            await settingStore.set(
-              'Comfy.LinkRenderMode',
-              LiteGraph.HIDDEN_LINK
-            )
-          } else if (savedLinkRenderMode != null) {
-            await settingStore.set('Comfy.LinkRenderMode', savedLinkRenderMode)
-            savedLinkRenderMode = null
-          }
-          compactModeStore.toggle()
+      function: async () => {
+        compactModeStore.toggle()
+        if (compactModeStore.isCompactMode) {
+          compactModeStore.savedLinkRenderMode = settingStore.get(
+            'Comfy.LinkRenderMode'
+          )
+          await settingStore.set('Comfy.LinkRenderMode', LiteGraph.HIDDEN_LINK)
+          return
         }
-      })()
+        const linksAreStillHidden =
+          settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
+        if (
+          linksAreStillHidden &&
+          compactModeStore.savedLinkRenderMode != null
+        ) {
+          await settingStore.set(
+            'Comfy.LinkRenderMode',
+            compactModeStore.savedLinkRenderMode
+          )
+        }
+        compactModeStore.savedLinkRenderMode = null
+      }
     }
   ]
 
