@@ -655,6 +655,80 @@ describe('SceneModelManager', () => {
     })
   })
 
+  describe('fitToViewer', () => {
+    it('does nothing when no current model', () => {
+      const { manager, setupCamera, setupGizmo } = createManager()
+
+      manager.fitToViewer()
+
+      expect(setupCamera).not.toHaveBeenCalled()
+      expect(setupGizmo).not.toHaveBeenCalled()
+    })
+
+    it('reapplies currentUpDirection after fitting', async () => {
+      const { manager, eventManager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('+z')
+      vi.mocked(eventManager.emitEvent).mockClear()
+
+      manager.fitToViewer()
+
+      // rotation.x should reflect +z direction (-PI/2) applied to the post-fit base (0,0,0)
+      expect(model.rotation.x).toBeCloseTo(-Math.PI / 2)
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'upDirectionChange',
+        '+z'
+      )
+    })
+
+    it('does not compound rotations when fitToViewer is called multiple times', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('-x')
+
+      manager.fitToViewer()
+      const rotationAfterFirst = model.rotation.z
+
+      manager.fitToViewer()
+      expect(model.rotation.z).toBeCloseTo(rotationAfterFirst)
+    })
+
+    it('leaves rotation at zero when currentUpDirection is original', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.fitToViewer()
+
+      expect(model.rotation.x).toBeCloseTo(0)
+      expect(model.rotation.y).toBeCloseTo(0)
+      expect(model.rotation.z).toBeCloseTo(0)
+    })
+
+    it('does not compound rotation when fitToViewer is called after manual rotation override', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      // Set an up direction, then manually override originalRotation to simulate
+      // a prior state where the base rotation was non-zero before fit
+      manager.setUpDirection('+x')
+      // Simulate that originalRotation was captured at a non-zero rotation
+      manager.originalRotation = new THREE.Euler(0.5, 0.3, 0.1)
+
+      manager.fitToViewer()
+
+      // After fit, the rotation should be correct for +x direction applied to (0,0,0) base
+      // Not compounded with the stale originalRotation
+      expect(model.rotation.x).toBeCloseTo(0)
+      expect(model.rotation.z).toBeCloseTo(-Math.PI / 2)
+    })
+  })
+
   describe('PLY mode switching', () => {
     function createPLYManager() {
       const ctx = createManager({
