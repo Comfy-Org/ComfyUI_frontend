@@ -559,10 +559,9 @@ describe('useCoreCommands', () => {
 
       await findCommand('Comfy.Canvas.ToggleLinkVisibility').function()
 
-      expect(mockStore.set).toHaveBeenCalledWith(
-        'Comfy.LinkRenderMode',
-        expect.any(Number)
-      )
+      const lastSetCall = vi.mocked(mockStore.set).mock.calls.at(-1)
+      expect(lastSetCall?.[0]).toBe('Comfy.LinkRenderMode')
+      expect(lastSetCall?.[1]).not.toBe(LiteGraph.HIDDEN_LINK)
     })
   })
 
