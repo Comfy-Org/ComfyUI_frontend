@@ -99,9 +99,7 @@ import {
   setWidgetConfig
 } from './widgetInputs'
 
-function makeWidget(
-  overrides: Partial<IBaseWidget> = {}
-): IBaseWidget {
+function makeWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
   return {
     name: 'value',
     value: 0,
@@ -189,9 +187,7 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const targetNode = createTargetNode('text', 'original')
       setupGraphWithLink(node, targetNode)
-      node.widgets = [
-        makeWidget({ value: 'hello {name}', type: 'string' })
-      ]
+      node.widgets = [makeWidget({ value: 'hello {name}', type: 'string' })]
       node.properties['Run widget replace on values'] = true
 
       node.applyToGraph()
@@ -498,7 +494,7 @@ describe('PrimitiveNode', () => {
       node.onAfterGraphConfigured()
 
       expect(node.widgets).toHaveLength(1)
-      expect(node.widgets[0].value).toBe('restored_value')
+      expect(node.widgets![0].value).toBe('restored_value')
     })
 
     it('creates fake widget when input has no widget but type is in ComfyWidgets', () => {
