@@ -335,40 +335,78 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes, prompt_id: jobId } = e.detail
+    const { nodes, prompt_id: jobId, workflow_id: messageWorkflowId } = e.detail
 
-    // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
     for (const nodeId in nodes) {
       const nodeState = nodes[nodeId]
       if (nodeState.state === 'running' && !previousForJob[nodeId]) {
-        // This node just started executing, revoke its previews
-        // Note that we're doing the *actual* node id instead of the display node id
-        // here intentionally. That way, we don't clear the preview every time a new node
-        // within an expanded graph starts executing.
         const { revokePreviewsByExecutionId } = useNodeOutputStore()
         revokePreviewsByExecutionId(nodeId)
       }
     }
 
-    // Update the progress states for all nodes
     nodeProgressStatesByJob.value = {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
     evictOldProgressJobs()
-    nodeProgressStates.value = nodes
 
-    // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value && nodes[executingNodeId.value]) {
-      const nodeState = nodes[executingNodeId.value]
-      _executingNodeProgress.value = {
-        value: nodeState.value,
-        max: nodeState.max,
-        prompt_id: nodeState.prompt_id,
-        node: nodeState.display_node_id || nodeState.node_id
+    if (messageMatchesActiveWorkflow(jobId, messageWorkflowId)) {
+      nodeProgressStates.value = nodes
+
+      if (executingNodeId.value && nodes[executingNodeId.value]) {
+        const nodeState = nodes[executingNodeId.value]
+        _executingNodeProgress.value = {
+          value: nodeState.value,
+          max: nodeState.max,
+          prompt_id: nodeState.prompt_id,
+          node: nodeState.display_node_id || nodeState.node_id
+        }
       }
     }
+  }
+
+  /**
+   * Determines whether a WebSocket execution message belongs to the
+   * currently active workflow tab. Used to gate writes to the global
+   * "current execution" mirror so a job initiated from another open
+   * workflow cannot leak its progress into the active one.
+   *
+   * Resolution order:
+   *  1. `workflow_id` carried on the WS message (when backend supports it).
+   *  2. {@link jobIdToWorkflowId} mapping populated when the job was queued
+   *     from this tab.
+   *  3. {@link jobIdToSessionWorkflowPath} mapping (path-based fallback).
+   *
+   * When the workflow cannot be resolved at all (e.g. job queued in a
+   * different browser session), the message is treated as belonging to
+   * the active workflow to preserve current behaviour for the existing
+   * single-tab common case.
+   */
+  function messageMatchesActiveWorkflow(
+    jobId: JobId,
+    messageWorkflowId: string | undefined
+  ): boolean {
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return true
+
+    const activeId =
+      activeWorkflow.activeState?.id ?? activeWorkflow.initialState?.id ?? null
+
+    if (messageWorkflowId && activeId) {
+      return messageWorkflowId === activeId
+    }
+
+    const mappedId = jobIdToWorkflowId.value.get(jobId)
+    if (mappedId && activeId) return mappedId === activeId
+
+    const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (mappedPath && activeWorkflow.path) {
+      return mappedPath === activeWorkflow.path
+    }
+
+    return true
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
@@ -483,6 +521,100 @@ export const useExecutionStore = defineStore('execution', () => {
       (id) => !activeJobIds.has(id)
     )
     clearInitializationByJobIds(orphaned)
+  }
+
+  /**
+   * Safely evict per-job execution artifacts for a job that has reached a
+   * terminal state, without disturbing state belonging to a different
+   * currently-running job.
+   *
+   * Unlike {@link resetExecutionState}, this is safe to call for any jobId,
+   * including jobs that are not the {@link activeJobId}. It is the polling
+   * fallback for the case where a WebSocket terminal message
+   * (`execution_success` / `execution_error` / `execution_interrupted`) is
+   * dropped and per-job UI state would otherwise remain stuck.
+   *
+   * Behaviour:
+   *  - Always removes the job's per-job entries
+   *    ({@link nodeProgressStatesByJob}, {@link queuedJobs}, preview).
+   *  - Clears the global "current execution" mirror
+   *    ({@link nodeProgressStates}, {@link _executingNodeProgress},
+   *    {@link activeJobId}) only when those still belong to the evicted job.
+   *  - Idempotent: calling for an already-cleared job is a no-op.
+   */
+  function evictTerminalJob(jobId: JobId) {
+    if (!jobId) return
+
+    const hadProgress = jobId in nodeProgressStatesByJob.value
+    if (hadProgress) {
+      const map = { ...nodeProgressStatesByJob.value }
+      delete map[jobId]
+      nodeProgressStatesByJob.value = map
+    }
+
+    if (jobId in queuedJobs.value) {
+      const next = { ...queuedJobs.value }
+      delete next[jobId]
+      queuedJobs.value = next
+    }
+
+    useJobPreviewStore().clearPreview(jobId)
+    clearInitializationByJobId(jobId)
+
+    const isActive = activeJobId.value === jobId
+    const mirrorBelongsToEvicted = mirrorOwnerJobId() === jobId
+
+    if (isActive || mirrorBelongsToEvicted) {
+      nodeProgressStates.value = {}
+      executionIdToLocatorCache.clear()
+    }
+
+    if (
+      _executingNodeProgress.value &&
+      _executingNodeProgress.value.prompt_id === jobId
+    ) {
+      _executingNodeProgress.value = null
+    }
+
+    if (isActive) {
+      activeJobId.value = null
+      executionErrorStore.clearPromptError()
+    }
+  }
+
+  /**
+   * Returns the prompt_id that the global {@link nodeProgressStates} mirror
+   * currently belongs to, or `null` when the mirror is empty.
+   *
+   * The mirror is replaced wholesale on every `progress_state` message, so
+   * all entries within it always share a single prompt_id; reading the
+   * first entry is sufficient.
+   */
+  function mirrorOwnerJobId(): JobId | null {
+    const first = Object.values(nodeProgressStates.value)[0]
+    return first?.prompt_id ?? null
+  }
+
+  /**
+   * Reconcile per-job progress state against the authoritative job sets from
+   * the backend (running/pending vs. terminal). Used by the queue polling
+   * path to recover from dropped WebSocket terminal messages.
+   *
+   * @param activeJobIds Jobs currently in Running or Pending on the backend.
+   * @param terminalJobIds Jobs in History (completed/failed/cancelled).
+   */
+  function reconcileTerminalJobs(
+    activeJobIds: Set<JobId>,
+    terminalJobIds: Set<JobId>
+  ) {
+    const tracked = new Set<JobId>(Object.keys(nodeProgressStatesByJob.value))
+    if (activeJobId.value) tracked.add(activeJobId.value)
+
+    for (const jobId of tracked) {
+      if (activeJobIds.has(jobId)) continue
+      if (!terminalJobIds.has(jobId)) continue
+      evictTerminalJob(jobId)
+    }
   }
 
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
@@ -643,6 +775,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
+    reconcileTerminalJobs,
     bindExecutionEvents,
     unbindExecutionEvents,
     storeJob,

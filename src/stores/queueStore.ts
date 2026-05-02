@@ -556,6 +556,9 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+
+        const terminalJobIds = new Set(history.map((j) => j.id))
+        executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
       }
 
       // Sort by create_time descending and limit to maxItems

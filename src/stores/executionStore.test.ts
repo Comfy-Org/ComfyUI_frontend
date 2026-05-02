@@ -11,12 +11,20 @@ const {
   mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
-  mockShowTextPreview
+  mockShowTextPreview,
+  mockActiveWorkflow
 } = vi.hoisted(() => ({
   mockNodeExecutionIdToNodeLocatorId: vi.fn(),
   mockNodeIdToNodeLocatorId: vi.fn(),
   mockNodeLocatorIdToNodeExecutionId: vi.fn(),
-  mockShowTextPreview: vi.fn()
+  mockShowTextPreview: vi.fn(),
+  mockActiveWorkflow: {
+    current: null as null | {
+      activeState?: { id?: string }
+      initialState?: { id?: string }
+      path?: string
+    }
+  }
 }))
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
@@ -35,7 +43,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: vi.fn(() => ({
       nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+      get activeWorkflow() {
+        return mockActiveWorkflow.current
+      }
     }))
   }
 })
@@ -437,6 +448,258 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
     store.reconcileInitializingJobs(new Set())
 
     expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
+describe('useExecutionStore - active workflow gating of progress mirror', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>,
+    workflowId?: string
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', {
+        detail: { nodes, prompt_id: jobId, workflow_id: workflowId }
+      })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    mockActiveWorkflow.current = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('updates per-job progress regardless of active workflow', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState(
+      'job-other',
+      makeProgressNodes('1', 'job-other'),
+      'wf-other'
+    )
+
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-other')
+  })
+
+  it('skips global mirror when message workflow_id mismatches active workflow', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState(
+      'job-other',
+      makeProgressNodes('1', 'job-other'),
+      'wf-other'
+    )
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('updates global mirror when message workflow_id matches active workflow', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-active')
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
+  })
+
+  it('falls back to jobIdToWorkflowId mapping when message has no workflow_id', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    store.registerJobWorkflowIdMapping('job-other', 'wf-other')
+
+    fireProgressState('job-other', makeProgressNodes('1', 'job-other'))
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('falls back to session path mapping when message has no workflow_id and no id mapping', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    store.ensureSessionWorkflowPath('job-other', '/wf-other.json')
+
+    fireProgressState('job-other', makeProgressNodes('1', 'job-other'))
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('updates mirror when no resolution is available (preserves single-tab behaviour)', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    fireProgressState('job-unknown', makeProgressNodes('1', 'job-unknown'))
+
+    expect(store.nodeProgressStates).toEqual(
+      makeProgressNodes('1', 'job-unknown')
+    )
+  })
+
+  it('updates mirror when there is no active workflow', () => {
+    mockActiveWorkflow.current = null
+
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-1')
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
+  })
+})
+
+describe('useExecutionStore - reconcileTerminalJobs', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', { detail: { nodes, prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionStart(jobId: string) {
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('evicts a non-active terminal job without disturbing the active job', () => {
+    fireExecutionStart('job-old')
+    fireProgressState('job-old', makeProgressNodes('1', 'job-old'))
+
+    fireExecutionStart('job-new')
+    fireProgressState('job-new', makeProgressNodes('2', 'job-new'))
+
+    expect(store.activeJobId).toBe('job-new')
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-old')
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-new')
+
+    store.reconcileTerminalJobs(new Set(['job-new']), new Set(['job-old']))
+
+    expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-old')
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-new')
+    expect(store.activeJobId).toBe('job-new')
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('2', 'job-new'))
+  })
+
+  it('evicts an active terminal job and clears global mirror', () => {
+    fireExecutionStart('job-1')
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'))
+
+    expect(store.activeJobId).toBe('job-1')
+    expect(Object.keys(store.nodeProgressStates)).toHaveLength(1)
+
+    store.reconcileTerminalJobs(new Set(), new Set(['job-1']))
+
+    expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-1')
+    expect(store.activeJobId).toBeNull()
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('clears stale global mirror when its owner job becomes terminal', () => {
+    fireExecutionStart('job-old')
+    fireProgressState('job-old', makeProgressNodes('1', 'job-old'))
+
+    fireExecutionStart('job-new')
+    expect(store.activeJobId).toBe('job-new')
+    expect(store.nodeProgressStates['1']?.prompt_id).toBe('job-old')
+
+    store.reconcileTerminalJobs(new Set(['job-new']), new Set(['job-old']))
+
+    expect(store.nodeProgressStates).toEqual({})
+    expect(store.activeJobId).toBe('job-new')
+    expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-old')
+  })
+
+  it('skips jobs that are still active even if also in terminal set', () => {
+    fireExecutionStart('job-1')
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'))
+
+    store.reconcileTerminalJobs(new Set(['job-1']), new Set(['job-1']))
+
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-1')
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('skips jobs absent from the terminal set', () => {
+    fireExecutionStart('job-1')
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'))
+
+    store.reconcileTerminalJobs(new Set(), new Set())
+
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-1')
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('is idempotent for an already-cleared job', () => {
+    store.reconcileTerminalJobs(new Set(), new Set(['job-1']))
+    store.reconcileTerminalJobs(new Set(), new Set(['job-1']))
+
+    expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-1')
+    expect(store.activeJobId).toBeNull()
   })
 })
 
