@@ -17,11 +17,23 @@ import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHel
  * Mock the `/api/node_replacements` endpoint and enable the feature flag +
  * settings required for node replacement to function.
  *
- * The store's `load()` runs inside `loadGraphData()` and short-circuits
- * unless `node_replacements` is set on `api.serverFeatureFlags`. We set
- * the flag here and dispatch a `feature_flags` event to also force an
- * immediate `load()` via the listener registered in `app.ts` (so the
- * store is hot before the workflow is loaded).
+ * The store's `load()` only fetches when `api.serverFeatureFlags` includes
+ * `node_replacements: true`. The server sends a `feature_flags` WS message
+ * that wholesale replaces `serverFeatureFlags`, which races with any
+ * test-side override done via `page.evaluate`. To make the flow
+ * deterministic across CI shards, this helper:
+ *
+ * 1. Routes `/api/node_replacements` to the mock data.
+ * 2. Persists the `Comfy.NodeReplacement.Enabled` and `ShowErrorsTab`
+ *    settings server-side via `setSetting`.
+ * 3. Installs an `addInitScript` that patches `WebSocket.prototype` so
+ *    every incoming `feature_flags` message has `node_replacements: true`
+ *    injected before the api's WS handler sees it.
+ * 4. Reloads the page so the patched WebSocket and the persisted settings
+ *    apply to a fresh app boot.
+ * 5. Waits for the resulting `/api/node_replacements` fetch to complete,
+ *    so the store is fully loaded before the test triggers a workflow
+ *    load.
  */
 async function setupNodeReplacement(
   comfyPage: ComfyPage,
@@ -37,14 +49,65 @@ async function setupNodeReplacement(
   )
   await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
 
-  await comfyPage.page.evaluate(() => {
-    const api = window.app!.api
-    api.serverFeatureFlags.value = {
-      ...api.serverFeatureFlags.value,
-      node_replacements: true
+  // Patch WebSocket so every incoming `feature_flags` message has
+  // `node_replacements: true` injected. Survives WS reconnects and
+  // any number of server-sent feature_flags messages.
+  await comfyPage.page.addInitScript(() => {
+    const proto = window.WebSocket.prototype
+    const originalAdd = proto.addEventListener
+    proto.addEventListener = function patchedAdd(
+      this: WebSocket,
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: AddEventListenerOptions | boolean
+    ) {
+      if (type === 'message' && typeof listener === 'function') {
+        const wrapped = function (this: WebSocket, event: Event) {
+          const msgEvent = event as MessageEvent
+          if (typeof msgEvent.data === 'string') {
+            try {
+              const msg = JSON.parse(msgEvent.data)
+              if (
+                msg &&
+                msg.type === 'feature_flags' &&
+                msg.data &&
+                typeof msg.data === 'object'
+              ) {
+                msg.data.node_replacements = true
+                const patched = new MessageEvent('message', {
+                  data: JSON.stringify(msg),
+                  origin: msgEvent.origin,
+                  lastEventId: msgEvent.lastEventId
+                })
+                return (listener as EventListener).call(this, patched)
+              }
+            } catch {
+              // not JSON or not a feature_flags message - pass through
+            }
+          }
+          return (listener as EventListener).call(this, event)
+        }
+        return originalAdd.call(this, type, wrapped as EventListener, options)
+      }
+      return originalAdd.call(
+        this,
+        type,
+        listener as EventListenerOrEventListenerObject,
+        options
+      )
     }
-    api.dispatchCustomEvent('feature_flags', api.serverFeatureFlags.value)
   })
+
+  // Set up the response listener BEFORE reload so we don't miss a
+  // fast-arriving fetch.
+  const fetchPromise = comfyPage.page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/node_replacements') && response.ok(),
+    { timeout: 10000 }
+  )
+
+  await comfyPage.workflow.reloadAndWaitForApp()
+  await fetchPromise
 }
 
 function getSwapNodesGroup(page: Page) {
