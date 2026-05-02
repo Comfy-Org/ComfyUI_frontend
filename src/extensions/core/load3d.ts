@@ -497,7 +497,8 @@ useExtensionService().registerExtension({
           const settings = {
             loadFolder: 'output',
             modelWidget: modelWidget,
-            cameraState: cameraState
+            cameraState: cameraState,
+            silentOnNotFound: true
           }
 
           config.configure(settings)
@@ -528,7 +529,8 @@ useExtensionService().registerExtension({
             loadFolder: 'output',
             modelWidget: modelWidget,
             cameraState: cameraState,
-            bgImagePath: bgImagePath
+            bgImagePath: bgImagePath,
+            silentOnNotFound: true
           }
 
           config.configure(settings)
