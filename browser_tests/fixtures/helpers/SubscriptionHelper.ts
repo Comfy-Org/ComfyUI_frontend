@@ -113,6 +113,19 @@ export class SubscriptionHelper {
       }
     })
 
+    // The cloud build calls `/api/features` at boot via `refreshRemoteConfig`,
+    // which overwrites `window.__CONFIG__` wholesale. Mock it to preserve
+    // `subscription_required: true` after that fetch resolves.
+    const featuresPattern = '**/api/features'
+    const featuresHandler = async (route: Route) => {
+      await route.fulfill({ json: { subscription_required: true } })
+    }
+    this.routeHandlers.push({
+      pattern: featuresPattern,
+      handler: featuresHandler
+    })
+    await this.page.route(featuresPattern, featuresHandler)
+
     const statusPattern = '**/customers/cloud-subscription-status'
     const statusHandler = async (route: Route) => {
       await route.fulfill({ json: this.statusResponse })
