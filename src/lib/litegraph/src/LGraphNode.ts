@@ -98,6 +98,21 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
+/**
+ * Canonical identifier type for a litegraph node.
+ *
+ * This is the single source of truth for node IDs across the litegraph
+ * library and the workflow schema layer. Other modules SHOULD import
+ * `NodeId` from here (or via the workflow schema re-export) rather than
+ * declaring local `string` / `number | string` aliases.
+ *
+ * Note: `src/renderer/core/layout/types.ts` deliberately defines a
+ * narrower `NodeId = string` for the Vue-node renderer, where IDs are
+ * normalized to strings. That is a separate, intentionally-narrower
+ * layered alias — see the JSDoc there.
+ *
+ * Tracking issue for full migration: #11428.
+ */
 export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object

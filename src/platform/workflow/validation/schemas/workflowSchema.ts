@@ -1,7 +1,9 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
+
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 
 const zRendererType = z.enum([
   'LG',
@@ -12,9 +14,20 @@ const zRendererType = z.enum([
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
-export const zNodeId = z.union([z.number().int(), z.string()])
+export const zNodeId = z.union([
+  z.number().int(),
+  z.string()
+]) satisfies z.ZodType<NodeId>
 const zNodeInputName = z.string()
-export type NodeId = z.infer<typeof zNodeId>
+
+/**
+ * Re-export of the canonical {@link NodeId} type defined in
+ * `src/lib/litegraph/src/LGraphNode.ts`. Kept here for ergonomic imports
+ * alongside `zNodeId` (the runtime validator) and historical call sites.
+ *
+ * See issue #11428 for the consolidation rationale.
+ */
+export type { NodeId }
 
 /**
  * UUID identifier for a saved workflow.

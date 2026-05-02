@@ -37,6 +37,20 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
+/**
+ * Renderer-internal node identifier.
+ *
+ * Intentionally narrower than the canonical {@link NodeId} in
+ * `src/lib/litegraph/src/LGraphNode.ts` (which is `number | string`).
+ * The Vue-node renderer normalizes all incoming IDs to strings before
+ * they enter the layout system, so this layered alias documents and
+ * enforces that contract at the renderer boundary.
+ *
+ * If you need a node ID at the litegraph or workflow-schema layer,
+ * import `NodeId` from `@/lib/litegraph/src/LGraphNode` instead.
+ *
+ * See issue #11428 for the layered-types decision.
+ */
 export type NodeId = string
 export type LinkId = number
 export type RerouteId = number
