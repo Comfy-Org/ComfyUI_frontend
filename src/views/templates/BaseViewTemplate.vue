@@ -13,7 +13,7 @@
       ref="topMenuRef"
       class="app-drag h-(--comfy-topbar-height) w-full"
     />
-    <div class="flex w-full grow items-center justify-center overflow-auto">
+    <div class="grid w-full grow place-items-center overflow-auto">
       <slot />
     </div>
   </div>

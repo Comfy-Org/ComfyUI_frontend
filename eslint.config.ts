@@ -27,7 +27,12 @@ const commonGlobals = {
   __COMFYUI_FRONTEND_VERSION__: 'readonly',
   __COMFYUI_FRONTEND_COMMIT__: 'readonly',
   __DISTRIBUTION__: 'readonly',
-  __IS_NIGHTLY__: 'readonly'
+  __IS_NIGHTLY__: 'readonly',
+  __CI_BRANCH__: 'readonly',
+  __CI_PR_NUMBER__: 'readonly',
+  __CI_PR_AUTHOR__: 'readonly',
+  __CI_RUN_ID__: 'readonly',
+  __CI_JOB_ID__: 'readonly'
 } as const
 
 const settings = {

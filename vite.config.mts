@@ -626,7 +626,12 @@ export default defineConfig({
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY),
+    __CI_BRANCH__: JSON.stringify(process.env.CI_BRANCH || ''),
+    __CI_PR_NUMBER__: JSON.stringify(process.env.CI_PR_NUMBER || ''),
+    __CI_PR_AUTHOR__: JSON.stringify(process.env.CI_PR_AUTHOR || ''),
+    __CI_RUN_ID__: JSON.stringify(process.env.CI_RUN_ID || ''),
+    __CI_JOB_ID__: JSON.stringify(process.env.CI_JOB_ID || '')
   },
 
   resolve: {

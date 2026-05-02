@@ -1,0 +1,147 @@
+# Description: Builds ComfyUI frontend and deploys previews to Cloudflare Pages
+name: 'CI: Deploy Preview'
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Post starting comment for non-forked PRs
+  comment-on-pr-start:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cicd/pr-preview-deploy-and-comment.sh
+          ./scripts/cicd/pr-preview-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "starting"
+
+  # Build frontend for all PRs and pushes
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      conclusion: ${{ steps.job-status.outputs.conclusion }}
+      workflow-url: ${{ steps.workflow-url.outputs.url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build frontend
+        env:
+          FRONTEND_COMMIT_HASH: ${{ github.sha }}
+          CI_BRANCH: ${{ github.head_ref || github.ref_name }}
+          CI_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          CI_PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
+          CI_RUN_ID: ${{ github.run_id }}
+          CI_JOB_ID: ${{ github.job }}
+          USE_PROD_CONFIG: 'true'
+        run: pnpm build
+
+      - name: Set job status
+        id: job-status
+        if: always()
+        run: |
+          echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
+
+      - name: Get workflow URL
+        id: workflow-url
+        if: always()
+        run: |
+          echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      - name: Upload build artifact
+        if: success() && github.event.pull_request.head.repo.fork == false
+        uses: actions/upload-artifact@v6
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # Deploy and comment for non-forked PRs only
+  deploy-and-comment:
+    needs: [comment-on-pr-start, build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && always()
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Download build artifact
+        if: needs.build.outputs.conclusion == 'success'
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+
+      - name: Make deployment script executable
+        run: chmod +x scripts/cicd/pr-preview-deploy-and-comment.sh
+
+      - name: Deploy preview and comment on PR
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_CONCLUSION: ${{ needs.build.outputs.conclusion }}
+          WORKFLOW_URL: ${{ needs.build.outputs.workflow-url }}
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          ./scripts/cicd/pr-preview-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "completed"
+
+  # Deploy to production URL on main branch push
+  deploy-production:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build frontend
+        env:
+          FRONTEND_COMMIT_HASH: ${{ github.sha }}
+          CI_BRANCH: ${{ github.ref_name }}
+          CI_RUN_ID: ${{ github.run_id }}
+          CI_JOB_ID: ${{ github.job }}
+        run: pnpm build
+
+      - name: Deploy to Cloudflare Pages (production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          pnpm dlx wrangler@^4.0.0 pages deploy dist \
+            --project-name=comfy-ui \
+            --branch=main

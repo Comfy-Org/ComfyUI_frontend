@@ -247,6 +247,7 @@ const zSystemStats = z.object({
     pytorch_version: z.string(),
     required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
+    comfy_api_base: z.string().optional(),
     ram_total: z.number(),
     ram_free: z.number(),
     // Cloud-specific fields

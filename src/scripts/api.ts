@@ -367,27 +367,52 @@ export class ComfyApi extends EventTarget {
    */
   apiKey?: string
 
+  /**
+   * The origin (protocol + host) for the backend, when overridden via the
+   * preview connection panel. Empty string means use same-origin.
+   */
+  private remoteOrigin = ''
+
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
+
+    const remoteBackend = localStorage.getItem('comfyui-preview-backend-url')
+    let parsedRemote: URL | null = null
+    if (remoteBackend) {
+      try {
+        parsedRemote = new URL(remoteBackend)
+      } catch {
+        // Corrupt value would crash the app at startup; drop it and fall back.
+        localStorage.removeItem('comfyui-preview-backend-url')
+      }
+    }
+    if (parsedRemote) {
+      this.remoteOrigin = parsedRemote.origin
+      this.api_host = parsedRemote.host
+      this.api_base = parsedRemote.pathname.replace(/\/+$/, '')
+    } else {
+      this.api_host = location.host
+      this.api_base = isCloud
+        ? ''
+        : location.pathname.split('/').slice(0, -1).join('/')
+    }
+
     this.initialClientId = sessionStorage.getItem('clientId')
   }
 
   internalURL(route: string): string {
-    return this.api_base + '/internal' + route
+    return this.remoteOrigin + this.api_base + '/internal' + route
   }
 
   apiURL(route: string): string {
-    if (route.startsWith('/api')) return this.api_base + route
-    return this.api_base + '/api' + route
+    if (route.startsWith('/api'))
+      return this.remoteOrigin + this.api_base + route
+    return this.remoteOrigin + this.api_base + '/api' + route
   }
 
   fileURL(route: string): string {
-    return this.api_base + route
+    return this.remoteOrigin + this.api_base + route
   }
 
   /**
@@ -578,8 +603,14 @@ export class ComfyApi extends EventTarget {
       }
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    // Derive WebSocket protocol from remote backend if set, else from page
+    let wsProtocol: string
+    if (this.remoteOrigin) {
+      wsProtocol = this.remoteOrigin.startsWith('https:') ? 'wss' : 'ws'
+    } else {
+      wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    }
+    const baseUrl = `${wsProtocol}://${this.api_host}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
