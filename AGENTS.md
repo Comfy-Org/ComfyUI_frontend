@@ -340,3 +340,35 @@ When using `take_snapshot` to inspect dropdowns, listboxes, or other components 
 - Put scripts used under `/temp/scripts/`
 - Put summaries of work performed under `/temp/summaries/`
 - Put TODOs and status updates under `/temp/in_progress/`
+
+### Reviewing PRs
+
+When reviewing a PR, "tests pass + types check + diff looks reasonable" is **not** sufficient. Two failure modes have caused real misses:
+
+#### 1. For refactor / extraction PRs: diff main vs branch by hand
+
+A "refactor" PR claims behavior equivalence. Reading only the new file and trusting the commit message lets behavior changes slip through unnoticed.
+
+Required steps before signing off on a refactor:
+
+- Pull the pre-refactor version of the equivalent code with `git show main:<old-path>` and put it side-by-side with the new code. Compare the **key expressions** (formulas, base values, clamps, branch conditions), not just the structure.
+- Treat `fix:` commit messages as claims, not conclusions. Ask: "does the bug being fixed actually exist on main?" Walk through the pre-refactor code with concrete inputs to verify.
+- Be suspicious of test parameters that drift from defaults. If a test passes only because it sets `speed: 10` or `initialSize: 2`, the realistic case (defaults) may be broken. Ask why each non-default value is needed.
+- Compute the **reachable parameter range** for the user. e.g. if a delta is clamped to ±100 and divided by 35, the maximum effect on the output is ±2.86 — is that enough for normal usage? Static reading does not surface saturation bugs; arithmetic does.
+- For any UI / interaction change: do not sign off on tests alone. State explicitly which scenarios need to be exercised in a browser, and ask the user to manually verify before merge. Per CLAUDE.md, dev-server browser testing is required for UI changes.
+
+#### 2. For PRs that add a new constant / list / map: check for existing duplication
+
+Reading only the diff hunks misses duplication that already exists in the same file as unchanged context. A new "single source of truth" constant is often actually the Nth copy of an existing implicit list.
+
+Required steps before signing off on any PR that adds a new constant array, lookup map, or enum:
+
+- Read the **whole file**, not just the diff hunks. Existing similar structures are usually unchanged context the diff renders in black.
+- `Grep` for one or two of the values being added (e.g. a locale code, a node type, a feature flag id). If the same set appears in 3+ places, the PR is creating duplication, not consolidating it.
+- Run a **future-change cost** check: "If a new $THING is added next month, how many files need to be touched?" If the answer is more than 1–2, flag the duplication and ask whether TypeScript types can constrain the other locations to derive from the new constant (e.g. `Record<Exclude<SupportedThing, 'default'>, Loader>` makes drift a compile error).
+- Distinguish "the bug fix is correct" from "the fix's structure is correct." Both need to be evaluated; a correct patch can still be a step backward architecturally.
+
+#### General review hygiene
+
+- Static lints, `tsc`, and bot reviewers (CodeRabbit, Copilot review) share the same blind spots: they evaluate diff hunks, not whole-file or cross-file architecture. Do not rely on green CI as a substitute for these checks.
+- For interaction-heavy code (mask editor, canvas, drag-and-drop, search box), explicitly tell the user which scenarios to manually exercise. Provide at least 3 adversarial cases (boundary values, stationary input, accumulation over time) rather than a single happy-path script.
