@@ -85,10 +85,9 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
       if (!node.isSubgraphNode()) return vueWidget.name === widget.name
 
-      if (!isPromotedWidgetView(widget) || !vueWidget.source) return false
       return (
-        widget.sourceNodeId == vueWidget.source.sourceNodeId &&
-        widget.sourceWidgetName === vueWidget.source.sourceWidgetName
+        isPromotedWidgetView(widget) &&
+        vueWidget.instanceWidgetName === widget.storeName
       )
     })
     if (!matchingWidget) return []

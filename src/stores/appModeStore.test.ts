@@ -4,12 +4,22 @@ import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -26,7 +36,12 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
+    rootGraph: {
+      extra: {},
+      nodes: [{ id: 1, isSubgraphNode: () => false }],
+      events: new EventTarget(),
+      getNodeById: () => undefined
+    }
   }
 }))
 
@@ -46,6 +61,16 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
   useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
+}))
+vi.mock('@/stores/domWidgetStore', () => ({
+  useDomWidgetStore: () => ({
+    widgetStates: new Map(),
+    setPositionOverride: vi.fn(),
+    clearPositionOverride: vi.fn()
+  })
+}))
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
 const mockSettings = vi.hoisted(() => {
@@ -67,6 +92,35 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 import { useAppModeStore } from './appModeStore'
+
+function createPromotedWidgetFixture(hostId: number): {
+  graph: LGraph
+  host: SubgraphNode
+  promoted: PromotedWidgetView
+} {
+  const subgraph = createTestSubgraph({
+    inputs: [{ name: 'value', type: '*' }]
+  })
+  const inner = new LiteGraphNode('Inner')
+  const input = inner.addInput('value', '*')
+  inner.addWidget('text', 'value', 'a', () => {})
+  input.widget = { name: 'value' }
+  subgraph.add(inner)
+  subgraph.inputNode.slots[0].connect(input, inner)
+
+  const host = createTestSubgraphNode(subgraph, { id: hostId })
+  host._internalConfigureAfterSlots()
+  host.graph!.add(host)
+
+  usePromotionStore().setPromotions(host.rootGraph.id, host.id, [
+    { sourceNodeId: String(inner.id), sourceWidgetName: 'value' }
+  ])
+
+  const promoted = host.widgets.find(isPromotedWidgetView)
+  if (!promoted) throw new Error('Expected promoted widget view')
+
+  return { graph: host.graph!, host, promoted }
+}
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -106,10 +160,13 @@ describe('appModeStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    resetSubgraphFixtureState()
     vi.mocked(app.rootGraph).extra = {}
     mockResolveNode.mockReturnValue(undefined)
     mockSettings.reset()
-    vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+    vi.mocked(app.rootGraph).nodes = [
+      { id: 1, isSubgraphNode: () => false } as LGraphNode
+    ]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
     vi.clearAllMocks()
@@ -256,6 +313,33 @@ describe('appModeStore', () => {
       })
 
       expect(store.selectedInputs).toEqual([[1, 'prompt', { height: 150 }]])
+    })
+
+    it('loadSelections rewrites legacy promoted tuples to host node id and storeName', async () => {
+      const { graph, host, promoted } = createPromotedWidgetFixture(500)
+      const { resolveNode: actualResolveNode } = (await vi.importActual(
+        '@/utils/litegraphUtil'
+      )) as {
+        resolveNode: (nodeId: NodeId, graph: LGraph) => LGraphNode | undefined
+      }
+      const originalRootGraph = app.rootGraph
+
+      mockResolveNode.mockImplementation((id) => actualResolveNode(id, graph))
+      Object.defineProperty(app, 'rootGraph', { value: graph, writable: true })
+
+      try {
+        store.loadSelections({
+          inputs: [[promoted.sourceNodeId, promoted.sourceWidgetName]],
+          outputs: []
+        })
+
+        expect(store.selectedInputs).toEqual([[host.id, promoted.storeName]])
+      } finally {
+        Object.defineProperty(app, 'rootGraph', {
+          value: originalRootGraph,
+          writable: true
+        })
+      }
     })
 
     it('keeps inputs for existing nodes even if widget is missing', async () => {
@@ -440,6 +524,18 @@ describe('appModeStore', () => {
         inputs: [[42, 'prompt', { height: 300 }]],
         outputs: []
       })
+    })
+  })
+
+  describe('removeSelectedInput', () => {
+    it('uses host node id and promoted storeName', () => {
+      const { host, promoted } = createPromotedWidgetFixture(601)
+
+      store.selectedInputs = [[host.id, promoted.storeName]]
+
+      store.removeSelectedInput(promoted, host)
+
+      expect(store.selectedInputs).toEqual([])
     })
   })
 

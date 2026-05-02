@@ -506,6 +506,48 @@ describe(createPromotedWidgetView, () => {
     expect(slot?.label).toBe('Renamed')
   })
 
+  test('label binding uses the exact promoted view instance when same source widget is promoted twice', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'shared', 'value', () => {})
+
+    subgraphNode.addInput('slot_a', '*')
+    subgraphNode.addInput('slot_b', '*')
+
+    const viewA = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'shared',
+      'Slot A'
+    )
+    const viewB = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'shared',
+      'Slot B'
+    )
+
+    if (!subgraphNode.inputs[0] || !subgraphNode.inputs[1]) {
+      throw new Error('Expected two subgraph inputs')
+    }
+
+    subgraphNode.inputs[0]._widget = viewA
+    Object.defineProperty(subgraphNode.inputs[0], '_subgraphSlot', {
+      value: { name: 'slot_a', label: 'A' },
+      configurable: true,
+      writable: true
+    })
+    subgraphNode.inputs[1]._widget = viewB
+    Object.defineProperty(subgraphNode.inputs[1], '_subgraphSlot', {
+      value: { name: 'slot_b', label: 'B' },
+      configurable: true,
+      writable: true
+    })
+
+    expect(viewA.label).toBe('A')
+    expect(viewB.label).toBe('B')
+  })
+
   test('value getter handles number values via isWidgetValue', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)

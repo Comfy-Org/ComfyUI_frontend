@@ -207,12 +207,22 @@ class PromotedWidgetView implements IPromotedWidgetView {
       const slot = input._subgraphSlot as SubgraphSlotRef | undefined
       if (!slot) continue
 
+      if (input._widget === this) {
+        return slot
+      }
+    }
+
+    for (const input of this.subgraphNode.inputs ?? []) {
+      const slot = input._subgraphSlot as SubgraphSlotRef | undefined
+      if (!slot) continue
+
       const w = input._widget
       if (
         w &&
         isPromotedWidgetView(w) &&
         w.sourceNodeId === this.sourceNodeId &&
-        w.sourceWidgetName === this.sourceWidgetName
+        w.sourceWidgetName === this.sourceWidgetName &&
+        w.disambiguatingSourceNodeId === this.disambiguatingSourceNodeId
       ) {
         return slot
       }

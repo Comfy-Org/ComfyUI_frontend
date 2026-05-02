@@ -263,6 +263,90 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(serialized.widgets_values).toBeUndefined()
   })
 
+  it('ignores sparse widgets_values holes when restoring promoted widget instances', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first', type: 'number' },
+        { name: 'second', type: 'number' }
+      ]
+    })
+
+    const firstNode = new LGraphNode('First')
+    const firstInput = firstNode.addInput('first', 'number')
+    const firstWidget = firstNode.addWidget('number', 'first', 5, () => {})
+    firstInput.widget = { name: 'first' }
+    firstWidget.serialize = false
+
+    const secondNode = new LGraphNode('Second')
+    const secondInput = secondNode.addInput('second', 'number')
+    secondNode.addWidget('number', 'second', 9, () => {})
+    secondInput.widget = { name: 'second' }
+
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    subgraph.inputNode.slots[0].connect(firstNode.inputs[0], firstNode)
+    subgraph.inputNode.slots[1].connect(secondNode.inputs[0], secondNode)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 701 })
+    const widgetsValues = new Array<number | undefined>(2)
+    widgetsValues[1] = 11
+
+    instance.configure({
+      id: 701,
+      type: subgraph.id,
+      pos: [0, 0],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: {
+        proxyWidgets: [
+          ['-1', 'first'],
+          ['-1', 'second']
+        ]
+      },
+      widgets_values: widgetsValues
+    })
+
+    expect(instance.widgets[0].value).toBe(5)
+    expect(instance.widgets[1].value).toBe(11)
+  })
+
+  it('ignores configure replay for promoted widgets whose concrete source is non-serializable', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node, widget } = createNodeWithWidget('TestNode', 10)
+    widget.serialize = false
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 502 })
+    instance.configure({
+      id: 502,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [33]
+    })
+
+    expect(instance.widgets[0].value).toBe(10)
+
+    widget.value = 14
+
+    expect(instance.widgets[0].value).toBe(14)
+    expect(instance.widgets[0].serializeValue?.(instance, 0)).toBe(14)
+  })
+
   it('serializes nested promoted widgets from the concrete source widget serialize state', () => {
     const leafSubgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]

@@ -1054,7 +1054,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const views = this.widgets ?? []
       const limit = Math.min(views.length, info.widgets_values.length)
       for (let i = 0; i < limit; i++) {
-        views[i].value = info.widgets_values[i]
+        if (!(i in info.widgets_values)) continue
+
+        const view = views[i]
+        const resolved = isPromotedWidgetView(view)
+          ? resolveConcretePromotedWidget(
+              this,
+              view.sourceNodeId,
+              view.sourceWidgetName,
+              view.disambiguatingSourceNodeId
+            )
+          : null
+        if (
+          resolved?.status === 'resolved' &&
+          resolved.resolved.widget.serialize === false
+        ) {
+          continue
+        }
+
+        view.value = info.widgets_values[i]
       }
     }
   }
