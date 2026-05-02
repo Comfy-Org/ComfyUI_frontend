@@ -19,10 +19,15 @@ async function openUserPopover(page: Page): Promise<Locator> {
 
 async function clickPopoverSubscribe(page: Page): Promise<void> {
   const popover = await openUserPopover(page)
+  // Use dispatchEvent instead of click() because the click opens the
+  // subscription dialog whose backdrop appears mid-action; Playwright's
+  // actionability re-check would otherwise see the mask intercepting and
+  // retry until timeout. The button is already known-visible from
+  // openUserPopover, so dispatching a synthetic click is safe here.
   await popover
     .getByRole('button', { name: /subscribe/i })
     .first()
-    .click()
+    .dispatchEvent('click')
 }
 
 // Closes the auto-opened subscription-required dialog if present.
@@ -60,11 +65,16 @@ function createSubscriptionTest(
       async ({ comfyPage }, use) => {
         const helper = createSubscriptionHelper(comfyPage.page, ...defaultOps)
         await helper.mock()
+        // Disable the cloud-subscription extension so its `requireActive
+        // Subscription` watcher doesn't auto-open the subscription dialog
+        // on app boot. The PrimeVue Dialog mask would otherwise intercept
+        // pointer events on every topbar button these tests interact with.
+        await comfyPage.setupSettings({
+          'Comfy.Extension.Disabled': ['Comfy.Cloud.Subscription']
+        })
         await comfyPage.page.reload()
-        // For unsubscribed status, the cloud build auto-opens the
-        // subscription-required modal whose backdrop intercepts pointer
-        // events on the topbar. Dismiss it so tests can interact with
-        // the buttons under test.
+        // Defense-in-depth: if the dialog still surfaces (e.g. via a
+        // different code path), dismiss it before the test runs.
         await dismissSubscriptionDialogIfOpen(comfyPage.page)
         await use(helper)
         await helper.clearMocks()
