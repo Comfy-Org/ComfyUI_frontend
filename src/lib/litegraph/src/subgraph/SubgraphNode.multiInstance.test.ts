@@ -1,15 +1,50 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ISlotType } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  ExportedSubgraphInstance,
+  ISlotType,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+/**
+ * Registers a minimal SubgraphNode subclass for a subgraph definition so that
+ * `LiteGraph.createNode(subgraphId)` (which is invoked by `LGraphNode.clone`)
+ * succeeds in tests.
+ */
+function registerSubgraphNodeType(subgraph: Subgraph): void {
+  const instanceData: ExportedSubgraphInstance = {
+    id: -1,
+    type: subgraph.id,
+    pos: [0, 0],
+    size: [100, 100],
+    inputs: [],
+    outputs: [],
+    flags: {},
+    order: 0,
+    mode: 0
+  }
+
+  const node = class extends SubgraphNode {
+    constructor() {
+      super(subgraph.rootGraph, subgraph, instanceData)
+    }
+  }
+  Object.defineProperty(node, 'title', { value: subgraph.name })
+  LiteGraph.registerNodeType(subgraph.id, node)
+}
 
 function createNodeWithWidget(
   title: string,
@@ -30,9 +65,18 @@ function createNodeWithWidget(
   return { node, widget, input }
 }
 
+const registeredTypes: string[] = []
+
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
+})
+
+afterEach(() => {
+  for (const type of registeredTypes) {
+    LiteGraph.unregisterNodeType(type)
+  }
+  registeredTypes.length = 0
 })
 
 describe('SubgraphNode multi-instance widget isolation', () => {
@@ -447,5 +491,50 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     const cloned = out.widgets_values?.[0] as { when: Date } | undefined
     expect(cloned?.when).toBeInstanceOf(Date)
     expect(cloned?.when.getTime()).toBe(date.getTime())
+  })
+
+  it('preserves per-instance promoted widget values across LGraphNode.clone (copy/paste)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 0)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    registerSubgraphNodeType(subgraph)
+    registeredTypes.push(subgraph.id)
+
+    const original = createTestSubgraphNode(subgraph, { id: 501 })
+    original.configure({
+      id: 501,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: ['per-instance-value']
+    })
+
+    expect(original.widgets[0].value).toBe('per-instance-value')
+
+    // LGraphNode.clone() invokes LiteGraph.createNode (id = -1), strips the id
+    // from the serialized data, then calls configure(data). The clone then
+    // needs to be added to a graph to receive a real id.
+    const clone = original.clone() as SubgraphNode | null
+    expect(clone).toBeTruthy()
+    if (!clone) throw new Error('clone failed')
+
+    original.graph!.add(clone)
+    expect(clone.id).not.toBe(-1)
+
+    expect(clone.widgets[0].value).toBe('per-instance-value')
+    expect(clone.widgets[0].serializeValue?.(clone, 0)).toBe(
+      'per-instance-value'
+    )
   })
 })

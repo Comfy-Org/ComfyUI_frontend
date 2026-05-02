@@ -108,6 +108,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * lifecycle to persist.
    */
   private _pendingPromotions: PromotedWidgetSource[] = []
+  /**
+   * Widget values buffered during `configure()` when the SubgraphNode is not
+   * yet attached (`id === -1`). The PromotedWidgetView setters short-circuit
+   * at id === -1 to avoid orphan cells in the widget value store, so we stash
+   * the replay values here and drain them in `onAdded()` once the node has a
+   * real id. This preserves per-instance promoted widget values across
+   * `LGraphNode.clone()` (Ctrl+C/V), which configures the cloned node before
+   * adding it to the graph.
+   */
+  private _pendingWidgetsValuesReplay?: TWidgetValue[]
   private _cacheVersion = 0
   private _linkedEntriesCache?: {
     version: number
@@ -1049,31 +1059,41 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     super.configure(info)
 
     // Replay widgets_values through promoted views to restore promoted-view
-    // values that super.configure() skips.
+    // values that super.configure() skips. When the node is not yet attached
+    // (`id === -1`, e.g. during `LGraphNode.clone()`), the PromotedWidgetView
+    // setters short-circuit, so defer the replay until `onAdded()`.
     if (info.widgets_values) {
-      const views = this.widgets ?? []
-      const limit = Math.min(views.length, info.widgets_values.length)
-      for (let i = 0; i < limit; i++) {
-        if (!(i in info.widgets_values)) continue
-
-        const view = views[i]
-        const resolved = isPromotedWidgetView(view)
-          ? resolveConcretePromotedWidget(
-              this,
-              view.sourceNodeId,
-              view.sourceWidgetName,
-              view.disambiguatingSourceNodeId
-            )
-          : null
-        if (
-          resolved?.status === 'resolved' &&
-          resolved.resolved.widget.serialize === false
-        ) {
-          continue
-        }
-
-        view.value = info.widgets_values[i]
+      if (this.id === -1) {
+        this._pendingWidgetsValuesReplay = info.widgets_values
+      } else {
+        this._replayPromotedWidgetValues(info.widgets_values)
       }
+    }
+  }
+
+  private _replayPromotedWidgetValues(values: TWidgetValue[]): void {
+    const views = this.widgets ?? []
+    const limit = Math.min(views.length, values.length)
+    for (let i = 0; i < limit; i++) {
+      if (!(i in values)) continue
+
+      const view = views[i]
+      const resolved = isPromotedWidgetView(view)
+        ? resolveConcretePromotedWidget(
+            this,
+            view.sourceNodeId,
+            view.sourceWidgetName,
+            view.disambiguatingSourceNodeId
+          )
+        : null
+      if (
+        resolved?.status === 'resolved' &&
+        resolved.resolved.widget.serialize === false
+      ) {
+        continue
+      }
+
+      view.value = values[i]
     }
   }
 
@@ -1336,6 +1356,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onAdded(_graph: LGraph): void {
     this._flushPendingPromotions()
     this._syncPromotions()
+    this._flushPendingWidgetsValuesReplay()
+  }
+
+  private _flushPendingWidgetsValuesReplay(): void {
+    const pending = this._pendingWidgetsValuesReplay
+    if (!pending || this.id === -1) return
+
+    this._pendingWidgetsValuesReplay = undefined
+    this._replayPromotedWidgetValues(pending)
   }
 
   /**
