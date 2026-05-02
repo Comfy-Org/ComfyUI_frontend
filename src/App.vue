@@ -1,6 +1,7 @@
 <template>
   <router-view />
   <GlobalDialog />
+  <AgentRoot />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
 
@@ -9,6 +10,7 @@ import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
+import AgentRoot from '@/agent/ui/AgentRoot.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'

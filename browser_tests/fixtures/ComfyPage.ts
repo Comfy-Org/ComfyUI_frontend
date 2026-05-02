@@ -518,6 +518,16 @@ export const comfyPageFixture = base.extend<{
 
     await comfyPage.setup()
 
+    // Hide agent UI in all tests except those explicitly testing the agent.
+    // The FAB is positioned over the canvas viewport, which would cause
+    // unrelated screenshot tests to fail.
+    if (!testInfo.tags.includes('@agent')) {
+      await page.addStyleTag({
+        content:
+          '[data-testid="agent-fab"],[data-testid="agent-panel"]{display:none!important}'
+      })
+    }
+
     if (isVueNodes) {
       await comfyPage.vueNodes.waitForNodes()
     }

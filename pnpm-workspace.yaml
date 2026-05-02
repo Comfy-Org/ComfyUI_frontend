@@ -3,6 +3,7 @@ packages:
   - packages/**
 
 catalog:
+  '@ai-sdk/openai': ^3.0.53
   '@alloc/quick-lru': ^5.2.0
   '@astrojs/check': ^0.9.8
   '@astrojs/sitemap': ^3.7.1
@@ -54,6 +55,7 @@ catalog:
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
+  '@types/shell-quote': ^1.7.5
   '@types/three': ^0.169.0
   '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.0
@@ -62,6 +64,7 @@ catalog:
   '@vueuse/core': ^14.2.0
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
+  ai: ^6.0.168
   algoliasearch: ^5.21.0
   astro: ^5.10.0
   axios: ^1.13.5
@@ -87,6 +90,7 @@ catalog:
   gsap: ^3.14.2
   happy-dom: ^20.0.11
   husky: ^9.1.7
+  idb-keyval: ^6.2.2
   jiti: 2.6.1
   jsdom: ^27.4.0
   jsonata: ^2.1.0
@@ -109,6 +113,7 @@ catalog:
   primevue: ^4.2.5
   reka-ui: ^2.5.0
   rollup-plugin-visualizer: ^6.0.4
+  shell-quote: ^1.8.3
   storybook: ^10.2.10
   stylelint: ^16.26.1
   tailwindcss: ^4.2.0
