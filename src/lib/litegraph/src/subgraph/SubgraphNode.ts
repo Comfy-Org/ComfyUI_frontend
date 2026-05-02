@@ -54,6 +54,7 @@ import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -649,14 +650,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     disambiguatingSourceNodeId?: string
   ): string {
     return disambiguatingSourceNodeId
-      ? JSON.stringify([
+      ? makeCompositeKey([
           inputKey,
           sourceNodeId,
           sourceWidgetName,
           inputName,
           disambiguatingSourceNodeId
         ])
-      : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
+      : makeCompositeKey([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
   private _serializeEntries(

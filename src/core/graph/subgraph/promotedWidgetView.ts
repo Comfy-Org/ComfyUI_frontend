@@ -15,6 +15,7 @@ import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -102,7 +103,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
-    this.storeName = `${nodeId}\u0000${widgetName}\u0000${disambiguatingSourceNodeId ?? ''}`
+    this.storeName = makeCompositeKey([
+      nodeId,
+      widgetName,
+      disambiguatingSourceNodeId ?? ''
+    ])
     this.graphId = subgraphNode.rootGraph.id
   }
 
