@@ -218,9 +218,11 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
           const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
           await comfyExpect(outerNode).toBeVisible()
 
-          await expect
-            .poll(() => getPromotedWidgetCount(comfyPage, OUTER_NODE_ID))
-            .toBeGreaterThan(0)
+          const widgets = outerNode.getByTestId(TestIds.widgets.widget)
+          await comfyExpect(
+            widgets,
+            'asset has 4 promoted widgets on outer subgraph node'
+          ).toHaveCount(4)
 
           expect(warnings).toEqual([])
         } finally {
