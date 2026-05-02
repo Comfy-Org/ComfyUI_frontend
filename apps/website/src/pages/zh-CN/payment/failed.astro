@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import PaymentStatusSection from '../../../components/payment/PaymentStatusSection.vue'
+---
+
+<BaseLayout title="支付失败 — Comfy" description="您的支付未能完成。" noindex>
+  <PaymentStatusSection status="failed" locale="zh-CN" client:load />
+</BaseLayout>

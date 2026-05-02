@@ -3592,6 +3592,49 @@ const translations = {
   'customers.feedback.role3': {
     en: 'Head of AI at Creative Studios',
     'zh-CN': 'Creative Studios AI 负责人'
+  },
+
+  // Payment status pages
+  'payment.success.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.success.title': {
+    en: 'Payment successful',
+    'zh-CN': '支付成功'
+  },
+  'payment.success.subtitle': {
+    en: "Thanks for your purchase. Your account has been credited and you're ready to keep building.",
+    'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
+  },
+  'payment.success.primaryCta': {
+    en: 'GO TO DASHBOARD',
+    'zh-CN': '前往控制台'
+  },
+  'payment.success.secondaryCta': {
+    en: 'BACK TO HOME',
+    'zh-CN': '返回首页'
+  },
+  'payment.failed.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.failed.title': {
+    en: 'Payment was not completed',
+    'zh-CN': '支付未完成'
+  },
+  'payment.failed.subtitle': {
+    en: "Your payment didn't go through and you have not been charged. You can try again from your dashboard or contact us if the issue continues.",
+    'zh-CN':
+      '您的支付未能完成，未发生扣款。您可以前往控制台重试，如问题仍未解决，请联系我们。'
+  },
+  'payment.failed.primaryCta': {
+    en: 'TRY AGAIN',
+    'zh-CN': '重新尝试'
+  },
+  'payment.failed.secondaryCta': {
+    en: 'CONTACT SUPPORT',
+    'zh-CN': '联系支持'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
