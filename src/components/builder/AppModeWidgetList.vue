@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, onScopeDispose, provide, ref, shallowRef } from 'vue'
+import { computed, provide, ref, shallowRef } from 'vue'
 
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { useI18n } from 'vue-i18n'
@@ -12,7 +12,6 @@ import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { LGraphTriggerHandler } from '@/lib/litegraph/src/types/graphTriggers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
@@ -66,22 +65,15 @@ useEventListener(
 )
 
 // Widget renames mutate `widget.label` on the live LiteGraph object and fire
-// `node:slot-label:changed` via `graph.onTrigger`. That object is non-reactive,
+// `node:slot-label:changed` on `graph.events`. That object is non-reactive,
 // so the rendered label (line ~203) goes stale. Bump a version counter on the
-// trigger and read it inside `mappedSelections` to force re-evaluation.
+// event and read it inside `mappedSelections` to force re-evaluation.
 const labelVersion = ref(0)
-const rootGraph = app.rootGraph
-const previousOnTrigger = rootGraph.onTrigger
-const chainedTriggerHandler: LGraphTriggerHandler = (event) => {
-  previousOnTrigger?.(event)
-  if (event.type === 'node:slot-label:changed') labelVersion.value++
-}
-rootGraph.onTrigger = chainedTriggerHandler
-onScopeDispose(() => {
-  if (rootGraph.onTrigger === chainedTriggerHandler) {
-    rootGraph.onTrigger = previousOnTrigger
-  }
-})
+useEventListener(
+  app.rootGraph.events,
+  'node:slot-label:changed',
+  () => labelVersion.value++
+)
 
 const mappedSelections = computed((): WidgetEntry[] => {
   void graphNodes.value
