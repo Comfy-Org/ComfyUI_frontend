@@ -16,6 +16,15 @@ import { loadWorkflowAndOpenErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsT
 /**
  * Mock the `/api/node_replacements` endpoint and enable the feature flag +
  * settings required for node replacement to function.
+ *
+ * The store reads the `node_replacements` server feature flag inside
+ * `nodeReplacementStore.load()`. The flag is delivered via WebSocket
+ * (`feature_flags` event) which can arrive after page-ready and overwrite
+ * any manual override on `api.serverFeatureFlags.value`. To make the test
+ * deterministic, we (1) set the flag, (2) synthesize a `feature_flags`
+ * event to trigger `load()`, and (3) wait for the mocked fetch to complete.
+ * Once `isLoaded.value === true`, subsequent `load()` calls short-circuit
+ * regardless of any later WS clobber.
  */
 async function setupNodeReplacement(
   comfyPage: ComfyPage,
@@ -31,11 +40,22 @@ async function setupNodeReplacement(
   )
   await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
 
-  // Enable the server feature flag so the store fetches replacements.
+  // Set the flag and force the replacement store to load now, before any
+  // workflow is loaded.
+  const responsePromise = comfyPage.page.waitForResponse(
+    '**/api/node_replacements'
+  )
   await comfyPage.page.evaluate(() => {
-    const flags = window.app!.api.serverFeatureFlags
-    flags.value = { ...flags.value, node_replacements: true }
+    const api = window.app!.api
+    api.serverFeatureFlags.value = {
+      ...api.serverFeatureFlags.value,
+      node_replacements: true
+    }
+    // Trigger the listener registered in app.ts that calls
+    // `nodeReplacementStore.load()`.
+    api.dispatchCustomEvent('feature_flags', api.serverFeatureFlags.value)
   })
+  await responsePromise
 }
 
 function getSwapNodesGroup(page: Page) {
