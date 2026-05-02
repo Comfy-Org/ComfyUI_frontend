@@ -3,6 +3,8 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
+import { hashPath } from '../base/hashUtil'
+import { resetStorageAvailable } from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock('@/scripts/api', () => ({
@@ -18,11 +20,22 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+const captureMessageMock = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureMessage: captureMessageMock
+}))
+
+function quotaError(): DOMException {
+  const err = new DOMException('Quota exceeded', 'QuotaExceededError')
+  return err
+}
+
 describe('workflowDraftStoreV2', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()
+    resetStorageAvailable()
     vi.clearAllMocks()
   })
 
@@ -97,6 +110,132 @@ describe('workflowDraftStoreV2', () => {
       // First draft should be evicted
       expect(store.getDraft('workflows/draft0.json')).toBeNull()
       expect(store.getDraft('workflows/new.json')).not.toBeNull()
+    })
+  })
+
+  describe('handleQuotaExceeded', () => {
+    const indexKey = 'Comfy.Workflow.DraftIndex.v2:personal'
+    const payloadPrefix = 'Comfy.Workflow.Draft.v2:personal:'
+
+    function seedDraftDirect(path: string, data: string, name: string) {
+      const key = hashPath(path)
+      localStorage.setItem(
+        `${payloadPrefix}${key}`,
+        JSON.stringify({ data, updatedAt: Date.now() })
+      )
+      const json = localStorage.getItem(indexKey)
+      const index = json
+        ? JSON.parse(json)
+        : { v: 2, updatedAt: Date.now(), order: [], entries: {} }
+      if (!index.order.includes(key)) index.order.push(key)
+      index.entries[key] = {
+        path,
+        name,
+        isTemporary: true,
+        updatedAt: Date.now()
+      }
+      localStorage.setItem(indexKey, JSON.stringify(index))
+    }
+
+    function injectOrphanedOrderKeys(...orphanKeys: string[]) {
+      const json = localStorage.getItem(indexKey)
+      const index = json
+        ? JSON.parse(json)
+        : { v: 2, updatedAt: Date.now(), order: [], entries: {} }
+      index.order = [...orphanKeys, ...index.order]
+      localStorage.setItem(indexKey, JSON.stringify(index))
+    }
+
+    function spyQuotaOnPayloadWrite(failTimes = Infinity) {
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      let failed = 0
+      return vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key.startsWith(payloadPrefix) && failed < failTimes) {
+            failed++
+            throw quotaError()
+          }
+          return realSetItem(key, value)
+        })
+    }
+
+    it('continues eviction past orphaned order keys with no entry', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      seedDraftDirect('workflows/evictable.json', '{"id":1}', 'evictable')
+      const desyncedKey = 'deadbeef'
+      injectOrphanedOrderKeys(desyncedKey)
+
+      const setItemSpy = spyQuotaOnPayloadWrite(1)
+      try {
+        const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+        expect(ok).toBe(true)
+      } finally {
+        setItemSpy.mockRestore()
+      }
+
+      expect(store.getDraft('workflows/evictable.json')).toBeNull()
+      expect(store.getDraft('workflows/incoming.json')).not.toBeNull()
+
+      const finalIndex = JSON.parse(localStorage.getItem(indexKey)!)
+      expect(finalIndex.order).not.toContain(desyncedKey)
+    })
+
+    it('cleans up multiple orphaned order keys preceding eviction candidates', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
+      seedDraftDirect('workflows/b.json', '{"id":"b"}', 'b')
+      injectOrphanedOrderKeys('orphan01', 'orphan02')
+
+      const setItemSpy = spyQuotaOnPayloadWrite(1)
+      try {
+        const ok = store.saveDraft('workflows/c.json', '{"id":"c"}', {
+          name: 'c',
+          isTemporary: true
+        })
+        expect(ok).toBe(true)
+      } finally {
+        setItemSpy.mockRestore()
+      }
+
+      const finalIndex = JSON.parse(localStorage.getItem(indexKey)!)
+      expect(finalIndex.order).not.toContain('orphan01')
+      expect(finalIndex.order).not.toContain('orphan02')
+      expect(store.getDraft('workflows/a.json')).toBeNull()
+      expect(store.getDraft('workflows/b.json')).not.toBeNull()
+      expect(store.getDraft('workflows/c.json')).not.toBeNull()
+    })
+
+    it('reports to Sentry when storage fills despite full eviction', () => {
+      const store = useWorkflowDraftStoreV2()
+      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
+
+      const setItemSpy = spyQuotaOnPayloadWrite()
+      try {
+        const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+        expect(ok).toBe(false)
+      } finally {
+        setItemSpy.mockRestore()
+      }
+
+      expect(captureMessageMock).toHaveBeenCalledWith(
+        expect.stringContaining('localStorage quota exhausted'),
+        expect.objectContaining({
+          level: 'warning',
+          tags: expect.objectContaining({
+            error_type: 'storage_quota_exhausted',
+            store: 'workflowDraftStoreV2'
+          })
+        })
+      )
     })
   })
 

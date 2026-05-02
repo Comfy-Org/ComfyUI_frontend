@@ -5,6 +5,7 @@
  * Handles LRU eviction and quota management.
  */
 
+import { captureMessage } from '@sentry/vue'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -146,6 +147,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   /**
    * Handles quota exceeded by evicting oldest drafts until write succeeds.
+   *
+   * Tolerates index/payload desync: orphaned `order` keys with no matching
+   * entry in `entries` are stripped in-place and the loop continues, rather
+   * than bailing out and leaving evictable drafts behind.
    */
   function handleQuotaExceeded(
     path: string,
@@ -153,35 +158,31 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     meta: DraftMeta
   ): boolean {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
     const draftKey = hashPath(path)
 
-    // Try evicting oldest entries until we can write
-    let currentIndex = index
+    let currentIndex = loadIndex()
+    let evictedCount = 0
+
     while (currentIndex.order.length > 0) {
       const oldestKey = currentIndex.order.find((key) => key !== draftKey)
-      if (!oldestKey) break // Only the target draft remains
+      if (!oldestKey) break
 
-      // Evict oldest
-      const oldestEntry = Object.values(currentIndex.entries).find(
-        (e) => hashPath(e.path) === oldestKey
-      )
-      if (!oldestEntry) break
+      const oldestEntry = currentIndex.entries[oldestKey]
+      if (!oldestEntry) {
+        currentIndex = stripOrderKey(currentIndex, oldestKey)
+        continue
+      }
 
       const result = removeEntry(currentIndex, oldestEntry.path)
       currentIndex = result.index
       if (result.removedKey) {
         deletePayload(workspaceId, result.removedKey)
+        evictedCount++
       }
 
-      // Try writing again
-      const success = writePayload(workspaceId, draftKey, {
-        data,
-        updatedAt: Date.now()
-      })
-
-      if (success) {
-        // Update index with the new entry
+      if (
+        writePayload(workspaceId, draftKey, { data, updatedAt: Date.now() })
+      ) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
@@ -196,9 +197,37 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
     }
 
-    // All evictions failed - mark storage as unavailable
+    persistIndex(currentIndex)
+    reportQuotaExhausted(currentIndex, evictedCount, data.length)
     markStorageUnavailable()
     return false
+  }
+
+  function stripOrderKey(index: DraftIndexV2, orphanKey: string): DraftIndexV2 {
+    return {
+      ...index,
+      updatedAt: Date.now(),
+      order: index.order.filter((key) => key !== orphanKey)
+    }
+  }
+
+  function reportQuotaExhausted(
+    finalIndex: DraftIndexV2,
+    evicted: number,
+    payloadBytes: number
+  ): void {
+    captureMessage('localStorage quota exhausted after full draft eviction', {
+      level: 'warning',
+      tags: {
+        error_type: 'storage_quota_exhausted',
+        store: 'workflowDraftStoreV2'
+      },
+      extra: {
+        evictedDrafts: evicted,
+        remainingDrafts: finalIndex.order.length,
+        incomingPayloadBytes: payloadBytes
+      }
+    })
   }
 
   /**
