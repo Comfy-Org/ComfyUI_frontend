@@ -69,6 +69,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
+  /** Opaque widget-store name paired with the host SubgraphNode; do not parse. */
+  readonly storeName: string
 
   readonly serialize = false
 
@@ -100,6 +102,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
+    this.storeName = `${nodeId}\u0000${widgetName}\u0000${disambiguatingSourceNodeId ?? ''}`
     this.graphId = subgraphNode.rootGraph.id
   }
 
@@ -368,15 +371,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     }
 
     return resolved
-  }
-
-  /** Opaque widget-store name paired with the host SubgraphNode; do not parse. */
-  get storeName(): string {
-    return JSON.stringify([
-      this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId ?? ''
-    ])
   }
 
   private getWidgetState(): WidgetState | undefined {
