@@ -20,7 +20,7 @@
 #   <name>-<width>.mp4
 #   <name>-poster.jpg          (single 1280w poster, suitable for SiteVideo)
 #
-# Requires ffmpeg on PATH. Tested with ffmpeg 6.x and 7.x.
+# Requires ffmpeg and ffprobe on PATH. Tested with ffmpeg 6.x and 7.x.
 
 set -euo pipefail
 
@@ -36,10 +36,12 @@ input_dir=$1
 output_dir=$2
 widths=${3:-1280}
 
-if ! command -v ffmpeg >/dev/null 2>&1; then
-  echo "error: ffmpeg not found on PATH" >&2
-  exit 127
-fi
+for tool in ffmpeg ffprobe; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "error: $tool not found on PATH" >&2
+    exit 127
+  fi
+done
 
 if [[ ! -d $input_dir ]]; then
   echo "error: input dir not found: $input_dir" >&2
@@ -48,9 +50,9 @@ fi
 
 mkdir -p "$output_dir"
 
-shopt -s nullglob
+shopt -s nullglob nocaseglob
 sources=("$input_dir"/*.{mp4,mov,webm,mkv})
-shopt -u nullglob
+shopt -u nullglob nocaseglob
 
 if [[ ${#sources[@]} -eq 0 ]]; then
   echo "error: no source videos in $input_dir (looked for .mp4 .mov .webm .mkv)" >&2
@@ -85,9 +87,16 @@ for src in "${sources[@]}"; do
   done
 
   poster_out="$output_dir/${name}-poster.jpg"
-  echo "    extracting poster -> $poster_out"
+  duration=$(ffprobe -v error -show_entries format=duration \
+    -of default=noprint_wrappers=1:nokey=1 "$src" 2>/dev/null || echo 0)
+  if awk "BEGIN { exit !($duration >= 1.0) }"; then
+    poster_seek=1
+  else
+    poster_seek=0
+  fi
+  echo "    extracting poster (t=${poster_seek}s) -> $poster_out"
   ffmpeg -y -hide_banner -loglevel error \
-    -ss 00:00:01 -i "$src" \
+    -ss "$poster_seek" -i "$src" \
     -vframes 1 -vf "scale=1280:-2:flags=lanczos" \
     -q:v 4 \
     "$poster_out"
