@@ -24,6 +24,14 @@ function getCommandRow(page: Page, commandId: string): Locator {
     .filter({ has: page.locator(`[title="${commandId}"]`) })
 }
 
+function getExpansionContent(page: Page, commandId: string): Locator {
+  // PrimeVue renders the expansion row as the next sibling <tr> of the
+  // expanded row. Scoping by sibling avoids matching unrelated expanded rows.
+  return getCommandRow(page, commandId)
+    .locator('xpath=following-sibling::tr[1]')
+    .locator('.pl-4')
+}
+
 async function openContextMenu(page: Page, commandId: string) {
   const row = getCommandRow(page, commandId)
   await row.locator(`[title="${commandId}"]`).click({ button: 'right' })
@@ -97,7 +105,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await row.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
 
-      const expansionContent = page.locator('.keybinding-panel .pl-4')
+      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
       await expect(chevron).toHaveClass(/rotate-90/)
 
@@ -119,7 +127,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await row.locator(`[title="${SINGLE_BINDING_COMMAND}"]`).click()
 
-      const expansionContent = page.locator('.keybinding-panel .pl-4')
+      const expansionContent = getExpansionContent(page, SINGLE_BINDING_COMMAND)
       await expect(expansionContent).toBeHidden()
     })
   })
@@ -229,7 +237,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await searchKeybindings(page, MULTI_BINDING_COMMAND)
 
-      const expansionContent = page.locator('.keybinding-panel .pl-4')
+      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeHidden()
 
       await openContextMenu(page, MULTI_BINDING_COMMAND)
@@ -416,7 +424,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, MULTI_BINDING_COMMAND)
 
       await page.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
-      const expansionContent = page.locator('.keybinding-panel .pl-4')
+      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
       const firstBindingRow = expansionContent
@@ -438,7 +446,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, MULTI_BINDING_COMMAND)
 
       await page.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
-      const expansionContent = page.locator('.keybinding-panel .pl-4')
+      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
       const bindingRows = expansionContent.locator(
@@ -517,7 +525,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, MULTI_BINDING_COMMAND)
 
       await page.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
-      const expansionContent = page.locator('.keybinding-panel .pl-4')
+      const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
       // Changing the filter triggers watch(filters, ...) which clears expansion
