@@ -5,7 +5,6 @@ import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { FEEDBACK_TYPEFORM_URL } from '@/platform/support/config'
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
@@ -143,27 +142,27 @@ describe('WorkflowTabs feedback button', () => {
     openSpy.mockRestore()
   })
 
-  it('opens the Typeform survey when clicked on a Cloud build', async () => {
+  it('opens the Typeform survey tagged with topbar source on Cloud', async () => {
     distribution.isCloud = true
     const { user } = renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Feedback' }))
 
     expect(openSpy).toHaveBeenCalledWith(
-      FEEDBACK_TYPEFORM_URL,
+      'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=topbar',
       '_blank',
       'noopener,noreferrer'
     )
   })
 
-  it('opens the Typeform survey when clicked on a Nightly build', async () => {
+  it('opens the Typeform survey tagged with topbar source on Nightly', async () => {
     distribution.isNightly = true
     const { user } = renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Feedback' }))
 
     expect(openSpy).toHaveBeenCalledWith(
-      FEEDBACK_TYPEFORM_URL,
+      'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=topbar',
       '_blank',
       'noopener,noreferrer'
     )

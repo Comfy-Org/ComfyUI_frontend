@@ -15,7 +15,7 @@ const ZENDESK_FIELDS = {
 } as const
 
 /**
- * Gets the distribution identifier for Zendesk tracking.
+ * Gets the distribution identifier for tracking.
  * Helps distinguish feedback from different build types.
  */
 function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
@@ -25,9 +25,23 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 }
 
 const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
+const FEEDBACK_TYPEFORM_BASE_URL = 'https://form.typeform.com/to/q7azbWPi'
 
-/** Shared Typeform feedback survey URL for all Cloud/Nightly feedback buttons. */
-export const FEEDBACK_TYPEFORM_URL = 'https://form.typeform.com/to/q7azbWPi'
+/**
+ * Builds the feedback Typeform URL tagged with the current build distribution
+ * and the UI source that opened it. Tags are passed via the URL fragment
+ * (Typeform's hidden-field convention) so survey responses can be segmented
+ * by distribution (cloud / oss-nightly / oss) and entry point.
+ */
+export function buildFeedbackTypeformUrl(
+  source: 'topbar' | 'action-bar' | 'help-center'
+): string {
+  const params = new URLSearchParams({
+    distribution: getDistribution(),
+    source
+  })
+  return `${FEEDBACK_TYPEFORM_BASE_URL}#${params.toString()}`
+}
 
 /**
  * Builds the support URL with optional user information for pre-filling.

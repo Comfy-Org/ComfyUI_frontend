@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { FEEDBACK_TYPEFORM_URL } from '@/platform/support/config'
 import type { ActionBarButton } from '@/types/comfy'
+
+const distribution = vi.hoisted(() => ({ isCloud: false, isNightly: false }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
 const registerExtension = vi.hoisted(() => vi.fn())
@@ -23,12 +24,23 @@ vi.mock('@/services/extensionService', () => ({
   })
 }))
 
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distribution.isCloud
+  },
+  get isNightly() {
+    return distribution.isNightly
+  }
+}))
+
 describe('cloudFeedbackTopbarButton', () => {
   let openSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
     vi.resetModules()
     registerExtension.mockReset()
+    distribution.isCloud = false
+    distribution.isNightly = false
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 
@@ -44,19 +56,22 @@ describe('cloudFeedbackTopbarButton', () => {
     return extension.actionBarButtons
   }
 
-  it('opens the Typeform survey when the Legacy action bar button is clicked', async () => {
+  it('opens the Typeform survey tagged with action-bar source on Cloud', async () => {
     tabBarLayout.value = 'Legacy'
+    distribution.isCloud = true
     await import('./cloudFeedbackTopbarButton')
 
     const buttons = getRegisteredButtons()
     expect(buttons).toHaveLength(1)
     buttons[0].onClick?.()
 
-    expect(openSpy).toHaveBeenCalledWith(
-      FEEDBACK_TYPEFORM_URL,
-      '_blank',
-      'noopener,noreferrer'
+    expect(openSpy).toHaveBeenCalledTimes(1)
+    const [url, target, features] = openSpy.mock.calls[0]
+    expect(url).toBe(
+      'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=action-bar'
     )
+    expect(target).toBe('_blank')
+    expect(features).toBe('noopener,noreferrer')
   })
 
   it('only registers the action bar button when the tab bar is Legacy', async () => {
