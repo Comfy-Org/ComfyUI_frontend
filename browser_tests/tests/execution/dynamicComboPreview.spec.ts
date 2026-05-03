@@ -1,6 +1,18 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+
+const PREVIEW_TEXT_TIMEOUT_MS = 15_000
+
+const expectPreviewTextContains = async (page: Page, expected: string) => {
+  const previewTextbox = page.getByRole('textbox', { name: 'preview_text' })
+  await expect
+    .poll(async () => previewTextbox.inputValue(), {
+      timeout: PREVIEW_TEXT_TIMEOUT_MS
+    })
+    .toContain(expected)
+}
 
 test.describe(
   'DynamicCombo text preview',
@@ -13,12 +25,7 @@ test.describe(
 
       await comfyPage.runButton.click()
 
-      const previewTextbox = comfyPage.page.getByRole('textbox', {
-        name: 'preview_text'
-      })
-      await expect
-        .poll(async () => previewTextbox.inputValue(), { timeout: 15_000 })
-        .toContain('DynamicCombo output')
+      await expectPreviewTextContains(comfyPage.page, 'DynamicCombo output')
     })
 
     test('shows text preview when DynamicCombo node is inside subgraph', async ({
@@ -35,12 +42,7 @@ test.describe(
 
       await subgraphNode.navigateIntoSubgraph()
 
-      const previewTextbox = comfyPage.page.getByRole('textbox', {
-        name: 'preview_text'
-      })
-      await expect
-        .poll(async () => previewTextbox.inputValue(), { timeout: 15_000 })
-        .toContain('DynamicCombo output')
+      await expectPreviewTextContains(comfyPage.page, 'DynamicCombo output')
     })
   }
 )
