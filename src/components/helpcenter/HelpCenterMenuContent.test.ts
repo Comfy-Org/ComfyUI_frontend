@@ -129,7 +129,7 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isCloud = true
     const { user } = renderComponent()
 
-    await user.click(screen.getByTestId('help-menu-item-feedback'))
+    await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
     expect(openSpy).toHaveBeenCalledWith(
       'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=help-center',
@@ -143,7 +143,7 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isNightly = true
     const { user } = renderComponent()
 
-    await user.click(screen.getByTestId('help-menu-item-feedback'))
+    await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
     expect(openSpy).toHaveBeenCalledWith(
       'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=help-center',
@@ -156,7 +156,7 @@ describe('HelpCenterMenuContent feedback item', () => {
   it('falls back to Comfy.ContactSupport on OSS builds', async () => {
     const { user } = renderComponent()
 
-    await user.click(screen.getByTestId('help-menu-item-feedback'))
+    await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
     expect(openSpy).not.toHaveBeenCalled()
     expect(commandStoreExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
