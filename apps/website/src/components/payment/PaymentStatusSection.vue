@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { onMounted, ref } from 'vue'
 
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import { externalLinks, getRoutes, resolveAppOrigin } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import SectionLabel from '../common/SectionLabel.vue'
@@ -14,19 +15,18 @@ const { status, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const labelKey = `payment.${status}.label` as const satisfies TranslationKey
-const titleKey = `payment.${status}.title` as const satisfies TranslationKey
-const subtitleKey =
-  `payment.${status}.subtitle` as const satisfies TranslationKey
-const primaryCtaKey =
-  `payment.${status}.primaryCta` as const satisfies TranslationKey
-const secondaryCtaKey =
-  `payment.${status}.secondaryCta` as const satisfies TranslationKey
-
-const primaryHref = externalLinks.apiKeys
-
 const routes = getRoutes(locale)
-const secondaryHref = status === 'success' ? routes.home : routes.contact
+
+const appOrigin = ref(externalLinks.app)
+onMounted(() => {
+  if (status === 'success' && typeof document !== 'undefined') {
+    appOrigin.value = resolveAppOrigin(document.referrer)
+  }
+})
+
+function handleCloseTab() {
+  if (typeof window !== 'undefined') window.close()
+}
 
 const iconRingClass =
   status === 'success'
@@ -75,34 +75,50 @@ const iconRingClass =
         </svg>
       </div>
 
-      <SectionLabel>{{ t(labelKey, locale) }}</SectionLabel>
+      <SectionLabel>{{ t(`payment.${status}.label`, locale) }}</SectionLabel>
 
       <h1
         class="text-primary-comfy-canvas text-4xl/tight font-light md:text-5xl/tight lg:text-6xl/tight"
       >
-        {{ t(titleKey, locale) }}
+        {{ t(`payment.${status}.title`, locale) }}
       </h1>
 
       <p
         class="text-primary-comfy-canvas/80 max-w-xl text-base font-light lg:text-lg"
       >
-        {{ t(subtitleKey, locale) }}
+        {{ t(`payment.${status}.subtitle`, locale) }}
       </p>
 
       <div
         class="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center"
       >
-        <BrandButton
-          :href="primaryHref"
-          variant="solid"
-          size="nav"
-          target="_self"
-        >
-          {{ t(primaryCtaKey, locale) }}
-        </BrandButton>
-        <BrandButton :href="secondaryHref" variant="outline" size="nav">
-          {{ t(secondaryCtaKey, locale) }}
-        </BrandButton>
+        <template v-if="status === 'success'">
+          <BrandButton :href="appOrigin" variant="solid" size="nav">
+            {{ t('payment.success.primaryCta', locale) }}
+          </BrandButton>
+          <BrandButton
+            :href="externalLinks.platform"
+            variant="outline"
+            size="nav"
+          >
+            {{ t('payment.success.secondaryCta', locale) }}
+          </BrandButton>
+        </template>
+        <template v-else>
+          <BrandButton :href="routes.contact" variant="solid" size="nav">
+            {{ t('payment.failed.primaryCta', locale) }}
+          </BrandButton>
+          <BrandButton
+            :href="externalLinks.docsApi"
+            variant="outline"
+            size="nav"
+          >
+            {{ t('payment.failed.secondaryCta', locale) }}
+          </BrandButton>
+          <BrandButton variant="outline" size="nav" @click="handleCloseTab">
+            {{ t('payment.failed.tertiaryCta', locale) }}
+          </BrandButton>
+        </template>
       </div>
     </div>
   </section>

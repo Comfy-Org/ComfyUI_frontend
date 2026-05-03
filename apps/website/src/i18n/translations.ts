@@ -3608,12 +3608,12 @@ const translations = {
     'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
   },
   'payment.success.primaryCta': {
-    en: 'GO TO DASHBOARD',
-    'zh-CN': '前往控制台'
+    en: 'CONTINUE IN COMFYUI',
+    'zh-CN': '返回 COMFYUI'
   },
   'payment.success.secondaryCta': {
-    en: 'BACK TO HOME',
-    'zh-CN': '返回首页'
+    en: 'VIEW BALANCE & USAGE',
+    'zh-CN': '查看余额与用量'
   },
   'payment.failed.label': {
     en: 'PAYMENT',
@@ -3624,17 +3624,21 @@ const translations = {
     'zh-CN': '支付未完成'
   },
   'payment.failed.subtitle': {
-    en: "Your payment didn't go through and you have not been charged. You can try again from your dashboard or contact us if the issue continues.",
+    en: "Your payment didn't go through and you have not been charged. You can retry from where you started, or check the billing docs if the issue continues.",
     'zh-CN':
-      '您的支付未能完成，未发生扣款。您可以前往控制台重试，如问题仍未解决，请联系我们。'
+      '您的支付未能完成，未发生扣款。您可以从原页面重试，或查阅计费文档了解更多信息。'
   },
   'payment.failed.primaryCta': {
-    en: 'TRY AGAIN',
-    'zh-CN': '重新尝试'
-  },
-  'payment.failed.secondaryCta': {
     en: 'CONTACT SUPPORT',
     'zh-CN': '联系支持'
+  },
+  'payment.failed.secondaryCta': {
+    en: 'READ BILLING DOCS',
+    'zh-CN': '查看计费文档'
+  },
+  'payment.failed.tertiaryCta': {
+    en: 'CLOSE TAB',
+    'zh-CN': '关闭页面'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
