@@ -77,7 +77,9 @@ function extractPrefillFromFormData(
     sampleImageUrls: nonBlobUrlsFromExampleImages(formData.exampleImages),
     tutorialUrl: formData.tutorialUrl || undefined,
     metadata:
-      Object.keys(formData.metadata).length > 0 ? formData.metadata : undefined
+      Object.keys(formData.metadata).length > 0
+        ? { ...formData.metadata }
+        : undefined
   }
 }
 
@@ -178,7 +180,7 @@ export function useComfyHubPublishWizard() {
         Object.keys(current.metadata).length === 0 &&
         prefill.metadata &&
         Object.keys(prefill.metadata).length > 0
-          ? prefill.metadata
+          ? { ...prefill.metadata }
           : current.metadata
     }
   }

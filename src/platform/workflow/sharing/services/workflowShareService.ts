@@ -60,10 +60,12 @@ function labelRefsToDisplayNames(
 ): string[] | undefined {
   if (!refs?.length) return undefined
   const labels = refs
-    .map((ref) =>
-      typeof ref === 'string' ? ref : (ref.display_name ?? ref.name)
-    )
-    .filter((label) => label.length > 0)
+    .map((ref) => {
+      if (typeof ref === 'string') return ref
+      const display = ref.display_name?.trim()
+      return display && display.length > 0 ? display : ref.name
+    })
+    .filter((label) => label.trim().length > 0)
   return labels.length > 0 ? labels : undefined
 }
 
