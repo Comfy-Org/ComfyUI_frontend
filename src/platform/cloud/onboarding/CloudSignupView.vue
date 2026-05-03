@@ -141,7 +141,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
-import { isEmbeddedWebView } from '@/utils/webviewDetection'
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()

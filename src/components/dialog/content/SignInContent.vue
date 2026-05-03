@@ -158,7 +158,7 @@ import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
-import { isEmbeddedWebView } from '@/utils/webviewDetection'
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'

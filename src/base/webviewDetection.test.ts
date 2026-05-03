@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { isEmbeddedWebView } from '@/utils/webviewDetection'
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 
 describe('isEmbeddedWebView', () => {
   afterEach(() => {

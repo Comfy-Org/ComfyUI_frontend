@@ -121,7 +121,7 @@ import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/u
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
-import { isEmbeddedWebView } from '@/utils/webviewDetection'
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
