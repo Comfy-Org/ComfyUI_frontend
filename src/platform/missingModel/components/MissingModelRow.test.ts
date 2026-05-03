@@ -10,9 +10,13 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 const mockDownloadModel = vi.hoisted(() => vi.fn())
 const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
+const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  isCloud: false,
+  get isDesktop() {
+    return mockIsDesktop.value
+  }
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -179,6 +183,7 @@ describe('MissingModelRow', () => {
       gatedRepoUrl: null
     })
     mockCopyToClipboard.mockReset()
+    mockIsDesktop.value = false
 
     const store = useMissingModelStore()
     store.folderPaths = {
@@ -187,6 +192,7 @@ describe('MissingModelRow', () => {
   })
 
   it('tracks and surfaces direct Electron downloads immediately after the button is clicked', async () => {
+    mockIsDesktop.value = true
     const user = userEvent.setup()
     const store = useMissingModelStore()
     renderComponent()
@@ -211,7 +217,23 @@ describe('MissingModelRow', () => {
     )
   })
 
+  it('does not track browser downloads as installed library selections outside desktop', async () => {
+    const user = userEvent.setup()
+    const store = useMissingModelStore()
+    renderComponent()
+
+    await user.click(screen.getByTestId('missing-model-download'))
+
+    expect(mockDownloadModel).toHaveBeenCalled()
+    expect(store.downloadRefs[modelKey]).toBeUndefined()
+    expect(store.selectedLibraryModel[modelKey]).toBeUndefined()
+    expect(
+      screen.queryByTestId('missing-model-status-card')
+    ).not.toBeInTheDocument()
+  })
+
   it('does not create UI state when the Electron download does not start', async () => {
+    mockIsDesktop.value = true
     mockDownloadModel.mockResolvedValue(false)
     const user = userEvent.setup()
     const store = useMissingModelStore()

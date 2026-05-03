@@ -203,7 +203,7 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   downloadModel,
   fetchModelMetadata,
@@ -292,7 +292,7 @@ async function handleDownload() {
       store.folderPaths
     )
 
-    if (started) {
+    if (started && isDesktop) {
       store.downloadRefs[modelKey.value] = {
         kind: 'electron-download',
         url: rep.url
