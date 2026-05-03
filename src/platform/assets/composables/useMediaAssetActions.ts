@@ -3,7 +3,7 @@ import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, downloadFileAsync } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -71,6 +71,10 @@ export function useMediaAssetActions() {
    * 2+ assets or with any asset whose job has `outputCount > 1`.
    * Falls back to direct downloads in OSS mode and for single single-output
    * assets. With no argument, uses the asset from `MediaAssetKey` context.
+   *
+   * Single-asset downloads use the awaitable `downloadFileAsync` so toasts
+   * reflect the actual blob fetch result (cloud) instead of just the
+   * navigator dispatch.
    */
   const downloadAssets = (assets?: AssetItem[]) => {
     const targetAssets =
@@ -84,6 +88,31 @@ export function useMediaAssetActions() {
 
     if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
       void downloadAssetsAsZip(targetAssets)
+      return
+    }
+
+    if (targetAssets.length === 1) {
+      const asset = targetAssets[0]
+      const filename = getAssetDisplayName(asset)
+      const downloadUrl = asset.preview_url || getAssetUrl(asset)
+
+      downloadFileAsync(downloadUrl, filename).then(
+        () => {
+          toast.add({
+            severity: 'success',
+            summary: t('g.success'),
+            detail: t('mediaAsset.selection.downloadsStarted', 1),
+            life: 2000
+          })
+        },
+        () => {
+          toast.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('g.failedToDownloadImage')
+          })
+        }
+      )
       return
     }
 
