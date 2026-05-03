@@ -52,13 +52,26 @@ Once the assets are uploaded, render them with:
 />
 ```
 
+### `<SiteVideo>` vs `<VideoPlayer>`
+
+- **`SiteVideo`** — lightweight multi-source `<video>` for decorative or
+  autoplay marketing clips. No custom controls, no captions UI.
+- **`VideoPlayer`** — full-featured player with custom scrubber, mute,
+  fullscreen, and caption toggles. Use this for content with subtitles or
+  user-driven playback.
+
+If you need both responsive sources and the rich `VideoPlayer` chrome, the
+two are not yet combined; either pick one or extend `VideoPlayer` to accept
+a source list.
+
 ### Encoder choices
 
 - **VP9/WebM** at CRF 32 — preferred by Chrome and Firefox; smaller files.
 - **H.264/MP4** at CRF 23, High profile, `+faststart` — universal fallback,
   required for Safari iOS.
-- **Poster JPG** at q4 — extracted from t=1s, scaled to 1280w. Use this as
-  the `poster` attribute so the video shows something while loading.
+- **Poster JPG** at q4 — extracted from t=1s when the clip is long enough,
+  otherwise t=0; scaled to 1280w. Use this as the `poster` attribute so
+  the video shows something while loading.
 
 ### Why a single resolution per video
 
