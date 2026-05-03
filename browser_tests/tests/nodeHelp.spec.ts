@@ -567,7 +567,9 @@ test.describe('Node Help V2 Sidebar', { tag: ['@slow', '@ui'] }, () => {
   async function openNodeInfoViMoreOptions(comfyPage: ComfyPage) {
     await expect(comfyPage.selectionToolbox).toBeVisible()
 
-    const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+    const moreOptionsBtn = comfyPage.selectionToolbox.getByTestId(
+      'more-options-button'
+    )
     await expect(moreOptionsBtn).toBeVisible()
     await moreOptionsBtn.click()
     await comfyPage.nextFrame()
