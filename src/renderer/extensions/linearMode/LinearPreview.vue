@@ -76,15 +76,17 @@ async function downloadAsset(item?: AssetItem) {
 
   downloadingAll.value = true
   try {
-    await Promise.all(
+    const results = await Promise.allSettled(
       outputs.map((output) => downloadFileAsync(output.url, output.filename))
     )
-  } catch {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
-    })
+
+    if (results.some((result) => result.status === 'rejected')) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.failedToDownloadFile')
+      })
+    }
   } finally {
     downloadingAll.value = false
   }
