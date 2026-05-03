@@ -72,18 +72,13 @@ test.describe('Homepage @smoke', () => {
   test('CaseStudySpotlight CTA sizes to its content, not the column', async ({
     page
   }) => {
-    const section = page.locator('section', {
-      has: page.getByText('Customer Stories')
+    const contentColumn = page.getByTestId('case-study-content')
+    const cta = contentColumn.getByRole('link', {
+      name: /see all case studies/i
     })
-    const cta = section.getByRole('link', { name: /see all case studies/i })
 
     await cta.scrollIntoViewIfNeeded()
     await expect(cta).toBeVisible()
-
-    const contentColumn = section
-      .getByRole('heading', { name: /See Comfy/i })
-      .locator('..')
-      .locator('..')
 
     const [columnBox, ctaBox] = await Promise.all([
       contentColumn.boundingBox(),
@@ -93,6 +88,29 @@ test.describe('Homepage @smoke', () => {
     expect(columnBox).not.toBeNull()
     expect(ctaBox).not.toBeNull()
     expect(ctaBox!.width).toBeLessThan(columnBox!.width * 0.7)
+  })
+
+  test('CaseStudySpotlight CTA has breathing room above it on mobile @mobile', async ({
+    page
+  }) => {
+    const contentColumn = page.getByTestId('case-study-content')
+    const subheading = contentColumn.getByText(
+      /Videos & case studies from teams/i
+    )
+    const cta = contentColumn.getByRole('link', {
+      name: /see all case studies/i
+    })
+
+    await cta.scrollIntoViewIfNeeded()
+
+    const [subBox, ctaBox] = await Promise.all([
+      subheading.boundingBox(),
+      cta.boundingBox()
+    ])
+
+    expect(subBox).not.toBeNull()
+    expect(ctaBox).not.toBeNull()
+    expect(ctaBox!.y - (subBox!.y + subBox!.height)).toBeGreaterThanOrEqual(24)
   })
 
   test('BuildWhatSection is visible', async ({ page }) => {

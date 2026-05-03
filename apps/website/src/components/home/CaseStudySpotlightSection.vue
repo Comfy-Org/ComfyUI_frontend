@@ -35,7 +35,10 @@ const routes = getRoutes(locale)
       </div>
 
       <!-- Right: content -->
-      <div class="flex flex-col justify-between p-6 lg:flex-1">
+      <div
+        data-testid="case-study-content"
+        class="flex flex-col justify-between p-6 lg:flex-1"
+      >
         <div class="flex flex-col gap-8">
           <p
             class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
@@ -52,7 +55,7 @@ const routes = getRoutes(locale)
           </p>
         </div>
 
-        <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row">
+        <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row lg:mt-0">
           <BrandButton :href="routes.customers" variant="outline">
             {{ t('caseStudy.seeAll', locale) }}
           </BrandButton>
