@@ -83,12 +83,6 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/imagePreviewStore', () => ({
-  useNodeOutputStore: () => ({
-    revokePreviewsByExecutionId: vi.fn()
-  })
-}))
-
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: mockRevokePreviewsByExecutionId

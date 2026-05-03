@@ -351,10 +351,10 @@ export const useExecutionStore = defineStore('execution', () => {
 
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
     if (isActiveWorkflowMessage) {
+      const { revokePreviewsByExecutionId } = useNodeOutputStore()
       for (const nodeId in nodes) {
         const nodeState = nodes[nodeId]
         if (nodeState.state === 'running' && !previousForJob[nodeId]) {
-          const { revokePreviewsByExecutionId } = useNodeOutputStore()
           revokePreviewsByExecutionId(nodeId)
         }
       }
