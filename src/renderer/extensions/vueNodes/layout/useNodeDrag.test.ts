@@ -199,6 +199,49 @@ describe('useNodeDrag', () => {
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
+  it('emits selectionSize=1 when dragging an unselected node while others are selected', async () => {
+    const { graphInteractionHooks } =
+      await import('@/renderer/core/canvas/hooks/graphInteractionHooks')
+    graphInteractionHooks.clear()
+
+    testState.selectedNodeIds.value = new Set(['1', '2'])
+    testState.selectedItems.value = [{ isLGraphGroup: true }]
+    testState.nodeLayouts.set('1', {
+      position: { x: 100, y: 100 },
+      size: { width: 200, height: 120 }
+    })
+    testState.nodeLayouts.set('2', {
+      position: { x: 300, y: 300 },
+      size: { width: 200, height: 120 }
+    })
+    testState.nodeLayouts.set('outsider', {
+      position: { x: 500, y: 500 },
+      size: { width: 200, height: 120 }
+    })
+
+    const observed: number[] = []
+    const unsubscribe = graphInteractionHooks.on('nodeDragMove', (e) =>
+      observed.push(e.selectionSize)
+    )
+
+    const { startDrag, handleDrag, endDrag } = useNodeDrag()
+    startDrag(pointerEvent(10, 20), 'outsider')
+    handleDrag(pointerEvent(30, 40), 'outsider')
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(observed).toEqual([1])
+
+    const endObserved: number[] = []
+    graphInteractionHooks.on('nodeDragEnd', (e) =>
+      endObserved.push(e.selectionSize)
+    )
+    endDrag(pointerEvent(30, 40), 'outsider')
+    expect(endObserved).toEqual([1])
+
+    unsubscribe()
+    graphInteractionHooks.clear()
+  })
+
   it('cancels pending RAF and applies snap updates on endDrag', () => {
     testState.selectedNodeIds.value = new Set(['1'])
     testState.nodeLayouts.set('1', {

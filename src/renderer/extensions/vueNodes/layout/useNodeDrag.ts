@@ -52,6 +52,7 @@ function useNodeDragIndividual() {
   let lastPointerX = 0
   let lastPointerY = 0
   let lastPointerEvent: PointerEvent | null = null
+  let draggedItemCount = 1
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
@@ -93,9 +94,12 @@ function useNodeDragIndividual() {
     if (isDraggedNodeInSelection) {
       selectedGroups = toValue(selectedItems).filter(isLGraphGroup)
       lastCanvasDelta = { x: 0, y: 0 }
+      draggedItemCount =
+        Math.max(selectedNodes?.size ?? 1, 1) + selectedGroups.length
     } else {
       selectedGroups = null
       lastCanvasDelta = null
+      draggedItemCount = 1
     }
 
     mutations.setSource(LayoutSource.Vue)
@@ -219,9 +223,7 @@ function useNodeDragIndividual() {
   }
 
   function computeDraggedItemCount(): number {
-    const nodeCount = toValue(selectedNodeIds)?.size ?? 1
-    const groupCount = selectedGroups?.length ?? 0
-    return Math.max(nodeCount, 1) + groupCount
+    return draggedItemCount
   }
 
   function emitNodeDragMove(nodeId: NodeId) {
@@ -317,6 +319,7 @@ function useNodeDragIndividual() {
     selectedGroups = null
     lastCanvasDelta = null
     lastPointerEvent = null
+    draggedItemCount = 1
 
     // Stop auto-pan
     autoPan?.stop()
