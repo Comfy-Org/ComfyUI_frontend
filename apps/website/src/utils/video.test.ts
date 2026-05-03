@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildVideoSources } from './video'
+import { buildVideoSources, videoKey } from './video'
 
 describe('buildVideoSources', () => {
   it('builds a source per requested format', () => {
@@ -58,5 +58,54 @@ describe('buildVideoSources', () => {
     })
 
     expect(sources).toEqual([])
+  })
+})
+
+describe('videoKey', () => {
+  it('changes when the source URL list changes', () => {
+    const at1280 = buildVideoSources({
+      name: 'hero',
+      baseUrl: 'https://media.comfy.org/m',
+      width: 1280,
+      formats: ['webm', 'mp4']
+    })
+    const at640 = buildVideoSources({
+      name: 'hero',
+      baseUrl: 'https://media.comfy.org/m',
+      width: 640,
+      formats: ['webm', 'mp4']
+    })
+
+    expect(videoKey(at1280)).not.toBe(videoKey(at640))
+  })
+
+  it('is stable across repeated calls with the same inputs', () => {
+    const args = {
+      name: 'hero',
+      baseUrl: 'https://media.comfy.org/m',
+      width: 1280,
+      formats: ['webm', 'mp4'] as const
+    }
+
+    expect(
+      videoKey(buildVideoSources({ ...args, formats: [...args.formats] }))
+    ).toBe(videoKey(buildVideoSources({ ...args, formats: [...args.formats] })))
+  })
+
+  it('reflects format-order changes', () => {
+    const webmFirst = buildVideoSources({
+      name: 'hero',
+      baseUrl: 'https://media.comfy.org/m',
+      width: 1280,
+      formats: ['webm', 'mp4']
+    })
+    const mp4First = buildVideoSources({
+      name: 'hero',
+      baseUrl: 'https://media.comfy.org/m',
+      width: 1280,
+      formats: ['mp4', 'webm']
+    })
+
+    expect(videoKey(webmFirst)).not.toBe(videoKey(mp4First))
   })
 })

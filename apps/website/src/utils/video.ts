@@ -36,3 +36,12 @@ export function buildVideoSources({
     format
   }))
 }
+
+/**
+ * Stable identifier for a list of video sources, suitable as a Vue `key`.
+ * Browsers do not reload a `<video>` when nested `<source>` children change;
+ * keying the parent forces a remount when the source set changes.
+ */
+export function videoKey(sources: VideoSource[]): string {
+  return sources.map((s) => s.src).join('|')
+}

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
-import { buildVideoSources } from '../../utils/video'
+import { buildVideoSources, videoKey } from '../../utils/video'
 import type { VideoFormat } from '../../utils/video'
 
 const {
@@ -34,12 +35,17 @@ const {
   videoClass?: string
 }>()
 
-const sources = buildVideoSources({ name, baseUrl, width, formats })
+const sources = computed(() =>
+  buildVideoSources({ name, baseUrl, width, formats })
+)
+const remountKey = computed(() => videoKey(sources.value))
+const decorative = computed(() => !alt && !controls)
 </script>
 
 <template>
   <div :class="cn('relative', containerClass)">
     <video
+      :key="remountKey"
       :class="cn('size-full', videoClass)"
       :poster
       :preload
@@ -48,12 +54,12 @@ const sources = buildVideoSources({ name, baseUrl, width, formats })
       :muted
       :controls
       :aria-label="alt"
-      :aria-hidden="alt ? undefined : true"
+      :aria-hidden="decorative ? true : undefined"
       playsinline
     >
       <source
         v-for="source in sources"
-        :key="source.type"
+        :key="source.src"
         :src="source.src"
         :type="source.type"
       />
