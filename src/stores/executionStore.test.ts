@@ -578,6 +578,58 @@ describe('useExecutionStore - active workflow gating of progress mirror', () => 
 
     expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-1'))
   })
+
+  it('skips _executingNodeProgress on workflow_id mismatch', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    const handler = apiEventHandlers.get('progress')
+    if (!handler) throw new Error('progress handler not bound')
+    handler(
+      new CustomEvent('progress', {
+        detail: {
+          value: 5,
+          max: 10,
+          prompt_id: 'job-other',
+          node: '1',
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store._executingNodeProgress).toBeNull()
+  })
+
+  it('updates _executingNodeProgress on workflow_id match', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+
+    const handler = apiEventHandlers.get('progress')
+    if (!handler) throw new Error('progress handler not bound')
+    handler(
+      new CustomEvent('progress', {
+        detail: {
+          value: 7,
+          max: 10,
+          prompt_id: 'job-1',
+          node: '1',
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    expect(store._executingNodeProgress).toEqual({
+      value: 7,
+      max: 10,
+      prompt_id: 'job-1',
+      node: '1',
+      workflow_id: 'wf-active'
+    })
+  })
 })
 
 describe('useExecutionStore - reconcileTerminalJobs', () => {

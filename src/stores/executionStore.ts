@@ -410,6 +410,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    const { prompt_id: jobId, workflow_id: messageWorkflowId } = e.detail
+    if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
     _executingNodeProgress.value = e.detail
   }
 
