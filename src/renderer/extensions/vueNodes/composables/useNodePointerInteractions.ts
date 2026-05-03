@@ -124,6 +124,11 @@ export function useNodePointerInteractions(
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
+      // Space (or other read_only triggers) can go active between pointerdown and
+      // pointerup; call safeDragEnd so isDraggingVueNodes doesn't get stuck true.
+      if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+        safeDragEnd(event)
+      }
       forwardEventToCanvas(event)
       return
     }

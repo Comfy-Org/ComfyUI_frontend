@@ -12,11 +12,15 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 const forwardEventToCanvasMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
 
+const { shouldHandleNodePointerEventsMock } = vi.hoisted(() => ({
+  shouldHandleNodePointerEventsMock: { value: true } as { value: boolean }
+}))
+
 // Mock the dependencies
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
   useCanvasInteractions: () => ({
     forwardEventToCanvas: forwardEventToCanvasMock,
-    shouldHandleNodePointerEvents: ref(true)
+    shouldHandleNodePointerEvents: shouldHandleNodePointerEventsMock
   })
 }))
 
@@ -136,6 +140,7 @@ describe('useNodePointerInteractions', () => {
     vi.resetAllMocks()
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
+    shouldHandleNodePointerEventsMock.value = true
   })
 
   it('should only start drag on left-click', async () => {
@@ -268,6 +273,32 @@ describe('useNodePointerInteractions', () => {
 
     // Selection should still only have been called once
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears drag state when pointerup fires while canvas is read-only (e.g. Space held)', async () => {
+    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+
+    // Start a drag normally
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 115,
+        clientY: 115,
+        buttons: 1
+      })
+    )
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    // Canvas goes read-only (Space pressed) before mouse is released
+    shouldHandleNodePointerEventsMock.value = false
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { clientX: 115, clientY: 115 })
+    )
+
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
