@@ -26,6 +26,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAssetsByTag: vi.fn(),
     getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
+    invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
@@ -1260,137 +1261,9 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
           false,
           { limit: 100 }
         )
-      } finally {
-        mockIsCloud.value = false
-      }
-    })
-  })
-
-  describe('input assets including public cache', () => {
-    it('loads public-inclusive input assets without changing inputAssets', async () => {
-      mockIsCloud.value = true
-      try {
-        setActivePinia(createTestingPinia({ stubActions: false }))
-        const store = useAssetsStore()
-        const userAsset = {
-          id: 'user-input',
-          name: 'user.png',
-          asset_hash: 'user-hash.png',
-          tags: ['input'],
-          is_immutable: false
-        }
-        const publicAsset = {
-          id: 'public-input',
-          name: 'public.png',
-          asset_hash: 'public-hash.png',
-          tags: ['input'],
-          is_immutable: true
-        }
-        vi.mocked(assetService.getAllAssetsByTag).mockResolvedValueOnce([
-          userAsset,
-          publicAsset
-        ])
-
-        const result = await store.getInputAssetsIncludingPublic()
-
-        expect(result).toEqual([userAsset, publicAsset])
-        expect(store.inputAssetsIncludingPublic).toEqual([
-          userAsset,
-          publicAsset
-        ])
-        expect(store.inputAssets).toEqual([])
-        expect(assetService.getAllAssetsByTag).toHaveBeenCalledWith(
-          'input',
-          true,
-          { limit: 500, signal: undefined }
-        )
-      } finally {
-        mockIsCloud.value = false
-      }
-    })
-
-    it('reuses cached public-inclusive input assets after the first load', async () => {
-      mockIsCloud.value = true
-      try {
-        setActivePinia(createTestingPinia({ stubActions: false }))
-        const store = useAssetsStore()
-        const assets = [
-          {
-            id: 'public-input',
-            name: 'public.png',
-            asset_hash: 'public-hash.png',
-            tags: ['input'],
-            is_immutable: true
-          }
-        ]
-        vi.mocked(assetService.getAllAssetsByTag).mockResolvedValueOnce(assets)
-
-        await store.getInputAssetsIncludingPublic()
-        const secondResult = await store.getInputAssetsIncludingPublic()
-
-        expect(secondResult).toBe(store.inputAssetsIncludingPublic)
-        expect(assetService.getAllAssetsByTag).toHaveBeenCalledOnce()
-      } finally {
-        mockIsCloud.value = false
-      }
-    })
-
-    it('invalidates public-inclusive input assets when user inputs refresh', async () => {
-      mockIsCloud.value = true
-      try {
-        setActivePinia(createTestingPinia({ stubActions: false }))
-        const store = useAssetsStore()
-        vi.mocked(assetService.getAllAssetsByTag).mockResolvedValueOnce([
-          {
-            id: 'public-input',
-            name: 'public.png',
-            asset_hash: 'public-hash.png',
-            tags: ['input'],
-            is_immutable: true
-          }
-        ])
-        vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([])
-
-        await store.getInputAssetsIncludingPublic()
-        await store.updateInputs()
-
-        expect(store.inputAssetsIncludingPublic).toEqual([])
-        expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
-          'input',
-          false,
-          {
-            limit: 100
-          }
-        )
-      } finally {
-        mockIsCloud.value = false
-      }
-    })
-
-    it('deduplicates concurrent public-inclusive input asset loads', async () => {
-      mockIsCloud.value = true
-      try {
-        setActivePinia(createTestingPinia({ stubActions: false }))
-        const store = useAssetsStore()
-        const assets = [
-          {
-            id: 'public-input',
-            name: 'public.png',
-            asset_hash: 'public-hash.png',
-            tags: ['input'],
-            is_immutable: true
-          }
-        ]
-        vi.mocked(assetService.getAllAssetsByTag).mockResolvedValueOnce(assets)
-
-        const [first, second] = await Promise.all([
-          store.getInputAssetsIncludingPublic(),
-          store.getInputAssetsIncludingPublic()
-        ])
-
-        expect(first).toEqual(assets)
-        expect(second).toEqual(assets)
-        expect(assetService.getAllAssetsByTag).toHaveBeenCalledOnce()
+        expect(
+          assetService.invalidateInputAssetsIncludingPublic
+        ).toHaveBeenCalledOnce()
       } finally {
         mockIsCloud.value = false
       }

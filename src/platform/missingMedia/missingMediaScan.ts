@@ -119,24 +119,14 @@ type AssetHashVerifier = (
 
 type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
 
-/**
- * Verify cloud media candidates by probing the asset hash endpoint first.
- * Invalid hash values fall back to the legacy input asset list check.
- */
-export async function verifyCloudMediaCandidates(
-  candidates: MissingMediaCandidate[],
-  signal?: AbortSignal,
-  checkAssetHash: AssetHashVerifier = assetService.checkAssetHash,
-  fetchInputAssets: InputAssetFetcher = fetchMissingInputAssets
-): Promise<void> {
-  if (signal?.aborted) return
-
-  const pending = candidates.filter((c) => c.isMissing === undefined)
-  if (pending.length === 0) return
-
+function groupCandidatesForHashLookup(candidates: MissingMediaCandidate[]): {
+  candidatesByHash: Map<string, MissingMediaCandidate[]>
+  legacyCandidates: MissingMediaCandidate[]
+} {
   const candidatesByHash = new Map<string, MissingMediaCandidate[]>()
   const legacyCandidates: MissingMediaCandidate[] = []
-  for (const candidate of pending) {
+
+  for (const candidate of candidates) {
     if (!isBlake3AssetHash(candidate.name)) {
       legacyCandidates.push(candidate)
       continue
@@ -147,6 +137,15 @@ export async function verifyCloudMediaCandidates(
     else candidatesByHash.set(candidate.name, [candidate])
   }
 
+  return { candidatesByHash, legacyCandidates }
+}
+
+async function verifyCandidatesByHash(
+  candidatesByHash: Map<string, MissingMediaCandidate[]>,
+  legacyCandidates: MissingMediaCandidate[],
+  signal: AbortSignal | undefined,
+  checkAssetHash: AssetHashVerifier
+): Promise<void> {
   await Promise.all(
     Array.from(candidatesByHash, async ([assetHash, hashCandidates]) => {
       if (signal?.aborted) return
@@ -175,6 +174,31 @@ export async function verifyCloudMediaCandidates(
       }
     })
   )
+}
+
+/**
+ * Verify cloud media candidates by probing the asset hash endpoint first.
+ * Invalid hash values fall back to the legacy input asset list check.
+ */
+export async function verifyCloudMediaCandidates(
+  candidates: MissingMediaCandidate[],
+  signal?: AbortSignal,
+  checkAssetHash: AssetHashVerifier = assetService.checkAssetHash,
+  fetchInputAssets: InputAssetFetcher = fetchMissingInputAssets
+): Promise<void> {
+  if (signal?.aborted) return
+
+  const pending = candidates.filter((c) => c.isMissing === undefined)
+  if (pending.length === 0) return
+
+  const { candidatesByHash, legacyCandidates } =
+    groupCandidatesForHashLookup(pending)
+  await verifyCandidatesByHash(
+    candidatesByHash,
+    legacyCandidates,
+    signal,
+    checkAssetHash
+  )
 
   if (signal?.aborted || legacyCandidates.length === 0) return
 
@@ -200,8 +224,7 @@ export async function verifyCloudMediaCandidates(
 async function fetchMissingInputAssets(
   signal?: AbortSignal
 ): Promise<AssetItem[]> {
-  const store = (await import('@/stores/assetsStore')).useAssetsStore()
-  return await store.getInputAssetsIncludingPublic(signal)
+  return await assetService.getInputAssetsIncludingPublic(signal)
 }
 
 function isAbortError(err: unknown): boolean {

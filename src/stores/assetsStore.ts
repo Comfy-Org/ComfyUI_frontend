@@ -18,7 +18,6 @@ import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
 
 const INPUT_LIMIT = 100
-const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -120,85 +119,6 @@ export const useAssetsStore = defineStore('assets', () => {
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
 
-  const inputAssetsIncludingPublic = ref<AssetItem[]>([])
-  const inputAssetsIncludingPublicLoading = ref(false)
-  const inputAssetsIncludingPublicError = ref<unknown>(null)
-  const inputAssetsIncludingPublicLoaded = ref(false)
-  let inputAssetsIncludingPublicRequestId = 0
-  let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
-
-  function createAbortError(): DOMException {
-    return new DOMException('Aborted', 'AbortError')
-  }
-
-  function throwIfAborted(signal?: AbortSignal): void {
-    if (signal?.aborted) throw createAbortError()
-  }
-
-  function invalidateInputAssetsIncludingPublic(): void {
-    inputAssetsIncludingPublicRequestId++
-    pendingInputAssetsIncludingPublic = null
-    inputAssetsIncludingPublic.value = []
-    inputAssetsIncludingPublicLoaded.value = false
-    inputAssetsIncludingPublicLoading.value = false
-    inputAssetsIncludingPublicError.value = null
-  }
-
-  async function updateInputAssetsIncludingPublic(
-    signal?: AbortSignal
-  ): Promise<AssetItem[]> {
-    throwIfAborted(signal)
-    if (pendingInputAssetsIncludingPublic) {
-      return await pendingInputAssetsIncludingPublic
-    }
-
-    const requestId = ++inputAssetsIncludingPublicRequestId
-    inputAssetsIncludingPublicLoading.value = true
-    inputAssetsIncludingPublicError.value = null
-
-    pendingInputAssetsIncludingPublic = (async () => {
-      const assets = isCloud
-        ? await assetService.getAllAssetsByTag('input', true, {
-            limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT,
-            signal
-          })
-        : await fetchInputFilesFromAPI()
-
-      throwIfAborted(signal)
-
-      if (requestId === inputAssetsIncludingPublicRequestId) {
-        inputAssetsIncludingPublic.value = assets
-        inputAssetsIncludingPublicLoaded.value = true
-      }
-
-      return assets
-    })()
-      .catch((err) => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          inputAssetsIncludingPublicError.value = err
-        }
-        throw err
-      })
-      .finally(() => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          inputAssetsIncludingPublicLoading.value = false
-          pendingInputAssetsIncludingPublic = null
-        }
-      })
-
-    return await pendingInputAssetsIncludingPublic
-  }
-
-  async function getInputAssetsIncludingPublic(
-    signal?: AbortSignal
-  ): Promise<AssetItem[]> {
-    throwIfAborted(signal)
-    if (inputAssetsIncludingPublicLoaded.value) {
-      return inputAssetsIncludingPublic.value
-    }
-    return await updateInputAssetsIncludingPublic(signal)
-  }
-
   const {
     state: inputAssets,
     isLoading: inputLoading,
@@ -214,7 +134,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const updateInputs = async () => {
     const result = await executeUpdateInputs()
-    invalidateInputAssetsIncludingPublic()
+    assetService.invalidateInputAssetsIncludingPublic()
     return result
   }
 
@@ -810,13 +730,10 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
-    inputAssetsIncludingPublic,
     historyAssets,
     inputLoading,
-    inputAssetsIncludingPublicLoading,
     historyLoading,
     inputError,
-    inputAssetsIncludingPublicError,
     historyError,
     hasMoreHistory,
     isLoadingMore,
@@ -828,9 +745,6 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Actions
     updateInputs,
-    getInputAssetsIncludingPublic,
-    updateInputAssetsIncludingPublic,
-    invalidateInputAssetsIncludingPublic,
     updateHistory,
     loadMoreHistory,
 

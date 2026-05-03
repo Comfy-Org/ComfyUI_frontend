@@ -175,6 +175,7 @@ const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
+const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
 export const MODELS_TAG = 'models'
 /** Asset tag used by the backend for placeholder records that are not installed. */
@@ -201,6 +202,31 @@ function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw createAbortError()
+}
+
+async function withCallerAbort<T>(
+  promise: Promise<T>,
+  signal?: AbortSignal
+): Promise<T> {
+  throwIfAborted(signal)
+  if (!signal) return await promise
+
+  let removeAbortListener = () => {}
+  const abortPromise = new Promise<never>((_, reject) => {
+    const onAbort = () => reject(createAbortError())
+    signal.addEventListener('abort', onAbort, { once: true })
+    removeAbortListener = () => signal.removeEventListener('abort', onAbort)
+  })
+
+  try {
+    return await Promise.race([promise, abortPromise])
+  } finally {
+    removeAbortListener()
+  }
+}
+
 /**
  * Validates asset response data using Zod schema
  */
@@ -219,6 +245,19 @@ function validateAssetResponse(data: unknown): AssetResponse {
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
+  let inputAssetsIncludingPublic: AssetItem[] | null = null
+  let inputAssetsIncludingPublicRequestId = 0
+  let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
+  let inputAssetsIncludingPublicAbortController: AbortController | null = null
+
+  function invalidateInputAssetsIncludingPublic(): void {
+    inputAssetsIncludingPublicRequestId++
+    inputAssetsIncludingPublicAbortController?.abort()
+    inputAssetsIncludingPublicAbortController = null
+    pendingInputAssetsIncludingPublic = null
+    inputAssetsIncludingPublic = null
+  }
+
   /**
    * Handles API response with consistent error handling and Zod validation
    */
@@ -486,6 +525,49 @@ function createAssetService() {
     }
   }
 
+  function startInputAssetsIncludingPublicRequest(): Promise<AssetItem[]> {
+    const requestId = ++inputAssetsIncludingPublicRequestId
+    const controller = new AbortController()
+    inputAssetsIncludingPublicAbortController = controller
+
+    pendingInputAssetsIncludingPublic = getAllAssetsByTag('input', true, {
+      limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT,
+      signal: controller.signal
+    })
+      .then((assets) => {
+        if (requestId === inputAssetsIncludingPublicRequestId) {
+          inputAssetsIncludingPublic = assets
+        }
+        return assets
+      })
+      .finally(() => {
+        if (requestId === inputAssetsIncludingPublicRequestId) {
+          pendingInputAssetsIncludingPublic = null
+          inputAssetsIncludingPublicAbortController = null
+        }
+      })
+
+    void pendingInputAssetsIncludingPublic.catch(() => {})
+    return pendingInputAssetsIncludingPublic
+  }
+
+  /**
+   * Gets cached input assets including public assets for missing media checks.
+   * Caller aborts cancel only that caller; shared fetches are invalidated
+   * through invalidateInputAssetsIncludingPublic().
+   */
+  async function getInputAssetsIncludingPublic(
+    signal?: AbortSignal
+  ): Promise<AssetItem[]> {
+    throwIfAborted(signal)
+    if (inputAssetsIncludingPublic) return inputAssetsIncludingPublic
+
+    const request =
+      pendingInputAssetsIncludingPublic ??
+      startInputAssetsIncludingPublicRequest()
+    return await withCallerAbort(request, signal)
+  }
+
   /**
    * Checks whether an asset exists for an exact asset hash.
    *
@@ -529,6 +611,8 @@ function createAssetService() {
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
     }
+
+    invalidateInputAssetsIncludingPublic()
   }
 
   /**
@@ -636,7 +720,9 @@ function createAssetService() {
       )
     }
 
-    return await res.json()
+    const asset = await res.json()
+    if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+    return asset
   }
 
   /**
@@ -689,7 +775,9 @@ function createAssetService() {
       )
     }
 
-    return await res.json()
+    const asset = await res.json()
+    if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+    return asset
   }
 
   /**
@@ -719,6 +807,7 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
+    if (tags.includes('input')) invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
 
@@ -749,6 +838,7 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
+    if (tags.includes('input')) invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
 
@@ -800,6 +890,7 @@ function createAssetService() {
           )
         )
       }
+      if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
       return result.data
     }
 
@@ -815,6 +906,7 @@ function createAssetService() {
         )
       )
     }
+    if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
     return result.data
   }
 
@@ -856,6 +948,8 @@ function createAssetService() {
     getAssetDetails,
     getAssetsByTag,
     getAllAssetsByTag,
+    getInputAssetsIncludingPublic,
+    invalidateInputAssetsIncludingPublic,
     checkAssetHash,
     deleteAsset,
     updateAsset,

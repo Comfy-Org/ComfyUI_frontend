@@ -463,6 +463,119 @@ describe(assetService.getAllAssetsByTag, () => {
   })
 })
 
+describe(assetService.getInputAssetsIncludingPublic, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('loads input assets with public assets included and reuses the cache', async () => {
+    const assets = [
+      validAsset({ id: 'user-input', tags: ['input'] }),
+      validAsset({ id: 'public-input', tags: ['input'], is_immutable: true })
+    ]
+    fetchApiMock.mockResolvedValueOnce(buildResponse({ assets }))
+
+    const first = await assetService.getInputAssetsIncludingPublic()
+    const second = await assetService.getInputAssetsIncludingPublic()
+
+    expect(first).toEqual(assets)
+    expect(second).toBe(first)
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('true')
+    expect(params.get('limit')).toBe('500')
+  })
+
+  it('fetches fresh input assets after explicit invalidation', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+
+    await assetService.getInputAssetsIncludingPublic()
+    assetService.invalidateInputAssetsIncludingPublic()
+    const refreshed = await assetService.getInputAssetsIncludingPublic()
+
+    expect(refreshed).toEqual(freshAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not let one caller abort the shared input asset load for other callers', async () => {
+    const firstController = new AbortController()
+    const secondController = new AbortController()
+    const assets = [validAsset({ id: 'public-input', tags: ['input'] })]
+    let resolveResponse!: (response: Response) => void
+    let serviceSignal: AbortSignal | undefined
+    fetchApiMock.mockImplementationOnce(async (_url, options) => {
+      serviceSignal = options?.signal ?? undefined
+      return await new Promise<Response>((resolve) => {
+        resolveResponse = resolve
+      })
+    })
+
+    const first = assetService.getInputAssetsIncludingPublic(
+      firstController.signal
+    )
+    const second = assetService.getInputAssetsIncludingPublic(
+      secondController.signal
+    )
+    firstController.abort()
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
+    expect(serviceSignal).not.toBe(firstController.signal)
+    expect(serviceSignal?.aborted).toBe(false)
+
+    resolveResponse(buildResponse({ assets }))
+
+    await expect(second).resolves.toEqual(assets)
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+
+  it('invalidates cached input assets after deleting an asset', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildResponse(null))
+      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+
+    await assetService.getInputAssetsIncludingPublic()
+    await assetService.deleteAsset('stale-input')
+    const refreshed = await assetService.getInputAssetsIncludingPublic()
+
+    expect(refreshed).toEqual(freshAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(3)
+    expect(fetchApiMock.mock.calls[1]).toEqual([
+      '/assets/stale-input',
+      expect.objectContaining({ method: 'DELETE' })
+    ])
+  })
+
+  it('invalidates cached input assets after an input asset upload', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const uploadedAsset = validAsset({ id: 'uploaded-input', tags: ['input'] })
+    const freshAssets = [uploadedAsset]
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildResponse(uploadedAsset))
+      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+
+    await assetService.getInputAssetsIncludingPublic()
+    await assetService.uploadAssetAsync({
+      source_url: 'https://example.com/input.png',
+      tags: ['input']
+    })
+    const refreshed = await assetService.getInputAssetsIncludingPublic()
+
+    expect(refreshed).toEqual(freshAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(3)
+  })
+})
+
 describe(assetService.checkAssetHash, () => {
   beforeEach(() => {
     vi.clearAllMocks()

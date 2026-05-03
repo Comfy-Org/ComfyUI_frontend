@@ -31,15 +31,10 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    checkAssetHash: mockCheckAssetHash
+    checkAssetHash: mockCheckAssetHash,
+    getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
   },
   isBlake3AssetHash: (value: string) => /^blake3:[0-9a-f]{64}$/i.test(value)
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
-  })
 }))
 
 function makeCandidate(
@@ -418,6 +413,28 @@ describe('verifyCloudMediaCandidates', () => {
       )
     ).resolves.toBeUndefined()
 
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('silences aborts from the default legacy fallback input asset store path', async () => {
+    const abortError = new Error('aborted')
+    abortError.name = 'AbortError'
+    const controller = new AbortController()
+    const candidates = [
+      makeCandidate('1', 'photo.png', { isMissing: undefined })
+    ]
+    mockGetInputAssetsIncludingPublic.mockImplementationOnce(async () => {
+      controller.abort()
+      throw abortError
+    })
+
+    await expect(
+      verifyCloudMediaCandidates(candidates, controller.signal)
+    ).resolves.toBeUndefined()
+
+    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
+      controller.signal
+    )
     expect(candidates[0].isMissing).toBeUndefined()
   })
 
