@@ -35,7 +35,7 @@
 
         <!-- OAuth Buttons (primary) -->
         <div class="flex flex-col gap-4">
-          <div v-if="!isWebView" class="relative">
+          <div v-if="!googleSsoBlockedReason" class="relative">
             <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
               <i class="pi pi-google mr-2"></i>
               {{ t('auth.signup.signUpWithGoogle') }}
@@ -141,7 +141,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
-import { isEmbeddedWebView } from '@/base/webviewDetection'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -159,7 +159,7 @@ const {
   switchToEmailForm,
   switchToSocialLogin
 } = useFreeTierOnboarding()
-const isWebView = isEmbeddedWebView()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })

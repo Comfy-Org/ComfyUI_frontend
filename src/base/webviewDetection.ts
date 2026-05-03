@@ -55,3 +55,18 @@ export function isEmbeddedWebView(ua: string = navigator.userAgent): boolean {
   if (hasWebViewBridge()) return true
   return false
 }
+
+/**
+ * Reason why Google SSO is blocked in the current environment, or `null` if it
+ * is available. Modeled as a discriminated string so call sites read as
+ * "if blocked, here's why" rather than an opaque boolean. Extend this union
+ * (e.g. `'unauthorized-host'`) as new blocking conditions are detected.
+ */
+export type GoogleSsoBlockedReason = 'embedded-webview' | null
+
+export function getGoogleSsoBlockedReason(
+  ua: string = navigator.userAgent
+): GoogleSsoBlockedReason {
+  if (isEmbeddedWebView(ua)) return 'embedded-webview'
+  return null
+}

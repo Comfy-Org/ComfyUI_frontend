@@ -49,7 +49,7 @@
       <div class="flex flex-col gap-6">
         <template v-if="ssoAllowed">
           <Button
-            v-if="!isWebView"
+            v-if="!googleSsoBlockedReason"
             type="button"
             class="h-10"
             variant="secondary"
@@ -158,7 +158,7 @@ import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
-import { isEmbeddedWebView } from '@/base/webviewDetection'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
@@ -174,7 +174,7 @@ const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
-const isWebView = isEmbeddedWebView()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,
