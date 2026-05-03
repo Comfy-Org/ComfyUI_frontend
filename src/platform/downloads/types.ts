@@ -34,12 +34,10 @@ export interface DownloadStartParams {
   tags?: string[]
 }
 
-export interface DownloadService {
+interface BaseDownloadService {
   /** Resolves once the download is accepted, not when it completes. */
   start(params: DownloadStartParams): Promise<DownloadEntry>
 
-  pause(id: string): Promise<void>
-  resume(id: string): Promise<void>
   cancel(id: string): Promise<void>
 
   getAll(): DownloadEntry[]
@@ -47,6 +45,23 @@ export interface DownloadService {
 
   /** Returns an unsubscribe function. */
   onProgress(id: string, cb: (entry: DownloadEntry) => void): () => void
-
-  readonly supportsPauseResume: boolean
 }
+
+export interface PausableDownloadService extends BaseDownloadService {
+  readonly supportsPauseResume: true
+  pause(id: string): Promise<void>
+  resume(id: string): Promise<void>
+}
+
+export interface NonPausableDownloadService extends BaseDownloadService {
+  readonly supportsPauseResume: false
+}
+
+/**
+ * Discriminated union by {@link supportsPauseResume}. Callers must narrow
+ * on the discriminant before calling {@link PausableDownloadService.pause}
+ * or {@link PausableDownloadService.resume}; the compiler enforces this.
+ */
+export type DownloadService =
+  | PausableDownloadService
+  | NonPausableDownloadService

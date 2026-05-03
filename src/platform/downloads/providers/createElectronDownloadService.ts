@@ -2,9 +2,9 @@ import type { DownloadProgressUpdate } from '@comfyorg/comfyui-electron-types'
 
 import type {
   DownloadEntry,
-  DownloadService,
   DownloadStartParams,
-  DownloadStatus
+  DownloadStatus,
+  PausableDownloadService
 } from '../types'
 
 import { electronAPI } from '@/utils/envUtil'
@@ -29,7 +29,7 @@ function toDownloadStatus(
   return isDownloadStatus(value) ? value : fallback
 }
 
-export async function createElectronDownloadService(): Promise<DownloadService> {
+export async function createElectronDownloadService(): Promise<PausableDownloadService> {
   const api = electronAPI()
   const downloadManager = api?.DownloadManager
   if (!downloadManager) {

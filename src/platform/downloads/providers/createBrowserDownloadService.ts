@@ -1,10 +1,10 @@
 import type {
   DownloadEntry,
-  DownloadService,
-  DownloadStartParams
+  DownloadStartParams,
+  NonPausableDownloadService
 } from '../types'
 
-export function createBrowserDownloadService(): DownloadService {
+export function createBrowserDownloadService(): NonPausableDownloadService {
   async function start(params: DownloadStartParams): Promise<DownloadEntry> {
     const anchorElement = document.createElement('a')
     anchorElement.href = params.url
@@ -23,8 +23,6 @@ export function createBrowserDownloadService(): DownloadService {
     }
   }
 
-  async function pause() {}
-  async function resume() {}
   async function cancel() {}
 
   function getAll(): DownloadEntry[] {
@@ -42,8 +40,6 @@ export function createBrowserDownloadService(): DownloadService {
   return {
     supportsPauseResume: false,
     start,
-    pause,
-    resume,
     cancel,
     getAll,
     getById,

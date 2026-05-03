@@ -1,10 +1,10 @@
 import type {
   DownloadEntry,
-  DownloadService,
-  DownloadStartParams
+  DownloadStartParams,
+  NonPausableDownloadService
 } from '../types'
 
-export function createCloudDownloadService(): DownloadService {
+export function createCloudDownloadService(): NonPausableDownloadService {
   const entries = new Map<string, DownloadEntry>()
   const progressListeners = new Map<
     string,
@@ -33,8 +33,6 @@ export function createCloudDownloadService(): DownloadService {
     return entry
   }
 
-  async function pause() {}
-  async function resume() {}
   async function cancel() {}
 
   function getAll(): DownloadEntry[] {
@@ -61,8 +59,6 @@ export function createCloudDownloadService(): DownloadService {
   return {
     supportsPauseResume: false,
     start,
-    pause,
-    resume,
     cancel,
     getAll,
     getById,
