@@ -18,6 +18,12 @@ const VALID_STATUSES: ReadonlySet<string> = new Set([
   'error'
 ])
 
+const TERMINAL_STATUSES: ReadonlySet<DownloadStatus> = new Set([
+  'completed',
+  'cancelled',
+  'error'
+])
+
 function isDownloadStatus(value: unknown): value is DownloadStatus {
   return typeof value === 'string' && VALID_STATUSES.has(value)
 }
@@ -56,6 +62,13 @@ export async function createElectronDownloadService(): Promise<PausableDownloadS
     }
     entries.set(update.url, entry)
     progressListeners.get(update.url)?.forEach((cb) => cb(entry))
+
+    // Prune terminal entries to bound memory growth. Consumers that need
+    // final state should snapshot it in their onProgress callback above.
+    if (TERMINAL_STATUSES.has(entry.status)) {
+      entries.delete(update.url)
+      progressListeners.delete(update.url)
+    }
   }
 
   const existingDownloads = await downloadManager.getAllDownloads()

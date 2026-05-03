@@ -162,4 +162,40 @@ describe('createElectronDownloadService', () => {
     const service = await createElectronDownloadService()
     expect(service.supportsPauseResume).toBe(true)
   })
+
+  it.each([
+    ['completed', DownloadStatus.COMPLETED],
+    ['cancelled', DownloadStatus.CANCELLED],
+    ['error', DownloadStatus.ERROR]
+  ])(
+    'prunes terminal entries (%s) after notifying listeners',
+    async (_label, terminalStatus) => {
+      const service = await createElectronDownloadService()
+
+      const url = 'https://example.com/terminal.safetensors'
+      await service.start({
+        url,
+        savePath: '/models',
+        filename: 'terminal.safetensors'
+      })
+
+      const listener = vi.fn()
+      service.onProgress(url, listener)
+
+      progressCallback!({
+        url,
+        filename: 'terminal.safetensors',
+        savePath: '/models',
+        progress: 1,
+        status: terminalStatus
+      })
+
+      // Listener still receives the final notification
+      expect(listener).toHaveBeenCalledOnce()
+      // Entry pruned to bound memory growth
+      const prunedEntry = service.getById(url)
+      expect(prunedEntry).toBeNull()
+      expect(service.getAll()).toHaveLength(0)
+    }
+  )
 })
