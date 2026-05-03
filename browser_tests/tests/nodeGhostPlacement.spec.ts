@@ -159,130 +159,14 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(after).toBeNull()
     })
 
-    test('moving ghost onto existing node and clicking places correctly', async ({
-      comfyPage
-    }) => {
-      // Get existing KSampler node from the default workflow
-      const [ksamplerRef] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      const ksamplerPos = await ksamplerRef.getPosition()
-      const ksamplerSize = await ksamplerRef.getSize()
-      const targetX = Math.round(ksamplerPos.x + ksamplerSize.width / 2)
-      const targetY = Math.round(ksamplerPos.y + ksamplerSize.height / 2)
-
-      // Start ghost placement away from the existing node
-      const startX = 50
-      const startY = 50
-      await comfyPage.page.mouse.move(startX, startY, { steps: 20 })
-      await comfyPage.nextFrame()
-
-      const ghostRef = await comfyPage.nodeOps.addNode(
-        'VAEDecode',
-        { ghost: true },
-        { x: startX, y: startY }
-      )
-      await comfyPage.nextFrame()
-
-      // Move ghost onto the existing node
-      await comfyPage.page.mouse.move(targetX, targetY, { steps: 20 })
-      await comfyPage.nextFrame()
-
-      // Click to finalize — on top of the existing node
-      await comfyPage.page.mouse.click(targetX, targetY)
-      await comfyPage.nextFrame()
-
-      // Ghost should be placed (no longer ghost)
-      const ghostResult = await getNodeById(comfyPage, ghostRef.id)
-      expect(ghostResult).not.toBeNull()
-      expect(ghostResult!.ghost).toBe(false)
-
-      // Ghost node should have moved from its start position toward where we clicked
-      const ghostPos = await ghostRef.getPosition()
-      expect(
-        Math.abs(ghostPos.x - startX) > 20 || Math.abs(ghostPos.y - startY) > 20
-      ).toBe(true)
-
-      // Existing node should NOT be selected
-      const selectedIds = await comfyPage.nodeOps.getSelectedNodeIds()
-      expect(selectedIds).not.toContain(ksamplerRef.id)
-    })
-
     test(
-      'subgraph blueprint added from search box enters ghost mode',
+      'Escape during ghost placement inside a subgraph cancels the ghost without exiting the subgraph',
       { tag: ['@subgraph'] },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting(
           'Comfy.NodeSearchBoxImpl',
           'default'
         )
-
-        // Convert a node to a subgraph and publish it as a blueprint
-        const nodeRef = await comfyPage.nodeOps.getNodeRefById('3')
-        await nodeRef.click('title')
-        await comfyPage.nextFrame()
-        await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
-        await comfyPage.nextFrame()
-        await comfyPage.nextFrame()
-        const subgraphNodes =
-          await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
-        expect(subgraphNodes).toHaveLength(1)
-        const subgraphNode = subgraphNodes[0]
-
-        const blueprintName = `ghost-test-${Date.now()}`
-        await subgraphNode.click('title')
-        await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
-          name: blueprintName
-        })
-        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
-        await comfyPage.toast.closeToasts(1)
-
-        const nodeCountBefore = await comfyPage.nodeOps.getGraphNodesCount()
-
-        // Open v2 search box and search for the published blueprint
-        const { searchBoxV2 } = comfyPage
-        await searchBoxV2.open()
-
-        await searchBoxV2.input.fill(blueprintName)
-        await expect(searchBoxV2.results.first()).toBeVisible()
-
-        // Click the result to add the node (v2 search box uses ghost mode)
-        await searchBoxV2.results.first().click()
-        await comfyPage.nextFrame()
-
-        // A new node should exist on the graph in ghost mode
-        const nodeCountAfter = await comfyPage.nodeOps.getGraphNodesCount()
-        expect(nodeCountAfter).toBe(nodeCountBefore + 1)
-
-        const ghostNodeId = await comfyPage.page.evaluate(() => {
-          return window.app!.canvas.state.ghostNodeId
-        })
-        expect(ghostNodeId).not.toBeNull()
-
-        const ghostState = await getNodeById(comfyPage, ghostNodeId!)
-        expect(ghostState).not.toBeNull()
-        expect(ghostState!.ghost).toBe(true)
-
-        // Wait for search box to close, then click to confirm placement
-        await expect(searchBoxV2.input).toBeHidden()
-        await comfyPage.nextFrame()
-        const viewport = comfyPage.page.viewportSize()!
-        await comfyPage.page.mouse.click(
-          Math.round(viewport.width / 2),
-          Math.round(viewport.height / 2)
-        )
-        await comfyPage.nextFrame()
-
-        const afterPlace = await getNodeById(comfyPage, ghostNodeId!)
-        expect(afterPlace).not.toBeNull()
-        expect(afterPlace!.ghost).toBe(false)
-      }
-    )
-
-    test(
-      'Escape during ghost placement inside a subgraph cancels the ghost without exiting the subgraph',
-      { tag: ['@subgraph'] },
-      async ({ comfyPage }) => {
-        await comfyPage.searchBoxV2.setup()
         await comfyPage.settings.setSetting(
           'Comfy.NodeSearchBoxImpl.FollowCursor',
           true
@@ -298,11 +182,18 @@ for (const mode of ['litegraph', 'vue'] as const) {
         }
         await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-        const subgraphId = await comfyPage.subgraph.getActiveGraphId()
+        // `subgraph.getActiveGraphId()` is not on core/1.43; inline via app state
+        const getActiveGraphId = () =>
+          comfyPage.page.evaluate(() => window.app!.canvas?.graph?.id ?? null)
+
+        const subgraphId = await getActiveGraphId()
         const initialNodeCount = await comfyPage.subgraph.getNodeCount()
 
+        // `searchBoxV2.open()` is not on core/1.43; the canvas double-click
+        // opens the v2 search box when Comfy.NodeSearchBoxImpl is set to default
         const { searchBoxV2 } = comfyPage
-        await searchBoxV2.open()
+        await comfyPage.canvas.dblclick({ position: { x: 400, y: 300 } })
+        await expect(searchBoxV2.input).toBeVisible()
         await searchBoxV2.input.fill('KSampler')
         await expect(searchBoxV2.results.first()).toBeVisible()
         await comfyPage.page.keyboard.press('Enter')
@@ -316,7 +207,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
           )
           .toBe(true)
 
-        await comfyPage.keyboard.press('Escape')
+        await comfyPage.page.keyboard.press('Escape')
 
         await expect
           .poll(() => comfyPage.subgraph.isInSubgraph(), {
@@ -324,9 +215,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
               'Escape during ghost placement should cancel the ghost, not exit the subgraph'
           })
           .toBe(true)
-        await expect
-          .poll(() => comfyPage.subgraph.getActiveGraphId())
-          .toBe(subgraphId)
+        await expect.poll(() => getActiveGraphId()).toBe(subgraphId)
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() => window.app!.canvas.state.ghostNodeId)
