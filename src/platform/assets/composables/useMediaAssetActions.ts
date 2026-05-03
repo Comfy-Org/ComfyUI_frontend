@@ -148,7 +148,7 @@ export function useMediaAssetActions() {
           toast.add({
             severity: 'error',
             summary: t('g.error'),
-            detail: t('g.failedToDownloadImage')
+            detail: t('g.failedToDownloadFile')
           })
         }
       )
