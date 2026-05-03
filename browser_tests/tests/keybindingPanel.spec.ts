@@ -457,14 +457,19 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
           message: 'Expected at least 2 bindings'
         })
         .toBeGreaterThanOrEqual(2)
+      const initialBindingCount = await bindingRows.count()
 
       await bindingRows
         .first()
         .getByRole('button', { name: /Remove keybinding/i })
         .click()
 
-      // Expansion auto-collapses when bindings drop below 2
-      await expect(expansionContent).toBeHidden()
+      if (initialBindingCount === 2) {
+        // Expansion auto-collapses when bindings drop below 2
+        await expect(expansionContent).toBeHidden()
+      } else {
+        await expect(bindingRows).toHaveCount(initialBindingCount - 1)
+      }
     })
   })
 
