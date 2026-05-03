@@ -508,7 +508,8 @@ export default defineConfig([
       'no-restricted-syntax': [
         'warn',
         {
-          selector: "ImportDeclaration[source.value='@/schemas/apiSchema']",
+          selector:
+            "ImportDeclaration[source.value='@/schemas/apiSchema'], ExportNamedDeclaration[source.value='@/schemas/apiSchema'], ExportAllDeclaration[source.value='@/schemas/apiSchema']",
           message:
             'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
         }
@@ -534,7 +535,8 @@ export default defineConfig([
       'no-restricted-syntax': [
         'warn',
         {
-          selector: "ImportDeclaration[source.value='zod']",
+          selector:
+            "ImportDeclaration[source.value='zod'], ExportNamedDeclaration[source.value='zod'], ExportAllDeclaration[source.value='zod']",
           message:
             'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
         }

@@ -25,14 +25,19 @@ function isFrozenImplementationFile(path: string): boolean {
   return true
 }
 
+function yellow(s: string): string {
+  return `\x1b[33m${s}\x1b[0m`
+}
+
+function bold(s: string): string {
+  return `\x1b[1m${s}\x1b[0m`
+}
+
 function main() {
   const added = getNewlyAddedFiles()
   const offenders = added.filter(isFrozenImplementationFile)
 
   if (offenders.length === 0) return
-
-  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`
-  const bold = (s: string) => `\x1b[1m${s}\x1b[0m`
 
   process.stdout.write(
     `\n${yellow(bold('⚠  Frozen directory warning'))}\n` +
