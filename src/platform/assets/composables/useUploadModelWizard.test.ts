@@ -9,6 +9,7 @@ import { useUploadModelWizard } from './useUploadModelWizard'
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
+    invalidateInputAssetsIncludingPublic: vi.fn(),
     uploadAssetAsync: vi.fn(),
     uploadAssetPreviewImage: vi.fn()
   }

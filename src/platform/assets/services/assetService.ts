@@ -248,14 +248,16 @@ function createAssetService() {
   let inputAssetsIncludingPublic: AssetItem[] | null = null
   let inputAssetsIncludingPublicRequestId = 0
   let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
-  let inputAssetsIncludingPublicAbortController: AbortController | null = null
 
+  /** Invalidates the cached public-inclusive input assets without aborting in-flight readers. */
   function invalidateInputAssetsIncludingPublic(): void {
     inputAssetsIncludingPublicRequestId++
-    inputAssetsIncludingPublicAbortController?.abort()
-    inputAssetsIncludingPublicAbortController = null
     pendingInputAssetsIncludingPublic = null
     inputAssetsIncludingPublic = null
+  }
+
+  function invalidateInputAssetsCacheIfNeeded(tags?: string[]): void {
+    if (tags?.includes('input')) invalidateInputAssetsIncludingPublic()
   }
 
   /**
@@ -527,12 +529,9 @@ function createAssetService() {
 
   function startInputAssetsIncludingPublicRequest(): Promise<AssetItem[]> {
     const requestId = ++inputAssetsIncludingPublicRequestId
-    const controller = new AbortController()
-    inputAssetsIncludingPublicAbortController = controller
 
     pendingInputAssetsIncludingPublic = getAllAssetsByTag('input', true, {
-      limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT,
-      signal: controller.signal
+      limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT
     })
       .then((assets) => {
         if (requestId === inputAssetsIncludingPublicRequestId) {
@@ -543,7 +542,6 @@ function createAssetService() {
       .finally(() => {
         if (requestId === inputAssetsIncludingPublicRequestId) {
           pendingInputAssetsIncludingPublic = null
-          inputAssetsIncludingPublicAbortController = null
         }
       })
 
@@ -721,7 +719,7 @@ function createAssetService() {
     }
 
     const asset = await res.json()
-    if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+    invalidateInputAssetsCacheIfNeeded(params.tags)
     return asset
   }
 
@@ -776,7 +774,7 @@ function createAssetService() {
     }
 
     const asset = await res.json()
-    if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+    invalidateInputAssetsCacheIfNeeded(params.tags)
     return asset
   }
 
@@ -807,7 +805,7 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    if (tags.includes('input')) invalidateInputAssetsIncludingPublic()
+    invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
 
@@ -838,7 +836,7 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    if (tags.includes('input')) invalidateInputAssetsIncludingPublic()
+    invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
 
@@ -890,7 +888,13 @@ function createAssetService() {
           )
         )
       }
-      if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+      if (
+        params.tags?.includes('input') &&
+        result.data.type === 'async' &&
+        result.data.task.status === 'completed'
+      ) {
+        invalidateInputAssetsIncludingPublic()
+      }
       return result.data
     }
 
@@ -906,7 +910,7 @@ function createAssetService() {
         )
       )
     }
-    if (params.tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+    invalidateInputAssetsCacheIfNeeded(params.tags)
     return result.data
   }
 

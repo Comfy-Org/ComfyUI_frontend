@@ -29,6 +29,12 @@ vi.mock('@/platform/tasks/services/taskService', () => ({
   }
 }))
 
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    invalidateInputAssetsIncludingPublic: vi.fn()
+  }
+}))
+
 function createDownloadMessage(
   overrides: Partial<AssetDownloadWsMessage> = {}
 ): AssetDownloadWsMessage {
@@ -87,6 +93,19 @@ describe('useAssetDownloadStore', () => {
       expect(store.activeDownloads).toHaveLength(0)
       expect(store.finishedDownloads).toHaveLength(1)
       expect(store.finishedDownloads[0].status).toBe('completed')
+    })
+
+    it('invalidates cached input assets when a download completes', async () => {
+      const { assetService } =
+        await import('@/platform/assets/services/assetService')
+      const store = useAssetDownloadStore()
+
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.finishedDownloads[0].status).toBe('completed')
+      expect(
+        assetService.invalidateInputAssetsIncludingPublic
+      ).toHaveBeenCalledOnce()
     })
 
     it('moves download to finished when failed', () => {

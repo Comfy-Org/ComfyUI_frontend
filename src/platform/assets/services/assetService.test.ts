@@ -526,13 +526,70 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     firstController.abort()
 
     await expect(first).rejects.toMatchObject({ name: 'AbortError' })
-    expect(serviceSignal).not.toBe(firstController.signal)
-    expect(serviceSignal?.aborted).toBe(false)
+    expect(serviceSignal).toBeUndefined()
 
     resolveResponse(buildResponse({ assets }))
 
     await expect(second).resolves.toEqual(assets)
     expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the shared input asset load alive after all callers abort', async () => {
+    const firstController = new AbortController()
+    const secondController = new AbortController()
+    const assets = [validAsset({ id: 'public-input', tags: ['input'] })]
+    let resolveResponse!: (response: Response) => void
+    fetchApiMock.mockImplementationOnce(
+      async () =>
+        await new Promise<Response>((resolve) => {
+          resolveResponse = resolve
+        })
+    )
+
+    const first = assetService.getInputAssetsIncludingPublic(
+      firstController.signal
+    )
+    const second = assetService.getInputAssetsIncludingPublic(
+      secondController.signal
+    )
+    firstController.abort()
+    secondController.abort()
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(second).rejects.toMatchObject({ name: 'AbortError' })
+
+    resolveResponse(buildResponse({ assets }))
+    await Promise.resolve()
+
+    await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
+      assets
+    )
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+
+  it('does not abort in-flight input asset loads when invalidated', async () => {
+    const assets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
+    let resolveResponse!: (response: Response) => void
+    fetchApiMock
+      .mockImplementationOnce(
+        async () =>
+          await new Promise<Response>((resolve) => {
+            resolveResponse = resolve
+          })
+      )
+      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+
+    const inFlight = assetService.getInputAssetsIncludingPublic()
+    assetService.invalidateInputAssetsIncludingPublic()
+
+    resolveResponse(buildResponse({ assets }))
+
+    await expect(inFlight).resolves.toEqual(assets)
+    await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
+      freshAssets
+    )
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
   it('invalidates cached input assets after deleting an asset', async () => {
@@ -573,6 +630,45 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
 
     expect(refreshed).toEqual(freshAssets)
     expect(fetchApiMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not invalidate cached input assets for pending async input uploads', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(
+        buildResponse(
+          { task_id: 'task-1', status: 'running' },
+          { ok: true, status: 202 }
+        )
+      )
+
+    await assetService.getInputAssetsIncludingPublic()
+    await assetService.uploadAssetAsync({
+      source_url: 'https://example.com/input.png',
+      tags: ['input']
+    })
+    const cached = await assetService.getInputAssetsIncludingPublic()
+
+    expect(cached).toEqual(staleAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not invalidate cached input assets for non-input uploads', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildResponse(validAsset({ tags: ['models'] })))
+
+    await assetService.getInputAssetsIncludingPublic()
+    await assetService.uploadAssetAsync({
+      source_url: 'https://example.com/model.safetensors',
+      tags: ['models']
+    })
+    const cached = await assetService.getInputAssetsIncludingPublic()
+
+    expect(cached).toEqual(staleAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 })
 

@@ -2,6 +2,7 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
@@ -117,11 +118,15 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     downloads.value.set(data.task_id, download)
 
-    if (data.status === 'completed' && download.modelType) {
-      lastCompletedDownload.value = {
-        taskId: data.task_id,
-        modelType: download.modelType,
-        timestamp: Date.now()
+    if (data.status === 'completed') {
+      assetService.invalidateInputAssetsIncludingPublic()
+
+      if (download.modelType) {
+        lastCompletedDownload.value = {
+          taskId: data.task_id,
+          modelType: download.modelType,
+          timestamp: Date.now()
+        }
       }
     }
   }
