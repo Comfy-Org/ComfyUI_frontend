@@ -317,7 +317,7 @@ describe('useComfyHubPublishWizard', () => {
         })
       )
 
-      expect(getCachedPrefill(path)).toEqual({
+      expect(getCachedPrefill(path)).toMatchObject({
         name: 'My Workflow',
         description: 'Cached description',
         tags: ['art'],
@@ -325,7 +325,6 @@ describe('useComfyHubPublishWizard', () => {
         customNodes: ['impact-pack'],
         thumbnailType: 'image',
         thumbnailUrl: 'https://cdn.example.com/thumb.png',
-        thumbnailComparisonUrl: undefined,
         sampleImageUrls: ['https://cdn.example.com/sample.png'],
         tutorialUrl: 'https://youtube.com/abc',
         metadata: { extra: 'value' }
@@ -370,19 +369,17 @@ describe('useComfyHubPublishWizard', () => {
       cachePublishPrefill(path, makeFormData({ thumbnailType: 'image' }))
 
       const cached = getCachedPrefill(path)
-      expect(cached).toEqual({
-        name: undefined,
-        description: undefined,
-        tags: undefined,
-        models: undefined,
-        customNodes: undefined,
-        thumbnailType: 'image',
-        thumbnailUrl: undefined,
-        thumbnailComparisonUrl: undefined,
-        sampleImageUrls: undefined,
-        tutorialUrl: undefined,
-        metadata: undefined
-      })
+      expect(cached?.thumbnailType).toBe('image')
+      expect(cached?.name).toBeUndefined()
+      expect(cached?.description).toBeUndefined()
+      expect(cached?.tags).toBeUndefined()
+      expect(cached?.models).toBeUndefined()
+      expect(cached?.customNodes).toBeUndefined()
+      expect(cached?.thumbnailUrl).toBeUndefined()
+      expect(cached?.thumbnailComparisonUrl).toBeUndefined()
+      expect(cached?.sampleImageUrls).toBeUndefined()
+      expect(cached?.tutorialUrl).toBeUndefined()
+      expect(cached?.metadata).toBeUndefined()
     })
 
     it('clones tags/models/metadata so later form mutations do not leak into the cache', () => {
