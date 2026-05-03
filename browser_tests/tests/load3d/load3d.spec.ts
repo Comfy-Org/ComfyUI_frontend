@@ -281,3 +281,84 @@ test.describe('Load3D', () => {
     })
   })
 })
+
+test.describe('Load3D silent 404 on missing output model', () => {
+  test('Does not show an error toast when the output model file is missing (404)', async ({
+    comfyPage
+  }) => {
+    // Intercept model fetch and return 404 to simulate a missing output file
+    // (e.g. shared workflow opened on a machine that never ran it)
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ status: 404, body: 'Not Found' })
+    )
+
+    // This workflow has a Preview3D node with Last Time Model File set,
+    // triggering the loadFolder: 'output' + silentOnNotFound: true path.
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    // Wait for the 404 response before asserting — gives the load attempt time
+    // to complete without using waitForTimeout
+    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+    await responsePromise
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({ hasText: 'Error loading model' })
+    ).toHaveCount(0)
+  })
+
+  test('Shows an error toast when a non-404 error occurs loading the output model', async ({
+    comfyPage
+  }) => {
+    // Intercept with a 500 to simulate a real server error (not 404) — toast must appear
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ status: 500, body: 'Internal Server Error' })
+    )
+
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+    await responsePromise
+
+    await expect
+      .poll(
+        () =>
+          comfyPage.toast.visibleToasts
+            .filter({ hasText: 'Error loading model' })
+            .count(),
+        { timeout: 10000 }
+      )
+      .toBeGreaterThan(0)
+  })
+})
+
+test.describe('Load3D initialization failure', () => {
+  test('Surfaces a toast when the THREE.WebGLRenderer cannot be created', async ({
+    comfyPage
+  }) => {
+    // Force `new THREE.WebGLRenderer(...)` inside Load3d to throw by making
+    // WebGL getContext() calls return null.
+    await comfyPage.page.evaluate(() => {
+      const proto = HTMLCanvasElement.prototype as {
+        getContext: (
+          this: HTMLCanvasElement,
+          type: string,
+          options?: unknown
+        ) => unknown
+      }
+      const original = proto.getContext
+      proto.getContext = function (type, options) {
+        if (type === 'webgl' || type === 'webgl2') return null
+        return original.call(this, type, options)
+      }
+    })
+    await comfyPage.workflow.loadWorkflow('3d/load3d_node')
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({
+        hasText: 'Failed to initialize 3D Viewer'
+      })
+    ).not.toHaveCount(0)
+  })
+})

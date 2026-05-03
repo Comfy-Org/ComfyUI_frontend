@@ -1832,8 +1832,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** KlingAI Query Task List */
-        get: operations["klingText2VideoQueryTaskList"];
+        get?: never;
         put?: never;
         /** KlingAI Create Video from Text */
         post: operations["klingCreateVideoFromText"];
@@ -1867,8 +1866,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** KlingAI Query Image2Video Task List */
-        get: operations["klingImage2VideoQueryTaskList"];
+        get?: never;
         put?: never;
         /** KlingAI Create Video from Image */
         post: operations["klingCreateVideoFromImage"];
@@ -4058,6 +4056,22 @@ export interface paths {
         get: operations["seedanceGetAsset"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/virtual-library/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceVirtualLibraryCreateAsset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7045,7 +7059,7 @@ export interface components {
         KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
         /**
          * @description Model Name
-         * @default kling-v2-master
+         * @default kling-v1
          * @enum {string}
          */
         KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
@@ -7198,7 +7212,7 @@ export interface components {
              * @description Storyboard method. Required when the multi_shot parameter is set to true.
              * @enum {string}
              */
-            shot_type?: "customize";
+            shot_type?: "customize" | "intelligence";
             /** @description Positive text prompt. Use <<<voice_1>>> to specify a voice matching the voice_list parameter order. A task can reference up to 2 tones. When specifying a tone, the sound parameter value must be on. */
             prompt?: string;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
@@ -7236,7 +7250,7 @@ export interface components {
             /** @description Customized Task ID */
             external_task_id?: string;
         };
-        KlingText2VideoResponse: {
+        KlingQueryTaskResponse: {
             /** @description Error code */
             code?: number;
             /** @description Error message */
@@ -7281,7 +7295,7 @@ export interface components {
              * @description Storyboard method. Required when the multi_shot parameter is set to true.
              * @enum {string}
              */
-            shot_type?: "customize";
+            shot_type?: "customize" | "intelligence";
             /** @description Positive text prompt. Use <<<voice_1>>> to specify a voice matching the voice_list parameter order. A task can reference up to 2 tones. When specifying a tone, the sound parameter value must be on. */
             prompt?: string;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
@@ -7303,6 +7317,11 @@ export interface components {
                  */
                 element_id?: number;
             }[];
+            /** @description List of voices referenced when generating videos. Supports up to 2 voices. The element_list and voice_list parameters are mutually exclusive. */
+            voice_list?: {
+                /** @description Voice ID returned through the voice customization API or a system preset voice ID. */
+                voice_id?: string;
+            }[];
             cfg_scale?: components["schemas"]["KlingVideoGenCfgScale"];
             mode?: components["schemas"]["KlingVideoGenMode"];
             /** @description Static Brush Application Area (Mask image created by users using the motion brush). The aspect ratio must match the input image. */
@@ -7322,7 +7341,6 @@ export interface components {
                 }[];
             }[];
             camera_control?: components["schemas"]["KlingCameraControl"];
-            aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             duration?: components["schemas"]["KlingVideoGenDuration"];
             /**
              * @description Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.
@@ -7342,36 +7360,6 @@ export interface components {
             callback_url?: string;
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
-        };
-        KlingImage2VideoResponse: {
-            /** @description Error code */
-            code?: number;
-            /** @description Error message */
-            message?: string;
-            /** @description Request ID */
-            request_id?: string;
-            data?: {
-                /** @description Task ID */
-                task_id?: string;
-                task_status?: components["schemas"]["KlingTaskStatus"];
-                /** @description Task status information, displaying the failure reason when the task fails */
-                task_status_msg?: string;
-                task_info?: {
-                    external_task_id?: string;
-                };
-                watermark_info?: {
-                    enabled?: boolean;
-                };
-                /** @description The deduction units of task */
-                final_unit_deduction?: string;
-                /** @description Task creation time, Unix timestamp in milliseconds */
-                created_at?: number;
-                /** @description Task update time, Unix timestamp in milliseconds */
-                updated_at?: number;
-                task_result?: {
-                    videos?: components["schemas"]["KlingVideoResult"][];
-                };
-            };
         };
         KlingVideoExtendRequest: {
             /** @description The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension. */
@@ -7426,7 +7414,7 @@ export interface components {
              * @description Storyboard method. Required when the multi_shot parameter is set to true.
              * @enum {string}
              */
-            shot_type?: "customize";
+            shot_type?: "customize" | "intelligence";
             /** @description Text prompt words, which can include positive and negative descriptions. Must not exceed 2,500 characters. Can specify elements, images, or videos in the format <<<>>> such as <<element_1>>, <<<image_1>>>, <<<video_1>>>. */
             prompt?: string;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
@@ -7479,7 +7467,7 @@ export interface components {
             sound: "on" | "off";
             /**
              * @description Video generation mode. std: Standard Mode, generating 720P videos, cost-effective. pro: Professional Mode, generating 1080P videos, higher quality video output.
-             * @default std
+             * @default pro
              * @enum {string}
              */
             mode: "pro" | "std";
@@ -7506,36 +7494,6 @@ export interface components {
             callback_url?: string;
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
-        };
-        KlingOmniVideoResponse: {
-            /** @description Error code */
-            code?: number;
-            /** @description Error message */
-            message?: string;
-            /** @description Request ID */
-            request_id?: string;
-            data?: {
-                /** @description Task ID */
-                task_id?: string;
-                task_status?: components["schemas"]["KlingTaskStatus"];
-                /** @description Task status information, displaying the failure reason when the task fails */
-                task_status_msg?: string;
-                task_info?: {
-                    external_task_id?: string;
-                };
-                watermark_info?: {
-                    enabled?: boolean;
-                };
-                /** @description The deduction units of task */
-                final_unit_deduction?: string;
-                /** @description Task creation time, Unix timestamp in milliseconds */
-                created_at?: number;
-                /** @description Task update time, Unix timestamp in milliseconds */
-                updated_at?: number;
-                task_result?: {
-                    videos?: components["schemas"]["KlingVideoResult"][];
-                };
-            };
         };
         KlingOmniImageRequest: {
             /**
@@ -14548,12 +14506,22 @@ export interface components {
             code: string;
             message: string;
         };
+        SeedanceVirtualLibraryCreateAssetRequest: {
+            /** @description Publicly accessible URL of the image asset to upload to the caller's virtual portrait library. */
+            url: string;
+            /** @description Client-supplied content hash used as the per-customer dedup key. Re-submitting the same hash returns the existing asset id without re-uploading to BytePlus. */
+            hash: string;
+        };
+        SeedanceVirtualLibraryCreateAssetResponse: {
+            /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
+            asset_id: string;
+        };
         WanVideoGenerationRequest: {
             /**
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /**
@@ -22698,103 +22666,6 @@ export interface operations {
             };
         };
     };
-    klingText2VideoQueryTaskList: {
-        parameters: {
-            query?: {
-                /** @description Page number */
-                pageNum?: number;
-                /** @description Data volume per page */
-                pageSize?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingText2VideoResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
     klingCreateVideoFromText: {
         parameters: {
             query?: never;
@@ -22815,7 +22686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingText2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -22910,104 +22781,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingText2VideoResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
-    klingImage2VideoQueryTaskList: {
-        parameters: {
-            query?: {
-                /** @description Page number */
-                pageNum?: number;
-                /** @description Data volume per page */
-                pageSize?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingImage2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -23104,7 +22878,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingImage2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -23199,7 +22973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingImage2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -24355,7 +24129,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingOmniVideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -24450,7 +24224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingOmniVideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -30590,10 +30364,7 @@ export interface operations {
     };
     seedanceGetAsset: {
         parameters: {
-            query?: {
-                /** @description BytePlus project name. Defaults to "default" if omitted. Must match the ProjectName used at create time. */
-                project_name?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description BytePlus-issued asset id returned by seedanceCreateAsset */
@@ -30610,6 +30381,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceGetAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceVirtualLibraryCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset creation accepted (asynchronous — poll seedanceGetAsset) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetResponse"];
                 };
             };
             /** @description Error 4xx/5xx */

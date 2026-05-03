@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "Générez une vidéo à partir d'une image de première image en utilisant le modèle HappyHorse.",
+    "display_name": "HappyHorse Image vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_frame": {
+        "name": "première image",
+        "tooltip": "Image de la première image. Le format de sortie est dérivé de cette image."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Générez une vidéo mettant en scène une personne ou un objet à partir de matériaux de référence avec le modèle HappyHorse. Prend en charge les performances à un seul personnage et les interactions multi-personnages.",
+    "display_name": "HappyHorse Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Génère une vidéo à partir d'une invite textuelle en utilisant le modèle HappyHorse.",
+    "display_name": "HappyHorse Texte vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Modifiez une vidéo à l'aide d'instructions textuelles ou d'images de référence avec le modèle HappyHorse. La durée de sortie est de 3 à 15s et correspond à la vidéo d'entrée ; les entrées de plus de 15s sont tronquées.",
+    "display_name": "HappyHorse Édition Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "La vidéo à éditer."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Agrandissez les images basse résolution en super-résolution, éliminez les artefacts et le bruit. Sortie maximale : 32 mégapixels.",
     "display_name": "HitPaw Amélioration Générale d’Image",
@@ -11685,6 +11835,14 @@
       "control_after_generate": {
         "name": "contrôle après génération"
       },
+      "custom_height": {
+        "name": "hauteur_personnalisée",
+        "tooltip": "Utilisé uniquement lorsque `size` est défini sur « Personnalisé ». Doit être un multiple de 16 (GPT Image 2 uniquement)."
+      },
+      "custom_width": {
+        "name": "largeur_personnalisée",
+        "tooltip": "Utilisé uniquement lorsque `size` est défini sur « Personnalisé ». Doit être un multiple de 16 (GPT Image 2 uniquement)."
+      },
       "image": {
         "name": "image",
         "tooltip": "Image de référence optionnelle pour l'édition d'image."
@@ -13883,6 +14041,127 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Détection",
+    "inputs": {
+      "bboxes": {
+        "name": "boîtes_englobantes",
+        "tooltip": "Boîtes englobantes à segmenter"
+      },
+      "conditioning": {
+        "name": "conditionnement",
+        "tooltip": "Conditionnement texte depuis CLIPTextEncode"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "masques_individuels",
+        "tooltip": "Sortir des masques par objet au lieu de l’union"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative_coords": {
+        "name": "coords_négatives",
+        "tooltip": "Points négatifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+      },
+      "positive_coords": {
+        "name": "coords_positives",
+        "tooltip": "Points positifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+      },
+      "refine_iterations": {
+        "name": "itérations_affinage",
+        "tooltip": "Passes d’affinage du décodeur SAM (0 = utiliser les masques bruts du détecteur)"
+      },
+      "threshold": {
+        "name": "seuil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masques",
+        "tooltip": null
+      },
+      "1": {
+        "name": "boîtes_englobantes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "Aperçu du suivi SAM3",
+    "inputs": {
+      "fps": {
+        "name": "ips"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacité"
+      },
+      "track_data": {
+        "name": "données_suivi"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Suivi vers Masque",
+    "inputs": {
+      "object_indices": {
+        "name": "indices_objets",
+        "tooltip": "Indices d’objets séparés par des virgules à inclure (ex : '0,2,3'). Vide = tous les objets."
+      },
+      "track_data": {
+        "name": "données_suivi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masques",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Suivi Vidéo",
+    "inputs": {
+      "conditioning": {
+        "name": "conditionnement",
+        "tooltip": "Conditionnement texte pour détecter de nouveaux objets pendant le suivi"
+      },
+      "detect_interval": {
+        "name": "intervalle_de_détection",
+        "tooltip": "Détecter tous les N frames (1 = chaque frame). Plus élevé = économie de calcul."
+      },
+      "detection_threshold": {
+        "name": "seuil_de_détection",
+        "tooltip": "Seuil de score pour la détection par texte"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images des frames vidéo en lot"
+      },
+      "initial_mask": {
+        "name": "masque_initial",
+        "tooltip": "Masque(s) pour la première frame à suivre (un par objet)"
+      },
+      "max_objects": {
+        "name": "objets_max",
+        "tooltip": "Nombre maximal d’objets suivis (0 = illimité). Les masques initiaux comptent dans cette limite."
+      },
+      "model": {
+        "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "données_suivi",
         "tooltip": null
       }
     }

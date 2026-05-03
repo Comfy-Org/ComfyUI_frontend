@@ -1,121 +1,42 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import type { Department } from '../../data/roles'
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import CategoryNav from '../common/CategoryNav.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', departments = [] } = defineProps<{
+  locale?: Locale
+  departments?: readonly Department[]
+}>()
 
 const activeCategory = ref('all')
 
-interface Role {
-  title: string
-  department: string
-  location: string
-  id: string
-}
-
-interface Department {
-  name: string
-  key: string
-  roles: Role[]
-}
-
-const departments: Department[] = [
-  {
-    name: 'ENGINEERING',
-    key: 'engineering',
-    roles: [
-      {
-        title: 'Design Engineer',
-        department: 'Engineering',
-        location: 'San Francisco',
-        id: 'abc787b9-ad85-421c-8218-debd23bea096'
-      },
-      {
-        title: 'Software Engineer',
-        department: 'Engineering',
-        location: 'San Francisco',
-        id: '99dc26c7-51ca-43cd-a1ba-7d475a0f4a40'
-      },
-      {
-        title: 'Product Manager',
-        department: 'Engineering',
-        location: 'London, UK',
-        id: '12dbc26e-9f6d-49bf-83c6-130f7566d03c'
-      },
-      {
-        title: 'Tech Lead Manager, Frontend',
-        department: 'Engineering',
-        location: 'San Francisco',
-        id: 'a0665088-3314-457a-aa7b-12ca5c3eb261'
-      }
-    ]
-  },
-  {
-    name: 'DESIGN',
-    key: 'design',
-    roles: [
-      {
-        title: 'Creative Director',
-        department: 'Design',
-        location: 'San Francisco',
-        id: '49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f'
-      },
-      {
-        title: 'Graphic Designer',
-        department: 'Design',
-        location: 'London, UK',
-        id: '19ba10aa-4961-45e8-8473-66a8a7a8079d'
-      },
-      {
-        title: 'Freelance Motion Designer',
-        department: 'Design',
-        location: 'Remote',
-        id: 'a7ccc2b4-4d9d-4e04-b39c-28a711995b5b'
-      }
-    ]
-  },
-  {
-    name: 'MARKETING',
-    key: 'marketing',
-    roles: [
-      {
-        title: 'Lifecycle Growth Marketer',
-        department: 'Marketing',
-        location: 'San Francisco',
-        id: 'be74d210-3b50-408c-9f61-8fee8833ce64'
-      },
-      {
-        title: 'Graphic Designer',
-        department: 'Marketing',
-        location: 'London, UK',
-        id: '28dea965-662b-4786-b024-c9a1b6bc1f23'
-      }
-    ]
-  }
-]
+const visibleDepartments = computed(() =>
+  departments.filter((d) => d.roles.length > 0)
+)
 
 const categories = computed(() => [
   { label: 'ALL', value: 'all' },
-  ...departments.map((d) => ({ label: d.name, value: d.key }))
+  ...visibleDepartments.value.map((d) => ({ label: d.name, value: d.key }))
 ])
 
 const filteredDepartments = computed(() =>
   activeCategory.value === 'all'
-    ? departments
-    : departments.filter((d) => d.key === activeCategory.value)
+    ? visibleDepartments.value
+    : visibleDepartments.value.filter((d) => d.key === activeCategory.value)
 )
+
+const hasRoles = computed(() => visibleDepartments.value.length > 0)
 </script>
 
 <template>
-  <section class="px-6 py-20 md:px-20 md:py-32">
+  <section class="px-6 py-20 md:px-20 md:py-32" data-testid="careers-roles">
     <div class="mx-auto max-w-6xl">
       <div class="flex flex-col gap-12 md:flex-row md:gap-20">
-        <!-- Left sidebar -->
         <div class="shrink-0 md:w-48">
           <div
             class="bg-primary-comfy-ink sticky top-20 z-10 py-4 md:top-28 md:py-0"
@@ -126,6 +47,7 @@ const filteredDepartments = computed(() =>
               {{ t('careers.roles.heading', locale) }}
             </h2>
             <CategoryNav
+              v-if="hasRoles"
               v-model="activeCategory"
               :categories="categories"
               class="mt-4"
@@ -133,8 +55,15 @@ const filteredDepartments = computed(() =>
           </div>
         </div>
 
-        <!-- Role listings -->
         <div class="min-w-0 flex-1">
+          <p
+            v-if="!hasRoles"
+            class="text-primary-warm-gray text-base md:text-lg"
+            data-testid="careers-roles-empty"
+          >
+            {{ t('careers.roles.empty', locale) }}
+          </p>
+
           <div
             v-for="dept in filteredDepartments"
             :key="dept.key"
@@ -147,10 +76,11 @@ const filteredDepartments = computed(() =>
             <a
               v-for="role in dept.roles"
               :key="role.id"
-              :href="`https://jobs.ashbyhq.com/comfy-org/${role.id}`"
+              :href="role.applyUrl"
               target="_blank"
               rel="noopener noreferrer"
               class="border-primary-warm-gray/20 group flex items-center justify-between border-b py-5"
+              data-testid="careers-role-link"
             >
               <div class="min-w-0">
                 <span

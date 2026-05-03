@@ -6,6 +6,16 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  prefetch: { prefetchAll: true },
+  redirects: {
+    '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
+      '/customers/moment-factory/',
+    '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
+      '/customers/series-entertainment/'
+  },
+  build: {
+    assets: '_website'
+  },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [vue(), sitemap()],
   vite: {

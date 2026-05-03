@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "Создайте видео из изображения первого кадра с помощью модели HappyHorse.",
+    "display_name": "HappyHorse: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Изображение первого кадра. Соотношение сторон результата определяется этим изображением."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Создайте видео с человеком или объектом по референсным материалам с помощью модели HappyHorse. Поддерживаются одиночные персонажи и взаимодействие нескольких персонажей.",
+    "display_name": "HappyHorse: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Создаёт видео по текстовому промпту с помощью модели HappyHorse.",
+    "display_name": "HappyHorse: текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Редактируйте видео с помощью текстовых инструкций или референсных изображений в модели HappyHorse. Длительность результата — 3-15 секунд и соответствует входному видео; входные видео длиннее 15 секунд будут обрезаны.",
+    "display_name": "HappyHorse: редактирование видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для редактирования."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Увеличение разрешения низкокачественных изображений до сверхвысокого, устранение артефактов и шума. Максимальный выход: 32 мегапикселя.",
     "display_name": "HitPaw General Image Enhance",
@@ -11685,6 +11835,14 @@
       "control_after_generate": {
         "name": "control after generate"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
+      },
       "image": {
         "name": "image",
         "tooltip": "Необязательное референсное изображение для редактирования."
@@ -13883,6 +14041,127 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Обнаружение",
+    "inputs": {
+      "bboxes": {
+        "name": "границы",
+        "tooltip": "Ограничивающие рамки для сегментации внутри"
+      },
+      "conditioning": {
+        "name": "condition",
+        "tooltip": "Текстовая настройка из CLIPTextEncode"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "individual_masks": {
+        "name": "отдельные_маски",
+        "tooltip": "Выводить маски для каждого объекта вместо объединения"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "отрицательные_координаты",
+        "tooltip": "Отрицательные точки-подсказки в формате JSON [{\"x\": int, \"y\": int}, ...] (пиксельные координаты)"
+      },
+      "positive_coords": {
+        "name": "положительные_координаты",
+        "tooltip": "Положительные точки-подсказки в формате JSON [{\"x\": int, \"y\": int}, ...] (пиксельные координаты)"
+      },
+      "refine_iterations": {
+        "name": "итерации_уточнения",
+        "tooltip": "Проходы уточнения декодера SAM (0=использовать исходные маски детектора)"
+      },
+      "threshold": {
+        "name": "порог"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "маски",
+        "tooltip": null
+      },
+      "1": {
+        "name": "границы",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 Предпросмотр Трека",
+    "inputs": {
+      "fps": {
+        "name": "кадров_в_секунду"
+      },
+      "images": {
+        "name": "изображения"
+      },
+      "opacity": {
+        "name": "непрозрачность"
+      },
+      "track_data": {
+        "name": "данные_трека"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Трек в Маску",
+    "inputs": {
+      "object_indices": {
+        "name": "индексы_объектов",
+        "tooltip": "Индексы объектов через запятую для включения (например, '0,2,3'). Пусто = все объекты."
+      },
+      "track_data": {
+        "name": "данные_трека"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "маски",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Видеотрек",
+    "inputs": {
+      "conditioning": {
+        "name": "condition",
+        "tooltip": "Текстовая настройка для обнаружения новых объектов во время трекинга"
+      },
+      "detect_interval": {
+        "name": "интервал_обнаружения",
+        "tooltip": "Запускать обнаружение каждые N кадров (1=каждый кадр). Большее значение экономит вычисления."
+      },
+      "detection_threshold": {
+        "name": "порог_обнаружения",
+        "tooltip": "Порог оценки для обнаружения по текстовой подсказке"
+      },
+      "images": {
+        "name": "изображения",
+        "tooltip": "Кадры видео в виде батчированных изображений"
+      },
+      "initial_mask": {
+        "name": "начальная_маска",
+        "tooltip": "Маска(и) для первого кадра для отслеживания (по одной на объект)"
+      },
+      "max_objects": {
+        "name": "макс_объектов",
+        "tooltip": "Максимум отслеживаемых объектов (0=без ограничений). Начальные маски учитываются в этом лимите."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "данные_трека",
         "tooltip": null
       }
     }

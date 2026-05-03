@@ -257,6 +257,8 @@ it('should validate node definition', () => {
 
 ## Mocking Composables with Reactive State
 
+> **Don't mock `vue-i18n`.** Mount with a real `createI18n` plugin instance instead — see [Don't Mock `vue-i18n` in `vitest-patterns.md`](./vitest-patterns.md#dont-mock-vue-i18n--use-a-real-plugin). This section applies to composables you own.
+
 When mocking composables that return reactive refs, define the mock implementation inline in `vi.mock()`'s factory function. This ensures stable singleton instances across all test invocations.
 
 ### Rules

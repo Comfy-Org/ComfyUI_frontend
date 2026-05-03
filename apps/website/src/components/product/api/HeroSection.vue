@@ -223,14 +223,14 @@ onUnmounted(() => {
 
       <div class="mt-8 flex flex-col gap-4 lg:flex-row">
         <BrandButton
-          :href="externalLinks.cloud"
+          :href="externalLinks.apiKeys"
           size="lg"
           class="text-center lg:min-w-60 lg:p-4"
         >
           {{ t('api.hero.getApiKeys', locale) }}
         </BrandButton>
         <BrandButton
-          :href="externalLinks.docs"
+          :href="externalLinks.docsApi"
           variant="outline"
           size="lg"
           class="text-center lg:min-w-60 lg:p-4"

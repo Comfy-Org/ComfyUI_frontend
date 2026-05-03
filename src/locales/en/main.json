@@ -210,6 +210,7 @@
     "filterByType": "Filter by {type}...",
     "mostRelevant": "Most relevant",
     "favorites": "Favorites",
+    "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
     "output": "Output",
@@ -229,6 +230,7 @@
     "warning": "Warning",
     "name": "Name",
     "category": "Category",
+    "categories": "Categories",
     "sort": "Sort",
     "source": "Source",
     "filter": "Filter",
@@ -369,6 +371,8 @@
     "preloadErrorTitle": "Loading Error",
     "recents": "Recents",
     "partner": "Partner",
+    "blueprints": "Blueprints",
+    "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },
@@ -379,6 +383,10 @@
     "actions": "Actions",
     "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "incompatibleVersion": {
+      "title": "ComfyUI-Manager upgrade required",
+      "message": "Please upgrade ComfyUI-Manager to version 4.2.1 or higher.\n• Desktop: Update the ComfyUI Desktop app\n• Standalone: Run pip install -U comfyui-manager and restart\nLearn more: https://github.com/Comfy-Org/ComfyUI-Manager"
+    },
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
@@ -1699,6 +1707,7 @@
     "gligen": "gligen",
     "shader": "shader",
     "Grok": "Grok",
+    "Wan": "Wan",
     "HitPaw": "HitPaw",
     "sd": "sd",
     "Ideogram": "Ideogram",
@@ -1748,7 +1757,6 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "Wan": "Wan",
     "camera": "camera",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
@@ -1820,6 +1828,7 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
     "STRING": "STRING",
@@ -2072,6 +2081,7 @@
     "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
+    "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
     "errorOpenImage": "Error opening image: {error}",
@@ -2729,6 +2739,7 @@
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
+    "blueprint": "Blueprint",
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
@@ -2775,56 +2786,64 @@
     "dontAskAgain": "Don't Ask Again",
     "loadError": "Failed to load survey. Please try again later."
   },
+  "errorPanelSurvey": {
+    "ctaText": "How's the new error panel?",
+    "ctaButton": "Give feedback"
+  },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
-      "steps": {
-        "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+      "intro": "Help us tailor your ComfyUI experience.",
+      "errors": {
+        "chooseAnOption": "Please choose an option.",
+        "selectAtLeastOne": "Please select at least one option.",
+        "describeAnswer": "Please describe your answer."
       },
-      "questions": {
+      "steps": {
+        "usage": "How do you plan to use ComfyUI?",
         "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+        "intent": "What do you want to create with ComfyUI?",
+        "source": "Where did you hear about ComfyUI?"
       },
       "options": {
+        "usage": {
+          "personal": "Personal use",
+          "work": "Work",
+          "education": "Education (student or educator)"
+        },
         "familiarity": {
-          "new": "New to ComfyUI (never used it before)",
-          "starting": "Just getting started (following tutorials)",
-          "basics": "Comfortable with basics",
-          "advanced": "Advanced user (custom workflows)",
-          "expert": "Expert (help others)"
+          "new": "New — never used it",
+          "starting": "Beginner — following tutorials",
+          "basics": "Intermediate — comfortable with basics",
+          "advanced": "Advanced — build and edit workflows",
+          "expert": "Expert — I help others"
         },
-        "purpose": {
-          "personal": "Personal projects / hobby",
-          "community": "Community contributions (nodes, workflows, etc.)",
-          "client": "Client work (freelance)",
-          "inhouse": "My own workplace (in-house)",
-          "research": "Academic research"
-        },
-        "industry": {
-          "film_tv_animation": "Film, TV, & animation",
-          "gaming": "Gaming",
-          "marketing": "Marketing & advertising",
-          "architecture": "Architecture",
-          "product_design": "Product & graphic design",
-          "fine_art": "Fine art & illustration",
-          "software": "Software & technology",
-          "education": "Education",
-          "other": "Other",
-          "otherPlaceholder": "Please specify"
-        },
-        "making": {
+        "intent": {
+          "workflows": "Custom workflows or pipelines",
+          "custom_nodes": "Custom nodes",
+          "videos": "Videos",
           "images": "Images",
-          "video": "Video & animation",
-          "3d": "3D assets",
+          "3d_game": "3D assets / game assets",
           "audio": "Audio / music",
-          "custom_nodes": "Custom nodes & workflows"
+          "apps": "Simplified Apps from workflows",
+          "api": "API endpoints to run workflows",
+          "not_sure": "Not sure"
+        },
+        "source": {
+          "youtube": "YouTube",
+          "reddit": "Reddit",
+          "twitter": "Twitter / X",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "friend": "Friend or colleague",
+          "search": "Google / search",
+          "newsletter": "Newsletter or blog",
+          "conference": "Conference or event",
+          "discord": "Discord / community",
+          "github": "GitHub",
+          "other": "Other"
         }
       }
     },
@@ -2894,10 +2913,10 @@
   "cloudForgotPassword_emailRequired": "Email is required",
   "cloudForgotPassword_passwordResetSent": "Password reset sent",
   "cloudForgotPassword_passwordResetError": "Failed to send password reset email",
+  "cloudSurvey_steps_usage": "How do you plan to use ComfyUI?",
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
-  "cloudSurvey_steps_purpose": "What will you primarily use ComfyUI for?",
-  "cloudSurvey_steps_industry": "What's your primary industry?",
-  "cloudSurvey_steps_making": "What do you plan on making?",
+  "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
+  "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
@@ -2963,7 +2982,9 @@
     "finish": "Finish",
     "importAnother": "Import Another",
     "genericLinkPlaceholder": "Paste link here",
+    "gridView": "Grid view",
     "jobId": "Job ID",
+    "listView": "List view",
     "loadingModels": "Loading {type}...",
     "maxFileSize": "Max file size: {size}",
     "maxFileSizeValue": "1 GB",
@@ -3560,7 +3581,10 @@
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
-      "downloadAll": "Download all"
+      "downloadAll": "Download all",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing missing models.",
+      "refreshFailed": "Failed to refresh missing models. Please try again."
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs",
