@@ -12,7 +12,8 @@ const {
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
   mockShowTextPreview,
-  mockActiveWorkflow
+  mockActiveWorkflow,
+  mockRevokePreviewsByExecutionId
 } = vi.hoisted(() => ({
   mockNodeExecutionIdToNodeLocatorId: vi.fn(),
   mockNodeIdToNodeLocatorId: vi.fn(),
@@ -24,7 +25,8 @@ const {
       initialState?: { id?: string }
       path?: string
     }
-  }
+  },
+  mockRevokePreviewsByExecutionId: vi.fn()
 }))
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
@@ -84,6 +86,12 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/stores/imagePreviewStore', () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: () => ({
+    revokePreviewsByExecutionId: mockRevokePreviewsByExecutionId
   })
 }))
 
@@ -506,6 +514,34 @@ describe('useExecutionStore - active workflow gating of progress mirror', () => 
     )
 
     expect(store.nodeProgressStatesByJob).toHaveProperty('job-other')
+  })
+
+  it('skips preview revocation for non-active workflow messages', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    mockRevokePreviewsByExecutionId.mockClear()
+
+    fireProgressState(
+      'job-other',
+      makeProgressNodes('1', 'job-other'),
+      'wf-other'
+    )
+
+    expect(mockRevokePreviewsByExecutionId).not.toHaveBeenCalled()
+  })
+
+  it('revokes previews for active workflow messages', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    mockRevokePreviewsByExecutionId.mockClear()
+
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'), 'wf-active')
+
+    expect(mockRevokePreviewsByExecutionId).toHaveBeenCalledWith('1')
   })
 
   it('skips global mirror when message workflow_id mismatches active workflow', () => {

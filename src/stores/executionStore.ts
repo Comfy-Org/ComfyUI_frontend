@@ -336,13 +336,19 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: jobId, workflow_id: messageWorkflowId } = e.detail
+    const isActiveWorkflowMessage = messageMatchesActiveWorkflow(
+      jobId,
+      messageWorkflowId
+    )
 
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
-    for (const nodeId in nodes) {
-      const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !previousForJob[nodeId]) {
-        const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
+    if (isActiveWorkflowMessage) {
+      for (const nodeId in nodes) {
+        const nodeState = nodes[nodeId]
+        if (nodeState.state === 'running' && !previousForJob[nodeId]) {
+          const { revokePreviewsByExecutionId } = useNodeOutputStore()
+          revokePreviewsByExecutionId(nodeId)
+        }
       }
     }
 
@@ -352,7 +358,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     evictOldProgressJobs()
 
-    if (messageMatchesActiveWorkflow(jobId, messageWorkflowId)) {
+    if (isActiveWorkflowMessage) {
       nodeProgressStates.value = nodes
 
       if (executingNodeId.value && nodes[executingNodeId.value]) {
