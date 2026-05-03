@@ -185,13 +185,25 @@ onBeforeUnmount(() => {
           }"
         >
           <template #item="{ item, props, label }">
-            <a v-bind="props.action" class="flex items-center gap-2">
+            <a
+              v-bind="props.action"
+              class="flex items-center gap-2"
+              :aria-label="
+                item.key === FAILED_TAB_KEY && hasFailures
+                  ? `${label} — ${failedTabIndicatorLabel}`
+                  : undefined
+              "
+              :title="
+                item.key === FAILED_TAB_KEY && hasFailures
+                  ? failedTabIndicatorLabel
+                  : undefined
+              "
+            >
               <span>{{ label }}</span>
               <i
                 v-if="item.key === FAILED_TAB_KEY && hasFailures"
                 class="pi pi-exclamation-circle text-danger"
-                :aria-label="failedTabIndicatorLabel"
-                :title="failedTabIndicatorLabel"
+                aria-hidden="true"
               />
             </a>
           </template>
