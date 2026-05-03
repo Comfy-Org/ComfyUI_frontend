@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -8,10 +8,10 @@ import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 
 const mockData = vi.hoisted(() => ({
@@ -58,6 +58,7 @@ vi.mock(
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    dragOverNode: null,
     rootGraph: { getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() }
   }
@@ -151,6 +152,31 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     }
   })
 }
+
+function createDragEvent(type: string, dataTransfer: DataTransfer): DragEvent {
+  const event = new Event(type, { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'dataTransfer', {
+    configurable: true,
+    value: dataTransfer
+  })
+  return event as DragEvent
+}
+
+function createFileDataTransfer(): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  dataTransfer.items.add(new File([''], 'test.png', { type: 'image/png' }))
+  return dataTransfer
+}
+
+function createUriDataTransferWithBmpPlaceholder(): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  dataTransfer.items.add(
+    new File([''], 'placeholder.bmp', { type: 'image/bmp' })
+  )
+  dataTransfer.setData('text/uri-list', 'https://example.com/image.png')
+  return dataTransfer
+}
+
 const mockNodeData: VueNodeData = {
   id: 'test-node-123',
   title: 'Test Node',
@@ -176,10 +202,12 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
+    app.dragOverNode = null
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
@@ -354,7 +382,9 @@ describe('LGraphNode', () => {
     })
 
     it('should render resize handle for regular nodes', () => {
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      const { container } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
       expect(
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[role="button"][aria-label]')
@@ -363,27 +393,128 @@ describe('LGraphNode', () => {
   })
 
   describe('handleDrop', () => {
-    it('should set app.dragOverNode and let event bubble', async () => {
+    it('should stop propagation when onDragDrop returns true', async () => {
+      const onDragDrop = vi.fn().mockReturnValue(true)
       mockData.mockLgraphNode = {
-        onDragOver: vi.fn(),
+        onDragDrop,
+        onDragOver: vi.fn(() => true),
         isSubgraphNode: () => false
       }
 
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
-      const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
-      const parent = nodeEl.parentElement!
+      const { container, baseElement } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
+      const root = getNodeRoot(container)
+      const dataTransfer = createFileDataTransfer()
 
       const parentListener = vi.fn()
-      expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
+      baseElement.addEventListener('drop', parentListener)
 
-      nodeEl.dispatchEvent(
-        new Event('drop', { bubbles: true, cancelable: true })
-      )
+      root.dispatchEvent(createDragEvent('dragover', dataTransfer))
+      root.dispatchEvent(createDragEvent('drop', dataTransfer))
 
+      expect(onDragDrop).toHaveBeenCalled()
+      expect(parentListener).not.toHaveBeenCalled()
+    })
+
+    it('should let drops bubble when dragover rejects them', async () => {
+      const onDragDrop = vi.fn().mockReturnValue(true)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(() => false),
+        isSubgraphNode: () => false
+      }
+
+      const { container, baseElement } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
+      const root = getNodeRoot(container)
+      const dataTransfer = createFileDataTransfer()
+
+      const parentListener = vi.fn()
+      baseElement.addEventListener('drop', parentListener)
+
+      root.dispatchEvent(createDragEvent('dragover', dataTransfer))
+      root.dispatchEvent(createDragEvent('drop', dataTransfer))
+
+      expect(onDragDrop).not.toHaveBeenCalled()
       expect(parentListener).toHaveBeenCalled()
-      expect(app.dragOverNode).toBe(mockData.mockLgraphNode)
+    })
+
+    it('should allow URI drops with only bmp placeholders to bubble to parent handlers', async () => {
+      const onDragDrop = vi.fn().mockReturnValue(true)
+      mockData.mockLgraphNode = {
+        id: mockNodeData.id,
+        onDragDrop,
+        onDragOver: vi.fn(() => true),
+        isSubgraphNode: () => false
+      }
+
+      const { container, baseElement } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
+      const root = getNodeRoot(container)
+      const dataTransfer = createUriDataTransferWithBmpPlaceholder()
+
+      const parentListener = vi.fn()
+      baseElement.addEventListener('drop', parentListener)
+
+      root.dispatchEvent(createDragEvent('dragover', dataTransfer))
+      root.dispatchEvent(createDragEvent('drop', dataTransfer))
+
+      expect(onDragDrop).not.toHaveBeenCalled()
+      expect(parentListener).toHaveBeenCalled()
+      expect(app.dragOverNode).toBeNull()
+    })
+
+    it('should stop propagation when onDragDrop returns a promise', async () => {
+      const onDragDrop = vi.fn().mockResolvedValue(true)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(() => true),
+        isSubgraphNode: () => false
+      }
+
+      const { container, baseElement } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
+      const root = getNodeRoot(container)
+      const dataTransfer = createFileDataTransfer()
+
+      const parentListener = vi.fn()
+      baseElement.addEventListener('drop', parentListener)
+
+      root.dispatchEvent(createDragEvent('dragover', dataTransfer))
+      root.dispatchEvent(createDragEvent('drop', dataTransfer))
+
+      await waitFor(() => expect(onDragDrop).toHaveBeenCalled())
+
+      expect(parentListener).not.toHaveBeenCalled()
+    })
+
+    it('should handle drop from a child element inside the node', async () => {
+      const onDragDrop = vi.fn().mockResolvedValue(true)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(() => true),
+        isSubgraphNode: () => false
+      }
+
+      const { baseElement } = renderLGraphNode({
+        nodeData: mockNodeData
+      })
+      const child = screen.getByTestId('node-inner-wrapper')
+      const dataTransfer = createFileDataTransfer()
+
+      const parentListener = vi.fn()
+      baseElement.addEventListener('drop', parentListener)
+
+      child.dispatchEvent(createDragEvent('dragover', dataTransfer))
+      child.dispatchEvent(createDragEvent('drop', dataTransfer))
+
+      await waitFor(() => expect(onDragDrop).toHaveBeenCalled())
+
+      expect(parentListener).not.toHaveBeenCalled()
     })
   })
 })

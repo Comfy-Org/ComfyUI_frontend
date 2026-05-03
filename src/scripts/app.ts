@@ -138,6 +138,7 @@ import {
   hasAudioType,
   hasImageType,
   hasVideoType,
+  isDropEventHandled,
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
@@ -232,7 +233,10 @@ export class ComfyApp {
   }
 
   canvas!: LGraphCanvas
-  dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
+  dragOverNode:
+    | (Pick<LGraphNode, 'onDragDrop' | 'id'> &
+        Partial<Pick<LGraphNode, 'onDragOver'>>)
+    | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
@@ -585,17 +589,39 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
-        // Skip if already handled (e.g. file drop onto publish dialog tiles)
-        if (event.defaultPrevented) return
+        const target = event.target
+        const isGraphCanvasDrop =
+          target instanceof Node && this.canvasContainer.contains(target)
+
+        if (isDropEventHandled(event)) return
+
+        // Vue-node drops may already be defaultPrevented before bubbling here.
+        // Only skip already-handled drops outside the graph canvas area.
+        if (event.defaultPrevented && !isGraphCanvasDrop) return
 
         event.preventDefault()
         event.stopPropagation()
 
-        const n = this.dragOverNode
+        const previousDragOverNode = this.dragOverNode
         this.dragOverNode = null
+        if (previousDragOverNode) {
+          this.canvas.setDirty(false, true)
+        }
+
+        this.canvas.adjustMouseEvent(event)
+        const nodeAtDropPosition = this.canvas.graph?.getNodeOnPos(
+          event.canvasX,
+          event.canvasY
+        )
+        const canUsePreviousDragOverNode =
+          previousDragOverNode &&
+          (previousDragOverNode.onDragOver?.(event) ?? true)
+        const dropNode = canUsePreviousDragOverNode
+          ? previousDragOverNode
+          : nodeAtDropPosition
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
-        if (await n?.onDragDrop?.(event)) return
+        if (await dropNode?.onDragDrop?.(event)) return
 
         const files = await extractFilesFromDragEvent(event)
         if (files.length === 0) return
@@ -1759,9 +1785,13 @@ export class ComfyApp {
         video: ['LoadVideo', pasteVideoNode]
       }
 
-      const mediaType = Object.keys(mediaNodeTypes).find((t) =>
-        file.type.startsWith(t)
-      )
+      const mediaType: keyof typeof mediaNodeTypes | null = hasImageType(file)
+        ? 'image'
+        : hasAudioType(file)
+          ? 'audio'
+          : hasVideoType(file)
+            ? 'video'
+            : null
       if (mediaType) {
         const [nodeType, pasteFn] = mediaNodeTypes[mediaType]
         const transfer = new DataTransfer()
@@ -1851,7 +1881,7 @@ export class ComfyApp {
    */
   async handleFileList(fileList: File[]) {
     if (fileList.length === 0) return
-    if (!fileList[0].type.startsWith('image')) return
+    if (!hasImageType(fileList[0])) return
 
     const imageNodes = await pasteImageNodes(this.canvas, fileList)
     if (imageNodes.length === 0) return
