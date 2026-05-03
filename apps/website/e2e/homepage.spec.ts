@@ -69,6 +69,32 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
+  test('CaseStudySpotlight CTA sizes to its content, not the column', async ({
+    page
+  }) => {
+    const section = page.locator('section', {
+      has: page.getByText('Customer Stories')
+    })
+    const cta = section.getByRole('link', { name: /see all case studies/i })
+
+    await cta.scrollIntoViewIfNeeded()
+    await expect(cta).toBeVisible()
+
+    const contentColumn = section
+      .getByRole('heading', { name: /See Comfy/i })
+      .locator('..')
+      .locator('..')
+
+    const [columnBox, ctaBox] = await Promise.all([
+      contentColumn.boundingBox(),
+      cta.boundingBox()
+    ])
+
+    expect(columnBox).not.toBeNull()
+    expect(ctaBox).not.toBeNull()
+    expect(ctaBox!.width).toBeLessThan(columnBox!.width * 0.7)
+  })
+
   test('BuildWhatSection is visible', async ({ page }) => {
     // "DOESN'T EXIST" is the actual badge text rendered in the Build What section
     await expect(page.getByText("DOESN'T EXIST")).toBeVisible()
