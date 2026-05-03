@@ -609,7 +609,10 @@ export const useExecutionStore = defineStore('execution', () => {
     activeJobIds: Set<JobId>,
     terminalJobIds: Set<JobId>
   ) {
-    const tracked = new Set<JobId>(Object.keys(nodeProgressStatesByJob.value))
+    const tracked = new Set<JobId>([
+      ...Object.keys(nodeProgressStatesByJob.value),
+      ...initializingJobIds.value
+    ])
     if (activeJobId.value) tracked.add(activeJobId.value)
 
     for (const jobId of tracked) {
@@ -653,14 +656,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text, prompt_id } = e.detail
+    const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
 
     // Filter: only accept progress for the active prompt
     if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
       return
 
-    // Handle execution node IDs for subgraphs
+    if (prompt_id && !messageMatchesActiveWorkflow(prompt_id, workflow_id))
+      return
+
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
     const node = canvasStore.canvas?.graph?.getNodeById(currentId)

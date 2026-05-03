@@ -753,6 +753,14 @@ describe('useExecutionStore - reconcileTerminalJobs', () => {
     expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-1')
     expect(store.activeJobId).toBeNull()
   })
+
+  it('evicts initializing-only jobs that landed in history without progress events', () => {
+    store.initializingJobIds = new Set(['job-init'])
+
+    store.reconcileTerminalJobs(new Set(), new Set(['job-init']))
+
+    expect(store.initializingJobIds.has('job-init')).toBe(false)
+  })
 })
 
 describe('useExecutionStore - progress_text startup guard', () => {
@@ -762,6 +770,7 @@ describe('useExecutionStore - progress_text startup guard', () => {
     nodeId: string
     text: string
     prompt_id?: string
+    workflow_id?: string
   }) {
     const handler = apiEventHandlers.get('progress_text')
     if (!handler) throw new Error('progress_text handler not bound')
@@ -771,6 +780,7 @@ describe('useExecutionStore - progress_text startup guard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     apiEventHandlers.clear()
+    mockActiveWorkflow.current = null
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
@@ -800,6 +810,50 @@ describe('useExecutionStore - progress_text startup guard', () => {
     } as unknown as LGraphCanvas
 
     fireProgressText({ nodeId: '1', text: 'warming up' })
+
+    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
+  })
+
+  it('should skip progress_text whose workflow_id mismatches active workflow', async () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({
+      nodeId: '1',
+      text: 'warming up',
+      prompt_id: 'job-other',
+      workflow_id: 'wf-other'
+    })
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('should call showTextPreview when workflow_id matches active workflow', async () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({
+      nodeId: '1',
+      text: 'warming up',
+      prompt_id: 'job-1',
+      workflow_id: 'wf-active'
+    })
 
     expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
   })
