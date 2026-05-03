@@ -814,16 +814,23 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop(event: DragEvent) {
+async function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
   if (!node?.onDragDrop) return
 
-  const handled = node.onDragDrop(event)
-  if (handled === true) {
+  // Backport-only compat: preserve the legacy `handled === true` sync-return
+  // path for custom-node `onDragDrop` implementations that don't participate
+  // in the new `claimEvent` flag. Async handlers from `useNodeDragAndDrop`
+  // claim the event themselves via the second arg; sync handlers that
+  // return `true` still get their event claimed here so the drop does not
+  // bubble to the document fallback in `app.ts`.
+  const result = node.onDragDrop(event, true)
+  if (result === true && !event.defaultPrevented) {
     event.preventDefault()
     event.stopPropagation()
   }
+  await result
 }
 </script>
