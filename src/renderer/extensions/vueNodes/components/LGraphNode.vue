@@ -831,6 +831,7 @@ async function handleDrop(event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
   }
+  // Awaited so async onDragDrop rejections propagate via Vue's errorHandler
   await result
 }
 </script>
