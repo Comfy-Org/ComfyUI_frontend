@@ -942,6 +942,116 @@ describe('useExecutionStore - reconcileTerminalJobs', () => {
   })
 })
 
+describe('useExecutionStore - terminal WS handlers do not clobber active job', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>,
+    workflowId?: string
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', {
+        detail: { nodes, prompt_id: jobId, workflow_id: workflowId }
+      })
+    )
+  }
+
+  function fireExecutionStart(jobId: string) {
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionSuccess(jobId: string) {
+    const handler = apiEventHandlers.get('execution_success')
+    if (!handler) throw new Error('execution_success handler not bound')
+    handler(
+      new CustomEvent('execution_success', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionInterrupted(jobId: string) {
+    const handler = apiEventHandlers.get('execution_interrupted')
+    if (!handler) throw new Error('execution_interrupted handler not bound')
+    handler(
+      new CustomEvent('execution_interrupted', {
+        detail: { prompt_id: jobId, node_id: '1', node_type: 'X', executed: [] }
+      })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    mockActiveWorkflow.current = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('execution_success for a non-active job does not clobber the active job mirror', () => {
+    fireExecutionStart('job-old')
+    fireProgressState('job-old', makeProgressNodes('1', 'job-old'))
+
+    fireExecutionStart('job-new')
+    fireProgressState('job-new', makeProgressNodes('2', 'job-new'))
+
+    expect(store.activeJobId).toBe('job-new')
+
+    fireExecutionSuccess('job-old')
+
+    expect(store.activeJobId).toBe('job-new')
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('2', 'job-new'))
+    expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-old')
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-new')
+  })
+
+  it('execution_interrupted for a non-active job does not clobber the active job', () => {
+    fireExecutionStart('job-old')
+    fireProgressState('job-old', makeProgressNodes('1', 'job-old'))
+
+    fireExecutionStart('job-new')
+    fireProgressState('job-new', makeProgressNodes('2', 'job-new'))
+
+    fireExecutionInterrupted('job-old')
+
+    expect(store.activeJobId).toBe('job-new')
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('2', 'job-new'))
+    expect(store.nodeProgressStatesByJob).not.toHaveProperty('job-old')
+  })
+
+  it('execution_success for the active job clears the global mirror and activeJobId', () => {
+    fireExecutionStart('job-1')
+    fireProgressState('job-1', makeProgressNodes('1', 'job-1'))
+
+    fireExecutionSuccess('job-1')
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.nodeProgressStates).toEqual({})
+  })
+})
+
 describe('useExecutionStore - progress_text startup guard', () => {
   let store: ReturnType<typeof useExecutionStore>
 

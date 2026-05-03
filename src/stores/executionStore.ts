@@ -273,6 +273,10 @@ export const useExecutionStore = defineStore('execution', () => {
   ) {
     const jobId = e.detail.prompt_id
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    if (jobId !== activeJobId.value) {
+      evictTerminalJob(jobId)
+      return
+    }
     resetExecutionState(jobId)
   }
 
@@ -288,6 +292,10 @@ export const useExecutionStore = defineStore('execution', () => {
       })
     }
     const jobId = e.detail.prompt_id
+    if (jobId !== activeJobId.value) {
+      evictTerminalJob(jobId)
+      return
+    }
     resetExecutionState(jobId)
   }
 
@@ -487,6 +495,20 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  /**
+   * Routes a terminal cleanup to the correct primitive: `evictTerminalJob`
+   * for non-active jobs (safe for any jobId, never clobbers another running
+   * job's mirror) and `resetExecutionState` for the active job (clears the
+   * global mirror that the active job owns).
+   */
+  function terminateJob(jobId: JobId) {
+    if (jobId !== activeJobId.value) {
+      evictTerminalJob(jobId)
+      return
+    }
+    resetExecutionState(jobId)
+  }
+
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
@@ -507,7 +529,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // OSS path / Cloud fallback (real runtime errors)
     executionErrorStore.lastExecutionError = e.detail
     clearInitializationByJobId(e.detail.prompt_id)
-    resetExecutionState(e.detail.prompt_id)
+    terminateJob(e.detail.prompt_id)
   }
 
   function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
@@ -516,7 +538,7 @@ export const useExecutionStore = defineStore('execution', () => {
       return false
 
     clearInitializationByJobId(detail.prompt_id)
-    resetExecutionState(detail.prompt_id)
+    terminateJob(detail.prompt_id)
     executionErrorStore.lastPromptError = {
       type: detail.exception_type ?? 'error',
       message: detail.exception_type
@@ -534,7 +556,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
-    resetExecutionState(detail.prompt_id)
+    terminateJob(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
       executionErrorStore.lastNodeErrors = result.nodeErrors
@@ -722,12 +744,23 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
 
-    // Filter: only accept progress for the active prompt
-    if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
-      return
+    // Prefer the workflow-ownership gate when we have any signal that lets
+    // us resolve it (workflow_id on the message, or a registered mapping).
+    // Only fall back to the legacy active-prompt guard when ownership is
+    // unresolvable, otherwise activeJobId pointing at a different workflow's
+    // job would incorrectly drop messages for the visible workflow.
+    if (prompt_id) {
+      const canResolveWorkflow =
+        Boolean(workflow_id) ||
+        jobIdToWorkflowId.value.has(prompt_id) ||
+        jobIdToSessionWorkflowPath.value.has(prompt_id)
 
-    if (prompt_id && !messageMatchesActiveWorkflow(prompt_id, workflow_id))
-      return
+      if (canResolveWorkflow) {
+        if (!messageMatchesActiveWorkflow(prompt_id, workflow_id)) return
+      } else if (activeJobId.value && prompt_id !== activeJobId.value) {
+        return
+      }
+    }
 
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
