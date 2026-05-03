@@ -48,7 +48,8 @@ describe('createBrowserDownloadService', () => {
 
   it('getById returns null', () => {
     const service = createBrowserDownloadService()
-    expect(service.getById('anything')).toBeNull()
+    const entry = service.getById('anything')
+    expect(entry).toBeNull()
   })
 
   it('onProgress returns a no-op unsubscribe', () => {
