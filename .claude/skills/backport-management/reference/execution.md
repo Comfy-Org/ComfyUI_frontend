@@ -6,6 +6,42 @@
 2. Medium gap next (quick win)
 3. Largest gap last (main effort)
 
+## Step 0: Test-Then-Resolve Pre-Pass (Recommended)
+
+Before triggering label-driven automation, run a dry-run cherry-pick loop to classify candidates. This is much faster than discovering conflicts after-the-fact across automation, manual cherry-picks, and CI failures.
+
+```bash
+git fetch origin TARGET_BRANCH
+git worktree add /tmp/dryrun-TARGET origin/TARGET_BRANCH
+cd /tmp/dryrun-TARGET
+
+CLEAN=()
+CONFLICT=()
+for pr in "${CANDIDATES[@]}"; do
+  SHA=$(gh pr view $pr --json mergeCommit --jq '.mergeCommit.oid')
+  git checkout -b dryrun-$pr origin/TARGET_BRANCH 2>/dev/null
+  if git cherry-pick -m 1 $SHA 2>/dev/null; then
+    CLEAN+=($pr)
+  else
+    CONFLICT+=($pr)
+    git cherry-pick --abort
+  fi
+  git checkout --detach HEAD 2>/dev/null
+  git branch -D dryrun-$pr 2>/dev/null
+done
+
+echo "CLEAN (${#CLEAN[@]}): ${CLEAN[*]}"
+echo "CONFLICT (${#CONFLICT[@]}): ${CONFLICT[*]}"
+
+cd -
+git worktree remove /tmp/dryrun-TARGET --force
+```
+
+Use the result to:
+- Send CLEAN PRs through label-driven automation (Step 1) — they'll typically self-merge
+- Reserve manual worktree time (Step 3) for CONFLICT PRs only
+- Surface PRs likely to need backport-only compat shims (CONFLICT files in `src/lib/litegraph/` or `src/scripts/app.ts`)
+
 ## Step 1: Label-Driven Automation (Batch)
 
 ```bash
@@ -87,6 +123,25 @@ for PR in ${CONFLICT_PRS[@]}; do
   # Resolve all conflicts, then:
   git add .
   GIT_EDITOR=true git cherry-pick --continue
+
+  # ── Public-API conflict review (REQUIRED for extension-API surfaces) ──
+  # If the conflict resolution touched any of these surfaces, consult oracle
+  # BEFORE pushing. A bad shim is worse than no fix:
+  #   - node.onXxx callback assignments (onDragDrop, onConnectionsChange, onRemoved, onConfigure, etc.)
+  #   - Methods on LGraphNode, LGraphCanvas, LGraph, Subgraph
+  #   - Public exports from src/lib/litegraph/
+  #   - Type changes in litegraph-augmentation.d.ts
+  # If a public callback's signature/contract changed: add a backport-only
+  # compatibility shim that preserves the OLD contract while keeping the
+  # new fix. Document it in the commit body under
+  # "## Backport-only compatibility fix". See SKILL.md gotcha section.
+  # ───────────────────────────────────────────────────────────────────────
+
+  # Per-PR validation BEFORE push (catches issues earlier than wave verification):
+  pnpm typecheck && \
+  pnpm test:unit -- run $(git diff --name-only HEAD~1 | grep -E "\.test\.ts$") && \
+  pnpm exec eslint $(git diff --name-only HEAD~1 | grep -E "\.(ts|vue)$") && \
+  pnpm exec oxfmt --check $(git diff --name-only HEAD~1 | grep -E "\.(ts|vue)$")
 
   git push origin backport-$PR-to-TARGET --no-verify
   NEW_PR=$(gh pr create --base TARGET_BRANCH --head backport-$PR-to-TARGET \
@@ -243,6 +298,9 @@ gh pr checks $PR --watch --fail-fast && gh pr merge $PR --squash --admin
 16. **Use `--no-verify` in worktrees** — husky hooks fail in `/tmp/` worktrees. Always push/commit with `--no-verify`.
 17. **Automation success varies by branch** — core/1.42 got 18/26 auto-PRs (69%), cloud/1.42 got 1/25 (4%). Cloud branches diverge more. Plan for manual fallback.
 18. **Test-then-resolve pattern** — for branches with low automation success, run a dry-run loop to classify clean vs conflict PRs before processing. This is much faster than resolving conflicts serially.
+19. **Public-API conflict resolutions need oracle review** — when a conflict touches `node.onXxx` callbacks, `LGraphNode`/`LGraphCanvas`/`LGraph`/`Subgraph` methods, or types in `litegraph-augmentation.d.ts`, consult oracle BEFORE pushing. Custom-node packages depend on these contracts. A literal cherry-pick of a refactor-style fix can silently break extensions still using the old contract — sometimes recreating the very bug the PR was fixing. Document any backport-only compatibility shim explicitly in the commit body.
+20. **Cherry-picked tests can require unbackported test scaffolding** — when a PR modifies a test file that was *added* on main by an earlier unbackported PR, the cherry-pick reports modify/delete on that file. Drop it from the backport (`git rm`) and document which PR introduced it. Don't smuggle in test infrastructure without its runtime prerequisites.
+21. **Per-PR validation catches issues earlier than wave verification** — for high-stakes branches, run `pnpm typecheck && pnpm exec eslint <changed files> && pnpm exec oxfmt --check` per PR before pushing. Wave verification still matters (it catches cross-PR interactions), but per-PR makes attribution trivial when something fails.
 
 ## CI Failure Triage
 
@@ -268,3 +326,36 @@ Common failure categories:
 | Type error                  | Interface changed on main but not branch | May need manual adaptation                |
 
 **Never assume a failure is safe to skip.** Present all failures to the user with analysis.
+
+## PR Body Template (Manual Cherry-Picks)
+
+Manual cherry-pick PRs need detail beyond the automation's terse default. Use this template — reviewers will look here before re-deriving conflict-resolution logic from the diff.
+
+```markdown
+Manual backport of #ORIG to `TARGET` for inclusion in `vX.Y.Z`.
+
+Cherry-picked from upstream merge commit `SHORT_SHA`.
+
+## Why
+[1-2 sentences from the original PR's "Summary" — what bug, what fix mechanism]
+
+## Conflict resolution
+- **`path/to/file`** — [what conflicted on this branch] → [resolution chosen + why]
+- **`path/to/dropped-test.test.ts`** — added on main by unrelated PR #XXXX (not backported). Dropped from this backport; runtime fix intact.
+- [...]
+
+## Backport-only compatibility fix (if applicable)
+[If you added a shim that wasn't in the upstream PR, document it here — what extension surface, what contract, what the shim preserves, why the upstream version would have regressed it]
+
+## Validation
+- `pnpm typecheck` ✅
+- `pnpm test:unit -- run <targeted suites>` ✅ (N/N passing)
+- `pnpm exec eslint <changed files>` ✅ (0 errors)
+- `pnpm exec oxfmt --check` ✅ (clean)
+
+[If manual e2e was skipped, explain why — e.g., requires live backend, headless not feasible. State that source is byte-identical to upstream + how long it's been baking on main.]
+
+Original PR: #ORIG / Original commit: `FULL_SHA`
+```
+
+The conflict-resolution section is non-negotiable — every conflict you resolved by hand needs a one-liner. This makes archaeology trivial six months later when someone asks "why does this look slightly different from main?"
