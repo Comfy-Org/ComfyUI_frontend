@@ -114,23 +114,26 @@ In the 2026-04-06 session: core/1.42 got 18/26 auto-PRs, cloud/1.42 got only 1/2
 
 ### Cherry-Picked Tests Can Reference Files Added By Earlier Unbackported PRs
 
-A common conflict: PR A on main modifies a test file that was *added* on main by an earlier PR B (not backported to the target). The cherry-pick of A reports "modify/delete" on B's test file because the file doesn't exist on the target. Adding the new file would smuggle in B's test scaffolding without B's runtime changes.
+A common conflict: PR A on main modifies a test file that was _added_ on main by an earlier PR B (not backported to the target). The cherry-pick of A reports "modify/delete" on B's test file because the file doesn't exist on the target. Adding the new file would smuggle in B's test scaffolding without B's runtime changes.
 
 **Detection:** Conflict says `deleted in HEAD and modified in <PR>`. Verify with:
+
 ```bash
 git log --diff-filter=A --oneline origin/main -- path/to/test.ts
 ```
+
 If the introducing commit is **not** on the target branch, the test file isn't a real prerequisite for the runtime fix.
 
 **Fix:** `git rm` the test file (drop it from the backport). Document in the commit body which PR introduced it on main and why dropping it is safe. The runtime fix itself usually doesn't depend on these tests — coverage exists at the integration layer.
 
 ### Backport-Only Compatibility Shims
 
-When a PR's *mechanism* relies on changes upstream that aren't on the older branch, a literal cherry-pick can recreate the original bug for any consumer still using the old contract. This is most dangerous for **public LiteGraph callbacks, extension APIs, and `node.*` methods** that custom-node packages depend on.
+When a PR's _mechanism_ relies on changes upstream that aren't on the older branch, a literal cherry-pick can recreate the original bug for any consumer still using the old contract. This is most dangerous for **public LiteGraph callbacks, extension APIs, and `node.*` methods** that custom-node packages depend on.
 
 **Real example (#11541, core/1.43 backport):** The PR removed `LGraphNode.vue`'s legacy `handled === true` sync-return check from `handleDrop`, replacing it with `await node.onDragDrop(event, true)`. Safe on `main` because all in-repo `onDragDrop` handlers had migrated to participate in the new `claimEvent` flag. On `core/1.43`, `onDragDrop` is a public callback — custom-node packages with synchronous `onDragDrop` returning `true` would no longer have their event claimed, recreating the duplicate-node-creation bug the PR was fixing.
 
 **Detection:** The PR's diff modifies a file that is part of a public extension API surface. Look for:
+
 - `node.onXxx` callback assignments
 - Methods on `LGraphNode`, `LGraphCanvas`, `LGraph`, `Subgraph`
 - Public exports from `src/lib/litegraph/`
@@ -182,19 +185,19 @@ Skip these without discussion:
 
 For 50+ candidate PRs, classify by changed paths first to skip the unproductive ones without spending time on triage. Run `git show --stat $SHA` (or `gh pr view --json files`) and bucket:
 
-| Path prefix | Bucket | Reason |
-| --- | --- | --- |
-| `apps/website/` | SKIP | Marketing/platform site, not core ComfyUI bundle |
-| `apps/desktop-ui/` | SKIP for `core/*` | Desktop app, separate release cadence |
-| `browser_tests/` only (no `src/`) | SKIP | Test-only |
-| `.github/workflows/` only | SKIP | CI/release infra |
-| `packages/design-system/` only | SKIP | Design tokens, not core |
-| `packages/{cloud,registry,ingest}-types/` only | SKIP | Generated types |
-| `.claude/`, `.agents/`, `docs/` | SKIP | Agent / documentation |
-| `*.stories.ts` only | SKIP | Storybook only |
-| `src/` (core editor) | KEEP — analyze further | Runtime/editor code that requires full triage |
+| Path prefix                                    | Bucket                 | Reason                                           |
+| ---------------------------------------------- | ---------------------- | ------------------------------------------------ |
+| `apps/website/`                                | SKIP                   | Marketing/platform site, not core ComfyUI bundle |
+| `apps/desktop-ui/`                             | SKIP for `core/*`      | Desktop app, separate release cadence            |
+| `browser_tests/` only (no `src/`)              | SKIP                   | Test-only                                        |
+| `.github/workflows/` only                      | SKIP                   | CI/release infra                                 |
+| `packages/design-system/` only                 | SKIP                   | Design tokens, not core                          |
+| `packages/{cloud,registry,ingest}-types/` only | SKIP                   | Generated types                                  |
+| `.claude/`, `.agents/`, `docs/`                | SKIP                   | Agent / documentation                            |
+| `*.stories.ts` only                            | SKIP                   | Storybook only                                   |
+| `src/` (core editor)                           | KEEP — analyze further | Runtime/editor code that requires full triage    |
 
-A PR touches multiple paths? Keep it if **any** changed file is under `src/` (or other core paths) and run normal analysis. Auto-skip is conservative — only skip when *all* paths match the SKIP buckets.
+A PR touches multiple paths? Keep it if **any** changed file is under `src/` (or other core paths) and run normal analysis. Auto-skip is conservative — only skip when _all_ paths match the SKIP buckets.
 
 This filter alone removes ~30-50% of candidates in a typical session, leaving only the PRs that need real triage.
 

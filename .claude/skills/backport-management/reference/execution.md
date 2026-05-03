@@ -38,6 +38,7 @@ git worktree remove /tmp/dryrun-TARGET --force
 ```
 
 Use the result to:
+
 - Send CLEAN PRs through label-driven automation (Step 1) — they'll typically self-merge
 - Reserve manual worktree time (Step 3) for CONFLICT PRs only
 - Surface PRs likely to need backport-only compat shims (CONFLICT files in `src/lib/litegraph/` or `src/scripts/app.ts`)
@@ -313,7 +314,7 @@ gh pr checks $PR --watch --fail-fast && gh pr merge $PR --squash --admin
 17. **Automation success varies by branch** — core/1.42 got 18/26 auto-PRs (69%), cloud/1.42 got 1/25 (4%). Cloud branches diverge more. Plan for manual fallback.
 18. **Test-then-resolve pattern** — for branches with low automation success, run a dry-run loop to classify clean vs conflict PRs before processing. This is much faster than resolving conflicts serially.
 19. **Public-API conflict resolutions need oracle review** — when a conflict touches `node.onXxx` callbacks, `LGraphNode`/`LGraphCanvas`/`LGraph`/`Subgraph` methods, or types in `litegraph-augmentation.d.ts`, consult oracle BEFORE pushing. Custom-node packages depend on these contracts. A literal cherry-pick of a refactor-style fix can silently break extensions still using the old contract — sometimes recreating the very bug the PR was fixing. Document any backport-only compatibility shim explicitly in the commit body.
-20. **Cherry-picked tests can require unbackported test scaffolding** — when a PR modifies a test file that was *added* on main by an earlier unbackported PR, the cherry-pick reports modify/delete on that file. Drop it from the backport (`git rm`) and document which PR introduced it. Don't smuggle in test infrastructure without its runtime prerequisites.
+20. **Cherry-picked tests can require unbackported test scaffolding** — when a PR modifies a test file that was _added_ on main by an earlier unbackported PR, the cherry-pick reports modify/delete on that file. Drop it from the backport (`git rm`) and document which PR introduced it. Don't smuggle in test infrastructure without its runtime prerequisites.
 21. **Per-PR validation catches issues earlier than wave verification** — for high-stakes branches, run `pnpm typecheck && pnpm exec eslint <changed files> && pnpm exec oxfmt --check` per PR before pushing. Wave verification still matters (it catches cross-PR interactions), but per-PR makes attribution trivial when something fails.
 
 ## CI Failure Triage
@@ -351,17 +352,21 @@ Manual backport of #ORIG to `TARGET` for inclusion in `vX.Y.Z`.
 Cherry-picked from upstream merge commit `SHORT_SHA`.
 
 ## Why
+
 [1-2 sentences from the original PR's "Summary" — what bug, what fix mechanism]
 
 ## Conflict resolution
+
 - **`path/to/file`** — [what conflicted on this branch] → [resolution chosen + why]
 - **`path/to/dropped-test.test.ts`** — added on main by unrelated PR #XXXX (not backported). Dropped from this backport; runtime fix intact.
 - [...]
 
 ## Backport-only compatibility fix (if applicable)
+
 [If you added a shim that wasn't in the upstream PR, document it here — what extension surface, what contract, what the shim preserves, why the upstream version would have regressed it]
 
 ## Validation
+
 - `pnpm typecheck` ✅
 - `pnpm test:unit -- run <targeted suites>` ✅ (N/N passing)
 - `pnpm exec eslint <changed files>` ✅ (0 errors)

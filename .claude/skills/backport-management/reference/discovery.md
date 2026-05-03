@@ -1,6 +1,7 @@
 # Discovery — Candidate Collection
 
 **Run all sources, then reconcile.** No single source is authoritative:
+
 - Slack bot may flag PRs that have already been backported (false positive)
 - Git gap may include PRs that don't need backport (test-only, design-system, website)
 - Bot can also miss PRs that landed without the right labels

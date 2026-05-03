@@ -52,7 +52,7 @@ for f in $(gh pr view $PR --json files --jq '.files[].path' | grep -v "^browser_
 done
 ```
 
-If the *primary* changed files (the runtime ones, not tests) are missing, mark the PR `SKIP / feature-not-on-branch`. This is faster than letting cherry-pick fail with modify/delete conflicts and gives a clean signal.
+If the _primary_ changed files (the runtime ones, not tests) are missing, mark the PR `SKIP / feature-not-on-branch`. This is faster than letting cherry-pick fail with modify/delete conflicts and gives a clean signal.
 
 This check is the first thing that runs after the path pre-filter and BEFORE you spend time reading PR descriptions.
 
@@ -65,6 +65,7 @@ Before the interactive Y/N approval flow, bucket all surviving candidates into t
 User-facing bugs, crashes, data corruption, or security issues in code paths that exist on the target branch. These are the strongest backport candidates.
 
 Indicators:
+
 - `fix:` prefix and the bug is reproducible on the target branch
 - Crash guards, runtime null checks, race-condition fixes
 - Data-loss bugs (state not persisted, duplicates, drops)
@@ -80,6 +81,7 @@ Recommend `Y` to user.
 Bugs that only manifest on cloud-hosted distributions (Secrets panel, subscription flows, cloud signup, workspace tracking, etc.). Whether to backport depends on whether cloud ships from the target `core/*` branch in your release matrix.
 
 Indicators:
+
 - Files under `src/platform/secrets/`, `src/platform/subscription/`, signup flows
 - PR description mentions cloud staging issues
 - Fix gated behind cloud feature flags
@@ -88,9 +90,10 @@ Default: ask the cloud release rotation owner. If unsure, defer.
 
 ### Tier 3 — Skip
 
-Path pre-filter caught most of these. The rest are PRs where the diff *touches* `src/` but the practical impact is non-user-facing or scoped to features the target doesn't ship.
+Path pre-filter caught most of these. The rest are PRs where the diff _touches_ `src/` but the practical impact is non-user-facing or scoped to features the target doesn't ship.
 
 Indicators:
+
 - All changes in test files even if the PR touched `src/` test files
 - Storybook stories only
 - Lint config / lint rule additions
