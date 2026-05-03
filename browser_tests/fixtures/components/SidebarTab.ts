@@ -95,6 +95,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly allTab: Locator
   public readonly blueprintsTab: Locator
   public readonly sortButton: Locator
+  public readonly nodeHelpContent: Locator
+  public readonly helpBackButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -103,6 +105,10 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.allTab = this.getTab('All')
     this.blueprintsTab = this.getTab('Blueprints')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
+    this.nodeHelpContent = this.sidebarContent.locator('.node-help-content')
+    this.helpBackButton = this.sidebarContent.getByRole('button', {
+      name: /back/i
+    })
   }
 
   getTab(name: string) {

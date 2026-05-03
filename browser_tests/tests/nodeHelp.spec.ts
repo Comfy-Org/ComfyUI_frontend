@@ -594,11 +594,11 @@ test.describe('Node Help V2 Sidebar', { tag: ['@slow', '@ui'] }, () => {
     await selectNodeWithPan(comfyPage, ksamplerNodes[0])
     await openNodeInfoViMoreOptions(comfyPage)
 
-    const sidebarContent = comfyPage.page.locator('.sidebar-content-container')
-    await expect(sidebarContent).toBeVisible()
-    await expect(sidebarContent.locator('.node-help-content')).toBeVisible()
-    await expect(sidebarContent).toContainText('KSampler')
-    await expect(sidebarContent.getByPlaceholder('Search...')).toBeHidden()
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    await expect(sidebar.sidebarContent).toBeVisible()
+    await expect(sidebar.nodeHelpContent).toBeVisible()
+    await expect(sidebar.sidebarContent).toContainText('KSampler')
+    await expect(sidebar.searchInput).toBeHidden()
   })
 
   test('Should return to V2 node library when clicking back from help page', async ({
@@ -613,16 +613,13 @@ test.describe('Node Help V2 Sidebar', { tag: ['@slow', '@ui'] }, () => {
     await selectNodeWithPan(comfyPage, ksamplerNodes[0])
     await openNodeInfoViMoreOptions(comfyPage)
 
-    const sidebarContent = comfyPage.page.locator('.sidebar-content-container')
-    await expect(sidebarContent.locator('.node-help-content')).toBeVisible()
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    await expect(sidebar.nodeHelpContent).toBeVisible()
 
-    const backButton = sidebarContent.getByRole('button', {
-      name: /back/i
-    })
-    await backButton.click()
+    await sidebar.helpBackButton.click()
 
-    await expect(sidebarContent.getByPlaceholder('Search...')).toBeVisible()
-    await expect(sidebarContent.locator('.node-help-content')).toBeHidden()
+    await expect(sidebar.searchInput).toBeVisible()
+    await expect(sidebar.nodeHelpContent).toBeHidden()
   })
 
   test('Should show correct node info when opening help for different node types', async ({
@@ -644,8 +641,10 @@ test.describe('Node Help V2 Sidebar', { tag: ['@slow', '@ui'] }, () => {
     await selectNodeWithPan(comfyPage, ksamplerNodes[0])
     await openNodeInfoViMoreOptions(comfyPage)
 
-    const sidebarContent = comfyPage.page.locator('.sidebar-content-container')
-    await expect(sidebarContent).toContainText('KSampler Help')
-    await expect(sidebarContent).toContainText('KSampler documentation content')
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    await expect(sidebar.sidebarContent).toContainText('KSampler Help')
+    await expect(sidebar.sidebarContent).toContainText(
+      'KSampler documentation content'
+    )
   })
 })
