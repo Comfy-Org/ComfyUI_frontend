@@ -573,9 +573,11 @@ test.describe('Node Help V2 Sidebar', { tag: ['@slow', '@ui'] }, () => {
     await expect(moreOptionsBtn).toBeVisible()
     await moreOptionsBtn.click()
 
-    const menu = comfyPage.page.locator('.p-contextmenu')
-    await expect(menu.getByText('Node Info', { exact: true })).toBeVisible()
-    await menu.getByText('Node Info', { exact: true }).click()
+    const nodeInfoEntry = comfyPage.contextMenu.getEntry('Node Info', {
+      exact: true
+    })
+    await expect(nodeInfoEntry).toBeVisible()
+    await nodeInfoEntry.click()
     await comfyPage.nextFrame()
   }
 

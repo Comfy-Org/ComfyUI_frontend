@@ -5,21 +5,30 @@ export class ContextMenu {
   public readonly primeVueMenu: Locator
   public readonly litegraphMenu: Locator
   public readonly litegraphContextMenu: Locator
-  public readonly menuItems: Locator
+  public readonly entries: Locator
 
   constructor(public readonly page: Page) {
     this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
     this.litegraphMenu = page.locator('.litemenu')
     this.litegraphContextMenu = page.locator('.litecontextmenu')
-    this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
+    this.entries = page.locator('.p-menuitem, .litemenu-entry')
+  }
+
+  /** @deprecated Use {@link entries} instead. */
+  get menuItems(): Locator {
+    return this.entries
+  }
+
+  getEntry(name: string, options: { exact?: boolean } = {}): Locator {
+    return this.page.getByRole('menuitem', { name, exact: options.exact })
   }
 
   async clickMenuItem(name: string): Promise<void> {
-    await this.page.getByRole('menuitem', { name }).click()
+    await this.getEntry(name).click()
   }
 
   async clickMenuItemExact(name: string): Promise<void> {
-    await this.page.getByRole('menuitem', { name, exact: true }).click()
+    await this.getEntry(name, { exact: true }).click()
   }
 
   /**
