@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
@@ -25,9 +25,8 @@ const secondaryCtaKey =
 
 const primaryHref = externalLinks.apiKeys
 
-const localePrefix = locale === 'zh-CN' ? '/zh-CN' : ''
-const secondaryHref =
-  status === 'success' ? `${localePrefix}/` : `${localePrefix}/contact`
+const routes = getRoutes(locale)
+const secondaryHref = status === 'success' ? routes.home : routes.contact
 
 const iconRingClass =
   status === 'success'

@@ -3,6 +3,18 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 
+const SITEMAP_EXCLUDED_PATHNAMES = new Set([
+  '/payment/success',
+  '/payment/failed',
+  '/zh-CN/payment/success',
+  '/zh-CN/payment/failed'
+])
+
+function isExcludedFromSitemap(page: string): boolean {
+  const pathname = new URL(page).pathname.replace(/\/$/, '')
+  return SITEMAP_EXCLUDED_PATHNAMES.has(pathname)
+}
+
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
@@ -20,7 +32,7 @@ export default defineConfig({
   integrations: [
     vue(),
     sitemap({
-      filter: (page) => !/\/payment\/(success|failed)\/?$/.test(page)
+      filter: (page) => !isExcludedFromSitemap(page)
     })
   ],
   vite: {
