@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -154,6 +154,12 @@ describe('useNodeDrag', () => {
     vi.stubGlobal('cancelAnimationFrame', testState.cancelAnimationFrame)
   })
 
+  afterEach(async () => {
+    const { graphInteractionHooks } =
+      await import('@/renderer/core/canvas/hooks/graphInteractionHooks')
+    graphInteractionHooks.clear()
+  })
+
   it('batches multi-node drag updates into one mutation call per frame', () => {
     testState.selectedNodeIds.value = new Set(['1', '2'])
     testState.nodeLayouts.set('1', {
@@ -202,7 +208,6 @@ describe('useNodeDrag', () => {
   it('emits selectionSize=1 when dragging an unselected node while others are selected', async () => {
     const { graphInteractionHooks } =
       await import('@/renderer/core/canvas/hooks/graphInteractionHooks')
-    graphInteractionHooks.clear()
 
     testState.selectedNodeIds.value = new Set(['1', '2'])
     testState.selectedItems.value = [{ isLGraphGroup: true }]
@@ -220,7 +225,7 @@ describe('useNodeDrag', () => {
     })
 
     const observed: number[] = []
-    const unsubscribe = graphInteractionHooks.on('nodeDragMove', (e) =>
+    graphInteractionHooks.on('nodeDragMove', (e) =>
       observed.push(e.selectionSize)
     )
 
@@ -237,9 +242,6 @@ describe('useNodeDrag', () => {
     )
     endDrag(pointerEvent(30, 40), 'outsider')
     expect(endObserved).toEqual([1])
-
-    unsubscribe()
-    graphInteractionHooks.clear()
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
