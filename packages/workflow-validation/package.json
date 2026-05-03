@@ -19,7 +19,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "vite build --config vite.config.mts && node ../../scripts/prepare-workflow-validation.js",
+    "build": "vite build --config vite.config.mts && tsx ../../scripts/prepare-workflow-validation.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

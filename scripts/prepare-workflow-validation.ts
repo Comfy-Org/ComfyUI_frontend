@@ -7,15 +7,30 @@ const repoRoot = path.resolve(__dirname, '..')
 const packageDir = path.join(repoRoot, 'packages', 'workflow-validation')
 const distDir = path.join(packageDir, 'dist')
 
+interface SourcePackage {
+  name: string
+  version: string
+  description?: string
+  license?: string
+  repository?: string
+  homepage?: string
+  dependencies?: Record<string, string>
+  publishConfig?: Record<string, unknown>
+}
+
 const sourcePackage = JSON.parse(
   fs.readFileSync(path.join(packageDir, 'package.json'), 'utf8')
-)
-const workspaceCatalog =
+) as SourcePackage
+
+const workspaceYaml =
   fs
     .readFileSync(path.join(repoRoot, 'pnpm-workspace.yaml'), 'utf8')
-    .match(/^catalog:\n([\s\S]*?)\n\S/m)?.[1] ?? ''
+    .replace(/\r\n/g, '\n') + '\n___end:'
 
-function resolveCatalog(name) {
+const workspaceCatalog =
+  workspaceYaml.match(/^catalog:\n([\s\S]*?)\n\S/m)?.[1] ?? ''
+
+function resolveCatalog(name: string): string {
   const sourceVersion = sourcePackage.dependencies?.[name]
   if (sourceVersion && sourceVersion !== 'catalog:') return sourceVersion
   const re = new RegExp(`^\\s+'?${name}'?:\\s*([^\\n]+)$`, 'm')
@@ -26,7 +41,7 @@ function resolveCatalog(name) {
         `Expected entry under \`catalog:\` in pnpm-workspace.yaml.`
     )
   }
-  return match[1].trim()
+  return match[1]!.trim()
 }
 
 const distPackage = {

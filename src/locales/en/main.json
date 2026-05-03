@@ -2261,7 +2261,15 @@
       "special": "Must contain at least one special character",
       "match": "Passwords must match"
     },
-    "personalDataConsentRequired": "You must agree to the processing of your personal data."
+    "personalDataConsentRequired": "You must agree to the processing of your personal data.",
+    "topology": {
+      "invalidLinks": "Workflow has {count} invalid link | Workflow has {count} invalid links",
+      "overflow": "…and {count} more (see console for full list)",
+      "abortedSummary": "Workflow has unrepairable invalid links",
+      "validationSummary": "Workflow Validation",
+      "linksFixedSummary": "Workflow Links Fixed",
+      "linksFixedDetail": "Fixed {patched} node connections and removed {deleted} invalid links."
+    }
   },
   "credits": {
     "activity": "Activity",

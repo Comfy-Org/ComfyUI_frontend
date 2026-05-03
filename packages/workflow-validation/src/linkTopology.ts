@@ -118,21 +118,26 @@ export function validateLinkTopology(graph: SerialisedGraph): TopologyError[] {
     if (!origin || !target) continue
 
     const outputs = origin.outputs ?? []
-    if (link.originSlot < 0 || link.originSlot >= outputs.length) {
+    const originSlotOutOfBounds =
+      link.originSlot < 0 || link.originSlot >= outputs.length
+    if (originSlotOutOfBounds) {
       errors.push({
         kind: 'origin-slot-out-of-bounds',
         link,
         originSlotCount: outputs.length
       })
-      continue
     }
     const inputs = target.inputs ?? []
-    if (link.targetSlot < 0 || link.targetSlot >= inputs.length) {
+    const targetSlotOutOfBounds =
+      link.targetSlot < 0 || link.targetSlot >= inputs.length
+    if (targetSlotOutOfBounds) {
       errors.push({
         kind: 'target-slot-out-of-bounds',
         link,
         targetSlotCount: inputs.length
       })
+    }
+    if (originSlotOutOfBounds || targetSlotOutOfBounds) {
       continue
     }
 
