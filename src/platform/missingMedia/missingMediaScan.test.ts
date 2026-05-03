@@ -5,6 +5,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 import {
   scanAllMediaCandidates,
   scanNodeMediaCandidates,
@@ -29,13 +30,20 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   ) => node._testExecutionId ?? String(node.id)
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    checkAssetHash: mockCheckAssetHash,
-    getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
-  },
-  isBlake3AssetHash: (value: string) => /^blake3:[0-9a-f]{64}$/i.test(value)
-}))
+vi.mock('@/platform/assets/services/assetService', async () => {
+  const actual = await vi.importActual<typeof AssetServiceModule>(
+    '@/platform/assets/services/assetService'
+  )
+
+  return {
+    ...actual,
+    assetService: {
+      ...actual.assetService,
+      checkAssetHash: mockCheckAssetHash,
+      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
+    }
+  }
+})
 
 function makeCandidate(
   nodeId: string,
@@ -86,7 +94,7 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
   return fromAny<LGraph, unknown>({ _testNodes: nodes })
 }
 
-function makeAsset(name: string, assetHash: string | null = name): AssetItem {
+function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   return {
     id: name,
     name,
@@ -361,7 +369,9 @@ describe('verifyCloudMediaCandidates', () => {
       makeCandidate('1', 'photo.png', { isMissing: undefined }),
       makeCandidate('2', 'missing.png', { isMissing: undefined })
     ]
-    const fetchInputAssets = vi.fn(async () => [makeAsset('photo.png')])
+    const fetchInputAssets = vi.fn(async () => [
+      makeAsset('stored-photo.png', 'photo.png')
+    ])
 
     await verifyCloudMediaCandidates(
       candidates,
@@ -383,7 +393,7 @@ describe('verifyCloudMediaCandidates', () => {
     const inputAssets = Array.from({ length: 500 }, (_, index) =>
       makeAsset(`asset-${index}.png`)
     )
-    inputAssets[42] = makeAsset('public-photo.png')
+    inputAssets[42] = makeAsset('public-asset-record', 'public-photo.png')
     mockGetInputAssetsIncludingPublic.mockResolvedValue(inputAssets)
 
     await verifyCloudMediaCandidates(candidates)

@@ -240,6 +240,23 @@ function validateAssetResponse(data: unknown): AssetResponse {
   )
 }
 
+function validateUploadedAssetResponse(
+  data: unknown
+): AssetItem & { created_new: boolean } {
+  const result = assetItemSchema.safeParse(data)
+  if (result.success) {
+    return data as AssetItem & { created_new: boolean }
+  }
+
+  console.error('Invalid asset upload response:', fromZodError(result.error))
+  throw new Error(
+    st(
+      'assetBrowser.errorUploadFailed',
+      'Failed to upload asset. Please try again.'
+    )
+  )
+}
+
 /**
  * Private service for asset-related network requests
  * Not exposed globally - used internally by ComfyApi
@@ -718,7 +735,7 @@ function createAssetService() {
       )
     }
 
-    const asset = await res.json()
+    const asset = validateUploadedAssetResponse(await res.json())
     invalidateInputAssetsCacheIfNeeded(params.tags)
     return asset
   }
@@ -773,7 +790,7 @@ function createAssetService() {
       )
     }
 
-    const asset = await res.json()
+    const asset = validateUploadedAssetResponse(await res.json())
     invalidateInputAssetsCacheIfNeeded(params.tags)
     return asset
   }
