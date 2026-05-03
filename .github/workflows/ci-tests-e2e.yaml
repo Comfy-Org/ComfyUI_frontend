@@ -4,7 +4,6 @@ name: 'CI: Tests E2E'
 on:
   push:
     branches: [main, master, core/*, desktop/*]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
   merge_group:
@@ -15,36 +14,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Detect whether e2e-relevant files changed. Required checks see "skipped"
-  # (which counts as passing) when only docs/apps/storybook files are touched,
-  # avoiding the stall that paths-ignore would cause.
   changes:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
-      should_run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.e2e }}
+      should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - name: Checkout repository
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/checkout@v6
-      - name: Check for e2e-relevant changes
-        if: ${{ github.event_name == 'pull_request' }}
-        id: filter
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        with:
-          predicate-quantifier: 'every'
-          filters: |
-            e2e:
-              - '**'
-              - '!apps/**'
-              - '!docs/**'
-              - '!.storybook/**'
-              - '!**/*.md'
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
 
   setup:
     needs: changes
-    if: ${{ needs.changes.outputs.should_run == 'true' }}
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -82,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -140,7 +123,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -194,7 +177,7 @@ jobs:
   merge-reports:
     needs: [changes, playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() && needs.changes.outputs.should_run == 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
     steps:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -233,7 +216,7 @@ jobs:
     steps:
       - name: Check E2E results
         env:
-          SHOULD_RUN: ${{ needs.changes.outputs.should_run }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
         run: |
@@ -251,7 +234,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       ${{
-        needs.changes.outputs.should_run == 'true' &&
+        needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.fork == false
       }}
@@ -278,7 +261,7 @@ jobs:
     if: >-
       ${{
         always() &&
-        needs.changes.outputs.should_run == 'true' &&
+        needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.fork == false
       }}

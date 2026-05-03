@@ -129,10 +129,11 @@ function closeDialog() {
 const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
+  const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
   const node = litegraphService.addNodeOnGraph(
     nodeDef,
     { pos: getNewNodeLocation() },
-    { ghost: useSearchBoxV2.value, dragEvent }
+    { ghost: useSearchBoxV2.value && followCursor, dragEvent }
   )
   if (!node) return
 

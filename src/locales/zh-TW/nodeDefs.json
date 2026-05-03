@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "使用 HappyHorse 模型，從首幀圖像生成影片。",
+    "display_name": "HappyHorse 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首幀圖像。輸出長寬比將依據此圖像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "使用 HappyHorse 模型，根據參考素材生成包含人物或物件的影片。支援單角色表演與多角色互動。",
+    "display_name": "HappyHorse 參考素材轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "使用 HappyHorse 模型，根據文字提示生成影片。",
+    "display_name": "HappyHorse 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "使用 HappyHorse 模型，根據文字指令或參考圖像編輯影片。輸出時長為 3-15 秒，並與輸入影片一致；超過 15 秒的輸入將被截斷。",
+    "display_name": "HappyHorse 影片編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要編輯的影片。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "將低解析度影像升級為超高解析度，消除雜訊與失真。最大輸出：32 百萬像素。",
     "display_name": "HitPaw 通用影像增強",
@@ -11684,6 +11834,14 @@
       },
       "control_after_generate": {
         "name": "生成後控制"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "僅當「size」為「Custom」時使用。必須為 16 的倍數（僅限 GPT Image 2）。"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "僅當「size」為「Custom」時使用。必須為 16 的倍數（僅限 GPT Image 2）。"
       },
       "image": {
         "name": "參考影像",

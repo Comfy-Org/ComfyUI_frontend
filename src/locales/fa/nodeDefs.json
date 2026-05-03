@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "تولید ویدیو از یک تصویر فریم اول با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "فریم اول",
+        "tooltip": "تصویر فریم اول. نسبت ابعاد خروجی از این تصویر استخراج می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "تولید ویدیو با حضور یک شخص یا شیء از مواد مرجع با مدل HappyHorse. پشتیبانی از اجراهای تک‌نفره و تعامل چندنفره.",
+    "display_name": "HappyHorse تبدیل مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "تولید ویدیو بر اساس پرامپت متنی با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "ویرایش ویدیو با دستور متنی یا تصاویر مرجع با مدل HappyHorse. مدت زمان خروجی بین ۳ تا ۱۵ ثانیه و مطابق با ویدیوی ورودی است؛ ورودی‌های بیش از ۱۵ ثانیه کوتاه می‌شوند.",
+    "display_name": "HappyHorse ویرایش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی که باید ویرایش شود."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "ارتقاء تصاویر با وضوح پایین به وضوح بسیار بالا، حذف نویز و آرتیفکت‌ها. حداکثر خروجی: ۳۲ مگاپیکسل.",
     "display_name": "افزایش کیفیت تصویر عمومی HitPaw",
@@ -11684,6 +11834,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
       },
       "image": {
         "name": "image",

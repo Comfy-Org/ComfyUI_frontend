@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
+  setViewport,
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -15,10 +17,14 @@ import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
+const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
+const MOBILE_VIEWPORT = { width: 360, height: 800 }
+
 describe('NodeSearchContent', () => {
   beforeEach(() => {
     setupTestPinia()
     vi.restoreAllMocks()
+    setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
     settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
@@ -547,7 +553,7 @@ describe('NodeSearchContent', () => {
   })
 
   describe('filter integration', () => {
-    it('should display active filters in the input area', () => {
+    it('renders one chip per active filter with the filter value', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'ImageNode',
@@ -556,16 +562,20 @@ describe('NodeSearchContent', () => {
         })
       ])
 
+      const inputFilter = useNodeDefStore().nodeSearchService.inputTypeFilter
       renderComponent({
         filters: [
-          {
-            filterDef: useNodeDefStore().nodeSearchService.inputTypeFilter,
-            value: 'IMAGE'
-          }
+          { filterDef: inputFilter, value: 'IMAGE' },
+          { filterDef: inputFilter, value: 'LATENT' }
         ]
       })
 
-      expect(screen.getAllByTestId('filter-chip').length).toBeGreaterThan(0)
+      const chipTexts = screen
+        .getAllByTestId('filter-chip')
+        .map((c) => c.textContent ?? '')
+      expect(chipTexts).toHaveLength(2)
+      expect(chipTexts.some((t) => t.includes('IMAGE'))).toBe(true)
+      expect(chipTexts.some((t) => t.includes('LATENT'))).toBe(true)
     })
   })
 
@@ -656,6 +666,95 @@ describe('NodeSearchContent', () => {
       })
       const removedValues = onRemoveFilter.mock.calls.map(([f]) => f.value)
       expect(removedValues).toEqual(expect.arrayContaining(['IMAGE', 'LATENT']))
+    })
+  })
+
+  describe('sidebar toggle', () => {
+    it('should hide and show the category sidebar when the toggle is clicked', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'KSampler',
+          display_name: 'KSampler',
+          category: 'sampling'
+        })
+      ])
+
+      const { user } = renderComponent()
+
+      const sidebar = await screen.findByTestId('category-sampling')
+      expect(sidebar).toBeVisible()
+
+      const toggle = screen.getByTestId('toggle-category-sidebar')
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      await user.click(toggle)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'false')
+        expect(screen.getByTestId('category-sampling')).not.toBeVisible()
+      })
+
+      await user.click(toggle)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'true')
+        expect(screen.getByTestId('category-sampling')).toBeVisible()
+      })
+    })
+
+    it('should close the sidebar when the search input gains focus on mobile', async () => {
+      setViewport(MOBILE_VIEWPORT)
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'KSampler',
+          display_name: 'KSampler',
+          category: 'sampling'
+        })
+      ])
+
+      const { user } = renderComponent()
+
+      const toggle = screen.getByTestId('toggle-category-sidebar')
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+      await user.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      await user.click(screen.getByRole('combobox'))
+
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      })
+    })
+
+    it('should preserve user state across mobile/desktop resizes', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'KSampler',
+          display_name: 'KSampler',
+          category: 'sampling'
+        })
+      ])
+
+      const { user } = renderComponent()
+
+      const toggle = screen.getByTestId('toggle-category-sidebar')
+      const expectExpanded = (value: 'true' | 'false') =>
+        waitFor(() => expect(toggle).toHaveAttribute('aria-expanded', value))
+
+      await expectExpanded('true')
+
+      setViewport(MOBILE_VIEWPORT)
+      await expectExpanded('false')
+
+      await user.click(toggle)
+      setViewport(DESKTOP_VIEWPORT)
+      await expectExpanded('true')
+
+      await user.click(toggle)
+      setViewport(MOBILE_VIEWPORT)
+      await expectExpanded('false')
+
+      setViewport(DESKTOP_VIEWPORT)
+      await expectExpanded('false')
     })
   })
 

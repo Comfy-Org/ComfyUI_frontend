@@ -4062,6 +4062,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/seedance/virtual-library/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceVirtualLibraryCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seedance/complete": {
         parameters: {
             query?: never;
@@ -14490,12 +14506,22 @@ export interface components {
             code: string;
             message: string;
         };
+        SeedanceVirtualLibraryCreateAssetRequest: {
+            /** @description Publicly accessible URL of the image asset to upload to the caller's virtual portrait library. */
+            url: string;
+            /** @description Client-supplied content hash used as the per-customer dedup key. Re-submitting the same hash returns the existing asset id without re-uploading to BytePlus. */
+            hash: string;
+        };
+        SeedanceVirtualLibraryCreateAssetResponse: {
+            /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
+            asset_id: string;
+        };
         WanVideoGenerationRequest: {
             /**
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /**
@@ -30338,10 +30364,7 @@ export interface operations {
     };
     seedanceGetAsset: {
         parameters: {
-            query?: {
-                /** @description BytePlus project name. Defaults to "default" if omitted. Must match the ProjectName used at create time. */
-                project_name?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description BytePlus-issued asset id returned by seedanceCreateAsset */
@@ -30358,6 +30381,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceGetAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceVirtualLibraryCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset creation accepted (asynchronous — poll seedanceGetAsset) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetResponse"];
                 };
             };
             /** @description Error 4xx/5xx */
