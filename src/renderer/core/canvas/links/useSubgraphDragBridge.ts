@@ -6,6 +6,7 @@ import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
@@ -72,6 +73,10 @@ export function useSubgraphDragBridge() {
 
       const renderLink = adapter.renderLinks[0]
       if (!renderLink) return
+
+      // Only bridge SubgraphInput/SubgraphOutput drags; other canvas drags
+      // (e.g., reroutes) should not activate Vue slot drag UI state.
+      if (!(renderLink.node instanceof SubgraphIONodeBase)) return
 
       const sourceType: 'input' | 'output' =
         connectingTo === 'input' ? 'output' : 'input'
