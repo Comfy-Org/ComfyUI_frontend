@@ -12,7 +12,9 @@ function getNewlyAddedFiles(): string[] {
       encoding: 'utf8'
     })
     return out.split('\n').filter(Boolean)
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    process.stderr.write(`Frozen-dir check skipped: ${message}\n`)
     return []
   }
 }
