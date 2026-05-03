@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -409,6 +409,63 @@ export const useExecutionStore = defineStore('execution', () => {
     return true
   }
 
+  /**
+   * Rebuilds the global progress mirror to match the currently active
+   * workflow tab. Called when the user switches tabs so stale progress
+   * from the previously active workflow does not bleed into the new one.
+   *
+   * Picks the most recent job whose mapping resolves to the active
+   * workflow and replays its `nodeProgressStatesByJob` entry into the
+   * mirror; clears the mirror entirely when no such job exists.
+   */
+  function reconcileMirrorForActiveWorkflow() {
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return
+
+    const activeId =
+      activeWorkflow.activeState?.id ?? activeWorkflow.initialState?.id ?? null
+    const activePath = activeWorkflow.path ?? null
+
+    const jobIds = Object.keys(nodeProgressStatesByJob.value)
+    let matchedJobId: JobId | null = null
+    for (let i = jobIds.length - 1; i >= 0; i--) {
+      const jobId = jobIds[i]
+      const mappedId = jobIdToWorkflowId.value.get(jobId)
+      const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
+      const idMatch = activeId !== null && mappedId === activeId
+      const pathMatch = activePath !== null && mappedPath === activePath
+      if (idMatch || pathMatch) {
+        matchedJobId = jobId
+        break
+      }
+    }
+
+    if (matchedJobId) {
+      const nodes = nodeProgressStatesByJob.value[matchedJobId] ?? {}
+      nodeProgressStates.value = nodes
+      executionIdToLocatorCache.clear()
+      if (
+        _executingNodeProgress.value &&
+        _executingNodeProgress.value.prompt_id !== matchedJobId
+      ) {
+        _executingNodeProgress.value = null
+      }
+    } else {
+      if (Object.keys(nodeProgressStates.value).length > 0) {
+        nodeProgressStates.value = {}
+        executionIdToLocatorCache.clear()
+      }
+      _executingNodeProgress.value = null
+    }
+  }
+
+  watch(
+    () => workflowStore.activeWorkflow,
+    () => {
+      reconcileMirrorForActiveWorkflow()
+    }
+  )
+
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
     const { prompt_id: jobId, workflow_id: messageWorkflowId } = e.detail
     if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
@@ -783,6 +840,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobIds,
     reconcileInitializingJobs,
     reconcileTerminalJobs,
+    reconcileMirrorForActiveWorkflow,
     bindExecutionEvents,
     unbindExecutionEvents,
     storeJob,

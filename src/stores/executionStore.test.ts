@@ -632,6 +632,149 @@ describe('useExecutionStore - active workflow gating of progress mirror', () => 
   })
 })
 
+describe('useExecutionStore - reconcileMirrorForActiveWorkflow', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>,
+    workflowId?: string
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', {
+        detail: { nodes, prompt_id: jobId, workflow_id: workflowId }
+      })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    mockActiveWorkflow.current = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('rebuilds the mirror from the active workflow job on tab switch', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-a' },
+      path: '/wf-a.json'
+    }
+    fireProgressState('job-a', makeProgressNodes('1', 'job-a'), 'wf-a')
+    store.registerJobWorkflowIdMapping('job-a', 'wf-a')
+
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-b' },
+      path: '/wf-b.json'
+    }
+    fireProgressState('job-b', makeProgressNodes('2', 'job-b'), 'wf-b')
+    store.registerJobWorkflowIdMapping('job-b', 'wf-b')
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('2', 'job-b'))
+
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-a' },
+      path: '/wf-a.json'
+    }
+    store.reconcileMirrorForActiveWorkflow()
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-a'))
+  })
+
+  it('clears the mirror when the active workflow has no matching job', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-a' },
+      path: '/wf-a.json'
+    }
+    fireProgressState('job-a', makeProgressNodes('1', 'job-a'), 'wf-a')
+    store.registerJobWorkflowIdMapping('job-a', 'wf-a')
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-a'))
+
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-empty' },
+      path: '/wf-empty.json'
+    }
+    store.reconcileMirrorForActiveWorkflow()
+
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('clears _executingNodeProgress that belonged to a different job', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-a' },
+      path: '/wf-a.json'
+    }
+    fireProgressState('job-a', makeProgressNodes('1', 'job-a'), 'wf-a')
+    store.registerJobWorkflowIdMapping('job-a', 'wf-a')
+
+    const progressHandler = apiEventHandlers.get('progress')
+    if (!progressHandler) throw new Error('progress handler not bound')
+    progressHandler(
+      new CustomEvent('progress', {
+        detail: {
+          value: 5,
+          max: 10,
+          prompt_id: 'job-a',
+          node: '1',
+          workflow_id: 'wf-a'
+        }
+      })
+    )
+
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-empty' },
+      path: '/wf-empty.json'
+    }
+    store.reconcileMirrorForActiveWorkflow()
+
+    expect(store._executingNodeProgress).toBeNull()
+  })
+
+  it('falls back to session path mapping when workflow id is not registered', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-a' },
+      path: '/wf-a.json'
+    }
+    fireProgressState('job-a', makeProgressNodes('1', 'job-a'), 'wf-a')
+    store.ensureSessionWorkflowPath('job-a', '/wf-a.json')
+
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-b' },
+      path: '/wf-b.json'
+    }
+    fireProgressState('job-b', makeProgressNodes('2', 'job-b'), 'wf-b')
+    store.ensureSessionWorkflowPath('job-b', '/wf-b.json')
+
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-a' },
+      path: '/wf-a.json'
+    }
+    store.reconcileMirrorForActiveWorkflow()
+
+    expect(store.nodeProgressStates).toEqual(makeProgressNodes('1', 'job-a'))
+  })
+})
+
 describe('useExecutionStore - reconcileTerminalJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
