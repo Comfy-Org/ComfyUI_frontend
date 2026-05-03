@@ -310,6 +310,66 @@ describe(useWorkflowShareService, () => {
     })
   })
 
+  it('drops empty arrays and empty metadata so prefill is null when hub details are blank', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-blank/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-blank',
+          share_id: 'wf-blank',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-blank') {
+        return mockJsonResponse({
+          tags: [],
+          models: [],
+          custom_nodes: [],
+          metadata: {}
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-blank')
+
+    expect(status.prefill).toBeNull()
+  })
+
+  it('falls back to label name when display_name is whitespace-only and drops blank refs', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-ws/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-ws',
+          share_id: 'wf-ws',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-ws') {
+        return mockJsonResponse({
+          tags: [
+            { name: 'realism', display_name: '   ' },
+            { name: '   ', display_name: '   ' },
+            { name: 'portrait', display_name: 'Portrait' }
+          ],
+          models: [{ name: '', display_name: '' }]
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-ws')
+
+    expect(status.prefill).toEqual({ tags: ['realism', 'Portrait'] })
+  })
+
   it('returns null prefill when hub workflow details are unavailable', async () => {
     mockFetchApi.mockImplementation(async (path: string) => {
       if (path === '/userdata/wf-no-meta/publish') {
