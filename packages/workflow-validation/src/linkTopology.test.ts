@@ -71,6 +71,53 @@ describe('validateLinkTopology', () => {
       actualLink: 999
     })
   })
+
+  it('accepts object-form links for valid graphs', () => {
+    const graph = makeGraph({
+      nodes: [
+        { id: 1, outputs: [{ name: 'o', type: '*', links: [10] }] },
+        { id: 2, inputs: [{ name: 'i', type: '*', link: 10 }] }
+      ],
+      links: [
+        {
+          id: 10,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: '*'
+        }
+      ]
+    })
+    expect(validateLinkTopology(graph)).toEqual([])
+  })
+
+  it('reports object-form links with out-of-bounds slots', () => {
+    const graph = makeGraph({
+      nodes: [
+        { id: 1, outputs: [{ name: 'o', type: '*', links: [10] }] },
+        {
+          id: 2,
+          inputs: [{ name: 'a', type: '*', link: null }]
+        }
+      ],
+      links: [
+        {
+          id: 10,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 5,
+          type: '*'
+        }
+      ]
+    })
+    const errors = validateLinkTopology(graph)
+    expect(errors[0]).toMatchObject({
+      kind: 'target-slot-out-of-bounds',
+      link: { linkId: 10, targetId: 2, targetSlot: 5 }
+    })
+  })
 })
 
 describe('describeTopologyError', () => {

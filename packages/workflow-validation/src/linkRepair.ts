@@ -491,6 +491,7 @@ export function repairLinks(
         )
         if (idx === -1) {
           logger.log(`INDEX NOT FOUND for #${data.deletedLinks[i]}`)
+          continue
         }
         logger.log(`splicing ${idx} from links`)
         ;(graph.links as Array<unknown>).splice(idx, 1)
