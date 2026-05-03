@@ -192,7 +192,7 @@ For 50+ candidate PRs, classify by changed paths first to skip the unproductive 
 | `packages/{cloud,registry,ingest}-types/` only | SKIP | Generated types |
 | `.claude/`, `.agents/`, `docs/` | SKIP | Agent / documentation |
 | `*.stories.ts` only | SKIP | Storybook only |
-| `src/` (core editor) | KEEP — analyze further |
+| `src/` (core editor) | KEEP — analyze further | Runtime/editor code that requires full triage |
 
 A PR touches multiple paths? Keep it if **any** changed file is under `src/` (or other core paths) and run normal analysis. Auto-skip is conservative — only skip when *all* paths match the SKIP buckets.
 

@@ -101,7 +101,7 @@ Indicators:
 
 When showing tier results to the user, format as:
 
-```
+```text
 Tier 1 (N PRs) — strong backport candidates
 - #11541 fix: stop duplicate node creation when dropping image on Vue nodes
   Why: Vue Nodes 2.0 regression — async onDragDrop bypassed handled-check, drops bubble to document, spawns extra LoadImage nodes

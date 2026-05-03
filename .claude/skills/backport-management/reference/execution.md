@@ -137,11 +137,25 @@ for PR in ${CONFLICT_PRS[@]}; do
   # "## Backport-only compatibility fix". See SKILL.md gotcha section.
   # ───────────────────────────────────────────────────────────────────────
 
-  # Per-PR validation BEFORE push (catches issues earlier than wave verification):
-  pnpm typecheck && \
-  pnpm test:unit -- run $(git diff --name-only HEAD~1 | grep -E "\.test\.ts$") && \
-  pnpm exec eslint $(git diff --name-only HEAD~1 | grep -E "\.(ts|vue)$") && \
-  pnpm exec oxfmt --check $(git diff --name-only HEAD~1 | grep -E "\.(ts|vue)$")
+  # Per-PR validation BEFORE push (catches issues earlier than wave verification).
+  # Guard each targeted command against empty file lists — running `pnpm test:unit -- run`
+  # with no arg matchers would run the full suite, and `pnpm exec eslint` with no args errors.
+  pnpm typecheck
+
+  mapfile -t TEST_FILES < <(git diff --name-only HEAD~1 | grep -E '\.test\.ts$' || true)
+  if [ ${#TEST_FILES[@]} -gt 0 ]; then
+    pnpm test:unit -- run "${TEST_FILES[@]}"
+  else
+    echo "No changed test files — skipping targeted unit tests"
+  fi
+
+  mapfile -t CODE_FILES < <(git diff --name-only HEAD~1 | grep -E '\.(ts|vue)$' || true)
+  if [ ${#CODE_FILES[@]} -gt 0 ]; then
+    pnpm exec eslint "${CODE_FILES[@]}"
+    pnpm exec oxfmt --check "${CODE_FILES[@]}"
+  else
+    echo "No changed ts/vue files — skipping targeted lint/format"
+  fi
 
   git push origin backport-$PR-to-TARGET --no-verify
   NEW_PR=$(gh pr create --base TARGET_BRANCH --head backport-$PR-to-TARGET \
