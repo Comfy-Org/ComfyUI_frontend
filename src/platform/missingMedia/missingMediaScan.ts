@@ -119,8 +119,6 @@ type AssetHashVerifier = (
 
 type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
 
-const MISSING_INPUT_ASSET_BATCH_SIZE = 500
-
 /**
  * Verify cloud media candidates by probing the asset hash endpoint first.
  * Invalid hash values fall back to the legacy input asset list check.
@@ -180,7 +178,13 @@ export async function verifyCloudMediaCandidates(
 
   if (signal?.aborted || legacyCandidates.length === 0) return
 
-  const inputAssets = await fetchInputAssets(signal)
+  let inputAssets: AssetItem[]
+  try {
+    inputAssets = await fetchInputAssets(signal)
+  } catch (err) {
+    if (signal?.aborted || isAbortError(err)) return
+    throw err
+  }
 
   if (signal?.aborted) return
 
@@ -189,19 +193,15 @@ export async function verifyCloudMediaCandidates(
   )
 
   for (const candidate of legacyCandidates) {
-    if (candidate.isMissing === undefined) {
-      candidate.isMissing = !assetHashes.has(candidate.name)
-    }
+    candidate.isMissing = !assetHashes.has(candidate.name)
   }
 }
 
 async function fetchMissingInputAssets(
   signal?: AbortSignal
 ): Promise<AssetItem[]> {
-  const options = signal
-    ? { limit: MISSING_INPUT_ASSET_BATCH_SIZE, signal }
-    : { limit: MISSING_INPUT_ASSET_BATCH_SIZE }
-  return await assetService.getAllAssetsByTag('input', true, options)
+  const store = (await import('@/stores/assetsStore')).useAssetsStore()
+  return await store.getInputAssetsIncludingPublic(signal)
 }
 
 function isAbortError(err: unknown): boolean {

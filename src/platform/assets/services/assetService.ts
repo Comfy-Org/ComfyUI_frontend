@@ -177,20 +177,28 @@ const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make s
 const DEFAULT_LIMIT = 500
 
 export const MODELS_TAG = 'models'
+/** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 
+/** Result of a HEAD lookup against an exact asset hash. */
 export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
 
 const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
 const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
 
+/** Returns true for a prefixed BLAKE3 asset hash: `blake3:<64 hex>`. */
 export function isBlake3AssetHash(value: string): boolean {
   return BLAKE3_ASSET_HASH_PATTERN.test(value)
 }
 
+/** Converts a raw 64-character BLAKE3 hex digest into an asset hash. */
 export function toBlake3AssetHash(hash: string | undefined): string | null {
   if (!hash || !BLAKE3_HEX_PATTERN.test(hash)) return null
   return `blake3:${hash}`
+}
+
+function createAbortError(): DOMException {
+  return new DOMException('Aborted', 'AbortError')
 }
 
 /**
@@ -463,6 +471,8 @@ function createAssetService() {
     let offset = 0
 
     while (true) {
+      if (signal?.aborted) throw createAbortError()
+
       const batch = await getAssetsByTag(tag, includePublic, {
         limit: pageSize,
         offset,

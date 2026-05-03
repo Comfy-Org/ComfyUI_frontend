@@ -14,10 +14,12 @@ import {
 } from './missingMediaScan'
 import type { MissingMediaCandidate } from './types'
 
-const { mockCheckAssetHash, mockGetAllAssetsByTag } = vi.hoisted(() => ({
-  mockCheckAssetHash: vi.fn(),
-  mockGetAllAssetsByTag: vi.fn()
-}))
+const { mockCheckAssetHash, mockGetInputAssetsIncludingPublic } = vi.hoisted(
+  () => ({
+    mockCheckAssetHash: vi.fn(),
+    mockGetInputAssetsIncludingPublic: vi.fn()
+  })
+)
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
@@ -29,10 +31,15 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    checkAssetHash: mockCheckAssetHash,
-    getAllAssetsByTag: mockGetAllAssetsByTag
+    checkAssetHash: mockCheckAssetHash
   },
   isBlake3AssetHash: (value: string) => /^blake3:[0-9a-f]{64}$/i.test(value)
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
+  })
 }))
 
 function makeCandidate(
@@ -264,7 +271,7 @@ describe('verifyCloudMediaCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCheckAssetHash.mockResolvedValue('missing')
-    mockGetAllAssetsByTag.mockResolvedValue([])
+    mockGetInputAssetsIncludingPublic.mockResolvedValue([])
   })
 
   it('marks candidates missing when the asset hash is not found', async () => {
@@ -382,14 +389,36 @@ describe('verifyCloudMediaCandidates', () => {
       makeAsset(`asset-${index}.png`)
     )
     inputAssets[42] = makeAsset('public-photo.png')
-    mockGetAllAssetsByTag.mockResolvedValue(inputAssets)
+    mockGetInputAssetsIncludingPublic.mockResolvedValue(inputAssets)
 
     await verifyCloudMediaCandidates(candidates)
 
-    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith('input', true, {
-      limit: 500
-    })
+    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
     expect(candidates[0].isMissing).toBe(false)
+  })
+
+  it('silences aborts while loading legacy fallback input assets', async () => {
+    const abortError = new Error('aborted')
+    abortError.name = 'AbortError'
+    const controller = new AbortController()
+    const candidates = [
+      makeCandidate('1', 'photo.png', { isMissing: undefined })
+    ]
+    const fetchInputAssets = vi.fn(async () => {
+      controller.abort()
+      throw abortError
+    })
+
+    await expect(
+      verifyCloudMediaCandidates(
+        candidates,
+        controller.signal,
+        undefined,
+        fetchInputAssets
+      )
+    ).resolves.toBeUndefined()
+
+    expect(candidates[0].isMissing).toBeUndefined()
   })
 
   it('falls back to input assets when the hash endpoint returns 400', async () => {

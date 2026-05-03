@@ -439,6 +439,28 @@ describe(assetService.getAllAssetsByTag, () => {
       signal: controller.signal
     })
   })
+
+  it('stops pagination when aborted between pages', async () => {
+    const controller = new AbortController()
+    fetchApiMock.mockImplementationOnce(async () => {
+      controller.abort()
+      return buildResponse({
+        assets: [
+          validAsset({ id: 'a', tags: ['input'] }),
+          validAsset({ id: 'b', tags: ['input'] })
+        ]
+      })
+    })
+
+    await expect(
+      assetService.getAllAssetsByTag('input', true, {
+        limit: 2,
+        signal: controller.signal
+      })
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
 })
 
 describe(assetService.checkAssetHash, () => {
