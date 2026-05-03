@@ -556,8 +556,9 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
       expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
       const resetArg = vi.mocked(existingWorkflow.changeTracker.reset).mock
-        .calls[0][0]
+        .calls[0]?.[0]
       expect(resetArg?.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       )
