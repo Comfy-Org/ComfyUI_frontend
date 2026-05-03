@@ -1,9 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
+
+type ThumbnailStepProps = ComponentProps<typeof ComfyHubThumbnailStep>
 
 const i18n = createI18n({
   legacy: false,
@@ -24,13 +27,8 @@ vi.mock('@/platform/workflow/sharing/utils/validateFileSize', () => ({
 }))
 
 function renderStep(
-  props: Partial<{
-    thumbnailType: 'image' | 'video' | 'imageComparison'
-    thumbnailUrl: string | null
-    comparisonBeforeUrl: string | null
-    comparisonAfterUrl: string | null
-  }> = {},
-  callbacks: Record<string, ReturnType<typeof vi.fn>> = {}
+  props: Partial<ThumbnailStepProps> = {},
+  callbacks: Partial<ThumbnailStepProps> = {}
 ) {
   return render(ComfyHubThumbnailStep, {
     props: { ...props, ...callbacks },

@@ -338,6 +338,12 @@ describe('ComfyHubPublishWizardContent', () => {
   })
 
   describe('thumbnail step handlers', () => {
+    function lastFormUpdate(): Partial<ComfyHubPublishFormData> {
+      const payload = onUpdateFormData.mock.calls.at(-1)?.[0]
+      expect(payload).toBeTruthy()
+      return payload as Partial<ComfyHubPublishFormData>
+    }
+
     it('clears every file/url field when thumbnail type changes', async () => {
       renderComponent({ currentStep: 'examples' })
 
@@ -359,10 +365,7 @@ describe('ComfyHubPublishWizardContent', () => {
 
       await userEvent.click(screen.getByTestId('emit-file'))
 
-      const call = onUpdateFormData.mock.calls.at(-1)?.[0] as Record<
-        string,
-        unknown
-      >
+      const call = lastFormUpdate()
       expect(call).toMatchObject({ thumbnailUrl: null })
       expect(call.thumbnailFile).toBeInstanceOf(File)
     })
@@ -372,10 +375,7 @@ describe('ComfyHubPublishWizardContent', () => {
 
       await userEvent.click(screen.getByTestId('emit-before-file'))
 
-      const call = onUpdateFormData.mock.calls.at(-1)?.[0] as Record<
-        string,
-        unknown
-      >
+      const call = lastFormUpdate()
       expect(call).toMatchObject({ comparisonBeforeUrl: null })
       expect(call.comparisonBeforeFile).toBeInstanceOf(File)
     })
@@ -385,10 +385,7 @@ describe('ComfyHubPublishWizardContent', () => {
 
       await userEvent.click(screen.getByTestId('emit-after-file'))
 
-      const call = onUpdateFormData.mock.calls.at(-1)?.[0] as Record<
-        string,
-        unknown
-      >
+      const call = lastFormUpdate()
       expect(call).toMatchObject({ comparisonAfterUrl: null })
       expect(call.comparisonAfterFile).toBeInstanceOf(File)
     })

@@ -252,10 +252,11 @@ describe('useComfyHubPublishWizard', () => {
 
     it('treats an empty prefill metadata object as no prefill', () => {
       const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.metadata = { user_key: 'keep-me' }
 
       applyPrefill({ metadata: {} })
 
-      expect(formData.value.metadata).toEqual({})
+      expect(formData.value.metadata).toEqual({ user_key: 'keep-me' })
     })
 
     it('does not overwrite a prefilled thumbnailUrl on a second applyPrefill', () => {
