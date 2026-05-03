@@ -29,9 +29,14 @@ export interface PaginationOptions {
   offset?: number
 }
 
+interface AssetPaginationOptions extends PaginationOptions {
+  signal?: AbortSignal
+}
+
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   includePublic?: boolean
+  signal?: AbortSignal
 }
 
 interface AssetExportOptions {
@@ -174,6 +179,20 @@ const DEFAULT_LIMIT = 500
 export const MODELS_TAG = 'models'
 export const MISSING_TAG = 'missing'
 
+export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
+
+const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
+const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
+
+export function isBlake3AssetHash(value: string): boolean {
+  return BLAKE3_ASSET_HASH_PATTERN.test(value)
+}
+
+export function toBlake3AssetHash(hash: string | undefined): string | null {
+  if (!hash || !BLAKE3_HEX_PATTERN.test(hash)) return null
+  return `blake3:${hash}`
+}
+
 /**
  * Validates asset response data using Zod schema
  */
@@ -203,7 +222,8 @@ function createAssetService() {
       includeTags,
       limit = DEFAULT_LIMIT,
       offset,
-      includePublic
+      includePublic,
+      signal
     } = options
     const queryParams = new URLSearchParams({
       include_tags: includeTags.join(','),
@@ -217,7 +237,9 @@ function createAssetService() {
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
-    const res = await api.fetchApi(url)
+    const res = signal
+      ? await api.fetchApi(url, { signal })
+      : await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
         `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
@@ -403,21 +425,80 @@ function createAssetService() {
    * @param options - Pagination options
    * @param options.limit - Maximum number of assets to return (default: 500)
    * @param options.offset - Number of assets to skip (default: 0)
+   * @param options.signal - Optional abort signal for cancelling the request
    * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
    */
   async function getAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+    { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
     const data = await handleAssetRequest(
-      { includeTags: [tag], limit, offset, includePublic },
+      { includeTags: [tag], limit, offset, includePublic, signal },
       `assets for tag ${tag}`
     )
 
     return (
       data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
     )
+  }
+
+  /**
+   * Gets every asset for a tag by walking paginated asset API responses.
+   *
+   * @param tag - The tag to filter by (e.g., 'models', 'input')
+   * @param includePublic - Whether to include public assets (default: true)
+   * @param options - Pagination options
+   * @param options.limit - Page size for each request (default: 500)
+   * @param options.signal - Optional abort signal for cancelling requests
+   * @returns Promise<AssetItem[]> - Full asset objects filtered by tag
+   */
+  async function getAllAssetsByTag(
+    tag: string,
+    includePublic: boolean = true,
+    { limit = DEFAULT_LIMIT, signal }: AssetPaginationOptions = {}
+  ): Promise<AssetItem[]> {
+    const assets: AssetItem[] = []
+    const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
+    let offset = 0
+
+    while (true) {
+      const batch = await getAssetsByTag(tag, includePublic, {
+        limit: pageSize,
+        offset,
+        signal
+      })
+      assets.push(...batch)
+
+      if (batch.length < pageSize) return assets
+
+      offset += batch.length
+    }
+  }
+
+  /**
+   * Checks whether an asset exists for an exact asset hash.
+   *
+   * Uses the HEAD /assets/hash/{hash} endpoint and maps status-only responses:
+   * 200 -> exists, 404 -> missing, and 400 -> invalid hash format.
+   */
+  async function checkAssetHash(
+    assetHash: string,
+    signal?: AbortSignal
+  ): Promise<AssetHashStatus> {
+    const response = await api.fetchApi(
+      `${ASSETS_ENDPOINT}/hash/${encodeURIComponent(assetHash)}`,
+      {
+        method: 'HEAD',
+        signal
+      }
+    )
+
+    if (response.status === 200) return 'exists'
+    if (response.status === 404) return 'missing'
+    if (response.status === 400) return 'invalid'
+
+    throw new Error(`Unexpected asset hash check status: ${response.status}`)
   }
 
   /**
@@ -764,6 +845,8 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
+    getAllAssetsByTag,
+    checkAssetHash,
     deleteAsset,
     updateAsset,
     addAssetTags,

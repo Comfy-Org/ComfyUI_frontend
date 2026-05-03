@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
+import {
+  assetService,
+  isBlake3AssetHash,
+  toBlake3AssetHash
+} from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
@@ -43,6 +47,10 @@ vi.mock('@/i18n', () => ({
 }))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
+
+const validBlake3Hash =
+  '1111111111111111111111111111111111111111111111111111111111111111'
+const validBlake3AssetHash = `blake3:${validBlake3Hash}`
 
 function buildResponse(
   body: unknown,
@@ -177,6 +185,25 @@ describe(assetService.getAssetMetadata, () => {
           encodeURIComponent('https://example.com/foo bar?x=1')
       )
     )
+  })
+})
+
+describe(isBlake3AssetHash, () => {
+  it('accepts only prefixed 64-character blake3 hashes', () => {
+    expect(isBlake3AssetHash(validBlake3AssetHash)).toBe(true)
+    expect(isBlake3AssetHash('BLAKE3:' + validBlake3Hash.toUpperCase())).toBe(
+      true
+    )
+    expect(isBlake3AssetHash('blake3:abc')).toBe(false)
+    expect(isBlake3AssetHash(validBlake3Hash)).toBe(false)
+  })
+})
+
+describe(toBlake3AssetHash, () => {
+  it('normalizes 64-character blake3 hex values to asset hashes', () => {
+    expect(toBlake3AssetHash(validBlake3Hash)).toBe(validBlake3AssetHash)
+    expect(toBlake3AssetHash('abc')).toBeNull()
+    expect(toBlake3AssetHash(undefined)).toBeNull()
   })
 })
 
@@ -352,5 +379,98 @@ describe(assetService.getAssetsByTag, () => {
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_public')).toBe('true')
+  })
+})
+
+describe(assetService.getAllAssetsByTag, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('paginates tagged asset requests with include_public=true', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [
+            validAsset({ id: 'a', tags: ['input'] }),
+            validAsset({ id: 'b', tags: ['input'] })
+          ]
+        })
+      )
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [validAsset({ id: 'c', tags: ['input'] })]
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b', 'c'])
+
+    const firstUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const firstParams = new URL(firstUrl, 'http://localhost').searchParams
+    expect(firstParams.get('include_public')).toBe('true')
+    expect(firstParams.get('limit')).toBe('2')
+    expect(firstParams.has('offset')).toBe(false)
+
+    const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
+    const secondParams = new URL(secondUrl, 'http://localhost').searchParams
+    expect(secondParams.get('include_public')).toBe('true')
+    expect(secondParams.get('limit')).toBe('2')
+    expect(secondParams.get('offset')).toBe('2')
+  })
+
+  it('passes abort signals through paginated requests', async () => {
+    const controller = new AbortController()
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({
+        assets: [validAsset({ id: 'a', tags: ['input'] })]
+      })
+    )
+
+    await assetService.getAllAssetsByTag('input', true, {
+      limit: 2,
+      signal: controller.signal
+    })
+
+    expect(fetchApiMock).toHaveBeenCalledWith(expect.any(String), {
+      signal: controller.signal
+    })
+  })
+})
+
+describe(assetService.checkAssetHash, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it.each([
+    [200, 'exists'],
+    [404, 'missing'],
+    [400, 'invalid']
+  ] as const)('maps %s responses to %s', async (status, expected) => {
+    const hash =
+      'blake3:1111111111111111111111111111111111111111111111111111111111111111'
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status }))
+
+    await expect(assetService.checkAssetHash(hash)).resolves.toBe(expected)
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      `/assets/hash/${encodeURIComponent(hash)}`,
+      {
+        method: 'HEAD',
+        signal: undefined
+      }
+    )
+  })
+
+  it('throws for unexpected responses', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 500 }))
+
+    await expect(assetService.checkAssetHash('blake3:abc')).rejects.toThrow(
+      'Unexpected asset hash check status: 500'
+    )
   })
 })
