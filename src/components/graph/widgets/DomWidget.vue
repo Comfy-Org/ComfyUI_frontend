@@ -121,13 +121,26 @@ function composeStyle() {
   }
 }
 
-watch([() => widgetState.pos, () => widgetState.size, left, top], () => {
-  updatePosition(widgetState)
-  if (enableDomClipping.value) {
-    updateDomClipping()
+watch(
+  [
+    () => widgetState.pos,
+    () => widgetState.size,
+    // Visibility transitions (e.g. LOD low_quality flipping) must refresh
+    // style: while invisible, DomWidgets.vue does not update widgetState
+    // and ds.offset/ds.scale are non-reactive, so updatePosition must be
+    // re-run against the current viewport when the widget reappears.
+    () => widgetState.visible,
+    left,
+    top
+  ],
+  () => {
+    updatePosition(widgetState)
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
+    composeStyle()
   }
-  composeStyle()
-})
+)
 
 watch(
   [
