@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  formatLocalizedMediumDate,
+  formatLocalizedNumber,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
@@ -386,6 +388,36 @@ describe('formatUtil', () => {
       expect(
         isCivitaiModelUrl('https://civitai.red/api/download/models/123456')
       ).toBe(true)
+    })
+  })
+
+  describe('formatLocalizedNumber', () => {
+    it('formats numbers using the given locale', () => {
+      expect(formatLocalizedNumber(2618646, 'en')).toBe('2,618,646')
+      expect(formatLocalizedNumber(2618646, 'de')).toBe('2.618.646')
+    })
+
+    it('returns an em-dash for undefined / NaN / Infinity', () => {
+      expect(formatLocalizedNumber(undefined, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.NaN, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.POSITIVE_INFINITY, 'en')).toBe('—')
+    })
+
+    it('formats zero as "0"', () => {
+      expect(formatLocalizedNumber(0, 'en')).toBe('0')
+    })
+  })
+
+  describe('formatLocalizedMediumDate', () => {
+    it('formats an ISO date with the medium style', () => {
+      expect(formatLocalizedMediumDate('2026-04-19T00:00:00Z', 'en')).toMatch(
+        /Apr \d{1,2}, 2026/
+      )
+    })
+
+    it('returns an em-dash for undefined or unparseable input', () => {
+      expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
+      expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
     })
   })
 })

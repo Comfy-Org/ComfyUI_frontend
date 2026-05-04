@@ -4,9 +4,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Pack } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
 
+import {
+  formatLocalizedMediumDate,
+  formatLocalizedNumber
+} from '@comfyorg/shared-frontend-utils/formatUtil'
+
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
-import { formatMediumDate, formatNumber } from '../../utils/format'
 import PackBanner from './PackBanner.vue'
 
 const { pack, locale = 'en' } = defineProps<{
@@ -92,7 +96,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                 {{ t('cloudNodes.detail.downloads', locale) }}
               </dt>
               <dd class="text-primary-comfy-canvas">
-                {{ formatNumber(pack.downloads, locale) }}
+                {{ formatLocalizedNumber(pack.downloads, locale) }}
               </dd>
             </div>
 
@@ -101,7 +105,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                 {{ t('cloudNodes.detail.stars', locale) }}
               </dt>
               <dd class="text-primary-comfy-canvas">
-                {{ formatNumber(pack.githubStars, locale) }}
+                {{ formatLocalizedNumber(pack.githubStars, locale) }}
               </dd>
             </div>
 
@@ -128,7 +132,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                 {{ t('cloudNodes.detail.lastUpdated', locale) }}
               </dt>
               <dd class="text-primary-comfy-canvas">
-                {{ formatMediumDate(pack.lastUpdated, locale) }}
+                {{ formatLocalizedMediumDate(pack.lastUpdated, locale) }}
               </dd>
             </div>
           </dl>
