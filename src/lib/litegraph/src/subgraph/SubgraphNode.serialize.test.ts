@@ -10,24 +10,25 @@
  *
  * @see https://github.com/Comfy-Org/ComfyUI_frontend/issues/9976
  */
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { describe, expect } from 'vitest'
 
-import type { Subgraph, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { usePromotionStore } from '@/stores/promotionStore'
 
-import { createTestSubgraph } from './__fixtures__/subgraphHelpers'
+import { subgraphTest as test } from './__fixtures__/subgraphFixtures'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './__fixtures__/subgraphHelpers'
 
 /**
  * Creates a subgraph with a single interior node that has a widget,
  * wired through a subgraph input. This creates the promotion binding
  * that serialize() captures in proxyWidgets.
  *
- * Builds on the shared createTestSubgraph helper, adding widget wiring
- * that the base helper doesn't support.
+ * Builds on the shared createTestSubgraph + createTestSubgraphNode helpers,
+ * adding only the widget wiring that the base helpers don't support.
  */
 function createSubgraphWithWidgetNode(): {
   rootGraph: LGraph
@@ -47,34 +48,20 @@ function createSubgraphWithWidgetNode(): {
   interiorNode.addOutput('out', 'INT')
   subgraph.add(interiorNode)
 
-  // Wire subgraph input → interior node widget input
+  // Wire subgraph input → interior node widget input (creates promotion binding)
   const sgInput = subgraph.addInput('seed', 'INT')
   sgInput.connect(nodeInput, interiorNode)
 
-  const instanceData: ExportedSubgraphInstance = {
-    id: 1,
-    type: subgraph.id,
-    pos: [0, 0],
-    size: [200, 100],
-    inputs: [],
-    outputs: [],
-    properties: {},
-    flags: {},
-    mode: 0,
-    order: 0
-  }
-  const subgraphNode = new SubgraphNode(rootGraph, subgraph, instanceData)
+  // Shared helper handles SubgraphNode construction (which registers promotions
+  // via _resolveInputWidget under its own id).
+  const subgraphNode = createTestSubgraphNode(subgraph, { id: 1 })
   rootGraph.add(subgraphNode)
 
   return { rootGraph, subgraph, interiorNode, subgraphNode }
 }
 
 describe('SubgraphNode.serialize() state isolation (#9976)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it('inputs have _widget and _subgraphSlot after construction', () => {
+  test('inputs have _widget and _subgraphSlot after construction', () => {
     const { subgraphNode } = createSubgraphWithWidgetNode()
 
     expect(subgraphNode.inputs).toHaveLength(1)
@@ -82,7 +69,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     expect(subgraphNode.inputs[0]._widget).toBeDefined()
   })
 
-  it('serialize() captures proxyWidgets from promotionStore for correct instance', () => {
+  test('serialize() captures proxyWidgets from promotionStore for correct instance', () => {
     const { rootGraph, interiorNode, subgraphNode } =
       createSubgraphWithWidgetNode()
 
@@ -101,7 +88,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     ])
   })
 
-  it('second instance gets its own proxyWidgets from construction', () => {
+  test('second instance gets its own proxyWidgets from construction', () => {
     const { rootGraph, subgraph, interiorNode, subgraphNode } =
       createSubgraphWithWidgetNode()
 
@@ -112,19 +99,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     expect(promotions).toHaveLength(1)
 
     // Create a second SubgraphNode with a DIFFERENT id (simulating clone)
-    const cloneInstanceData: ExportedSubgraphInstance = {
-      id: 999,
-      type: subgraph.id,
-      pos: [0, 0],
-      size: [200, 100],
-      inputs: [],
-      outputs: [],
-      properties: {},
-      flags: {},
-      mode: 0,
-      order: 0
-    }
-    const cloneNode = new SubgraphNode(rootGraph, subgraph, cloneInstanceData)
+    const cloneNode = createTestSubgraphNode(subgraph, { id: 999 })
     rootGraph.add(cloneNode)
 
     // The clone gets proxyWidgets because _resolveInputWidget ran during
@@ -135,7 +110,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     ])
   })
 
-  it('serialize() preserves modified interior widget values', () => {
+  test('serialize() preserves modified interior widget values', () => {
     const { interiorNode, subgraphNode } = createSubgraphWithWidgetNode()
 
     interiorNode.widgets![0].value = 999
@@ -144,7 +119,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     expect(interiorNode.widgets![0].value).toBe(999)
   })
 
-  it('asSerialisable() captures current widget values', () => {
+  test('asSerialisable() captures current widget values', () => {
     const { subgraph, interiorNode } = createSubgraphWithWidgetNode()
 
     interiorNode.widgets![0].value = 777
@@ -154,7 +129,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     expect(serializedNode?.widgets_values?.[0]).toBe(777)
   })
 
-  it('direct serialize() preserves proxyWidgets and widget values', () => {
+  test('direct serialize() preserves proxyWidgets and widget values', () => {
     const { subgraph, interiorNode, subgraphNode } =
       createSubgraphWithWidgetNode()
 
@@ -175,11 +150,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
 })
 
 describe('Subgraph copy roundtrip preserves state (#9976)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it('serialized subgraph definition preserves modified widget values', () => {
+  test('serialized subgraph definition preserves modified widget values', () => {
     const { subgraph, interiorNode, subgraphNode } =
       createSubgraphWithWidgetNode()
 
@@ -193,20 +164,12 @@ describe('Subgraph copy roundtrip preserves state (#9976)', () => {
     expect(serializedNode?.widgets_values?.[0]).toBe(123)
   })
 
-  it('multiple instances: serialization order does not affect definition values', () => {
+  test('multiple instances: serialization order does not affect definition values', () => {
     const { rootGraph, subgraph, interiorNode } = createSubgraphWithWidgetNode()
 
-    const subgraphNode2 = new SubgraphNode(rootGraph, subgraph, {
+    const subgraphNode2 = createTestSubgraphNode(subgraph, {
       id: 2,
-      type: subgraph.id,
-      pos: [300, 0],
-      size: [200, 100],
-      inputs: [],
-      outputs: [],
-      properties: {},
-      flags: {},
-      mode: 0,
-      order: 0
+      pos: [300, 0]
     })
     rootGraph.add(subgraphNode2)
 
