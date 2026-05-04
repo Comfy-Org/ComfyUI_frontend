@@ -10,7 +10,7 @@ import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import PackCard from './PackCard.vue'
 
-type SortMode = 'mostNodes' | 'az' | 'recentlyUpdated'
+type SortMode = 'downloads' | 'mostNodes' | 'az' | 'recentlyUpdated'
 
 const { locale = 'en', packs } = defineProps<{
   locale?: Locale
@@ -18,7 +18,7 @@ const { locale = 'en', packs } = defineProps<{
 }>()
 
 const query = defineModel<string>('query', { default: '' })
-const sortMode = ref<SortMode>('mostNodes')
+const sortMode = ref<SortMode>('downloads')
 
 const filteredPacks = computed(() => {
   const normalizedQuery = query.value.trim().toLowerCase()
@@ -49,7 +49,11 @@ const filteredPacks = computed(() => {
     })
   }
 
-  return matching.sort((a, b) => b.nodes.length - a.nodes.length)
+  if (sortMode.value === 'mostNodes') {
+    return matching.sort((a, b) => b.nodes.length - a.nodes.length)
+  }
+
+  return matching.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0))
 })
 </script>
 
@@ -91,8 +95,15 @@ const filteredPacks = computed(() => {
         <select
           id="cloud-nodes-sort"
           v-model="sortMode"
-          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full rounded-2xl border py-3 pl-4 pr-10 text-sm md:w-64"
+          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full appearance-none rounded-2xl border bg-[length:0.65rem_0.65rem] bg-[right_1rem_center] bg-no-repeat py-3 pl-4 pr-12 text-sm md:w-64"
+          :style="{
+            backgroundImage:
+              'url(\'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22 fill=%22%23a39b8d%22><path d=%22M6 9.2L1.4 4.6 2.8 3.2 6 6.4l3.2-3.2 1.4 1.4z%22/></svg>\')'
+          }"
         >
+          <option value="downloads">
+            {{ t('cloudNodes.sort.downloads', locale) }}
+          </option>
           <option value="mostNodes">
             {{ t('cloudNodes.sort.mostNodes', locale) }}
           </option>

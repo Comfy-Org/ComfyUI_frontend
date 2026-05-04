@@ -756,6 +756,10 @@ const translations = {
     en: 'Search packs or nodes',
     'zh-CN': '搜索节点包或节点名称'
   },
+  'cloudNodes.sort.downloads': {
+    en: 'Most installed',
+    'zh-CN': '按安装量'
+  },
   'cloudNodes.sort.mostNodes': {
     en: 'Most nodes',
     'zh-CN': '按节点数量'
