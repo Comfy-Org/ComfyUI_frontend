@@ -47,10 +47,10 @@
 </template>
 
 <script setup lang="ts">
-import ChipTag from '@/components/chip/Tag.vue'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
+import ChipTag from '@/components/chip/Tag.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

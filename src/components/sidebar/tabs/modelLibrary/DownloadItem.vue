@@ -5,7 +5,13 @@
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Tag
-        :label="t('electronFileDownload.cancelled')"
+        :label="
+          t(
+            download.status === 'error'
+              ? 'electronFileDownload.error'
+              : 'electronFileDownload.cancelled'
+          )
+        "
         class="mt-2 bg-red-700 text-sm font-light"
         removable
         @remove="handleRemoveDownload"
@@ -67,10 +73,9 @@
 
 <script setup lang="ts">
 import ProgressBar from 'primevue/progressbar'
-
-import Tag from '@/components/chip/Tag.vue'
 import { useI18n } from 'vue-i18n'
 
+import Tag from '@/components/chip/Tag.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'

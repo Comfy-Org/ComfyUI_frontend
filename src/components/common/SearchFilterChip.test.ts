@@ -28,17 +28,19 @@ describe('SearchFilterChip', () => {
     expect(screen.getByText('I')).toBeInTheDocument()
   })
 
-  it('applies semantic badge class for input type', () => {
-    renderChip({ text: 'CLIP', badge: 'I', badgeClass: 'i-badge' })
-    const badge = screen.getByText('I')
-    expect(badge.className).toContain('bg-green-500')
-  })
-
-  it('applies semantic badge class for output type', () => {
-    renderChip({ text: 'IMAGE', badge: 'O', badgeClass: 'o-badge' })
-    const badge = screen.getByText('O')
-    expect(badge.className).toContain('bg-red-500')
-  })
+  it.each([
+    ['input type', 'I', 'i-badge', 'bg-green-500'],
+    ['output type', 'O', 'o-badge', 'bg-red-500'],
+    ['combo type', 'C', 'c-badge', 'bg-blue-500'],
+    ['seed type', 'S', 's-badge', 'bg-yellow-500']
+  ])(
+    'applies semantic badge class for %s',
+    (_, badgeText, badgeClass, color) => {
+      renderChip({ text: 'CLIP', badge: badgeText, badgeClass })
+      const badge = screen.getByText(badgeText)
+      expect(badge.className).toContain(color)
+    }
+  )
 
   it('shows remove button and emits remove on click', async () => {
     const user = userEvent.setup()
