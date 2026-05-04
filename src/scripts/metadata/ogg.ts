@@ -1,5 +1,13 @@
 import type { ComfyMetadata } from '@/types/metadataTypes'
 
+const OGG_HEADER_SIZE = 27 // Base size of the Ogg page header (from magic number to just before segment count)
+const OGG_PAGE_SEGMENTS_OFFSET = 26 // Offset position where the number of segments in the page is stored
+const OGG_MAX_SEGMENT_SIZE = 255 // Ogg spec: the maximum size of a single segment is 255 bytes
+
+// Magic numbers as byte arrays to avoid per-page TextDecoder allocations
+const OGG_S_MAGIC = new TextEncoder().encode('OggS')
+const OPUS_TAGS_MAGIC = new TextEncoder().encode('OpusTags')
+
 /**
  * Extracts ComfyUI metadata (prompt and workflow) from an Ogg/Opus audio file.
  *
@@ -13,7 +21,8 @@ import type { ComfyMetadata } from '@/types/metadataTypes'
  *   not found or if parsing fails.
  */
 export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
-  // Read the beginning of the file (Opus files metadata is usually in the first couple of pages)
+  // Metadata is usually in the first couple of pages. A 2 MB cap covers all realistic sizes.
+  // If the packet exceeds this, parsing will abort and warn instead of reading the whole file.
   const MAX_READ_BYTES = 2 * 1024 * 1024
   let arrayBuffer: ArrayBuffer
   try {
@@ -27,10 +36,20 @@ export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
   const decoder = new TextDecoder('utf-8')
 
   // Sequentially trace Ogg pages to extract segments of the 'OpusTags' packet containing metadata
-  const segments = extractOpusTags(data, decoder)
+  const segments = extractOpusTags(data)
   if (segments.length === 0) {
     console.warn(
       'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
+    )
+    return { prompt: undefined, workflow: undefined }
+  }
+
+  // If the last segment is 255 bytes, the packet continues beyond our MAX_READ_BYTES cap.
+  // We avoid reading further to prevent full-file scans on audio without embedded metadata.
+  if (segments[segments.length - 1].length === OGG_MAX_SEGMENT_SIZE) {
+    console.warn(
+      'Ogg metadata parsing: OpusTags packet extends beyond the 2 MB read cap ' +
+        'and was truncated; prompt/workflow metadata will be unavailable.'
     )
     return { prompt: undefined, workflow: undefined }
   }
@@ -59,22 +78,16 @@ export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
  * shorter than 255 bytes signals the end of the current packet.
  *
  * @param data - Raw binary content of the Ogg file.
- * @param decoder - UTF-8 TextDecoder used to identify magic strings.
  * @returns An array of `Uint8Array` segments that together constitute the
  *   OpusTags packet, or an empty array if the packet is not found.
  */
-function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
-  const OGG_HEADER_SIZE = 27 // Base size of the Ogg page header (from magic number to just before segment count)
-  const OGG_PAGE_SEGMENTS_OFFSET = 26 // Offset position where the number of segments in the page is stored
-  const OGG_MAX_SEGMENT_SIZE = 255 // Ogg spec: the maximum size of a single segment is 255 bytes
-
+function extractOpusTags(data: Uint8Array): Uint8Array[] {
   const segments: Uint8Array[] = []
   let offset = 0
   let inOpusTags = false
 
   while (offset + OGG_HEADER_SIZE <= data.length) {
-    const pageSignature = decoder.decode(data.subarray(offset, offset + 4))
-    if (pageSignature !== 'OggS') break
+    if (!compareMagic(data, offset, OGG_S_MAGIC)) break
 
     const pageSegmentsCount = data[offset + OGG_PAGE_SEGMENTS_OFFSET]
     const lengthsOffset = offset + OGG_HEADER_SIZE
@@ -87,18 +100,18 @@ function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
     for (let i = 0; i < pageSegmentsCount; i++) {
       const segmentLength = data[lengthsOffset + i]
 
-      // Bounds check: ensure the segment data lies within the available data
-      if (dataOffset + segmentLength > data.length) break
+      // Stop processing if the segment exceeds our available data buffer
+      if (dataOffset + segmentLength > data.length) {
+        pageProcessingEnded = true
+        break
+      }
 
       const segment = data.subarray(dataOffset, dataOffset + segmentLength)
       dataOffset += segmentLength
 
       if (!inOpusTags) {
-        if (segmentLength >= 8) {
-          const segmentMagic = decoder.decode(segment.subarray(0, 8))
-          if (segmentMagic === 'OpusTags') {
-            inOpusTags = true
-          }
+        if (segmentLength >= 8 && compareMagic(segment, 0, OPUS_TAGS_MAGIC)) {
+          inOpusTags = true
         }
       }
 
@@ -208,4 +221,18 @@ function parseVorbisComments(
   }
 
   return result
+}
+
+/**
+ * Compares a portion of a Uint8Array with a magic byte sequence.
+ */
+function compareMagic(
+  data: Uint8Array,
+  offset: number,
+  magic: Uint8Array
+): boolean {
+  for (let i = 0; i < magic.length; i++) {
+    if (data[offset + i] !== magic[i]) return false
+  }
+  return true
 }

@@ -4,12 +4,14 @@ import { describe, expect, it, vi, afterEach } from 'vitest'
 import { getOggMetadata } from './ogg'
 import { EXPECTED_PROMPT, EXPECTED_WORKFLOW } from './__fixtures__/helpers'
 
+const OGG_HEADER_SIZE = 27
+const OGG_MAX_SEGMENT_SIZE = 255
+
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.opus')
 
 function createOggWithOpusTags(comments: {
   [key: string]: string
 }): ArrayBuffer {
-  const OGG_HEADER_SIZE = 27
   const vendor = 'ComfyUI'
   const vendorBytes = new TextEncoder().encode(vendor)
   const commentKeys = Object.keys(comments)
@@ -66,11 +68,11 @@ function createOggWithOpusTags(comments: {
     let dataSizeInThisPage = 0
     const lacingValues: number[] = []
 
-    for (let i = 0; i < 255; i++) {
+    for (let i = 0; i < OGG_MAX_SEGMENT_SIZE; i++) {
       const remainingForThisPacket = remainingPacketSize - dataSizeInThisPage
-      if (remainingForThisPacket >= 255) {
-        lacingValues.push(255)
-        dataSizeInThisPage += 255
+      if (remainingForThisPacket >= OGG_MAX_SEGMENT_SIZE) {
+        lacingValues.push(OGG_MAX_SEGMENT_SIZE)
+        dataSizeInThisPage += OGG_MAX_SEGMENT_SIZE
       } else {
         lacingValues.push(remainingForThisPacket)
         dataSizeInThisPage += remainingForThisPacket
@@ -106,8 +108,8 @@ function createOggWithOpusTags(comments: {
 
   while (currentTotalSize < TARGET_SIZE) {
     // Create a dummy audio page (approx 65KB per page)
-    const numSegments = 255
-    const segmentDataSize = 255
+    const numSegments = OGG_MAX_SEGMENT_SIZE
+    const segmentDataSize = OGG_MAX_SEGMENT_SIZE
     const dataSize = numSegments * segmentDataSize
     const pageSize = OGG_HEADER_SIZE + numSegments + dataSize
     const audioPage = new Uint8Array(pageSize)
@@ -154,16 +156,74 @@ describe('getOggMetadata', () => {
   })
 
   it('resolves undefined fields when the file reading fails', async () => {
-    const file = new File([new Uint8Array(16)], 'test.ogg', { type: 'audio/ogg' })
+    const file = new File([new Uint8Array(16)], 'test.ogg', {
+      type: 'audio/ogg'
+    })
     vi.spyOn(file, 'slice').mockImplementation(() => {
       return {
         arrayBuffer: () => Promise.reject(new Error('File read aborted'))
       } as unknown as Blob
     })
 
+    const warnSpy = vi.spyOn(console, 'warn')
     const result = await getOggMetadata(file)
 
     expect(result).toEqual({ prompt: undefined, workflow: undefined })
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Ogg metadata file read failed:'),
+      expect.any(Error)
+    )
+  })
+
+  it('resolves undefined when a very large OpusTags packet is truncated at the 2 MB read cap', async () => {
+    // Build a minimal valid Ogg file whose OpusTags packet data extends well past 2 MB.
+    // We fake this by making file.slice() return a buffer whose OpusTags segment is cut off
+    // mid-packet (i.e. the last segment has length 255, signalling an open / incomplete packet).
+    const headPageSize = OGG_HEADER_SIZE + 1 + 19
+    const headPage = new Uint8Array(headPageSize)
+    headPage.set(new TextEncoder().encode('OggS'), 0)
+    headPage[5] = 0x02
+    headPage[26] = 1
+    headPage[OGG_HEADER_SIZE] = 19
+    headPage.set(new TextEncoder().encode('OpusHead'), OGG_HEADER_SIZE + 1)
+
+    // Tags page: one segment of exactly OGG_MAX_SEGMENT_SIZE bytes (open packet — never terminates within the cap)
+    const truncatedTagsPage = new Uint8Array(
+      OGG_HEADER_SIZE + 1 + OGG_MAX_SEGMENT_SIZE
+    )
+    truncatedTagsPage.set(new TextEncoder().encode('OggS'), 0)
+    truncatedTagsPage[26] = 1 // 1 segment
+    truncatedTagsPage[OGG_HEADER_SIZE] = OGG_MAX_SEGMENT_SIZE // segment length == OGG_MAX_SEGMENT_SIZE → packet continues
+    // Write 'OpusTags' magic at the start of the segment data so the parser recognises the packet
+    truncatedTagsPage.set(
+      new TextEncoder().encode('OpusTags'),
+      OGG_HEADER_SIZE + 1
+    )
+
+    const truncated = new Uint8Array(headPage.length + truncatedTagsPage.length)
+    truncated.set(headPage, 0)
+    truncated.set(truncatedTagsPage, headPage.length)
+
+    // Simulate file.slice() returning only the truncated 2 MB view
+    const file = new File([new Uint8Array(1)], 'huge.opus', {
+      type: 'audio/ogg'
+    })
+    vi.spyOn(file, 'slice').mockReturnValue(
+      new Blob([truncated]) as unknown as ReturnType<File['slice']>
+    )
+    const warnSpy = vi.spyOn(console, 'warn')
+
+    const result = await getOggMetadata(file)
+
+    // The packet was never closed, so no complete metadata could be extracted
+    expect(result.prompt).toBeUndefined()
+    expect(result.workflow).toBeUndefined()
+    // A descriptive warning must be emitted so the truncation is not silent
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'OpusTags packet extends beyond the 2 MB read cap'
+      )
+    )
   })
 
   it('should extract prompt and workflow from a valid Ogg file', async () => {
