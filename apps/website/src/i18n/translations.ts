@@ -914,9 +914,9 @@ const translations = {
     'zh-CN': '我应该选择 Comfy Cloud 还是本地 ComfyUI（自托管）？'
   },
   'cloud.faq.3.a': {
-    en: "Comfy Cloud (beta) has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
+    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
     'zh-CN':
-      'Comfy Cloud（测试版）无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
+      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
   },
   'cloud.faq.4.q': {
     en: 'Do I need a GPU or a strong computer to use Comfy Cloud?',
@@ -1279,10 +1279,6 @@ const translations = {
   'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
-  },
-  'pricing.included.comingSoon': {
-    en: 'coming soon',
-    'zh-CN': '即将推出'
   },
 
   // VideoPlayer
@@ -3646,6 +3642,49 @@ const translations = {
   'models.breadcrumb.models': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'
+  },
+
+  // Payment status pages
+  'payment.success.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.success.title': {
+    en: 'Payment successful',
+    'zh-CN': '支付成功'
+  },
+  'payment.success.subtitle': {
+    en: "Thanks for your purchase. Your account has been credited and you're ready to keep building.",
+    'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
+  },
+  'payment.success.primaryCta': {
+    en: 'CONTINUE TO COMFY CLOUD',
+    'zh-CN': '前往 COMFY CLOUD'
+  },
+  'payment.success.secondaryCta': {
+    en: 'VIEW USAGE & PAYMENTS',
+    'zh-CN': '查看用量与支付'
+  },
+  'payment.failed.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.failed.title': {
+    en: 'Payment was not completed',
+    'zh-CN': '支付未完成'
+  },
+  'payment.failed.subtitle': {
+    en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",
+    'zh-CN':
+      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅订阅文档。'
+  },
+  'payment.failed.primaryCta': {
+    en: 'CONTACT SUPPORT',
+    'zh-CN': '联系支持'
+  },
+  'payment.failed.secondaryCta': {
+    en: 'READ SUBSCRIPTION DOCS',
+    'zh-CN': '查看订阅文档'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
