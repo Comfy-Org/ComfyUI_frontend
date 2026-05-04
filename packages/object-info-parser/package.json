@@ -2,6 +2,7 @@
   "name": "@comfyorg/object-info-parser",
   "version": "1.0.0",
   "description": "Shared object_info schemas and helpers",
+  "license": "GPL-3.0-only",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
