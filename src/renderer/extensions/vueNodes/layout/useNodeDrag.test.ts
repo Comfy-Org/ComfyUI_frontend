@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -154,6 +154,12 @@ describe('useNodeDrag', () => {
     vi.stubGlobal('cancelAnimationFrame', testState.cancelAnimationFrame)
   })
 
+  afterEach(async () => {
+    const { graphInteractionHooks } =
+      await import('@/renderer/core/canvas/hooks/graphInteractionHooks')
+    graphInteractionHooks.clear()
+  })
+
   it('batches multi-node drag updates into one mutation call per frame', () => {
     testState.selectedNodeIds.value = new Set(['1', '2'])
     testState.nodeLayouts.set('1', {
@@ -197,6 +203,45 @@ describe('useNodeDrag', () => {
       { nodeId: '1', position: { x: 70, y: 100 } }
     ])
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
+  })
+
+  it('emits selectionSize=1 when dragging an unselected node while others are selected', async () => {
+    const { graphInteractionHooks } =
+      await import('@/renderer/core/canvas/hooks/graphInteractionHooks')
+
+    testState.selectedNodeIds.value = new Set(['1', '2'])
+    testState.selectedItems.value = [{ isLGraphGroup: true }]
+    testState.nodeLayouts.set('1', {
+      position: { x: 100, y: 100 },
+      size: { width: 200, height: 120 }
+    })
+    testState.nodeLayouts.set('2', {
+      position: { x: 300, y: 300 },
+      size: { width: 200, height: 120 }
+    })
+    testState.nodeLayouts.set('outsider', {
+      position: { x: 500, y: 500 },
+      size: { width: 200, height: 120 }
+    })
+
+    const observed: number[] = []
+    graphInteractionHooks.on('nodeDragMove', (e) =>
+      observed.push(e.selectionSize)
+    )
+
+    const { startDrag, handleDrag, endDrag } = useNodeDrag()
+    startDrag(pointerEvent(10, 20), 'outsider')
+    handleDrag(pointerEvent(30, 40), 'outsider')
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(observed).toEqual([1])
+
+    const endObserved: number[] = []
+    graphInteractionHooks.on('nodeDragEnd', (e) =>
+      endObserved.push(e.selectionSize)
+    )
+    endDrag(pointerEvent(30, 40), 'outsider')
+    expect(endObserved).toEqual([1])
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
