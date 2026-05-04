@@ -83,13 +83,37 @@ export class VueNodeFixture {
     expected: BoxOrigin,
     { precision = 1 }: { precision?: number } = {}
   ): Promise<void> {
-    await expect
-      .poll(async () => (await this.boundingBox())?.x)
-      .toBeCloseTo(expected.x, precision)
-    await expect
-      .poll(async () => (await this.boundingBox())?.y)
-      .toBeCloseTo(expected.y, precision)
+    await expect.poll(this.pollLeftEdge).toBeCloseTo(expected.x, precision)
+    await expect.poll(this.pollTopEdge).toBeCloseTo(expected.y, precision)
   }
+
+  /** Poll the node's left/x edge for use with `expect.poll`. */
+  pollLeftEdge = async (): Promise<number | null> =>
+    (await this.boundingBox())?.x ?? null
+
+  /** Poll the node's top/y edge for use with `expect.poll`. */
+  pollTopEdge = async (): Promise<number | null> =>
+    (await this.boundingBox())?.y ?? null
+
+  /** Poll the node's right edge (x + width) for use with `expect.poll`. */
+  pollRightEdge = async (): Promise<number | null> => {
+    const b = await this.boundingBox()
+    return b ? b.x + b.width : null
+  }
+
+  /** Poll the node's bottom edge (y + height) for use with `expect.poll`. */
+  pollBottomEdge = async (): Promise<number | null> => {
+    const b = await this.boundingBox()
+    return b ? b.y + b.height : null
+  }
+
+  /** Poll the node's width for use with `expect.poll`. */
+  pollWidth = async (): Promise<number | null> =>
+    (await this.boundingBox())?.width ?? null
+
+  /** Poll the node's height for use with `expect.poll`. */
+  pollHeight = async (): Promise<number | null> =>
+    (await this.boundingBox())?.height ?? null
 
   /** Locator for the resize handle at the given corner, scoped to this node. */
   getResizeHandle(corner: CompassCorners): Locator {

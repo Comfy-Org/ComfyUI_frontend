@@ -1,5 +1,3 @@
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
@@ -17,19 +15,6 @@ async function setupResizableNode(comfyPage: ComfyPage, title: string) {
   const node = await comfyPage.vueNodes.getFixtureByTitle(title)
   const box = await node.selectAndGetBox()
   return { node, box }
-}
-
-const leftEdgeOf = (locator: Locator) => async () =>
-  (await locator.boundingBox())?.x ?? null
-const topEdgeOf = (locator: Locator) => async () =>
-  (await locator.boundingBox())?.y ?? null
-const rightEdgeOf = (locator: Locator) => async () => {
-  const b = await locator.boundingBox()
-  return b ? b.x + b.width : null
-}
-const bottomEdgeOf = (locator: Locator) => async () => {
-  const b = await locator.boundingBox()
-  return b ? b.y + b.height : null
 }
 
 test.describe(
@@ -73,12 +58,8 @@ test.describe(
 
       await node.expectAnchoredAt(initialBox)
 
-      await expect
-        .poll(async () => (await node.boundingBox())?.width)
-        .toBeGreaterThan(initialBox.width)
-      await expect
-        .poll(async () => (await node.boundingBox())?.height)
-        .toBeGreaterThan(initialBox.height)
+      await expect.poll(node.pollWidth).toBeGreaterThan(initialBox.width)
+      await expect.poll(node.pollHeight).toBeGreaterThan(initialBox.height)
     })
 
     const cornerCases = RESIZE_HANDLES.map((h) => ({
@@ -96,31 +77,19 @@ test.describe(
 
           await node.resizeFromCorner(corner, dragX, dragY)
 
-          await expect
-            .poll(async () => (await node.boundingBox())?.width)
-            .toBeGreaterThan(box.width)
-          await expect
-            .poll(async () => (await node.boundingBox())?.height)
-            .toBeGreaterThan(box.height)
+          await expect.poll(node.pollWidth).toBeGreaterThan(box.width)
+          await expect.poll(node.pollHeight).toBeGreaterThan(box.height)
 
           if (hasWestEdge(corner)) {
-            await expect
-              .poll(async () => (await node.boundingBox())?.x)
-              .toBeLessThan(box.x)
+            await expect.poll(node.pollLeftEdge).toBeLessThan(box.x)
           } else {
-            await expect
-              .poll(async () => (await node.boundingBox())?.x)
-              .toBeCloseTo(box.x, 0)
+            await expect.poll(node.pollLeftEdge).toBeCloseTo(box.x, 0)
           }
 
           if (hasNorthEdge(corner)) {
-            await expect
-              .poll(async () => (await node.boundingBox())?.y)
-              .toBeLessThan(box.y)
+            await expect.poll(node.pollTopEdge).toBeLessThan(box.y)
           } else {
-            await expect
-              .poll(async () => (await node.boundingBox())?.y)
-              .toBeCloseTo(box.y, 0)
+            await expect.poll(node.pollTopEdge).toBeCloseTo(box.y, 0)
           }
         })
       })
@@ -134,11 +103,11 @@ test.describe(
           const { node, box } = await setupResizableNode(comfyPage, 'KSampler')
 
           const pollAnchorX = hasWestEdge(corner)
-            ? rightEdgeOf(node.root)
-            : leftEdgeOf(node.root)
+            ? node.pollRightEdge
+            : node.pollLeftEdge
           const pollAnchorY = hasNorthEdge(corner)
-            ? bottomEdgeOf(node.root)
-            : topEdgeOf(node.root)
+            ? node.pollBottomEdge
+            : node.pollTopEdge
 
           const anchorX = hasWestEdge(corner) ? box.x + box.width : box.x
           const anchorY = hasNorthEdge(corner) ? box.y + box.height : box.y
@@ -160,10 +129,8 @@ test.describe(
 
         await node.resizeFromCorner('SW', box.width + 100, 0)
 
-        await expect.poll(rightEdgeOf(node.root)).toBeCloseTo(rightEdge, 0)
-        await expect
-          .poll(async () => (await node.boundingBox())?.width)
-          .toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
+        await expect.poll(node.pollRightEdge).toBeCloseTo(rightEdge, 0)
+        await expect.poll(node.pollWidth).toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
       })
 
       test('NE resize clamps height at its lower bound', async ({
@@ -190,10 +157,8 @@ test.describe(
 
         await node.resizeFromCorner('NE', 0, 200)
 
-        await expect
-          .poll(async () => (await node.boundingBox())?.height)
-          .toBeCloseTo(clampedHeight, 0)
-        await expect.poll(bottomEdgeOf(node.root)).toBeCloseTo(bottomEdge, 0)
+        await expect.poll(node.pollHeight).toBeCloseTo(clampedHeight, 0)
+        await expect.poll(node.pollBottomEdge).toBeCloseTo(bottomEdge, 0)
       })
     })
   }
