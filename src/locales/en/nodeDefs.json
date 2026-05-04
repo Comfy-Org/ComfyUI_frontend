@@ -1553,12 +1553,16 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "ColorTransfer",
+    "display_name": "Color Transfer",
     "description": "Match the colors of one image to another using various algorithms.",
     "inputs": {
       "image_target": {
         "name": "image_target",
         "tooltip": "Image(s) to apply the color transform to."
+      },
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Reference image(s) to match colors to."
       },
       "method": {
         "name": "method"
@@ -1569,10 +1573,6 @@
       },
       "strength": {
         "name": "strength"
-      },
-      "image_ref": {
-        "name": "image_ref",
-        "tooltip": "Reference image(s) to match colors to. If not provided, processing is skipped"
       }
     },
     "outputs": {
