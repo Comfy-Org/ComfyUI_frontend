@@ -23,15 +23,12 @@ interface Model {
   readonly displayName: string
   readonly directory: ModelDirectory
   readonly huggingFaceUrl: string
+  readonly thumbnailUrl?: string
   readonly docsUrl?: string
   readonly blogUrl?: string
   readonly featured: boolean
   readonly workflowCount: number
-  readonly publishedDate: string
-  readonly modifiedDate: string
 }
-
-const TODAY = '2026-05-04'
 
 export const models: readonly Model[] = (
   generatedModels as Array<{
@@ -41,6 +38,7 @@ export const models: readonly Model[] = (
     displayName: string
     directory: string
     huggingFaceUrl: string
+    thumbnailUrl?: string
     workflowCount: number
   }>
 ).map((m) => ({
@@ -50,10 +48,9 @@ export const models: readonly Model[] = (
   displayName: m.displayName,
   directory: m.directory as ModelDirectory,
   huggingFaceUrl: m.huggingFaceUrl,
+  ...(m.thumbnailUrl ? { thumbnailUrl: m.thumbnailUrl } : {}),
   featured: false,
   workflowCount: m.workflowCount,
-  publishedDate: TODAY,
-  modifiedDate: TODAY,
   ...modelMetadata[m.slug]
 }))
 

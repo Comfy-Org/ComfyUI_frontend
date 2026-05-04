@@ -38,6 +38,7 @@ interface OutputModel {
   directory: string
   workflowCount: number
   displayName: string
+  thumbnailUrl?: string
   canonicalSlug?: string
 }
 
@@ -177,7 +178,25 @@ function extractApiModels(files: string[]): ApiModelData[] {
   })
 }
 
-function run(): void {
+const HUB_BASE = 'https://comfy.org'
+
+async function fetchThumbnail(slug: string): Promise<string | undefined> {
+  try {
+    const url = `${HUB_BASE}/api/hub/workflows?tag=${encodeURIComponent(slug)}&limit=1`
+    const res = await fetch(url)
+    if (!res.ok) return undefined
+    const data = (await res.json()) as {
+      workflows?: Array<{ thumbnail_url?: string; sample_image_urls?: string[] }>
+    }
+    const wf = data.workflows?.[0]
+    const thumb = wf?.thumbnail_url || wf?.sample_image_urls?.[0]
+    return thumb || undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function run(): Promise<void> {
   const models = new Map<string, ModelData>()
 
   const files = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.json'))
@@ -188,8 +207,12 @@ function run(): void {
       const raw = readFileSync(filePath, 'utf8')
       const data: unknown = JSON.parse(raw)
       extractModels(data, file, models)
-    } catch {
-      process.stderr.write(`Warning: failed to parse ${file}\n`)
+    } catch (error) {
+      throw new Error(
+        `Failed to parse ${file}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      )
     }
   }
 
@@ -253,6 +276,19 @@ function run(): void {
 
   const combined = [...apiOutput, ...output]
 
+  // Fetch hub thumbnails unless skipped (set SKIP_THUMBNAILS=1 for offline use)
+  if (!process.env['SKIP_THUMBNAILS']) {
+    process.stdout.write(`Fetching hub thumbnails for ${combined.length} models...\n`)
+    await Promise.all(
+      combined.map(async (m) => {
+        const thumb = await fetchThumbnail(m.slug)
+        if (thumb) m.thumbnailUrl = thumb
+      })
+    )
+    const withThumbs = combined.filter((m) => m.thumbnailUrl).length
+    process.stdout.write(`  ${withThumbs}/${combined.length} models have thumbnails\n`)
+  }
+
   const defaultOut = join(
     fileURLToPath(new URL('.', import.meta.url)),
     '../src/config/generated-models.json'
@@ -267,4 +303,7 @@ function run(): void {
   )
 }
 
-run()
+run().catch((err) => {
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
+  process.exit(1)
+})

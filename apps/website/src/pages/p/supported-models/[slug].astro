@@ -28,8 +28,6 @@ const softwareAppJsonLd = {
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
   url: canonicalURL.href,
-  datePublished: model.publishedDate,
-  dateModified: model.modifiedDate,
   author: {
     '@type': 'Organization',
     name: 'Comfy Org',
@@ -101,10 +99,9 @@ const pageDescription = `Run ${displayName} in ComfyUI. ${model.workflowCount} w
 <BaseLayout
   title={`${pageTitle} — Comfy`}
   description={pageDescription}
+  ogImage={model.thumbnailUrl}
 >
   <Fragment slot="head">
-    <meta property="article:published_time" content={model.publishedDate} />
-    <meta property="article:modified_time" content={model.modifiedDate} />
     <script
       is:inline
       type="application/ld+json"
