@@ -67,21 +67,11 @@ test.describe(
         'Load Checkpoint'
       )
 
-      await expect
-        .poll(async () => (await node.boundingBox())?.x)
-        .toBeCloseTo(initialBox.x, 1)
-      await expect
-        .poll(async () => (await node.boundingBox())?.y)
-        .toBeCloseTo(initialBox.y, 1)
+      await node.expectAnchoredAt(initialBox)
 
       await node.resizeFromCorner('SE', 50, 30)
 
-      await expect
-        .poll(async () => (await node.boundingBox())?.x)
-        .toBeCloseTo(initialBox.x, 1)
-      await expect
-        .poll(async () => (await node.boundingBox())?.y)
-        .toBeCloseTo(initialBox.y, 1)
+      await node.expectAnchoredAt(initialBox)
 
       await expect
         .poll(async () => (await node.boundingBox())?.width)
