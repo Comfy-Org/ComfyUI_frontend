@@ -8,11 +8,12 @@ import UseCaseSection from '../components/home/UseCaseSection.vue'
 import CaseStudySpotlightSection from '../components/home/CaseStudySpotlightSection.vue'
 import GetStartedSection from '../components/home/GetStartedSection.vue'
 import BuildWhatSection from '../components/home/BuildWhatSection.vue'
+import { t } from '../i18n/translations'
 ---
 
 <BaseLayout
   title="Comfy — Professional Control of Visual AI"
-  description="ComfyUI is the open-source visual AI app for image, video, and 3D creation. Run node-based generative workflows with the ComfyUI web app or desktop app."
+  description={t('hero.subtitle', 'en')}
   keywords={['comfyui app', 'comfyui web app', 'comfy ui application', 'comfyui application', 'comfy app', 'comfyui', 'visual ai app', 'node-based ai', 'generative ai workflows']}
 >
   <HeroSection client:load />

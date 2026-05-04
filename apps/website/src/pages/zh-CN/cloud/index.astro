@@ -7,11 +7,12 @@ import AudienceSection from '../../../components/product/cloud/AudienceSection.v
 import PricingSection from '../../../components/product/cloud/PricingSection.vue'
 import ProductCardsSection from '../../../components/product/cloud/ProductCardsSection.vue'
 import FAQSection from '../../../components/product/cloud/FAQSection.vue'
+import { t } from '../../../i18n/translations'
 ---
 
 <BaseLayout
   title="Comfy Cloud — 云端 AI"
-  description="Comfy Cloud 是官方的 ComfyUI 网页版应用，在浏览器中运行完整的 ComfyUI，托管 GPU、模型与存储，无需安装即可使用。"
+  description={t('cloud.hero.subtitle', 'zh-CN')}
   keywords={['comfyui web app', 'comfyui app', 'comfyui online', 'comfyui cloud', 'ComfyUI 网页版', 'ComfyUI 云端', 'ComfyUI 应用', 'Comfy Cloud', '云端 ComfyUI']}
 >
   <HeroSection locale="zh-CN" />

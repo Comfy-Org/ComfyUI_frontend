@@ -7,11 +7,12 @@ import ReasonSection from '../../components/product/local/ReasonSection.vue'
 import EcoSystemSection from '../../components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '../../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../../components/product/local/FAQSection.vue'
+import { t } from '../../i18n/translations'
 ---
 
 <BaseLayout
   title="下载 — Comfy"
-  description="下载 ComfyUI 桌面应用，支持 Windows、macOS 与 Linux。在本地运行开源的 ComfyUI 应用程序，搭建节点式图像、视频与 3D AI 工作流。"
+  description={t('download.hero.subtitle', 'zh-CN')}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui download', 'ComfyUI 下载', 'ComfyUI 桌面应用', 'ComfyUI 应用', 'ComfyUI Windows', 'ComfyUI macOS', 'ComfyUI Linux']}
 >
   <CloudBannerSection locale="zh-CN" />

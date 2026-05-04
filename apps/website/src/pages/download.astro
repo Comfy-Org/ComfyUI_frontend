@@ -7,11 +7,12 @@ import ReasonSection from '../components/product/local/ReasonSection.vue'
 import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
 import FAQSection from '../components/product/local/FAQSection.vue'
+import { t } from '../i18n/translations'
 ---
 
 <BaseLayout
   title="Download Comfy — Run AI Locally"
-  description="Download the ComfyUI desktop app for Windows, macOS, and Linux. Run the open-source ComfyUI application locally for node-based image, video, and 3D AI workflows."
+  description={t('download.hero.subtitle', 'en')}
   keywords={['comfyui app', 'comfyui desktop app', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux', 'comfyui local']}
 >
   <CloudBannerSection />
