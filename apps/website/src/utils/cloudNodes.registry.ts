@@ -22,7 +22,7 @@ export async function fetchRegistryPacks(
   }
 
   const baseUrl = options.baseUrl ?? DEFAULT_REGISTRY_BASE_URL
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  const timeoutMs = clampTimeoutMs(options.timeoutMs)
   const fetchImpl = options.fetchImpl ?? fetch
 
   const batches = chunk(uniquePackIds, BATCH_SIZE)
@@ -135,4 +135,15 @@ function chunk<T>(values: readonly T[], size: number): T[][] {
     chunks.push(values.slice(i, i + size))
   }
   return chunks
+}
+
+function clampTimeoutMs(candidate: number | undefined): number {
+  if (
+    typeof candidate !== 'number' ||
+    !Number.isFinite(candidate) ||
+    candidate <= 0
+  ) {
+    return DEFAULT_TIMEOUT_MS
+  }
+  return Math.floor(candidate)
 }
