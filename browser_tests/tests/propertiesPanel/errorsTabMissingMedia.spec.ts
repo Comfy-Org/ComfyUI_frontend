@@ -1,9 +1,62 @@
 import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { STABLE_INPUT_IMAGE } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  loadWorkflowAndOpenErrorsTab,
+  openErrorsTab
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+
+const test = comfyPageFixture
+const PUBLIC_INPUT_ASSET_HASH = 'nonexistent_test_image_12345.png'
+const PUBLIC_INPUT_ASSET: Asset = {
+  ...STABLE_INPUT_IMAGE,
+  id: 'test-public-input-001',
+  name: 'public_reference_photo.png',
+  asset_hash: PUBLIC_INPUT_ASSET_HASH
+}
+
+function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
+  return { assets, total: assets.length, has_more: false }
+}
+
+const cloudTest = comfyPageFixture.extend<{
+  cloudAssetRequests: string[]
+  stubCloudAssets: void
+}>({
+  cloudAssetRequests: async ({ page: _page }, use) => {
+    await use([])
+  },
+  stubCloudAssets: [
+    async ({ cloudAssetRequests, page }, use) => {
+      const assetsRoutePattern = /\/api\/assets(?:\?.*)?$/
+      const assetsRouteHandler = (route: Route) => {
+        const url = new URL(route.request().url())
+        const includeTags = url.searchParams.get('include_tags') ?? ''
+        const tags = includeTags.split(',').filter(Boolean)
+        const includePublic = url.searchParams.get('include_public') === 'true'
+        const assets =
+          tags.includes('input') && includePublic ? [PUBLIC_INPUT_ASSET] : []
+
+        cloudAssetRequests.push(route.request().url())
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(makeAssetsResponse(assets))
+        })
+      }
+
+      await page.route(assetsRoutePattern, assetsRouteHandler)
+      await use()
+      await page.unroute(assetsRoutePattern, assetsRouteHandler)
+    },
+    { auto: true }
+  ]
+})
 
 async function uploadFileViaDropzone(comfyPage: ComfyPage) {
   const dropzone = comfyPage.page.getByTestId(
@@ -203,3 +256,44 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     })
   })
 })
+
+cloudTest.describe(
+  'Errors tab - Missing media cloud assets',
+  {
+    tag: '@cloud'
+  },
+  () => {
+    cloudTest.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.RightSidePanel.ShowErrorsTab',
+        true
+      )
+    })
+
+    cloudTest(
+      'does not report public input assets as missing',
+      async ({ cloudAssetRequests, comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('missing/missing_media_single')
+
+        await expect
+          .poll(() =>
+            cloudAssetRequests.some((requestUrl) => {
+              const url = new URL(requestUrl)
+              const includeTags = url.searchParams.get('include_tags') ?? ''
+              return (
+                includeTags.split(',').includes('input') &&
+                url.searchParams.get('include_public') === 'true'
+              )
+            })
+          )
+          .toBe(true)
+
+        await openErrorsTab(comfyPage)
+
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingMediaGroup)
+        ).toBeHidden()
+      }
+    )
+  }
+)
