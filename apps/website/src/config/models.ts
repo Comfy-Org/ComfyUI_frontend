@@ -26,6 +26,7 @@ interface Model {
   readonly thumbnailUrl?: string
   readonly docsUrl?: string
   readonly blogUrl?: string
+  readonly hubSlug?: string
   readonly featured: boolean
   readonly workflowCount: number
 }

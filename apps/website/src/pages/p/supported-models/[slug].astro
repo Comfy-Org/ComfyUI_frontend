@@ -68,7 +68,7 @@ const faqJsonLd = {
       name: `What is ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `${displayName} is an AI model supported in ComfyUI.`
+        text: `${displayName} is an AI model you can run locally in ComfyUI with full control over every parameter. ComfyUI's node-based workflow editor lets you connect ${displayName} with other models, ControlNets, and custom nodes to build any image or video pipeline you need.`
       }
     },
     {
@@ -77,8 +77,8 @@ const faqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: model.docsUrl
-          ? `Follow the step-by-step tutorial at ${model.docsUrl}.`
-          : `Open ComfyUI, find "${displayName}" in the model browser, and load it into your workflow.`
+          ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
+          : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`
       }
     },
     {
@@ -86,14 +86,22 @@ const faqJsonLd = {
       name: `How many ComfyUI workflows use ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `${model.workflowCount} community workflow templates use ${displayName}.`
+        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Hub. Each template is ready to run in ComfyUI and can be customized to suit your project.`
+      }
+    },
+    {
+      '@type': 'Question',
+      name: `Is ${displayName} free to use in ComfyUI?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`
       }
     }
   ]
 }
 
 const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI. ${model.workflowCount} workflow templates, step-by-step tutorials, and full model control.`
+const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
 ---
 
 <BaseLayout
@@ -120,11 +128,11 @@ const pageDescription = `Run ${displayName} in ComfyUI. ${model.workflowCount} w
   </Fragment>
 
   <ModelHeroSection
-    slug={model.slug}
     displayName={displayName}
     huggingFaceUrl={model.huggingFaceUrl}
     docsUrl={model.docsUrl}
     blogUrl={model.blogUrl}
+    hubSlug={model.hubSlug}
     workflowCount={model.workflowCount}
     directory={model.directory}
   />

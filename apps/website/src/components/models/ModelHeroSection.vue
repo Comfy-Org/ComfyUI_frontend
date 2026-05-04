@@ -4,24 +4,26 @@ import BrandButton from '../common/BrandButton.vue'
 import { t } from '../../i18n/translations'
 
 const {
-  slug,
   displayName,
   huggingFaceUrl,
   docsUrl,
   blogUrl,
+  hubSlug,
   workflowCount,
   directory
 } = defineProps<{
-  slug: string
   displayName: string
   huggingFaceUrl: string
   docsUrl?: string
   blogUrl?: string
+  hubSlug?: string
   workflowCount: number
   directory: string
 }>()
 
-const workflowsUrl = `https://www.comfy.org/workflows/model/${slug}`
+const workflowsUrl = hubSlug
+  ? `https://www.comfy.org/workflows/model/${hubSlug}`
+  : 'https://www.comfy.org/workflows'
 
 const dirDisplayMap: Record<string, string> = {
   diffusion_models: 'Diffusion Model',

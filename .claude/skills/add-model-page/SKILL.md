@@ -13,8 +13,6 @@ add, update, or remove model pages in the ComfyUI website.
 - `Update the model page for <model-name>`
 - `Remove <model-name> from model pages`
 
----
-
 ## Phase 1 — Parse the request
 
 Extract:
@@ -24,8 +22,6 @@ Extract:
 
 Normalize to a slug: lowercase, replace `_` and `.` with `-`, strip file extensions.
 Example: `flux1_dev.safetensors` → `flux1-dev`
-
----
 
 ## Architecture overview
 
@@ -53,7 +49,6 @@ This writes `apps/website/src/config/generated-models.json` directly.
 Run the generator to get fresh data, then find the model:
 
 ```bash
-cd ComfyUI_frontend
 pnpm tsx apps/website/scripts/generate-models.ts
 jq '.[] | select(.slug | contains("MODEL_SLUG"))' \
   apps/website/src/config/generated-models.json
@@ -97,12 +92,13 @@ mymodel: { name: 'My Model', slug: 'my-model' },
 Then re-run `pnpm tsx apps/website/scripts/generate-models.ts` — it will appear
 in `generated-models.json` automatically.
 
-If you also want a `docsUrl` or `blogUrl`, add an entry to `model-metadata.ts`:
+If you also want a `docsUrl`, `blogUrl`, or a link to the hub model page, add an entry to `model-metadata.ts`:
 
 ```typescript
 'my-model': {
   docsUrl: 'https://docs.comfy.org/tutorials/...',
   blogUrl: 'https://blog.comfy.org/...',
+  hubSlug: 'my-model',   // slug at comfy.org/workflows/model/{hubSlug} — only set if the page exists (returns 200)
   featured: true
 }
 ```
