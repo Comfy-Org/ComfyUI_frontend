@@ -13,7 +13,11 @@
 import { describe, expect } from 'vitest'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
 
 import { subgraphTest as test } from './__fixtures__/subgraphFixtures'
@@ -156,12 +160,25 @@ describe('Subgraph copy roundtrip preserves state (#9976)', () => {
 
     interiorNode.widgets![0].value = 123
 
-    // Full _serializeItems-style flow
-    subgraphNode.serialize()
-    const exported = subgraph.clone(true).asSerialisable()
+    // Mimic _serializeItems clone path. Both serialized payloads are consumed
+    // via cloneObject so the assertions below operate on snapshots, not live
+    // references into the running subgraph.
+    const serializedInstance = LiteGraph.cloneObject(subgraphNode.serialize())
+    const serializedDef = LiteGraph.cloneObject(
+      subgraph.clone(true).asSerialisable()
+    )
 
-    const serializedNode = exported.nodes?.find((n) => n.id === interiorNode.id)
-    expect(serializedNode?.widgets_values?.[0]).toBe(123)
+    // Mutate the live widget AFTER capture: the snapshot must remain at 123.
+    // If serialize() ever started writing live references instead of snapshots,
+    // this assertion would flip to -1.
+    interiorNode.widgets![0].value = -1
+
+    expect(serializedInstance!.id).toBe(subgraphNode.id)
+
+    const exportedInterior = serializedDef!.nodes?.find(
+      (n) => n.id === interiorNode.id
+    )
+    expect(exportedInterior?.widgets_values?.[0]).toBe(123)
   })
 
   test('multiple instances: serialization order does not affect definition values', () => {
