@@ -46,7 +46,7 @@ test.describe('Download page @smoke', () => {
     await expect(githubBtn).toBeVisible()
     await expect(githubBtn).toHaveAttribute(
       'href',
-      'https://github.com/Comfy-Org/ComfyUI'
+      'https://github.com/Comfy-Org/ComfyUI#installing'
     )
 
     await context.close()
