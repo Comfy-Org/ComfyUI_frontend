@@ -8,7 +8,6 @@ interface IncludedFeature {
   titleKey: TranslationKey
   descriptionKey: TranslationKey
   isComingSoon?: boolean
-  hideComingSoonBadge?: boolean
 }
 
 const features: IncludedFeature[] = [
@@ -55,8 +54,7 @@ const features: IncludedFeature[] = [
   {
     titleKey: 'pricing.included.feature11.title',
     descriptionKey: 'pricing.included.feature11.description',
-    isComingSoon: true,
-    hideComingSoonBadge: true
+    isComingSoon: true
   }
 ]
 </script>
@@ -103,17 +101,9 @@ const features: IncludedFeature[] = [
               class="mt-0.5 size-4 shrink-0"
               aria-hidden="true"
             />
-            <div>
-              <p class="text-primary-comfy-canvas text-sm font-medium">
-                {{ t(feature.titleKey, locale) }}
-              </p>
-              <span
-                v-if="feature.isComingSoon && !feature.hideComingSoonBadge"
-                class="text-primary-comfy-yellow mt-1 inline-block text-xs"
-              >
-                {{ t('pricing.included.comingSoon', locale) }}
-              </span>
-            </div>
+            <p class="text-primary-comfy-canvas text-sm font-medium">
+              {{ t(feature.titleKey, locale) }}
+            </p>
           </div>
 
           <!-- Description -->

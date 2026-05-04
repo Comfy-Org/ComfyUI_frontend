@@ -1276,10 +1276,6 @@ const translations = {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
   },
-  'pricing.included.comingSoon': {
-    en: 'coming soon',
-    'zh-CN': '即将推出'
-  },
 
   // VideoPlayer
   'player.play': { en: 'Play', 'zh-CN': '播放' },
