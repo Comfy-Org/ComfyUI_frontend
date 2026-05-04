@@ -354,7 +354,12 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   test(
     'subgraph transition (enter and exit)',
     { tag: ['@vue-nodes'] },
-    async ({ comfyPage }) => {
+    async ({ comfyPage }, testInfo) => {
+      // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
+      // The signal is dominated by N=80 mount cost, so a single sample per
+      // CI invocation is sufficient — early-return on subsequent repeats.
+      if (testInfo.repeatEachIndex > 0) return
+
       // Load workflow with a subgraph containing 80 interior nodes.
       // Entering the subgraph unmounts root nodes and mounts all 80 interior
       // nodes synchronously — this is the bottleneck we're measuring.
