@@ -920,7 +920,12 @@ export class LGraphNode
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
           const incoming = info.widgets_values[i++]
-          const isNumeric = ['number', 'slider', 'knob'].includes(widget.type)
+          const isNumeric = [
+            'number',
+            'slider',
+            'gradientslider',
+            'knob'
+          ].includes(widget.type)
           const isInvalid =
             incoming === null ||
             incoming === undefined ||

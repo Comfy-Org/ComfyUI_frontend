@@ -56,6 +56,16 @@ describe('LGraphNode.configure numeric widget sanitization', () => {
     expect(node.widgets![0].value).toBe(99999)
   })
 
+  it('preserves default when widgets_values contains null for a gradientslider widget', () => {
+    node.addWidget('gradientslider', 'denoise', 0.75, null, {})
+
+    node.configure(
+      serialisedNode({ widgets_values: [null] as unknown[] as number[] })
+    )
+
+    expect(node.widgets![0].value).toBe(0.75)
+  })
+
   it('does not sanitize null for non-numeric widget types', () => {
     node.addWidget('text', 'prompt', 'default text', null, {})
 
