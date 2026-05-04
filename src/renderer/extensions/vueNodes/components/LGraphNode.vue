@@ -17,7 +17,8 @@
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-node-component-outline',
+        isSelected &&
+          'outline-node-component-outline focus:outline-none focus-visible:outline-none',
         executing && 'outline-node-stroke-executing',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
