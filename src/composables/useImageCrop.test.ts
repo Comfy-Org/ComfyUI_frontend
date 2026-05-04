@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { createApp, defineComponent, nextTick, reactive, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,9 +17,34 @@ import {
   createMockSubgraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 
-import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
+import { useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
+
+const useImageMockState = vi.hoisted(() => {
+  return {
+    state: null as null | {
+      state: Ref<HTMLImageElement | undefined>
+      isReady: Ref<boolean>
+      error: Ref<unknown>
+    }
+  }
+})
+
+function getUseImageMock() {
+  if (!useImageMockState.state) {
+    useImageMockState.state = {
+      state: ref<HTMLImageElement | undefined>(undefined),
+      isReady: ref(false),
+      error: ref<unknown>(null)
+    }
+  }
+  return useImageMockState.state
+}
+
+function resetUseImageMock() {
+  useImageMockState.state = null
+}
 
 vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual('@vueuse/core')
@@ -27,7 +53,8 @@ vi.mock('@vueuse/core', async () => {
     useResizeObserver: (_target: unknown, cb: () => void) => {
       resizeObserverCallbacks.push(cb)
       return { stop: vi.fn() }
-    }
+    },
+    useImage: () => getUseImageMock()
   }
 })
 
@@ -177,8 +204,31 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
       value: nh
     })
   }
-  ;(vm.handleImageLoad as () => void)()
+  triggerImageLoad(nw, nh)
   flushResizeObservers()
+}
+
+function triggerImageLoad(nw: number, nh: number) {
+  const mock = getUseImageMock()
+  const fakeImg = new Image()
+  Object.defineProperty(fakeImg, 'naturalWidth', {
+    configurable: true,
+    value: nw
+  })
+  Object.defineProperty(fakeImg, 'naturalHeight', {
+    configurable: true,
+    value: nh
+  })
+  mock.state.value = fakeImg
+  mock.error.value = null
+  mock.isReady.value = true
+}
+
+function triggerImageError() {
+  const mock = getUseImageMock()
+  mock.state.value = undefined
+  mock.isReady.value = false
+  mock.error.value = new Error('image failed to load')
 }
 
 const harnessCleanups: Array<() => void> = []
@@ -202,28 +252,6 @@ async function flushTicks() {
   await nextTick()
 }
 
-describe('imageCropLoadingAfterUrlChange', () => {
-  it('clears loading when url becomes null', () => {
-    expect(imageCropLoadingAfterUrlChange(null, 'https://a/b.png')).toBe(false)
-  })
-
-  it('keeps loading off when url stays null', () => {
-    expect(imageCropLoadingAfterUrlChange(null, null)).toBe(false)
-  })
-
-  it('starts loading when url changes to a new string', () => {
-    expect(imageCropLoadingAfterUrlChange('https://b', 'https://a')).toBe(true)
-  })
-
-  it('starts loading when first url is set', () => {
-    expect(imageCropLoadingAfterUrlChange('https://a', undefined)).toBe(true)
-  })
-
-  it('returns null when url is unchanged so caller can skip updating', () => {
-    expect(imageCropLoadingAfterUrlChange('https://a', 'https://a')).toBe(null)
-  })
-})
-
 describe('useImageCrop', () => {
   let sourceNode: LGraphNode
   let cropNode: LGraphNode
@@ -231,6 +259,7 @@ describe('useImageCrop', () => {
 
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
+    resetUseImageMock()
     vi.clearAllMocks()
     outputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
@@ -382,7 +411,8 @@ describe('useImageCrop', () => {
       configurable: true,
       value: 0
     })
-    ;(vm.handleImageLoad as () => void)()
+    triggerImageLoad(0, 0)
+    await flushTicks()
     vm.modelValue = { x: 0, y: 0, width: 100, height: 80 }
     const style = vm.cropBoxStyle as Record<string, string>
     expect(parseFloat(style.width)).toBeCloseTo(100, 1)
@@ -410,14 +440,16 @@ describe('useImageCrop', () => {
 
     expect(vm.imageUrl).toBe('https://example.com/b.png')
     expect(vm.isLoading).toBe(true)
-    ;(vm.handleImageLoad as () => void)()
+    triggerImageLoad(800, 600)
+    await flushTicks()
     expect(vm.isLoading).toBe(false)
   })
 
   it('clears imageUrl on image error', async () => {
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeTruthy()
-    ;(vm.handleImageError as () => void)()
+    triggerImageError()
+    await flushTicks()
     expect(vm.imageUrl).toBeNull()
     expect(vm.isLoading).toBe(false)
   })
@@ -600,6 +632,7 @@ describe('WidgetImageCrop', () => {
 
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
+    resetUseImageMock()
     vi.clearAllMocks()
     const outputStore: MockOutputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
@@ -688,7 +721,7 @@ describe('WidgetImageCrop', () => {
       configurable: true,
       value: 400
     })
-    img.dispatchEvent(new Event('load'))
+    triggerImageLoad(400, 400)
     await flushTicks()
     expect(screen.getByTestId('crop-overlay')).toBeTruthy()
     unmount()
@@ -732,7 +765,7 @@ describe('WidgetImageCrop', () => {
       configurable: true,
       value: 400
     })
-    img.dispatchEvent(new Event('load'))
+    triggerImageLoad(400, 400)
     await flushTicks()
 
     await user.click(screen.getByRole('button', { name: 'Lock aspect ratio' }))

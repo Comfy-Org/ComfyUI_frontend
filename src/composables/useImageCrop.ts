@@ -1,4 +1,4 @@
-import { useResizeObserver } from '@vueuse/core'
+import { useImage, useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -22,19 +22,6 @@ const CORNER_SIZE = 10
 /** Minimum crop width/height in source image pixel space. */
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 2
-
-/**
- * Next `isLoading` when `imageUrl` transitions. `null` means do not change
- * `isLoading` (e.g. same URL).
- */
-export function imageCropLoadingAfterUrlChange(
-  url: string | null,
-  previous: string | null | undefined
-): boolean | null {
-  if (url == null) return false
-  if (url !== previous) return true
-  return null
-}
 
 export const ASPECT_RATIOS = {
   '1:1': 1,
@@ -193,17 +180,37 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     imageUrl.value = getInputImageUrl()
   }
 
+  const {
+    state: imageState,
+    isReady: imageIsReady,
+    error: imageLoadError
+  } = useImage(computed(() => ({ src: imageUrl.value ?? '', alt: '' })))
+
   watch(imageUrl, (url, previous) => {
-    const next = imageCropLoadingAfterUrlChange(url, previous)
-    if (next !== null) {
-      isLoading.value = next
+    if (url == null) {
+      isLoading.value = false
+    } else if (url !== previous) {
+      isLoading.value = true
     }
   })
 
-  const updateDisplayedDimensions = () => {
-    if (!imageEl.value || !containerEl.value) return
+  watch([imageIsReady, imageState], ([ready, img]) => {
+    if (!ready || !img) return
+    isLoading.value = false
+    updateDisplayedDimensions(img)
+  })
 
-    const img = imageEl.value
+  watch(imageLoadError, (err) => {
+    if (err) {
+      isLoading.value = false
+      imageUrl.value = null
+    }
+  })
+
+  const updateDisplayedDimensions = (loadedImg?: HTMLImageElement | null) => {
+    const img = loadedImg ?? imageEl.value
+    if (!img || !containerEl.value) return
+
     const container = containerEl.value
 
     naturalWidth.value = img.naturalWidth
@@ -369,16 +376,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
       CORNER_DIRECTIONS.has(h.direction)
     )
   })
-
-  const handleImageLoad = () => {
-    isLoading.value = false
-    updateDisplayedDimensions()
-  }
-
-  const handleImageError = () => {
-    isLoading.value = false
-    imageUrl.value = null
-  }
 
   const capturePointer = (e: PointerEvent) => {
     if (e.target instanceof HTMLElement) e.target.setPointerCapture(e.pointerId)
@@ -617,8 +614,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     cropBoxStyle,
     resizeHandles,
 
-    handleImageLoad,
-    handleImageError,
     handleDragStart,
     handleDragMove,
     handleDragEnd,
