@@ -38,6 +38,14 @@ const mockCanvas = vi.hoisted(() => ({
   _deserializeItems: vi.fn()
 }))
 
+const mockApp = vi.hoisted(() => ({
+  canvas: undefined as unknown,
+  graph: undefined as unknown,
+  dragOverNode: null,
+  lastExecutionError: null,
+  rootGraph: {}
+}))
+
 const mockFavoritedWidgetsStore = vi.hoisted(() => ({
   isFavorited: vi.fn().mockReturnValue(false),
   toggleFavorite: vi.fn()
@@ -75,13 +83,7 @@ vi.mock('@/utils/formatUtil', () => ({
 }))
 
 vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: mockCanvas,
-    graph: mockCanvas.graph,
-    dragOverNode: null,
-    lastExecutionError: null,
-    rootGraph: {}
-  },
+  app: mockApp,
   ComfyApp: {
     clipspace: null,
     clipspace_return_node: null,
@@ -279,6 +281,8 @@ describe('litegraphService', () => {
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.visible_area = [0, 0, 800, 600]
     mockCanvas.graph.nodes = []
+    mockApp.canvas = mockCanvas
+    mockApp.graph = mockCanvas.graph
   })
 
   describe('getExtraOptionsForWidget', () => {
@@ -463,6 +467,14 @@ describe('litegraphService', () => {
         expect(center).toEqual([0, 0])
 
         mockCanvas.ds.visible_area = savedVisibleArea
+      })
+
+      it('returns [0, 0] without throwing when app.canvas is undefined', async () => {
+        mockApp.canvas = undefined
+
+        const service = await getService()
+        expect(() => service.getCanvasCenter()).not.toThrow()
+        expect(service.getCanvasCenter()).toEqual([0, 0])
       })
     })
 
