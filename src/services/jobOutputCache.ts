@@ -9,8 +9,14 @@
 import QuickLRU from '@alloc/quick-lru'
 
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  extractPrompt,
+  extractWorkflow
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -113,4 +119,11 @@ export async function getJobWorkflow(
 ): Promise<ComfyWorkflowJSON | undefined> {
   const detail = await getJobDetail(jobId)
   return await extractWorkflow(detail)
+}
+
+export async function getJobPrompt(
+  jobId: string
+): Promise<ComfyApiWorkflow | undefined> {
+  const detail = await getJobDetail(jobId)
+  return extractPrompt(detail)
 }
