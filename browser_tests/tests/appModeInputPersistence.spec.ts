@@ -5,7 +5,7 @@ import {
 import {
   saveCloseAndReopenInBuilder,
   setupBuilder
-} from '@e2e/helpers/builderTestUtils'
+} from '@e2e/fixtures/utils/builderTestUtils'
 
 const WIDGETS = ['seed', 'steps', 'cfg']
 
