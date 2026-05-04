@@ -269,13 +269,18 @@ export function computeProcessedWidgets({
     identity: { renderKey }
   } of uniqueWidgets) {
     const hostNodeId = String(nodeId ?? '')
+    const hostBareId = String(stripGraphPrefix(nodeId ?? ''))
+    const sourceNodeId = widget.source?.sourceNodeId
+    const widgetId = sourceNodeId ?? hostBareId
     // Promotion-store grouping keys off the interior source identity.
     // For promoted views: use the source local id; for non-promoted
     // widgets: the host node id stands in (a non-promoted widget acts as
     // its own source for border-style purposes).
-    const sourceBareId =
-      widget.source?.sourceNodeId ?? String(stripGraphPrefix(nodeId ?? ''))
-    const promotionSourceNodeId = widget.source ? sourceBareId : undefined
+    const promotionLookupNodeId =
+      widget.source?.disambiguatingSourceNodeId ?? sourceNodeId ?? hostBareId
+    const promotionSourceNodeId = widget.source
+      ? promotionLookupNodeId
+      : undefined
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -359,7 +364,7 @@ export function computeProcessedWidgets({
         missingModelStore
       ),
       hidden: mergedOptions.hidden ?? false,
-      id: sourceBareId,
+      id: widgetId,
       name: widget.name,
       renderKey,
       type: widget.type,

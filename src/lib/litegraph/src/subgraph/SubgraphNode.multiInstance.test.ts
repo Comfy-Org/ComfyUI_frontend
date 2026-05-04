@@ -537,4 +537,48 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       'per-instance-value'
     )
   })
+
+  it('clears deferred widget replay when reconfigured without widgets_values before attach', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 5)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const detached = createTestSubgraphNode(subgraph, { id: -1 })
+    detached.configure({
+      id: -1,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [33]
+    })
+
+    detached.configure({
+      id: -1,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] }
+    })
+
+    detached.graph!.add(detached)
+
+    expect(detached.id).not.toBe(-1)
+    expect(detached.widgets[0].value).toBe(5)
+    expect(detached.widgets[0].serializeValue?.(detached, 0)).toBe(5)
+  })
 })

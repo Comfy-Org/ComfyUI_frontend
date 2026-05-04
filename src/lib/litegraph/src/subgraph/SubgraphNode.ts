@@ -1065,6 +1065,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // values that super.configure() skips. When the node is not yet attached
     // (`id === -1`, e.g. during `LGraphNode.clone()`), the PromotedWidgetView
     // setters short-circuit, so defer the replay until `onAdded()`.
+    this._pendingWidgetsValuesReplay = undefined
     if (info.widgets_values) {
       if (this.id === -1) {
         this._pendingWidgetsValuesReplay = info.widgets_values

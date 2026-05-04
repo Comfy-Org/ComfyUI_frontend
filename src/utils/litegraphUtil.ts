@@ -345,6 +345,7 @@ export function resolveNodeWidget(
   if (!graph || typeof graph.getNodeById !== 'function') return []
 
   const node = graph.getNodeById(nodeId)
+  const normalizedSourceNodeId = String(nodeId)
   if (!widgetName) return node ? [node] : []
 
   if (node) {
@@ -363,7 +364,7 @@ export function resolveNodeWidget(
       (w) =>
         isPromotedWidgetView(w) &&
         w.sourceWidgetName === widgetName &&
-        w.sourceNodeId === nodeId
+        w.sourceNodeId === normalizedSourceNodeId
     )
     if (widget) return [node, widget]
   }

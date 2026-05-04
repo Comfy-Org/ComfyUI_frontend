@@ -145,4 +145,17 @@ describe('resolveNode', () => {
     expect(resolvedNode).toBe(host)
     expect(resolvedWidget).toBe(promoted)
   })
+
+  it('keeps legacy fallback for saved promoted widget source tuples with numeric node ids', () => {
+    const { host, promoted } = createPromotedWidgetFixture(503)
+
+    const [resolvedNode, resolvedWidget] = resolveNodeWidget(
+      Number(promoted.sourceNodeId),
+      promoted.sourceWidgetName,
+      host.graph!
+    )
+
+    expect(resolvedNode).toBe(host)
+    expect(resolvedWidget).toBe(promoted)
+  })
 })

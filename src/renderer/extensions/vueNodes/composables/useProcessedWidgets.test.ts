@@ -249,6 +249,51 @@ describe('computeProcessedWidgets borderStyle', () => {
     ).toBe(true)
   })
 
+  it('uses disambiguatingSourceNodeId when checking promoted border styling', () => {
+    const promotedWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: '3',
+      instanceWidgetName: 'promoted:text:1',
+      source: {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      },
+      slotName: 'text'
+    })
+
+    usePromotionStore().promote('graph-test', '4', {
+      sourceNodeId: '3',
+      sourceWidgetName: 'text',
+      disambiguatingSourceNodeId: '1'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '3',
+        type: 'SubgraphNode',
+        widgets: [promotedWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(
+      result.some((w) => w.simplified.borderStyle?.includes('promoted'))
+    ).toBe(true)
+    expect(result[0]?.id).toBe('3')
+  })
+
   it('does not apply promoted border styling to outermost widgets', () => {
     const promotedWidget = createMockWidget({
       name: 'text',
