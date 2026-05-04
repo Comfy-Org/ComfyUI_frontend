@@ -1222,4 +1222,95 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
   })
+
+  describe('closeWorkflow', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+    })
+
+    function createAndRegister(
+      path: string,
+      index: number
+    ): LoadedComfyWorkflow {
+      const workflow = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 100
+      })
+      workflow.changeTracker = createMockChangeTracker()
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      workflowStore.attachWorkflow(workflow, index)
+      return workflow as LoadedComfyWorkflow
+    }
+
+    it('does not close tab when switching to replacement fails', async () => {
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      vi.mocked(app.loadGraphData).mockRejectedValue(
+        new Error('configure failed')
+      )
+
+      const result = await service.closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.isOpen(active)).toBe(true)
+    })
+
+    it('falls back to default workflow when replacement throws', async () => {
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      let callCount = 0
+      vi.mocked(app.loadGraphData).mockImplementation(async () => {
+        callCount++
+        if (callCount === 1) {
+          throw new Error('replacement failed')
+        }
+        workflowStore.activeWorkflow = createAndRegister(
+          'workflows/Unsaved Workflow.json',
+          2
+        )
+      })
+
+      const result = await service.closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+
+      expect(result).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+    })
+
+    // Regression for #7840 silent path: loadGraphData() resolves but the active
+    // workflow stays unchanged because configure() errors are caught internally.
+    // closeWorkflow must still refuse to remove the tab. This test exists to
+    // pin the !workflowStore.isActive(workflow) postcondition in trySwitch().
+    it('does not close tab when loadGraphData resolves but active workflow does not change', async () => {
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      // Both the replacement switch and the default-workflow fallback resolve
+      // without changing activeWorkflow — simulating loadGraphData swallowing
+      // configure() errors internally.
+      vi.mocked(app.loadGraphData).mockResolvedValue(undefined)
+
+      const result = await service.closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.isOpen(active)).toBe(true)
+      expect(workflowStore.isActive(active)).toBe(true)
+    })
+  })
 })
