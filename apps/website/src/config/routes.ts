@@ -27,10 +27,6 @@ export function getRoutes(locale: Locale = 'en'): Routes {
   ) as unknown as Routes
 }
 
-export function modelDetail(slug: string): string {
-  return `/p/supported-models/${slug}`
-}
-
 export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
