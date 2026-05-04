@@ -2,20 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import HeroSection from '../../components/cloud-nodes/HeroSection.vue'
 import PackGridSection from '../../components/cloud-nodes/PackGridSection.vue'
-import { fetchCloudNodesForBuild } from '../../utils/cloudNodes'
-import { reportCloudNodesOutcome } from '../../utils/cloudNodes.ci'
+import { loadPacksForBuild } from '../../utils/cloudNodes.build'
 
-const outcome = await fetchCloudNodesForBuild()
-reportCloudNodesOutcome(outcome)
-
-if (outcome.status === 'failed') {
-  throw new Error(
-    `Cloud nodes fetch failed and no snapshot is available. Reason: ${outcome.reason}. ` +
-      'Run `pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot` locally and commit the snapshot.'
-  )
-}
-
-const packs = outcome.snapshot.packs
+const packs = await loadPacksForBuild()
 ---
 
 <BaseLayout
