@@ -51,6 +51,7 @@ jobs:
             echo "Secret not available in this run; skipping leak check."
             exit 0
           fi
+          # grep -rlF prints only file paths (never match content).
           MATCHES=$(grep -rlF --exclude-dir=node_modules --null \
             -e "$WEBSITE_CLOUD_API_KEY" apps/website/dist/ 2>/dev/null \
             | tr '\0' '\n' || true)

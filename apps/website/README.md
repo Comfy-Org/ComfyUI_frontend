@@ -115,19 +115,18 @@ snapshots can't be accidentally committed.
 
 ## Cloud nodes integration
 
-`/cloud/nodes` and `/zh-CN/cloud/nodes` are rendered from the Comfy
-Cloud `/api/object_info` endpoint at build time, joined with public
-metadata from `https://api.comfy.org/nodes`. Data flow:
+`/cloud/supported-nodes` and `/zh-CN/cloud/supported-nodes` are
+rendered from the Comfy Cloud `/api/object_info` endpoint at build
+time, joined with public metadata from `https://api.comfy.org/nodes`.
+Data flow:
 
-1. `src/pages/cloud/nodes.astro` awaits `fetchCloudNodesForBuild()`
-   during the Astro build.
+1. `src/pages/cloud/supported-nodes.astro` awaits
+   `fetchCloudNodesForBuild()` during the Astro build.
 2. `src/utils/cloudNodes.ts` calls
    `GET https://cloud.comfy.org/api/object_info` with the
    `X-API-Key: $WEBSITE_CLOUD_API_KEY` header, validates the envelope
    and each node with Zod via `@comfyorg/object-info-parser`, and
-   sanitizes user content (combo lists referencing user filenames are
-   stripped; combo options on `LoadImage`/`LoadImageMask`/
-   `LoadImageOutput`/`LoadVideo`/`LoadAudio` are zeroed out entirely).
+   sanitizes user content.
 3. Pack ids are derived from `python_module` and enriched with public
    registry metadata via `src/utils/cloudNodes.registry.ts` (no auth,
    batches of 50, single retry; soft failure when registry is
@@ -151,12 +150,20 @@ into the client bundle).
 
 ### CI wiring
 
+This repo's `.github/workflows/*.yaml` changes cannot be pushed by a
+GitHub App. A maintainer must apply the following edits **once**:
+
+**`.github/workflows/ci-website-build.yaml`** — pass the env into the
+build step and verify the cloud key does not leak into output:
+
 ```yaml
 jobs:
   build:
     steps:
       - name: Build website
         env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
         run: pnpm --filter @comfyorg/website build
 
@@ -178,10 +185,47 @@ jobs:
           fi
 ```
 
-The Vercel preview workflow (`ci-vercel-website-preview.yaml`) needs
-`WEBSITE_CLOUD_API_KEY` in both `deploy-preview` and `deploy-production`
-build steps so `vercel build` can read it. The secret must also exist
-in the Vercel project environment.
+**`.github/workflows/ci-vercel-website-preview.yaml`** — add
+`packages/object-info-parser/**` to trigger paths and pass all website
+build env vars into both `vercel build` steps:
+
+```yaml
+on:
+  pull_request:
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/object-info-parser/**'
+      - 'packages/tailwind-utils/**'
+  push:
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/object-info-parser/**'
+      - 'packages/tailwind-utils/**'
+
+jobs:
+  deploy-preview:
+    steps:
+      - name: Build project artifacts
+        env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
+          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
+        run: vercel build
+
+  deploy-production:
+    steps:
+      - name: Build project artifacts
+        env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
+          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
+        run: vercel build --prod
+```
+
+The secret must also exist in the Vercel project environment so
+`vercel build` in preview and production has access to it.
 
 ### Refreshing the snapshot
 
@@ -204,9 +248,8 @@ fetched response and on the snapshot before it is written:
 
 - Combo values matching `/\.(png|jpe?g|webp|gif|mp4|mov|webm|wav|mp3|flac|ogg|safetensors|ckpt|pt)$/i`
   are dropped from any node.
-- Combo lists for known user-upload nodes (`LoadImage`,
-  `LoadImageMask`, `LoadImageOutput`, `LoadVideo`, `LoadAudio`) are
-  emptied entirely.
+- Combo lists for `LoadImage`, `LoadVideo`, and `LoadAudio` are
+  stripped before snapshot commit.
 
 Tests in `packages/object-info-parser/src/__tests__/sanitizeUserContent.test.ts`
 exercise both paths.
