@@ -11,6 +11,10 @@ const translations = {
     'zh-CN':
       'Comfy 是面向专业视觉人士的 AI 创作引擎。您可以精确掌控每个模型、每个参数和每个输出。'
   },
+  'hero.runFirstWorkflow': {
+    en: 'Run your first workflow',
+    'zh-CN': '运行你的第一个工作流'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {
@@ -910,9 +914,9 @@ const translations = {
     'zh-CN': '我应该选择 Comfy Cloud 还是本地 ComfyUI（自托管）？'
   },
   'cloud.faq.3.a': {
-    en: "Comfy Cloud (beta) has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
+    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
     'zh-CN':
-      'Comfy Cloud（测试版）无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
+      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
   },
   'cloud.faq.4.q': {
     en: 'Do I need a GPU or a strong computer to use Comfy Cloud?',
@@ -1275,10 +1279,6 @@ const translations = {
   'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
-  },
-  'pricing.included.comingSoon': {
-    en: 'coming soon',
-    'zh-CN': '即将推出'
   },
 
   // VideoPlayer
@@ -2242,6 +2242,20 @@ const translations = {
     en: 'Ubisoft La Forge open-sourced its CHORD PBR material estimation model with ComfyUI custom nodes, enabling end-to-end texture generation workflows for AAA game production.',
     'zh-CN':
       '育碧 La Forge 开源了 CHORD PBR 材质估算模型及 ComfyUI 自定义节点，为 AAA 游戏制作实现了端到端的纹理生成工作流。'
+  },
+  'customers.story.groove-jones.category': {
+    en: 'CASE STUDY',
+    'zh-CN': '案例研究'
+  },
+  'customers.story.groove-jones.title': {
+    en: "How Groove Jones Delivered a Holiday FOOH Campaign for Dick's Sporting Goods with Comfy",
+    'zh-CN':
+      "Groove Jones 如何借助 Comfy 为 Dick's Sporting Goods 打造节日 FOOH 营销"
+  },
+  'customers.story.groove-jones.body': {
+    en: 'Groove Jones, a Dallas-based creative studio, used Comfy to deliver a hyper-realistic FOOH holiday campaign for the Crocs x NFL collection on a fast-approaching deadline.',
+    'zh-CN':
+      '达拉斯创意工作室 Groove Jones 借助 Comfy，在紧迫的节日档期内为 Crocs x NFL 联名系列交付了超写实的 FOOH 营销内容。'
   },
   'customers.story.readMore': {
     en: 'READ MORE ON THIS TOPIC',
@@ -3274,6 +3288,227 @@ const translations = {
   'customers.detail.ubisoft-chord.topic-6.block.6.role2': {
     en: 'ComfyUI Blog',
     'zh-CN': 'ComfyUI 博客'
+  },
+
+  // Customer Detail: Groove Jones
+  // Topic 1: Intro
+  'customers.detail.groove-jones.topic-1.label': {
+    en: 'INTRO',
+    'zh-CN': '简介'
+  },
+  'customers.detail.groove-jones.topic-1.block.0': {
+    en: 'Groove Jones, a Dallas-based creative studio, builds AI-driven campaigns and immersive experiences for major brands where photoreal polish, creative ambition, and social-ready speed all have to land together. As their work expanded across AI Video, AR, VR, and WebGL for clients like Crocs, the NFL, and Dick\u2019s Sporting Goods, they faced a recurring challenge: delivering feature-film-quality VFX on commercial timelines and budgets.',
+    'zh-CN':
+      '位于达拉斯的创意工作室 Groove Jones，为众多大牌客户打造由 AI 驱动的营销活动和沉浸式体验，需要同时兼顾照片级的精细度、创意野心，以及适配社交媒体的交付速度。随着他们为 Crocs、NFL 和 Dick\u2019s Sporting Goods 等客户的工作扩展到 AI 视频、AR、VR 和 WebGL，他们反复遇到同一个挑战：用商业项目的工期和预算，交付电影级的 VFX 质量。'
+  },
+  'customers.detail.groove-jones.topic-1.block.1': {
+    en: 'For the Crocs x NFL collection holiday launch, that challenge came to a head. The brief called for hyper-realistic video of giant NFL-licensed Crocs parachuting into real Dick\u2019s Sporting Goods parking lots, across multiple locations, delivered on a fast-approaching holiday deadline. A live-action shoot plus a traditional CG pipeline was off the table.',
+    'zh-CN':
+      '在 Crocs x NFL 联名系列的节日上市项目中，这个挑战被推到了极致。Brief 要求制作超写实视频：巨型 NFL 授权 Crocs 鞋款跳伞落入多个真实的 Dick\u2019s Sporting Goods 停车场，并要在紧迫的节日档期前交付。实地拍摄加传统 CG 流水线的方案，已经完全行不通。'
+  },
+  // Topic 2: The Output
+  'customers.detail.groove-jones.topic-2.label': {
+    en: 'THE OUTPUT',
+    'zh-CN': '交付成果'
+  },
+  'customers.detail.groove-jones.topic-2.title': {
+    en: 'The Output Groove Jones Achieved Using Comfy',
+    'zh-CN': 'Groove Jones 借助 Comfy 实现的交付成果'
+  },
+  'customers.detail.groove-jones.topic-2.block.0': {
+    en: 'A full FOOH (faux out-of-home) social campaign delivered on a tight holiday deadline\nHyper-realistic videos of giant NFL-licensed Crocs parachuting onto Dick\u2019s Sporting Goods parking lots\nVertical 9:16 deliverables at 2K for Instagram Reels, TikTok, and YouTube Shorts\nSame-day iteration on client notes instead of week-long asset updates\nWinner, Aaron Awards 2024: Best AI Workflow for Production',
+    'zh-CN':
+      '在紧迫的节日档期内交付完整的 FOOH（虚构户外广告）社媒营销活动\n超写实视频：巨型 NFL 授权 Crocs 鞋款跳伞落入 Dick\u2019s Sporting Goods 停车场\n面向 Instagram Reels、TikTok、YouTube Shorts 的 9:16 竖屏 2K 交付物\n客户反馈当天迭代，不再需要数周的资产更新周期\n荣获 2024 年 Aaron Awards：最佳 AI 制作工作流奖'
+  },
+  // Topic 3: The Problem
+  'customers.detail.groove-jones.topic-3.label': {
+    en: 'THE PROBLEM',
+    'zh-CN': '挑战'
+  },
+  'customers.detail.groove-jones.topic-3.title': {
+    en: 'The Problem Groove Jones Was Trying to Solve',
+    'zh-CN': 'Groove Jones 试图解决的问题'
+  },
+  'customers.detail.groove-jones.topic-3.block.0': {
+    en: 'A traditional pipeline for this creative meant a live-action shoot at multiple store locations plus a full CG build: high-res modeling of every team\u2019s clog, look development, lighting, rendering, compositing, and a new render every time the client wanted a variation. It also meant a large crew (modelers, texture artists, lighting artists, compositors) and a schedule measured in months. Neither the budget nor the holiday window supported that path.',
+    'zh-CN':
+      '按照传统流水线做这个创意，意味着要在多家门店实地拍摄，加上完整的 CG 制作：每支球队鞋款的高精建模、look development、灯光、渲染、合成，客户每次想要新变体都要重新渲染。这也意味着庞大的团队（建模师、纹理师、灯光师、合成师），以及以"月"为单位的工期。无论是预算还是节日档期，都无法支撑这条路径。'
+  },
+  // Topic 4: How Comfy Solved the Problem
+  'customers.detail.groove-jones.topic-4.label': {
+    en: 'HOW COMFY SOLVED THE PROBLEM',
+    'zh-CN': 'Comfy 如何解决问题'
+  },
+  'customers.detail.groove-jones.topic-4.title': {
+    en: 'How Groove Jones Used Comfy to Solve the Problem',
+    'zh-CN': 'Groove Jones 如何用 Comfy 解决问题'
+  },
+  'customers.detail.groove-jones.topic-4.block.0': {
+    en: 'Groove Jones\u2019s Senior Creative Technologist, Doug Hogan, rebuilt the production process around Comfy\u2019s node-based workflow system, using their proprietary GrooveTech GenVFX pipeline. Custom LoRAs handled brand accuracy, a single Comfy graph orchestrated multiple generative models, and Nuke handled final polish. For a team with feature-film and commercial roots, the environment was immediately familiar.',
+    'zh-CN':
+      'Groove Jones 的高级创意技术总监 Doug Hogan 围绕 Comfy 的节点式工作流系统重新搭建了制作流程，并基于他们自研的 GrooveTech GenVFX 流水线展开。自定义 LoRA 负责保证品牌一致性，一张 Comfy 图编排多个生成模型，Nuke 负责最终精修。对于有电影和广告制作背景的团队，这套环境上手没有任何门槛。'
+  },
+  'customers.detail.groove-jones.topic-4.block.1.text': {
+    en: 'Comfy felt very similar to working inside a traditional CG and compositing pipeline. Node-based logic, clear data flow, modular builds. It felt natural to our artists already.',
+    'zh-CN':
+      'Comfy 用起来非常像传统 CG 和合成流水线：节点逻辑、清晰的数据流、模块化构建。我们的艺术家用起来毫无违和感。'
+  },
+  'customers.detail.groove-jones.topic-4.block.1.name': {
+    en: 'Doug Hogan | Senior Creative Technologist @ Groove Jones',
+    'zh-CN': 'Doug Hogan | Groove Jones 高级创意技术总监'
+  },
+  // Topic 5: Brand-Trained LoRAs
+  'customers.detail.groove-jones.topic-5.label': {
+    en: 'BRAND-TRAINED LORAS',
+    'zh-CN': '品牌定制 LORA'
+  },
+  'customers.detail.groove-jones.topic-5.title': {
+    en: 'Brand-Trained LoRAs for Hero Assets',
+    'zh-CN': '为主视觉资产定制的品牌 LoRA'
+  },
+  'customers.detail.groove-jones.topic-5.block.0': {
+    en: 'Groove Jones trained custom LoRAs on the Crocs NFL Team Clogs and on Dick\u2019s Sporting Goods storefronts, so every generation came out anchored in brand-accurate references. Real team colorways, real product silhouettes, and real store exteriors stayed consistent across shots without per-frame correction, replacing what would normally take weeks of manual look development.',
+    'zh-CN':
+      'Groove Jones 基于 Crocs NFL 球队联名鞋款和 Dick\u2019s Sporting Goods 门店外景训练了定制 LoRA，让每一次生成都能锚定品牌精准的参考素材。真实的球队配色、产品轮廓和门店外观在不同镜头之间保持一致，不需要逐帧修正——而这通常意味着数周的 look development 工作量。'
+  },
+  'customers.detail.groove-jones.topic-5.block.1.src': {
+    en: 'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-team-lineup.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-team-lineup.webp'
+  },
+  'customers.detail.groove-jones.topic-5.block.1.alt': {
+    en: 'Grid of brand-accurate NFL team Crocs generated via custom LoRAs',
+    'zh-CN': '通过定制 LoRA 生成的多支 NFL 球队联名 Crocs 网格'
+  },
+  'customers.detail.groove-jones.topic-5.block.1.caption': {
+    en: 'Brand-accurate NFL team colorways generated through custom LoRAs.',
+    'zh-CN': '通过定制 LoRA 生成的、与品牌精准一致的 NFL 球队配色。'
+  },
+  // Topic 6: Multi-Model Orchestration
+  'customers.detail.groove-jones.topic-6.label': {
+    en: 'MULTI-MODEL ORCHESTRATION',
+    'zh-CN': '多模型编排'
+  },
+  'customers.detail.groove-jones.topic-6.title': {
+    en: 'Multi-Model Orchestration in a Single Graph',
+    'zh-CN': '单张图内的多模型编排'
+  },
+  'customers.detail.groove-jones.topic-6.block.0': {
+    en: 'The creative required different generative models at different stages: Flux for key-frame still development, Gemini Flash 2.5 (Nano Banana) for fast ideation and variants, and Veo 3.1 plus Moonvalley\u2019s Marey for final video generation. Comfy routed between all four inside one graph, so outputs from one model fed directly into the next without ever leaving the environment.',
+    'zh-CN':
+      '这个创意在不同阶段需要不同的生成模型：Flux 用于关键帧静帧开发，Gemini Flash 2.5（Nano Banana）用于快速构思和变体生成，Veo 3.1 加上 Moonvalley 的 Marey 用于最终的视频生成。Comfy 在一张图里就把这四个模型串起来，前一个模型的输出直接喂给下一个模型，全程无需切换环境。'
+  },
+  'customers.detail.groove-jones.topic-6.block.1.text': {
+    en: 'The Comfy community develops at an almost exponential curve, and we were able to leverage their existing nodes and tools to solve very specific production challenges instead of reinventing the wheel ourselves.',
+    'zh-CN':
+      'Comfy 社区几乎是指数级增长的，我们可以直接利用社区已有的节点和工具去解决非常具体的制作问题，而不必自己重新造轮子。'
+  },
+  'customers.detail.groove-jones.topic-6.block.1.name': {
+    en: 'Dale Carman | Co-founder @ Groove Jones',
+    'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
+  },
+  // Topic 7: The Pipeline
+  'customers.detail.groove-jones.topic-7.label': {
+    en: 'THE PIPELINE',
+    'zh-CN': '流水线'
+  },
+  'customers.detail.groove-jones.topic-7.title': {
+    en: 'Storyboards to Previz to Final Shot in One Pipeline',
+    'zh-CN': '从故事板到 Previz 再到成片，全部在一条流水线内'
+  },
+  'customers.detail.groove-jones.topic-7.block.0': {
+    en: 'The workflow opened with traditional storyboards for narrative approval, then moved into CGI blocking to lock composition, camera framing, and story beats. Comfy drove generation from there: the shoe drop, the parking lot reactions, the crowd coverage, and the environmental conversions that turned static summer storefronts into snow-covered holiday scenes, all inside the same graph.',
+    'zh-CN':
+      '工作流从传统故事板开始用于叙事确认，再进入 CGI blocking，锁定构图、镜头取景和叙事节奏。从这里开始 Comfy 接管生成：鞋款空投、停车场反应镜头、人群覆盖、把夏季静态门店外景转换成被雪覆盖的节日场景——全部在同一张图里完成。'
+  },
+  'customers.detail.groove-jones.topic-7.block.1.src': {
+    en: 'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-dicks-storyboards.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-dicks-storyboards.webp'
+  },
+  'customers.detail.groove-jones.topic-7.block.1.alt': {
+    en: 'Storyboard grid for the Crocs x NFL holiday campaign',
+    'zh-CN': 'Crocs x NFL 节日营销的故事板网格'
+  },
+  'customers.detail.groove-jones.topic-7.block.1.caption': {
+    en: 'Grayscale storyboards used to lock narrative beats before generation.',
+    'zh-CN': '在生成之前用于锁定叙事节奏的灰度故事板。'
+  },
+  'customers.detail.groove-jones.topic-7.block.2.src': {
+    en: 'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-fooh-sequence.webp',
+    'zh-CN':
+      'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-fooh-sequence.webp'
+  },
+  'customers.detail.groove-jones.topic-7.block.2.alt': {
+    en: 'Composition progression from blocking to mid-render to final shot',
+    'zh-CN': '从 blocking 到中间渲染再到最终镜头的构图演进'
+  },
+  'customers.detail.groove-jones.topic-7.block.2.caption': {
+    en: 'Composition progression: wireframe blocking, mid-render, and final shot.',
+    'zh-CN': '构图演进：线框 blocking、中间渲染、最终成片。'
+  },
+  // Topic 8: Version Control
+  'customers.detail.groove-jones.topic-8.label': {
+    en: 'VERSION CONTROL',
+    'zh-CN': '版本管理'
+  },
+  'customers.detail.groove-jones.topic-8.title': {
+    en: 'Workflow Files as Version Control',
+    'zh-CN': '把工作流文件当作版本管理'
+  },
+  'customers.detail.groove-jones.topic-8.block.0': {
+    en: 'Every variant of every shot lived as a Comfy workflow file, which doubled as version control. When notes came in requesting a different team colorway, store exterior, or time of day, the team duplicated a branch instead of rebuilding, which made same-day iteration possible. GPU usage and API credit burn were trackable inside the same environment as the work itself, giving Production real-time visibility into compute cost per iteration.',
+    'zh-CN':
+      '每个镜头的每个变体都以 Comfy 工作流文件的形式存在，文件本身就是版本管理。当客户反馈要求换一支球队配色、换一个门店外景或者换一个时间段时，团队只需复制一个分支，而不是重建——这才让"当天迭代"成为可能。GPU 使用量和 API 额度消耗也都能在同一个环境里追踪到，让制作部门实时看到每次迭代的算力成本。'
+  },
+  // Topic 9: Finishing in Nuke
+  'customers.detail.groove-jones.topic-9.label': {
+    en: 'FINISHING IN NUKE',
+    'zh-CN': 'Nuke 终修'
+  },
+  'customers.detail.groove-jones.topic-9.title': {
+    en: 'Finishing in Nuke',
+    'zh-CN': '在 Nuke 中完成终修'
+  },
+  'customers.detail.groove-jones.topic-9.block.0': {
+    en: 'Generated shots moved into Nuke for final compositing: falling snow, camera shake, crowd ambience, holiday audio, and 2K mastering in 9:16 for Instagram Reels, TikTok, and YouTube Shorts. Because Comfy handled generation cleanly, Nuke focused on polish and motion enhancement rather than patching generative artifacts.',
+    'zh-CN':
+      '生成的镜头进入 Nuke 完成最终合成：飘雪、镜头抖动、人群环境音、节日氛围音效，以及面向 Instagram Reels、TikTok、YouTube Shorts 的 9:16 2K 母带。由于 Comfy 把生成环节处理得很干净，Nuke 可以专注于精修和动态增强，而不是去修补生成模型留下的瑕疵。'
+  },
+  // Topic 10: The Takeaway
+  'customers.detail.groove-jones.topic-10.label': {
+    en: 'THE TAKEAWAY',
+    'zh-CN': '总结'
+  },
+  'customers.detail.groove-jones.topic-10.title': {
+    en: 'Conclusion',
+    'zh-CN': '结语'
+  },
+  'customers.detail.groove-jones.topic-10.block.0': {
+    en: 'By building the FOOH pipeline inside Comfy, Groove Jones turned a brief that would have required an expensive live-action shoot plus months of CG into a fast, iterative, single-environment workflow the client could direct in real time. The project recently won the Aaron Award for Best AI Workflow for Production.',
+    'zh-CN':
+      '通过在 Comfy 中搭建整套 FOOH 流水线，Groove Jones 把一个原本需要昂贵实地拍摄加数月 CG 制作的项目，变成了一套高速迭代、单一环境、客户可以实时指挥的工作流。该项目近期还荣获 Aaron Award 的"最佳 AI 制作工作流"奖。'
+  },
+  'customers.detail.groove-jones.topic-10.block.1.text': {
+    en: 'At Groove Jones, we care deeply about delivering work that makes people say WOW! But we also care about delivering on time and on budget. VFX projects used to operate at razor thin margins. Comfy solved that for us.',
+    'zh-CN':
+      '在 Groove Jones，我们非常在意交付让人说"WOW！"的作品，但我们同样在意按时按预算交付。VFX 项目以前的利润率薄得像刀刃，Comfy 帮我们彻底解决了这个问题。'
+  },
+  'customers.detail.groove-jones.topic-10.block.1.name': {
+    en: 'Dale Carman | Co-founder @ Groove Jones',
+    'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
+  },
+  'customers.detail.groove-jones.topic-10.block.2.label': {
+    en: 'GROOVE JONES CONTRIBUTORS',
+    'zh-CN': 'GROOVE JONES 贡献者'
+  },
+  'customers.detail.groove-jones.topic-10.block.2.name': {
+    en: 'TBD',
+    'zh-CN': '待补充'
+  },
+  'customers.detail.groove-jones.topic-10.block.2.role': {
+    en: 'TBD',
+    'zh-CN': '待补充'
   },
 
   // Contact – FormSection
