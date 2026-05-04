@@ -98,4 +98,18 @@ describe('keybindingService - event propagation', () => {
 
     expect(event.stopPropagation).not.toHaveBeenCalled()
   })
+
+  it('does not stop propagation for bare Escape even when a keybinding matches', async () => {
+    // ExitSubgraph is bound to bare Escape. Element-level handlers (Reka UI
+    // menus, PrimeVue dialogs, BuilderFooterToolbar) need the event to reach
+    // them so they can close — stopPropagation would block them.
+    const event = createKeyboardEvent('Escape')
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Graph.ExitSubgraph'
+    )
+    expect(event.stopPropagation).not.toHaveBeenCalled()
+  })
 })
