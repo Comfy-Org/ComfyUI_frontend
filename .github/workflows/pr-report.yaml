@@ -138,6 +138,8 @@ jobs:
             const legacyMarkers = [
               '<!-- COMFYUI_FRONTEND_SIZE -->',
               '<!-- COMFYUI_FRONTEND_PERF -->',
+              '<!-- PLAYWRIGHT_TEST_STATUS -->',
+              '<!-- STORYBOOK_BUILD_STATUS -->',
             ];
 
             const comments = await github.paginate(github.rest.issues.listComments, {
@@ -158,11 +160,19 @@ jobs:
               }
             }
 
-      - name: Post PR comment
+      - name: Read PR report
+        id: report
         if: steps.pr-meta.outputs.skip != 'true'
-        uses: ./.github/actions/post-pr-report-comment
+        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        with:
+          path: ./pr-report.md
+
+      - name: Upsert bundle/perf/coverage section into unified report
+        if: steps.pr-meta.outputs.skip != 'true'
+        uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}
-          report-file: ./pr-report.md
+          section-name: ci-metrics
+          section-content: ${{ steps.report.outputs.content }}
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}

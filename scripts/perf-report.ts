@@ -316,12 +316,16 @@ function renderFullReport(
     lines.push(
       `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**`,
       '',
+      `<details><summary>Show regressions</summary>`,
+      '',
       ...tableHeader,
       ...flaggedRows,
+      '',
+      '</details>',
       ''
     )
   } else {
-    lines.push('No regressions detected.', '')
+    lines.push('✅ No regressions detected.', '')
   }
 
   lines.push(
@@ -393,6 +397,8 @@ function renderColdStartReport(
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
+    `<details><summary>All metrics (cold start)</summary>`,
+    '',
     '| Metric | Baseline | PR | Δ |',
     '|--------|----------|-----|---|'
   )
@@ -430,6 +436,7 @@ function renderColdStartReport(
     }
   }
 
+  lines.push('', '</details>')
   return lines
 }
 
@@ -438,7 +445,10 @@ function renderNoBaselineReport(
 ): string[] {
   const lines: string[] = []
   lines.push(
-    'No baseline found — showing absolute values.\n',
+    '> ℹ️ No baseline found — significance unavailable.',
+    '',
+    `<details><summary>Absolute values</summary>`,
+    '',
     '| Metric | Value |',
     '|--------|-------|'
   )
@@ -449,6 +459,7 @@ function renderNoBaselineReport(
       lines.push(`| ${testName}: ${label} | ${formatValue(prVal, unit)} |`)
     }
   }
+  lines.push('', '</details>')
   return lines
 }
 

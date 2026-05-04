@@ -38,16 +38,15 @@ jobs:
         id: pr
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
-      - name: Handle Test Start
+      - name: Handle Test Start — upsert playwright starting section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'requested'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ steps.pr.outputs.number }}" \
-            "${{ github.event.workflow_run.head_branch }}" \
-            "starting"
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          section-name: playwright
+          section-content: '## 🎭 Playwright: ⏳ Running...'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
 
       - name: Download and Deploy Reports
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
@@ -59,13 +58,14 @@ jobs:
           path: reports
           if_no_artifact_found: warn
 
-      - name: Handle Test Completion
+      - name: Handle Test Completion — deploy and generate section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && hashFiles('reports/**') != ''
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+          SUMMARY_FILE: playwright-section.md
         run: |
           # Rename merged report if exists
           [ -d "reports/playwright-report-chromium-merged" ] && \
@@ -76,3 +76,20 @@ jobs:
             "${{ steps.pr.outputs.number }}" \
             "${{ github.event.workflow_run.head_branch }}" \
             "completed"
+
+      - name: Read playwright section
+        id: section
+        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && hashFiles('playwright-section.md') != ''
+        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        with:
+          path: playwright-section.md
+
+      - name: Upsert playwright section into unified report
+        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && steps.section.outputs.content != ''
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          section-name: playwright
+          section-content: ${{ steps.section.outputs.content }}
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
