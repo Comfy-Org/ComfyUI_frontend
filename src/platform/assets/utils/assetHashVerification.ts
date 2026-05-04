@@ -1,6 +1,10 @@
 import type { AssetHashStatus } from '@/platform/assets/services/assetService'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
+/**
+ * Low-level hash checker. Cancellation should reject with the same
+ * DOMException AbortError shape as `fetch`.
+ */
 export type AssetHashVerifier = (
   assetHash: string,
   signal?: AbortSignal
@@ -24,6 +28,10 @@ interface VerifyCandidatesByAssetHashOptions<T> {
 
 const DEFAULT_MAX_CONCURRENT_HASH_CHECKS = 12
 
+/**
+ * Deduplicates asset hash checks and partitions candidates for scanner policy.
+ * `fallback` candidates should continue through the caller's legacy lookup path.
+ */
 export async function verifyCandidatesByAssetHash<T>({
   candidates,
   getAssetHash,
@@ -58,18 +66,20 @@ export async function verifyCandidatesByAssetHash<T>({
 
   const entries = [...candidatesByHash.entries()]
   let nextIndex = 0
-  const workerCount = Math.min(
-    entries.length,
-    Math.max(1, Math.floor(maxConcurrent))
-  )
+  const requestedWorkerCount = Math.max(1, Math.floor(maxConcurrent))
+  const workerCount = Math.min(entries.length, requestedWorkerCount)
+
+  function hasAborted(): boolean {
+    return result.aborted || signal?.aborted === true
+  }
 
   async function verifyNextHash(): Promise<void> {
-    while (!result.aborted && nextIndex < entries.length) {
+    while (!hasAborted() && nextIndex < entries.length) {
       const entry = entries[nextIndex++]
       if (!entry) return
 
       const [assetHash, hashCandidates] = entry
-      if (signal?.aborted) {
+      if (hasAborted()) {
         result.aborted = true
         return
       }
@@ -78,7 +88,7 @@ export async function verifyCandidatesByAssetHash<T>({
       try {
         status = await checkAssetHash(assetHash, signal)
       } catch (error) {
-        if (signal?.aborted || isAbortError(error)) {
+        if (hasAborted() || isAbortError(error)) {
           result.aborted = true
           return
         }
@@ -88,7 +98,7 @@ export async function verifyCandidatesByAssetHash<T>({
         continue
       }
 
-      if (signal?.aborted) {
+      if (hasAborted()) {
         result.aborted = true
         return
       }
@@ -103,9 +113,7 @@ export async function verifyCandidatesByAssetHash<T>({
     }
   }
 
-  await Promise.all(
-    Array.from({ length: workerCount }, async () => await verifyNextHash())
-  )
+  await Promise.all(Array.from({ length: workerCount }, verifyNextHash))
 
   return result
 }
