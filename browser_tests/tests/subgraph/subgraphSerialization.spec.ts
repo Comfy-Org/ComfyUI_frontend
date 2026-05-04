@@ -14,6 +14,7 @@ import {
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 const LEGACY_PREFIXED_WORKFLOW =
   'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
+const LEGACY_THREE_TUPLE_WORKFLOW = 'subgraphs/nested-duplicate-widget-names'
 const MULTI_INSTANCE_WORKFLOW =
   'subgraphs/subgraph-multi-instance-promoted-text-values'
 
@@ -523,6 +524,40 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           ).toBeVisible()
         }
       })
+    }
+  )
+
+  test(
+    'Legacy 3-tuple proxyWidgets entries serialize back to 2-tuples after load',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(LEGACY_THREE_TUPLE_WORKFLOW)
+
+      const hostNode = comfyPage.vueNodes.getNodeLocator('4')
+      await expect(hostNode).toBeVisible()
+
+      const promotedTextbox = hostNode.getByRole('textbox', {
+        name: 'text',
+        exact: true
+      })
+      await expect(promotedTextbox).toHaveCount(1)
+      await expect(promotedTextbox).toHaveValue('22222222222')
+
+      await expect(hostNode.getByText('text', { exact: true })).toBeVisible()
+
+      const serializedProxyWidgets = await comfyPage.page.evaluate(() => {
+        const serialized = window.app!.graph!.serialize()
+        const hostNode = serialized.nodes.find((node) => node.id === 4)
+        const proxyWidgets = hostNode?.properties?.proxyWidgets
+        return Array.isArray(proxyWidgets) ? proxyWidgets : []
+      })
+
+      expect(serializedProxyWidgets).toEqual([['3', '3: 2: text']])
+      expect(
+        serializedProxyWidgets.every(
+          (entry) => Array.isArray(entry) && entry.length === 2
+        )
+      ).toBe(true)
     }
   )
 
