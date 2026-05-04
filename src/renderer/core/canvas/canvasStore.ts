@@ -133,9 +133,14 @@ export const useCanvasStore = defineStore('canvas', () => {
     () => canvas.value,
     (newCanvas) => {
       isReadOnly.value = newCanvas.read_only
-      newCanvas.onReadOnlyChanged = (value: boolean) => {
-        isReadOnly.value = value
-      }
+
+      useEventListener(
+        newCanvas.canvas,
+        'litegraph:read-only-changed',
+        (event: CustomEvent<{ readOnly: boolean }>) => {
+          isReadOnly.value = event.detail.readOnly
+        }
+      )
 
       useEventListener(
         newCanvas.canvas,

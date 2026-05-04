@@ -59,4 +59,9 @@ export interface LGraphCanvasEventMap {
     active: boolean
     nodeId: NodeId
   }
+
+  /** The canvas read-only state has changed. */
+  'litegraph:read-only-changed': {
+    readOnly: boolean
+  }
 }
