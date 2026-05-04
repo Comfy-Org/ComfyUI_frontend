@@ -796,6 +796,46 @@ const translations = {
     en: 'Included nodes',
     'zh-CN': '包含节点'
   },
+  'cloudNodes.detail.back': {
+    en: 'Back to all packs',
+    'zh-CN': '返回所有节点包'
+  },
+  'cloudNodes.detail.publisher': {
+    en: 'Publisher',
+    'zh-CN': '发布者'
+  },
+  'cloudNodes.detail.downloads': {
+    en: 'Downloads',
+    'zh-CN': '下载量'
+  },
+  'cloudNodes.detail.stars': {
+    en: 'GitHub stars',
+    'zh-CN': 'GitHub 星标'
+  },
+  'cloudNodes.detail.latestVersion': {
+    en: 'Latest version',
+    'zh-CN': '最新版本'
+  },
+  'cloudNodes.detail.license': {
+    en: 'License',
+    'zh-CN': '许可证'
+  },
+  'cloudNodes.detail.lastUpdated': {
+    en: 'Last updated',
+    'zh-CN': '最后更新'
+  },
+  'cloudNodes.detail.deprecated': {
+    en: 'Deprecated',
+    'zh-CN': '已弃用'
+  },
+  'cloudNodes.detail.experimental': {
+    en: 'Experimental',
+    'zh-CN': '实验性'
+  },
+  'cloudNodes.detail.nodesHeading': {
+    en: 'Nodes in this pack',
+    'zh-CN': '此节点包中的节点'
+  },
 
   // Cloud – ReasonSection
   'cloud.reason.heading': {

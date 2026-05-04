@@ -1,0 +1,25 @@
+---
+import type { GetStaticPaths } from 'astro'
+
+import type { Pack } from '../../../data/cloudNodes'
+
+import snapshot from '../../../data/cloud-nodes.snapshot.json'
+import PackDetail from '../../../components/cloud-nodes/PackDetail.vue'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { t } from '../../../i18n/translations'
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return snapshot.packs.map((pack) => ({
+    params: { pack: pack.id },
+    props: { pack }
+  }))
+}
+
+const { pack } = Astro.props as { pack: Pack }
+const description =
+  pack.description || t('cloudNodes.card.unavailableDescription', 'en')
+---
+
+<BaseLayout title={`${pack.displayName} — Comfy Cloud`} description={description}>
+  <PackDetail pack={pack} />
+</BaseLayout>

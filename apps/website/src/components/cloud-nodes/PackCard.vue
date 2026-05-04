@@ -11,6 +11,11 @@ const { locale = 'en', pack } = defineProps<{
   pack: Pack
 }>()
 
+const detailHref =
+  locale === 'zh-CN'
+    ? `/zh-CN/cloud/supported-nodes/${pack.id}`
+    : `/cloud/supported-nodes/${pack.id}`
+
 function nodeCountLabel(nodeCount: number): string {
   const key =
     new Intl.PluralRules(locale).select(nodeCount) === 'one'
@@ -33,10 +38,14 @@ function nodeCountLabel(nodeCount: number): string {
 
     <div class="flex flex-1 flex-col gap-5 p-5 md:p-6">
       <div class="flex flex-col gap-2">
-        <h3
-          class="text-primary-comfy-canvas text-2xl/tight font-semibold"
-        >
-          {{ pack.displayName }}
+        <h3 class="text-primary-comfy-canvas text-2xl/tight font-semibold">
+          <a
+            :href="detailHref"
+            class="hover:text-primary-comfy-yellow"
+            data-testid="cloud-node-pack-card-link"
+          >
+            {{ pack.displayName }}
+          </a>
         </h3>
         <p class="text-primary-warm-gray text-sm/relaxed">
           {{
