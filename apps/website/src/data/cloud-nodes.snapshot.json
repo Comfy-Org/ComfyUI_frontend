@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-05-04T13:35:24.529Z",
+  "fetchedAt": "2026-05-04T16:29:55.587Z",
   "packs": [
     {
       "id": "comfyui-impact-pack",
@@ -11,7 +11,7 @@
         "id": "drltdata",
         "name": "Dr.Lt.Data"
       },
-      "downloads": 2617625,
+      "downloads": 2618646,
       "githubStars": 3092,
       "latestVersion": "8.28.3",
       "license": "See repository LICENSE",
@@ -60,7 +60,7 @@
         "id": "crystian",
         "name": "Crystian"
       },
-      "downloads": 1670655,
+      "downloads": 1671447,
       "githubStars": 1855,
       "latestVersion": "1.27.4",
       "license": "See repository LICENSE",
@@ -114,7 +114,7 @@
       "publisher": {
         "id": "rgthree"
       },
-      "downloads": 3024189,
+      "downloads": 3025389,
       "githubStars": 3028,
       "latestVersion": "1.0.2604070017",
       "license": "See repository LICENSE",
@@ -163,7 +163,7 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 3318598,
+      "downloads": 3319866,
       "githubStars": 2544,
       "latestVersion": "1.3.9",
       "license": "See repository LICENSE",
@@ -212,7 +212,7 @@
         "id": "yolain",
         "name": "yolain"
       },
-      "downloads": 2766678,
+      "downloads": 2767609,
       "githubStars": 2500,
       "latestVersion": "1.3.6",
       "license": "See repository LICENSE",
@@ -260,7 +260,7 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 590385,
+      "downloads": 590539,
       "githubStars": 967,
       "latestVersion": "1.5.7",
       "license": "See repository LICENSE",
@@ -308,7 +308,7 @@
         "id": "was",
         "name": "WAS"
       },
-      "downloads": 980838,
+      "downloads": 981051,
       "githubStars": 1777,
       "latestVersion": "1.0.1",
       "license": "See repository LICENSE",
@@ -347,26 +347,50 @@
       ]
     },
     {
-      "id": "comfyui-manager",
-      "registryId": "comfyui-manager",
-      "displayName": "ComfyUI-Manager",
-      "description": "Required tooling for managing custom-node packs from inside ComfyUI. Bundled and pre-configured on Comfy Cloud so you can browse, install, and update without leaving the editor.",
-      "repoUrl": "https://github.com/ltdrdata/ComfyUI-Manager",
+      "id": "comfyui_ipadapter_plus",
+      "registryId": "comfyui_ipadapter_plus",
+      "displayName": "ComfyUI_IPAdapter_plus",
+      "description": "Reference-image conditioning with IPAdapter — style transfer, Face ID, and multi-image embeddings. The most-installed conditioning pack on the registry, used in countless portrait, product, and animation workflows.",
+      "repoUrl": "https://github.com/cubiq/ComfyUI_IPAdapter_plus",
       "publisher": {
-        "id": "drltdata",
-        "name": "Dr.Lt.Data"
+        "id": "matteo",
+        "name": "Matteo"
       },
-      "downloads": 13664,
-      "githubStars": 14438,
-      "latestVersion": "3.0.1",
-      "license": "See repository LICENSE",
-      "lastUpdated": "2024-11-16T08:05:09.428686Z",
+      "downloads": 1208394,
+      "githubStars": 5938,
+      "latestVersion": "2.0.0",
+      "license": "GPL-3.0 license",
+      "lastUpdated": "2024-06-05T06:57:13.485481Z",
       "nodes": [
         {
-          "name": "Manager Menu Anchor",
-          "displayName": "Manager Menu Anchor",
-          "category": "ComfyUI-Manager",
-          "description": "Internal node that anchors Manager menu hooks (no-op for users)."
+          "name": "IPAdapterUnifiedLoader",
+          "displayName": "IPAdapterUnifiedLoader",
+          "category": "ipadapter",
+          "description": "Load IPAdapter, image encoder and CLIP vision in one node."
+        },
+        {
+          "name": "IPAdapterFaceID",
+          "displayName": "IPAdapterFaceID",
+          "category": "ipadapter/faceid",
+          "description": "Apply Face ID embeddings for high-fidelity portrait reference."
+        },
+        {
+          "name": "IPAdapterStyleComposition",
+          "displayName": "IPAdapterStyleComposition",
+          "category": "ipadapter",
+          "description": "Reference an image for style without copying its content."
+        },
+        {
+          "name": "IPAdapterAdvanced",
+          "displayName": "IPAdapterAdvanced",
+          "category": "ipadapter",
+          "description": "Full-control IPAdapter with masking, weights, and noise injection."
+        },
+        {
+          "name": "IPAdapterEncoder",
+          "displayName": "IPAdapterEncoder",
+          "category": "ipadapter/embeds",
+          "description": "Encode reference images into IPAdapter embeddings for reuse."
         }
       ]
     }
