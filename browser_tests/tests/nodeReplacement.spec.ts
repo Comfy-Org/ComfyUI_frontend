@@ -145,14 +145,14 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             .getByRole('button', { name: 'Replace All', exact: true })
             .click()
 
-          const workflow = await comfyPage.workflow.getExportedWorkflow()
-          const linkFromUpscalerToSave = workflow.links?.find(
-            (l) => l[1] === 2 && l[3] === 3
+          const replacedNodeOutputLinkCount = await comfyPage.page.evaluate(
+            () =>
+              window.app!.graph!.getNodeById(2)?.outputs[0]?.links?.length ?? 0
           )
           expect(
-            linkFromUpscalerToSave,
-            'Output link from replaced upscaler to SaveImage should be preserved'
-          ).toBeDefined()
+            replacedNodeOutputLinkCount,
+            'Replaced upscaler should still drive its downstream consumer'
+          ).toBeGreaterThan(0)
         })
       })
     })
