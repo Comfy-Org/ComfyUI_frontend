@@ -35,10 +35,11 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { AppMode } from '@/utils/appMode'
 import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
+import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { createRafCoalescer } from '@/utils/rafBatch'
 
 interface ExecutionNodeInfo {
   title?: string | null
@@ -369,6 +370,8 @@ export const useExecutionStore = defineStore('execution', () => {
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
     jobIdToWorkflow.clear()
+
+    cancelPendingProgressUpdates()
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -433,6 +436,9 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<string | number | null>): void {
+    progressCoalescer.cancel()
+
+
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -475,8 +481,15 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
+  const progressStateCoalescer =
+    createRafCoalescer<ProgressStateWsMessage>(_applyProgressState)
+
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes, prompt_id: jobId } = e.detail
+    progressStateCoalescer.push(e.detail)
+  }
+
+  function _applyProgressState(detail: ProgressStateWsMessage) {
+    const { nodes, prompt_id: jobId } = detail
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
@@ -513,8 +526,17 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
+    _executingNodeProgress.value = detail
+  })
+
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _executingNodeProgress.value = e.detail
+    progressCoalescer.push(e.detail)
+  }
+
+  function cancelPendingProgressUpdates() {
+    progressCoalescer.cancel()
+    progressStateCoalescer.cancel()
   }
 
   function handleStatus() {
@@ -670,6 +692,8 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: JobId | null) {
+    cancelPendingProgressUpdates()
+
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
