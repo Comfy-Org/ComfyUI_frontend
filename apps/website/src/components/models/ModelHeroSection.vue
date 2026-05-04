@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '../common/BrandButton.vue'
-import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
 const {
+  slug,
   displayName,
   huggingFaceUrl,
   docsUrl,
@@ -12,6 +12,7 @@ const {
   workflowCount,
   directory
 } = defineProps<{
+  slug: string
   displayName: string
   huggingFaceUrl: string
   docsUrl?: string
@@ -19,6 +20,8 @@ const {
   workflowCount: number
   directory: string
 }>()
+
+const workflowsUrl = `https://www.comfy.org/workflows/model/${slug}`
 
 const dirDisplayMap: Record<string, string> = {
   diffusion_models: 'Diffusion Model',
@@ -71,7 +74,7 @@ const isPartnerNode = directory === 'partner_nodes'
 
       <div class="flex flex-col gap-3 sm:flex-row">
         <BrandButton
-          :href="externalLinks.workflows"
+          :href="workflowsUrl"
           variant="solid"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
