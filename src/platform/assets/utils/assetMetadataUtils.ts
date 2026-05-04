@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCivitaiUrl } from '@/utils/formatUtil'
 
 /**
  * Type-safe utilities for extracting metadata from assets.
@@ -126,16 +127,9 @@ export function getAssetAdditionalTags(asset: AssetItem): string[] {
  * @returns Human-readable source name
  */
 export function getSourceName(url: string): string {
+  if (isCivitaiUrl(url)) return 'Civitai'
   try {
     const hostname = new URL(url).hostname.toLowerCase()
-    if (
-      hostname === 'civitai.com' ||
-      hostname.endsWith('.civitai.com') ||
-      hostname === 'civitai.red' ||
-      hostname.endsWith('.civitai.red')
-    ) {
-      return 'Civitai'
-    }
     if (hostname === 'huggingface.co' || hostname.endsWith('.huggingface.co')) {
       return 'Hugging Face'
     }

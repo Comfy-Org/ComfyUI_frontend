@@ -8,6 +8,7 @@ import {
   getPathDetails,
   highlightQuery,
   isCivitaiModelUrl,
+  isCivitaiUrl,
   isPreviewableMediaType,
   truncateFilename
 } from './formatUtil'
@@ -378,6 +379,19 @@ describe('formatUtil', () => {
     it('returns false for text/other', () => {
       expect(isPreviewableMediaType('text')).toBe(false)
       expect(isPreviewableMediaType('other')).toBe(false)
+    })
+  })
+
+  describe('isCivitaiUrl', () => {
+    it.for([
+      { url: 'https://civitai.com/models/123', expected: true },
+      { url: 'https://civitai.red/models/123', expected: true },
+      { url: 'https://sub.civitai.com/models/123', expected: true },
+      { url: 'https://sub.civitai.red/models/123', expected: true },
+      { url: 'https://example.com/model', expected: false },
+      { url: 'not-a-url', expected: false }
+    ])('$url → $expected', ({ url, expected }) => {
+      expect(isCivitaiUrl(url)).toBe(expected)
     })
   })
 
