@@ -740,17 +740,17 @@ const translations = {
     'zh-CN': '云端节点目录'
   },
   'cloudNodes.hero.heading': {
-    en: 'Custom nodes on Comfy Cloud',
-    'zh-CN': 'Comfy Cloud 上的自定义节点'
+    en: 'Run your favorite ComfyUI custom nodes on the cloud',
+    'zh-CN': '在云端运行你喜爱的 ComfyUI 自定义节点'
   },
   'cloudNodes.hero.body': {
-    en: 'Browse custom-node packs currently supported on Comfy Cloud, with pack metadata and included node lists.',
+    en: 'Spin up workflows with hundreds of community-built nodes — detailers, ControlNet preprocessors, animation tools, and quality-of-life utilities — preinstalled on Comfy Cloud and ready to run on managed GPUs.',
     'zh-CN':
-      '浏览当前在 Comfy Cloud 上可用的自定义节点包，查看每个节点包的概览信息与包含节点。'
+      '在 Comfy Cloud 托管 GPU 上即开即用，预装数百个社区节点——细节修复、ControlNet 预处理、动画工具与日常便利组件，应有尽有。'
   },
   'cloudNodes.section.heading': {
-    en: 'Supported custom-node packs',
-    'zh-CN': '已支持的自定义节点包'
+    en: 'Find a custom-node pack',
+    'zh-CN': '查找自定义节点包'
   },
   'cloudNodes.search.placeholder': {
     en: 'Search packs or nodes',
@@ -767,6 +767,36 @@ const translations = {
   'cloudNodes.sort.recentlyUpdated': {
     en: 'Recently updated',
     'zh-CN': '最近更新'
+  },
+  'cloudNodes.search.label': {
+    en: 'Search custom-node packs',
+    'zh-CN': '搜索自定义节点包'
+  },
+  'cloudNodes.sort.label': {
+    en: 'Sort packs',
+    'zh-CN': '排序节点包'
+  },
+  'cloudNodes.list.ariaLabel': {
+    en: 'Custom-node packs supported on Comfy Cloud',
+    'zh-CN': 'Comfy Cloud 支持的自定义节点包'
+  },
+  'cloudNodes.meta.title': {
+    en: 'Custom-node packs on Comfy Cloud — supported by default',
+    'zh-CN': 'Comfy Cloud 自定义节点包合集——开箱即用'
+  },
+  'cloudNodes.meta.description': {
+    en: 'Browse hundreds of ComfyUI custom-node packs preinstalled on Comfy Cloud. Detailers, ControlNet preprocessors, animation tools, samplers, and more — search by pack or by node name.',
+    'zh-CN':
+      '浏览 Comfy Cloud 预装的数百个 ComfyUI 自定义节点包：细节修复、ControlNet 预处理、动画工具、采样器等——按节点包或节点名搜索。'
+  },
+  'cloudNodes.detail.metaTitle': {
+    en: '{pack} on Comfy Cloud',
+    'zh-CN': '{pack}（Comfy Cloud）'
+  },
+  'cloudNodes.detail.metaDescription': {
+    en: '{pack} is preinstalled on Comfy Cloud — {nodeCount} nodes ready to run on managed GPUs. {description}',
+    'zh-CN':
+      '{pack} 已预装于 Comfy Cloud——{nodeCount} 个节点可在托管 GPU 上即时运行。{description}'
   },
   'cloudNodes.empty.heading': {
     en: 'No matching packs',
