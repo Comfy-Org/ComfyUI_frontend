@@ -339,12 +339,10 @@ function createAssetService() {
 
     // Extract directory names from assets that actually exist, exclude missing assets
     const discoveredFolders = new Set<string>(
-      data?.assets
-        ?.filter((asset) => !asset.tags.includes(MISSING_TAG))
-        ?.flatMap((asset) => asset.tags)
-        ?.filter(
-          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag)
-        ) ?? []
+      data.assets
+        .filter((asset) => !asset.tags.includes(MISSING_TAG))
+        .flatMap((asset) => asset.tags)
+        .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
     )
 
     // Return only discovered folders in alphabetical order
@@ -363,17 +361,15 @@ function createAssetService() {
       `models for ${folder}`
     )
 
-    return (
-      data?.assets
-        ?.filter(
-          (asset) =>
-            !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
-        )
-        ?.map((asset) => ({
-          name: asset.name,
-          pathIndex: 0
-        })) ?? []
-    )
+    return data.assets
+      .filter(
+        (asset) =>
+          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
+      )
+      .map((asset) => ({
+        name: asset.name,
+        pathIndex: 0
+      }))
   }
 
   /**
@@ -449,11 +445,9 @@ function createAssetService() {
     )
 
     // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return (
-      data?.assets?.filter(
-        (asset) =>
-          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
-      ) ?? []
+    return data.assets.filter(
+      (asset) =>
+        !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
     )
   }
 
@@ -505,13 +499,12 @@ function createAssetService() {
       `assets for tag ${tag}`
     )
 
-    return (
-      data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
-    )
+    return data.assets.filter((asset) => !asset.tags.includes(MISSING_TAG))
   }
 
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
+   * Pagination follows the required server-provided `has_more` flag.
    *
    * @param tag - The tag to filter by (e.g., 'models', 'input')
    * @param includePublic - Whether to include public assets (default: true)
@@ -542,7 +535,7 @@ function createAssetService() {
         },
         `assets for tag ${tag}`
       )
-      const batch = data.assets ?? []
+      const batch = data.assets
       assets.push(...batch.filter((asset) => !asset.tags.includes(MISSING_TAG)))
 
       if (batch.length === 0 || !data.has_more) {

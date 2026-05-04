@@ -605,7 +605,7 @@ describe(assetService.getAllAssetsByTag, () => {
       )
 
     const assets = await assetService.getAllAssetsByTag('input', true, {
-      limit: 2
+      limit: 3
     })
 
     expect(assets.map((a) => a.id)).toEqual(['first', 'second', 'later-public'])
@@ -619,13 +619,31 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(secondParams.get('offset')).toBe('2')
   })
 
-  it('rejects tagged asset pages without has_more', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse({
+  it.each([
+    {
+      name: 'missing has_more',
+      body: {
         assets: [validAsset({ id: 'a', tags: ['input'] })],
         total: 1
-      })
-    )
+      }
+    },
+    {
+      name: 'missing total',
+      body: {
+        assets: [validAsset({ id: 'a', tags: ['input'] })],
+        has_more: false
+      }
+    },
+    {
+      name: 'non-boolean has_more',
+      body: {
+        assets: [validAsset({ id: 'a', tags: ['input'] })],
+        total: 1,
+        has_more: 'false'
+      }
+    }
+  ])('rejects asset responses with $name', async ({ body }) => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(body))
 
     await expect(
       assetService.getAllAssetsByTag('input', true, { limit: 2 })
