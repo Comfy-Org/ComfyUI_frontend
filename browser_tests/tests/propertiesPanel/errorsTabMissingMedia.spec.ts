@@ -6,10 +6,8 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { STABLE_INPUT_IMAGE } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
-import {
-  loadWorkflowAndOpenErrorsTab,
-  openErrorsTab
-} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 const test = comfyPageFixture
 const PUBLIC_INPUT_ASSET_HASH = 'nonexistent_test_image_12345.png'
@@ -288,7 +286,12 @@ cloudTest.describe(
           )
           .toBe(true)
 
-        await openErrorsTab(comfyPage)
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await panel.open(comfyPage.actionbar.propertiesButton)
+
+        await expect(
+          comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
+        ).toBeHidden()
 
         await expect(
           comfyPage.page.getByTestId(TestIds.dialogs.missingMediaGroup)
