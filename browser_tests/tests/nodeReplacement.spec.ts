@@ -92,9 +92,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
 
           expect(ksampler?.widgets_values).toBeDefined()
           const widgetValues = ksampler!.widgets_values as unknown[]
-          expect(widgetValues).toEqual(
-            expect.arrayContaining([42, 20, 7, 'euler', 'normal'])
-          )
+          expect(widgetValues).toEqual([42, 20, 7, 'euler', 'normal'])
         })
 
         test('Success toast is shown after replacement', async ({
