@@ -239,6 +239,64 @@ describe('VirtualGrid', () => {
     expect(onApproachEnd).not.toHaveBeenCalled()
   })
 
+  it('renders last page when scrollY exceeds natural max (FE-535)', async () => {
+    const items = createItems(5)
+    mockedWidth.value = 400
+    mockedHeight.value = 200
+    mockedScrollY.value = 5000
+
+    render(VirtualGrid, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 100,
+        defaultItemWidth: 100,
+        maxColumns: 4,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+
+    await nextTick()
+
+    const renderedItems = screen.queryAllByText(/^Item \d+$/)
+    expect(renderedItems.length).toBeGreaterThan(0)
+  })
+
+  it('keeps last page visible when items shrink below current scroll (FE-535)', async () => {
+    const items = createItems(8)
+    mockedWidth.value = 400
+    mockedHeight.value = 240
+    mockedScrollY.value = 3000
+
+    render(VirtualGrid, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 100,
+        defaultItemWidth: 100,
+        maxColumns: 4,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+
+    await nextTick()
+
+    const renderedItems = screen.queryAllByText(/^Item \d+$/)
+    expect(renderedItems.length).toBeGreaterThan(0)
+  })
+
   it('forces cols to maxColumns when maxColumns is finite', async () => {
     mockedWidth.value = 100
     mockedHeight.value = 200
