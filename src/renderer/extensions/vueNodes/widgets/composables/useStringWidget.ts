@@ -5,7 +5,6 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -41,7 +40,7 @@ function addMultilineWidget(
     }
   })
 
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget)
   widget.value = opts.defaultVal
 
   return widget

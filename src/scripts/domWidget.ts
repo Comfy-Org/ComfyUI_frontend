@@ -356,9 +356,9 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = <W extends BaseDOMWidget<object | string>>(
+export const addWidget = <V extends object | string>(
   node: LGraphNode,
-  widget: W
+  widget: BaseDOMWidget<V>
 ) => {
   node.addCustomWidget(widget)
 
