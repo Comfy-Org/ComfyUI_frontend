@@ -6,6 +6,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
+import { formatMediumDate, formatNumber } from '../../utils/format'
 import PackBanner from './PackBanner.vue'
 
 const { pack, locale = 'en' } = defineProps<{
@@ -17,21 +18,6 @@ const backHref =
   locale === 'zh-CN' ? '/zh-CN/cloud/supported-nodes' : '/cloud/supported-nodes'
 
 const { groupedNodes } = useNodesByCategory(() => pack.nodes)
-
-const numberFormatter = new Intl.NumberFormat(locale)
-const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' })
-
-function formatNumber(value?: number): string {
-  if (typeof value !== 'number') return '—'
-  return numberFormatter.format(value)
-}
-
-function formatDate(value?: string): string {
-  if (!value) return '—'
-  const timestamp = Date.parse(value)
-  if (Number.isNaN(timestamp)) return '—'
-  return dateFormatter.format(timestamp)
-}
 </script>
 
 <template>
@@ -106,7 +92,7 @@ function formatDate(value?: string): string {
                 {{ t('cloudNodes.detail.downloads', locale) }}
               </dt>
               <dd class="text-primary-comfy-canvas">
-                {{ formatNumber(pack.downloads) }}
+                {{ formatNumber(pack.downloads, locale) }}
               </dd>
             </div>
 
@@ -115,7 +101,7 @@ function formatDate(value?: string): string {
                 {{ t('cloudNodes.detail.stars', locale) }}
               </dt>
               <dd class="text-primary-comfy-canvas">
-                {{ formatNumber(pack.githubStars) }}
+                {{ formatNumber(pack.githubStars, locale) }}
               </dd>
             </div>
 
@@ -142,7 +128,7 @@ function formatDate(value?: string): string {
                 {{ t('cloudNodes.detail.lastUpdated', locale) }}
               </dt>
               <dd class="text-primary-comfy-canvas">
-                {{ formatDate(pack.lastUpdated) }}
+                {{ formatMediumDate(pack.lastUpdated, locale) }}
               </dd>
             </div>
           </dl>
