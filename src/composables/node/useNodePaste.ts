@@ -1,3 +1,4 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type PasteHandler<T> = (files: File[]) => Promise<T>
@@ -17,7 +18,7 @@ export const useNodePaste = <T>(
 ) => {
   const { onPaste, fileFilter = () => true, allow_batch = false } = options
 
-  node.pasteFiles = function (files: File[]) {
+  const installedPasteFiles = function (files: File[]) {
     const filteredFiles = Array.from(files).filter(fileFilter)
     if (!filteredFiles.length) return false
 
@@ -26,4 +27,9 @@ export const useNodePaste = <T>(
     void onPaste(paste)
     return true
   }
+  node.pasteFiles = installedPasteFiles
+
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    if (node.pasteFiles === installedPasteFiles) node.pasteFiles = undefined
+  })
 }

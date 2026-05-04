@@ -319,7 +319,7 @@ describe('API Feature Flags', () => {
     })
 
     it('should parse legacy format when server does not support progress_text_metadata', () => {
-      // Restore real getClientFeatureFlags (advertises support)
+      // Client advertises support; intentionally inert — parser checks serverFeatureFlags only
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_progress_text_metadata: true
       })
@@ -337,6 +337,7 @@ describe('API Feature Flags', () => {
     })
 
     it('should parse new format when server supports progress_text_metadata', () => {
+      // Client advertises support; intentionally inert — parser checks serverFeatureFlags only
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_progress_text_metadata: true
       })
@@ -359,6 +360,7 @@ describe('API Feature Flags', () => {
       // This is the exact bug scenario: client says it supports the flag,
       // server doesn't, but the decoder checks the client flag and tries
       // to parse a prompt_id that isn't there.
+      // Client advertises support; intentionally inert — parser checks serverFeatureFlags only
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_progress_text_metadata: true
       })
