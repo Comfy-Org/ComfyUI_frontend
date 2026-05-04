@@ -8,7 +8,9 @@ test.describe('Cloud nodes page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Custom nodes on Comfy Cloud — Comfy')
+    await expect(page).toHaveTitle(
+      'Custom-node packs on Comfy Cloud — supported by default'
+    )
   })
 
   test('renders at least one pack card', async ({ page }) => {
@@ -57,7 +59,7 @@ test.describe('Cloud nodes page @smoke', () => {
 test.describe('Cloud nodes page (zh-CN) @smoke', () => {
   test('renders localized title and packs', async ({ page }) => {
     await page.goto('/zh-CN/cloud/supported-nodes')
-    await expect(page).toHaveTitle('Comfy Cloud 上的自定义节点 — Comfy')
+    await expect(page).toHaveTitle('Comfy Cloud 自定义节点包合集——开箱即用')
     await expect(page.getByTestId('cloud-node-pack-card').first()).toBeVisible()
     await expect(
       page.getByTestId('cloud-node-pack-banner').first()
