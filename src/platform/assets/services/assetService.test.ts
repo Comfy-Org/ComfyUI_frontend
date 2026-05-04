@@ -713,66 +713,22 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
-  it('does not let one caller abort the shared input asset load for other callers', async () => {
-    const firstController = new AbortController()
-    const secondController = new AbortController()
+  it('deduplicates concurrent input asset loads while the request is pending', async () => {
     const assets = [validAsset({ id: 'public-input', tags: ['input'] })]
     let resolveResponse!: (response: Response) => void
-    let serviceSignal: AbortSignal | undefined
-    fetchApiMock.mockImplementationOnce(async (_url, options) => {
-      serviceSignal = options?.signal ?? undefined
+    fetchApiMock.mockImplementationOnce(async () => {
       return await new Promise<Response>((resolve) => {
         resolveResponse = resolve
       })
     })
 
-    const first = assetService.getInputAssetsIncludingPublic(
-      firstController.signal
-    )
-    const second = assetService.getInputAssetsIncludingPublic(
-      secondController.signal
-    )
-    firstController.abort()
-
-    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
-    expect(serviceSignal).toBeUndefined()
+    const first = assetService.getInputAssetsIncludingPublic()
+    const second = assetService.getInputAssetsIncludingPublic()
 
     resolveResponse(buildAssetListResponse(assets))
 
+    await expect(first).resolves.toEqual(assets)
     await expect(second).resolves.toEqual(assets)
-    expect(fetchApiMock).toHaveBeenCalledOnce()
-  })
-
-  it('keeps the shared input asset load alive after all callers abort', async () => {
-    const firstController = new AbortController()
-    const secondController = new AbortController()
-    const assets = [validAsset({ id: 'public-input', tags: ['input'] })]
-    let resolveResponse!: (response: Response) => void
-    fetchApiMock.mockImplementationOnce(
-      async () =>
-        await new Promise<Response>((resolve) => {
-          resolveResponse = resolve
-        })
-    )
-
-    const first = assetService.getInputAssetsIncludingPublic(
-      firstController.signal
-    )
-    const second = assetService.getInputAssetsIncludingPublic(
-      secondController.signal
-    )
-    firstController.abort()
-    secondController.abort()
-
-    await expect(first).rejects.toMatchObject({ name: 'AbortError' })
-    await expect(second).rejects.toMatchObject({ name: 'AbortError' })
-
-    resolveResponse(buildAssetListResponse(assets))
-    await Promise.resolve()
-
-    await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
-      assets
-    )
     expect(fetchApiMock).toHaveBeenCalledOnce()
   })
 

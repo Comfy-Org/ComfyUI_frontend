@@ -4,6 +4,10 @@ import { z } from 'zod'
 import { st } from '@/i18n'
 
 import {
+  fetchInputAssetsIncludingPublicQuery,
+  invalidateInputAssetsIncludingPublicQuery
+} from '@/platform/assets/queries/inputAssetsIncludingPublicQuery'
+import {
   assetItemSchema,
   assetResponseSchema,
   asyncUploadResponseSchema,
@@ -202,35 +206,6 @@ export function toBlake3AssetHash(hash: string | undefined): string | null {
   return `blake3:${hash}`
 }
 
-function createAbortError(): DOMException {
-  return new DOMException('Aborted', 'AbortError')
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw createAbortError()
-}
-
-async function withCallerAbort<T>(
-  promise: Promise<T>,
-  signal?: AbortSignal
-): Promise<T> {
-  throwIfAborted(signal)
-  if (!signal) return await promise
-
-  let removeAbortListener = () => {}
-  const abortPromise = new Promise<never>((_, reject) => {
-    const onAbort = () => reject(createAbortError())
-    signal.addEventListener('abort', onAbort, { once: true })
-    removeAbortListener = () => signal.removeEventListener('abort', onAbort)
-  })
-
-  try {
-    return await Promise.race([promise, abortPromise])
-  } finally {
-    removeAbortListener()
-  }
-}
-
 /**
  * Validates asset response data using Zod schema
  */
@@ -266,15 +241,9 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
-  let inputAssetsIncludingPublic: AssetItem[] | null = null
-  let inputAssetsIncludingPublicRequestId = 0
-  let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
-
   /** Invalidates the cached public-inclusive input assets without aborting in-flight readers. */
   function invalidateInputAssetsIncludingPublic(): void {
-    inputAssetsIncludingPublicRequestId++
-    pendingInputAssetsIncludingPublic = null
-    inputAssetsIncludingPublic = null
+    invalidateInputAssetsIncludingPublicQuery()
   }
 
   function invalidateInputAssetsCacheIfNeeded(tags?: string[]): void {
@@ -530,7 +499,7 @@ function createAssetService() {
     let offset = 0
 
     while (true) {
-      if (signal?.aborted) throw createAbortError()
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
       const data = await handleAssetRequest(
         {
@@ -553,43 +522,19 @@ function createAssetService() {
     }
   }
 
-  function startInputAssetsIncludingPublicRequest(): Promise<AssetItem[]> {
-    const requestId = ++inputAssetsIncludingPublicRequestId
-
-    pendingInputAssetsIncludingPublic = getAllAssetsByTag('input', true, {
-      limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT
-    })
-      .then((assets) => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          inputAssetsIncludingPublic = assets
-        }
-        return assets
-      })
-      .finally(() => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          pendingInputAssetsIncludingPublic = null
-        }
-      })
-
-    void pendingInputAssetsIncludingPublic.catch(() => {})
-    return pendingInputAssetsIncludingPublic
-  }
-
   /**
    * Gets cached input assets including public assets for missing media checks.
-   * Caller aborts cancel only that caller; shared fetches are invalidated
-   * through invalidateInputAssetsIncludingPublic().
+   * The signal parameter is accepted for existing callers; callers guard aborted
+   * scan results outside this shared query cache.
    */
   async function getInputAssetsIncludingPublic(
-    signal?: AbortSignal
+    _signal?: AbortSignal
   ): Promise<AssetItem[]> {
-    throwIfAborted(signal)
-    if (inputAssetsIncludingPublic) return inputAssetsIncludingPublic
-
-    const request =
-      pendingInputAssetsIncludingPublic ??
-      startInputAssetsIncludingPublicRequest()
-    return await withCallerAbort(request, signal)
+    return await fetchInputAssetsIncludingPublicQuery(() =>
+      getAllAssetsByTag('input', true, {
+        limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT
+      })
+    )
   }
 
   /**

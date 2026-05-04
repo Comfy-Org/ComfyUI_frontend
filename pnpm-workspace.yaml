@@ -37,6 +37,7 @@ catalog:
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
   '@tailwindcss/vite': ^4.2.0
+  '@tanstack/vue-query': ^5.100.9
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
