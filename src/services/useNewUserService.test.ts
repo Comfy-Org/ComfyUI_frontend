@@ -26,9 +26,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettingStore
 }))
 
-//@ts-expect-error Define global for the test
-global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
-
 import { useNewUserService } from '@/services/useNewUserService'
 
 describe('useNewUserService', () => {
