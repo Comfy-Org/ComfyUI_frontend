@@ -141,9 +141,8 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
     const { propertiesPanel } = comfyPage.menu
     await expect(propertiesPanel.root).toBeVisible()
 
-    // Error cards contain <p> elements with error messages
     const errorMessage = propertiesPanel.root
-      .locator('.whitespace-pre-wrap')
+      .getByTestId('error-card-message')
       .first()
     await expect(errorMessage).toBeVisible()
     await expect(errorMessage).not.toHaveText('')
