@@ -17,13 +17,46 @@ export const getStaticPaths: GetStaticPaths = async () => {
 }
 
 const { pack } = Astro.props as { pack: Pack }
-const description =
-  pack.description || t('cloudNodes.card.unavailableDescription', 'zh-CN')
+const fallbackDescription = t('cloudNodes.card.unavailableDescription', 'zh-CN')
+const description = pack.description || fallbackDescription
+const title = t('cloudNodes.detail.metaTitle', 'zh-CN').replace(
+  '{pack}',
+  pack.displayName
+)
+const metaDescription = t('cloudNodes.detail.metaDescription', 'zh-CN')
+  .replace('{pack}', pack.displayName)
+  .replace('{nodeCount}', String(pack.nodes.length))
+  .replace('{description}', description)
+
+const siteBase = Astro.site ?? new URL('https://comfy.org')
+const pageUrl = new URL(`/zh-CN/cloud/supported-nodes/${pack.id}`, siteBase).href
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: pack.displayName,
+  applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'ComfyUI custom-node pack',
+  operatingSystem: 'Comfy Cloud (managed)',
+  url: pageUrl,
+  description,
+  image: pack.bannerUrl || pack.iconUrl,
+  softwareVersion: pack.latestVersion,
+  license: pack.license,
+  codeRepository: pack.repoUrl,
+  author: pack.publisher?.name
+    ? { '@type': 'Person', name: pack.publisher.name }
+    : undefined,
+  offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' }
+}
 ---
 
-<BaseLayout
-  title={`${pack.displayName} — Comfy Cloud 节点包`}
-  description={description}
->
+<BaseLayout title={title} description={metaDescription} ogImage={pack.bannerUrl}>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(softwareJsonLd)}
+  />
   <PackDetail pack={pack} locale="zh-CN" />
 </BaseLayout>

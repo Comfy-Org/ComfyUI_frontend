@@ -2,15 +2,40 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
 import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
+import { t } from '../../../i18n/translations'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
 
 const packs = await loadPacksForBuild()
+
+const siteBase = Astro.site ?? new URL('https://comfy.org')
+const pageUrl = new URL('/zh-CN/cloud/supported-nodes', siteBase).href
+
+const itemListJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Comfy Cloud 支持的自定义节点包',
+  url: pageUrl,
+  numberOfItems: packs.length,
+  itemListElement: packs.map((pack, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    url: new URL(`/zh-CN/cloud/supported-nodes/${pack.id}`, siteBase).href,
+    name: pack.displayName,
+    image: pack.bannerUrl || pack.iconUrl
+  }))
+}
 ---
 
 <BaseLayout
-  title="Comfy Cloud 上的自定义节点 — Comfy"
-  description="浏览 Comfy Cloud 支持的自定义节点包，查看包信息与包含的节点。"
+  title={t('cloudNodes.meta.title', 'zh-CN')}
+  description={t('cloudNodes.meta.description', 'zh-CN')}
 >
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(itemListJsonLd)}
+  />
   <HeroSection locale="zh-CN" client:visible />
   <PackGridSection locale="zh-CN" packs={packs} client:visible />
 </BaseLayout>

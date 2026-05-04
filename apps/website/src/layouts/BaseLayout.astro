@@ -91,6 +91,7 @@ const websiteJsonLd = {
     <!-- Structured Data -->
     <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <slot name="head" />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
