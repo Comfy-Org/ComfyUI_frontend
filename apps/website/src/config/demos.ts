@@ -49,6 +49,22 @@ export const demos: readonly Demo[] = [
     tags: ['getting-started', 'templates', 'workflow'],
     publishedDate: '2026-04-19',
     modifiedDate: '2026-04-19'
+  },
+  {
+    slug: 'community-workflows',
+    arcadeId: 'mqZh17oWDuWIyhK0xwEV',
+    category: 'demos.category.gettingStarted',
+    title: 'demos.community-workflows.title',
+    description: 'demos.community-workflows.description',
+    transcript: 'demos.community-workflows.transcript',
+    ogImage: '/images/demos/community-workflows-og.png',
+    thumbnail: '/images/demos/community-workflows-thumb.webp',
+    estimatedTime: 'demos.duration.2min',
+    durationIso: 'PT2M',
+    difficulty: 'beginner',
+    tags: ['getting-started', 'community', 'workflow', 'hub'],
+    publishedDate: '2026-05-04',
+    modifiedDate: '2026-05-04'
   }
 ]
 
