@@ -86,11 +86,6 @@ test.describe(
       cloudAssetRequests,
       comfyPage
     }) => {
-      test.fail(
-        true,
-        'Root return currently replays nested subgraph container model widgets as missing in Cloud. Remove this annotation when the replay scan skips nested subgraph containers.'
-      )
-
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
       const errorOverlay = comfyPage.page.getByTestId(
@@ -120,6 +115,11 @@ test.describe(
       await comfyPage.page.getByTestId(TestIds.breadcrumb.item('root')).click()
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
       await panel.open(comfyPage.actionbar.propertiesButton)
+
+      test.fail(
+        true,
+        'Root return currently replays nested subgraph container model widgets as missing in Cloud. Remove this annotation when the replay scan skips nested subgraph containers.'
+      )
 
       await expect
         .poll(
