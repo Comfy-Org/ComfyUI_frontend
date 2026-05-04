@@ -1,6 +1,9 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+const WORKFLOW_TEMPLATES_BASE =
+  'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates'
 
 const TEMPLATES_DIR = fileURLToPath(
   new URL('../../../../workflow_templates/templates', import.meta.url)
@@ -29,6 +32,7 @@ interface ModelData {
   url: string
   directory: string
   templates: Set<string>
+  firstTemplate?: string
 }
 
 interface OutputModel {
@@ -141,7 +145,12 @@ function extractModels(
         typeof model['directory'] === 'string' ? model['directory'] : ''
 
       if (!models.has(name)) {
-        models.set(name, { url, directory, templates: new Set() })
+        models.set(name, {
+          url,
+          directory,
+          templates: new Set(),
+          firstTemplate: templateName
+        })
       }
       models.get(name)!.templates.add(templateName)
     }
@@ -264,28 +273,18 @@ function buildTutorialUrlMap(templatesDir: string): Map<string, string> {
   return map
 }
 
-const HUB_BASE = 'https://comfy.org'
-
-async function fetchThumbnail(slug: string): Promise<string | undefined> {
-  try {
-    const url = `${HUB_BASE}/api/hub/workflows?tag=${encodeURIComponent(slug)}&limit=1`
-    const res = await fetch(url)
-    if (!res.ok) return undefined
-    const data = (await res.json()) as {
-      workflows?: Array<{
-        thumbnail_url?: string
-        sample_image_urls?: string[]
-      }>
-    }
-    const wf = data.workflows?.[0]
-    const thumb = wf?.thumbnail_url || wf?.sample_image_urls?.[0]
-    return thumb || undefined
-  } catch {
-    return undefined
-  }
+function templateThumbnailUrl(
+  firstTemplate: string | undefined,
+  templatesDir: string
+): string | undefined {
+  if (!firstTemplate) return undefined
+  const base = firstTemplate.replace(/\.json$/, '')
+  const localPath = join(templatesDir, `${base}-1.webp`)
+  if (!existsSync(localPath)) return undefined
+  return `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(base)}-1.webp`
 }
 
-async function run(): Promise<void> {
+function run(): void {
   const models = new Map<string, ModelData>()
 
   const files = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.json'))
@@ -349,6 +348,8 @@ async function run(): Promise<void> {
     }
     const docsUrl = tutorialUrlMap.get(name)
     if (docsUrl) result.docsUrl = docsUrl
+    const thumb = templateThumbnailUrl(data.firstTemplate, TEMPLATES_DIR)
+    if (thumb) result.thumbnailUrl = thumb
     if (canonicalRaw !== null) {
       result.canonicalSlug = makeSlug(canonicalRaw)
     }
@@ -368,22 +369,10 @@ async function run(): Promise<void> {
 
   const combined = [...apiOutput, ...output]
 
-  // Fetch hub thumbnails unless skipped (set SKIP_THUMBNAILS=1 for offline use)
-  if (!process.env['SKIP_THUMBNAILS']) {
-    process.stdout.write(
-      `Fetching hub thumbnails for ${combined.length} models...\n`
-    )
-    await Promise.all(
-      combined.map(async (m) => {
-        const thumb = await fetchThumbnail(m.slug)
-        if (thumb) m.thumbnailUrl = thumb
-      })
-    )
-    const withThumbs = combined.filter((m) => m.thumbnailUrl).length
-    process.stdout.write(
-      `  ${withThumbs}/${combined.length} models have thumbnails\n`
-    )
-  }
+  const withThumbs = combined.filter((m) => m.thumbnailUrl).length
+  process.stdout.write(
+    `  ${withThumbs}/${combined.length} models have thumbnails\n`
+  )
 
   const defaultOut = join(
     fileURLToPath(new URL('.', import.meta.url)),
@@ -399,7 +388,9 @@ async function run(): Promise<void> {
   )
 }
 
-run().catch((err) => {
+try {
+  run()
+} catch (err) {
   process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
   process.exit(1)
-})
+}
