@@ -11835,6 +11835,14 @@
       "control_after_generate": {
         "name": "생성 후 제어"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "`size`가 'Custom'일 때만 사용됩니다. 16의 배수여야 합니다(GPT Image 2 전용)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "`size`가 'Custom'일 때만 사용됩니다. 16의 배수여야 합니다(GPT Image 2 전용)."
+      },
       "image": {
         "name": "참조 이미지",
         "tooltip": "이미지 편집을 위한 선택적 참조 이미지."

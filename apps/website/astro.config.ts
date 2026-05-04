@@ -3,6 +3,23 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 
+const LOCALES = ['en', 'zh-CN'] as const
+const DEFAULT_LOCALE = 'en'
+const PAYMENT_STATUSES = ['success', 'failed'] as const
+const LOCALE_PREFIXES = LOCALES.map((locale) =>
+  locale === DEFAULT_LOCALE ? '' : `/${locale}`
+)
+const SITEMAP_EXCLUDED_PATHNAMES = new Set(
+  LOCALE_PREFIXES.flatMap((prefix) =>
+    PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
+  )
+)
+
+function isExcludedFromSitemap(page: string): boolean {
+  const pathname = new URL(page).pathname.replace(/\/$/, '')
+  return SITEMAP_EXCLUDED_PATHNAMES.has(pathname)
+}
+
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
@@ -17,7 +34,12 @@ export default defineConfig({
     assets: '_website'
   },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
-  integrations: [vue(), sitemap()],
+  integrations: [
+    vue(),
+    sitemap({
+      filter: (page) => !isExcludedFromSitemap(page)
+    })
+  ],
   vite: {
     plugins: [tailwindcss()],
     server: {
@@ -27,8 +49,8 @@ export default defineConfig({
     }
   },
   i18n: {
-    locales: ['en', 'zh-CN'],
-    defaultLocale: 'en',
+    locales: [...LOCALES],
+    defaultLocale: DEFAULT_LOCALE,
     routing: {
       prefixDefaultLocale: false
     }
