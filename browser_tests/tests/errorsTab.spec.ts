@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 async function triggerExecutionError(comfyPage: {
   canvasOps: { disconnectEdge: () => Promise<void> }
@@ -29,7 +29,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
     await triggerExecutionError(comfyPage)
 
     // Dismiss the error overlay
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId('error-overlay')
     await expect(overlay).toBeVisible()
     await overlay.getByRole('button', { name: /Dismiss/i }).click()
 
@@ -45,7 +45,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
   test('Error card shows locate button', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId('error-overlay')
     await expect(overlay).toBeVisible()
     await overlay.getByRole('button', { name: /See Errors/i }).click()
 
@@ -61,7 +61,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
   test('Clicking locate button focuses canvas', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId('error-overlay')
     await expect(overlay).toBeVisible()
     await overlay.getByRole('button', { name: /See Errors/i }).click()
 
@@ -79,7 +79,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
   test('Collapse all button collapses error groups', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId('error-overlay')
     await expect(overlay).toBeVisible()
     await overlay.getByRole('button', { name: /See Errors/i }).click()
 
@@ -105,7 +105,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
   test('Search filters errors', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId('error-overlay')
     await expect(overlay).toBeVisible()
     await overlay.getByRole('button', { name: /See Errors/i }).click()
 
@@ -134,7 +134,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
   test('Errors tab shows error message text', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId('error-overlay')
     await expect(overlay).toBeVisible()
     await overlay.getByRole('button', { name: /See Errors/i }).click()
 

@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Settings Sidebar', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -36,7 +36,7 @@ test.describe('Settings Sidebar', { tag: '@ui' }, () => {
     await settingsButton.click()
     await expect(comfyPage.settingDialog.root).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
-    await expect(comfyPage.settingDialog.root).not.toBeVisible()
+    await expect(comfyPage.settingDialog.root).toBeHidden()
   })
 
   test('Settings search box is functional', async ({ comfyPage }) => {
