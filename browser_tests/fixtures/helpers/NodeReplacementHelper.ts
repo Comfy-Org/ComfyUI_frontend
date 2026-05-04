@@ -4,16 +4,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
 
-/**
- * Mock `/api/node_replacements` and enable the feature flag + settings
- * needed for node replacement to function.
- *
- * Mirrors the canonical pattern from `shareWorkflowDialog.spec.ts` /
- * `managerDialog.spec.ts`: directly mutate `api.serverFeatureFlags.value`
- * after `comfyPage.setup()` so the WS `feature_flags` payload can't
- * overwrite it. `mockServerFeatures` (on `/api/features`) does not
- * populate the reactive ref.
- */
+/** Mock `/api/node_replacements` and enable the node replacement feature. */
 export async function setupNodeReplacement(
   comfyPage: ComfyPage,
   replacements: NodeReplacementResponse
