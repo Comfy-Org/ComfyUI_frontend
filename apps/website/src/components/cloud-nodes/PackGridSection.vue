@@ -70,7 +70,11 @@ const filteredPacks = computed(() => {
       <div
         class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
       >
+        <label for="cloud-nodes-search" class="sr-only">
+          {{ t('cloudNodes.search.label', locale) }}
+        </label>
         <input
+          id="cloud-nodes-search"
           v-model="query"
           :placeholder="t('cloudNodes.search.placeholder', locale)"
           :class="
@@ -81,9 +85,13 @@ const filteredPacks = computed(() => {
           data-testid="cloud-nodes-search"
         />
 
+        <label for="cloud-nodes-sort" class="sr-only">
+          {{ t('cloudNodes.sort.label', locale) }}
+        </label>
         <select
+          id="cloud-nodes-sort"
           v-model="sortMode"
-          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full rounded-2xl border px-4 py-3 text-sm md:w-64"
+          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full rounded-2xl border py-3 pl-4 pr-10 text-sm md:w-64"
         >
           <option value="mostNodes">
             {{ t('cloudNodes.sort.mostNodes', locale) }}
@@ -109,7 +117,7 @@ const filteredPacks = computed(() => {
         v-else
         class="grid grid-cols-1 gap-5 md:grid-cols-2"
         role="list"
-        aria-label="Cloud node packs"
+        :aria-label="t('cloudNodes.list.ariaLabel', locale)"
       >
         <PackCard
           v-for="pack in filteredPacks"

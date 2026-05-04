@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
 
 const { bannerUrl, iconUrl, name } = defineProps<{
@@ -11,9 +9,10 @@ const { bannerUrl, iconUrl, name } = defineProps<{
   name: string
 }>()
 
-const hasError = ref(false)
-const imgSrc = computed(() => bannerUrl || iconUrl || DEFAULT_BANNER)
-const showFallback = computed(() => hasError.value || !imgSrc.value)
+const isImageError = ref(false)
+
+const showDefaultBanner = computed(() => !bannerUrl && !iconUrl)
+const imgSrc = computed(() => bannerUrl || iconUrl)
 </script>
 
 <template>
@@ -21,23 +20,28 @@ const showFallback = computed(() => hasError.value || !imgSrc.value)
     class="z-0 aspect-7/3 w-full overflow-hidden"
     data-testid="cloud-node-pack-banner"
   >
-    <div class="relative size-full">
+    <div v-if="showDefaultBanner" class="size-full">
+      <img
+        :src="DEFAULT_BANNER"
+        :alt="`${name} banner`"
+        class="size-full object-cover"
+      />
+    </div>
+    <div v-else class="relative size-full">
       <div
-        v-if="!showFallback"
+        v-if="imgSrc && !isImageError"
         class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
         :style="{ backgroundImage: `url(${imgSrc})`, filter: 'blur(10px)' }"
       />
-
       <img
-        :src="showFallback ? DEFAULT_BANNER : imgSrc"
+        :src="isImageError ? DEFAULT_BANNER : imgSrc"
         :alt="`${name} banner`"
         :class="
-          cn(
-            'relative z-10 size-full',
-            showFallback ? 'object-cover' : 'object-contain'
-          )
+          isImageError
+            ? 'relative z-10 size-full object-cover'
+            : 'relative z-10 size-full object-contain'
         "
-        @error="hasError = true"
+        @error="isImageError = true"
       />
     </div>
   </div>
