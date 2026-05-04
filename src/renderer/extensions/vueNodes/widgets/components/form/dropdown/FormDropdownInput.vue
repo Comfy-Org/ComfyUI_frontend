@@ -95,7 +95,11 @@ defineExpose({ focus, showPicker })
           {{ placeholder }}
         </span>
         <span v-else>
-          {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
+          {{
+            selectedItems
+              .map((item) => item.label || item.name || item.id)
+              .join(', ')
+          }}
         </span>
       </span>
       <i
