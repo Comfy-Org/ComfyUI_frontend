@@ -56,7 +56,7 @@ jobs:
             const fs = require('fs');
             const models = JSON.parse(fs.readFileSync('out.json', 'utf8'));
             const arr = Array.isArray(models) ? models : Object.values(models);
-            const slugs = arr.map(m => m.suggestedSlug ?? m.slug).filter(Boolean);
+            const slugs = arr.map(m => m.slug).filter(Boolean);
             console.log(JSON.stringify(slugs));
           ")
 

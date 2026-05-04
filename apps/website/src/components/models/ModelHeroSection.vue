@@ -2,10 +2,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '../common/BrandButton.vue'
 import { externalLinks } from '../../config/routes'
+import { t } from '../../i18n/translations'
 
 const {
   displayName,
-  description,
   huggingFaceUrl,
   docsUrl,
   blogUrl,
@@ -13,7 +13,6 @@ const {
   directory
 } = defineProps<{
   displayName: string
-  description: string
   huggingFaceUrl: string
   docsUrl?: string
   blogUrl?: string
@@ -52,21 +51,22 @@ const isPartnerNode = directory === 'partner_nodes'
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
       <p
-        class="text-sm font-medium tracking-widest text-(--color-primary-comfy-yellow) uppercase"
+        class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
       >
         {{ eyebrow }}
       </p>
 
-      <h1 class="text-4xl font-bold text-white lg:text-6xl">
-        {{ displayName }}
+      <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+        {{ displayName }} in ComfyUI
       </h1>
 
-      <p class="text-base/relaxed text-white/70 lg:text-lg/relaxed">
-        {{ description }}
-      </p>
-
-      <p class="text-sm text-white/50">
-        {{ workflowCount }} workflows use this model
+      <p class="text-sm text-primary-comfy-canvas/60">
+        {{
+          t('models.hero.workflowCount').replace(
+            '{count}',
+            String(workflowCount)
+          )
+        }}
       </p>
 
       <div class="flex flex-col gap-3 sm:flex-row">
@@ -76,40 +76,42 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          TRY IN COMFY
+          {{ t('models.hero.primaryCta') }}
         </BrandButton>
 
         <BrandButton
           v-if="!isPartnerNode"
           :href="huggingFaceUrl"
           target="_blank"
+          rel="noopener noreferrer"
           variant="outline"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          DOWNLOAD MODEL
+          {{ t('models.hero.secondaryCta') }}
         </BrandButton>
 
         <BrandButton
           v-if="docsUrl"
           :href="docsUrl"
           target="_blank"
+          rel="noopener noreferrer"
           variant="outline"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          VIEW TUTORIAL
+          {{ t('models.hero.tutorialCta') }}
         </BrandButton>
       </div>
 
-      <div v-if="blogUrl" class="flex gap-4 text-sm text-white/50">
+      <div v-if="blogUrl" class="text-sm text-primary-comfy-canvas/60">
         <a
           :href="blogUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="underline hover:text-white/80"
+          class="hover:text-primary-comfy-canvas underline"
         >
-          Read blog post
+          {{ t('models.hero.blogLink') }}
         </a>
       </div>
     </div>

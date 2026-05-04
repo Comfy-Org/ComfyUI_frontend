@@ -18,15 +18,13 @@ if (model.canonicalSlug) {
   return Astro.redirect(`/p/supported-models/${model.canonicalSlug}`, 301)
 }
 
-const displayName = t(model.displayName)
-const description = t(model.description)
+const { displayName } = model
 const canonicalURL = new URL(`/p/supported-models/${model.slug}`, Astro.site)
 
 const softwareAppJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: displayName,
-  description,
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
   url: canonicalURL.href,
@@ -72,7 +70,7 @@ const faqJsonLd = {
       name: `What is ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: description
+        text: `${displayName} is an AI model supported in ComfyUI.`
       }
     },
     {
@@ -81,8 +79,8 @@ const faqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: model.docsUrl
-          ? `Follow our step-by-step tutorial at ${model.docsUrl} to get started with ${displayName} in ComfyUI.`
-          : `Open ComfyUI, search for "${displayName}" in the model browser, and load it into your workflow.`
+          ? `Follow the step-by-step tutorial at ${model.docsUrl}.`
+          : `Open ComfyUI, find "${displayName}" in the model browser, and load it into your workflow.`
       }
     },
     {
@@ -90,17 +88,19 @@ const faqJsonLd = {
       name: `How many ComfyUI workflows use ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `There are ${model.workflowCount} community workflow templates that use ${displayName}.`
+        text: `${model.workflowCount} community workflow templates use ${displayName}.`
       }
     }
   ]
 }
+
+const pageTitle = `${displayName} in ComfyUI`
+const pageDescription = `Run ${displayName} in ComfyUI. ${model.workflowCount} workflow templates, step-by-step tutorials, and full model control.`
 ---
 
 <BaseLayout
-  title={`${displayName} — Comfy`}
-  description={description}
-  ogImage={model.ogImage}
+  title={`${pageTitle} — Comfy`}
+  description={pageDescription}
 >
   <Fragment slot="head">
     <meta property="article:published_time" content={model.publishedDate} />
@@ -124,7 +124,6 @@ const faqJsonLd = {
 
   <ModelHeroSection
     displayName={displayName}
-    description={description}
     huggingFaceUrl={model.huggingFaceUrl}
     docsUrl={model.docsUrl}
     blogUrl={model.blogUrl}
@@ -133,20 +132,20 @@ const faqJsonLd = {
   />
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-    <h2 class="text-2xl font-bold text-white lg:text-3xl">
-      What is {displayName}?
+    <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
+      {t('models.whatIs.heading').replace('{name}', displayName)}
     </h2>
-    <p class="mt-4 text-base/relaxed text-white/70 lg:text-lg/relaxed max-w-3xl">
-      {description}
+    <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
+      {pageDescription}
     </p>
     {model.docsUrl && (
       <a
         href={model.docsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        class="mt-6 inline-block text-[var(--color-primary-comfy-yellow)] hover:underline"
+        class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
       >
-        Read the full tutorial →
+        {t('models.whatIs.tutorialLink')}
       </a>
     )}
   </section>

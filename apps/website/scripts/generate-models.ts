@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const TEMPLATES_DIR = fileURLToPath(
@@ -16,7 +16,7 @@ const QUANT_SUFFIXES = [
   '_fp16',
   '_fp4',
   '_bf16',
-  '_int8'
+  '_int8',
 ]
 
 interface RawModel {
@@ -32,12 +32,12 @@ interface ModelData {
 }
 
 interface OutputModel {
+  slug: string
   name: string
-  url: string
+  huggingFaceUrl: string
   directory: string
   workflowCount: number
-  suggestedSlug: string
-  suggestedDisplayName: string
+  displayName: string
   canonicalSlug?: string
 }
 
@@ -77,7 +77,7 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   veo3: { name: 'Veo 3', slug: 'veo-3' },
   flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
   wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
-  wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
+  wavespped: { name: 'Wavespeed', slug: 'wavespeed' },
 }
 
 function stripExt(name: string): string {
@@ -103,7 +103,7 @@ function makeSlug(name: string): string {
 function makeDisplayName(name: string): string {
   const base = stripExt(name)
   return base
-    .split(/[_-]/)
+    .split(/[_\-]/)
     .map((part) => {
       if (/^(fp\d+|bf\d+|int\d+)$/i.test(part)) return part.toUpperCase()
       if (/^(e4m3fn|scaled|mixed|fp8mixed)$/i.test(part)) return part
@@ -172,7 +172,7 @@ function extractApiModels(files: string[]): ApiModelData[] {
       slug,
       name: found.name,
       directory: 'partner_nodes' as const,
-      templateCount: count
+      templateCount: count,
     }
   })
 }
@@ -227,12 +227,12 @@ function run(): void {
   const output: OutputModel[] = sorted.map(([name, data]) => {
     const canonicalRaw = canonicalMap.get(name) ?? null
     const result: OutputModel = {
+      slug: makeSlug(name),
       name,
-      url: data.url,
+      huggingFaceUrl: data.url,
       directory: data.directory,
       workflowCount: data.templates.size,
-      suggestedSlug: makeSlug(name),
-      suggestedDisplayName: makeDisplayName(name)
+      displayName: makeDisplayName(name),
     }
     if (canonicalRaw !== null) {
       result.canonicalSlug = makeSlug(canonicalRaw)
@@ -243,27 +243,28 @@ function run(): void {
   const apiOutput: OutputModel[] = apiModels
     .sort((a, b) => b.templateCount - a.templateCount)
     .map((m) => ({
+      slug: m.slug,
       name: m.name,
-      url: '',
+      huggingFaceUrl: '',
       directory: m.directory,
       workflowCount: m.templateCount,
-      suggestedSlug: m.slug,
-      suggestedDisplayName: m.name
+      displayName: m.name,
     }))
 
   const combined = [...apiOutput, ...output]
 
-  const outputArg = process.argv[2]
+  const defaultOut = join(
+    fileURLToPath(new URL('.', import.meta.url)),
+    '../src/config/generated-models.json'
+  )
+  const outputArg = process.argv[2] ?? defaultOut
   const json = JSON.stringify(combined, null, 2) + '\n'
 
-  if (outputArg) {
-    writeFileSync(outputArg, json, 'utf8')
-    process.stdout.write(
-      `Written ${combined.length} models (${apiOutput.length} partner, ${output.length} local) to ${outputArg}\n`
-    )
-  } else {
-    process.stdout.write(json)
-  }
+  writeFileSync(outputArg, json, 'utf8')
+  process.stdout.write(
+    `Written ${combined.length} models ` +
+      `(${apiOutput.length} partner, ${output.length} local) to ${outputArg}\n`
+  )
 }
 
 run()
