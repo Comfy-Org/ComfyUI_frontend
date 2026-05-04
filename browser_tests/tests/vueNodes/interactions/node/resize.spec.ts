@@ -104,17 +104,14 @@ test.describe(
         .toBeGreaterThan(initialBox.height)
     })
 
-    // Exercise every non-SE corner. SE is covered by the drift test above.
-    const nonSeCornerCases = RESIZE_HANDLES.filter(
-      (h) => h.corner !== 'SE'
-    ).map((h) => ({
+    const cornerCases = RESIZE_HANDLES.map((h) => ({
       corner: h.corner,
       dragX: hasWestEdge(h.corner) ? -50 : 50,
       dragY: hasNorthEdge(h.corner) ? -40 : 40
     }))
 
     test.describe('corner resize directions', () => {
-      nonSeCornerCases.forEach(({ corner, dragX, dragY }) => {
+      cornerCases.forEach(({ corner, dragX, dragY }) => {
         test(`${corner}: size increases and correct edges shift`, async ({
           comfyPage
         }) => {
@@ -153,7 +150,7 @@ test.describe(
     })
 
     test.describe('opposite edge anchoring', () => {
-      nonSeCornerCases.forEach(({ corner, dragX, dragY }) => {
+      cornerCases.forEach(({ corner, dragX, dragY }) => {
         test(`${corner} resize keeps opposite corner fixed`, async ({
           comfyPage
         }) => {
