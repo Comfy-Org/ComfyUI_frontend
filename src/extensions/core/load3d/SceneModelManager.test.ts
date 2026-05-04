@@ -102,6 +102,16 @@ function createMeshModel(name = 'TestModel'): THREE.Group {
   return group
 }
 
+function createPointsModel(name = 'TestModel'): THREE.Group {
+  const geometry = new THREE.BufferGeometry()
+  const material = new THREE.PointsMaterial({ color: 0xff0000 })
+  const points = new THREE.Points(geometry, material)
+  const group = new THREE.Group()
+  group.name = name
+  group.add(points)
+  return group
+}
+
 describe('SceneModelManager', () => {
   describe('constructor', () => {
     it('initializes default state', () => {
@@ -304,6 +314,20 @@ describe('SceneModelManager', () => {
       const mesh = model.children[0] as THREE.Mesh
       const geoDispose = vi.spyOn(mesh.geometry, 'dispose')
       const matDispose = vi.spyOn(mesh.material as THREE.Material, 'dispose')
+
+      await manager.setupModel(model)
+      manager.clearModel()
+
+      expect(geoDispose).toHaveBeenCalled()
+      expect(matDispose).toHaveBeenCalled()
+    })
+
+    it('disposes points geometry and materials', async () => {
+      const { manager } = createManager()
+      const model = createPointsModel()
+      const points = model.children[0] as THREE.Points
+      const geoDispose = vi.spyOn(points.geometry, 'dispose')
+      const matDispose = vi.spyOn(points.material as THREE.Material, 'dispose')
 
       await manager.setupModel(model)
       manager.clearModel()

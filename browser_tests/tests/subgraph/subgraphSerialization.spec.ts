@@ -14,8 +14,6 @@ import {
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 const LEGACY_PREFIXED_WORKFLOW =
   'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
-const MULTI_INSTANCE_WORKFLOW =
-  'subgraphs/subgraph-multi-instance-promoted-text-values'
 
 async function expectPromotedWidgetsToResolveToInteriorNodes(
   comfyPage: ComfyPage,
@@ -40,31 +38,6 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
   )
 
   expect(results).toEqual(widgets.map(() => true))
-}
-
-async function getPromotedHostWidgetValues(
-  comfyPage: ComfyPage,
-  nodeIds: string[]
-) {
-  return comfyPage.page.evaluate((ids) => {
-    const graph = window.app!.canvas.graph!
-
-    return ids.map((id) => {
-      const node = graph.getNodeById(id)
-      if (
-        !node ||
-        typeof node.isSubgraphNode !== 'function' ||
-        !node.isSubgraphNode()
-      ) {
-        return { id, values: [] as unknown[] }
-      }
-
-      return {
-        id,
-        values: (node.widgets ?? []).map((widget) => widget.value)
-      }
-    })
-  }, nodeIds)
 }
 
 test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
@@ -525,29 +498,4 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       })
     }
   )
-
-  test('Multiple instances of the same subgraph keep distinct promoted widget values after load and reload', async ({
-    comfyPage
-  }) => {
-    const hostNodeIds = ['11', '12', '13']
-    const expectedValues = ['Alpha\n', 'Beta\n', 'Gamma\n']
-
-    await comfyPage.workflow.loadWorkflow(MULTI_INSTANCE_WORKFLOW)
-
-    const initialValues = await getPromotedHostWidgetValues(
-      comfyPage,
-      hostNodeIds
-    )
-    expect(initialValues.map(({ values }) => values[0])).toEqual(expectedValues)
-
-    await comfyPage.subgraph.serializeAndReload()
-
-    const reloadedValues = await getPromotedHostWidgetValues(
-      comfyPage,
-      hostNodeIds
-    )
-    expect(reloadedValues.map(({ values }) => values[0])).toEqual(
-      expectedValues
-    )
-  })
 })

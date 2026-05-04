@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.44.13",
+  "version": "1.44.15",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -83,6 +83,7 @@
     "@tiptap/extension-table-row": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
+    "@vee-validate/zod": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "@vueuse/router": "^14.2.0",
@@ -113,6 +114,7 @@
     "three": "^0.170.0",
     "tiptap-markdown": "^0.8.10",
     "typegpu": "catalog:",
+    "vee-validate": "catalog:",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:",
