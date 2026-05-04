@@ -21,11 +21,11 @@ const zAsset = z.object({
   user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
 })
 
-const zAssetResponse = z.object({
-  assets: z.array(zAsset),
-  total: zListAssetsResponse.shape.total,
-  has_more: zListAssetsResponse.shape.has_more
-})
+const zAssetResponse = zListAssetsResponse
+  .pick({ total: true, has_more: true })
+  .extend({
+    assets: z.array(zAsset)
+  })
 
 const zModelFolder = z.object({
   name: z.string(),
