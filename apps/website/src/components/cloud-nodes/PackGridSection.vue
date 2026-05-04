@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Pack } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
 
+import { useFilteredPacks } from '../../composables/useFilteredPacks';
+import type { PackSortMode } from '../../composables/useFilteredPacks';
 import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import PackCard from './PackCard.vue'
-
-type SortMode = 'downloads' | 'mostNodes' | 'az' | 'recentlyUpdated'
 
 const { locale = 'en', packs } = defineProps<{
   locale?: Locale
@@ -18,42 +18,12 @@ const { locale = 'en', packs } = defineProps<{
 }>()
 
 const query = defineModel<string>('query', { default: '' })
-const sortMode = ref<SortMode>('downloads')
+const sortMode = ref<PackSortMode>('downloads')
 
-const filteredPacks = computed(() => {
-  const normalizedQuery = query.value.trim().toLowerCase()
-  const matching =
-    normalizedQuery.length === 0
-      ? [...packs]
-      : packs.filter((pack) => {
-          const inPackName = pack.displayName
-            .toLowerCase()
-            .includes(normalizedQuery)
-          if (inPackName) return true
-          return pack.nodes.some((node) =>
-            node.displayName.toLowerCase().includes(normalizedQuery)
-          )
-        })
-
-  if (sortMode.value === 'az') {
-    return matching.sort((a, b) => a.displayName.localeCompare(b.displayName))
-  }
-
-  if (sortMode.value === 'recentlyUpdated') {
-    return matching.sort((a, b) => {
-      const aTime = Date.parse(a.lastUpdated ?? '')
-      const bTime = Date.parse(b.lastUpdated ?? '')
-      const safeATime = Number.isNaN(aTime) ? 0 : aTime
-      const safeBTime = Number.isNaN(bTime) ? 0 : bTime
-      return safeBTime - safeATime
-    })
-  }
-
-  if (sortMode.value === 'mostNodes') {
-    return matching.sort((a, b) => b.nodes.length - a.nodes.length)
-  }
-
-  return matching.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0))
+const { filteredPacks } = useFilteredPacks({
+  packs: () => packs,
+  query,
+  sortMode
 })
 </script>
 
@@ -95,7 +65,7 @@ const filteredPacks = computed(() => {
         <select
           id="cloud-nodes-sort"
           v-model="sortMode"
-          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full appearance-none rounded-2xl border bg-[length:0.65rem_0.65rem] bg-[right_1rem_center] bg-no-repeat py-3 pl-4 pr-12 text-sm md:w-64"
+          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full appearance-none rounded-2xl border bg-size-[0.65rem_0.65rem] bg-position-[right_1rem_center] bg-no-repeat py-3 pr-12 pl-4 text-sm md:w-64"
           :style="{
             backgroundImage:
               'url(\'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22 fill=%22%23a39b8d%22><path d=%22M6 9.2L1.4 4.6 2.8 3.2 6 6.4l3.2-3.2 1.4 1.4z%22/></svg>\')'
