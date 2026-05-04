@@ -1,3 +1,5 @@
+import { toRaw } from 'vue'
+
 import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -28,7 +30,10 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
   isPromotedWidgetView
@@ -44,11 +49,13 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -103,6 +110,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * lifecycle to persist.
    */
   private _pendingPromotions: PromotedWidgetSource[] = []
+  /** Widgets_values buffered during pre-attach configure(); drained in onAdded(). */
+  private _pendingWidgetsValuesReplay?: TWidgetValue[]
   private _cacheVersion = 0
   private _linkedEntriesCache?: {
     version: number
@@ -634,29 +643,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     disambiguatingSourceNodeId?: string
   ): string {
     return disambiguatingSourceNodeId
-      ? JSON.stringify([
+      ? makeCompositeKey([
           inputKey,
           sourceNodeId,
           sourceWidgetName,
           inputName,
           disambiguatingSourceNodeId
         ])
-      : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
+      : makeCompositeKey([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
   private _serializeEntries(
     entries: PromotedWidgetSource[]
-  ): (string[] | [string, string, string])[] {
-    return entries.map((e) =>
+  ): SerializedProxyWidgetTuple[] {
+    return entries.map((e) => [
+      e.sourceNodeId,
       e.disambiguatingSourceNodeId
-        ? [e.sourceNodeId, e.sourceWidgetName, e.disambiguatingSourceNodeId]
-        : [e.sourceNodeId, e.sourceWidgetName]
-    )
+        ? `${e.sourceNodeId}: ${e.disambiguatingSourceNodeId}: ${e.sourceWidgetName}`
+        : e.sourceWidgetName
+    ])
   }
 
   private _resolveLegacyEntry(
     widgetName: string
-  ): [string, string] | undefined {
+  ): SerializedProxyWidgetTuple | undefined {
     // Legacy -1 entries use the slot name as the widget name.
     // Find the input with that name, then trace to the connected interior widget.
     const input = this.inputs.find((i) => i.name === widgetName)
@@ -1042,6 +1052,45 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
+
+    // Replay widgets_values through promoted views to restore promoted-view
+    // values that super.configure() skips. When the node is not yet attached
+    // (`id === -1`, e.g. during `LGraphNode.clone()`), the PromotedWidgetView
+    // setters short-circuit, so defer the replay until `onAdded()`.
+    this._pendingWidgetsValuesReplay = undefined
+    if (info.widgets_values) {
+      if (this.id === -1) {
+        this._pendingWidgetsValuesReplay = info.widgets_values
+      } else {
+        this._replayPromotedWidgetValues(info.widgets_values)
+      }
+    }
+  }
+
+  private _replayPromotedWidgetValues(values: TWidgetValue[]): void {
+    const views = this.widgets ?? []
+    const limit = Math.min(views.length, values.length)
+    for (let i = 0; i < limit; i++) {
+      if (!(i in values)) continue
+
+      const view = views[i]
+      const resolved = isPromotedWidgetView(view)
+        ? resolveConcretePromotedWidget(
+            this,
+            view.sourceNodeId,
+            view.sourceWidgetName,
+            view.disambiguatingSourceNodeId
+          )
+        : null
+      if (
+        resolved?.status === 'resolved' &&
+        resolved.resolved.widget.serialize === false
+      ) {
+        continue
+      }
+
+      view.value = values[i]
+    }
   }
 
   override _internalConfigureAfterSlots() {
@@ -1303,6 +1352,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onAdded(_graph: LGraph): void {
     this._flushPendingPromotions()
     this._syncPromotions()
+    this._flushPendingWidgetsValuesReplay()
+  }
+
+  private _flushPendingWidgetsValuesReplay(): void {
+    const pending = this._pendingWidgetsValuesReplay
+    if (!pending || this.id === -1) return
+
+    this._pendingWidgetsValuesReplay = undefined
+    this._replayPromotedWidgetValues(pending)
   }
 
   /**
@@ -1573,36 +1631,59 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Synchronizes widget values from this SubgraphNode instance to the
-   * corresponding widgets in the subgraph definition before serialization.
-   * This ensures nested subgraph widget values are preserved when saving.
+   * Projects per-instance promoted widget values into `widgets_values`
+   * and the canonical promotion-store snapshot into
+   * `properties.proxyWidgets` — both written onto the serialized output.
+   * The live node's `properties.proxyWidgets` is not mutated; the
+   * promotion store is the source of truth at runtime.
    */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization.
-    // Only sync for inputs that are linked to a promoted widget via _widget.
-    for (const input of this.inputs) {
-      if (!input._widget) continue
-
-      const subgraphInput =
-        input._subgraphSlot ??
-        this.subgraph.inputNode.slots.find((slot) => slot.name === input.name)
-      if (!subgraphInput) continue
-
-      const connectedWidgets = subgraphInput.getConnectedWidgets()
-      for (const connectedWidget of connectedWidgets) {
-        connectedWidget.value = input._widget.value
-      }
-    }
-
-    // Write promotion store state back to properties for serialization
     const entries = usePromotionStore().getPromotions(
       this.rootGraph.id,
       this.id
     )
-    this.properties.proxyWidgets = this._serializeEntries(entries)
 
-    return super.serialize()
+    const serialized = super.serialize()
+
+    // Write the promotion-store snapshot directly onto the serialized
+    // output so the live properties.proxyWidgets stays untouched.
+    serialized.properties ??= {}
+    serialized.properties.proxyWidgets = this._serializeEntries(entries)
+
+    // Promoted views are skipped by super.serialize() (`serialize = false`),
+    // so project their per-instance values back into widgets_values.
+    // Respect the resolved concrete source widget's serialize flag so
+    // transient widgets stay unsaved through nested promotions too.
+    // SubgraphNode never sets `serialize_widgets`, so super.serialize()
+    // never produces `widgets_values` — start from an empty array.
+    const views = this.widgets ?? []
+    const merged: TWidgetValue[] = []
+    views.forEach((view, idx) => {
+      if (isPromotedWidgetView(view)) {
+        const resolved = resolveConcretePromotedWidget(
+          this,
+          view.sourceNodeId,
+          view.sourceWidgetName,
+          view.disambiguatingSourceNodeId
+        )
+        if (
+          resolved.status === 'resolved' &&
+          resolved.resolved.widget.serialize === false
+        ) {
+          return
+        }
+      }
+      const value = view.value
+      merged[idx] =
+        value != null && typeof value === 'object'
+          ? (structuredClone(toRaw(value)) as TWidgetValue)
+          : (value as TWidgetValue)
+    })
+    if (merged.length > 0) serialized.widgets_values = merged
+
+    return serialized
   }
+
   override clone() {
     const clone = super.clone()
 

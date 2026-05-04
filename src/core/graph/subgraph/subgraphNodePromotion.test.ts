@@ -103,7 +103,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
     expect(subgraphNode.widgets[1].name).toBe('widgetA')
   })
-  test('Will mirror changes to value', () => {
+  test('Promoted view falls back to interior; promoted writes do not mutate interior', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -113,10 +113,16 @@ describe('Subgraph proxyWidgets', () => {
     )
     expect(subgraphNode.widgets.length).toBe(1)
     expect(subgraphNode.widgets[0].value).toBe('value')
+
+    // Direct interior edits remain visible through the view (no override)
     innerNodes[0].widgets![0].value = 'test'
     expect(subgraphNode.widgets[0].value).toBe('test')
+
+    // Promoted-view writes route to the per-instance cell only —
+    // the interior widget is NOT mutated.
     subgraphNode.widgets[0].value = 'test2'
-    expect(innerNodes[0].widgets![0].value).toBe('test2')
+    expect(subgraphNode.widgets[0].value).toBe('test2')
+    expect(innerNodes[0].widgets![0].value).toBe('test')
   })
   test('Will not modify position or sizing of existing widgets', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
@@ -253,7 +259,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets).toHaveLength(0)
   })
 
-  test('serialize does not produce widgets_values for promoted views', () => {
+  test('serialize stores widgets_values for promoted views', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -265,9 +271,7 @@ describe('Subgraph proxyWidgets', () => {
 
     const serialized = subgraphNode.serialize()
 
-    // SubgraphNode doesn't set serialize_widgets, so widgets_values is absent.
-    // Even if it were set, views have serialize: false and would be skipped.
-    expect(serialized.widgets_values).toBeUndefined()
+    expect(serialized.widgets_values).toEqual(['value'])
   })
 
   test('serialize preserves proxyWidgets in properties', () => {
@@ -289,6 +293,28 @@ describe('Subgraph proxyWidgets', () => {
       [innerIds[0], 'widgetA'],
       [innerIds[0], 'widgetB']
     ])
+  })
+
+  test('serialize() does not mutate the live properties.proxyWidgets', () => {
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [
+        { sourceNodeId: innerIds[0], sourceWidgetName: 'widgetA' },
+        { sourceNodeId: innerIds[0], sourceWidgetName: 'widgetB' }
+      ]
+    )
+
+    const before = subgraphNode.properties.proxyWidgets
+    const beforeSnapshot = JSON.parse(JSON.stringify(before))
+
+    subgraphNode.serialize()
+
+    expect(subgraphNode.properties.proxyWidgets).toBe(before)
+    expect(subgraphNode.properties.proxyWidgets).toStrictEqual(beforeSnapshot)
   })
 
   test('multi-link representative is deterministic across repeated reads', () => {
@@ -371,9 +397,11 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNodeA.widgets[0].type).toBe('number')
     expect(subgraphNodeA.widgets[0].value).toBe(42)
 
-    // Setting value at outermost level propagates to concrete widget
+    // Value set at outermost level lives in the per-instance cell.
+    // Read returns the override; concrete interior widget stays unchanged.
     subgraphNodeA.widgets[0].value = 99
-    expect(concreteNode.widgets![0].value).toBe(99)
+    expect(subgraphNodeA.widgets[0].value).toBe(99)
+    expect(concreteNode.widgets![0].value).toBe(42)
   })
 
   test('removeWidget cleans up promotion and input, then re-promote works', () => {

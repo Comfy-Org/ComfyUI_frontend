@@ -7,6 +7,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ProxyWidgetTuple,
+  SerializedProxyWidgetTuple
+} from '@/core/schemas/promotionSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -386,7 +390,7 @@ export class SubgraphHelper {
   }
 
   async getHostPromotedTupleSnapshot(): Promise<
-    { hostNodeId: string; promotedWidgets: [string, string][] }[]
+    { hostNodeId: string; promotedWidgets: SerializedProxyWidgetTuple[] }[]
   > {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
@@ -401,15 +405,18 @@ export class SubgraphHelper {
             : []
           const promotedWidgets = proxyWidgets
             .filter(
-              (entry): entry is [string, string] =>
+              (entry): entry is ProxyWidgetTuple =>
                 Array.isArray(entry) &&
                 entry.length >= 2 &&
                 typeof entry[0] === 'string' &&
                 typeof entry[1] === 'string'
             )
             .map(
-              ([interiorNodeId, widgetName]) =>
-                [interiorNodeId, widgetName] as [string, string]
+              ([sourceNodeId, serializedSourceWidgetName]) =>
+                [
+                  sourceNodeId,
+                  serializedSourceWidgetName
+                ] satisfies SerializedProxyWidgetTuple
             )
 
           return {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { LGraph, LGraphNode, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
 import type {
@@ -11,7 +12,7 @@ import type {
 function createSerialisedNode(
   id: number,
   type: string,
-  proxyWidgets?: Array<[string, string]>
+  proxyWidgets?: SerializedProxyWidgetTuple[]
 ): ISerialisedNode {
   return {
     id,

@@ -8,7 +8,6 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -28,7 +27,10 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { resolveNodeWidget } from '@/utils/litegraphUtil'
+import {
+  getSelectedWidgetIdentity,
+  resolveNodeWidget
+} from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -157,10 +159,7 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
-  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  const storeName = isPromotedWidgetView(widget)
-    ? widget.sourceWidgetName
-    : widget.name
+  const [storeId, storeName] = getSelectedWidgetIdentity(node, widget)
   const index = appModeStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
   )

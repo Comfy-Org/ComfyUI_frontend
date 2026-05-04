@@ -1,4 +1,4 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -9,17 +9,13 @@ import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
-import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -74,6 +70,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
+  /** Opaque widget-store name paired with the host SubgraphNode; do not parse. */
+  readonly storeName: string
 
   readonly serialize = false
 
@@ -91,7 +89,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
-  /** Cached reference to the bound subgraph slot, set at construction. */
+  /** Lazily cached bound subgraph slot reference. */
   private _boundSlot?: SubgraphSlotRef
   private _boundSlotVersion = -1
 
@@ -105,6 +103,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
+    this.storeName = makeCompositeKey([
+      nodeId,
+      widgetName,
+      disambiguatingSourceNodeId ?? ''
+    ])
     this.graphId = subgraphNode.rootGraph.id
   }
 
@@ -155,66 +158,41 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.resolveAtHost()?.widget.value
   }
 
+  serializeValue(_node: LGraphNode, _index: number): IBaseWidget['value'] {
+    return this.value
+  }
+
   set value(value: IBaseWidget['value']) {
-    const linkedWidgets = this.getLinkedInputWidgets()
-    if (linkedWidgets.length > 0) {
-      const widgetStore = useWidgetValueStore()
-      let didUpdateState = false
-      for (const linkedWidget of linkedWidgets) {
-        const state = widgetStore.getWidget(
-          this.graphId,
-          linkedWidget.nodeId,
-          linkedWidget.widgetName
-        )
-        if (state) {
-          state.value = value
-          didUpdateState = true
-        }
-      }
+    if (!isWidgetValue(value)) return
+    // Pre-attach sentinel: skip writes before LGraph.add() assigns the real id.
+    if (this.subgraphNode.id === -1) return
 
-      const resolved = this.resolveDeepest()
-      if (resolved) {
-        const resolvedState = widgetStore.getWidget(
-          this.graphId,
-          stripGraphPrefix(String(resolved.node.id)),
-          resolved.widget.name
-        )
-        if (resolvedState) {
-          resolvedState.value = value
-          didUpdateState = true
-        }
-      }
-
-      if (didUpdateState) return
-    }
-
-    const state = this.getWidgetState()
-    if (state) {
-      state.value = value
-      return
-    }
-
-    const resolved = this.resolveAtHost()
-    if (resolved && isWidgetValue(value)) {
-      resolved.widget.value = value
-    }
+    // Per-instance cell isolation: writes go only to this view's cell;
+    // reads fall back to the interior widget when no cell exists.
+    this.ensureInstanceState().value = value
   }
 
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
-    // Fall back to persisted widget state (survives save/reload before
-    // the slot binding is established) then to construction displayName.
     const state = this.getWidgetState()
     return state?.label ?? this.displayName
   }
 
+  /** Slot-bound: only update existing cell. Unbound: materialize. */
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
     if (slot) slot.label = value || undefined
-    // Also persist to widget state store for save/reload resilience
-    const state = this.getWidgetState()
-    if (state) state.label = value
+
+    // Pre-attach sentinel guard: skip per-instance cell write before LGraph.add().
+    if (this.subgraphNode.id === -1) return
+
+    if (slot) {
+      const existing = this.getWidgetState()
+      if (existing) existing.label = value
+    } else {
+      this.ensureInstanceState().label = value
+    }
   }
 
   /**
@@ -223,7 +201,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
    *
    * Note: Using length as the cache key works because the returned reference
    * is the same mutable slot object. When slot properties (label, name) change,
-   * the caller reads fresh values from that reference.  The cache only needs
+   * the caller reads fresh values from that reference. The cache only needs
    * to invalidate when slots are added or removed, which changes length.
    */
   private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
@@ -236,21 +214,28 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    // Identity match wins; otherwise fall back to source-identity match
+    // (sibling view bound to the same promoted source).
+    let sourceMatch: SubgraphSlotRef | undefined
     for (const input of this.subgraphNode.inputs ?? []) {
       const slot = input._subgraphSlot as SubgraphSlotRef | undefined
       if (!slot) continue
 
+      if (input._widget === this) return slot
+
+      if (sourceMatch) continue
       const w = input._widget
       if (
         w &&
         isPromotedWidgetView(w) &&
         w.sourceNodeId === this.sourceNodeId &&
-        w.sourceWidgetName === this.sourceWidgetName
+        w.sourceWidgetName === this.sourceWidgetName &&
+        w.disambiguatingSourceNodeId === this.disambiguatingSourceNodeId
       ) {
-        return slot
+        sourceMatch = slot
       }
     }
-    return undefined
+    return sourceMatch
   }
 
   get hidden(): boolean {
@@ -385,70 +370,27 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return resolved
   }
 
-  private getWidgetState() {
-    const linkedState = this.getLinkedInputWidgetStates()[0]
-    if (linkedState) return linkedState
-
-    const resolved = this.resolveDeepest()
-    if (!resolved) return undefined
+  private getWidgetState(): WidgetState | undefined {
     return useWidgetValueStore().getWidget(
       this.graphId,
-      stripGraphPrefix(String(resolved.node.id)),
-      resolved.widget.name
+      this.subgraphNode.id,
+      this.storeName
     )
   }
 
-  private getLinkedInputWidgets(): Array<{
-    nodeId: NodeId
-    widgetName: string
-    widget: IBaseWidget
-  }> {
-    const linkedInputSlot = this.subgraphNode.inputs.find((input) => {
-      if (!input._subgraphSlot) return false
-      if (matchPromotedInput([input], this) !== input) return false
-
-      const boundWidget = input._widget
-      if (boundWidget === this) return true
-
-      if (boundWidget && isPromotedWidgetView(boundWidget)) {
-        return (
-          boundWidget.sourceNodeId === this.sourceNodeId &&
-          boundWidget.sourceWidgetName === this.sourceWidgetName &&
-          boundWidget.disambiguatingSourceNodeId ===
-            this.disambiguatingSourceNodeId
-        )
-      }
-
-      return input._subgraphSlot
-        .getConnectedWidgets()
-        .filter(hasWidgetNode)
-        .some(
-          (widget) =>
-            String(widget.node.id) === this.sourceNodeId &&
-            widget.name === this.sourceWidgetName
-        )
+  /** Lazily creates this view's per-instance state from source defaults. */
+  private ensureInstanceState(): WidgetState {
+    const seed = this.resolveDeepest()?.widget ?? this.resolveAtHost()?.widget
+    return useWidgetValueStore().getOrRegister(this.graphId, {
+      nodeId: this.subgraphNode.id,
+      name: this.storeName,
+      type: seed?.type ?? 'text',
+      value: seed?.value,
+      options: seed?.options ?? {},
+      label: seed?.label,
+      serialize: seed?.serialize,
+      disabled: seed?.disabled
     })
-    const linkedInput = linkedInputSlot?._subgraphSlot
-    if (!linkedInput) return []
-
-    return linkedInput
-      .getConnectedWidgets()
-      .filter(hasWidgetNode)
-      .map((widget) => ({
-        nodeId: stripGraphPrefix(String(widget.node.id)),
-        widgetName: widget.name,
-        widget
-      }))
-  }
-
-  private getLinkedInputWidgetStates(): WidgetState[] {
-    const widgetStore = useWidgetValueStore()
-
-    return this.getLinkedInputWidgets()
-      .map(({ nodeId, widgetName }) =>
-        widgetStore.getWidget(this.graphId, nodeId, widgetName)
-      )
-      .filter((state): state is WidgetState => state !== undefined)
   }
 
   private getProjectedWidget(resolved: {
