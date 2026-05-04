@@ -531,14 +531,25 @@ function createAssetService() {
     while (true) {
       if (signal?.aborted) throw createAbortError()
 
-      const batch = await getAssetsByTag(tag, includePublic, {
-        limit: pageSize,
-        offset,
-        signal
-      })
-      assets.push(...batch)
+      const data = await handleAssetRequest(
+        {
+          includeTags: [tag],
+          limit: pageSize,
+          offset,
+          includePublic,
+          signal
+        },
+        `assets for tag ${tag}`
+      )
+      const batch = data.assets ?? []
+      assets.push(...batch.filter((asset) => !asset.tags.includes(MISSING_TAG)))
 
-      if (batch.length < pageSize) return assets
+      const noMoreFromServer = data.has_more === false
+      const inferredLastPage =
+        data.has_more === undefined && batch.length < pageSize
+      if (batch.length === 0 || noMoreFromServer || inferredLastPage) {
+        return assets
+      }
 
       offset += batch.length
     }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  MISSING_TAG,
   assetService,
   isBlake3AssetHash,
   toBlake3AssetHash
@@ -475,6 +476,70 @@ describe(assetService.getAllAssetsByTag, () => {
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('include_public')).toBe('true')
     expect(secondParams.get('limit')).toBe('2')
+    expect(secondParams.get('offset')).toBe('2')
+  })
+
+  it('paginates from raw response size before filtering missing-tagged assets', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [
+            validAsset({ id: 'visible', tags: ['input'] }),
+            validAsset({ id: 'hidden', tags: ['input', MISSING_TAG] })
+          ]
+        })
+      )
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [validAsset({ id: 'later-public', tags: ['input'] })]
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['visible', 'later-public'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+
+    const secondUrl = fetchApiMock.mock.calls[1]?.[0]
+    if (typeof secondUrl !== 'string') {
+      throw new Error('Expected a second asset request URL')
+    }
+    const secondParams = new URL(secondUrl, 'http://localhost').searchParams
+    expect(secondParams.get('offset')).toBe('2')
+  })
+
+  it('honors has_more when walking tagged asset pages', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [
+            validAsset({ id: 'first', tags: ['input'] }),
+            validAsset({ id: 'second', tags: ['input'] })
+          ],
+          has_more: true
+        })
+      )
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [validAsset({ id: 'later-public', tags: ['input'] })],
+          has_more: false
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 3
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['first', 'second', 'later-public'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+
+    const secondUrl = fetchApiMock.mock.calls[1]?.[0]
+    if (typeof secondUrl !== 'string') {
+      throw new Error('Expected a second asset request URL')
+    }
+    const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('offset')).toBe('2')
   })
 
