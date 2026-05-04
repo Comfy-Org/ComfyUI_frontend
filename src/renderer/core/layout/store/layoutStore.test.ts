@@ -646,3 +646,78 @@ describe('layoutStore CRDT operations', () => {
     }
   )
 })
+
+describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
+  beforeEach(() => {
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  // Minimal Path2D stub — happy-dom does not implement Path2D, but the store
+  // only stores it and passes it back to ctx.isPointInStroke (which we mock).
+  const stubPath = {} as unknown as Path2D
+
+  const seedSegment = (linkId = 1, rerouteId: number | null = null) => {
+    layoutStore.updateLinkSegmentLayout(linkId, rerouteId, {
+      path: stubPath,
+      bounds: { x: 0, y: 0, width: 100, height: 100 },
+      centerPos: { x: 50, y: 50 }
+    })
+    return { linkId, rerouteId }
+  }
+
+  const makeCtx = (hit = true) => {
+    const isPointInStroke = vi.fn().mockReturnValue(hit)
+    return {
+      ctx: {
+        lineWidth: 17,
+        isPointInStroke
+      } as unknown as CanvasRenderingContext2D,
+      isPointInStroke
+    }
+  }
+
+  it('uses caller-supplied dpr to scale the stroke hit-test point', () => {
+    const { linkId } = seedSegment()
+    const { ctx, isPointInStroke } = makeCtx()
+
+    const result = layoutStore.queryLinkSegmentAtPoint(
+      { x: 50, y: 50 },
+      ctx,
+      0.5
+    )
+
+    expect(result).toEqual({ linkId, rerouteId: null })
+    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 25, 25)
+  })
+
+  it('falls back to window.devicePixelRatio when dpr is omitted', () => {
+    seedSegment()
+    const { ctx, isPointInStroke } = makeCtx()
+
+    const originalDpr = window.devicePixelRatio
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 2
+    })
+    try {
+      layoutStore.queryLinkSegmentAtPoint({ x: 50, y: 50 }, ctx)
+    } finally {
+      Object.defineProperty(window, 'devicePixelRatio', {
+        configurable: true,
+        value: originalDpr
+      })
+    }
+
+    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 100, 100)
+  })
+
+  it('threads dpr through queryLinkAtPoint to the segment hit-test', () => {
+    const { linkId } = seedSegment(7)
+    const { ctx, isPointInStroke } = makeCtx()
+
+    const hit = layoutStore.queryLinkAtPoint({ x: 50, y: 50 }, ctx, 3)
+
+    expect(hit).toBe(linkId)
+    expect(isPointInStroke).toHaveBeenCalledWith(stubPath, 150, 150)
+  })
+})
