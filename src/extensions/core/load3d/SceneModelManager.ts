@@ -328,7 +328,7 @@ export class SceneModelManager implements ModelManagerInterface {
       this.scene.remove(obj)
 
       obj.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
+        if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
           child.geometry?.dispose()
           if (Array.isArray(child.material)) {
             child.material.forEach((material) => material.dispose())

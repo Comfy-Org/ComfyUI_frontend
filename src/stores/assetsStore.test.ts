@@ -24,7 +24,9 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
+    getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
+    invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
@@ -1259,6 +1261,9 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
           false,
           { limit: 100 }
         )
+        expect(
+          assetService.invalidateInputAssetsIncludingPublic
+        ).toHaveBeenCalledOnce()
       } finally {
         mockIsCloud.value = false
       }
