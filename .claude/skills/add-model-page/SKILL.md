@@ -1,11 +1,11 @@
 ---
 name: add-model-page
-description: 'Add, update, or remove a model page entry on the comfy org website. Creates a PR to Comfy-Org/ComfyUI_frontend apps/website folder with the change and posts a Vercel preview link back to Slack.'
+description: 'add, update, or remove a model page entry on the comfy org website. creates a PR to Comfy-Org/ComfyUI_frontend apps/website folder with the change and posts a Vercel preview link back to Slack.'
 ---
 
 # add-model-page
 
-Add, update, or remove model pages in the ComfyUI website.
+add, update, or remove model pages in the ComfyUI website.
 
 ## Trigger phrases
 
