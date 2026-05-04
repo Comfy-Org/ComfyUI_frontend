@@ -337,13 +337,13 @@ function createAssetService() {
     // Blacklist directories we don't want to show
     const blacklistedDirectories = new Set(['configs'])
 
-    // Extract directory names from assets that actually exist, exclude missing assets
-    const discoveredFolders = new Set<string>(
-      data.assets
-        .filter((asset) => !asset.tags.includes(MISSING_TAG))
-        .flatMap((asset) => asset.tags)
-        .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
+    const existingAssets = data.assets.filter(
+      (asset) => !asset.tags.includes(MISSING_TAG)
     )
+    const folderTags = existingAssets
+      .flatMap((asset) => asset.tags)
+      .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
+    const discoveredFolders = new Set<string>(folderTags)
 
     // Return only discovered folders in alphabetical order
     const sortedFolders = Array.from(discoveredFolders).toSorted()
@@ -361,15 +361,15 @@ function createAssetService() {
       `models for ${folder}`
     )
 
-    return data.assets
-      .filter(
-        (asset) =>
-          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
-      )
-      .map((asset) => ({
-        name: asset.name,
-        pathIndex: 0
-      }))
+    const modelsInFolder = data.assets.filter(
+      (asset) =>
+        !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
+    )
+
+    return modelsInFolder.map((asset) => ({
+      name: asset.name,
+      pathIndex: 0
+    }))
   }
 
   /**
