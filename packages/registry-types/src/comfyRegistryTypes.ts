@@ -4014,6 +4014,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/seedance/visual-validate/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's completed visual-validation groups
+         * @description Returns the caller's completed visual-validation groups (real-person H5 verification). Used to power the group selector in client UIs. Excludes virtual-library (AIGC) groups, which are not part of the public API surface.
+         */
+        get: operations["seedanceListVisualValidationGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/seedance/visual-validate/sessions/{session_id}": {
         parameters: {
             query?: never;
@@ -4037,7 +4057,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the caller's assets across all owned groups
+         * @description Fans out to BytePlus ListAssets across the caller's completed verification groups, denormalizes the group label into each row, and returns a single flat list. Result is post-filtered by asset_type. Optional group_id narrows to one group. Hard caps: 5 pages × 100 assets per group, 1000 total assets.
+         */
+        get: operations["seedanceListUserAssets"];
         put?: never;
         post: operations["seedanceCreateAsset"];
         delete?: never;
@@ -14442,6 +14466,10 @@ export interface components {
                 total_tokens?: number;
             };
         };
+        SeedanceCreateVisualValidateSessionRequest: {
+            /** @description Optional human-readable label for the asset group that will be created by this verification. Stored locally and returned by seedanceListVisualValidationGroups so users can identify their groups in selectors. */
+            name?: string;
+        };
         SeedanceCreateVisualValidateSessionResponse: {
             /**
              * Format: uuid
@@ -14451,6 +14479,37 @@ export interface components {
             /** @description BytePlus-issued H5 liveness link. Open in a browser with camera access. Valid for ~120 seconds. */
             h5_link: string;
         };
+        SeedanceListVisualValidationGroupsResponse: {
+            groups: components["schemas"]["SeedanceVisualValidationGroup"][];
+        };
+        SeedanceListUserAssetsResponse: {
+            assets: components["schemas"]["SeedanceUserAsset"][];
+            /** @description True if the global per-request asset cap was hit and older results were dropped. */
+            truncated: boolean;
+        };
+        SeedanceUserAsset: {
+            asset_id: string;
+            name?: string | null;
+            /** @description BytePlus access URL (~12h validity). Refreshed on each list call. */
+            url?: string | null;
+            group_id: string;
+            /** @description Display label of the source group, denormalized for client-side search. */
+            group_name: string;
+            /** @enum {string} */
+            asset_type: "Image" | "Video" | "Audio";
+            /** @enum {string} */
+            status: "Active" | "Processing" | "Failed";
+            /** Format: date-time */
+            create_time: string;
+        };
+        SeedanceVisualValidationGroup: {
+            /** @description BytePlus-issued asset group id. */
+            group_id: string;
+            /** @description Display label. Caller-supplied at creation time when available; otherwise a server-generated fallback derived from the creation date. */
+            name: string;
+            /** Format: date-time */
+            created_at: string;
+        };
         SeedanceGetVisualValidateSessionResponse: {
             /** Format: uuid */
             session_id: string;
@@ -14458,6 +14517,8 @@ export interface components {
             status: "pending" | "completed" | "failed";
             /** @description Populated only when status == completed. This is the BytePlus Asset Group ID the user will upload assets into. */
             group_id?: string | null;
+            /** @description Optional human-readable label provided when the session was created. */
+            name?: string | null;
             error_code?: string | null;
             error_message?: string | null;
         };
@@ -30275,7 +30336,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SeedanceCreateVisualValidateSessionRequest"];
+            };
+        };
         responses: {
             /** @description Verification session created */
             201: {
@@ -30284,6 +30349,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceCreateVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceListVisualValidationGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visual-validation groups owned by the caller */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceListVisualValidationGroupsResponse"];
                 };
             };
             /** @description Error 4xx/5xx */
@@ -30316,6 +30410,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceGetVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceListUserAssets: {
+        parameters: {
+            query: {
+                /** @description Asset type to return. */
+                asset_type: "Image" | "Video";
+                /** @description Narrow the listing to one group. Caller must own it. */
+                group_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assets owned by the caller */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceListUserAssetsResponse"];
                 };
             };
             /** @description Error 4xx/5xx */
