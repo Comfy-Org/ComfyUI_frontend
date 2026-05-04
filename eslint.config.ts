@@ -250,7 +250,13 @@ export default defineConfig([
           // @/utils/errorUtil instead — see issue #11429.
           selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
           message:
-            'Do not use `as Error` assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        },
+        {
+          // Bans `<Error>value` and `<Error & { ... }>value`.
+          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
         }
       ]
     }
