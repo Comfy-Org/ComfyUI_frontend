@@ -6,11 +6,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Queue button modes', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setup()
-  })
-
   test('Run button is visible in topbar', async ({ comfyPage }) => {
     await expect(comfyPage.runButton).toBeVisible()
   })
