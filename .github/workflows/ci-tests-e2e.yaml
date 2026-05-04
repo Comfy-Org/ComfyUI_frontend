@@ -228,7 +228,7 @@ jobs:
   # when using pull_request event, we have permission to comment directly
   # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
 
-  # Post starting comment for non-forked PRs
+  # Post starting section into the unified PR report comment for non-forked PRs
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
@@ -244,17 +244,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Post starting comment
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
-            "starting"
+      - name: Upsert playwright starting section into unified report
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: playwright
+          section-content: '## 🎭 Playwright: ⏳ Running...'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
 
-  # Deploy and comment for non-forked PRs only
+  # Deploy and upsert final playwright section for non-forked PRs only
   deploy-and-comment:
     needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
@@ -278,15 +277,33 @@ jobs:
           pattern: playwright-report-*
           path: reports
 
-      - name: Deploy reports and comment on PR
+      - name: Deploy reports and generate section
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          SUMMARY_FILE: playwright-section.md
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "${{ github.head_ref }}" \
             "completed"
+
+      - name: Read playwright section
+        id: section
+        if: hashFiles('playwright-section.md') != ''
+        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        with:
+          path: playwright-section.md
+
+      - name: Upsert playwright section into unified report
+        if: steps.section.outputs.content != ''
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: playwright
+          section-content: ${{ steps.section.outputs.content }}
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
   #### END Deployment and commenting (non-forked PRs only)

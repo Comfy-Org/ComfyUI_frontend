@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
-# Deploy Storybook to Cloudflare Pages and comment on PR
+# Deploy Storybook to Cloudflare Pages and write section markdown.
 # Usage: ./pr-storybook-deploy-and-comment.sh <pr_number> <branch_name> <status>
+#
+# When SUMMARY_FILE env var is set, the generated markdown is written there
+# instead of posted as a standalone GitHub comment. The caller is then
+# responsible for upserting that content into the unified PR report via the
+# upsert-comment-section action.
 
 # Input validation
 # Validate PR number is numeric
@@ -91,17 +96,26 @@ deploy_storybook() {
     echo "failed"
 }
 
-# Post or update GitHub comment
+# Post or update GitHub comment, or write to SUMMARY_FILE if set.
+# When SUMMARY_FILE is set, the caller (workflow) is responsible for upserting
+# the content into the unified PR report via upsert-comment-section.
 post_comment() {
     body="$1"
+
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        printf '%s\n' "$body" > "$SUMMARY_FILE"
+        echo "Wrote storybook section to $SUMMARY_FILE" >&2
+        return
+    fi
+
     temp_file=$(mktemp)
     echo "$body" > "$temp_file"
-    
+
     if command -v gh > /dev/null 2>&1; then
         # Find existing comment ID
         existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
-        
+
         if [ -n "$existing" ]; then
             # Update specific comment by ID
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
@@ -113,15 +127,20 @@ post_comment() {
         echo "GitHub CLI not available, outputting comment:"
         cat "$temp_file"
     fi
-    
+
     rm -f "$temp_file"
 }
 
 # Main execution
 if [ "$STATUS" = "starting" ]; then
-    # Post starting comment
-    comment="$COMMENT_MARKER
+    # When writing to SUMMARY_FILE, omit the standalone marker (the upsert
+    # action uses its own section delimiters).
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        comment="## 🎨 Storybook: <img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> Building..."
+    else
+        comment="$COMMENT_MARKER
 ## 🎨 Storybook: <img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> Building..."
+    fi
     post_comment "$comment"
     
 elif [ "$STATUS" = "completed" ]; then
@@ -197,10 +216,18 @@ elif [ "$STATUS" = "completed" ]; then
 
 </details>"
 
-    comment="$COMMENT_MARKER
+    # Omit standalone marker when writing to SUMMARY_FILE — the upsert action
+    # adds its own section delimiters.
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        comment="$header
+
+$details"
+    else
+        comment="$COMMENT_MARKER
 $header
 
 $details"
-    
+    fi
+
     post_comment "$comment"
 fi
