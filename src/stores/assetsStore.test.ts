@@ -450,7 +450,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       vi.mocked(api.getHistory).mockResolvedValueOnce(mockHistory)
       await store.updateHistory()
 
-      // Delete 3 items — offset should shift from 200 to 197
+      // Delete 3 items — offset shifts from 200 to 197 so the next page
+      // request lines up with the server's post-deletion cursor and we don't
+      // skip the rows that backfilled into the old page-1 boundary.
       store.removeHistoryItems(['prompt_1', 'prompt_3', 'prompt_5'])
       expect(store.historyAssets).toHaveLength(197)
 
@@ -461,6 +463,36 @@ describe('assetsStore - Refactored (Option A)', () => {
       await store.loadMoreHistory()
 
       expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 197 })
+    })
+
+    it('should compose deletion offset with drift on next loadMore', async () => {
+      // Initial page 1 (200 items: prompt_0 .. prompt_199)
+      const page1 = Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page1)
+      await store.updateHistory()
+
+      // 3 net-new items merge in via a refresh — drift becomes 3.
+      const newJobs = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(7000 + i)
+      )
+      const refreshedPage1 = [...newJobs, ...page1.slice(0, 197)]
+      vi.mocked(api.getHistory).mockResolvedValueOnce(refreshedPage1)
+      await store.updateHistory()
+
+      // Delete 2 loaded items — historyOffset should drop from 200 to 198.
+      store.removeHistoryItems(['prompt_10', 'prompt_20'])
+
+      // Next loadMore offset must compose deletion + drift:
+      //   adjustedOffset = (200 - 2) + 3 = 201
+      // If historyOffset is not decremented the request becomes 203 and the
+      // server rows at the new positions 201–202 are silently skipped.
+      const page2 = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page2)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 201 })
     })
 
     it('should allow re-inserting a removed item on next updateHistory', async () => {

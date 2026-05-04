@@ -149,9 +149,13 @@ export const useAssetsStore = defineStore('assets', () => {
     loadedIds.add(asset.id)
 
     const assetTime = new Date(asset.created_at ?? 0).getTime()
-    const insertIndex = allHistoryItems.value.findIndex(
-      (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-    )
+    // Sort: newer first; ties broken by lexicographically larger id first
+    // so insertion order is stable across repeated merges.
+    const insertIndex = allHistoryItems.value.findIndex((item) => {
+      const itemTime = new Date(item.created_at ?? 0).getTime()
+      if (itemTime !== assetTime) return itemTime < assetTime
+      return item.id < asset.id
+    })
 
     if (insertIndex === -1) {
       allHistoryItems.value.push(asset)
@@ -161,6 +165,21 @@ export const useAssetsStore = defineStore('assets', () => {
     return true
   }
 
+  /**
+   * Remove items from the local view (used after the server confirmed the
+   * delete). Decrements historyOffset by the count of removed loaded items so
+   * the canonical caller flow — `removeHistoryItems(ids)` then
+   * `await updateHistory()` then `loadMoreHistory()` — produces the correct
+   * server offset:
+   *
+   * After deletion, the refreshed first page that `updateHistory()` fetches
+   * gets backfilled with items that previously sat just past the page-1
+   * boundary. Those backfilled items legitimately count as drift. If we
+   * leave `historyOffset` untouched, `loadMoreHistory()` then computes
+   * `historyOffset + drift` which double-counts the deletion: it adds the
+   * backfilled items on top of the original cursor and skips that many
+   * unseen rows on the next page.
+   */
   function removeHistoryItems(ids: string[]) {
     const idSet = new Set(ids)
     const removedCount = allHistoryItems.value.filter((item) =>
