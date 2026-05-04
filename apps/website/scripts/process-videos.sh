@@ -87,9 +87,14 @@ for src in "${sources[@]}"; do
   done
 
   poster_out="$output_dir/${name}-poster.jpg"
-  duration=$(ffprobe -v error -show_entries format=duration \
-    -of default=noprint_wrappers=1:nokey=1 "$src" 2>/dev/null || echo 0)
-  if awk "BEGIN { exit !($duration >= 1.0) }"; then
+  duration_raw=$(ffprobe -v error -show_entries format=duration \
+    -of default=noprint_wrappers=1:nokey=1 "$src" 2>/dev/null || true)
+  if [[ $duration_raw =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    duration="$duration_raw"
+  else
+    duration=0
+  fi
+  if awk -v d="$duration" 'BEGIN { exit !(d >= 1.0) }'; then
     poster_seek=1
   else
     poster_seek=0
