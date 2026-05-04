@@ -1,7 +1,6 @@
 import { t } from '@/i18n'
 import { uploadMedia } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 class Load3dUtils {
