@@ -25,6 +25,15 @@ const overrideTransitionGrace = new Set<string>()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
+// Track canvas viewport between frames. Screen-space position depends on
+// lgCanvas.ds.offset and ds.scale, which are non-reactive. When the user
+// pans or zooms, canvas-space `pos` is unchanged but the rendered style
+// must update — force pos reassignment whenever the viewport changes so
+// the downstream watcher in DomWidget recomputes style with current ds.
+let lastViewportOffsetX = Number.NaN
+let lastViewportOffsetY = Number.NaN
+let lastViewportScale = Number.NaN
+
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
@@ -32,6 +41,17 @@ const updateWidgets = () => {
   const lowQuality = lgCanvas.low_quality
   const currentGraph = lgCanvas.graph
   const seenWidgetIds = new Set<string>()
+
+  const viewportOffsetX = lgCanvas.ds.offset[0]
+  const viewportOffsetY = lgCanvas.ds.offset[1]
+  const viewportScale = lgCanvas.ds.scale
+  const viewportChanged =
+    lastViewportOffsetX !== viewportOffsetX ||
+    lastViewportOffsetY !== viewportOffsetY ||
+    lastViewportScale !== viewportScale
+  lastViewportOffsetX = viewportOffsetX
+  lastViewportOffsetY = viewportOffsetY
+  lastViewportScale = viewportScale
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
@@ -85,7 +105,11 @@ const updateWidgets = () => {
       const margin = widget.margin
       const newPosX = posNode.pos[0] + margin
       const newPosY = posNode.pos[1] + margin + posWidget.y
-      if (widgetState.pos[0] !== newPosX || widgetState.pos[1] !== newPosY) {
+      if (
+        viewportChanged ||
+        widgetState.pos[0] !== newPosX ||
+        widgetState.pos[1] !== newPosY
+      ) {
         widgetState.pos = [newPosX, newPosY]
       }
 
