@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -32,30 +33,20 @@ const tooltipDirectiveStub = {
   updated: vi.fn()
 }
 
-const SELECTORS = {
-  interruptAllButton: 'button[aria-label="Interrupt all running jobs"]',
-  clearQueuedButton: 'button[aria-label="Clear queued"]',
-  summaryRow: '.flex.items-center.gap-2',
-  currentNodeRow: '.flex.items-center.gap-1.text-text-secondary'
+const defaultProps = {
+  totalProgressStyle: { width: '65%' },
+  currentNodeProgressStyle: { width: '40%' },
+  totalPercentFormatted: '65%',
+  currentNodePercentFormatted: '40%',
+  currentNodeName: 'Sampler',
+  runningCount: 1,
+  queuedCount: 2,
+  bottomRowClass: 'flex custom-bottom-row'
 }
 
-const COPY = {
-  viewAllJobs: 'View all jobs'
-}
-
-const mountComponent = (props: Record<string, unknown> = {}) =>
-  mount(QueueOverlayActive, {
-    props: {
-      totalProgressStyle: { width: '65%' },
-      currentNodeProgressStyle: { width: '40%' },
-      totalPercentFormatted: '65%',
-      currentNodePercentFormatted: '40%',
-      currentNodeName: 'Sampler',
-      runningCount: 1,
-      queuedCount: 2,
-      bottomRowClass: 'flex custom-bottom-row',
-      ...props
-    },
+const renderComponent = (props: Record<string, unknown> = {}) =>
+  render(QueueOverlayActive, {
+    props: { ...defaultProps, ...props },
     global: {
       plugins: [i18n],
       directives: {
@@ -66,58 +57,65 @@ const mountComponent = (props: Record<string, unknown> = {}) =>
 
 describe('QueueOverlayActive', () => {
   it('renders progress metrics and emits actions when buttons clicked', async () => {
-    const wrapper = mountComponent({ runningCount: 2, queuedCount: 3 })
+    const user = userEvent.setup()
+    const interruptAllSpy = vi.fn()
+    const clearQueuedSpy = vi.fn()
+    const viewAllJobsSpy = vi.fn()
 
-    const progressBars = wrapper.findAll('.absolute.inset-0')
-    expect(progressBars[0].attributes('style')).toContain('width: 65%')
-    expect(progressBars[1].attributes('style')).toContain('width: 40%')
+    const { container } = renderComponent({
+      runningCount: 2,
+      queuedCount: 3,
+      onInterruptAll: interruptAllSpy,
+      onClearQueued: clearQueuedSpy,
+      onViewAllJobs: viewAllJobsSpy
+    })
 
-    const content = wrapper.text().replace(/\s+/g, ' ')
-    expect(content).toContain('Total: 65%')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const progressBars = container.querySelectorAll('.absolute.inset-0')
+    expect(progressBars[0]).toHaveStyle({ width: '65%' })
+    expect(progressBars[1]).toHaveStyle({ width: '40%' })
 
-    const [runningSection, queuedSection] = wrapper.findAll(
-      SELECTORS.summaryRow
+    expect(screen.getByText('65%')).toBeInTheDocument()
+
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('running')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('queued')).toBeInTheDocument()
+
+    expect(screen.getByText('Current node:')).toBeInTheDocument()
+    expect(screen.getByText('Sampler')).toBeInTheDocument()
+    expect(screen.getByText('40%')).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Interrupt all running jobs' })
     )
-    expect(runningSection.text()).toContain('2')
-    expect(runningSection.text()).toContain('running')
-    expect(queuedSection.text()).toContain('3')
-    expect(queuedSection.text()).toContain('queued')
+    expect(interruptAllSpy).toHaveBeenCalledOnce()
 
-    const currentNodeSection = wrapper.find(SELECTORS.currentNodeRow)
-    expect(currentNodeSection.text()).toContain('Current node:')
-    expect(currentNodeSection.text()).toContain('Sampler')
-    expect(currentNodeSection.text()).toContain('40%')
+    await user.click(screen.getByRole('button', { name: 'Clear queued' }))
+    expect(clearQueuedSpy).toHaveBeenCalledOnce()
 
-    const interruptButton = wrapper.get(SELECTORS.interruptAllButton)
-    await interruptButton.trigger('click')
-    expect(wrapper.emitted('interruptAll')).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'View all jobs' }))
+    expect(viewAllJobsSpy).toHaveBeenCalledOnce()
 
-    const clearQueuedButton = wrapper.get(SELECTORS.clearQueuedButton)
-    await clearQueuedButton.trigger('click')
-    expect(wrapper.emitted('clearQueued')).toHaveLength(1)
-
-    const buttons = wrapper.findAll('button')
-    const viewAllButton = buttons.find((btn) =>
-      btn.text().includes(COPY.viewAllJobs)
-    )
-    expect(viewAllButton).toBeDefined()
-    await viewAllButton!.trigger('click')
-    expect(wrapper.emitted('viewAllJobs')).toHaveLength(1)
-
-    expect(wrapper.find('.custom-bottom-row').exists()).toBe(true)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('.custom-bottom-row')).toBeTruthy()
   })
 
   it('hides action buttons when counts are zero', () => {
-    const wrapper = mountComponent({ runningCount: 0, queuedCount: 0 })
+    renderComponent({ runningCount: 0, queuedCount: 0 })
 
-    expect(wrapper.find(SELECTORS.interruptAllButton).exists()).toBe(false)
-    expect(wrapper.find(SELECTORS.clearQueuedButton).exists()).toBe(false)
+    expect(
+      screen.queryByRole('button', { name: 'Interrupt all running jobs' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Clear queued' })
+    ).not.toBeInTheDocument()
   })
 
   it('builds tooltip configs with translated strings', () => {
     const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
 
-    mountComponent()
+    renderComponent()
 
     expect(spy).toHaveBeenCalledWith('Cancel job')
     expect(spy).toHaveBeenCalledWith('Clear queue')

@@ -32,7 +32,9 @@
         </div>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
-        <span class="break-all text-muted-foreground">{{ asset.name }}</span>
+        <span class="break-all text-muted-foreground">{{
+          getAssetFilename(asset)
+        }}</span>
       </ModelInfoField>
       <ModelInfoField
         v-if="sourceUrl"
@@ -232,6 +234,7 @@ import {
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
+  getAssetFilename,
   getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
@@ -239,7 +242,7 @@ import {
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelInfoField from './ModelInfoField.vue'
 

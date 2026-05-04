@@ -29,7 +29,7 @@ import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -314,6 +314,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       </PropertiesAccordionItem>
       <div
         v-if="isSelectOutputsMode && !appModeStore.selectedOutputs.length"
+        data-testid="builder-output-placeholder"
         class="m-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-warning-background bg-warning-background/20 text-center text-sm text-warning-background"
       >
         {{ t('linearMode.builder.outputPlaceholder') }}

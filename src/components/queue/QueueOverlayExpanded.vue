@@ -13,14 +13,14 @@
       :selected-sort-mode="selectedSortMode"
       :has-failed-jobs="hasFailedJobs"
       @show-assets="$emit('showAssets')"
-      @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
+      @update:selected-job-tab="onUpdateSelectedJobTab"
       @update:selected-workflow-filter="
         $emit('update:selectedWorkflowFilter', $event)
       "
       @update:selected-sort-mode="$emit('update:selectedSortMode', $event)"
     />
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 flex-1">
       <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
         @cancel-item="onCancelItemEvent"
@@ -50,6 +50,7 @@ import type {
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
@@ -81,6 +82,7 @@ const emit = defineEmits<{
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const { jobMenuEntries } = useJobMenu(
   () => currentMenuItem.value,
@@ -93,6 +95,11 @@ const onCancelItemEvent = (item: JobListItem) => {
 
 const onDeleteItemEvent = (item: JobListItem) => {
   emit('deleteItem', item)
+}
+
+const onUpdateSelectedJobTab = (value: JobTab) => {
+  trackFeatureUsed()
+  emit('update:selectedJobTab', value)
 }
 
 const onMenuItem = (item: JobListItem, event: Event) => {

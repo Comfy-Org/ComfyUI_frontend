@@ -16,12 +16,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
 import TabInfo from './info/TabInfo.vue'
@@ -41,6 +42,7 @@ import TabErrors from './errors/TabErrors.vue'
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingMediaStore = useMissingMediaStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
@@ -58,6 +60,7 @@ const activeMissingNodeGraphIds = computed<Set<string>>(() => {
 })
 
 const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
+const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -142,13 +145,22 @@ const hasMissingModelSelected = computed(
     )
 )
 
+const hasMissingMediaSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingMediaGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
     hasMissingNodeSelected.value ||
-    hasMissingModelSelected.value
+    hasMissingModelSelected.value ||
+    hasMissingMediaSelected.value
   )
 })
 
@@ -287,11 +299,16 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <i
+            <Button
               v-if="!isEditing"
-              class="relative top-[2px] ml-2 icon-[lucide--pencil] size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              variant="link"
+              size="unset"
+              :aria-label="t('rightSidePanel.editTitle')"
+              class="relative top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
-            />
+            >
+              <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
+            </Button>
           </template>
           <template v-else>
             {{ panelTitle }}
@@ -303,6 +320,8 @@ function handleTitleCancel() {
             v-if="isSingleSubgraphNode"
             variant="secondary"
             size="icon"
+            data-testid="subgraph-editor-toggle"
+            :aria-label="t('rightSidePanel.editSubgraph')"
             :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(
@@ -337,6 +356,7 @@ function handleTitleCancel() {
             :key="tab.value"
             class="px-2 py-1 font-inter text-sm transition-all active:scale-95"
             :value="tab.value"
+            :data-testid="`panel-tab-${tab.value}`"
           >
             {{ tab.label() }}
             <i
