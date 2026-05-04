@@ -256,9 +256,9 @@ describe(assetService.uploadAssetFromBase64, () => {
   it('does not invalidate cached input assets when the upload response is invalid', async () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-      blob: vi.fn(async () => new Blob(['hello']))
-    } as unknown as Response)
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('hello'))
     fetchApiMock
       .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
       .mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))

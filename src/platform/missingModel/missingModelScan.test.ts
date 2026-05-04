@@ -19,6 +19,7 @@ import activeSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/a
 import bypassedSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/bypassedSubgraphUnmatchedModel.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 
 const { mockCheckAssetHash } = vi.hoisted(() => ({
   mockCheckAssetHash: vi.fn()
@@ -32,13 +33,19 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   ) => node._testExecutionId ?? String(node.id)
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    checkAssetHash: mockCheckAssetHash
-  },
-  toBlake3AssetHash: (hash: string | undefined) =>
-    hash && /^[0-9a-f]{64}$/i.test(hash) ? `blake3:${hash}` : null
-}))
+vi.mock('@/platform/assets/services/assetService', async () => {
+  const actual = await vi.importActual<typeof AssetServiceModule>(
+    '@/platform/assets/services/assetService'
+  )
+
+  return {
+    ...actual,
+    assetService: {
+      ...actual.assetService,
+      checkAssetHash: mockCheckAssetHash
+    }
+  }
+})
 
 /** Helper: create a combo widget mock */
 function makeComboWidget(
