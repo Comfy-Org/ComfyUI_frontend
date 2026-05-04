@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Node Header Actions', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -24,7 +24,7 @@ test.describe('Vue Node Header Actions', { tag: '@node' }, () => {
     await vueNode.toggleCollapse()
     await comfyPage.nextFrame()
 
-    await expect(vueNode.body).not.toBeVisible()
+    await expect(vueNode.body).toBeHidden()
   })
 
   test('Clicking collapse button again expands node', async ({ comfyPage }) => {
@@ -32,7 +32,7 @@ test.describe('Vue Node Header Actions', { tag: '@node' }, () => {
 
     await vueNode.toggleCollapse()
     await comfyPage.nextFrame()
-    await expect(vueNode.body).not.toBeVisible()
+    await expect(vueNode.body).toBeHidden()
 
     await vueNode.toggleCollapse()
     await comfyPage.nextFrame()
@@ -43,7 +43,7 @@ test.describe('Vue Node Header Actions', { tag: '@node' }, () => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
     await vueNode.header.dblclick()
-    await expect(vueNode.titleInput).toBeVisible()
+    await vueNode.titleEditor.expectVisible()
   })
 
   test('Title edit saves on Enter', async ({ comfyPage }) => {
@@ -60,8 +60,8 @@ test.describe('Vue Node Header Actions', { tag: '@node' }, () => {
     expect(await vueNode.getTitle()).toBe('Renamed Sampler')
 
     await vueNode.header.dblclick()
-    await vueNode.titleInput.fill('This Should Be Cancelled')
-    await vueNode.titleInput.press('Escape')
+    await vueNode.titleEditor.input.fill('This Should Be Cancelled')
+    await vueNode.titleEditor.cancel()
     await comfyPage.nextFrame()
 
     expect(await vueNode.getTitle()).toBe('Renamed Sampler')
