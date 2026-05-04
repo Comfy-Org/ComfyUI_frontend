@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { getPromotedWidgets } from '@e2e/helpers/promotedWidgets'
+import { getPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 
 test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
   test.describe('Nested subgraph configure order', () => {
