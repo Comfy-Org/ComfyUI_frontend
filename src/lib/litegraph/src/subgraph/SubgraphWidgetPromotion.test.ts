@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
   ISlotType,
   Subgraph,
@@ -409,7 +410,10 @@ describe('SubgraphWidgetPromotion', () => {
         String(samplerNode.id)
       )
       expect(hostNode.properties.proxyWidgets).toStrictEqual([
-        [String(nestedNode.id), 'noise_seed', String(samplerNode.id)]
+        [
+          String(nestedNode.id),
+          `${nestedNode.id}: ${samplerNode.id}: noise_seed`
+        ]
       ])
     })
 
@@ -430,8 +434,9 @@ describe('SubgraphWidgetPromotion', () => {
 
       // serialize() syncs the promotion store into properties.proxyWidgets
       const serialized = hostNode.serialize()
-      const originalProxyWidgets = serialized.properties!
-        .proxyWidgets as string[][]
+      const originalProxyWidgets = parseProxyWidgets(
+        serialized.properties?.proxyWidgets
+      )
 
       expect(originalProxyWidgets.length).toBeGreaterThan(0)
       expect(
@@ -441,7 +446,9 @@ describe('SubgraphWidgetPromotion', () => {
       // Simulate clone: create a second SubgraphNode configured from serialized data
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
-      const cloneProxyWidgets = cloneNode.properties.proxyWidgets as string[][]
+      const cloneProxyWidgets = parseProxyWidgets(
+        cloneNode.properties.proxyWidgets
+      )
 
       expect(cloneProxyWidgets.length).toBeGreaterThan(0)
       expect(

@@ -49,6 +49,7 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   makePromotionEntryKey,
@@ -662,17 +663,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _serializeEntries(
     entries: PromotedWidgetSource[]
-  ): (string[] | [string, string, string])[] {
-    return entries.map((e) =>
+  ): SerializedProxyWidgetTuple[] {
+    return entries.map((e) => [
+      e.sourceNodeId,
       e.disambiguatingSourceNodeId
-        ? [e.sourceNodeId, e.sourceWidgetName, e.disambiguatingSourceNodeId]
-        : [e.sourceNodeId, e.sourceWidgetName]
-    )
+        ? `${e.sourceNodeId}: ${e.disambiguatingSourceNodeId}: ${e.sourceWidgetName}`
+        : e.sourceWidgetName
+    ])
   }
 
   private _resolveLegacyEntry(
     widgetName: string
-  ): [string, string] | undefined {
+  ): SerializedProxyWidgetTuple | undefined {
     // Legacy -1 entries use the slot name as the widget name.
     // Find the input with that name, then trace to the connected interior widget.
     const input = this.inputs.find((i) => i.name === widgetName)

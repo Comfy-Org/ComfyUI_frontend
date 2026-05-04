@@ -21,6 +21,7 @@ import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetVi
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -72,7 +73,7 @@ function setupSubgraph(
 
 function setPromotions(
   subgraphNode: SubgraphNode,
-  entries: [string, string][]
+  entries: SerializedProxyWidgetTuple[]
 ) {
   usePromotionStore().setPromotions(
     subgraphNode.rootGraph.id,
