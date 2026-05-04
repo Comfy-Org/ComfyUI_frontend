@@ -473,11 +473,8 @@ function createAssetService() {
     }
     const data = await res.json()
 
-    // Validate the single asset response against our schema
-    const result = assetResponseSchema.safeParse({ assets: [data] })
-    if (result.success && result.data.assets?.[0]) {
-      return result.data.assets[0]
-    }
+    const result = assetItemSchema.safeParse(data)
+    if (result.success) return result.data
 
     const error = result.error
       ? fromZodError(result.error)
@@ -548,10 +545,7 @@ function createAssetService() {
       const batch = data.assets ?? []
       assets.push(...batch.filter((asset) => !asset.tags.includes(MISSING_TAG)))
 
-      const noMoreFromServer = data.has_more === false
-      const inferredLastPage =
-        data.has_more === undefined && batch.length < pageSize
-      if (batch.length === 0 || noMoreFromServer || inferredLastPage) {
+      if (batch.length === 0 || !data.has_more) {
         return assets
       }
 

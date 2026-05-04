@@ -1,3 +1,4 @@
+import { zListAssetsResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 // Zod schemas for asset API validation matching ComfyUI Assets REST API spec
@@ -21,9 +22,9 @@ const zAsset = z.object({
 })
 
 const zAssetResponse = z.object({
-  assets: z.array(zAsset).optional(),
-  total: z.number().optional(),
-  has_more: z.boolean().optional()
+  assets: z.array(zAsset),
+  total: zListAssetsResponse.shape.total,
+  has_more: zListAssetsResponse.shape.has_more
 })
 
 const zModelFolder = z.object({
