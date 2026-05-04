@@ -1,24 +1,35 @@
+import { useElementBounding } from '@vueuse/core'
+import type { ComputedRef } from 'vue'
+import { computed } from 'vue'
+
 import type { ViewportInsets } from '@/lib/litegraph/src/DragAndScale'
 
+let shared: ComputedRef<ViewportInsets> | null = null
+
 /**
- * Calculates the viewport insets by comparing the graph canvas element's
- * bounding rect with the visible graph-canvas-panel (the unobscured area
- * between sidebars/panels). Returns zero insets if elements are not found.
+ * Reactive insets representing the area of `#graph-canvas` obscured by the
+ * `.graph-canvas-panel` overlay (sidebar, right panel, etc.) on each side.
+ *
+ * Backed by VueUse's `useElementBounding`, which uses passive observers and
+ * caches reads, so call sites pay no per-call layout cost. Singleton — the
+ * underlying observers attach once for the app's lifetime.
  */
-export function getCanvasViewportInsets(): ViewportInsets {
-  const canvasEl = document.getElementById('graph-canvas')
-  const panelEl = document.querySelector('.graph-canvas-panel')
-  if (!canvasEl || !panelEl) return {}
+export function useCanvasViewportInsets(): ComputedRef<ViewportInsets> {
+  if (shared) return shared
 
-  const canvasRect = canvasEl.getBoundingClientRect()
-  const panelRect = panelEl.getBoundingClientRect()
+  const canvas = useElementBounding(() =>
+    document.getElementById('graph-canvas')
+  )
+  const panel = useElementBounding(() =>
+    document.querySelector<HTMLElement>('.graph-canvas-panel')
+  )
 
-  const left = Math.max(0, panelRect.left - canvasRect.left)
-  const right = Math.max(0, canvasRect.right - panelRect.right)
-  const top = Math.max(0, panelRect.top - canvasRect.top)
-  const bottom = Math.max(0, canvasRect.bottom - panelRect.bottom)
+  shared = computed<ViewportInsets>(() => ({
+    left: Math.max(0, panel.left.value - canvas.left.value),
+    right: Math.max(0, canvas.right.value - panel.right.value),
+    top: Math.max(0, panel.top.value - canvas.top.value),
+    bottom: Math.max(0, canvas.bottom.value - panel.bottom.value)
+  }))
 
-  if (left === 0 && right === 0 && top === 0 && bottom === 0) return {}
-
-  return { left, right, top, bottom }
+  return shared
 }

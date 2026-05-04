@@ -1,12 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { getCanvasViewportInsets } from './useCanvasViewportInsets'
-
-describe('getCanvasViewportInsets', () => {
+describe('useCanvasViewportInsets', () => {
   let canvasEl: HTMLElement
   let panelEl: HTMLElement
 
-  beforeEach(() => {
+  function mockRect(el: HTMLElement, rect: Partial<DOMRect>) {
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: 0,
+      height: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+      ...rect
+    })
+  }
+
+  beforeEach(async () => {
+    vi.resetModules()
+
     canvasEl = document.createElement('div')
     canvasEl.id = 'graph-canvas'
     document.body.appendChild(canvasEl)
@@ -22,91 +38,85 @@ describe('getCanvasViewportInsets', () => {
     vi.restoreAllMocks()
   })
 
-  it('returns empty object when canvas element is not found', () => {
-    canvasEl.remove()
-    expect(getCanvasViewportInsets()).toEqual({})
+  async function load() {
+    const mod = await import('./useCanvasViewportInsets')
+    return mod.useCanvasViewportInsets()
+  }
+
+  it('returns a singleton across calls', async () => {
+    const { useCanvasViewportInsets } =
+      await import('./useCanvasViewportInsets')
+    expect(useCanvasViewportInsets()).toBe(useCanvasViewportInsets())
   })
 
-  it('returns empty object when panel element is not found', () => {
-    panelEl.remove()
-    expect(getCanvasViewportInsets()).toEqual({})
-  })
-
-  it('returns empty object when rects are identical', () => {
+  it('reports zero insets when canvas and panel are coincident', async () => {
     const rect = {
       left: 0,
       right: 1920,
       top: 0,
       bottom: 1080,
       width: 1920,
-      height: 1080,
-      x: 0,
-      y: 0,
-      toJSON: () => {}
+      height: 1080
     }
-    vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(rect)
-    vi.spyOn(panelEl, 'getBoundingClientRect').mockReturnValue(rect)
+    mockRect(canvasEl, rect)
+    mockRect(panelEl, rect)
 
-    expect(getCanvasViewportInsets()).toEqual({})
+    const insets = await load()
+    await nextTick()
+    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
   })
 
-  it('computes left/right insets from panel offset', () => {
-    vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue({
+  it('computes left/right insets from a centered panel', async () => {
+    mockRect(canvasEl, {
       left: 0,
       right: 1920,
       top: 0,
       bottom: 1080,
       width: 1920,
-      height: 1080,
-      x: 0,
-      y: 0,
-      toJSON: () => {}
+      height: 1080
     })
-    vi.spyOn(panelEl, 'getBoundingClientRect').mockReturnValue({
+    mockRect(panelEl, {
       left: 300,
       right: 1620,
       top: 0,
       bottom: 1080,
       width: 1320,
       height: 1080,
-      x: 300,
-      y: 0,
-      toJSON: () => {}
+      x: 300
     })
 
-    const insets = getCanvasViewportInsets()
-    expect(insets.left).toBe(300)
-    expect(insets.right).toBe(300)
-    expect(insets.top).toBe(0)
-    expect(insets.bottom).toBe(0)
+    const insets = await load()
+    await nextTick()
+    expect(insets.value).toMatchObject({
+      left: 300,
+      right: 300,
+      top: 0,
+      bottom: 0
+    })
   })
 
-  it('computes right-side-only inset for right panel', () => {
-    vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue({
+  it('clamps negative differences to zero', async () => {
+    mockRect(canvasEl, {
+      left: 100,
+      right: 1820,
+      top: 50,
+      bottom: 1030,
+      width: 1720,
+      height: 980,
+      x: 100,
+      y: 50
+    })
+    mockRect(panelEl, {
       left: 0,
       right: 1920,
       top: 0,
       bottom: 1080,
       width: 1920,
-      height: 1080,
-      x: 0,
-      y: 0,
-      toJSON: () => {}
-    })
-    vi.spyOn(panelEl, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      right: 1620,
-      top: 0,
-      bottom: 1080,
-      width: 1620,
-      height: 1080,
-      x: 0,
-      y: 0,
-      toJSON: () => {}
+      height: 1080
     })
 
-    const insets = getCanvasViewportInsets()
-    expect(insets.left).toBe(0)
-    expect(insets.right).toBe(300)
+    const insets = await load()
+    await nextTick()
+    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
   })
 })
