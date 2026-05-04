@@ -3596,7 +3596,7 @@ const translations = {
   'customers.feedback.role3': {
     en: 'Head of AI at Creative Studios',
     'zh-CN': 'Creative Studios AI 负责人'
-  }
+  },
 
   // Models – UI keys
   'models.hero.eyebrow': {

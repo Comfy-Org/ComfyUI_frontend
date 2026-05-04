@@ -101,7 +101,7 @@ const isPartnerNode = directory === 'partner_nodes'
       </div>
 
       <div v-if="blogUrl" class="flex gap-4 text-sm text-white/50">
-        <a :href="blogUrl" target="_blank" class="hover:text-white/80 underline">
+        <a :href="blogUrl" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">
           Read blog post
         </a>
       </div>
