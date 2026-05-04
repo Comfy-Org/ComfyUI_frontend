@@ -15,7 +15,7 @@ import {
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { normalizeLinearData, useAppModeStore } from '@/stores/appModeStore'
 import type {
   WorkflowMenuAction,
   WorkflowMenuItem
@@ -229,7 +229,7 @@ export function useWorkflowActionsMenu(
       : workflow?.changeTracker?.activeState?.extra?.linearData
     let hasLinearData: boolean
     if (rawLd) {
-      const { inputs, outputs } = pruneLinearData(rawLd)
+      const { inputs, outputs } = pruneLinearData(normalizeLinearData(rawLd))
       hasLinearData = inputs.length > 0 || outputs.length > 0
     } else {
       hasLinearData = workflow?.path?.endsWith('.app.json') ?? false
