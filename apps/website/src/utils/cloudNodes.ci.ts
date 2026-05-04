@@ -33,7 +33,13 @@ function buildAnnotations(outcome: FetchOutcome): string[] {
     if (outcome.droppedCount === 0) return []
     const nodeCount = outcome.droppedCount === 1 ? 'node' : 'nodes'
     const drops = outcome.droppedNodes
-      .map((d) => `  - ${d.name ? `"${d.name}"` : '(unnamed)'}: ${d.reason}`)
+      .map((d) => {
+        const name = escapeAnnotation(
+          d.name ? `"${d.name}"` : '(unnamed)'
+        )
+        const reason = escapeAnnotation(d.reason)
+        return `  - ${name}: ${reason}`
+      })
       .join('%0A')
     return [
       `::warning title=Cloud nodes: dropped ${outcome.droppedCount} invalid ${nodeCount}::Dropped nodes:%0A${drops}%0A%0AAction items:%0A  1. Verify node definitions returned by cloud /api/object_info.%0A  2. If a valid node shape changed, update @comfyorg/object-info-parser/src/schemas/nodeDefSchema.ts and add tests.%0A  3. Dropped nodes are not shown on /cloud/supported-nodes until fixed.`
@@ -64,7 +70,10 @@ function staleAnnotation(reason: string): string {
 }
 
 function escapeAnnotation(value: string): string {
-  return value.replace(/\r?\n/g, '%0A').replace(/\r/g, '%0D')
+  return value
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A')
 }
 
 function buildStepSummary(outcome: FetchOutcome): string {

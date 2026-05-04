@@ -213,10 +213,16 @@ async function parseCloudNodes(
     validDefs as Record<string, NonNullable<(typeof validDefs)[string]>>
   )
   const grouped = groupNodesByPack(sanitizedDefs)
-  const registryMap = await fetchRegistryPacks(
-    grouped.map((pack) => pack.id),
-    { fetchImpl: options.fetchImpl }
-  )
+
+  let registryMap = new Map<string, RegistryPack | null>()
+  try {
+    registryMap = await fetchRegistryPacks(
+      grouped.map((pack) => pack.id),
+      { fetchImpl: options.fetchImpl }
+    )
+  } catch {
+    registryMap = new Map()
+  }
 
   const packs = grouped.map((pack) =>
     toDomainPack(
@@ -228,6 +234,18 @@ async function parseCloudNodes(
   )
 
   return { kind: 'ok', packs, droppedNodes }
+}
+
+function safeExternalUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined
+    if (!url.host) return undefined
+    return url.toString()
+  } catch {
+    return undefined
+  }
 }
 
 function toDomainPack(
@@ -250,9 +268,9 @@ function toDomainPack(
     registryId: registryPack?.id,
     displayName: registryPack?.name?.trim() || fallbackDisplayName || packId,
     description: registryPack?.description?.trim() || undefined,
-    bannerUrl: registryPack?.banner_url,
-    iconUrl: registryPack?.icon,
-    repoUrl: registryPack?.repository,
+    bannerUrl: safeExternalUrl(registryPack?.banner_url),
+    iconUrl: safeExternalUrl(registryPack?.icon),
+    repoUrl: safeExternalUrl(registryPack?.repository),
     publisher: registryPack?.publisher?.id
       ? {
           id: registryPack.publisher.id,

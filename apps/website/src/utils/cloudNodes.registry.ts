@@ -37,6 +37,9 @@ export async function fetchRegistryPacks(
       timeoutMs
     )
     if (!nodes) {
+      for (const packId of batch) {
+        resolved.set(packId, null)
+      }
       continue
     }
 

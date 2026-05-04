@@ -37,7 +37,16 @@ export interface NodesSnapshot {
 export function isNodesSnapshot(value: unknown): value is NodesSnapshot {
   if (value === null || typeof value !== 'object') return false
   const candidate = value as { fetchedAt?: unknown; packs?: unknown }
-  return (
-    typeof candidate.fetchedAt === 'string' && Array.isArray(candidate.packs)
-  )
+  if (typeof candidate.fetchedAt !== 'string') return false
+  if (!Array.isArray(candidate.packs)) return false
+
+  return candidate.packs.every((pack) => {
+    if (pack === null || typeof pack !== 'object') return false
+    const p = pack as { id?: unknown; displayName?: unknown; nodes?: unknown }
+    return (
+      typeof p.id === 'string' &&
+      typeof p.displayName === 'string' &&
+      Array.isArray(p.nodes)
+    )
+  })
 }
