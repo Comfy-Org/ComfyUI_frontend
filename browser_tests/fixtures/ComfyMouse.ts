@@ -66,6 +66,45 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.drop(options)
   }
 
+  /**
+   * Middle mouse button drag-and-drop. Used by the MMB pan tests across the
+   * graph canvas, widget surfaces (textarea / markdown), and the mask editor
+   * canvas to verify the pan gesture forwards correctly from each surface.
+   */
+  async mmbDrag(
+    from: Position,
+    to: Position,
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await this.dragAndDrop(from, to, { ...options, button: 'middle' })
+  }
+
+  /**
+   * Middle-button drag anchored at the center of a locator's bounding box.
+   * Asserts visibility, resolves the center, and delegates to {@link mmbDrag}.
+   * Collapses the `boundingBox()` + center-math + `mmbDrag` boilerplate that
+   * repeats across MMB pan tests.
+   */
+  async mmbDragFromCenter(
+    locator: Locator,
+    delta: { dx: number; dy: number },
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await locator.waitFor({ state: 'visible' })
+    const box = await locator.boundingBox()
+    if (!box) throw new Error('mmbDragFromCenter: bounding box not found')
+
+    const start = {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2
+    }
+    await this.mmbDrag(
+      start,
+      { x: start.x + delta.dx, y: start.y + delta.dy },
+      options
+    )
+  }
+
   /** @see {@link Mouse.move} */
   async move(to: Position, options = ComfyMouse.defaultOptions) {
     await this.mouse.move(to.x, to.y, options)

@@ -54,4 +54,40 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await textarea.click({ button: 'right' })
     await expect(vueContextMenu).toBeVisible()
   })
+
+  test(
+    'Middle-click drag on textarea should pan canvas',
+    { tag: ['@screenshot', '@canvas'] },
+    async ({ comfyPage, comfyMouse }) => {
+      const textarea = getFirstMultilineStringWidget(comfyPage)
+      await comfyMouse.mmbDragFromCenter(
+        textarea,
+        { dx: 120, dy: 80 },
+        { steps: 10 }
+      )
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-paned-with-mmb-over-textarea.png'
+      )
+    }
+  )
+
+  test(
+    'Middle-click drag on markdown widget should pan canvas',
+    { tag: ['@screenshot', '@canvas'] },
+    async ({ comfyPage, comfyMouse }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
+
+      const markdownWidget = comfyPage.page.locator('.widget-markdown').first()
+      await comfyMouse.mmbDragFromCenter(
+        markdownWidget,
+        { dx: 120, dy: 80 },
+        { steps: 10 }
+      )
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-paned-with-mmb-over-markdown.png'
+      )
+    }
+  )
 })

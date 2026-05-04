@@ -8,6 +8,11 @@
         v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
+        <!-- Native drag area for Electron -->
+        <div
+          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
+        />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
@@ -119,7 +124,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -184,6 +189,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
@@ -599,7 +605,11 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
-  if (!isMiddlePointerInput(e)) return
+  // Bound to pointerdown, pointerup, AND pointermove (see template capture
+  // handlers). isMiddleForPointerEvent picks the right helper per event type
+  // so the forwarder survives chorded moves without misclassifying chorded
+  // pointerdowns.
+  if (!isMiddleForPointerEvent(e)) return
   if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 

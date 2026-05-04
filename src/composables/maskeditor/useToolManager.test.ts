@@ -440,6 +440,13 @@ describe('useToolManager', () => {
       expect(mockBrushDrawing.handleDrawing).not.toHaveBeenCalled()
     })
 
+    it('should not pan on chorded middle and left button drag', async () => {
+      const tm = setup()
+      await tm.handlePointerMove(pointerEvent({ buttons: 5 }))
+
+      expect(mockPanZoom.handlePanMove).not.toHaveBeenCalled()
+    })
+
     it('should pan on left button + space drag', async () => {
       const tm = setup()
       mockKeyboard.isKeyDown.mockImplementation((k) => k === ' ')

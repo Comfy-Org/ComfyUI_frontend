@@ -100,6 +100,25 @@ describe('useTransformSettling', () => {
     expect(isTransforming.value).toBe(false)
   })
 
+  it('should treat middle-click as pan', async () => {
+    const { isTransforming } = useTransformSettling(element, {
+      settleDelay: 200
+    })
+
+    element.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 1 })
+    )
+    element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await nextTick()
+
+    expect(isTransforming.value).toBe(true)
+
+    element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+    vi.advanceTimersByTime(200)
+
+    expect(isTransforming.value).toBe(false)
+  })
+
   it('should not track pointermove without pointerdown', async () => {
     const { isTransforming } = useTransformSettling(element)
 

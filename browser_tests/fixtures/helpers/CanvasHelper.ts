@@ -264,6 +264,18 @@ export class CanvasHelper {
     await this.page.mouse.up({ button: 'middle' })
   }
 
+  async middleClickDrag(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    options?: { steps?: number }
+  ): Promise<void> {
+    const { steps = 10 } = options ?? {}
+    await this.page.mouse.move(from.x, from.y)
+    await this.page.mouse.down({ button: 'middle' })
+    await this.page.mouse.move(to.x, to.y, { steps })
+    await this.page.mouse.up({ button: 'middle' })
+  }
+
   async disconnectEdge(
     options: { modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[] } = {}
   ): Promise<void> {

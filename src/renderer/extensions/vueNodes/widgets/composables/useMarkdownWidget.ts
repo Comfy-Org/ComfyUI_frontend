@@ -7,9 +7,9 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
@@ -65,74 +65,34 @@ function addMarkdownWidget(
   widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
 
-  const controller = new AbortController()
-  const { signal } = controller
-
-  inputEl.addEventListener(
-    'input',
-    (event) => {
-      if (event.target instanceof HTMLTextAreaElement) {
-        widget.value = event.target.value
-      }
-      widget.callback?.(widget.value)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'dblclick',
-    () => {
-      inputEl.classList.add('editing')
-      setTimeout(() => textarea.focus(), 0)
-    },
-    { signal }
-  )
-
-  textarea.addEventListener('blur', () => inputEl.classList.remove('editing'), {
-    signal
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
+    widget.callback?.(widget.value)
   })
 
-  textarea.addEventListener(
-    'change',
-    () => {
-      editor.commands.setContent(textarea.value)
-      widget.callback?.(widget.value)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener('keydown', (event) => event.stopPropagation(), {
-    signal
+  inputEl.addEventListener('dblclick', () => {
+    inputEl.classList.add('editing')
+    setTimeout(() => {
+      textarea.focus()
+    }, 0)
   })
 
-  inputEl.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (event.button === 1) app.canvas.processMouseDown(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointermove',
-    (event) => {
-      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointerup',
-    (event) => {
-      if (event.button === 1) app.canvas.processMouseUp(event)
-    },
-    { signal }
-  )
-
-  widget.onRemove = useChainCallback(widget.onRemove, () => {
-    controller.abort()
-    if (!editor.isDestroyed) editor.destroy()
+  textarea.addEventListener('blur', () => {
+    inputEl.classList.remove('editing')
   })
+
+  textarea.addEventListener('change', () => {
+    editor.commands.setContent(textarea.value)
+    widget.callback?.(widget.value)
+  })
+
+  inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
+    event.stopPropagation()
+  })
+
+  forwardMiddleButtonToCanvas(inputEl)
 
   return widget
 }
