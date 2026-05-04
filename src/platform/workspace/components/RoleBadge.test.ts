@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
@@ -17,8 +17,8 @@ const i18n = createI18n({
   }
 })
 
-function mountRoleBadge(role: 'owner' | 'member') {
-  return mount(RoleBadge, {
+function renderRoleBadge(role: 'owner' | 'member') {
+  return render(RoleBadge, {
     props: { role },
     global: { plugins: [i18n] }
   })
@@ -26,12 +26,12 @@ function mountRoleBadge(role: 'owner' | 'member') {
 
 describe('RoleBadge', () => {
   it('renders the owner label', () => {
-    const wrapper = mountRoleBadge('owner')
-    expect(wrapper.text()).toBe('Owner')
+    renderRoleBadge('owner')
+    expect(screen.getByText('Owner')).toBeInTheDocument()
   })
 
   it('renders the member label', () => {
-    const wrapper = mountRoleBadge('member')
-    expect(wrapper.text()).toBe('Member')
+    renderRoleBadge('member')
+    expect(screen.getByText('Member')).toBeInTheDocument()
   })
 })

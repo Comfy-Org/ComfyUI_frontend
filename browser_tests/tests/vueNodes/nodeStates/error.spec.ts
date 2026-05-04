@@ -1,41 +1,228 @@
+import { mergeTests } from '@playwright/test'
+
 import {
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import {
+  cleanupFakeModel,
+  dismissErrorOverlay,
+  enableErrorsOverlay
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  ExecutionHelper,
+  buildKSamplerError
+} from '@e2e/fixtures/helpers/ExecutionHelper'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const ERROR_CLASS = /ring-destructive-background/
+const UNKNOWN_NODE_ID = '1'
+const INNER_EXECUTION_ID = '2:1'
 
-test.describe('Vue Node Error', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
     comfyPage
   }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
-    // Expect error state on missing unknown node
-    const unknownNode = comfyPage.page
-      .locator('[data-node-id]')
-      .filter({ hasText: 'UNKNOWN NODE' })
-      .getByTestId('node-inner-wrapper')
-    await expect(unknownNode).toHaveClass(ERROR_CLASS)
+    await expect(
+      comfyPage.vueNodes.getNodeInnerWrapper(UNKNOWN_NODE_ID)
+    ).toHaveClass(ERROR_CLASS)
   })
 
   test('should display error state when node causes execution error', async ({
     comfyPage
   }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+    const raiseErrorId =
+      await comfyPage.vueNodes.getNodeIdByTitle('Raise Error')
     await comfyPage.runButton.click()
 
-    const raiseErrorNode = comfyPage.page
-      .locator('[data-node-id]')
-      .filter({ hasText: 'Raise Error' })
-      .getByTestId('node-inner-wrapper')
-    await expect(raiseErrorNode).toHaveClass(ERROR_CLASS)
+    await expect(
+      comfyPage.vueNodes.getNodeInnerWrapper(raiseErrorId)
+    ).toHaveClass(ERROR_CLASS)
+  })
+
+  test.describe('validation errors', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await enableErrorsOverlay(comfyPage)
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    })
+
+    test('shows error ring when a validation error is returned for a node', async ({
+      comfyPage
+    }) => {
+      const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+      const exec = new ExecutionHelper(comfyPage)
+      await exec.mockValidationFailure({
+        [ksamplerId]: buildKSamplerError(
+          'value_bigger_than_max',
+          'steps',
+          'steps: 99999 is bigger than max 10000'
+        )
+      })
+
+      await comfyPage.runButton.click()
+
+      await expect(
+        comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
+      ).toHaveClass(ERROR_CLASS)
+    })
+
+    test('clears error ring when user edits an out-of-range number widget back into range', async ({
+      comfyPage
+    }) => {
+      const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
+      const exec = new ExecutionHelper(comfyPage)
+
+      await test.step('queue with out-of-range steps to surface the error', async () => {
+        await exec.mockValidationFailure({
+          [ksamplerId]: buildKSamplerError(
+            'value_bigger_than_max',
+            'steps',
+            'steps: 99999 is bigger than max 10000'
+          )
+        })
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
+        await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+      })
+
+      await test.step('edit steps widget so the new value is within range', async () => {
+        const stepsWidget = comfyPage.vueNodes.getWidgetByName(
+          'KSampler',
+          'steps'
+        )
+        const controls = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
+        // ScrubableNumberInput commits on blur — explicit blur avoids a race
+        // with the keyup-Enter handler in case Enter is consumed elsewhere.
+        await controls.input.fill('25')
+        await controls.input.blur()
+      })
+
+      await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
+    })
+
+    test('clears error ring when user picks a different combo option', async ({
+      comfyPage
+    }) => {
+      const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
+      const exec = new ExecutionHelper(comfyPage)
+
+      await test.step('queue with invalid sampler to surface the error', async () => {
+        await exec.mockValidationFailure({
+          [ksamplerId]: buildKSamplerError(
+            'value_not_in_list',
+            'sampler_name',
+            'sampler_name: bogus_sampler is not in list'
+          )
+        })
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
+        await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+      })
+
+      await test.step('select a different sampler option', async () => {
+        await comfyPage.vueNodes.selectComboOption(
+          'KSampler',
+          'sampler_name',
+          'dpmpp_2m'
+        )
+      })
+
+      await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
+    })
+  })
+
+  test.describe('subgraph propagation', { tag: '@subgraph' }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await enableErrorsOverlay(comfyPage)
+      await cleanupFakeModel(comfyPage)
+    })
+
+    test('parent subgraph node shows error ring when an interior node is missing', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
+      const subgraphParentId = await comfyPage.vueNodes.getNodeIdByTitle(
+        'Subgraph with Missing Node'
+      )
+
+      await expect(
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
+      ).toHaveClass(ERROR_CLASS)
+    })
+
+    test('parent subgraph node shows error ring when an interior node has a missing model', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_in_subgraph'
+      )
+      const subgraphParentId = await comfyPage.vueNodes.getNodeIdByTitle(
+        'Subgraph with Missing Model'
+      )
+
+      await expect(
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
+      ).toHaveClass(ERROR_CLASS)
+    })
+
+    test('parent subgraph node shows error ring when an interior node fails execution', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      const subgraphParentId =
+        await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
+      const innerWrapper =
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
+      await expect(
+        innerWrapper,
+        'subgraph parent must mount before injecting WS execution_error'
+      ).toBeVisible()
+      await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
+
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      exec.executionError(
+        'mocked-prompt',
+        INNER_EXECUTION_ID,
+        'boom inside the subgraph'
+      )
+
+      await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+    })
+
+    test('parent subgraph node shows error ring when interior node has a validation error', async ({
+      comfyPage
+    }) => {
+      // Validation errors are keyed by execution id, so an interior error
+      // ("2:1") must propagate the ring up to the root-level subgraph
+      // container ("2") via errorAncestorExecutionIds.
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      const subgraphParentId =
+        await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
+      const innerWrapper =
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
+      await expect(innerWrapper).toBeVisible()
+      await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
+
+      const exec = new ExecutionHelper(comfyPage)
+      await exec.mockValidationFailure({
+        [INNER_EXECUTION_ID]: buildKSamplerError(
+          'value_bigger_than_max',
+          'steps',
+          'steps: 99999 is bigger than max 10000'
+        )
+      })
+      await comfyPage.runButton.click()
+
+      await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+    })
   })
 })

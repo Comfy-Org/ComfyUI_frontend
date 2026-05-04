@@ -15,11 +15,15 @@ browser_tests/
 │   ├── VueNodeHelpers.ts - Vue Nodes 2.0 helpers
 │   ├── selectors.ts      - Centralized TestIds
 │   ├── data/             - Static test data (mock API responses, workflow JSONs, node definitions)
-│   ├── components/       - Page object components (locators, user interactions)
+│   ├── components/       - Page object classes (locators, user interactions)
+│   │   ├── Actionbar.ts
 │   │   ├── ContextMenu.ts
+│   │   ├── ManageGroupNode.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
-│   │   └── Topbar.ts
+│   │   ├── Templates.ts
+│   │   ├── Topbar.ts
+│   │   └── ...
 │   ├── helpers/          - Focused helper classes (domain-specific actions)
 │   │   ├── CanvasHelper.ts
 │   │   ├── CommandHelper.ts
@@ -28,17 +32,69 @@ browser_tests/
 │   │   ├── SettingsHelper.ts
 │   │   ├── WorkflowHelper.ts
 │   │   └── ...
-│   └── utils/            - Pure utility functions (no page dependency)
-├── helpers/          - Test-specific utilities
+│   └── utils/            - Standalone utility functions (used by tests or fixtures)
+│       ├── builderTestUtils.ts
+│       ├── clipboardSpy.ts
+│       ├── fitToView.ts
+│       ├── perfReporter.ts
+│       └── ...
 └── tests/            - Test files (*.spec.ts)
 ```
 
 ### Architectural Separation
 
 - **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
-- **`fixtures/components/`** — Page object components. Encapsulate locators and user interactions for a specific UI area.
-- **`fixtures/helpers/`** — Focused helper classes. Domain-specific actions that coordinate multiple page objects (e.g. canvas operations, workflow loading).
-- **`fixtures/utils/`** — Pure utility functions. No `Page` dependency; stateless helpers that can be used anywhere.
+- **`fixtures/components/`** — Page object components. Classes that own locators for a specific UI region (e.g. `Actionbar`, `ContextMenu`, `ManageGroupNode`).
+- **`fixtures/helpers/`** — Helper classes that coordinate actions across multiple regions without owning a locator surface of their own (e.g. `CanvasHelper`, `WorkflowHelper`, `NodeOperationsHelper`).
+- **`fixtures/utils/`** — Standalone utility functions. Exported functions (not classes) used by tests or fixtures (e.g. `fitToView`, `clipboardSpy`, `builderTestUtils`).
+
+### Placement Rule
+
+When adding a new file, use this decision tree:
+
+```mermaid
+flowchart TD
+    A[New file in browser_tests/fixtures/] --> B{Has any code?}
+    B -- No, JSON/data only --> D[fixtures/data/]
+    B -- Yes --> C{Is it a class?}
+    C -- No, exported functions --> U[fixtures/utils/]
+    C -- Yes --> E{Owns locators for a<br/>specific UI region?}
+    E -- Yes --> P[fixtures/components/]
+    E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
+```
+
+## Page Object Locator Style
+
+Define UI element locators as `public readonly` properties assigned in the constructor — not as getter methods. Getters that simply return a locator add unnecessary indirection and hide the object shape from IDE auto-complete.
+
+```typescript
+// ✅ Correct — public readonly, assigned in constructor
+export class MyDialog extends BaseDialog {
+  public readonly submitButton: Locator
+  public readonly cancelButton: Locator
+
+  constructor(page: Page) {
+    super(page)
+    this.submitButton = this.root.getByRole('button', { name: 'Submit' })
+    this.cancelButton = this.root.getByRole('button', { name: 'Cancel' })
+  }
+}
+
+// ❌ Avoid — getter-based locators
+export class MyDialog extends BaseDialog {
+  get submitButton() {
+    return this.root.getByRole('button', { name: 'Submit' })
+  }
+}
+```
+
+**Keep as getters only when:**
+
+- Lazy initialization is needed (`this._tab ??= new Tab(this.page)`)
+- The value is computed from runtime state (e.g. `get id() { return this.userIds[index] }`)
+- It's a private convenience accessor (e.g. `private get page() { return this.comfyPage.page }`)
+
+When a class has cached locator properties, prefer reusing them in methods rather than rebuilding locators from scratch.
 
 ## Polling Assertions
 

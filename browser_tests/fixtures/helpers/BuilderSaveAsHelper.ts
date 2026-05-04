@@ -3,71 +3,59 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class BuilderSaveAsHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  /** The save-as dialog (scoped by aria-labelledby). */
+  public readonly dialog: Locator
+  /** The post-save success dialog (scoped by aria-labelledby). */
+  public readonly successDialog: Locator
+  public readonly title: Locator
+  public readonly radioGroup: Locator
+  public readonly nameInput: Locator
+  public readonly saveButton: Locator
+  public readonly successMessage: Locator
+  public readonly viewAppButton: Locator
+  public readonly closeButton: Locator
+  /** The X button to dismiss the success dialog without any action. */
+  public readonly dismissButton: Locator
+  public readonly exitBuilderButton: Locator
+  public readonly overwriteDialog: Locator
+  public readonly overwriteButton: Locator
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.dialog = this.page.locator('[aria-labelledby="builder-save"]')
+    this.successDialog = this.page.locator(
+      '[aria-labelledby="builder-save-success"]'
+    )
+    this.title = this.dialog.getByText('Save as')
+    this.radioGroup = this.dialog.getByRole('radiogroup')
+    this.nameInput = this.dialog.getByRole('textbox')
+    this.saveButton = this.dialog.getByRole('button', { name: 'Save' })
+    this.successMessage = this.successDialog.getByText('Successfully saved')
+    this.viewAppButton = this.successDialog.getByRole('button', {
+      name: 'View app'
+    })
+    this.closeButton = this.successDialog
+      .getByRole('button', { name: 'Close', exact: true })
+      .filter({ hasText: 'Close' })
+    this.dismissButton = this.successDialog.locator(
+      'button.p-dialog-close-button'
+    )
+    this.exitBuilderButton = this.successDialog.getByRole('button', {
+      name: 'Exit builder'
+    })
+    this.overwriteDialog = this.page.getByRole('dialog', {
+      name: 'Overwrite existing file?'
+    })
+    this.overwriteButton = this.overwriteDialog.getByRole('button', {
+      name: 'Overwrite'
+    })
+  }
 
   private get page(): Page {
     return this.comfyPage.page
   }
 
-  /** The save-as dialog (scoped by aria-labelledby). */
-  get dialog(): Locator {
-    return this.page.locator('[aria-labelledby="builder-save"]')
-  }
-
-  /** The post-save success dialog (scoped by aria-labelledby). */
-  get successDialog(): Locator {
-    return this.page.locator('[aria-labelledby="builder-save-success"]')
-  }
-
-  get title(): Locator {
-    return this.dialog.getByText('Save as')
-  }
-
-  get radioGroup(): Locator {
-    return this.dialog.getByRole('radiogroup')
-  }
-
-  get nameInput(): Locator {
-    return this.dialog.getByRole('textbox')
-  }
-
   viewTypeRadio(viewType: 'App' | 'Node graph'): Locator {
     return this.dialog.getByRole('radio', { name: viewType })
-  }
-
-  get saveButton(): Locator {
-    return this.dialog.getByRole('button', { name: 'Save' })
-  }
-
-  get successMessage(): Locator {
-    return this.successDialog.getByText('Successfully saved')
-  }
-
-  get viewAppButton(): Locator {
-    return this.successDialog.getByRole('button', { name: 'View app' })
-  }
-
-  get closeButton(): Locator {
-    return this.successDialog
-      .getByRole('button', { name: 'Close', exact: true })
-      .filter({ hasText: 'Close' })
-  }
-
-  /** The X button to dismiss the success dialog without any action. */
-  get dismissButton(): Locator {
-    return this.successDialog.locator('button.p-dialog-close-button')
-  }
-
-  get exitBuilderButton(): Locator {
-    return this.successDialog.getByRole('button', { name: 'Exit builder' })
-  }
-
-  get overwriteDialog(): Locator {
-    return this.page.getByRole('dialog', { name: 'Overwrite existing file?' })
-  }
-
-  get overwriteButton(): Locator {
-    return this.overwriteDialog.getByRole('button', { name: 'Overwrite' })
   }
 
   async fillAndSave(workflowName: string, viewType: 'App' | 'Node graph') {

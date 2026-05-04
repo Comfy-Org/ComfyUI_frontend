@@ -1,5 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
-/* eslint-disable vue/no-unused-emit-declarations */
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'

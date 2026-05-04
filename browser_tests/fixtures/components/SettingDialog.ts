@@ -1,15 +1,22 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
 export class SettingDialog extends BaseDialog {
+  public readonly searchBox: Locator
+  public readonly categories: Locator
+  public readonly contentArea: Locator
+
   constructor(
     page: Page,
     public readonly comfyPage: ComfyPage
   ) {
     super(page, TestIds.dialogs.settings)
+    this.searchBox = this.root.getByPlaceholder(/Search/)
+    this.categories = this.root.locator('nav').getByRole('button')
+    this.contentArea = this.root.getByRole('main')
   }
 
   async open() {
@@ -36,20 +43,8 @@ export class SettingDialog extends BaseDialog {
     await settingInputDiv.locator('input').click()
   }
 
-  get searchBox() {
-    return this.root.getByPlaceholder(/Search/)
-  }
-
-  get categories() {
-    return this.root.locator('nav').getByRole('button')
-  }
-
   category(name: string) {
     return this.root.locator('nav').getByRole('button', { name })
-  }
-
-  get contentArea() {
-    return this.root.getByRole('main')
   }
 
   async goToAboutPanel() {
@@ -57,6 +52,6 @@ export class SettingDialog extends BaseDialog {
       name: 'About'
     })
     await aboutButton.click()
-    await this.page.waitForSelector('.about-container')
+    await this.page.locator('.about-container').waitFor()
   }
 }

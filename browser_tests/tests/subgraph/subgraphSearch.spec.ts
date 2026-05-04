@@ -15,15 +15,14 @@ async function exitSubgraphAndPublish(
   subgraphNode: Awaited<ReturnType<typeof createSubgraphAndNavigateInto>>,
   blueprintName: string
 ) {
-  await comfyPage.page.keyboard.press('Escape')
-  await comfyPage.nextFrame()
+  await comfyPage.keyboard.press('Escape')
 
   await subgraphNode.click('title')
   await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
     name: blueprintName
   })
 
-  await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5_000 })
+  await expect(comfyPage.visibleToasts).toHaveCount(1)
   await comfyPage.toast.closeToasts(1)
 }
 
@@ -42,7 +41,6 @@ async function searchAndExpectResult(
 
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.NodeSearchBoxImpl',
       'v1 (legacy)'
@@ -55,13 +53,15 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
     await comfyPage.command.executeCommand('Comfy.Subgraph.SetDescription', {
       description: 'This is a test description'
     })
-
-    const description = await comfyPage.page.evaluate(() => {
-      const subgraph = window.app!.canvas.subgraph
-      return (subgraph?.extra as Record<string, unknown>)?.BlueprintDescription
-    })
-
-    expect(description).toBe('This is a test description')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const subgraph = window.app!.canvas.subgraph
+          return (subgraph?.extra as Record<string, unknown>)
+            ?.BlueprintDescription
+        })
+      )
+      .toBe('This is a test description')
   })
 
   test('Published search aliases remain searchable after reload', async ({

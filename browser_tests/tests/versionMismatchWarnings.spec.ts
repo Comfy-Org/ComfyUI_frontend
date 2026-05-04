@@ -37,7 +37,6 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   }
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.VersionCompatibility.DisableWarnings',
       false
@@ -83,7 +82,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     // Expect no warning toast to be shown
     await expect(
       comfyPage.page.getByText('Version Compatibility Warning')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should persist dismissed state across sessions', async ({
@@ -121,6 +120,6 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     // The same warning from same versions should not be shown to the user again
     await expect(
       comfyPage.page.getByText('Version Compatibility Warning')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 })

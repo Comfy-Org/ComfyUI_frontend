@@ -1,16 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
-import {
-  buildSubgraphExecutionPaths,
-  flattenWorkflowNodes,
-  validateComfyWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type {
-  ComfyNode,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
@@ -67,6 +58,69 @@ describe('parseComfyWorkflow', () => {
     await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
+  describe('linearData.inputs schema', () => {
+    it('validates 2-tuple format (legacy)', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt']], outputs: [1] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([[1, 'prompt']])
+    })
+
+    it('validates 3-tuple format with config', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', { height: 200 }]], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs![0]).toEqual([
+        1,
+        'prompt',
+        { height: 200 }
+      ])
+    })
+
+    it('validates 3-tuple format with empty config', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', {}]], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+    })
+
+    it('validates mixed 2-tuple and 3-tuple entries', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [
+            [1, 'prompt'],
+            [2, 'seed', { height: 100 }]
+          ],
+          outputs: []
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [1, 'prompt'],
+        [2, 'seed', { height: 100 }]
+      ])
+    })
+
+    it('rejects invalid config shape', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', 'invalid']], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).toBeNull()
+    })
+  })
+
   it('workflow.nodes.pos', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.nodes[0].pos = [1, 2, 3]
@@ -78,13 +132,13 @@ describe('parseComfyWorkflow', () => {
     // Should automatically transform the legacy format object to array.
     workflow.nodes[0].pos = { '0': 3, '1': 4 }
     let validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].pos).toEqual([3, 4])
 
     workflow.nodes[0].pos = { 0: 3, 1: 4 }
     validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].pos).toEqual([3, 4])
 
     // Should accept the legacy bugged format object.
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/710
@@ -101,8 +155,8 @@ describe('parseComfyWorkflow', () => {
       '9': 0
     }
     validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].pos).toEqual([600, 340])
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].pos).toEqual([600, 340])
   })
 
   it('workflow.nodes.widget_values', async () => {
@@ -120,8 +174,8 @@ describe('parseComfyWorkflow', () => {
     // dynamic widgets display.
     workflow.nodes[0].widgets_values = { foo: 'bar' }
     const validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].widgets_values).toEqual({ foo: 'bar' })
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
 
   it('workflow.links', async () => {
@@ -213,118 +267,5 @@ describe('parseComfyWorkflow', () => {
       workflow.nodes[0].properties.ver = ver
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
-  })
-})
-
-function node(id: number, type: string): ComfyNode {
-  return { id, type } as ComfyNode
-}
-
-function subgraphDef(id: string, nodes: ComfyNode[]) {
-  return { id, name: id, nodes, inputNode: {}, outputNode: {} }
-}
-
-describe('buildSubgraphExecutionPaths', () => {
-  it('returns empty map when there are no subgraph definitions', () => {
-    expect(buildSubgraphExecutionPaths([node(5, 'SomeNode')], [])).toEqual(
-      new Map()
-    )
-  })
-
-  it('returns empty map when no root node matches a subgraph type', () => {
-    const def = subgraphDef('def-A', [])
-    expect(
-      buildSubgraphExecutionPaths([node(5, 'UnrelatedNode')], [def])
-    ).toEqual(new Map())
-  })
-
-  it('maps a single subgraph instance to its execution path', () => {
-    const def = subgraphDef('def-A', [])
-    const result = buildSubgraphExecutionPaths([node(5, 'def-A')], [def])
-    expect(result.get('def-A')).toEqual(['5'])
-  })
-
-  it('collects multiple instances of the same subgraph type', () => {
-    const def = subgraphDef('def-A', [])
-    const result = buildSubgraphExecutionPaths(
-      [node(5, 'def-A'), node(10, 'def-A')],
-      [def]
-    )
-    expect(result.get('def-A')).toEqual(['5', '10'])
-  })
-
-  it('builds nested execution paths for subgraphs within subgraphs', () => {
-    const innerDef = subgraphDef('def-B', [])
-    const outerDef = subgraphDef('def-A', [node(70, 'def-B')])
-    const result = buildSubgraphExecutionPaths(
-      [node(5, 'def-A')],
-      [outerDef, innerDef]
-    )
-    expect(result.get('def-A')).toEqual(['5'])
-    expect(result.get('def-B')).toEqual(['5:70'])
-  })
-
-  it('does not recurse infinitely on self-referential subgraph definitions', () => {
-    const cyclicDef = subgraphDef('def-A', [node(70, 'def-A')])
-    expect(() =>
-      buildSubgraphExecutionPaths([node(5, 'def-A')], [cyclicDef])
-    ).not.toThrow()
-  })
-
-  it('does not recurse infinitely on mutually cyclic subgraph definitions', () => {
-    const defA = subgraphDef('def-A', [node(70, 'def-B')])
-    const defB = subgraphDef('def-B', [node(80, 'def-A')])
-    expect(() =>
-      buildSubgraphExecutionPaths([node(5, 'def-A')], [defA, defB])
-    ).not.toThrow()
-  })
-})
-
-describe('flattenWorkflowNodes', () => {
-  it('returns root nodes when no subgraphs exist', () => {
-    const result = flattenWorkflowNodes({
-      nodes: [node(1, 'KSampler'), node(2, 'CLIPLoader')]
-    } as ComfyWorkflowJSON)
-
-    expect(result).toHaveLength(2)
-    expect(result.map((n) => n.id)).toEqual([1, 2])
-  })
-
-  it('returns empty array when nodes is undefined', () => {
-    const result = flattenWorkflowNodes({} as ComfyWorkflowJSON)
-    expect(result).toEqual([])
-  })
-
-  it('includes subgraph nodes with prefixed IDs', () => {
-    const result = flattenWorkflowNodes(
-      fromPartial<ComfyWorkflowJSON>({
-        nodes: [node(5, 'def-A')],
-        definitions: {
-          subgraphs: [
-            subgraphDef('def-A', [node(10, 'Inner'), node(20, 'Inner2')])
-          ]
-        }
-      })
-    )
-
-    expect(result).toHaveLength(3) // 1 root + 2 subgraph
-    expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:20'])
-  })
-
-  it('prefixes nested subgraph nodes with full execution path', () => {
-    const result = flattenWorkflowNodes(
-      fromPartial<ComfyWorkflowJSON>({
-        nodes: [node(5, 'def-A')],
-        definitions: {
-          subgraphs: [
-            subgraphDef('def-A', [node(10, 'def-B')]),
-            subgraphDef('def-B', [node(3, 'Leaf')])
-          ]
-        }
-      })
-    )
-
-    // root:5, def-A inner: 5:10, def-B inner: 5:10:3
-    expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:10:3'])
   })
 })

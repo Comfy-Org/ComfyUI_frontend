@@ -18,7 +18,7 @@ test.describe('Properties panel - Title editing', () => {
 
   test('should enter edit mode on pencil click', async () => {
     await panel.titleEditIcon.click()
-    await expect(panel.titleInput).toBeVisible()
+    await panel.titleEditor.expectVisible()
   })
 
   test('should update node title on edit', async () => {
@@ -34,7 +34,7 @@ test.describe('Properties panel - Title editing', () => {
       'KSampler',
       'CLIP Text Encode (Prompt)'
     ])
-    await expect(panel.titleEditIcon).not.toBeVisible()
+    await expect(panel.titleEditIcon).toBeHidden()
   })
 
   test('should not show pencil icon when nothing is selected', async ({
@@ -43,8 +43,7 @@ test.describe('Properties panel - Title editing', () => {
     await comfyPage.page.evaluate(() => {
       window.app!.canvas.deselectAll()
     })
-    await comfyPage.nextFrame()
     await expect(panel.panelTitle).toContainText('Workflow Overview')
-    await expect(panel.titleEditIcon).not.toBeVisible()
+    await expect(panel.titleEditIcon).toBeHidden()
   })
 })

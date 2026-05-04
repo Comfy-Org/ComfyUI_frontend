@@ -5,8 +5,6 @@ import {
 
 test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Enable the essentials feature flag via the reactive serverFeatureFlags ref.
     // In production, this flag comes via WebSocket or remoteConfig (cloud only).
     // The localhost test server has neither, so we set it directly.
@@ -82,9 +80,7 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
     const firstCard = comfyPage.page.locator('[data-node-name]').first()
     await expect(firstCard).toBeVisible()
 
-    const nodeName = await firstCard.getAttribute('data-node-name')
-    expect(nodeName).toBeTruthy()
-    expect(nodeName!.length).toBeGreaterThan(0)
+    await expect(firstCard).toHaveAttribute('data-node-name', /.+/)
   })
 
   test('Node library can switch between all and essentials tabs', async ({

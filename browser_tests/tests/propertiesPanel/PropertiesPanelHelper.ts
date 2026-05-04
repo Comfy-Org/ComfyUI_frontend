@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class PropertiesPanelHelper {
@@ -8,12 +9,14 @@ export class PropertiesPanelHelper {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly closeButton: Locator
+  readonly titleEditor: TitleEditor
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.closeButton = this.root.locator('button[aria-pressed]')
+    this.titleEditor = new TitleEditor(this.root)
   }
 
   get tabs(): Locator {
@@ -26,10 +29,6 @@ export class PropertiesPanelHelper {
 
   get titleEditIcon(): Locator {
     return this.panelTitle.locator('i[class*="lucide--pencil"]')
-  }
-
-  get titleInput(): Locator {
-    return this.root.getByTestId(TestIds.node.titleInput)
   }
 
   getNodeStateButton(state: 'Normal' | 'Bypass' | 'Mute'): Locator {
@@ -76,7 +75,7 @@ export class PropertiesPanelHelper {
   async close(): Promise<void> {
     if (await this.root.isVisible()) {
       await this.closeButton.click()
-      await expect(this.root).not.toBeVisible()
+      await expect(this.root).toBeHidden()
     }
   }
 
@@ -86,8 +85,8 @@ export class PropertiesPanelHelper {
 
   async editTitle(newTitle: string): Promise<void> {
     await this.titleEditIcon.click()
-    await this.titleInput.fill(newTitle)
-    await this.titleInput.press('Enter')
+    await this.titleEditor.expectVisible()
+    await this.titleEditor.setTitle(newTitle)
   }
 
   async searchWidgets(query: string): Promise<void> {

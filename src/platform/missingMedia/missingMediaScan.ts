@@ -7,6 +7,7 @@ import type {
   MediaType
 } from './types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IBaseWidget,
   IComboWidget
@@ -15,7 +16,14 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetHashStatus } from '@/platform/assets/services/assetService'
+import {
+  assetService,
+  isBlake3AssetHash
+} from '@/platform/assets/services/assetService'
 
 /** Map of node types to their media widget name and media type. */
 const MEDIA_NODE_WIDGETS: Record<
@@ -49,76 +57,183 @@ export function scanAllMediaCandidates(
   for (const node of allNodes) {
     if (!node.widgets?.length) continue
     if (node.isSubgraphNode?.()) continue
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
 
-    const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
-    if (!mediaInfo) continue
-
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    if (!executionId) continue
-
-    for (const widget of node.widgets) {
-      if (!isComboWidget(widget)) continue
-      if (widget.name !== mediaInfo.widgetName) continue
-
-      const value = widget.value
-      if (typeof value !== 'string' || !value.trim()) continue
-
-      let isMissing: boolean | undefined
-      if (isCloud) {
-        // Cloud: options may be empty initially; defer to async verification
-        isMissing = undefined
-      } else {
-        const options = resolveComboValues(widget)
-        isMissing = !options.includes(value)
-      }
-
-      candidates.push({
-        nodeId: executionId as NodeId,
-        nodeType: node.type,
-        widgetName: widget.name,
-        mediaType: mediaInfo.mediaType,
-        name: value,
-        isMissing
-      })
-    }
+    candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
   }
 
   return candidates
 }
 
-interface InputVerifier {
-  updateInputs: () => Promise<unknown>
-  inputAssets: Array<{ asset_hash?: string | null; name: string }>
+/** Scan a single node for missing media candidates (OSS immediate resolution). */
+export function scanNodeMediaCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isCloud: boolean
+): MissingMediaCandidate[] {
+  if (!node.widgets?.length) return []
+
+  const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
+  if (!mediaInfo) return []
+
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  const candidates: MissingMediaCandidate[] = []
+  for (const widget of node.widgets) {
+    if (!isComboWidget(widget)) continue
+    if (widget.name !== mediaInfo.widgetName) continue
+
+    const value = widget.value
+    if (typeof value !== 'string' || !value.trim()) continue
+
+    let isMissing: boolean | undefined
+    if (isCloud) {
+      isMissing = undefined
+    } else {
+      const options = resolveComboValues(widget)
+      isMissing = !options.includes(value)
+    }
+
+    candidates.push({
+      nodeId: executionId as NodeId,
+      nodeType: node.type,
+      widgetName: widget.name,
+      mediaType: mediaInfo.mediaType,
+      name: value,
+      isMissing
+    })
+  }
+
+  return candidates
+}
+
+type AssetHashVerifier = (
+  assetHash: string,
+  signal?: AbortSignal
+) => Promise<AssetHashStatus>
+
+type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
+
+function groupCandidatesForHashLookup(candidates: MissingMediaCandidate[]): {
+  candidatesByHash: Map<string, MissingMediaCandidate[]>
+  legacyCandidates: MissingMediaCandidate[]
+} {
+  const candidatesByHash = new Map<string, MissingMediaCandidate[]>()
+  const legacyCandidates: MissingMediaCandidate[] = []
+
+  for (const candidate of candidates) {
+    if (!isBlake3AssetHash(candidate.name)) {
+      legacyCandidates.push(candidate)
+      continue
+    }
+
+    const hashCandidates = candidatesByHash.get(candidate.name)
+    if (hashCandidates) hashCandidates.push(candidate)
+    else candidatesByHash.set(candidate.name, [candidate])
+  }
+
+  return { candidatesByHash, legacyCandidates }
+}
+
+async function verifyCandidatesByHash(
+  candidatesByHash: Map<string, MissingMediaCandidate[]>,
+  legacyCandidates: MissingMediaCandidate[],
+  signal: AbortSignal | undefined,
+  checkAssetHash: AssetHashVerifier
+): Promise<void> {
+  await Promise.all(
+    Array.from(candidatesByHash, async ([assetHash, hashCandidates]) => {
+      if (signal?.aborted) return
+
+      let status: AssetHashStatus
+      try {
+        status = await checkAssetHash(assetHash, signal)
+        if (signal?.aborted) return
+      } catch (err) {
+        if (signal?.aborted || isAbortError(err)) return
+        console.warn(
+          '[Missing Media Pipeline] Failed to verify asset hash:',
+          err
+        )
+        legacyCandidates.push(...hashCandidates)
+        return
+      }
+
+      if (status === 'invalid') {
+        legacyCandidates.push(...hashCandidates)
+        return
+      }
+
+      for (const candidate of hashCandidates) {
+        candidate.isMissing = status === 'missing'
+      }
+    })
+  )
 }
 
 /**
- * Verify cloud media candidates against the input assets fetched from the
- * assets store. Mutates candidates' `isMissing` in place.
+ * Verify cloud media candidates by probing the asset hash endpoint first.
+ * Invalid hash values fall back to the legacy input asset list check.
  */
 export async function verifyCloudMediaCandidates(
   candidates: MissingMediaCandidate[],
   signal?: AbortSignal,
-  assetsStore?: InputVerifier
+  checkAssetHash: AssetHashVerifier = assetService.checkAssetHash,
+  fetchInputAssets: InputAssetFetcher = fetchMissingInputAssets
 ): Promise<void> {
   if (signal?.aborted) return
 
   const pending = candidates.filter((c) => c.isMissing === undefined)
   if (pending.length === 0) return
 
-  const store =
-    assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
+  const { candidatesByHash, legacyCandidates } =
+    groupCandidatesForHashLookup(pending)
+  await verifyCandidatesByHash(
+    candidatesByHash,
+    legacyCandidates,
+    signal,
+    checkAssetHash
+  )
 
-  await store.updateInputs()
+  if (signal?.aborted || legacyCandidates.length === 0) return
+
+  let inputAssets: AssetItem[]
+  try {
+    inputAssets = await fetchInputAssets(signal)
+  } catch (err) {
+    if (signal?.aborted || isAbortError(err)) return
+    throw err
+  }
 
   if (signal?.aborted) return
 
   const assetHashes = new Set(
-    store.inputAssets.map((a) => a.asset_hash).filter((h): h is string => !!h)
+    inputAssets.map((a) => a.asset_hash).filter((h): h is string => !!h)
   )
 
-  for (const c of pending) {
-    c.isMissing = !assetHashes.has(c.name)
+  for (const candidate of legacyCandidates) {
+    candidate.isMissing = !assetHashes.has(candidate.name)
   }
+}
+
+async function fetchMissingInputAssets(
+  signal?: AbortSignal
+): Promise<AssetItem[]> {
+  return await assetService.getInputAssetsIncludingPublic(signal)
+}
+
+function isAbortError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'name' in err &&
+    err.name === 'AbortError'
+  )
 }
 
 /** Group confirmed-missing candidates by file name into view models. */

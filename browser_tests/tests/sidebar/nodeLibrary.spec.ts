@@ -43,7 +43,6 @@ async function renameInlineFolder(comfyPage: ComfyPage, newName: string) {
 
 test.describe('Node library sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
     await comfyPage.settings.setSetting(bookmarksSettingId, [])
     await comfyPage.settings.setSetting(bookmarksCustomizationSettingId, {})
@@ -58,7 +57,7 @@ test.describe('Node library sidebar', () => {
 
     // Hover over a node to display the preview
     const nodeSelector = tab.nodeSelector('KSampler (Advanced)')
-    await comfyPage.page.hover(nodeSelector)
+    await comfyPage.page.locator(nodeSelector).hover()
 
     // Verify the preview is displayed
     await expect(tab.nodePreview).toBeVisible()
@@ -78,9 +77,9 @@ test.describe('Node library sidebar', () => {
       y: canvasBoundingBox.y + canvasBoundingBox.height / 2
     }
 
-    await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector, {
-      targetPosition
-    })
+    await comfyPage.page
+      .locator(nodeSelector)
+      .dragTo(comfyPage.page.locator(canvasSelector), { targetPosition })
     await comfyPage.nextFrame()
 
     // Verify the node is added to the canvas
@@ -102,7 +101,9 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
 
     // Hover on the bookmark node to display the preview
-    await comfyPage.page.hover('.node-lib-bookmark-tree-explorer .tree-leaf')
+    await comfyPage.page
+      .locator('.node-lib-bookmark-tree-explorer .tree-leaf')
+      .hover()
     await expect(tab.nodePreview).toBeVisible()
   })
 
@@ -220,6 +221,7 @@ test.describe('Node library sidebar', () => {
       .click()
     await expectBookmarks(comfyPage, [])
   })
+
   test('Can customize icon', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
     const tab = comfyPage.menu.nodeLibraryTab
@@ -247,6 +249,7 @@ test.describe('Node library sidebar', () => {
       }
     })
   })
+
   // If color is left as default, it should not be saved
   test('Can customize icon (default field)', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])

@@ -4,17 +4,29 @@ name: 'CI: Tests Unit'
 on:
   push:
     branches: [main, master, dev*, core/*, desktop/*]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   test:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -26,10 +38,20 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
+      - name: Upload unit coverage artifact
+        if: always() && github.event_name == 'push'
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-coverage
+          path: coverage/lcov.info
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         with:
           files: coverage/lcov.info
+          flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false

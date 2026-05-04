@@ -5,7 +5,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Sidebar splitter width independence', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Sidebar.UnifiedWidth', true)
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
   })
@@ -24,10 +23,10 @@ test.describe('Sidebar splitter width independence', () => {
       .locator('.p-splitter-gutter:not(.hidden)')
       .first()
     await expect(gutter).toBeVisible()
-    const box = await gutter.boundingBox()
-    expect(box).not.toBeNull()
-    const centerX = box!.x + box!.width / 2
-    const centerY = box!.y + box!.height / 2
+    await expect.poll(() => gutter.boundingBox()).not.toBeNull()
+    const box = (await gutter.boundingBox())!
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
     await comfyPage.page.mouse.move(centerX, centerY)
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(centerX + deltaX, centerY, { steps: 10 })
@@ -40,7 +39,6 @@ test.describe('Sidebar splitter width independence', () => {
     location: 'left' | 'right'
   ) {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', location)
-    await comfyPage.nextFrame()
     await dismissToasts(comfyPage)
     await comfyPage.menu.nodeLibraryTab.open()
   }
@@ -63,12 +61,16 @@ test.describe('Sidebar splitter width independence', () => {
     // Right sidebar should use its default width, not the left's resized width
     const rightSidebar = comfyPage.page.locator('.side-bar-panel').first()
     await expect(rightSidebar).toBeVisible()
-    const rightWidth = (await rightSidebar.boundingBox())!.width
 
     // The right sidebar should NOT match the left's resized width.
     // We dragged the left sidebar 100px wider, so there should be a noticeable
     // difference between the left (resized) and right (default) widths.
-    expect(Math.abs(rightWidth - leftWidth)).toBeGreaterThan(50)
+    await expect
+      .poll(async () => {
+        const b = await rightSidebar.boundingBox()
+        return b ? Math.abs(b.width - leftWidth) : -1
+      })
+      .toBeGreaterThan(50)
   })
 
   test('localStorage keys include sidebar location', async ({ comfyPage }) => {
@@ -77,10 +79,11 @@ test.describe('Sidebar splitter width independence', () => {
     await dragGutter(comfyPage, 50)
 
     // Left-only sidebar should use the legacy key (no location suffix)
-    const leftKey = await comfyPage.page.evaluate(() =>
-      localStorage.getItem('unified-sidebar')
-    )
-    expect(leftKey).not.toBeNull()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => localStorage.getItem('unified-sidebar'))
+      )
+      .not.toBeNull()
 
     // Switch to right and resize
     await comfyPage.menu.nodeLibraryTab.close()
@@ -88,16 +91,20 @@ test.describe('Sidebar splitter width independence', () => {
     await dragGutter(comfyPage, -50)
 
     // Right sidebar should use a different key with location suffix
-    const rightKey = await comfyPage.page.evaluate(() =>
-      localStorage.getItem('unified-sidebar-right')
-    )
-    expect(rightKey).not.toBeNull()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          localStorage.getItem('unified-sidebar-right')
+        )
+      )
+      .not.toBeNull()
 
     // Both keys should exist independently
-    const leftKeyStillExists = await comfyPage.page.evaluate(() =>
-      localStorage.getItem('unified-sidebar')
-    )
-    expect(leftKeyStillExists).not.toBeNull()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => localStorage.getItem('unified-sidebar'))
+      )
+      .not.toBeNull()
   })
 
   test('normalized panel sizes sum to approximately 100%', async ({
@@ -107,16 +114,33 @@ test.describe('Sidebar splitter width independence', () => {
     await dragGutter(comfyPage, 80)
 
     // Check that saved sizes sum to ~100%
-    const sizes = await comfyPage.page.evaluate(() => {
-      const raw = localStorage.getItem('unified-sidebar')
-      return raw ? JSON.parse(raw) : null
-    })
+    const getSidebarSizes = () =>
+      comfyPage.page.evaluate(() => {
+        const raw = localStorage.getItem('unified-sidebar')
+        return raw ? (JSON.parse(raw) as number[]) : null
+      })
 
-    expect(sizes).not.toBeNull()
-    expect(Array.isArray(sizes)).toBe(true)
+    await expect
+      .poll(async () => {
+        const sizes = await getSidebarSizes()
+        return Array.isArray(sizes)
+      })
+      .toBe(true)
 
-    const sum = (sizes as number[]).reduce((a, b) => a + b, 0)
-    expect(sum).toBeGreaterThan(99)
-    expect(sum).toBeLessThanOrEqual(101)
+    await expect
+      .poll(async () => {
+        const sizes = await getSidebarSizes()
+        if (!sizes) return 0
+        return sizes.reduce((a, b) => a + b, 0)
+      })
+      .toBeGreaterThan(99)
+
+    await expect
+      .poll(async () => {
+        const sizes = await getSidebarSizes()
+        if (!sizes) return Infinity
+        return sizes.reduce((a, b) => a + b, 0)
+      })
+      .toBeLessThanOrEqual(101)
   })
 })

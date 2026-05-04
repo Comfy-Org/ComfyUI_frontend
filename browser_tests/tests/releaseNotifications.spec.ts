@@ -19,10 +19,6 @@ function createMockRelease(overrides?: Partial<ReleaseNote>): ReleaseNote {
 }
 
 test.describe('Release Notifications', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('should show help center with release information', async ({
     comfyPage
   }) => {
@@ -72,8 +68,8 @@ test.describe('Release Notifications', () => {
     ).toBeVisible()
 
     // Close help center by dismissable mask
-    await comfyPage.page.click('.help-center-backdrop')
-    await expect(helpMenu).not.toBeVisible()
+    await comfyPage.page.locator('.help-center-backdrop').click()
+    await expect(helpMenu).toBeHidden()
   })
 
   test('should not show release notifications when mocked (default behavior)', async ({
@@ -103,10 +99,10 @@ test.describe('Release Notifications', () => {
     ).toBeVisible()
 
     // Should not show any popups or toasts
-    await expect(comfyPage.page.locator('.whats-new-popup')).not.toBeVisible()
+    await expect(comfyPage.page.locator('.whats-new-popup')).toBeHidden()
     await expect(
       comfyPage.page.locator('.release-notification-toast')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should handle release API errors gracefully', async ({ comfyPage }) => {
@@ -189,13 +185,13 @@ test.describe('Release Notifications', () => {
     const whatsNewSection = comfyPage.page.getByTestId(
       TestIds.dialogs.whatsNewSection
     )
-    await expect(whatsNewSection).not.toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
 
     // Should not show any popups or toasts
-    await expect(comfyPage.page.locator('.whats-new-popup')).not.toBeVisible()
+    await expect(comfyPage.page.locator('.whats-new-popup')).toBeHidden()
     await expect(
       comfyPage.page.locator('.release-notification-toast')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should not make API calls when notifications are disabled', async ({
@@ -325,7 +321,7 @@ test.describe('Release Notifications', () => {
     await expect(whatsNewSection).toBeVisible()
 
     // Close help center
-    await comfyPage.page.click('.help-center-backdrop')
+    await comfyPage.page.locator('.help-center-backdrop').click()
 
     // Disable notifications
     await comfyPage.settings.setSetting(
@@ -337,7 +333,7 @@ test.describe('Release Notifications', () => {
     await helpCenterButton.click()
 
     // Verify "What's New?" section is now hidden
-    await expect(whatsNewSection).not.toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
   })
 
   test('should handle edge case with empty releases and disabled notifications', async ({
@@ -381,6 +377,6 @@ test.describe('Release Notifications', () => {
     const whatsNewSection = comfyPage.page.getByTestId(
       TestIds.dialogs.whatsNewSection
     )
-    await expect(whatsNewSection).not.toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
   })
 })

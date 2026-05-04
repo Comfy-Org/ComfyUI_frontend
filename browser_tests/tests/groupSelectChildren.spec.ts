@@ -2,29 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-
-/**
- * Returns the client-space position of a group's title bar (for clicking).
- */
-async function getGroupTitlePosition(
-  comfyPage: ComfyPage,
-  title: string
-): Promise<{ x: number; y: number }> {
-  const pos = await comfyPage.page.evaluate((title) => {
-    const app = window.app!
-    const group = app.graph.groups.find(
-      (g: { title: string }) => g.title === title
-    )
-    if (!group) return null
-    const clientPos = app.canvasPosToClientPos([
-      group.pos[0] + 50,
-      group.pos[1] + 15
-    ])
-    return { x: clientPos[0], y: clientPos[1] }
-  }, title)
-  if (!pos) throw new Error(`Group "${title}" not found`)
-  return pos
-}
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 /**
  * Returns {selectedNodeCount, selectedGroupCount, selectedItemCount}
@@ -60,17 +38,19 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       true
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
     await comfyPage.nextFrame()
 
-    const counts = await getSelectionCounts(comfyPage)
     // Outer Group + Inner Group + 1 node = 3 items
-    expect(counts.selectedItemCount).toBe(3)
-    expect(counts.selectedGroupCount).toBe(2)
-    expect(counts.selectedNodeCount).toBe(1)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({
+        selectedItemCount: 3,
+        selectedGroupCount: 2,
+        selectedNodeCount: 1
+      })
   })
 
   test('Setting disabled: clicking outer group selects only the group', async ({
@@ -81,16 +61,18 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       false
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
     await comfyPage.nextFrame()
 
-    const counts = await getSelectionCounts(comfyPage)
-    expect(counts.selectedItemCount).toBe(1)
-    expect(counts.selectedGroupCount).toBe(1)
-    expect(counts.selectedNodeCount).toBe(0)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({
+        selectedItemCount: 1,
+        selectedGroupCount: 1,
+        selectedNodeCount: 0
+      })
   })
 
   test('Deselecting outer group deselects all children', async ({
@@ -101,15 +83,15 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       true
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     // Select the outer group (cascades to children)
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
     await comfyPage.nextFrame()
 
-    let counts = await getSelectionCounts(comfyPage)
-    expect(counts.selectedItemCount).toBe(3)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({ selectedItemCount: 3 })
 
     // Deselect all via page.evaluate to avoid UI overlay interception
     await comfyPage.page.evaluate(() => {
@@ -117,7 +99,8 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
     })
     await comfyPage.nextFrame()
 
-    counts = await getSelectionCounts(comfyPage)
-    expect(counts.selectedItemCount).toBe(0)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({ selectedItemCount: 0 })
   })
 })

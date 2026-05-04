@@ -12,9 +12,18 @@ test.describe('Load3D', () => {
 
       await expect(load3d.canvas).toBeVisible()
 
-      const canvasBox = await load3d.canvas.boundingBox()
-      expect(canvasBox!.width).toBeGreaterThan(0)
-      expect(canvasBox!.height).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await load3d.canvas.boundingBox()
+          return b?.width ?? 0
+        })
+        .toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await load3d.canvas.boundingBox()
+          return b?.height ?? 0
+        })
+        .toBeGreaterThan(0)
 
       await expect(load3d.getUploadButton('upload 3d model')).toBeVisible()
       await expect(
@@ -57,16 +66,14 @@ test.describe('Load3D', () => {
       await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const n = window.app!.graph.getNodeById(1)
-              const config = n?.properties?.['Scene Config'] as
-                | Record<string, string>
-                | undefined
-              return config?.backgroundColor
-            }),
-          { timeout: 3000 }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const n = window.app!.graph.getNodeById(1)
+            const config = n?.properties?.['Scene Config'] as
+              | Record<string, string>
+              | undefined
+            return config?.backgroundColor
+          })
         )
         .toBe('#cc3333')
 
@@ -102,14 +109,11 @@ test.describe('Load3D', () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById(1)
       const modelFileWidget = await node.getWidget(0)
-      await expect
-        .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
-        .toContain('cube.obj')
+      await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
-      await comfyPage.nextFrame()
-
-      await expect(load3d.node).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        load3d.node,
         'load3d-uploaded-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
       )
@@ -134,17 +138,227 @@ test.describe('Load3D', () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById(1)
       const modelFileWidget = await node.getWidget(0)
-      await expect
-        .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
-        .toContain('cube.obj')
+      await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
-      await comfyPage.nextFrame()
-
-      await expect(load3d.node).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        load3d.node,
         'load3d-dropped-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
       )
     }
   )
+
+  test(
+    'Uploading a background image populates Scene Config and surfaces panorama/remove controls',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage, load3d }) => {
+      await expect(load3d.uploadBackgroundImageButton).toBeVisible()
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const readBackgroundImage = async () => {
+        const properties =
+          await node.getProperty<Record<string, { backgroundImage?: string }>>(
+            'properties'
+          )
+        return properties['Scene Config']?.backgroundImage ?? ''
+      }
+
+      expect(
+        await readBackgroundImage(),
+        'Scene Config.backgroundImage should start empty'
+      ).toBe('')
+
+      await test.step('Upload an image via file picker', async () => {
+        const uploadResponse = comfyPage.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200
+        )
+        const fileChooser = comfyPage.page.waitForEvent('filechooser')
+        await load3d.uploadBackgroundImageButton.click()
+        await (await fileChooser).setFiles(assetPath('image64x64.webp'))
+        await uploadResponse
+      })
+
+      await expect.poll(readBackgroundImage).not.toBe('')
+      await expect(load3d.panoramaModeButton).toBeVisible()
+      await expect(load3d.removeBackgroundImageButton).toBeVisible()
+
+      await comfyPage.expectScreenshot(
+        load3d.node,
+        'load3d-background-image-tiled.png',
+        { maxDiffPixelRatio: 0.05 }
+      )
+
+      await test.step('Toggling panorama mode updates Scene Config.backgroundRenderMode', async () => {
+        await load3d.panoramaModeButton.click()
+        await expect
+          .poll(async () => {
+            const properties =
+              await node.getProperty<
+                Record<string, { backgroundRenderMode?: string }>
+              >('properties')
+            return properties['Scene Config']?.backgroundRenderMode
+          })
+          .toBe('panorama')
+        await comfyPage.expectScreenshot(
+          load3d.node,
+          'load3d-background-image-panorama.png',
+          { maxDiffPixelRatio: 0.05 }
+        )
+      })
+
+      await test.step('Remove background image clears the Scene Config', async () => {
+        await load3d.removeBackgroundImageButton.click()
+        await expect.poll(readBackgroundImage).toBe('')
+        await expect(load3d.removeBackgroundImageButton).toHaveCount(0)
+        await expect(load3d.panoramaModeButton).toHaveCount(0)
+      })
+    }
+  )
+
+  test(
+    'Grid toggle hides and restores the Scene grid helper',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage, load3d }) => {
+      await expect(load3d.gridToggleButton).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const readShowGrid = async () => {
+        const properties =
+          await node.getProperty<Record<string, { showGrid?: boolean }>>(
+            'properties'
+          )
+        return properties['Scene Config']?.showGrid
+      }
+
+      expect(
+        await readShowGrid(),
+        'Load3D workflow should start with grid visible (true or undefined)'
+      ).not.toBe(false)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+        maxDiffPixelRatio: 0.05
+      })
+
+      await load3d.gridToggleButton.click()
+      await expect.poll(readShowGrid).toBe(false)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-hidden.png', {
+        maxDiffPixelRatio: 0.05
+      })
+
+      await load3d.gridToggleButton.click()
+      await expect.poll(readShowGrid).toBe(true)
+      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+        maxDiffPixelRatio: 0.05
+      })
+    }
+  )
+
+  test('Recording controls show stop/export/clear buttons after a recording', async ({
+    comfyPage,
+    load3d
+  }) => {
+    await expect(load3d.recordingButton).toBeVisible()
+    await expect(load3d.stopRecordingButton).toHaveCount(0)
+
+    await test.step('Start recording flips button to stop-recording', async () => {
+      await load3d.recordingButton.click()
+      await expect(load3d.stopRecordingButton).toBeVisible()
+    })
+
+    await test.step('Stop recording surfaces export/clear controls and a 1s duration', async () => {
+      // Record for 1s wall-clock so the duration display settles on 00:01.
+      await comfyPage.delay(1000)
+      await load3d.stopRecordingButton.click()
+      await expect(load3d.recordingButton).toBeVisible()
+      await expect(load3d.exportRecordingButton).toBeVisible()
+      await expect(load3d.clearRecordingButton).toBeVisible()
+      await expect(load3d.recordingDuration).toHaveText('00:01')
+    })
+
+    await test.step('Clear recording removes export and clear controls', async () => {
+      await load3d.clearRecordingButton.click()
+      await expect(load3d.exportRecordingButton).toHaveCount(0)
+      await expect(load3d.clearRecordingButton).toHaveCount(0)
+    })
+  })
+})
+
+test.describe('Load3D silent 404 on missing output model', () => {
+  test('Does not show an error toast when the output model file is missing (404)', async ({
+    comfyPage
+  }) => {
+    // Intercept model fetch and return 404 to simulate a missing output file
+    // (e.g. shared workflow opened on a machine that never ran it)
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ status: 404, body: 'Not Found' })
+    )
+
+    // This workflow has a Preview3D node with Last Time Model File set,
+    // triggering the loadFolder: 'output' + silentOnNotFound: true path.
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    // Wait for the 404 response before asserting — gives the load attempt time
+    // to complete without using waitForTimeout
+    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+    await responsePromise
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({ hasText: 'Error loading model' })
+    ).toHaveCount(0)
+  })
+
+  test('Shows an error toast when a non-404 error occurs loading the output model', async ({
+    comfyPage
+  }) => {
+    // Intercept with a 500 to simulate a real server error (not 404) — toast must appear
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ status: 500, body: 'Internal Server Error' })
+    )
+
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+    await responsePromise
+
+    await expect
+      .poll(
+        () =>
+          comfyPage.toast.visibleToasts
+            .filter({ hasText: 'Error loading model' })
+            .count(),
+        { timeout: 10000 }
+      )
+      .toBeGreaterThan(0)
+  })
+})
+
+test.describe('Load3D initialization failure', () => {
+  test('Surfaces a toast when the THREE.WebGLRenderer cannot be created', async ({
+    comfyPage
+  }) => {
+    // Force `new THREE.WebGLRenderer(...)` inside Load3d to throw by making
+    // WebGL getContext() calls return null.
+    await comfyPage.page.evaluate(() => {
+      const proto = HTMLCanvasElement.prototype as {
+        getContext: (
+          this: HTMLCanvasElement,
+          type: string,
+          options?: unknown
+        ) => unknown
+      }
+      const original = proto.getContext
+      proto.getContext = function (type, options) {
+        if (type === 'webgl' || type === 'webgl2') return null
+        return original.call(this, type, options)
+      }
+    })
+    await comfyPage.workflow.loadWorkflow('3d/load3d_node')
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({
+        hasText: 'Failed to initialize 3D Viewer'
+      })
+    ).not.toHaveCount(0)
+  })
 })

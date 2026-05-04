@@ -1,9 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { AssetInfo } from '../../../src/schemas/apiSchema'
-import { comfyPageFixture } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
+import type { AssetInfo } from '@/schemas/apiSchema'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 interface PublishRecord {
   workflow_id: string

@@ -1,41 +1,28 @@
 import type { Locator } from '@playwright/test'
 
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
-  constructor(private readonly locator: Locator) {}
+  public readonly header: Locator
+  public readonly title: Locator
+  public readonly titleEditor: TitleEditor
+  public readonly body: Locator
+  public readonly pinIndicator: Locator
+  public readonly collapseButton: Locator
+  public readonly collapseIcon: Locator
+  public readonly root: Locator
 
-  get header(): Locator {
-    return this.locator.locator('[data-testid^="node-header-"]')
-  }
-
-  get title(): Locator {
-    return this.locator.locator('[data-testid="node-title"]')
-  }
-
-  get titleInput(): Locator {
-    return this.locator.locator('[data-testid="node-title-input"]')
-  }
-
-  get body(): Locator {
-    return this.locator.locator('[data-testid^="node-body-"]')
-  }
-
-  get pinIndicator(): Locator {
-    return this.locator.getByTestId(TestIds.node.pinIndicator)
-  }
-
-  get collapseButton(): Locator {
-    return this.locator.locator('[data-testid="node-collapse-button"]')
-  }
-
-  get collapseIcon(): Locator {
-    return this.collapseButton.locator('i')
-  }
-
-  get root(): Locator {
-    return this.locator
+  constructor(private readonly locator: Locator) {
+    this.header = locator.locator('[data-testid^="node-header-"]')
+    this.title = locator.getByTestId('node-title')
+    this.titleEditor = new TitleEditor(locator)
+    this.body = locator.locator('[data-testid^="node-body-"]')
+    this.pinIndicator = locator.getByTestId(TestIds.node.pinIndicator)
+    this.collapseButton = locator.getByTestId('node-collapse-button')
+    this.collapseIcon = this.collapseButton.locator('i')
+    this.root = locator
   }
 
   async getTitle(): Promise<string> {
@@ -44,17 +31,8 @@ export class VueNodeFixture {
 
   async setTitle(value: string): Promise<void> {
     await this.header.dblclick()
-    const input = this.titleInput
-    await input.waitFor({ state: 'visible' })
-    await input.fill(value)
-    await input.press('Enter')
-  }
-
-  async cancelTitleEdit(): Promise<void> {
-    await this.header.dblclick()
-    const input = this.titleInput
-    await input.waitFor({ state: 'visible' })
-    await input.press('Escape')
+    await this.titleEditor.expectVisible()
+    await this.titleEditor.setTitle(value)
   }
 
   async toggleCollapse(): Promise<void> {

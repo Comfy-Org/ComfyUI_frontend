@@ -3,18 +3,11 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-  })
-
+test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
   async function runAndOpenGallery(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow(
       'widgets/save_image_and_animated_webp'
     )
-    await comfyPage.vueNodes.waitForNodes()
     await comfyPage.runButton.click()
 
     // Wait for SaveImage node to produce output
@@ -31,7 +24,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
 
     // Wait for any asset card to appear (may contain img or video)
     const assetCard = comfyPage.page
-      .locator('[role="button"]')
+      .getByRole('button')
       .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 
@@ -56,13 +49,13 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
     await runAndOpenGallery(comfyPage)
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
   })
 
   test('closes gallery when clicking close button', async ({ comfyPage }) => {
     await runAndOpenGallery(comfyPage)
 
     await comfyPage.mediaLightbox.closeButton.click()
-    await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
   })
 })

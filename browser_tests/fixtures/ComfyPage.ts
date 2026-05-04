@@ -1,15 +1,17 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
+import MCR from 'monocart-coverage-reports'
 
+import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { ComfyActionbar } from '@e2e/helpers/actionbar'
-import { ComfyTemplates } from '@e2e/helpers/templates'
+import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
+import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { sleep } from '@e2e/fixtures/utils/timing'
+import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -20,6 +22,7 @@ import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import {
   AssetsSidebarTab,
   ModelLibrarySidebarTab,
@@ -29,8 +32,6 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
-import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
-import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
@@ -54,11 +55,13 @@ class ComfyPropertiesPanel {
   readonly root: Locator
   readonly panelTitle: Locator
   readonly searchBox: Locator
+  readonly titleEditor: TitleEditor
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
+    this.titleEditor = new TitleEditor(this.root)
   }
 }
 
@@ -73,15 +76,13 @@ class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly modeToggleButton: Locator
+  public readonly buttons: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
-  }
-
-  get buttons() {
-    return this.sideToolbar.locator('.side-bar-button')
+    this.buttons = this.sideToolbar.locator('.side-bar-button')
   }
 
   get modelLibraryTab() {
@@ -139,6 +140,7 @@ class ComfyMenu {
 
 export class ComfyPage {
   public readonly url: string
+  public readonly apiUrl: string
   // All canvas position operations are based on default view of canvas.
   public readonly canvas: Locator
   public readonly selectionToolbox: Locator
@@ -161,6 +163,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly templatesDialog: TemplatesDialog
+  public readonly titleEditor: TitleEditor
   public readonly mediaLightbox: MediaLightbox
   public readonly vueNodes: VueNodeHelpers
   public readonly appMode: AppModeHelper
@@ -180,9 +183,9 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
-  public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
+  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -197,8 +200,9 @@ export class ComfyPage {
     public readonly request: APIRequestContext
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    this.apiUrl = process.env.PLAYWRIGHT_SETUP_API_URL || this.url
     this.canvas = page.locator('#graph-canvas')
-    this.selectionToolbox = page.locator('.selection-toolbox')
+    this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
@@ -206,13 +210,14 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
-    this.searchBoxV2 = new ComfyNodeSearchBoxV2(page)
+    this.searchBoxV2 = new ComfyNodeSearchBoxV2(this)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.templatesDialog = new TemplatesDialog(page)
+    this.titleEditor = new TitleEditor(page)
     this.mediaLightbox = new MediaLightbox(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
@@ -225,6 +230,7 @@ export class ComfyPage {
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
+    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -232,17 +238,12 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
-    this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
   }
 
-  get visibleToasts() {
-    return this.toast.visibleToasts
-  }
-
   async setupUser(username: string) {
-    const res = await this.request.get(`${this.url}/api/users`)
+    const res = await this.request.get(`${this.apiUrl}/api/users`)
     if (res.status() !== 200)
       throw new Error(`Failed to retrieve users: ${await res.text()}`)
 
@@ -256,7 +257,7 @@ export class ComfyPage {
   }
 
   async createUser(username: string) {
-    const resp = await this.request.post(`${this.url}/api/users`, {
+    const resp = await this.request.post(`${this.apiUrl}/api/users`, {
       data: { username }
     })
 
@@ -268,7 +269,7 @@ export class ComfyPage {
 
   async setupSettings(settings: Record<string, unknown>) {
     const resp = await this.request.post(
-      `${this.url}/api/devtools/set_settings`,
+      `${this.apiUrl}/api/devtools/set_settings`,
       {
         data: settings
       }
@@ -319,13 +320,22 @@ export class ComfyPage {
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)
+    await this.waitForAppReady()
+  }
+
+  /**
+   * Wait for the app to finish initializing after navigation/reload:
+   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
+   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `WorkflowHelper.reloadAndWaitForApp()`.
+   */
+  async waitForAppReady() {
     await this.page.waitForFunction(
-      () =>
-        // window.app => GraphCanvas ready
-        // window.app.extensionManager => GraphView ready
-        window.app && window.app.extensionManager
+      // window.app => GraphCanvas ready
+      // window.app.extensionManager => GraphView ready
+      () => window.app?.extensionManager
     )
-    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
+    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
   }
 
@@ -339,9 +349,7 @@ export class ComfyPage {
   }
 
   async nextFrame() {
-    await this.page.evaluate(() => {
-      return new Promise<number>(requestAnimationFrame)
-    })
+    await nextFrame(this.page)
   }
 
   async delay(ms: number) {
@@ -375,7 +383,7 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
+    await this.page.locator('button.comfy-close-menu-btn').click()
     await this.nextFrame()
   }
 
@@ -392,9 +400,29 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
+  }
+
+  async expectScreenshot(
+    locator: Locator,
+    name: string | string[],
+    options?: {
+      animations?: 'disabled' | 'allow'
+      caret?: 'hide' | 'initial'
+      mask?: Array<Locator>
+      maskColor?: string
+      maxDiffPixelRatio?: number
+      maxDiffPixels?: number
+      omitBackground?: boolean
+      scale?: 'css' | 'device'
+      stylePath?: string | Array<string>
+      threshold?: number
+      timeout?: number
+    }
+  ): Promise<void> {
+    await this.nextFrame()
+    await comfyExpect(locator).toHaveScreenshot(name, options)
   }
 
   async setFocusMode(focusMode: boolean) {
@@ -405,12 +433,53 @@ export class ComfyPage {
   }
 }
 
+class ComfyFiles {
+  protected teardownCallbacks: (() => Promise<unknown>)[] = []
+
+  constructor(protected readonly comfyPage: ComfyPage) {}
+
+  async teardown() {
+    await Promise.all(this.teardownCallbacks.map((cb) => cb()))
+  }
+
+  deleteAfterTest(file: {
+    filename: string
+    subfolder?: string
+    type?: string
+  }) {
+    this.teardownCallbacks.push(() =>
+      this.comfyPage.request.delete(
+        `${this.comfyPage.url}/api/devtools/view?${new URLSearchParams(file)}`
+      )
+    )
+  }
+}
+
 export const testComfySnapToGridGridSize = 50
+
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
+  comfyFiles: ComfyFiles
 }>({
+  page: async ({ page, browserName }, use) => {
+    if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
+      return use(page)
+    }
+
+    await page.coverage.startJSCoverage({ resetOnNavigation: false })
+    await use(page)
+    const coverage = await page.coverage.stopJSCoverage()
+
+    const mcr = MCR({
+      outputDir: COVERAGE_OUTPUT_DIR,
+      reports: []
+    })
+    await mcr.add(coverage)
+  },
+
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
@@ -418,6 +487,8 @@ export const comfyPageFixture = base.extend<{
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
+
+    const isVueNodes = testInfo.tags.includes('@vue-nodes')
 
     try {
       await comfyPage.setupSettings({
@@ -441,7 +512,8 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VersionCompatibility.DisableWarnings': true,
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false
+        'Comfy.RightSidePanel.ShowErrorsTab': false,
+        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true })
       })
     } catch (e) {
       console.error(e)
@@ -453,18 +525,26 @@ export const comfyPageFixture = base.extend<{
 
     await comfyPage.setup()
 
+    if (isVueNodes) {
+      await comfyPage.vueNodes.waitForNodes()
+    }
+
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
     if (needsPerf) await comfyPage.perf.init()
 
     await use(comfyPage)
 
-    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
     await use(comfyMouse)
+  },
+  comfyFiles: async ({ comfyPage }, use) => {
+    const comfyFiles = new ComfyFiles(comfyPage)
+    await use(comfyFiles)
+    await comfyFiles.teardown()
   }
 })
 

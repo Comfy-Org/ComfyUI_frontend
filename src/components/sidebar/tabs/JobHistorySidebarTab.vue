@@ -2,15 +2,16 @@
   <SidebarTabTemplate :title="$t('queue.jobHistory')">
     <template #alt-title>
       <div class="ml-auto flex shrink-0 items-center">
-        <JobHistoryActionsMenu @clear-history="showQueueClearHistoryDialog" />
+        <JobHistoryActionsMenu @clear-history="onClearHistory" />
       </div>
     </template>
     <template #header>
       <div class="flex flex-col gap-2 pb-1">
         <div class="px-3 py-2">
           <JobFilterTabs
-            v-model:selected-job-tab="selectedJobTab"
+            :selected-job-tab="selectedJobTab"
             :has-failed-jobs="hasFailedJobs"
+            @update:selected-job-tab="onUpdateSelectedJobTab"
           />
         </div>
         <JobFilterActions
@@ -81,13 +82,14 @@ import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useJobList } from '@/composables/queue/useJobList'
-import type { JobListItem } from '@/composables/queue/useJobList'
+import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -104,6 +106,17 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
+
+const onClearHistory = () => {
+  trackFeatureUsed()
+  showQueueClearHistoryDialog()
+}
+
+const onUpdateSelectedJobTab = (value: JobTab) => {
+  trackFeatureUsed()
+  selectedJobTab.value = value
+}
 const {
   selectedJobTab,
   selectedWorkflowFilter,
@@ -145,6 +158,7 @@ const activeQueueSummary = computed(() => {
 })
 
 const clearQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
+  trackFeatureUsed()
   const pendingJobIds = queueStore.pendingTasks
     .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
@@ -160,6 +174,7 @@ const {
 } = useResultGallery(() => filteredTasks.value)
 
 const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   const previewOutput = item.taskRef?.previewOutput
 
   if (previewOutput?.is3D) {
@@ -194,10 +209,12 @@ const { jobMenuEntries, cancelJob } = useJobMenu(
 )
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   await cancelJob(item)
 })
 
 const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   if (!item.taskRef) return
   await queueStore.delete(item.taskRef)
 })

@@ -46,10 +46,6 @@ test.describe(
   'Subgraph promoted widget panel',
   { tag: ['@node', '@widget'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test.describe('SubgraphEditor (Settings panel)', () => {
       test('linked promoted widgets have hide toggle disabled', async ({
         comfyPage
@@ -106,14 +102,17 @@ test.describe(
           'Input Test Subgraph'
         )
 
-        const allTexts = await collectWidgetLabels(shownSection)
-        expect(allTexts.length).toBeGreaterThan(0)
-
-        // The fixture has a widget with name="text" but
-        // label="renamed_from_sidepanel". The panel should show the
-        // renamed label, not the raw widget name.
-        expect(allTexts).toContain('renamed_from_sidepanel')
-        expect(allTexts).not.toContain('text')
+        await expect
+          .poll(() => collectWidgetLabels(shownSection))
+          .toEqual(
+            expect.arrayContaining([
+              expect.anything(),
+              'renamed_from_sidepanel'
+            ])
+          )
+        await expect
+          .poll(() => collectWidgetLabels(shownSection))
+          .not.toContain('text')
       })
     })
 
