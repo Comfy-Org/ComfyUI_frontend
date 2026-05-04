@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Узел Moonvalley Marey: Изображение в видео",
-    "display_name": "Moonvalley Marey: Изображение в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Эталонное изображение, используемое для генерации видео"
-      },
-      "negative_prompt": {
-        "name": "негативный_промпт",
-        "tooltip": "Текст негативного промпта"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "prompt_adherence": {
-        "name": "следование_промпту",
-        "tooltip": "Коэффициент управления генерацией"
-      },
-      "resolution": {
-        "name": "разрешение",
-        "tooltip": "Разрешение выходного видео"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Значение случайного сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Количество шагов денизинга"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey: Текст в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "negative_prompt": {
-        "name": "негативный_промпт",
-        "tooltip": "Текст негативного промпта"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "prompt_adherence": {
-        "name": "следование_запросу",
-        "tooltip": "Коэффициент управления генерацией"
-      },
-      "resolution": {
-        "name": "разрешение",
-        "tooltip": "Разрешение выходного видео"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное значение сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Шаги вывода"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video to Video",
-    "inputs": {
-      "control_type": {
-        "name": "тип_управления"
-      },
-      "motion_intensity": {
-        "name": "интенсивность_движения",
-        "tooltip": "Используется только если тип_управления 'Передача движения'"
-      },
-      "negative_prompt": {
-        "name": "негативный_запрос",
-        "tooltip": "Текст негативного запроса"
-      },
-      "prompt": {
-        "name": "запрос",
-        "tooltip": "Описывает видео для генерации"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное значение сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Количество шагов вывода"
-      },
-      "video": {
-        "name": "видео",
-        "tooltip": "Эталонное видео, используемое для генерации выходного видео. Должно быть длиной не менее 5 секунд. Видео длиннее 5 секунд будут автоматически обрезаны. Поддерживается только формат MP4."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "Морфология изображения",
     "inputs": {
@@ -12534,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "контроль после генерации"
       },
       "value": {
@@ -16624,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Кадры видео как пакет изображений. Предполагается 24 кадра в секунду; внутренне дискретизируется до 1 кадра в секунду."
       }
     },
     "outputs": {
@@ -16679,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Кадры видео как пакет изображений. Предполагается 24 кадра в секунду; внутренне дискретизируется до 1 кадра в секунду."
       }
     },
     "outputs": {
@@ -16894,6 +16794,45 @@
       },
       "upscaler_resolution": {
         "name": "разрешение увеличителя"
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Оживите видео с помощью мощных технологий увеличения разрешения и восстановления.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "уровень динамического сжатия",
+        "tooltip": "Уровень CQP."
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "креативность"
+      },
+      "upscaler_model_prompt": {
+        "name": "промпт"
+      },
+      "upscaler_model_realism": {
+        "name": "реализм"
+      },
+      "upscaler_model_sharp": {
+        "name": "резкость"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "разрешение увеличения"
       },
       "video": {
         "name": "видео"

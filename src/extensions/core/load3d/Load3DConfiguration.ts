@@ -24,6 +24,20 @@ type Load3DConfigurationSettings = {
   silentOnNotFound?: boolean
 }
 
+const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
+
+export function parseAnnotatedFilename(
+  rawValue: string,
+  fallbackFolder: string
+): { filename: string; folder: string } {
+  const match = ANNOTATED_FILENAME_PATTERN.exec(rawValue)
+  if (!match) return { filename: rawValue, folder: fallbackFolder }
+  return {
+    filename: rawValue.slice(0, match.index),
+    folder: match[1]
+  }
+}
+
 class Load3DConfiguration {
   constructor(
     private load3d: Load3d,
@@ -268,14 +282,17 @@ class Load3DConfiguration {
     return async (value: string | number | boolean | object) => {
       if (!value) return
 
-      const filename = value as string
+      const { filename, folder } = parseAnnotatedFilename(
+        value as string,
+        loadFolder
+      )
 
       this.setResourceFolder(filename)
 
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
-          loadFolder
+          folder
         )
       )
 
