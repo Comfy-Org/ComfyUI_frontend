@@ -2,6 +2,24 @@ import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+function hasV2DraftHistory(raw: string | null): boolean {
+  if (!raw) return false
+  try {
+    const parsed = JSON.parse(raw) as {
+      order?: unknown
+      entries?: unknown
+    }
+    const orderLength = Array.isArray(parsed.order) ? parsed.order.length : 0
+    const entriesCount =
+      parsed.entries && typeof parsed.entries === 'object'
+        ? Object.keys(parsed.entries as Record<string, unknown>).length
+        : 0
+    return orderLength > 0 || entriesCount > 0
+  } catch {
+    return false
+  }
+}
+
 function _useNewUserService() {
   const settingStore = useSettingStore()
   const pendingCallbacks = shallowRef<Array<() => Promise<void>>>([])
@@ -30,9 +48,12 @@ function _useNewUserService() {
       !localStorage.getItem('Comfy.Workflow.DraftOrder')
 
     // V2 draft index key (scoped to personal workspace; cloud workspace id
-    // comes from sessionStorage which may not be set yet at this point)
-    const hasNoV2DraftIndex = !localStorage.getItem(
-      'Comfy.Workflow.DraftIndex.v2:personal'
+    // comes from sessionStorage which may not be set yet at this point).
+    // Check for actual draft history rather than key existence: an empty
+    // index is written by `migrateV1toV2()` for genuine new users during
+    // startup, so key presence alone is not evidence of prior usage.
+    const hasNoV2DraftIndex = !hasV2DraftHistory(
+      localStorage.getItem('Comfy.Workflow.DraftIndex.v2:personal')
     )
 
     return (
