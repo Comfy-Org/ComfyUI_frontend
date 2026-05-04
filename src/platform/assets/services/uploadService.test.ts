@@ -159,6 +159,64 @@ describe('uploadService', () => {
         ?.body as FormData
       expect(formData.get('original_ref')).toBe(JSON.stringify(originalRef))
     })
+
+    it('forwards the configured endpoint to api.fetchApi', async () => {
+      const mockFile = new File(['content'], 'mask.png')
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        createMockResponse(200, { name: 'mask.png' })
+      )
+
+      await uploadMedia({ source: mockFile }, { endpoint: '/upload/mask' })
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/upload/mask',
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+
+    it('defaults to /upload/image endpoint when not specified', async () => {
+      const mockFile = new File(['content'], 'test.png')
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        createMockResponse(200, { name: 'test.png' })
+      )
+
+      await uploadMedia({ source: mockFile })
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/upload/image',
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+
+    it('converts Blob source to a File preserving mime type and fallback name', async () => {
+      const mockBlob = new Blob(['content'], { type: 'image/png' })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        createMockResponse(200, { name: 'upload-123.png', subfolder: '' })
+      )
+
+      await uploadMedia({ source: mockBlob })
+
+      const formData = vi.mocked(api.fetchApi).mock.calls[0][1]
+        ?.body as FormData
+      const uploadedFile = formData.get('image')
+      expect(uploadedFile).toBeInstanceOf(File)
+      expect((uploadedFile as File).type).toBe('image/png')
+      expect((uploadedFile as File).name).toMatch(/^upload-\d+\.png$/)
+    })
+
+    it('uses provided filename when converting a Blob', async () => {
+      const mockBlob = new Blob(['content'], { type: 'image/png' })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        createMockResponse(200, { name: 'custom.png', subfolder: '' })
+      )
+
+      await uploadMedia({ source: mockBlob, filename: 'custom.png' })
+
+      const formData = vi.mocked(api.fetchApi).mock.calls[0][1]
+        ?.body as FormData
+      const uploadedFile = formData.get('image') as File
+      expect(uploadedFile.name).toBe('custom.png')
+    })
   })
 
   describe('uploadMediaBatch', () => {
