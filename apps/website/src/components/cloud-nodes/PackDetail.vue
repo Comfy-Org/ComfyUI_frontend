@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Pack, PackNode } from '../../data/cloudNodes'
+import type { Pack } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
 
+import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
 import PackBanner from './PackBanner.vue'
 
@@ -17,30 +16,10 @@ const { pack, locale = 'en' } = defineProps<{
 const backHref =
   locale === 'zh-CN' ? '/zh-CN/cloud/supported-nodes' : '/cloud/supported-nodes'
 
-const groupedNodes = computed(() => {
-  const byCategory = new Map<string, PackNode[]>()
-
-  for (const node of pack.nodes) {
-    const category = node.category || '—'
-    const existing = byCategory.get(category)
-    if (existing) {
-      existing.push(node)
-      continue
-    }
-    byCategory.set(category, [node])
-  }
-
-  return [...byCategory.entries()]
-    .map(([category, nodes]) => ({
-      category,
-      nodes: [...nodes].sort((a, b) =>
-        a.displayName.localeCompare(b.displayName)
-      )
-    }))
-    .sort((a, b) => a.category.localeCompare(b.category))
-})
+const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
 const numberFormatter = new Intl.NumberFormat(locale)
+const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' })
 
 function formatNumber(value?: number): string {
   if (typeof value !== 'number') return '—'
@@ -51,9 +30,7 @@ function formatDate(value?: string): string {
   if (!value) return '—'
   const timestamp = Date.parse(value)
   if (Number.isNaN(timestamp)) return '—'
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
-    timestamp
-  )
+  return dateFormatter.format(timestamp)
 }
 </script>
 

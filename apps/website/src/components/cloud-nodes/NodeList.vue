@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { PackNode } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
 
+import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en', nodes } = defineProps<{
@@ -11,27 +10,7 @@ const { locale = 'en', nodes } = defineProps<{
   nodes: readonly PackNode[]
 }>()
 
-const groupedNodes = computed(() => {
-  const byCategory = new Map<string, PackNode[]>()
-  for (const node of nodes) {
-    const category = node.category || 'misc'
-    const existing = byCategory.get(category)
-    if (existing) {
-      existing.push(node)
-      continue
-    }
-    byCategory.set(category, [node])
-  }
-
-  return [...byCategory.entries()]
-    .map(([category, categoryNodes]) => ({
-      category,
-      nodes: [...categoryNodes].sort((a, b) =>
-        a.displayName.localeCompare(b.displayName)
-      )
-    }))
-    .sort((a, b) => a.category.localeCompare(b.category))
-})
+const { groupedNodes } = useNodesByCategory(() => nodes)
 </script>
 
 <template>
