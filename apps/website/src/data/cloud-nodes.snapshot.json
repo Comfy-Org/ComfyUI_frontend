@@ -1,0 +1,109 @@
+{
+  "fetchedAt": "2026-05-04T00:00:00.000Z",
+  "packs": [
+    {
+      "id": "comfyui-controlnet-aux",
+      "registryId": "comfyui-controlnet-aux",
+      "displayName": "ComfyUI ControlNet Aux",
+      "description": "Preprocessors and helper nodes for ControlNet workflows.",
+      "bannerUrl": "https://cdn.comfy.org/registry/banners/comfyui-controlnet-aux.webp",
+      "iconUrl": "https://cdn.comfy.org/registry/icons/comfyui-controlnet-aux.png",
+      "repoUrl": "https://github.com/Fannovel16/comfyui_controlnet_aux",
+      "publisher": {
+        "id": "fannovel16",
+        "name": "Fannovel16"
+      },
+      "downloads": 148200,
+      "githubStars": 5400,
+      "latestVersion": "1.12.2",
+      "license": "Apache-2.0",
+      "lastUpdated": "2026-04-27T11:11:00.000Z",
+      "supportedOs": ["linux", "windows", "macos"],
+      "supportedAccelerators": ["CUDA", "ROCm", "CPU"],
+      "nodes": [
+        {
+          "name": "DWPreprocessor",
+          "displayName": "DW Pose Preprocessor",
+          "category": "controlnet/preprocessors",
+          "description": "Estimate pose maps for ControlNet guidance."
+        },
+        {
+          "name": "AnyLinePreprocessor",
+          "displayName": "AnyLine Preprocessor",
+          "category": "controlnet/preprocessors",
+          "description": "Extract robust line art from source images."
+        },
+        {
+          "name": "OpenPosePreprocessor",
+          "displayName": "OpenPose Preprocessor",
+          "category": "controlnet/preprocessors",
+          "description": "Generate body/hand/face keypoint maps."
+        },
+        {
+          "name": "MidasDepthMapPreprocessor",
+          "displayName": "MiDaS Depth Preprocessor",
+          "category": "controlnet/preprocessors",
+          "description": "Predict monocular depth maps for depth conditioning."
+        },
+        {
+          "name": "HEDPreprocessor",
+          "displayName": "HED Edge Preprocessor",
+          "category": "controlnet/preprocessors",
+          "description": "Compute soft edge maps with HED."
+        }
+      ]
+    },
+    {
+      "id": "comfyui-impact-pack",
+      "registryId": "comfyui-impact-pack",
+      "displayName": "ComfyUI Impact Pack",
+      "description": "Utility, detailer, and batching nodes for production workflows.",
+      "bannerUrl": "https://cdn.comfy.org/registry/banners/comfyui-impact-pack.webp",
+      "iconUrl": "https://cdn.comfy.org/registry/icons/comfyui-impact-pack.png",
+      "repoUrl": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+      "publisher": {
+        "id": "ltdrdata",
+        "name": "ltdrdata"
+      },
+      "downloads": 212400,
+      "githubStars": 6300,
+      "latestVersion": "8.3.0",
+      "license": "MIT",
+      "lastUpdated": "2026-05-01T08:23:00.000Z",
+      "supportedOs": ["linux", "windows", "macos"],
+      "supportedAccelerators": ["CUDA", "ROCm", "CPU"],
+      "nodes": [
+        {
+          "name": "DetailerForEach",
+          "displayName": "Detailer (for each)",
+          "category": "impact/detailer",
+          "description": "Run iterative detail refinement over detected regions."
+        },
+        {
+          "name": "FaceDetailer",
+          "displayName": "Face Detailer",
+          "category": "impact/detailer",
+          "description": "Detect and refine faces with local passes."
+        },
+        {
+          "name": "SEGSPreview",
+          "displayName": "SEGS Preview",
+          "category": "impact/utility",
+          "description": "Preview segmentation outputs before refinement."
+        },
+        {
+          "name": "MaskToSEGS",
+          "displayName": "Mask to SEGS",
+          "category": "impact/utility",
+          "description": "Convert binary masks into SEGS regions."
+        },
+        {
+          "name": "WildcardText",
+          "displayName": "Wildcard Text",
+          "category": "impact/prompt",
+          "description": "Expand wildcard prompt tokens during generation."
+        }
+      ]
+    }
+  ]
+}
