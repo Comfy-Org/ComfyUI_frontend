@@ -186,7 +186,10 @@ async function fetchThumbnail(slug: string): Promise<string | undefined> {
     const res = await fetch(url)
     if (!res.ok) return undefined
     const data = (await res.json()) as {
-      workflows?: Array<{ thumbnail_url?: string; sample_image_urls?: string[] }>
+      workflows?: Array<{
+        thumbnail_url?: string
+        sample_image_urls?: string[]
+      }>
     }
     const wf = data.workflows?.[0]
     const thumb = wf?.thumbnail_url || wf?.sample_image_urls?.[0]
@@ -278,7 +281,9 @@ async function run(): Promise<void> {
 
   // Fetch hub thumbnails unless skipped (set SKIP_THUMBNAILS=1 for offline use)
   if (!process.env['SKIP_THUMBNAILS']) {
-    process.stdout.write(`Fetching hub thumbnails for ${combined.length} models...\n`)
+    process.stdout.write(
+      `Fetching hub thumbnails for ${combined.length} models...\n`
+    )
     await Promise.all(
       combined.map(async (m) => {
         const thumb = await fetchThumbnail(m.slug)
@@ -286,7 +291,9 @@ async function run(): Promise<void> {
       })
     )
     const withThumbs = combined.filter((m) => m.thumbnailUrl).length
-    process.stdout.write(`  ${withThumbs}/${combined.length} models have thumbnails\n`)
+    process.stdout.write(
+      `  ${withThumbs}/${combined.length} models have thumbnails\n`
+    )
   }
 
   const defaultOut = join(
