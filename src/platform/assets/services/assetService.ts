@@ -185,6 +185,12 @@ export const MISSING_TAG = 'missing'
 /** Result of a HEAD lookup against an exact asset hash. */
 export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
 
+/** Verifier signature shared by callers that probe the hash endpoint. */
+export type AssetHashVerifier = (
+  assetHash: string,
+  signal?: AbortSignal
+) => Promise<AssetHashStatus>
+
 const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
 const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
 const uploadedAssetResponseSchema = assetItemSchema.extend({
@@ -202,24 +208,16 @@ export function toBlake3AssetHash(hash: string | undefined): string | null {
   return `blake3:${hash}`
 }
 
-function createAbortError(): DOMException {
-  return new DOMException('Aborted', 'AbortError')
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw createAbortError()
-}
-
 async function withCallerAbort<T>(
   promise: Promise<T>,
   signal?: AbortSignal
 ): Promise<T> {
-  throwIfAborted(signal)
+  signal?.throwIfAborted()
   if (!signal) return await promise
 
   let removeAbortListener = () => {}
   const abortPromise = new Promise<never>((_, reject) => {
-    const onAbort = () => reject(createAbortError())
+    const onAbort = () => reject(signal.reason)
     signal.addEventListener('abort', onAbort, { once: true })
     removeAbortListener = () => signal.removeEventListener('abort', onAbort)
   })
@@ -533,7 +531,7 @@ function createAssetService() {
     let offset = 0
 
     while (true) {
-      if (signal?.aborted) throw createAbortError()
+      signal?.throwIfAborted()
 
       const data = await handleAssetRequest(
         {
@@ -589,7 +587,7 @@ function createAssetService() {
   async function getInputAssetsIncludingPublic(
     signal?: AbortSignal
   ): Promise<AssetItem[]> {
-    throwIfAborted(signal)
+    signal?.throwIfAborted()
     if (inputAssetsIncludingPublic) return inputAssetsIncludingPublic
 
     const request =

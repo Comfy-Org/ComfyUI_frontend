@@ -8,12 +8,14 @@ import type { ResultItemType } from '@/schemas/apiSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`
- * when cancelling a request.
+ * when cancelling a request. Real AbortControllers reject with a
+ * `DOMException` (which extends `Error`), and some libraries throw plain
+ * `Error`s with `name === 'AbortError'`. Either is treated as an abort.
  */
 export const isAbortError = (
   err: unknown
-): err is DOMException & { name: 'AbortError' } =>
-  err instanceof DOMException && err.name === 'AbortError'
+): err is Error & { name: 'AbortError' } =>
+  err instanceof Error && err.name === 'AbortError'
 
 export const isSubgraph = (
   item: LGraph | Subgraph | undefined | null
