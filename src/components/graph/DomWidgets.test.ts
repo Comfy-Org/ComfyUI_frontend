@@ -50,7 +50,8 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     low_quality: false,
     read_only: false,
     isNodeVisible: vi.fn(() => true),
-    ds: { offset: [0, 0], scale: 1 }
+    ds: { offset: [0, 0], scale: 1 },
+    selected_nodes: {}
   })
 }
 
@@ -205,6 +206,67 @@ describe('DomWidgets transition grace characterization', () => {
     // (this is the perf optimization being protected).
     drawFrame(canvas)
     expect(widgetState.pos).toBe(posAfterFirstFrame)
+  })
+
+  it('mirrors widget.computedDisabled into widgetState each frame', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'node', [100, 200])
+    const widget = createWidget('disabled-widget', node, 12)
+    Object.assign(widget, { computedDisabled: false })
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    expect(widgetState.computedDisabled).toBe(false)
+
+    // Simulate litegraph connecting an input -> widget.computedDisabled flips.
+    Object.assign(widget, { computedDisabled: true })
+    drawFrame(canvas)
+    expect(widgetState.computedDisabled).toBe(true)
+  })
+
+  it('forces pos reassignment for widgets when the selected node moves', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const movingNode = createNode(graph, 1, 'moving', [100, 100])
+    const otherNode = createNode(graph, 2, 'other', [400, 100])
+    const widget = createWidget('clipped-widget', otherNode, 12)
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    // movingNode is the selected node — its renderArea drives clipping for
+    // widgets owned by other nodes.
+    canvas.selected_nodes = { 1: movingNode }
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    const posAfterFirstFrame = widgetState.pos
+
+    // Drag the selected node — otherNode (and its widget) hasn't moved, but
+    // the widget's clip-path depends on movingNode.renderArea, so the
+    // downstream pos watcher must re-fire.
+    movingNode.pos[0] = 150
+    drawFrame(canvas)
+    expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
 
   it('cleans orphaned transition-grace ids after widget removal', () => {

@@ -34,6 +34,18 @@ let lastViewportOffsetX = Number.NaN
 let lastViewportOffsetY = Number.NaN
 let lastViewportScale = Number.NaN
 
+// Track the selected node's identity and bounds between frames. DOM widget
+// clipping is computed against the selected node's renderArea (non-reactive).
+// When the user drags or resizes the selected node, widgets owned by other
+// nodes must re-evaluate their clip-path even though their own pos hasn't
+// changed — force pos reassignment on those widgets so the downstream
+// watcher in DomWidget re-runs updateDomClipping().
+let lastSelectedNodeId: string | number | undefined
+let lastSelectedPosX = 0
+let lastSelectedPosY = 0
+let lastSelectedWidth = 0
+let lastSelectedHeight = 0
+
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
@@ -52,6 +64,25 @@ const updateWidgets = () => {
   lastViewportOffsetX = viewportOffsetX
   lastViewportOffsetY = viewportOffsetY
   lastViewportScale = viewportScale
+
+  const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
+  const selectedNodeId = selectedNode?.id
+  const selectedPosX = selectedNode ? selectedNode.pos[0] : 0
+  const selectedPosY = selectedNode ? selectedNode.pos[1] : 0
+  const selectedWidth = selectedNode ? selectedNode.size[0] : 0
+  const selectedHeight = selectedNode ? selectedNode.size[1] : 0
+  const selectionChanged =
+    lastSelectedNodeId !== selectedNodeId ||
+    (!!selectedNode &&
+      (lastSelectedPosX !== selectedPosX ||
+        lastSelectedPosY !== selectedPosY ||
+        lastSelectedWidth !== selectedWidth ||
+        lastSelectedHeight !== selectedHeight))
+  lastSelectedNodeId = selectedNodeId
+  lastSelectedPosX = selectedPosX
+  lastSelectedPosY = selectedPosY
+  lastSelectedWidth = selectedWidth
+  lastSelectedHeight = selectedHeight
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
@@ -107,6 +138,7 @@ const updateWidgets = () => {
       const newPosY = posNode.pos[1] + margin + posWidget.y
       if (
         viewportChanged ||
+        selectionChanged ||
         widgetState.pos[0] !== newPosX ||
         widgetState.pos[1] !== newPosY
       ) {
@@ -130,6 +162,13 @@ const updateWidgets = () => {
       const newReadonly = lgCanvas.read_only
       if (widgetState.readonly !== newReadonly) {
         widgetState.readonly = newReadonly
+      }
+
+      const newComputedDisabled = useOverride
+        ? (override.widget.computedDisabled ?? widget.computedDisabled ?? false)
+        : (widget.computedDisabled ?? false)
+      if (widgetState.computedDisabled !== newComputedDisabled) {
+        widgetState.computedDisabled = newComputedDisabled
       }
     }
   }

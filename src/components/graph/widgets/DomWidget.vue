@@ -104,10 +104,7 @@ const updateDomClipping = () => {
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
 
 function composeStyle() {
-  const override = widgetState.positionOverride
-  const isDisabled = override
-    ? (override.widget.computedDisabled ?? widget.computedDisabled)
-    : widget.computedDisabled
+  const isDisabled = widgetState.computedDisabled
 
   style.value = {
     ...positionStyle.value,
@@ -146,6 +143,7 @@ watch(
   [
     () => widgetState.zIndex,
     () => widgetState.readonly,
+    () => widgetState.computedDisabled,
     () => widgetState.positionOverride,
     enableDomClipping
   ],
