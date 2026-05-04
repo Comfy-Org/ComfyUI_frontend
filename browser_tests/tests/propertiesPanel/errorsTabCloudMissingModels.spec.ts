@@ -116,22 +116,21 @@ test.describe(
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
       await panel.open(comfyPage.actionbar.propertiesButton)
 
+      await expect
+        .poll(
+          () =>
+            countDiffusionModelAssetRequests(cloudAssetRequests) >
+            requestCountBeforeRootReturn,
+          { timeout: 10_000 }
+        )
+        .toBe(true)
+
       test.fail(
         true,
         'Root return currently replays nested subgraph container model widgets as missing in Cloud. Remove this annotation when the replay scan skips nested subgraph containers.'
       )
 
-      await expect
-        .poll(
-          async () => ({
-            didReplayScan:
-              countDiffusionModelAssetRequests(cloudAssetRequests) >
-              requestCountBeforeRootReturn,
-            errorsTabVisible: await errorsTab.isVisible()
-          }),
-          { timeout: 10_000 }
-        )
-        .toEqual({ didReplayScan: true, errorsTabVisible: false })
+      await expect(errorsTab).toBeHidden()
     })
   }
 )
