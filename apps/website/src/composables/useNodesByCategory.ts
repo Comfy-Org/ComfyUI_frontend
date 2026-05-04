@@ -5,7 +5,7 @@ import type { PackNode } from '../data/cloudNodes'
 
 const UNCATEGORIZED = '—'
 
-export interface NodeCategoryGroup {
+interface NodeCategoryGroup {
   category: string
   nodes: PackNode[]
 }
