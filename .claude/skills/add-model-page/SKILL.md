@@ -1,6 +1,6 @@
 ---
 name: add-model-page
-description: 'Add, update, or remove a model page entry on the comfy org website. Creates a PR to Comfy-Org/ComfyUI_frontend apps/website folder with the change.'
+description: 'Add, update, or remove a model page entry on the comfy org website. Creates a PR to Comfy-Org/ComfyUI_frontend apps/website folder with the change and posts a Vercel preview link back to Slack.'
 ---
 
 # add-model-page
@@ -74,7 +74,8 @@ If no match and it is a known API/partner model, add it to `API_PROVIDER_MAP` in
 ## Phase 3 — Check for existing entry
 
 ```bash
-grep -n "slug: '${SLUG}'" apps/website/src/config/models.ts
+jq --arg slug "${SLUG}" '.[] | select(.slug == $slug)' \
+  apps/website/src/config/generated-models.json
 ```
 
 - Match found + action is `add` → switch to UPDATE flow automatically
@@ -141,7 +142,9 @@ Fix any type errors before proceeding. Common issues:
 ```bash
 BRANCH="add-model-page-MODEL-SLUG"   # or update- / remove-
 git checkout -b $BRANCH
-git add apps/website/src/config/models.ts apps/website/src/i18n/translations.ts
+git add apps/website/src/config/generated-models.json \
+        apps/website/scripts/generate-models.ts \
+        apps/website/src/config/model-metadata.ts
 git commit -m "feat(models): add model page for MODEL-SLUG"
 git push -u origin $BRANCH
 gh pr create \
@@ -150,18 +153,14 @@ gh pr create \
 Adds a new model page entry for MODEL-SLUG.
 
 ## Changes
-- `models.ts`: new entry with workflowCount N, directory DIRECTORY
-- `translations.ts`: placeholder i18n keys (zh-CN needs translation)
-
-## Images needed
-- `/images/models/MODEL-SLUG-og.png` (1200×630)
-- `/images/models/MODEL-SLUG-thumb.webp`
+- `generated-models.json`: regenerated with new entry (workflowCount N, directory DIRECTORY)
+- `model-metadata.ts`: editorial overrides (docsUrl, featured) if needed
 EOF
 )"
 ```
 
 For UPDATE use branch `update-model-page-MODEL-SLUG`.
-For REMOVE use `remove-model-page-MODEL-SLUG` and omit the images note.
+For REMOVE use `remove-model-page-MODEL-SLUG`.
 
 ---
 

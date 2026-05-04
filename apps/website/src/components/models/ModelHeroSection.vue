@@ -72,7 +72,7 @@ const isPartnerNode = directory === 'partner_nodes'
       <div class="flex flex-col gap-3 sm:flex-row">
         <BrandButton
           :href="externalLinks.workflows"
-          variant="primary"
+          variant="solid"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >

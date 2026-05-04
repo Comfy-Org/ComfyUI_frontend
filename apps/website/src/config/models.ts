@@ -60,11 +60,3 @@ export const models: readonly Model[] = (
 export function getModelBySlug(slug: string): Model | undefined {
   return models.find((m) => m.slug === slug)
 }
-
-export function getFeaturedModels(): readonly Model[] {
-  return models.filter((m) => m.featured)
-}
-
-export function getModelsByDirectory(dir: ModelDirectory): readonly Model[] {
-  return models.filter((m) => m.directory === dir)
-}

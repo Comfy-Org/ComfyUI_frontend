@@ -33,7 +33,12 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      entry: ['src/scripts/**/*.ts']
+      entry: [
+        'src/scripts/**/*.ts',
+        'src/pages/**/*.astro',
+        'src/layouts/**/*.astro'
+      ],
+      project: ['src/**/*.{ts,vue,astro}', 'scripts/**/*.ts']
     }
   },
   ignoreBinaries: ['python3'],
