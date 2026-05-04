@@ -235,6 +235,46 @@ describe(assetService.uploadAssetFromUrl, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
     consoleSpy.mockRestore()
   })
+
+  it('requires upload responses to include created_new', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(
+        buildResponse(validAsset({ id: 'uploaded-input', tags: ['input'] }))
+      )
+
+    await assetService.getInputAssetsIncludingPublic()
+    await expect(
+      assetService.uploadAssetFromUrl({
+        url: 'https://example.com/input.png',
+        name: 'input.png',
+        tags: ['input']
+      })
+    ).rejects.toThrow('Failed to upload asset')
+    const cached = await assetService.getInputAssetsIncludingPublic()
+
+    expect(cached).toEqual(staleAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+    consoleSpy.mockRestore()
+  })
+
+  it('returns validated upload responses with created_new', async () => {
+    const uploadedAsset = {
+      ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
+      created_new: true
+    }
+    fetchApiMock.mockResolvedValueOnce(buildResponse(uploadedAsset))
+
+    await expect(
+      assetService.uploadAssetFromUrl({
+        url: 'https://example.com/input.png',
+        name: 'input.png',
+        tags: ['input']
+      })
+    ).resolves.toEqual(uploadedAsset)
+  })
 })
 
 describe(assetService.uploadAssetFromBase64, () => {
@@ -263,6 +303,37 @@ describe(assetService.uploadAssetFromBase64, () => {
     fetchApiMock
       .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
       .mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
+
+    await assetService.getInputAssetsIncludingPublic()
+    await expect(
+      assetService.uploadAssetFromBase64({
+        data: 'data:text/plain;base64,aGVsbG8=',
+        name: 'input.txt',
+        tags: ['input']
+      })
+    ).rejects.toThrow('Failed to upload asset')
+    const cached = await assetService.getInputAssetsIncludingPublic()
+
+    expect(cached).toEqual(staleAssets)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+    fetchSpy.mockRestore()
+    consoleSpy.mockRestore()
+  })
+
+  it('rejects upload responses with a non-boolean created_new', async () => {
+    const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('hello'))
+    fetchApiMock
+      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(
+        buildResponse({
+          ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
+          created_new: 'true'
+        })
+      )
 
     await assetService.getInputAssetsIncludingPublic()
     await expect(

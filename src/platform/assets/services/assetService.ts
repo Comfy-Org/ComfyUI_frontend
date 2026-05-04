@@ -1,4 +1,5 @@
 import { fromZodError } from 'zod-validation-error'
+import { z } from 'zod'
 
 import { st } from '@/i18n'
 
@@ -186,6 +187,9 @@ export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
 
 const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
 const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
+const uploadedAssetResponseSchema = assetItemSchema.extend({
+  created_new: z.boolean()
+})
 
 /** Returns true for a prefixed BLAKE3 asset hash: `blake3:<64 hex>`. */
 export function isBlake3AssetHash(value: string): boolean {
@@ -243,9 +247,9 @@ function validateAssetResponse(data: unknown): AssetResponse {
 function validateUploadedAssetResponse(
   data: unknown
 ): AssetItem & { created_new: boolean } {
-  const result = assetItemSchema.safeParse(data)
+  const result = uploadedAssetResponseSchema.safeParse(data)
   if (result.success) {
-    return data as AssetItem & { created_new: boolean }
+    return result.data
   }
 
   console.error('Invalid asset upload response:', fromZodError(result.error))
