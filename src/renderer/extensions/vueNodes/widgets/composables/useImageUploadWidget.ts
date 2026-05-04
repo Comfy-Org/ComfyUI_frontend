@@ -3,7 +3,7 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -11,8 +11,10 @@ import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
-const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
-const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
+import {
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_VIDEO_TYPES
+} from '@/utils/mediaUploadUtil'
 
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
@@ -50,7 +52,7 @@ export const useImageUploadWidget = () => {
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
     }
-    const formatPath = (value: string) =>
+    const formatPath = (value: string | ResultItem) =>
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     // Setup file upload handling

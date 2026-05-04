@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -86,7 +86,7 @@ const createI18nInstance = () =>
 const mountView = async (query: Record<string, unknown>) => {
   mockQuery = query
 
-  const wrapper = mount(CloudSubscriptionRedirectView, {
+  const { container } = render(CloudSubscriptionRedirectView, {
     global: {
       plugins: [createI18nInstance()]
     }
@@ -94,7 +94,7 @@ const mountView = async (query: Record<string, unknown>) => {
 
   await flushPromises()
 
-  return { wrapper }
+  return { container }
 }
 
 describe('CloudSubscriptionRedirectView', () => {
@@ -118,13 +118,13 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('shows subscription copy when subscriptionType is valid', async () => {
-    const { wrapper } = await mountView({ tier: 'creator' })
+    await mountView({ tier: 'creator' })
 
     // Should not redirect to home
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
 
     // Shows copy under logo
-    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
     // Triggers checkout flow
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
@@ -134,11 +134,9 @@ describe('CloudSubscriptionRedirectView', () => {
     )
 
     // Shows loading affordances
-    expect(wrapper.findComponent({ name: 'ProgressSpinner' }).exists()).toBe(
-      true
-    )
-    const skipLink = wrapper.get('a[href="/"]')
-    expect(skipLink.text()).toContain('Skip to the cloud app')
+    expect(
+      screen.getByRole('link', { name: /skip to the cloud app/i })
+    ).toBeInTheDocument()
   })
 
   test('opens billing portal when subscription is already active', async () => {
@@ -152,12 +150,12 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('uses first value when subscriptionType is an array', async () => {
-    const { wrapper } = await mountView({
+    await mountView({
       tier: ['creator', 'pro']
     })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',

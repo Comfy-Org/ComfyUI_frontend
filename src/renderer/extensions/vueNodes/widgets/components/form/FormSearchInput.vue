@@ -3,7 +3,7 @@ import { refDebounced } from '@vueuse/core'
 import { ref, toRef, toValue, watch } from 'vue'
 import type { HTMLAttributes, MaybeRefOrGetter } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   searcher = async () => {},

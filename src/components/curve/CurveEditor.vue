@@ -85,11 +85,11 @@
 import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { CurveInterpolation, CurvePoint } from './types'
 
-import { histogramToPath } from './curveUtils'
+import { histogramToPath } from '@/utils/histogramUtil'
 
 const {
   curveColor = 'white',

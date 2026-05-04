@@ -175,7 +175,6 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="template in isLoading ? [] : displayTemplates"
-            v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
             size="tall"
@@ -405,8 +404,8 @@ import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import MultiSelect from '@/components/input/MultiSelect.vue'
-import SingleSelect from '@/components/input/SingleSelect.vue'
+import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
@@ -423,8 +422,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
@@ -442,29 +439,6 @@ const templateWasSelected = ref(false)
 
 onMounted(() => {
   sessionStartTime.value = Date.now()
-})
-
-const systemStatsStore = useSystemStatsStore()
-
-const distributions = computed(() => {
-  switch (__DISTRIBUTION__) {
-    case 'cloud':
-      return [TemplateIncludeOnDistributionEnum.Cloud]
-    case 'localhost':
-      return [TemplateIncludeOnDistributionEnum.Local]
-    case 'desktop':
-    default:
-      if (systemStatsStore.systemStats?.system.os === 'darwin') {
-        return [
-          TemplateIncludeOnDistributionEnum.Desktop,
-          TemplateIncludeOnDistributionEnum.Mac
-        ]
-      }
-      return [
-        TemplateIncludeOnDistributionEnum.Desktop,
-        TemplateIncludeOnDistributionEnum.Windows
-      ]
-  }
 })
 
 // Wrap onClose to track session end
@@ -586,7 +560,7 @@ const {
   totalCount,
   resetFilters,
   loadFuseOptions
-} = useTemplateFiltering(navigationFilteredTemplates, selectedNavItem)
+} = useTemplateFiltering(navigationFilteredTemplates)
 
 /**
  * Coordinates state between the selected navigation item and the sort order to
@@ -851,14 +825,6 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
-
-const isTemplateVisibleOnDistribution = (template: TemplateInfo) => {
-  return (template.includeOnDistributions?.length ?? 0) > 0
-    ? distributions.value.some((d) =>
-        template.includeOnDistributions?.includes(d)
-      )
-    : true
-}
 
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs

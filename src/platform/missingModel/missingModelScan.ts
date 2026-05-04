@@ -1,8 +1,6 @@
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { flattenWorkflowNodes } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   MissingModelCandidate,
   MissingModelViewModel,
@@ -13,18 +11,64 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IAssetWidget,
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { resolveComboValues } from '@/utils/litegraphUtil'
+import type { AssetHashStatus } from '@/platform/assets/services/assetService'
+import {
+  assetService,
+  toBlake3AssetHash
+} from '@/platform/assets/services/assetService'
+
+export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
+  models?: ModelFile[]
+}
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+/**
+ * Fills url/hash/directory onto a candidate from the node's embedded
+ * `properties.models` metadata when the names match. The full pipeline
+ * does this via enrichWithEmbeddedMetadata + graphData.models, but the
+ * realtime single-node scan (paste, un-bypass) otherwise loses these
+ * fields — making the Missing Model row's download/copy-url buttons
+ * disappear after a bypass/un-bypass cycle.
+ */
+function enrichCandidateFromNodeProperties(
+  candidate: MissingModelCandidate,
+  embeddedModels: readonly ModelFile[] | undefined
+): MissingModelCandidate {
+  if (!embeddedModels?.length) return candidate
+  // Require directory agreement when the candidate already has one —
+  // a single node can reference two models with the same name under
+  // different directories (e.g. a LoRA present in multiple folders);
+  // name-only matching would stamp the wrong url/hash onto the
+  // candidate. Mirrors the directory check in enrichWithEmbeddedMetadata.
+  const match = embeddedModels.find(
+    (m) =>
+      m.name === candidate.name &&
+      (!candidate.directory || candidate.directory === m.directory)
+  )
+  if (!match) return candidate
+  return {
+    ...candidate,
+    directory: candidate.directory ?? match.directory,
+    url: candidate.url ?? match.url,
+    hash: candidate.hash ?? match.hash,
+    hashType: candidate.hashType ?? match.hash_type
+  }
 }
 
 function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
@@ -50,14 +94,6 @@ export function isModelFileName(name: string): boolean {
   return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
 
-function resolveComboOptions(widget: IComboWidget): string[] {
-  const values = widget.options.values
-  if (!values) return []
-  if (typeof values === 'function') return values(widget)
-  if (Array.isArray(values)) return values
-  return Object.keys(values)
-}
-
 /**
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
  * Must be called after `graph.configure()` so widget name/value mappings are accurate.
@@ -80,26 +116,59 @@ export function scanAllModelCandidates(
     // Skip subgraph container nodes: their promoted widgets are synthetic
     // views of interior widgets, which are already scanned via recursion.
     if (node.isSubgraphNode?.()) continue
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
 
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    if (!executionId) continue
+    candidates.push(
+      ...scanNodeModelCandidates(
+        rootGraph,
+        node,
+        isAssetSupported,
+        getDirectory
+      )
+    )
+  }
 
-    for (const widget of node.widgets) {
-      let candidate: MissingModelCandidate | null = null
+  return candidates
+}
 
-      if (isAssetWidget(widget)) {
-        candidate = scanAssetWidget(node, widget, executionId, getDirectory)
-      } else if (isComboWidget(widget)) {
-        candidate = scanComboWidget(
-          node,
-          widget,
-          executionId,
-          isAssetSupported,
-          getDirectory
-        )
-      }
+/** Scan a single node's widgets for missing model candidates (OSS immediate resolution). */
+export function scanNodeModelCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined
+): MissingModelCandidate[] {
+  if (!node.widgets?.length) return []
 
-      if (candidate) candidates.push(candidate)
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  const candidates: MissingModelCandidate[] = []
+  const embeddedModels = (node as { properties?: { models?: ModelFile[] } })
+    .properties?.models
+  for (const widget of node.widgets) {
+    let candidate: MissingModelCandidate | null = null
+
+    if (isAssetWidget(widget)) {
+      candidate = scanAssetWidget(node, widget, executionId, getDirectory)
+    } else if (isComboWidget(widget)) {
+      candidate = scanComboWidget(
+        node,
+        widget,
+        executionId,
+        isAssetSupported,
+        getDirectory
+      )
+    }
+
+    if (candidate) {
+      candidates.push(
+        enrichCandidateFromNodeProperties(candidate, embeddedModels)
+      )
     }
   }
 
@@ -113,11 +182,11 @@ function scanAssetWidget(
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {
   const value = widget.value
-  if (!value.trim()) return null
+  if (typeof value !== 'string' || !value.trim()) return null
   if (!isModelFileName(value)) return null
 
   return {
-    nodeId: executionId as NodeId,
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: true,
@@ -139,11 +208,11 @@ function scanComboWidget(
   if (!isModelFileName(value)) return null
 
   const nodeIsAssetSupported = isAssetSupported(node.type, widget.name)
-  const options = resolveComboOptions(widget)
+  const options = resolveComboValues(widget)
   const inOptions = options.includes(value)
 
   return {
-    nodeId: executionId as NodeId,
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: nodeIsAssetSupported,
@@ -155,7 +224,7 @@ function scanComboWidget(
 
 export async function enrichWithEmbeddedMetadata(
   candidates: readonly MissingModelCandidate[],
-  graphData: ComfyWorkflowJSON,
+  graphData: MissingModelWorkflowData,
   checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
   isAssetSupported?: (nodeType: string, widgetName: string) => boolean
 ): Promise<MissingModelCandidate[]> {
@@ -204,8 +273,27 @@ export async function enrichWithEmbeddedMetadata(
     }
   }
 
+  // Workflow-level entries (sourceNodeType === '') survive only when
+  // some active (non-muted, non-bypassed) node actually references the
+  // model — not merely because any unrelated active node exists. A
+  // reference is any widget value (or node.properties.models entry)
+  // that matches the model name on an active node.
+  // Hoist the id→node map once; isModelReferencedByActiveNode would
+  // otherwise rebuild it on every unmatched entry.
+  const flattenedNodeById = new Map(allNodes.map((n) => [String(n.id), n]))
+  const activeUnmatched = unmatched.filter(
+    (m) =>
+      m.sourceNodeType !== '' ||
+      isModelReferencedByActiveNode(
+        m.name,
+        m.directory,
+        allNodes,
+        flattenedNodeById
+      )
+  )
+
   const settled = await Promise.allSettled(
-    unmatched.map(async (model) => {
+    activeUnmatched.map(async (model) => {
       const installed = await checkModelInstalled(model.name, model.directory)
       if (installed) return null
 
@@ -242,16 +330,82 @@ export async function enrichWithEmbeddedMetadata(
   return enriched
 }
 
+function isModelReferencedByActiveNode(
+  modelName: string,
+  modelDirectory: string | undefined,
+  allNodes: ReturnType<typeof flattenWorkflowNodes>,
+  nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
+): boolean {
+  for (const node of allNodes) {
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
+    if (!isAncestorPathActiveInFlattened(String(node.id), nodeById)) continue
+
+    // Require directory agreement when both sides specify one, so a
+    // same-name entry under a different folder does not keep an
+    // unrelated workflow-level model alive as missing.
+    const embeddedModels = (
+      node.properties as
+        | { models?: Array<{ name: string; directory?: string }> }
+        | undefined
+    )?.models
+    if (
+      embeddedModels?.some(
+        (m) =>
+          m.name === modelName &&
+          (modelDirectory === undefined ||
+            m.directory === undefined ||
+            m.directory === modelDirectory)
+      )
+    ) {
+      return true
+    }
+
+    // widgets_values carries only the name, so directory cannot be
+    // checked here — fall back to filename matching.
+    const values = node.widgets_values
+    if (!values) continue
+    const valueArray = Array.isArray(values) ? values : Object.values(values)
+    for (const v of valueArray) {
+      if (typeof v === 'string' && v === modelName) return true
+    }
+  }
+  return false
+}
+
+function isAncestorPathActiveInFlattened(
+  executionId: string,
+  nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
+): boolean {
+  for (const ancestorId of getParentExecutionIds(executionId)) {
+    const ancestor = nodeById.get(ancestorId)
+    if (!ancestor) continue
+    if (
+      ancestor.mode === LGraphEventMode.NEVER ||
+      ancestor.mode === LGraphEventMode.BYPASS
+    )
+      return false
+  }
+  return true
+}
+
 function collectEmbeddedModelsWithSource(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
-  graphData: ComfyWorkflowJSON
+  graphData: MissingModelWorkflowData
 ): EmbeddedModelWithSource[] {
   const result: EmbeddedModelWithSource[] = []
 
   for (const node of allNodes) {
-    const selected = getSelectedModelsMetadata(
-      node as Parameters<typeof getSelectedModelsMetadata>[0]
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
     )
+      continue
+
+    const selected = getSelectedModelsMetadata(node)
     if (!selected?.length) continue
 
     for (const model of selected) {
@@ -285,8 +439,7 @@ function findWidgetNameForModel(
   modelName: string
 ): string {
   if (Array.isArray(node.widgets_values) || !node.widgets_values) return ''
-  const wv = node.widgets_values as Record<string, unknown>
-  for (const [key, val] of Object.entries(wv)) {
+  for (const [key, val] of Object.entries(node.widgets_values)) {
     if (val === modelName) return key
   }
   return ''
@@ -297,20 +450,68 @@ interface AssetVerifier {
   getAssets: (nodeType: string) => AssetItem[] | undefined
 }
 
+type AssetHashVerifier = (
+  assetHash: string,
+  signal?: AbortSignal
+) => Promise<AssetHashStatus>
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal,
-  assetsStore?: AssetVerifier
+  assetsStore?: AssetVerifier,
+  checkAssetHash: AssetHashVerifier = assetService.checkAssetHash
 ): Promise<void> {
   if (signal?.aborted) return
 
+  const pendingCandidates = candidates.filter(
+    (c) => c.isAssetSupported && c.isMissing === undefined
+  )
+  if (pendingCandidates.length === 0) return
+
   const pendingNodeTypes = new Set<string>()
-  for (const c of candidates) {
-    if (c.isAssetSupported && c.isMissing === undefined) {
-      pendingNodeTypes.add(c.nodeType)
+  const candidatesByHash = new Map<string, MissingModelCandidate[]>()
+
+  for (const candidate of pendingCandidates) {
+    const assetHash = getBlake3AssetHash(candidate)
+    if (!assetHash) {
+      pendingNodeTypes.add(candidate.nodeType)
+      continue
     }
+
+    const hashCandidates = candidatesByHash.get(assetHash)
+    if (hashCandidates) hashCandidates.push(candidate)
+    else candidatesByHash.set(assetHash, [candidate])
   }
 
+  await Promise.all(
+    Array.from(candidatesByHash, async ([assetHash, hashCandidates]) => {
+      if (signal?.aborted) return
+
+      try {
+        const status = await checkAssetHash(assetHash, signal)
+        if (signal?.aborted) return
+
+        if (status === 'exists') {
+          for (const candidate of hashCandidates) {
+            candidate.isMissing = false
+          }
+          return
+        }
+      } catch (err) {
+        if (signal?.aborted || isAbortError(err)) return
+        console.warn(
+          '[Missing Model Pipeline] Failed to verify asset hash:',
+          err
+        )
+      }
+
+      for (const candidate of hashCandidates) {
+        pendingNodeTypes.add(candidate.nodeType)
+      }
+    })
+  )
+
+  if (signal?.aborted) return
   if (pendingNodeTypes.size === 0) return
 
   const store =
@@ -341,6 +542,20 @@ export async function verifyAssetSupportedCandidates(
     const assets = store.getAssets(c.nodeType) ?? []
     c.isMissing = !isAssetInstalled(c, assets)
   }
+}
+
+function getBlake3AssetHash(candidate: MissingModelCandidate): string | null {
+  if (candidate.hashType?.toLowerCase() !== 'blake3') return null
+  return toBlake3AssetHash(candidate.hash)
+}
+
+function isAbortError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'name' in err &&
+    err.name === 'AbortError'
+  )
 }
 
 function normalizePath(path: string): string {

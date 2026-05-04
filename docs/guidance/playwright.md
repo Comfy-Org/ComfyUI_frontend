@@ -117,6 +117,18 @@ export const test = base.extend<{
 - Keep fixtures modular — extend `@playwright/test` base, not
   `comfyPageFixture`, so they can be composed via `mergeTests`
 
+## Custom Assertions
+
+Add assertion methods directly on the page object or helper class instead of extending `comfyExpect`. Page object methods are discoverable via IntelliSense without special imports.
+
+```typescript
+// ✅ Page object assertions
+await node.expectPinned()
+await node.expectBypassed()
+
+// ❌ Do not add custom matchers to comfyExpect
+```
+
 ## Test Tags
 
 - `@mobile` — Mobile viewport tests
@@ -142,6 +154,97 @@ Key schema locations:
 - `src/platform/remote/comfyui/jobs/jobTypes.ts` — Jobs API Zod schemas (`zJobDetail`, `zJobsListResponse`, `zRawJobListItem`)
 - `src/platform/workflow/validation/schemas/workflowSchema.ts` — Workflow validation (`ComfyWorkflowJSON`, `ComfyApiWorkflow`)
 - `src/types/metadataTypes.ts` — Asset metadata types
+
+## Typed API Mocks
+
+When mocking API responses with `route.fulfill()`, **always** type the response body
+using existing schemas or generated types — never use untyped inline JSON objects.
+This catches shape mismatches at compile time instead of through flaky runtime failures.
+
+All three generated-type packages (`ingest-types`, `registry-types`, `generatedManagerTypes`)
+are auto-generated from their respective OpenAPI specs. Prefer these as the single
+source of truth for any mock that targets their endpoints.
+
+### Sources of truth
+
+| Endpoint category                                   | Type source                                                                                         |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (`packages/ingest-types`, auto-generated from OpenAPI)                     |
+| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (`packages/registry-types`, auto-generated from OpenAPI)                 |
+| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`, auto-generated from OpenAPI) |
+| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`                                                    |
+| Node definitions                                    | `src/schemas/nodeDefSchema.ts`                                                                      |
+| Templates                                           | `src/platform/workflow/templates/types/template.ts`                                                 |
+
+### Patterns
+
+```typescript
+// ✅ Import the type and annotate mock data
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+
+const mockRelease: ReleaseNote = {
+  id: 1,
+  project: 'comfyui',
+  version: 'v0.3.44',
+  attention: 'medium',
+  content: '## New Features',
+  published_at: new Date().toISOString()
+}
+body: JSON.stringify([mockRelease])
+
+// ❌ Untyped inline JSON — schema drift goes unnoticed
+body: JSON.stringify([{ id: 1, project: 'comfyui', version: 'v0.3.44', ... }])
+```
+
+## When to Use `page.evaluate`
+
+### Acceptable (use sparingly)
+
+Reading internal state that has no UI representation (prefer locator
+assertions whenever possible):
+
+```typescript
+// Reading graph/store values
+const nodeCount = await page.evaluate(() => window.app!.graph!.nodes.length)
+const linkSlot = await page.evaluate(() => window.app!.graph!.links.get(1)?.target_slot)
+
+// Reading computed properties or store state
+await page.evaluate(() => useWorkflowStore().activeWorkflow)
+
+// Setting up test fixtures (registering extensions, mock error handlers)
+await page.evaluate(() => {
+  window.app!.registerExtension({ name: 'TestExt', settings: [...] })
+})
+```
+
+### Avoid
+
+Performing actions that have a UI equivalent — use Playwright locators and user
+interactions instead:
+
+```typescript
+// Bad: setting a widget value programmatically
+await page.evaluate(() => { node.widgets![0].value = 512 })
+// Good: click the widget and type the value
+await widgetLocator.click()
+await widgetLocator.fill('512')
+
+// Bad: dispatching synthetic DOM events
+await page.evaluate(() => { btn.dispatchEvent(new MouseEvent('click', ...)) })
+// Good: use Playwright's click
+await page.getByTestId('more-options-button').click()
+
+// Bad: calling store actions that correspond to user interactions
+await page.evaluate(() => { app.queuePrompt(0) })
+// Good: click the Queue button
+await page.getByRole('button', { name: 'Queue' }).click()
+```
+
+### Preferred
+
+Use helper methods from `browser_tests/fixtures/helpers/` that wrap real user
+interactions (e.g., `comfyPage.settings.setSetting`, `comfyPage.nodeOps`,
+`comfyPage.workflow.loadWorkflow`).
 
 ## Running Tests
 

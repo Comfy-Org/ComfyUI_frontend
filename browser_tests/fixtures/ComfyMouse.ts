@@ -1,7 +1,7 @@
-import type { Mouse } from '@playwright/test'
+import type { Locator, Mouse } from '@playwright/test'
 
-import type { ComfyPage } from './ComfyPage'
-import type { Position } from './types'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position } from '@e2e/fixtures/types'
 
 /**
  * Used for drag and drop ops
@@ -26,11 +26,10 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
   static defaultSteps = 5
   static defaultOptions: DragOptions = { steps: ComfyMouse.defaultSteps }
 
-  constructor(readonly comfyPage: ComfyPage) {}
+  readonly mouse: Mouse
 
-  /** The normal Playwright {@link Mouse} property from {@link ComfyPage.page}. */
-  get mouse() {
-    return this.comfyPage.page.mouse
+  constructor(readonly comfyPage: ComfyPage) {
+    this.mouse = comfyPage.page.mouse
   }
 
   async nextFrame() {
@@ -71,6 +70,22 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
   async move(to: Position, options = ComfyMouse.defaultOptions) {
     await this.mouse.move(to.x, to.y, options)
     await this.nextFrame()
+  }
+
+  async resizeByDragging(
+    element: Locator,
+    { x, y }: { x?: number; y?: number }
+  ) {
+    const elementBox = await element.boundingBox()
+    if (!elementBox) throw new Error('element should have layout')
+
+    const cx = elementBox.x + elementBox.width / 2
+    const cy = elementBox.y + elementBox.height / 2
+
+    await this.dragAndDrop(
+      { x: cx, y: cy },
+      { x: cx + (x ?? 0), y: cy + (y ?? 0) }
+    )
   }
 
   //#region Pass-through

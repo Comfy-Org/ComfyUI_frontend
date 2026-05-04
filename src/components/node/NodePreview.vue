@@ -7,17 +7,22 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     :node-def="nodeDef"
     :position="position"
   />
-  <div v-else class="_sb_node_preview bg-component-node-background">
+  <div
+    v-else
+    class="_sb_node_preview bg-component-node-background"
+    data-testid="node-preview"
+  >
     <div class="_sb_table">
       <div
         class="node_header text-ellipsis"
+        data-testid="node-header"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
           color: litegraphColors.NODE_TITLE_COLOR
         }"
       >
-        <div class="_sb_dot headdot pr-3" />
+        <div class="_sb_dot headdot pr-3" data-testid="head-dot" />
         {{ nodeDef.display_name }}
       </div>
       <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
@@ -76,6 +81,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     <div
       v-if="renderedDescription"
       class="_sb_description"
+      data-testid="node-description"
       :style="{
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR

@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -167,7 +168,7 @@ describe('BaseWidget store integration', () => {
       const defaultValue = 'You are an expert image-generation engine.'
       const widget = createTestWidget(node, {
         name: 'system_prompt',
-        value: undefined as unknown as number
+        value: fromAny<number, unknown>(undefined)
       })
 
       // Simulate what addDOMWidget does: override value with getter/setter

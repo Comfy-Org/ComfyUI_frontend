@@ -103,19 +103,19 @@ useExtensionService().registerExtension({
 
           const loadFolder = fileInfo.type as 'input' | 'output'
 
-          config.configureForSaveMesh(loadFolder, filePath)
+          config.configureForSaveMesh(loadFolder, filePath, {
+            silentOnNotFound: true
+          })
 
           if (isAssetPreviewSupported()) {
             const filename = fileInfo.filename ?? ''
-            const onModelLoaded = () => {
-              load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
-              load3d
-                .captureThumbnail(256, 256)
-                .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-                .then((blob) => persistThumbnail(filename, blob))
-                .catch(() => {})
-            }
-            load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+
+            void load3d
+              .whenLoadIdle()
+              .then(() => load3d.captureThumbnail(256, 256))
+              .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+              .then((blob) => persistThumbnail(filename, blob))
+              .catch(() => {})
           }
         }
       })

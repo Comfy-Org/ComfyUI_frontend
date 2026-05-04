@@ -6,6 +6,43 @@
 2. Medium gap next (quick win)
 3. Largest gap last (main effort)
 
+## Step 0: Test-Then-Resolve Pre-Pass (Recommended)
+
+Before triggering label-driven automation, run a dry-run cherry-pick loop to classify candidates. This is much faster than discovering conflicts after-the-fact across automation, manual cherry-picks, and CI failures.
+
+```bash
+git fetch origin TARGET_BRANCH
+git worktree add /tmp/dryrun-TARGET origin/TARGET_BRANCH
+cd /tmp/dryrun-TARGET
+
+CLEAN=()
+CONFLICT=()
+for pr in "${CANDIDATES[@]}"; do
+  SHA=$(gh pr view $pr --json mergeCommit --jq '.mergeCommit.oid')
+  git checkout -b dryrun-$pr origin/TARGET_BRANCH 2>/dev/null
+  if git cherry-pick -m 1 $SHA 2>/dev/null; then
+    CLEAN+=($pr)
+  else
+    CONFLICT+=($pr)
+    git cherry-pick --abort
+  fi
+  git checkout --detach HEAD 2>/dev/null
+  git branch -D dryrun-$pr 2>/dev/null
+done
+
+echo "CLEAN (${#CLEAN[@]}): ${CLEAN[*]}"
+echo "CONFLICT (${#CONFLICT[@]}): ${CONFLICT[*]}"
+
+cd -
+git worktree remove /tmp/dryrun-TARGET --force
+```
+
+Use the result to:
+
+- Send CLEAN PRs through label-driven automation (Step 1) — they'll typically self-merge
+- Reserve manual worktree time (Step 3) for CONFLICT PRs only
+- Surface PRs likely to need backport-only compat shims (CONFLICT files in `src/lib/litegraph/` or `src/scripts/app.ts`)
+
 ## Step 1: Label-Driven Automation (Batch)
 
 ```bash
@@ -73,14 +110,55 @@ for PR in ${CONFLICT_PRS[@]}; do
   git cherry-pick -m 1 $MERGE_SHA
 
   # If conflict — NEVER skip based on file count alone!
-  # Categorize conflicts first: binary PNGs, modify/delete, content, add/add
+  # Categorize conflicts first: binary PNGs, modify/delete, content, add/add, component rewrites
   # See SKILL.md Conflict Triage table for resolution per type.
+
+  # For component rewrites (4+ markers in a .vue file, library migration):
+  # DO NOT use accept-theirs regex — it produces broken hybrids.
+  # Instead, use the complete file from the merge commit:
+  # git show $MERGE_SHA:path/to/file > path/to/file
+
+  # For simple content conflicts, accept theirs:
+  # python3 -c "import re; ..."
 
   # Resolve all conflicts, then:
   git add .
   GIT_EDITOR=true git cherry-pick --continue
 
-  git push origin backport-$PR-to-TARGET
+  # ── Public-API conflict review (REQUIRED for extension-API surfaces) ──
+  # If the conflict resolution touched any of these surfaces, consult oracle
+  # BEFORE pushing. A bad shim is worse than no fix:
+  #   - node.onXxx callback assignments (onDragDrop, onConnectionsChange, onRemoved, onConfigure, etc.)
+  #   - Methods on LGraphNode, LGraphCanvas, LGraph, Subgraph
+  #   - Public exports from src/lib/litegraph/
+  #   - Type changes in litegraph-augmentation.d.ts
+  # If a public callback's signature/contract changed: add a backport-only
+  # compatibility shim that preserves the OLD contract while keeping the
+  # new fix. Document it in the commit body under
+  # "## Backport-only compatibility fix". See SKILL.md gotcha section.
+  # ───────────────────────────────────────────────────────────────────────
+
+  # Per-PR validation BEFORE push (catches issues earlier than wave verification).
+  # Guard each targeted command against empty file lists — running `pnpm test:unit -- run`
+  # with no arg matchers would run the full suite, and `pnpm exec eslint` with no args errors.
+  pnpm typecheck
+
+  mapfile -t TEST_FILES < <(git diff --name-only HEAD~1 | grep -E '\.test\.ts$' || true)
+  if [ ${#TEST_FILES[@]} -gt 0 ]; then
+    pnpm test:unit -- run "${TEST_FILES[@]}"
+  else
+    echo "No changed test files — skipping targeted unit tests"
+  fi
+
+  mapfile -t CODE_FILES < <(git diff --name-only HEAD~1 | grep -E '\.(ts|vue)$' || true)
+  if [ ${#CODE_FILES[@]} -gt 0 ]; then
+    pnpm exec eslint "${CODE_FILES[@]}"
+    pnpm exec oxfmt --check "${CODE_FILES[@]}"
+  else
+    echo "No changed ts/vue files — skipping targeted lint/format"
+  fi
+
+  git push origin backport-$PR-to-TARGET --no-verify
   NEW_PR=$(gh pr create --base TARGET_BRANCH --head backport-$PR-to-TARGET \
     --title "[backport TARGET] TITLE (#$PR)" \
     --body "Backport of #$PR..." | grep -oP '\d+$')
@@ -114,7 +192,30 @@ source ~/.nvm/nvm.sh && nvm use 24 && pnpm install && pnpm typecheck && pnpm tes
 git worktree remove /tmp/verify-TARGET --force
 ```
 
-If verification fails, stop and fix before proceeding to the next wave. Do not compound problems across waves.
+If verification fails, **do not skip** — create a fix PR:
+
+```bash
+# Stay in the verify worktree
+git checkout -b fix-backport-TARGET origin/TARGET_BRANCH
+
+# Common fixes:
+# 1. Component rewrite hybrids: overwrite with merge commit version
+git show MERGE_SHA:path/to/Component.vue > path/to/Component.vue
+
+# 2. Missing dependency files
+git show MERGE_SHA:path/to/missing.ts > path/to/missing.ts
+
+# 3. Missing type properties: edit the interface
+# 4. Unused imports: delete the import lines
+
+git add -A
+git commit --no-verify -m "fix: resolve backport typecheck issues on TARGET"
+git push origin fix-backport-TARGET --no-verify
+gh pr create --base TARGET --head fix-backport-TARGET --title "fix: resolve backport typecheck issues on TARGET" --body "..."
+gh pr merge $PR --squash --admin
+```
+
+Do not proceed to the next branch until typecheck passes.
 
 ## Conflict Resolution Patterns
 
@@ -142,7 +243,35 @@ git rm $FILE
 git checkout --theirs $FILE && git add $FILE
 ```
 
-### 4. Locale Files
+### 4. Component Rewrites (DO NOT accept-theirs)
+
+When a PR completely rewrites a component (e.g., PrimeVue → Reka UI), accept-theirs produces
+a broken hybrid with mismatched template/script sections.
+
+```bash
+# Use the complete correct file from the merge commit instead:
+git show $MERGE_SHA:src/components/input/MultiSelect.vue > src/components/input/MultiSelect.vue
+git show $MERGE_SHA:src/components/input/SingleSelect.vue > src/components/input/SingleSelect.vue
+git add src/components/input/MultiSelect.vue src/components/input/SingleSelect.vue
+```
+
+**Detection:** 4+ conflict markers in a single `.vue` file, imports changing between component
+libraries (PrimeVue → Reka UI, etc.), template structure completely different on each side.
+
+### 5. Missing Dependencies After Cherry-Pick
+
+Cherry-picks can succeed but leave the branch broken because the PR's code on main
+references composables/components introduced by an earlier PR.
+
+```bash
+# Add the missing file from the merge commit:
+git show $MERGE_SHA:src/composables/queue/useJobDetailsHover.ts > src/composables/queue/useJobDetailsHover.ts
+git show $MERGE_SHA:src/components/builder/BuilderSaveDialogContent.vue > src/components/builder/BuilderSaveDialogContent.vue
+```
+
+**Detection:** `pnpm typecheck` fails with "Cannot find module" or "X is not defined" after cherry-pick succeeds cleanly.
+
+### 6. Locale Files
 
 Usually adding new i18n keys — accept theirs, validate JSON:
 
@@ -176,8 +305,17 @@ gh pr checks $PR --watch --fail-fast && gh pr merge $PR --squash --admin
 8. **Always validate JSON** after resolving locale file conflicts
 9. **Dep refresh PRs** — skip on stable branches. Risk of transitive dep regressions outweighs audit cleanup. Cherry-pick individual CVE fixes instead.
 10. **Verify after each wave** — run `pnpm typecheck && pnpm test:unit` on the target branch after merging a batch. Catching breakage early prevents compounding errors.
-11. **Cloud-only PRs don't belong on core/\* branches** — app mode, cloud auth, and cloud-specific UI changes are irrelevant to local users. Always check PR scope against branch scope before backporting.
+11. **App mode and Firebase auth are NOT cloud-only** — they go to both core and cloud branches. Only team workspaces, cloud queue, and cloud-specific login are cloud-only.
 12. **Never admin-merge without CI** — `--admin` bypasses all branch protections including required status checks. A bulk session of 69 admin-merges shipped 3 test failures. Always wait for CI to pass first, or use `--auto --squash` which waits by design.
+13. **Accept-theirs regex breaks component rewrites** — when a PR migrates between component libraries (PrimeVue → Reka UI), the regex produces a broken hybrid. Use `git show SHA:path > path` to get the complete correct version instead.
+14. **Cherry-picks can silently bring in missing-dependency code** — if PR A references a composable introduced by PR B, cherry-picking A succeeds but typecheck fails. Always run typecheck after each wave and add missing files from the merge commit.
+15. **Fix PRs are expected** — plan for 1 fix PR per branch to resolve typecheck issues from conflict resolutions. This is normal, not a failure.
+16. **Use `--no-verify` in worktrees** — husky hooks fail in `/tmp/` worktrees. Always push/commit with `--no-verify`.
+17. **Automation success varies by branch** — core/1.42 got 18/26 auto-PRs (69%), cloud/1.42 got 1/25 (4%). Cloud branches diverge more. Plan for manual fallback.
+18. **Test-then-resolve pattern** — for branches with low automation success, run a dry-run loop to classify clean vs conflict PRs before processing. This is much faster than resolving conflicts serially.
+19. **Public-API conflict resolutions need oracle review** — when a conflict touches `node.onXxx` callbacks, `LGraphNode`/`LGraphCanvas`/`LGraph`/`Subgraph` methods, or types in `litegraph-augmentation.d.ts`, consult oracle BEFORE pushing. Custom-node packages depend on these contracts. A literal cherry-pick of a refactor-style fix can silently break extensions still using the old contract — sometimes recreating the very bug the PR was fixing. Document any backport-only compatibility shim explicitly in the commit body.
+20. **Cherry-picked tests can require unbackported test scaffolding** — when a PR modifies a test file that was _added_ on main by an earlier unbackported PR, the cherry-pick reports modify/delete on that file. Drop it from the backport (`git rm`) and document which PR introduced it. Don't smuggle in test infrastructure without its runtime prerequisites.
+21. **Per-PR validation catches issues earlier than wave verification** — for high-stakes branches, run `pnpm typecheck && pnpm exec eslint <changed files> && pnpm exec oxfmt --check` per PR before pushing. Wave verification still matters (it catches cross-PR interactions), but per-PR makes attribution trivial when something fails.
 
 ## CI Failure Triage
 
@@ -203,3 +341,40 @@ Common failure categories:
 | Type error                  | Interface changed on main but not branch | May need manual adaptation                |
 
 **Never assume a failure is safe to skip.** Present all failures to the user with analysis.
+
+## PR Body Template (Manual Cherry-Picks)
+
+Manual cherry-pick PRs need detail beyond the automation's terse default. Use this template — reviewers will look here before re-deriving conflict-resolution logic from the diff.
+
+```markdown
+Manual backport of #ORIG to `TARGET` for inclusion in `vX.Y.Z`.
+
+Cherry-picked from upstream merge commit `SHORT_SHA`.
+
+## Why
+
+[1-2 sentences from the original PR's "Summary" — what bug, what fix mechanism]
+
+## Conflict resolution
+
+- **`path/to/file`** — [what conflicted on this branch] → [resolution chosen + why]
+- **`path/to/dropped-test.test.ts`** — added on main by unrelated PR #XXXX (not backported). Dropped from this backport; runtime fix intact.
+- [...]
+
+## Backport-only compatibility fix (if applicable)
+
+[If you added a shim that wasn't in the upstream PR, document it here — what extension surface, what contract, what the shim preserves, why the upstream version would have regressed it]
+
+## Validation
+
+- `pnpm typecheck` ✅
+- `pnpm test:unit -- run <targeted suites>` ✅ (N/N passing)
+- `pnpm exec eslint <changed files>` ✅ (0 errors)
+- `pnpm exec oxfmt --check` ✅ (clean)
+
+[If manual e2e was skipped, explain why — e.g., requires live backend, headless not feasible. State that source is byte-identical to upstream + how long it's been baking on main.]
+
+Original PR: #ORIG / Original commit: `FULL_SHA`
+```
+
+The conflict-resolution section is non-negotiable — every conflict you resolved by hand needs a one-liner. This makes archaeology trivial six months later when someone asks "why does this look slightly different from main?"
