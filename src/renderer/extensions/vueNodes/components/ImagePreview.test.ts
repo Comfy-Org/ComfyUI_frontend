@@ -4,8 +4,23 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+const useImageMock = vi.hoisted(() => ({
+  error: null as Ref<unknown> | null
+}))
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  const { ref } = await import('vue')
+  useImageMock.error = ref<unknown>(null)
+  return {
+    ...(actual as Record<string, unknown>),
+    useImage: () => ({ error: useImageMock.error })
+  }
+})
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
@@ -77,6 +92,7 @@ describe('ImagePreview', () => {
   }
 
   beforeEach(() => {
+    if (useImageMock.error) useImageMock.error.value = null
     vi.clearAllMocks()
   })
 
