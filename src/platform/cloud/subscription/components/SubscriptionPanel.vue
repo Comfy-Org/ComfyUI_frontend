@@ -4,7 +4,7 @@
       <div class="flex items-center gap-2">
         <span class="font-inter text-2xl/tight font-semibold">
           {{
-            isActiveSubscription
+            canAccessSubscriptionFeatures
               ? $t('subscription.title')
               : $t('subscription.titleUnsubscribed')
           }}
@@ -90,7 +90,8 @@ const teamWorkspacesEnabled = computed(
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const { isActiveSubscription, manageSubscription } = useBillingContext()
+const { canAccessSubscriptionFeatures, manageSubscription } =
+  useBillingContext()
 
 const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
   useSubscriptionActions()

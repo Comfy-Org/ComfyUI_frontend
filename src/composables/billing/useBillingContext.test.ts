@@ -47,7 +47,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
     formattedRenewalDate: { value: 'Jan 1, 2025' },
@@ -173,9 +173,9 @@ describe('useBillingContext', () => {
     await expect(manageSubscription()).resolves.toBeUndefined()
   })
 
-  it('provides isActiveSubscription convenience computed', () => {
-    const { isActiveSubscription } = useBillingContext()
-    expect(isActiveSubscription.value).toBe(true)
+  it('provides canAccessSubscriptionFeatures convenience computed', () => {
+    const { canAccessSubscriptionFeatures } = useBillingContext()
+    expect(canAccessSubscriptionFeatures.value).toBe(true)
   })
 
   it('exposes requireActiveSubscription action', async () => {
