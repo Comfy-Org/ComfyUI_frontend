@@ -7,14 +7,12 @@ on:
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
-      - 'packages/object-info-parser/**'
       - 'packages/tailwind-utils/**'
   push:
     branches: [main]
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
-      - 'packages/object-info-parser/**'
       - 'packages/tailwind-utils/**'
 
 env:
@@ -57,7 +55,6 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
         run: vercel build
 
       - name: Fetch head commit metadata
@@ -155,7 +152,6 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
         run: vercel build --prod
 
       - name: Deploy project artifacts to Vercel

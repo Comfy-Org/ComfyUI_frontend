@@ -39,23 +39,4 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
         run: pnpm --filter @comfyorg/website build
-
-      - name: Verify cloud API key is not leaked into build output
-        env:
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-        run: |
-          set +x
-          if [ -z "${WEBSITE_CLOUD_API_KEY:-}" ]; then
-            echo "Secret not available in this run; skipping leak check."
-            exit 0
-          fi
-          # grep -rlF prints only file paths (never match content).
-          MATCHES=$(grep -rlF --exclude-dir=node_modules --null \
-            -e "$WEBSITE_CLOUD_API_KEY" apps/website/dist/ 2>/dev/null \
-            | tr '\0' '\n' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "::error title=Cloud API key leaked into build output::$MATCHES"
-            exit 1
-          fi
