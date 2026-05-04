@@ -2,8 +2,8 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { UPLOAD_SKIPPED_ERROR, useUpload } from '@/composables/useUpload'
 import { t } from '@/i18n'
-import { uploadMedia } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -23,6 +23,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
+  const { loading, uploadBatch } = useUpload()
 
   function updateSelectedItems(selectedItems: Set<string>) {
     const id =
@@ -36,40 +37,35 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  async function uploadFile(
-    file: File,
-    isPasted: boolean = false,
-    formFields: Partial<{ type: ResultItemType }> = {}
-  ) {
-    const subfolder = isPasted
-      ? 'pasted'
-      : (toValue(options.uploadSubfolder) ?? undefined)
-
-    const result = await uploadMedia(
-      { source: file },
-      { subfolder, type: formFields.type }
-    )
-
-    if (!result.success) {
-      toastStore.addAlert(result.error ?? t('toastMessages.uploadFailed'))
-      return null
-    }
-
-    if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-      const assetsStore = useAssetsStore()
-      await assetsStore.updateInputs()
-    }
-
-    return result.path
-  }
-
   async function uploadFiles(files: File[]): Promise<string[]> {
     const folder = toValue(options.uploadFolder) ?? 'input'
-    const uploadPromises = files.map((file) =>
-      uploadFile(file, false, { type: folder })
+    const subfolder = toValue(options.uploadSubfolder) ?? undefined
+
+    const results = await uploadBatch(
+      files.map((file) => ({ source: file })),
+      { subfolder, type: folder }
     )
-    const results = await Promise.all(uploadPromises)
-    return results.filter((path): path is string => path !== null)
+
+    const skipped = results.some((r) => r.error === UPLOAD_SKIPPED_ERROR)
+    if (skipped) {
+      toastStore.addAlert(t('g.uploadAlreadyInProgress'))
+      return []
+    }
+
+    const uploadedPaths: string[] = []
+    for (const result of results) {
+      if (!result.success) {
+        toastStore.addAlert(result.error ?? t('toastMessages.uploadFailed'))
+        continue
+      }
+      uploadedPaths.push(result.path)
+    }
+
+    if (uploadedPaths.length > 0 && folder === 'input') {
+      await useAssetsStore().updateInputs()
+    }
+
+    return uploadedPaths
   }
 
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
@@ -105,6 +101,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   return {
     updateSelectedItems,
-    handleFilesUpdate
+    handleFilesUpdate,
+    loading
   }
 }

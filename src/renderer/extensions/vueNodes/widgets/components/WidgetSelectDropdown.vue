@@ -88,7 +88,11 @@ const {
   isAssetMode: () => props.isAssetMode
 })
 
-const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
+const {
+  updateSelectedItems,
+  handleFilesUpdate,
+  loading: uploading
+} = useWidgetSelectActions({
   modelValue,
   dropdownItems,
   widget: () => props.widget,
@@ -165,6 +169,7 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable
+      :loading="uploading"
       :accept="acceptTypes"
       :filter-options
       :show-ownership-filter
