@@ -20,6 +20,7 @@
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
