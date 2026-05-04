@@ -403,8 +403,7 @@ describe('verifyCloudMediaCandidates', () => {
   })
 
   it('silences aborts while loading legacy fallback input assets', async () => {
-    const abortError = new Error('aborted')
-    abortError.name = 'AbortError'
+    const abortError = new DOMException('aborted', 'AbortError')
     const controller = new AbortController()
     const candidates = [
       makeCandidate('1', 'photo.png', { isMissing: undefined })
@@ -427,8 +426,7 @@ describe('verifyCloudMediaCandidates', () => {
   })
 
   it('silences aborts from the default legacy fallback input asset store path', async () => {
-    const abortError = new Error('aborted')
-    abortError.name = 'AbortError'
+    const abortError = new DOMException('aborted', 'AbortError')
     const controller = new AbortController()
     const candidates = [
       makeCandidate('1', 'photo.png', { isMissing: undefined })

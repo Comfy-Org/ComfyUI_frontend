@@ -19,11 +19,13 @@ import {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { AssetHashStatus } from '@/platform/assets/services/assetService'
 import {
   assetService,
   isBlake3AssetHash
 } from '@/platform/assets/services/assetService'
+import { verifyCandidatesByAssetHash } from '@/platform/assets/utils/assetHashVerification'
+import type { AssetHashVerifier } from '@/platform/assets/utils/assetHashVerification'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 /** Map of node types to their media widget name and media type. */
 const MEDIA_NODE_WIDGETS: Record<
@@ -112,69 +114,7 @@ export function scanNodeMediaCandidates(
   return candidates
 }
 
-type AssetHashVerifier = (
-  assetHash: string,
-  signal?: AbortSignal
-) => Promise<AssetHashStatus>
-
 type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
-
-function groupCandidatesForHashLookup(candidates: MissingMediaCandidate[]): {
-  candidatesByHash: Map<string, MissingMediaCandidate[]>
-  legacyCandidates: MissingMediaCandidate[]
-} {
-  const candidatesByHash = new Map<string, MissingMediaCandidate[]>()
-  const legacyCandidates: MissingMediaCandidate[] = []
-
-  for (const candidate of candidates) {
-    if (!isBlake3AssetHash(candidate.name)) {
-      legacyCandidates.push(candidate)
-      continue
-    }
-
-    const hashCandidates = candidatesByHash.get(candidate.name)
-    if (hashCandidates) hashCandidates.push(candidate)
-    else candidatesByHash.set(candidate.name, [candidate])
-  }
-
-  return { candidatesByHash, legacyCandidates }
-}
-
-async function verifyCandidatesByHash(
-  candidatesByHash: Map<string, MissingMediaCandidate[]>,
-  legacyCandidates: MissingMediaCandidate[],
-  signal: AbortSignal | undefined,
-  checkAssetHash: AssetHashVerifier
-): Promise<void> {
-  await Promise.all(
-    Array.from(candidatesByHash, async ([assetHash, hashCandidates]) => {
-      if (signal?.aborted) return
-
-      let status: AssetHashStatus
-      try {
-        status = await checkAssetHash(assetHash, signal)
-        if (signal?.aborted) return
-      } catch (err) {
-        if (signal?.aborted || isAbortError(err)) return
-        console.warn(
-          '[Missing Media Pipeline] Failed to verify asset hash:',
-          err
-        )
-        legacyCandidates.push(...hashCandidates)
-        return
-      }
-
-      if (status === 'invalid') {
-        legacyCandidates.push(...hashCandidates)
-        return
-      }
-
-      for (const candidate of hashCandidates) {
-        candidate.isMissing = status === 'missing'
-      }
-    })
-  )
-}
 
 /**
  * Verify cloud media candidates by probing the asset hash endpoint first.
@@ -191,16 +131,26 @@ export async function verifyCloudMediaCandidates(
   const pending = candidates.filter((c) => c.isMissing === undefined)
   if (pending.length === 0) return
 
-  const { candidatesByHash, legacyCandidates } =
-    groupCandidatesForHashLookup(pending)
-  await verifyCandidatesByHash(
-    candidatesByHash,
-    legacyCandidates,
+  const verification = await verifyCandidatesByAssetHash({
+    candidates: pending,
+    getAssetHash: (candidate) =>
+      isBlake3AssetHash(candidate.name) ? candidate.name : null,
     signal,
-    checkAssetHash
-  )
+    checkAssetHash,
+    onError: (err) => {
+      console.warn('[Missing Media Pipeline] Failed to verify asset hash:', err)
+    }
+  })
+  if (verification.aborted) return
 
-  if (signal?.aborted || legacyCandidates.length === 0) return
+  for (const candidate of verification.existing) {
+    candidate.isMissing = false
+  }
+  for (const candidate of verification.missing) {
+    candidate.isMissing = true
+  }
+
+  if (signal?.aborted || verification.fallback.length === 0) return
 
   let inputAssets: AssetItem[]
   try {
@@ -216,7 +166,7 @@ export async function verifyCloudMediaCandidates(
     inputAssets.map((a) => a.asset_hash).filter((h): h is string => !!h)
   )
 
-  for (const candidate of legacyCandidates) {
+  for (const candidate of verification.fallback) {
     candidate.isMissing = !assetHashes.has(candidate.name)
   }
 }
@@ -225,15 +175,6 @@ async function fetchMissingInputAssets(
   signal?: AbortSignal
 ): Promise<AssetItem[]> {
   return await assetService.getInputAssetsIncludingPublic(signal)
-}
-
-function isAbortError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'name' in err &&
-    err.name === 'AbortError'
-  )
 }
 
 /** Group confirmed-missing candidates by file name into view models. */

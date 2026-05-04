@@ -6,6 +6,7 @@ import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -271,10 +272,6 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     urlImporting.value = {}
     folderPaths.value = {}
     fileSizes.value = {}
-  }
-
-  function isAbortError(error: unknown) {
-    return error instanceof Error && error.name === 'AbortError'
   }
 
   async function refreshMissingModels() {
