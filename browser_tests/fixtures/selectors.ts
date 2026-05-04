@@ -64,6 +64,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-refresh',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
+    swapNodesGroup: 'error-group-swap-nodes',
     missingMediaRow: 'missing-media-row',
     missingMediaUploadDropzone: 'missing-media-upload-dropzone',
     missingMediaLibrarySelect: 'missing-media-library-select',
