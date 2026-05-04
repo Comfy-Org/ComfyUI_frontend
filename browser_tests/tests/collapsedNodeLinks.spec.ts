@@ -74,10 +74,11 @@ test.describe(
     test('renders collapsed node links correctly after fitView on first subgraph entry', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-collapsed-node'
       )
-      await comfyPage.nextFrame()
+      await comfyPage.vueNodes.waitForNodes()
 
       await comfyPage.vueNodes.enterSubgraph('2')
 
