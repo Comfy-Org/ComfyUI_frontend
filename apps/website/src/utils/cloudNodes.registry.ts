@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import type { components } from '@comfyorg/registry-types'
 
 export const DEFAULT_REGISTRY_BASE_URL = 'https://api.comfy.org'
@@ -5,6 +7,43 @@ const DEFAULT_TIMEOUT_MS = 5_000
 const BATCH_SIZE = 50
 
 export type RegistryPack = components['schemas']['Node']
+
+const RegistryPackSchema = z
+  .object({
+    id: z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    icon: z.string().optional(),
+    banner_url: z.string().optional(),
+    repository: z.string().optional(),
+    license: z.string().optional(),
+    downloads: z.number().optional(),
+    github_stars: z.number().optional(),
+    created_at: z.string().optional(),
+    supported_os: z.array(z.string()).optional(),
+    supported_accelerators: z.array(z.string()).optional(),
+    publisher: z
+      .object({
+        id: z.string().optional(),
+        name: z.string().optional()
+      })
+      .passthrough()
+      .optional(),
+    latest_version: z
+      .object({
+        version: z.string().optional(),
+        createdAt: z.string().optional()
+      })
+      .passthrough()
+      .optional()
+  })
+  .passthrough()
+
+const RegistryListResponseSchema = z
+  .object({
+    nodes: z.array(RegistryPackSchema)
+  })
+  .passthrough()
 
 interface FetchRegistryOptions {
   baseUrl?: string
@@ -117,11 +156,12 @@ async function fetchBatch(
       }
     }
 
-    const body = (await res.json()) as { nodes?: RegistryPack[] }
-    if (!Array.isArray(body.nodes)) {
+    const rawBody: unknown = await res.json()
+    const parsed = RegistryListResponseSchema.safeParse(rawBody)
+    if (!parsed.success) {
       return { kind: 'err', retryable: false }
     }
-    return { kind: 'ok', nodes: body.nodes }
+    return { kind: 'ok', nodes: parsed.data.nodes as RegistryPack[] }
   } catch {
     return { kind: 'err', retryable: true }
   } finally {
