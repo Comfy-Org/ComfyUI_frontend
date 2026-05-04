@@ -28,14 +28,15 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 
 export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
-  app: 'https://app.comfy.org',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   platform: 'https://platform.comfy.org',
+  platformUsage: 'https://platform.comfy.org/profile/usage',
   support: 'https://support.comfy.org/hc/en-us',
   workflows: 'https://comfy.org/workflows',
   youtube: 'https://www.youtube.com/@ComfyOrg'

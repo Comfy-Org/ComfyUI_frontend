@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
@@ -18,18 +18,12 @@ const { status, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const routes = getRoutes(locale)
-
-function handleCloseTab() {
-  if (typeof window === 'undefined') return
-  window.close()
-  // window.close() only succeeds on tabs that were script-opened. After a
-  // Stripe Checkout redirect the opener relationship is unreliable, so fall
-  // back to navigating home if the tab is still open shortly after.
-  setTimeout(() => {
-    if (!window.closed) window.location.href = routes.home
-  }, 100)
-}
+const primaryHref =
+  status === 'success' ? externalLinks.cloud : externalLinks.support
+const secondaryHref =
+  status === 'success'
+    ? externalLinks.platformUsage
+    : externalLinks.docsSubscription
 
 const iconRingClass =
   status === 'success'
@@ -95,33 +89,12 @@ const iconRingClass =
       <div
         class="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center"
       >
-        <template v-if="status === 'success'">
-          <BrandButton :href="externalLinks.app" variant="solid" size="nav">
-            {{ t('payment.success.primaryCta', locale) }}
-          </BrandButton>
-          <BrandButton
-            :href="externalLinks.platform"
-            variant="outline"
-            size="nav"
-          >
-            {{ t('payment.success.secondaryCta', locale) }}
-          </BrandButton>
-        </template>
-        <template v-else>
-          <BrandButton :href="routes.contact" variant="solid" size="nav">
-            {{ t('payment.failed.primaryCta', locale) }}
-          </BrandButton>
-          <BrandButton
-            :href="externalLinks.docsApi"
-            variant="outline"
-            size="nav"
-          >
-            {{ t('payment.failed.secondaryCta', locale) }}
-          </BrandButton>
-          <BrandButton variant="outline" size="nav" @click="handleCloseTab">
-            {{ t('payment.failed.tertiaryCta', locale) }}
-          </BrandButton>
-        </template>
+        <BrandButton :href="primaryHref" variant="solid" size="nav">
+          {{ t(`payment.${status}.primaryCta`, locale) }}
+        </BrandButton>
+        <BrandButton :href="secondaryHref" variant="outline" size="nav">
+          {{ t(`payment.${status}.secondaryCta`, locale) }}
+        </BrandButton>
       </div>
     </div>
   </section>

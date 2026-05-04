@@ -3608,12 +3608,12 @@ const translations = {
     'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
   },
   'payment.success.primaryCta': {
-    en: 'CONTINUE IN COMFYUI',
-    'zh-CN': '返回 COMFYUI'
+    en: 'CONTINUE TO COMFY CLOUD',
+    'zh-CN': '前往 COMFY CLOUD'
   },
   'payment.success.secondaryCta': {
-    en: 'VIEW BALANCE & USAGE',
-    'zh-CN': '查看余额与用量'
+    en: 'VIEW USAGE',
+    'zh-CN': '查看用量'
   },
   'payment.failed.label': {
     en: 'PAYMENT',
@@ -3624,21 +3624,17 @@ const translations = {
     'zh-CN': '支付未完成'
   },
   'payment.failed.subtitle': {
-    en: "Your payment didn't go through and you have not been charged. Reach out to support or check the billing docs if you need help.",
+    en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",
     'zh-CN':
-      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅计费文档。'
+      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅订阅文档。'
   },
   'payment.failed.primaryCta': {
     en: 'CONTACT SUPPORT',
     'zh-CN': '联系支持'
   },
   'payment.failed.secondaryCta': {
-    en: 'READ BILLING DOCS',
-    'zh-CN': '查看计费文档'
-  },
-  'payment.failed.tertiaryCta': {
-    en: 'CLOSE TAB',
-    'zh-CN': '关闭页面'
+    en: 'READ SUBSCRIPTION DOCS',
+    'zh-CN': '查看订阅文档'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

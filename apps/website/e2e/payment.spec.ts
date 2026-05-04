@@ -1,14 +1,13 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
+import { externalLinks } from '../src/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 
-const APP_URL = externalLinks.app
-const PLATFORM_URL = externalLinks.platform
-const BILLING_DOCS_URL = externalLinks.docsApi
-const EN_ROUTES = getRoutes('en')
-const ZH_CN_ROUTES = getRoutes('zh-CN')
+const CLOUD_URL = externalLinks.cloud
+const PLATFORM_USAGE_URL = externalLinks.platformUsage
+const SUPPORT_URL = externalLinks.support
+const DOCS_SUBSCRIPTION_URL = externalLinks.docsSubscription
 
 async function expectNoIndex(page: Page) {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -34,18 +33,16 @@ test.describe('Payment success page @smoke', () => {
     await expect(page.getByText(/Thanks for your purchase/i)).toBeVisible()
   })
 
-  test('primary CTA links to ComfyUI app (default fallback)', async ({
-    page
-  }) => {
-    const cta = page.getByRole('link', { name: /CONTINUE IN COMFYUI/i })
+  test('primary CTA links to Comfy Cloud', async ({ page }) => {
+    const cta = page.getByRole('link', { name: /CONTINUE TO COMFY CLOUD/i })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', APP_URL)
+    await expect(cta).toHaveAttribute('href', CLOUD_URL)
   })
 
-  test('secondary CTA links to platform balance & usage', async ({ page }) => {
-    const cta = page.getByRole('link', { name: /VIEW BALANCE & USAGE/i })
+  test('secondary CTA links to platform usage page', async ({ page }) => {
+    const cta = page.getByRole('link', { name: /VIEW USAGE/i })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', PLATFORM_URL)
+    await expect(cta).toHaveAttribute('href', PLATFORM_USAGE_URL)
   })
 })
 
@@ -69,21 +66,16 @@ test.describe('Payment failed page @smoke', () => {
     await expect(page.getByText(/payment didn't go through/i)).toBeVisible()
   })
 
-  test('primary CTA links to contact page', async ({ page }) => {
+  test('primary CTA links to support help center', async ({ page }) => {
     const cta = page.getByRole('link', { name: /CONTACT SUPPORT/i })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', EN_ROUTES.contact)
+    await expect(cta).toHaveAttribute('href', SUPPORT_URL)
   })
 
-  test('secondary CTA links to billing docs', async ({ page }) => {
-    const cta = page.getByRole('link', { name: /READ BILLING DOCS/i })
+  test('secondary CTA links to subscription docs', async ({ page }) => {
+    const cta = page.getByRole('link', { name: /READ SUBSCRIPTION DOCS/i })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', BILLING_DOCS_URL)
-  })
-
-  test('tertiary CTA is a close-tab button', async ({ page }) => {
-    const button = page.getByRole('button', { name: /CLOSE TAB/i })
-    await expect(button).toBeVisible()
+    await expect(cta).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
   })
 })
 
@@ -96,11 +88,12 @@ test.describe('Payment pages zh-CN @smoke', () => {
       page.getByRole('heading', { name: '支付成功', level: 1 })
     ).toBeVisible()
     await expect(
-      page.getByRole('link', { name: '返回 COMFYUI' })
-    ).toHaveAttribute('href', APP_URL)
-    await expect(
-      page.getByRole('link', { name: '查看余额与用量' })
-    ).toHaveAttribute('href', PLATFORM_URL)
+      page.getByRole('link', { name: '前往 COMFY CLOUD' })
+    ).toHaveAttribute('href', CLOUD_URL)
+    await expect(page.getByRole('link', { name: '查看用量' })).toHaveAttribute(
+      'href',
+      PLATFORM_USAGE_URL
+    )
   })
 
   test('zh-CN failed page renders and links correctly', async ({ page }) => {
@@ -112,11 +105,10 @@ test.describe('Payment pages zh-CN @smoke', () => {
     ).toBeVisible()
     await expect(page.getByRole('link', { name: '联系支持' })).toHaveAttribute(
       'href',
-      ZH_CN_ROUTES.contact
+      SUPPORT_URL
     )
     await expect(
-      page.getByRole('link', { name: '查看计费文档' })
-    ).toHaveAttribute('href', BILLING_DOCS_URL)
-    await expect(page.getByRole('button', { name: '关闭页面' })).toBeVisible()
+      page.getByRole('link', { name: '查看订阅文档' })
+    ).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
   })
 })
