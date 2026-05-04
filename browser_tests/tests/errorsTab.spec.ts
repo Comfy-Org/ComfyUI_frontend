@@ -52,9 +52,9 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
     const { propertiesPanel } = comfyPage.menu
     await expect(propertiesPanel.root).toBeVisible()
 
-    const locateButton = propertiesPanel.root.locator(
-      'button .icon-\\[lucide--locate\\]'
-    )
+    const locateButton = propertiesPanel.root.getByRole('button', {
+      name: 'Locate node on canvas'
+    })
     await expect(locateButton.first()).toBeVisible()
   })
 
@@ -69,8 +69,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
     await expect(propertiesPanel.root).toBeVisible()
 
     const locateButton = propertiesPanel.root
-      .locator('button')
-      .filter({ has: comfyPage.page.locator('.icon-\\[lucide--locate\\]') })
+      .getByRole('button', { name: 'Locate node on canvas' })
       .first()
     await locateButton.click()
 
@@ -117,14 +116,18 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
     await propertiesPanel.searchBox.fill('zzz_nonexistent_zzz')
 
     await expect(
-      propertiesPanel.root.locator('.icon-\\[lucide--locate\\]')
+      propertiesPanel.root.getByRole('button', {
+        name: 'Locate node on canvas'
+      })
     ).toHaveCount(0)
 
     // Clear the search to restore results
     await propertiesPanel.searchBox.fill('')
 
     await expect(
-      propertiesPanel.root.locator('.icon-\\[lucide--locate\\]').first()
+      propertiesPanel.root
+        .getByRole('button', { name: 'Locate node on canvas' })
+        .first()
     ).toBeVisible()
   })
 
