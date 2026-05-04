@@ -284,10 +284,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
           SUMMARY_FILE: playwright-section.md
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
+            "$BRANCH_NAME" \
             "completed"
 
       - name: Read playwright section

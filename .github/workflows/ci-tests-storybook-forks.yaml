@@ -66,11 +66,12 @@ jobs:
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
           SUMMARY_FILE: storybook-section.md
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
         run: |
           chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
           ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ steps.pr.outputs.number }}" \
-            "${{ github.event.workflow_run.head_branch }}" \
+            "$BRANCH_NAME" \
             "completed"
 
       - name: Read storybook section

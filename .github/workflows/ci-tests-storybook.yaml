@@ -171,10 +171,11 @@ jobs:
           WORKFLOW_CONCLUSION: ${{ needs.storybook-build.outputs.conclusion }}
           WORKFLOW_URL: ${{ needs.storybook-build.outputs.workflow-url }}
           SUMMARY_FILE: storybook-section.md
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
+            "$BRANCH_NAME" \
             "completed"
 
       - name: Read storybook section
