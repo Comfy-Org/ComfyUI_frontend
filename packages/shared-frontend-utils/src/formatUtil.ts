@@ -74,10 +74,14 @@ export function highlightQuery(
     text = DOMPurify.sanitize(text)
   }
 
-  // Escape special regex characters in the query string
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // Escape special regex characters, then join with an optional single
+  // space so cross-word matches (e.g. "geto" → "imaGE TO") are
+  // highlighted without spanning tabs, newlines, or multi-space gaps.
+  const pattern = Array.from(query)
+    .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('[ ]?')
 
-  const regex = new RegExp(`(${escapedQuery})`, 'gi')
+  const regex = new RegExp(`(${pattern})`, 'gi')
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
@@ -361,9 +365,17 @@ export const generateUUID = (): string => {
  */
 export const isCivitaiModelUrl = (url: string): boolean => {
   if (!isValidUrl(url)) return false
-  if (!url.includes('civitai.com')) return false
 
   const urlObj = new URL(url)
+  const hostname = urlObj.hostname.toLowerCase()
+  const isCivitaiHost =
+    hostname === 'civitai.com' ||
+    hostname.endsWith('.civitai.com') ||
+    hostname === 'civitai.red' ||
+    hostname.endsWith('.civitai.red')
+  if (!isCivitaiHost) {
+    return false
+  }
   const pathname = urlObj.pathname
 
   return (
@@ -542,7 +554,8 @@ const IMAGE_EXTENSIONS = [
   'bmp',
   'avif',
   'tif',
-  'tiff'
+  'tiff',
+  'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const

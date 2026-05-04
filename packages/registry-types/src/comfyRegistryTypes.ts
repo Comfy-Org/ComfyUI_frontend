@@ -1376,6 +1376,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/nodeversions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin list all node versions with optional filters
+         * @description Admin-only endpoint to list all node versions with support for including deleted versions. Only admins can access this endpoint.
+         */
+        get: operations["adminListAllNodeVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/admin/coupons": {
         parameters: {
             query?: never;
@@ -1812,8 +1832,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** KlingAI Query Task List */
-        get: operations["klingText2VideoQueryTaskList"];
+        get?: never;
         put?: never;
         /** KlingAI Create Video from Text */
         post: operations["klingCreateVideoFromText"];
@@ -1847,8 +1866,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** KlingAI Query Image2Video Task List */
-        get: operations["klingImage2VideoQueryTaskList"];
+        get?: never;
         put?: never;
         /** KlingAI Create Video from Image */
         post: operations["klingCreateVideoFromImage"];
@@ -2074,6 +2092,26 @@ export interface paths {
         };
         /** KlingAI Query Avatar Task */
         get: operations["klingAvatarQueryTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/v1/general/advanced-presets-elements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * KlingAI Query Presets Elements
+         * @description Retrieves a list of advanced preset elements from Kling AI.
+         */
+        get: operations["klingGetPresetsElements"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2867,7 +2905,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Poll the status of a Veo prediction operation. Deprecated. Use /proxy/veo/{modelId}/generate instead. */
+        /** Poll the status of a Veo prediction operation. Deprecated. Use /proxy/veo/{modelId}/poll instead. */
         post: operations["veoPoll"];
         delete?: never;
         options?: never;
@@ -3936,6 +3974,122 @@ export interface paths {
             cookie?: never;
         };
         get: operations["byteplusVideoGenerationQuery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/byteplus-seedance2/api/v3/contents/generations/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["byteplusSeedance2VideoGenerationQuery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/visual-validate/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceCreateVisualValidateSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/visual-validate/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seedanceGetVisualValidateSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seedanceGetAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/virtual-library/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceVirtualLibraryCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seedance/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * BytePlus real-person verification callback landing page
+         * @description Browser-facing landing page that BytePlus redirects the end user to after H5 liveness is complete. Logs the callback parameters and returns plain HTML the user sees in their browser. Client polls seedanceGetVisualValidateSession to observe the actual result.
+         */
+        get: operations["seedanceVisualValidateCallback"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5298,6 +5452,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/elevenlabs/v1/shared-voices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Shared Voices
+         * @description Retrieves a list of shared voices from the ElevenLabs voice library.
+         */
+        get: operations["ElevenLabsGetSharedVoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/elevenlabs/v2/voices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Voices
+         * @description Proxies ElevenLabs `GET /v2/voices` (the paginated voice search endpoint)
+         *     with the `category` query parameter pinned to `premade`, so only premade
+         *     voices from the ElevenLabs voice library are ever returned.
+         */
+        get: operations["ElevenLabsGetVoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/elevenlabs/v1/sound-generation": {
         parameters: {
             query?: never;
@@ -5599,6 +5795,51 @@ export interface paths {
         get: operations["freepikMagnificStyleTransferGetStatus"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/sonilo/v2m/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate music from video
+         * @description Generate music from a video using Sonilo video-to-music AI.
+         *     Accepts either a video file upload or a video URL, with an optional prompt.
+         *     Returns a streaming NDJSON response with duration, titles, audio chunks, and completion events.
+         *     Max video duration: 6 minutes. Max upload size: 1024MB.
+         */
+        post: operations["soniloVideoToMusicGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/sonilo/t2m/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate music from text prompt
+         * @description Generate music from a text prompt using Sonilo text-to-music AI.
+         *     Requires a prompt describing the desired music. Duration is optional and will be inferred if not provided.
+         *     Returns a streaming NDJSON response with duration, titles, audio chunks, and completion events.
+         */
+        post: operations["soniloTextToMusicGenerate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6818,7 +7059,7 @@ export interface components {
         KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
         /**
          * @description Model Name
-         * @default kling-v2-master
+         * @default kling-v1
          * @enum {string}
          */
         KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
@@ -6971,7 +7212,7 @@ export interface components {
              * @description Storyboard method. Required when the multi_shot parameter is set to true.
              * @enum {string}
              */
-            shot_type?: "customize";
+            shot_type?: "customize" | "intelligence";
             /** @description Positive text prompt. Use <<<voice_1>>> to specify a voice matching the voice_list parameter order. A task can reference up to 2 tones. When specifying a tone, the sound parameter value must be on. */
             prompt?: string;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
@@ -7009,7 +7250,7 @@ export interface components {
             /** @description Customized Task ID */
             external_task_id?: string;
         };
-        KlingText2VideoResponse: {
+        KlingQueryTaskResponse: {
             /** @description Error code */
             code?: number;
             /** @description Error message */
@@ -7054,7 +7295,7 @@ export interface components {
              * @description Storyboard method. Required when the multi_shot parameter is set to true.
              * @enum {string}
              */
-            shot_type?: "customize";
+            shot_type?: "customize" | "intelligence";
             /** @description Positive text prompt. Use <<<voice_1>>> to specify a voice matching the voice_list parameter order. A task can reference up to 2 tones. When specifying a tone, the sound parameter value must be on. */
             prompt?: string;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
@@ -7076,6 +7317,11 @@ export interface components {
                  */
                 element_id?: number;
             }[];
+            /** @description List of voices referenced when generating videos. Supports up to 2 voices. The element_list and voice_list parameters are mutually exclusive. */
+            voice_list?: {
+                /** @description Voice ID returned through the voice customization API or a system preset voice ID. */
+                voice_id?: string;
+            }[];
             cfg_scale?: components["schemas"]["KlingVideoGenCfgScale"];
             mode?: components["schemas"]["KlingVideoGenMode"];
             /** @description Static Brush Application Area (Mask image created by users using the motion brush). The aspect ratio must match the input image. */
@@ -7095,7 +7341,6 @@ export interface components {
                 }[];
             }[];
             camera_control?: components["schemas"]["KlingCameraControl"];
-            aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             duration?: components["schemas"]["KlingVideoGenDuration"];
             /**
              * @description Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.
@@ -7115,36 +7360,6 @@ export interface components {
             callback_url?: string;
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
-        };
-        KlingImage2VideoResponse: {
-            /** @description Error code */
-            code?: number;
-            /** @description Error message */
-            message?: string;
-            /** @description Request ID */
-            request_id?: string;
-            data?: {
-                /** @description Task ID */
-                task_id?: string;
-                task_status?: components["schemas"]["KlingTaskStatus"];
-                /** @description Task status information, displaying the failure reason when the task fails */
-                task_status_msg?: string;
-                task_info?: {
-                    external_task_id?: string;
-                };
-                watermark_info?: {
-                    enabled?: boolean;
-                };
-                /** @description The deduction units of task */
-                final_unit_deduction?: string;
-                /** @description Task creation time, Unix timestamp in milliseconds */
-                created_at?: number;
-                /** @description Task update time, Unix timestamp in milliseconds */
-                updated_at?: number;
-                task_result?: {
-                    videos?: components["schemas"]["KlingVideoResult"][];
-                };
-            };
         };
         KlingVideoExtendRequest: {
             /** @description The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension. */
@@ -7199,7 +7414,7 @@ export interface components {
              * @description Storyboard method. Required when the multi_shot parameter is set to true.
              * @enum {string}
              */
-            shot_type?: "customize";
+            shot_type?: "customize" | "intelligence";
             /** @description Text prompt words, which can include positive and negative descriptions. Must not exceed 2,500 characters. Can specify elements, images, or videos in the format <<<>>> such as <<element_1>>, <<<image_1>>>, <<<video_1>>>. */
             prompt?: string;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
@@ -7252,7 +7467,7 @@ export interface components {
             sound: "on" | "off";
             /**
              * @description Video generation mode. std: Standard Mode, generating 720P videos, cost-effective. pro: Professional Mode, generating 1080P videos, higher quality video output.
-             * @default std
+             * @default pro
              * @enum {string}
              */
             mode: "pro" | "std";
@@ -7279,36 +7494,6 @@ export interface components {
             callback_url?: string;
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
-        };
-        KlingOmniVideoResponse: {
-            /** @description Error code */
-            code?: number;
-            /** @description Error message */
-            message?: string;
-            /** @description Request ID */
-            request_id?: string;
-            data?: {
-                /** @description Task ID */
-                task_id?: string;
-                task_status?: components["schemas"]["KlingTaskStatus"];
-                /** @description Task status information, displaying the failure reason when the task fails */
-                task_status_msg?: string;
-                task_info?: {
-                    external_task_id?: string;
-                };
-                watermark_info?: {
-                    enabled?: boolean;
-                };
-                /** @description The deduction units of task */
-                final_unit_deduction?: string;
-                /** @description Task creation time, Unix timestamp in milliseconds */
-                created_at?: number;
-                /** @description Task update time, Unix timestamp in milliseconds */
-                updated_at?: number;
-                task_result?: {
-                    videos?: components["schemas"]["KlingVideoResult"][];
-                };
-            };
         };
         KlingOmniImageRequest: {
             /**
@@ -9617,6 +9802,150 @@ export interface components {
              */
             model_id: string;
         };
+        ElevenLabsSharedVoice: {
+            public_owner_id: string;
+            voice_id: string;
+            date_unix: number;
+            name: string;
+            accent: string;
+            gender: string;
+            age: string;
+            descriptive: string;
+            use_case: string;
+            /** @enum {string} */
+            category: "generated" | "cloned" | "premade" | "professional" | "famous" | "high_quality";
+            language?: string | null;
+            locale?: string | null;
+            description?: string | null;
+            preview_url?: string | null;
+            usage_character_count_1y: number;
+            usage_character_count_7d: number;
+            play_api_usage_character_count_1y: number;
+            cloned_by_count: number;
+            /** Format: double */
+            rate?: number | null;
+            /**
+             * Format: double
+             * @description The rate of the voice in USD per 1000 credits. null if default.
+             */
+            fiat_rate?: number | null;
+            free_users_allowed: boolean;
+            live_moderation_enabled: boolean;
+            featured: boolean;
+            /** @description The verified languages of the voice. */
+            verified_languages?: components["schemas"]["ElevenLabsVerifiedVoiceLanguage"][] | null;
+            notice_period?: number | null;
+            instagram_username?: string | null;
+            twitter_username?: string | null;
+            youtube_username?: string | null;
+            tiktok_username?: string | null;
+            image_url?: string | null;
+            is_added_by_user?: boolean | null;
+            is_bookmarked?: boolean | null;
+        };
+        ElevenLabsVerifiedVoiceLanguage: {
+            /** @description The language of the voice. */
+            language: string;
+            /** @description The voice's model ID. */
+            model_id: string;
+            /** @description The voice's accent, if applicable. */
+            accent?: string | null;
+            /** @description The voice's locale, if applicable. */
+            locale?: string | null;
+            /** @description The voice's preview URL, if applicable. */
+            preview_url?: string | null;
+        };
+        /**
+         * @description Paginated response shape returned by the shared-voices proxy to match the
+         *     frontend's `RichComboWidget` progressive-fetch contract.
+         */
+        ElevenLabsSharedVoicesPaginatedResponse: {
+            /** @description The list of shared voices on this page. */
+            items: components["schemas"]["ElevenLabsSharedVoice"][];
+            /** @description Whether there are more shared voices in subsequent pages. */
+            has_more: boolean;
+        };
+        /** @description A voice from the authenticated account's voice library (e.g. a premade voice). */
+        ElevenLabsVoice: {
+            voice_id: string;
+            name: string;
+            /** @description Voice category (e.g. "premade", "cloned", "generated", "professional"). */
+            category: string;
+            description?: string | null;
+            preview_url?: string | null;
+            /** @description Free-form string labels attached to the voice (e.g. accent, gender, age, use_case). */
+            labels?: {
+                [key: string]: string;
+            } | null;
+            /** @description The verified languages of the voice. */
+            verified_languages?: components["schemas"]["ElevenLabsVerifiedVoiceLanguage"][] | null;
+        };
+        /**
+         * @description Paginated response shape returned by the premade-voices proxy.
+         *     Mirrors ElevenLabs `/v2/voices`, renaming `voices` to `items` to
+         *     match the frontend's `RichComboWidget` progressive-fetch contract.
+         */
+        ElevenLabsVoicesPaginatedResponse: {
+            /** @description The list of premade voices on this page. */
+            items: components["schemas"]["ElevenLabsVoice"][];
+            /** @description Whether there are more voices in subsequent pages. */
+            has_more: boolean;
+            /** @description Cursor to pass to the next request to fetch the next page. */
+            next_page_token?: string | null;
+        };
+        KlingPresetsElementsResponse: {
+            code?: number;
+            message?: string;
+            request_id?: string;
+            data?: components["schemas"]["KlingPresetsElementTask"][];
+        };
+        KlingPresetsElementTask: {
+            task_id?: string;
+            /** @enum {string} */
+            task_status?: "submitted" | "processing" | "succeed" | "failed";
+            task_status_msg?: string;
+            task_info?: {
+                external_task_id?: string;
+            };
+            task_result?: {
+                elements?: components["schemas"]["KlingPresetsElement"][];
+            };
+            final_unit_deduction?: string;
+            /** @description Task creation time, Unix timestamp in ms */
+            created_at?: number;
+            /** @description Task update time, Unix timestamp in ms */
+            updated_at?: number;
+        };
+        KlingPresetsElement: {
+            /** Format: int64 */
+            element_id?: number;
+            element_name?: string;
+            element_description?: string;
+            reference_type?: string;
+            element_image_list?: {
+                frontal_image?: string;
+                refer_images?: {
+                    image_url?: string;
+                }[];
+            };
+            element_video_list?: {
+                refer_videos?: {
+                    video_url?: string;
+                }[];
+            };
+            element_voice_info?: {
+                voice_id?: string;
+                voice_name?: string;
+                trial_url?: string;
+                owned_by?: string;
+            };
+            tag_list?: {
+                id?: string;
+                name?: string;
+                description?: string;
+            }[];
+            owned_by?: string;
+        };
         KlingErrorResponse: {
             /**
              * @description - 1000: Authentication failed
@@ -10195,77 +10524,196 @@ export interface components {
         };
         VeoGenVidRequest: {
             instances?: {
-                /** @description Text description of the video */
+                /** @description Text description of the video to generate */
                 prompt: string;
-                /** @description Optional image to guide video generation */
+                /** @description Optional first frame image to guide video generation */
                 image?: {
-                    /** Format: byte */
+                    /**
+                     * Format: byte
+                     * @description Base64-encoded image data
+                     */
                     bytesBase64Encoded?: string;
+                    /** @description Cloud Storage URI of the image */
                     gcsUri?: string;
-                    mimeType?: string;
+                    /**
+                     * @description MIME type of the image (image/jpeg or image/png)
+                     * @enum {string}
+                     */
+                    mimeType?: "image/jpeg" | "image/png";
                 } & (unknown | unknown);
-                /** @description Optional last frame image to guide video generation */
+                /** @description Optional last frame image. Used with image to generate video between first and last frames. Supported by Veo 3.0+ models. */
                 lastFrame?: {
-                    /** Format: byte */
+                    /**
+                     * Format: byte
+                     * @description Base64-encoded image data
+                     */
                     bytesBase64Encoded?: string;
+                    /** @description Cloud Storage URI of the image */
                     gcsUri?: string;
+                    /**
+                     * @description MIME type of the image (image/jpeg or image/png)
+                     * @enum {string}
+                     */
+                    mimeType?: "image/jpeg" | "image/png";
+                } & (unknown | unknown);
+                /** @description Optional reference images to guide video generation. Supports up to 3 asset images or 1 style image. Supported by Veo 3.1 models (preview). */
+                referenceImages?: {
+                    image: {
+                        /**
+                         * Format: byte
+                         * @description Base64-encoded image data
+                         */
+                        bytesBase64Encoded?: string;
+                        /** @description Cloud Storage URI of the image */
+                        gcsUri?: string;
+                        /**
+                         * @description MIME type of the image (image/jpeg or image/png)
+                         * @enum {string}
+                         */
+                        mimeType?: "image/jpeg" | "image/png";
+                    } & (unknown | unknown);
+                    /**
+                     * @description Type of reference image
+                     * @enum {string}
+                     */
+                    referenceType: "asset" | "style";
+                    /** @description Optional identifier for the reference image */
+                    referenceId?: string;
+                }[];
+                /** @description Optional input video for video extension or editing. Incompatible with image and referenceImages. */
+                video?: {
+                    /**
+                     * Format: byte
+                     * @description Base64-encoded video bytes
+                     */
+                    bytesBase64Encoded?: string;
+                    /** @description Cloud Storage URI of the input video */
+                    gcsUri?: string;
+                    /**
+                     * @description MIME type of the video
+                     * @enum {string}
+                     */
+                    mimeType?: "video/mov" | "video/mpeg" | "video/mp4" | "video/mpg" | "video/avi" | "video/wmv" | "video/mpegps" | "video/x-flv";
+                } & (unknown | unknown);
+                /**
+                 * @description Camera motion type. Requires image to be provided.
+                 * @enum {string}
+                 */
+                cameraControl?: "fixed" | "pan_left" | "pan_right" | "tilt_up" | "tilt_down" | "truck_left" | "truck_right" | "pedestal_up" | "pedestal_down" | "push_in" | "pull_out";
+                /** @description Optional mask for video editing. Applies to input video. */
+                mask?: {
+                    /**
+                     * Format: byte
+                     * @description Base64-encoded mask bytes
+                     */
+                    bytesBase64Encoded?: string;
+                    /** @description Cloud Storage URI to mask file */
+                    gcsUri?: string;
+                    /** @description MIME type of the mask (image/png, image/jpeg, image/webp, or video formats) */
                     mimeType?: string;
+                    /**
+                     * @description How the mask is applied
+                     * @enum {string}
+                     */
+                    maskMode?: "insert" | "remove" | "remove_static" | "outpaint";
                 } & (unknown | unknown);
             }[];
             parameters?: {
-                /** @example 16:9 */
-                aspectRatio?: string;
+                /**
+                 * @description Aspect ratio of the generated video. Default: 16:9
+                 * @example 16:9
+                 * @enum {string}
+                 */
+                aspectRatio?: "16:9" | "9:16";
+                /** @description Text describing what to avoid in the generated video */
                 negativePrompt?: string;
-                /** @enum {string} */
-                personGeneration?: "ALLOW" | "BLOCK";
+                /**
+                 * @description Controls people in generated videos. Default: allow_adult
+                 * @enum {string}
+                 */
+                personGeneration?: "dont_allow" | "allow_adult" | "allowAll";
+                /** @description Number of videos to generate. If not specified, 1 video is generated. */
                 sampleCount?: number;
-                /** Format: uint32 */
+                /**
+                 * Format: uint32
+                 * @description Random seed for deterministic output. Different seeds used per video if sampleCount > 1.
+                 */
                 seed?: number;
-                /** @description Optional Cloud Storage URI to upload the video */
+                /** @description Cloud Storage URI (gs://) for saving generated videos */
                 storageUri?: string;
+                /** @description Target duration of the generated video in seconds. Veo 2: 5-8. Veo 3/3.1: 4, 6, or 8. Default: 8 */
                 durationSeconds?: number;
+                /** @description Frame rate of generated videos in frames per second */
+                fps?: number;
+                /** @description Automatically improve prompt for higher quality. Defaults to true. */
                 enhancePrompt?: boolean;
-                /** @description Generate audio for the video. Only supported by veo 3 models. */
+                /** @description Whether to generate audio along with the video. Defaults to true. Supported by Veo 3.0+ models. */
                 generateAudio?: boolean;
+                /**
+                 * @description Output video resolution. Supported by Veo 3.0+ models. Default: 720p
+                 * @enum {string}
+                 */
+                resolution?: "720p" | "1080p" | "4k";
+                /**
+                 * @description Resize approach for input image. Default: pad
+                 * @enum {string}
+                 */
+                resizeMode?: "pad" | "crop";
+                /**
+                 * @description Video compression quality. Default: optimized
+                 * @enum {string}
+                 */
+                compressionQuality?: "optimized" | "lossless";
+                /**
+                 * @description Operation type for the video generation request
+                 * @enum {string}
+                 */
+                task?: "textToVideo" | "imageToVideo" | "referenceToVideo" | "edit" | "extend" | "upscale";
+                /** @description Cloud Pub/Sub topic for progress updates (projects/{project}/topics/{topic}) */
+                pubsubTopic?: string;
             };
         };
+        /** @description Response from a Veo video generation request. Contains the operation name for polling. */
         VeoGenVidResponse: {
             /**
-             * @description Operation resource name
+             * @description Operation resource name used to poll for results via fetchPredictOperation
              * @example projects/PROJECT_ID/locations/us-central1/publishers/google/models/MODEL_ID/operations/a1b07c8e-7b5a-4aba-bb34-3e1ccb8afcc8
              */
             name: string;
         };
         VeoGenVidPollRequest: {
             /**
-             * @description Full operation name (from predict response)
+             * @description Full operation name returned from the generate response
              * @example projects/PROJECT_ID/locations/us-central1/publishers/google/models/MODEL_ID/operations/OPERATION_ID
              */
             operationName: string;
         };
+        /** @description Response from polling a Veo video generation operation */
         VeoGenVidPollResponse: {
+            /** @description Operation resource name */
             name?: string;
+            /** @description Whether the operation has completed */
             done?: boolean;
-            /** @description The actual prediction response if done is true */
+            /** @description The prediction response, present when done is true */
             response?: {
                 /** @example type.googleapis.com/cloud.ai.large_models.vision.GenerateVideoResponse */
                 "@type"?: string;
-                /** @description Count of media filtered by responsible AI policies */
+                /** @description Number of videos filtered by responsible AI policies */
                 raiMediaFilteredCount?: number;
-                /** @description Reasons why media was filtered by responsible AI policies */
+                /** @description Reasons why videos were filtered by responsible AI policies */
                 raiMediaFilteredReasons?: string[];
                 videos?: {
-                    /** @description Cloud Storage URI of the video */
+                    /** @description Cloud Storage URI of the generated video */
                     gcsUri?: string;
                     /** @description Base64-encoded video content */
                     bytesBase64Encoded?: string;
-                    /** @description Video MIME type */
+                    /** @description Video MIME type (video/mp4) */
                     mimeType?: string;
                 }[];
             };
-            /** @description Error details if operation failed */
+            /** @description Error details, present if the operation failed */
             error?: {
-                /** @description Error code */
+                /** @description gRPC error code */
                 code?: number;
                 /** @description Error message */
                 message?: string;
@@ -10366,8 +10814,8 @@ export interface components {
         };
         OpenAIImageGenerationRequest: {
             /**
-             * @description The model to use for image generation
-             * @example dall-e-3
+             * @description The model to use for image generation (e.g., dall-e-2, dall-e-3, gpt-image-1, gpt-image-1.5, gpt-image-2)
+             * @example gpt-image-2
              */
             model?: string;
             /**
@@ -10434,8 +10882,8 @@ export interface components {
         };
         OpenAIImageEditRequest: {
             /**
-             * @description The model to use for image editing
-             * @example gpt-image-1
+             * @description The model to use for image editing (e.g., dall-e-2, gpt-image-1, gpt-image-1.5, gpt-image-2)
+             * @example gpt-image-2
              */
             model: string;
             /**
@@ -13846,7 +14294,7 @@ export interface components {
              * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
              * @enum {string}
              */
-            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015";
+            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128";
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
             /**
@@ -13862,19 +14310,46 @@ export interface components {
              */
             return_last_frame: boolean;
             /**
-             * @description Only supported by Seedance 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
-             *     true: The model outputs a video with synchronized audio. Seedance 1.5 pro can automatically generate matching voice, sound effects, or background music based on the prompt and visual content. It is recommended to enclose dialogue in double quotes. Example: A man stops a woman and says, "Remember, never point your finger at the moon."
+             * @description Supported by Seedance 2.0, 2.0 fast, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
+             *     true: The model outputs a video with synchronized audio.
              *     false: The model outputs a silent video.
              * @default true
              */
             generate_audio: boolean;
+            /**
+             * @description Video resolution. Seedance 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
+             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p.
+             * @enum {string}
+             */
+            resolution?: "480p" | "720p" | "1080p";
+            /**
+             * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
+             * @enum {string}
+             */
+            ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "adaptive";
+            /** @description Video duration in seconds. Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
+            duration?: number;
+            /** @description Seed integer for controlling randomness. Range: [-1, 2^32-1]. -1 uses a random seed. */
+            seed?: number;
+            /**
+             * @description Whether the generated video includes a watermark.
+             * @default false
+             */
+            watermark: boolean;
+            /**
+             * @description Service tier for processing. Seedance 2.0 & 2.0 fast do not support flex (offline inference).
+             * @enum {string}
+             */
+            service_tier?: "default" | "flex";
+            /** @description Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200]. */
+            execution_expires_after?: number;
         };
         BytePlusVideoGenerationContent: {
             /**
              * @description The type of the input content
              * @enum {string}
              */
-            type: "text" | "image_url";
+            type: "text" | "image_url" | "video_url" | "audio_url";
             /**
              * @description The input text information for the model. Includes text prompt and optional parameters.
              *
@@ -13894,12 +14369,40 @@ export interface components {
             text?: string;
             image_url?: {
                 /**
-                 * @description Image content for image-to-video generation (when type is "image")
+                 * @description Image content for image-to-video generation (when type is "image_url")
                  *     Image URL: Make sure that the image URL is accessible.
                  *     Base64-encoded content: Format must be data:image/<format>;base64,<content>
+                 *     Asset ID: Format asset://<ASSET_ID>
                  */
                 url?: string;
             };
+            /** @description Input video object. Only Seedance 2.0 & 2.0 fast support video input. */
+            video_url?: {
+                /**
+                 * @description Video URL or Asset ID.
+                 *     Video URL: Public URL of the video (mp4, mov).
+                 *     Asset ID: Format asset://<ASSET_ID>
+                 */
+                url?: string;
+            };
+            /** @description Input audio object. Only Seedance 2.0 & 2.0 fast support audio input. Cannot be used alone - must include at least 1 image or video. */
+            audio_url?: {
+                /**
+                 * @description Audio URL, Base64 encoding, or Asset ID.
+                 *     Audio URL: Public URL of the audio (wav, mp3).
+                 *     Base64: Format data:audio/<format>;base64,<content>
+                 *     Asset ID: Format asset://<ASSET_ID>
+                 */
+                url?: string;
+            };
+            /**
+             * @description The role/position of the content item.
+             *     For images: first_frame, last_frame, or reference_image.
+             *     For videos: reference_video (Seedance 2.0 & 2.0 fast only).
+             *     For audio: reference_audio (Seedance 2.0 & 2.0 fast only).
+             * @enum {string}
+             */
+            role?: "first_frame" | "last_frame" | "reference_image" | "reference_video" | "reference_audio";
         };
         BytePlusVideoGenerationResponse: {
             /** @description The ID of the video generation task */
@@ -13914,7 +14417,7 @@ export interface components {
              * @description The state of the task
              * @enum {string}
              */
-            status?: "queued" | "running" | "cancelled" | "succeeded" | "failed";
+            status?: "queued" | "running" | "cancelled" | "succeeded" | "failed" | "expired";
             /** @description The error information. If the task succeeds, null is returned. If the task fails, the error information is returned. */
             error?: {
                 /** @description The error code */
@@ -13939,12 +14442,86 @@ export interface components {
                 total_tokens?: number;
             };
         };
+        SeedanceCreateVisualValidateSessionResponse: {
+            /**
+             * Format: uuid
+             * @description Session identifier. Clients poll seedanceGetVisualValidateSession with this.
+             */
+            session_id: string;
+            /** @description BytePlus-issued H5 liveness link. Open in a browser with camera access. Valid for ~120 seconds. */
+            h5_link: string;
+        };
+        SeedanceGetVisualValidateSessionResponse: {
+            /** Format: uuid */
+            session_id: string;
+            /** @enum {string} */
+            status: "pending" | "completed" | "failed";
+            /** @description Populated only when status == completed. This is the BytePlus Asset Group ID the user will upload assets into. */
+            group_id?: string | null;
+            error_code?: string | null;
+            error_message?: string | null;
+        };
+        SeedanceCreateAssetRequest: {
+            /** @description BytePlus Asset Group ID the asset will belong to. Caller must own this group. */
+            group_id: string;
+            /** @description Publicly accessible URL of the asset. */
+            url: string;
+            /** @description Optional asset name, up to 64 characters. */
+            name?: string;
+            /** @enum {string} */
+            asset_type: "Image" | "Video" | "Audio";
+            moderation?: components["schemas"]["SeedanceAssetModeration"];
+            /** @description BytePlus project name. Defaults to "default". Must match the Asset Group's project. */
+            project_name?: string;
+        };
+        SeedanceAssetModeration: {
+            /**
+             * @description Content Pre-filter review strategy. "Skip" bypasses most non-baseline policies (requires Secure Mode off on the account).
+             * @enum {string}
+             */
+            strategy: "Default" | "Skip";
+        };
+        SeedanceCreateAssetResponse: {
+            /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
+            asset_id: string;
+        };
+        SeedanceGetAssetResponse: {
+            id: string;
+            name?: string | null;
+            /** @description Access URL valid for ~12 hours. */
+            url?: string | null;
+            /** @enum {string} */
+            asset_type: "Image" | "Video" | "Audio";
+            group_id: string;
+            /** @enum {string} */
+            status: "Active" | "Processing" | "Failed";
+            error?: components["schemas"]["SeedanceAssetError"];
+            /** Format: date-time */
+            create_time?: string | null;
+            /** Format: date-time */
+            update_time?: string | null;
+            project_name?: string | null;
+        };
+        SeedanceAssetError: {
+            code: string;
+            message: string;
+        };
+        SeedanceVirtualLibraryCreateAssetRequest: {
+            /** @description Publicly accessible URL of the image asset to upload to the caller's virtual portrait library. */
+            url: string;
+            /** @description Client-supplied content hash used as the per-customer dedup key. Re-submitting the same hash returns the existing asset id without re-uploading to BytePlus. */
+            hash: string;
+        };
+        SeedanceVirtualLibraryCreateAssetResponse: {
+            /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
+            asset_id: string;
+        };
         WanVideoGenerationRequest: {
             /**
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /**
@@ -13952,7 +14529,7 @@ export interface components {
                  *     For wan2.6-r2v with multiple reference videos, use 'character1', 'character2', etc. to refer to subjects
                  *     in the order of reference videos. Example: "Character1 sings on the roadside, Character2 dances beside it"
                  */
-                prompt: string;
+                prompt?: string;
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
                 negative_prompt?: string;
                 /** @description Audio file download URL. Supported formats: mp3 and wav. Cannot be used with reference_video_urls. */
@@ -13973,6 +14550,23 @@ export interface components {
                  *     Billing: Based on actual reference duration used.
                  */
                 reference_video_urls?: string[];
+                /**
+                 * @description Media asset list for wan2.7 models. Specifies reference materials (image, audio, video)
+                 *     for video generation. Each element contains a type and url field.
+                 *     Supported type values vary by model:
+                 *     - wan2.7-i2v: first_frame, last_frame, driving_audio, first_clip
+                 *     - wan2.7-r2v: reference_image, reference_video
+                 *     - wan2.7-videoedit: video, reference_image
+                 */
+                media?: {
+                    /**
+                     * @description Media asset type
+                     * @enum {string}
+                     */
+                    type: "first_frame" | "last_frame" | "driving_audio" | "first_clip" | "reference_image" | "reference_video" | "video";
+                    /** @description URL of the media file (public HTTP/HTTPS URL or OSS temporary URL) */
+                    url: string;
+                }[];
             };
             /** @description Video processing parameters */
             parameters?: {
@@ -13985,9 +14579,10 @@ export interface components {
                  */
                 size?: string;
                 /**
-                 * @description Resolution level for I2V models. Supported values vary by model:
+                 * @description Resolution level. Supported values vary by model:
                  *     - wan2.5-i2v-preview: 480P, 720P, 1080P
                  *     - wan2.6-i2v: 720P, 1080P only (no 480P support)
+                 *     - wan2.7 models (i2v, t2v, r2v, videoedit): 720P, 1080P (default 1080P)
                  * @enum {string}
                  */
                 resolution?: "480P" | "720P" | "1080P";
@@ -13996,10 +14591,11 @@ export interface components {
                  *     - wan2.5 models: 5 or 10 seconds
                  *     - wan2.6-t2v, wan2.6-i2v: 5, 10, or 15 seconds
                  *     - wan2.6-r2v: 5 or 10 seconds only (no 15s support)
+                 *     - wan2.7-i2v, wan2.7-t2v: integer in [2, 15]
+                 *     - wan2.7-r2v, wan2.7-videoedit: integer in [2, 10]
                  * @default 5
-                 * @enum {integer}
                  */
-                duration?: 5 | 10 | 15;
+                duration?: number;
                 /**
                  * @description Is it enabled prompt intelligent rewriting. Default is true
                  * @default true
@@ -14007,13 +14603,27 @@ export interface components {
                 prompt_extend?: boolean;
                 /**
                  * @description Intelligent multi-lens control. Only active when prompt_extend is enabled.
-                 *     For wan2.6 models only.
-                 *     - multi: Intelligent disassembly into multiple lenses (default)
-                 *     - single: Single lens generation
-                 * @default multi
+                 *     For wan2.6 and wan2.7-r2v models.
+                 *     - single: Single-shot video (default)
+                 *     - multi: Multi-shot video
+                 * @default single
                  * @enum {string}
                  */
                 shot_type?: "multi" | "single";
+                /**
+                 * @description Aspect ratio of the generated video. For wan2.7 models only.
+                 *     If not provided, defaults based on the resolution tier.
+                 * @enum {string}
+                 */
+                ratio?: "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
+                /**
+                 * @description Video audio setting for wan2.7-videoedit model.
+                 *     - auto (default): Model intelligently judges based on prompt content
+                 *     - origin: Forcefully preserve the original audio from the input video
+                 * @default auto
+                 * @enum {string}
+                 */
+                audio_setting?: "auto" | "origin";
                 /** @description Random number seed, used to control the randomness of the model generated content */
                 seed?: number;
                 /**
@@ -15576,40 +16186,35 @@ export interface components {
         QuiverTextToSVGRequest: {
             /**
              * @description Model identifier for SVG generation
-             * @default arrow-preview
+             * @example arrow-1.1
              */
             model: string;
             /** @description Text description of the desired SVG output */
             prompt: string;
             /** @description Additional style or formatting guidance */
             instructions?: string;
-            /** @description Up to 4 reference images (URL or base64) */
-            references?: components["schemas"]["QuiverImageObject"][];
+            /** @description Optional reference images to guide style/composition. Accepts URL object, base64 object, or URL string shorthand. Runtime limits are model-specific. */
+            references?: (components["schemas"]["QuiverImageObject"] | string)[];
             /**
              * @description Number of SVGs to generate
              * @default 1
              */
             n: number;
             /**
-             * @description Enable Server-Sent Events streaming
-             * @default false
-             */
-            stream: boolean;
-            /**
-             * @description Randomness control
+             * @description Sampling temperature
              * @default 1
              */
             temperature: number;
             /**
-             * @description Nucleus sampling parameter
+             * @description Nucleus sampling probability
              * @default 1
              */
             top_p: number;
             /**
-             * @description Token presence penalty
+             * @description Penalty for tokens already present in prior output
              * @default 0
              */
-            presence_penalty: number;
+            presence_penalty: number | null;
             /** @description Maximum number of output tokens */
             max_output_tokens?: number;
         };
@@ -15617,42 +16222,37 @@ export interface components {
         QuiverImageToSVGRequest: {
             /**
              * @description Model identifier for SVG vectorization
-             * @default arrow-preview
+             * @example arrow-1.1
              */
             model: string;
             image: components["schemas"]["QuiverImageObject"];
             /**
-             * @description Automatically crop to dominant subject
+             * @description Auto-crop image to the dominant subject before vectorization
              * @default false
              */
             auto_crop: boolean;
             /** @description Square resize target in pixels */
             target_size?: number;
             /**
-             * @description Number of SVGs to generate
-             * @default 1
-             */
-            n: number;
-            /**
              * @description Enable Server-Sent Events streaming
              * @default false
              */
             stream: boolean;
             /**
-             * @description Randomness control
+             * @description Sampling temperature
              * @default 1
              */
             temperature: number;
             /**
-             * @description Nucleus sampling parameter
+             * @description Nucleus sampling probability
              * @default 1
              */
             top_p: number;
             /**
-             * @description Token presence penalty
+             * @description Penalty for tokens already present in prior output
              * @default 0
              */
-            presence_penalty: number;
+            presence_penalty: number | null;
             /** @description Maximum number of output tokens */
             max_output_tokens?: number;
         };
@@ -15669,24 +16269,39 @@ export interface components {
         /** @description Response from Quiver AI SVG generation/vectorization */
         QuiverSVGResponse: {
             /** @description Unique identifier for the generation */
-            id?: string;
+            id: string;
             /** @description Unix timestamp of creation */
-            created?: number;
-            data?: {
-                /** @description Generated SVG content */
-                svg?: string;
+            created: number;
+            data: {
+                /** @description Raw SVG markup */
+                svg: string;
                 /**
                  * @description MIME type of the output
-                 * @default image/svg+xml
+                 * @enum {string}
                  */
-                mime_type: string;
+                mime_type: "image/svg+xml";
             }[];
+            /** @description Credit cost for this request. Use this for billing instead of usage tokens. */
+            credits?: number;
+            /**
+             * @deprecated
+             * @description Deprecated. Use credits for billing values.
+             */
             usage?: {
-                /** @description Total tokens used */
+                /**
+                 * @deprecated
+                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
+                 */
                 total_tokens?: number;
-                /** @description Input tokens used */
+                /**
+                 * @deprecated
+                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
+                 */
                 input_tokens?: number;
-                /** @description Output tokens used */
+                /**
+                 * @deprecated
+                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
+                 */
                 output_tokens?: number;
             };
         };
@@ -16277,6 +16892,72 @@ export interface components {
                     /** @description Inference time in milliseconds */
                     inference?: number;
                 };
+            };
+        };
+        SoniloVideoToMusicRequest: {
+            /**
+             * Format: binary
+             * @description Multipart file part; e.g. video/mp4.
+             */
+            video: string;
+            /** @description Optional text prompt to guide music generation. */
+            prompt?: string;
+        } | {
+            /**
+             * Format: uri
+             * @description Public http(s) URL of the video.
+             */
+            video_url: string;
+            /** @description Optional text prompt to guide music generation. */
+            prompt?: string;
+        };
+        SoniloTextToMusicRequest: {
+            /** @description Text prompt describing the desired music. */
+            prompt: string;
+            /** @description Target duration in seconds. Will be inferred if not provided. */
+            duration?: number;
+        };
+        /** @description A single NDJSON event from the Sonilo streaming response. */
+        SoniloStreamEvent: {
+            /** @enum {string} */
+            type: "title";
+            stream_index: number;
+            prompt_index: number;
+            copy_index: number;
+            title: string;
+            display_tags: string[];
+        } | {
+            /** @enum {string} */
+            type: "audio_chunk";
+            sample_rate: number;
+            channels: number;
+            stream_index: number;
+            num_streams: number;
+            /** @description Base64-encoded AAC in fMP4 fragments; concatenate per stream_index. */
+            data: string;
+        } | {
+            /** @enum {string} */
+            type: "generated_audio";
+            sample_rate: number;
+            channels: number;
+            duration_sec_by_stream: number[];
+            billing_rate_per_sec: number;
+            billing: number;
+        } | {
+            /** @enum {string} */
+            type: "complete";
+        } | {
+            /** @enum {string} */
+            type: "error";
+            code?: string;
+            message: string;
+        };
+        SoniloErrorResponse: {
+            detail?: {
+                /** @description Error code */
+                code?: string;
+                /** @description Human-readable error message */
+                message?: string;
             };
         };
     };
@@ -20046,6 +20727,82 @@ export interface operations {
             };
         };
     };
+    adminListAllNodeVersions: {
+        parameters: {
+            query?: {
+                nodeId?: string;
+                statuses?: components["schemas"]["NodeVersionStatus"][];
+                include_status_reason?: boolean;
+                /** @description The page number to retrieve. */
+                page?: number;
+                /** @description The number of items to include per page. */
+                pageSize?: number;
+                /** @description search for status_reason, case insensitive */
+                status_reason?: string;
+                /** @description Include soft-deleted node versions in the results */
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of all node versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Total number of node versions available */
+                        total?: number;
+                        versions?: components["schemas"]["NodeVersion"][];
+                        /** @description Current page number */
+                        page?: number;
+                        /** @description Maximum number of node versions per page. Maximum is 100. */
+                        pageSize?: number;
+                        /** @description Total number of pages available */
+                        totalPages?: number;
+                    };
+                };
+            };
+            /** @description Invalid input, object invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listCoupons: {
         parameters: {
             query?: {
@@ -21909,103 +22666,6 @@ export interface operations {
             };
         };
     };
-    klingText2VideoQueryTaskList: {
-        parameters: {
-            query?: {
-                /** @description Page number */
-                pageNum?: number;
-                /** @description Data volume per page */
-                pageSize?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingText2VideoResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
     klingCreateVideoFromText: {
         parameters: {
             query?: never;
@@ -22026,7 +22686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingText2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -22121,104 +22781,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingText2VideoResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
-    klingImage2VideoQueryTaskList: {
-        parameters: {
-            query?: {
-                /** @description Page number */
-                pageNum?: number;
-                /** @description Data volume per page */
-                pageSize?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingImage2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -22315,7 +22878,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingImage2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -22410,7 +22973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingImage2VideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -23566,7 +24129,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingOmniVideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -23661,7 +24224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KlingOmniVideoResponse"];
+                    "application/json": components["schemas"]["KlingQueryTaskResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -23921,6 +24484,67 @@ export interface operations {
             };
             /** @description Server timeout */
             504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingGetPresetsElements: {
+        parameters: {
+            query?: {
+                /** @description Page number. Value range: [1, 1000]. */
+                pageNum?: number;
+                /** @description Data volume per page. Value range: [1, 500]. */
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Presets elements retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingPresetsElementsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26586,8 +27210,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The ID of the model to use for generation */
-                modelId: string;
+                /** @description The Veo model ID to use for generation */
+                modelId: "veo-2.0-generate-001" | "veo-3.0-generate-001" | "veo-3.0-fast-generate-001" | "veo-3.1-generate-001" | "veo-3.1-fast-generate-001" | "veo-3.1-lite-generate-001";
             };
             cookie?: never;
         };
@@ -26641,8 +27265,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The ID of the model to use for generation */
-                modelId: string;
+                /** @description The Veo model ID */
+                modelId: "veo-2.0-generate-001" | "veo-3.0-generate-001" | "veo-3.0-fast-generate-001" | "veo-3.1-generate-001" | "veo-3.1-fast-generate-001" | "veo-3.1-lite-generate-001";
             };
             cookie?: never;
         };
@@ -29608,6 +30232,223 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    byteplusSeedance2VideoGenerationQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the Seedance 2.0 video generation task to query */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Video generation task information retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BytePlusVideoGenerationQueryResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceCreateVisualValidateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verification session created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceCreateVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceGetVisualValidateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session id returned by seedanceCreateVisualValidateSession */
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceGetVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeedanceCreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset creation accepted (asynchronous — poll seedanceGetAsset) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceCreateAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceGetAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BytePlus-issued asset id returned by seedanceCreateAsset */
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceGetAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceVirtualLibraryCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset creation accepted (asynchronous — poll seedanceGetAsset) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceVisualValidateCallback: {
+        parameters: {
+            query: {
+                bytedToken: string;
+                resultCode: string;
+                algorithmBaseRespCode?: string;
+                reqMeasureInfoValue?: string;
+                verify_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Landing page shown to the user's browser */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
                 };
             };
         };
@@ -32841,6 +33682,113 @@ export interface operations {
             };
         };
     };
+    ElevenLabsGetSharedVoices: {
+        parameters: {
+            query?: {
+                /** @description How many shared voices to return at maximum. Can not exceed 100, defaults to 30. */
+                page_size?: number;
+                /** @description Voice category used for filtering. One of: professional, famous, high_quality. */
+                category?: string;
+                /** @description Gender used for filtering */
+                gender?: string;
+                /** @description Age used for filtering */
+                age?: string;
+                /** @description Accent used for filtering */
+                accent?: string;
+                /** @description Language used for filtering */
+                language?: string;
+                /** @description Locale used for filtering */
+                locale?: string;
+                /** @description Search term used for filtering */
+                search?: string;
+                /** @description Use-case used for filtering */
+                use_cases?: string[];
+                /** @description Descriptives used for filtering */
+                descriptives?: string[];
+                /** @description Filter featured voices */
+                featured?: boolean;
+                /** @description Filter voices with a minimum notice period of the given number of days. */
+                min_notice_period_days?: number;
+                /** @description Include/exclude voices with custom rates */
+                include_custom_rates?: boolean;
+                /** @description Include/exclude voices that are live moderated */
+                include_live_moderated?: boolean;
+                /** @description Filter voices that are enabled for the reader app */
+                reader_app_enabled?: boolean;
+                /** @description Filter voices by public owner ID */
+                owner_id?: string;
+                /** @description Sort criteria */
+                sort?: string;
+                /** @description Page number */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Shared voices retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElevenLabsSharedVoicesPaginatedResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElevenLabsValidationError"];
+                };
+            };
+        };
+    };
+    ElevenLabsGetVoices: {
+        parameters: {
+            query?: {
+                /** @description Search term used to filter voices by name or description. */
+                search?: string;
+                /** @description How many voices to return per page. Max 100, defaults to 10. */
+                page_size?: number;
+                /** @description Pagination cursor returned by a previous call. */
+                next_page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Voices retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElevenLabsVoicesPaginatedResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ElevenLabsSoundGeneration: {
         parameters: {
             query?: {
@@ -33460,6 +34408,117 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FreepikErrorResponse"];
+                };
+            };
+        };
+    };
+    soniloVideoToMusicGenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SoniloVideoToMusicRequest"];
+            };
+        };
+        responses: {
+            /** @description OK - Streaming NDJSON response with audio generation events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["SoniloStreamEvent"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Unauthorized - Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Payload Too Large - Video exceeds size limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+        };
+    };
+    soniloTextToMusicGenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SoniloTextToMusicRequest"];
+            };
+        };
+        responses: {
+            /** @description OK - Streaming NDJSON response with audio generation events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["SoniloStreamEvent"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Unauthorized - Invalid or missing API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
                 };
             };
         };

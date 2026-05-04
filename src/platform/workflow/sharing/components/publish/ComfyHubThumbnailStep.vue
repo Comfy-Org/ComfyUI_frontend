@@ -192,7 +192,7 @@ import {
   MAX_IMAGE_SIZE_MB,
   MAX_VIDEO_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useDropZone, useObjectUrl } from '@vueuse/core'
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'

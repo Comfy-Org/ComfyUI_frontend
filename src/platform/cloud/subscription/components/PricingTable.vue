@@ -270,9 +270,11 @@ import {
   TIER_TO_KEY
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  SubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -280,9 +282,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
-import type { components } from '@/types/comfyRegistryTypes'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
@@ -450,29 +450,31 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (hasPaidSubscription.value) {
+        const targetPlan = {
+          tierKey,
+          billingCycle: currentBillingCycle.value
+        } as const
+        const previousPlan = currentPlanDescriptor.value
         const checkoutAttribution = await getCheckoutAttributionForCloud()
         if (userId.value) {
           telemetry?.trackBeginCheckout({
             user_id: userId.value,
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
+            tier: targetPlan.tierKey,
+            cycle: targetPlan.billingCycle,
             checkout_type: 'change',
             ...checkoutAttribution,
-            ...(currentTierKey.value
-              ? { previous_tier: currentTierKey.value }
-              : {})
+            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
           })
         }
         // Pass the target tier to create a deep link to subscription update confirmation
-        const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-        const targetPlan = {
-          tierKey,
-          billingCycle: currentBillingCycle.value
-        }
+        const checkoutTier = getCheckoutTier(
+          targetPlan.tierKey,
+          targetPlan.billingCycle
+        )
         const downgrade =
-          currentPlanDescriptor.value &&
+          previousPlan &&
           isPlanDowngrade({
-            current: currentPlanDescriptor.value,
+            current: previousPlan,
             target: targetPlan
           })
 
@@ -480,7 +482,20 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
           await accessBillingPortal()
         } else {
-          await accessBillingPortal(checkoutTier)
+          const didOpenPortal = await accessBillingPortal(checkoutTier)
+          if (!didOpenPortal) {
+            return
+          }
+
+          recordPendingSubscriptionCheckoutAttempt({
+            tier: targetPlan.tierKey,
+            cycle: targetPlan.billingCycle,
+            checkout_type: 'change',
+            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
+            ...(previousPlan
+              ? { previous_cycle: previousPlan.billingCycle }
+              : {})
+          })
         }
       } else {
         await performSubscriptionCheckout(

@@ -9,6 +9,7 @@ import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from './commandStore'
@@ -113,7 +114,8 @@ function workspaceStoreSetup() {
 
     registerSidebarTab,
     unregisterSidebarTab,
-    getSidebarTabs
+    getSidebarTabs,
+    renderMarkdownToHtml
   }
 }
 

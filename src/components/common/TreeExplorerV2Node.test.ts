@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import type { FlattenedItem } from 'reka-ui'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -13,7 +14,7 @@ import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: { en: { g: { delete: 'Delete' } } }
 })
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -26,6 +27,17 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
   useNodeBookmarkStore: () => ({
     isBookmarked: vi.fn().mockReturnValue(false),
     toggleBookmark: vi.fn()
+  })
+}))
+
+const mockDeleteBlueprint = vi.fn()
+const mockIsUserBlueprint = vi.fn().mockReturnValue(false)
+
+vi.mock('@/stores/subgraphStore', () => ({
+  useSubgraphStore: () => ({
+    isUserBlueprint: mockIsUserBlueprint,
+    deleteBlueprint: mockDeleteBlueprint,
+    typePrefix: 'SubgraphBlueprint.'
   })
 }))
 
@@ -81,7 +93,7 @@ describe('TreeExplorerV2Node', () => {
     }
   }
 
-  function mountComponent(
+  function renderComponent(
     props: Record<string, unknown> = {},
     options: {
       provide?: Record<string, unknown>
@@ -89,68 +101,76 @@ describe('TreeExplorerV2Node', () => {
     } = {}
   ) {
     const treeItemStub = options.treeItemStub ?? createTreeItemStub()
-    return {
-      wrapper: mount(TreeExplorerV2Node, {
-        global: {
-          plugins: [i18n],
-          stubs: {
-            TreeItem: treeItemStub.stub,
-            Teleport: { template: '<div />' }
-          },
-          provide: {
-            ...options.provide
-          }
+    const onNodeClick = vi.fn()
+    const { container } = render(TreeExplorerV2Node, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          TreeItem: treeItemStub.stub,
+          Teleport: { template: '<div />' }
         },
-        props: {
-          item: createMockItem('node'),
-          ...props
+        provide: {
+          ...options.provide
         }
-      }),
-      treeItemStub
-    }
+      },
+      props: {
+        item: createMockItem('node'),
+        onNodeClick,
+        ...props
+      }
+    })
+    return { container, treeItemStub, onNodeClick }
+  }
+
+  function getTreeNode(container: Element) {
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    return container.querySelector('div.group\\/tree-node')! as HTMLElement
   }
 
   describe('handleClick', () => {
     it('emits nodeClick event when clicked', async () => {
-      const { wrapper } = mountComponent({
+      const user = userEvent.setup()
+      const { container, onNodeClick } = renderComponent({
         item: createMockItem('node')
       })
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
-      await nodeDiv.trigger('click')
+      const nodeDiv = getTreeNode(container)
+      await user.click(nodeDiv)
 
-      expect(wrapper.emitted('nodeClick')).toBeTruthy()
-      expect(wrapper.emitted('nodeClick')?.[0]?.[0]).toMatchObject({
+      expect(onNodeClick).toHaveBeenCalled()
+      expect(onNodeClick.mock.calls[0][0]).toMatchObject({
         type: 'node',
         label: 'Test Label'
       })
     })
 
     it('calls handleToggle for folder items', async () => {
+      const user = userEvent.setup()
       const treeItemStub = createTreeItemStub()
-      const { wrapper } = mountComponent(
+      const { container, onNodeClick } = renderComponent(
         { item: createMockItem('folder') },
         { treeItemStub }
       )
 
-      const folderDiv = wrapper.find('div.group\\/tree-node')
-      await folderDiv.trigger('click')
+      const folderDiv = getTreeNode(container)
+      await user.click(folderDiv)
 
-      expect(wrapper.emitted('nodeClick')).toBeTruthy()
+      expect(onNodeClick).toHaveBeenCalled()
       expect(treeItemStub.handleToggle).toHaveBeenCalled()
     })
 
     it('does not call handleToggle for node items', async () => {
+      const user = userEvent.setup()
       const treeItemStub = createTreeItemStub()
-      const { wrapper } = mountComponent(
+      const { container, onNodeClick } = renderComponent(
         { item: createMockItem('node') },
         { treeItemStub }
       )
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
-      await nodeDiv.trigger('click')
+      const nodeDiv = getTreeNode(container)
+      await user.click(nodeDiv)
 
-      expect(wrapper.emitted('nodeClick')).toBeTruthy()
+      expect(onNodeClick).toHaveBeenCalled()
       expect(treeItemStub.handleToggle).not.toHaveBeenCalled()
     })
   })
@@ -160,7 +180,7 @@ describe('TreeExplorerV2Node', () => {
       const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
       const nodeItem = createMockItem('node')
 
-      const { wrapper } = mountComponent(
+      const { container } = renderComponent(
         { item: nodeItem },
         {
           provide: {
@@ -169,16 +189,20 @@ describe('TreeExplorerV2Node', () => {
         }
       )
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
-      await nodeDiv.trigger('contextmenu')
+      const nodeDiv = getTreeNode(container)
+      await fireEvent.contextMenu(nodeDiv)
 
       expect(contextMenuNode.value).toEqual(nodeItem.value)
     })
 
-    it('does not set contextMenuNode for folder items', async () => {
-      const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
+    it('clears contextMenuNode when right-clicking a folder', async () => {
+      const contextMenuNode = ref<RenderedTreeExplorerNode | null>({
+        key: 'stale',
+        type: 'node',
+        label: 'Stale'
+      } as RenderedTreeExplorerNode)
 
-      const { wrapper } = mountComponent(
+      const { container } = renderComponent(
         { item: createMockItem('folder') },
         {
           provide: {
@@ -187,49 +211,115 @@ describe('TreeExplorerV2Node', () => {
         }
       )
 
-      const folderDiv = wrapper.find('div.group\\/tree-node')
-      await folderDiv.trigger('contextmenu')
+      const folderDiv = getTreeNode(container)
+      await fireEvent.contextMenu(folderDiv)
 
       expect(contextMenuNode.value).toBeNull()
     })
   })
 
+  describe('blueprint actions', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('shows delete button for user blueprints', () => {
+      mockIsUserBlueprint.mockReturnValue(true)
+      renderComponent({
+        item: createMockItem('node', {
+          data: { name: 'SubgraphBlueprint.test' }
+        })
+      })
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    })
+
+    it('hides delete button for non-blueprint nodes', () => {
+      mockIsUserBlueprint.mockReturnValue(false)
+      renderComponent({
+        item: createMockItem('node', {
+          data: { name: 'KSampler' }
+        })
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Delete' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('always shows bookmark button', () => {
+      mockIsUserBlueprint.mockReturnValue(true)
+      renderComponent({
+        item: createMockItem('node', {
+          data: { name: 'SubgraphBlueprint.test' }
+        })
+      })
+
+      expect(
+        screen.getByRole('button', { name: 'icon.bookmark' })
+      ).toBeInTheDocument()
+    })
+
+    it('calls deleteBlueprint when delete button is clicked', async () => {
+      const user = userEvent.setup()
+      mockIsUserBlueprint.mockReturnValue(true)
+      const nodeName = 'SubgraphBlueprint.test'
+      renderComponent({
+        item: createMockItem('node', {
+          data: { name: nodeName }
+        })
+      })
+
+      const deleteButton = screen.getByRole('button', { name: 'Delete' })
+      await user.click(deleteButton)
+
+      expect(mockDeleteBlueprint).toHaveBeenCalledWith(nodeName)
+    })
+  })
+
   describe('rendering', () => {
     it('renders node icon for node type', () => {
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('node')
       })
 
-      expect(wrapper.find('i.icon-\\[comfy--node\\]').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('i.icon-\\[comfy--node\\]')).toBeTruthy()
     })
 
     it('renders folder icon for folder type', () => {
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('folder', { icon: 'icon-[lucide--folder]' })
       })
 
-      expect(wrapper.find('i.icon-\\[lucide--folder\\]').exists()).toBe(true)
+      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      expect(
+        container.querySelector('i.icon-\\[lucide--folder\\]')
+      ).toBeTruthy()
+      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
     })
 
     it('renders label text', () => {
-      const { wrapper } = mountComponent({
+      renderComponent({
         item: createMockItem('node', { label: 'My Node' })
       })
 
-      expect(wrapper.text()).toContain('My Node')
+      expect(screen.getByText('My Node')).toBeInTheDocument()
     })
 
     it('renders chevron for folder with children', () => {
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: {
           ...createMockItem('folder'),
           hasChildren: true
         }
       })
 
-      expect(wrapper.find('i.icon-\\[lucide--chevron-down\\]').exists()).toBe(
-        true
-      )
+      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      expect(
+        container.querySelector('i.icon-\\[lucide--chevron-down\\]')
+      ).toBeTruthy()
+      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
     })
   })
 
@@ -239,75 +329,75 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('sets draggable attribute on node items', () => {
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('node')
       })
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
-      expect(nodeDiv.attributes('draggable')).toBe('true')
+      const nodeDiv = getTreeNode(container)
+      expect(nodeDiv.getAttribute('draggable')).toBe('true')
     })
 
     it('does not set draggable on folder items', () => {
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('folder')
       })
 
-      const folderDiv = wrapper.find('div.group\\/tree-node')
-      expect(folderDiv.attributes('draggable')).toBeUndefined()
+      const folderDiv = getTreeNode(container)
+      expect(folderDiv.getAttribute('draggable')).toBeNull()
     })
 
     it('calls startDrag with native mode on dragstart', async () => {
       const mockData = { name: 'TestNode' }
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('node', { data: mockData })
       })
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
-      await nodeDiv.trigger('dragstart')
+      const nodeDiv = getTreeNode(container)
+      await fireEvent.dragStart(nodeDiv)
 
       expect(mockStartDrag).toHaveBeenCalledWith(mockData, 'native')
     })
 
     it('does not call startDrag for folder items on dragstart', async () => {
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('folder')
       })
 
-      const folderDiv = wrapper.find('div.group\\/tree-node')
-      await folderDiv.trigger('dragstart')
+      const folderDiv = getTreeNode(container)
+      await fireEvent.dragStart(folderDiv)
 
       expect(mockStartDrag).not.toHaveBeenCalled()
     })
 
     it('calls handleNativeDrop on dragend with drop coordinates', async () => {
       const mockData = { name: 'TestNode' }
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('node', { data: mockData })
       })
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
+      const nodeDiv = getTreeNode(container)
 
-      await nodeDiv.trigger('dragstart')
+      await fireEvent.dragStart(nodeDiv)
 
       const dragEndEvent = new DragEvent('dragend', { bubbles: true })
       Object.defineProperty(dragEndEvent, 'clientX', { value: 100 })
       Object.defineProperty(dragEndEvent, 'clientY', { value: 200 })
 
-      await nodeDiv.element.dispatchEvent(dragEndEvent)
-      await wrapper.vm.$nextTick()
+      nodeDiv.dispatchEvent(dragEndEvent)
+      await nextTick()
 
       expect(mockHandleNativeDrop).toHaveBeenCalledWith(100, 200)
     })
 
     it('calls handleNativeDrop regardless of dropEffect', async () => {
       const mockData = { name: 'TestNode' }
-      const { wrapper } = mountComponent({
+      const { container } = renderComponent({
         item: createMockItem('node', { data: mockData })
       })
 
-      const nodeDiv = wrapper.find('div.group\\/tree-node')
+      const nodeDiv = getTreeNode(container)
 
-      await nodeDiv.trigger('dragstart')
+      await fireEvent.dragStart(nodeDiv)
       mockHandleNativeDrop.mockClear()
 
       const dragEndEvent = new DragEvent('dragend', { bubbles: true })
@@ -317,8 +407,8 @@ describe('TreeExplorerV2Node', () => {
         value: { dropEffect: 'none' }
       })
 
-      await nodeDiv.element.dispatchEvent(dragEndEvent)
-      await wrapper.vm.$nextTick()
+      nodeDiv.dispatchEvent(dragEndEvent)
+      await nextTick()
 
       expect(mockHandleNativeDrop).toHaveBeenCalledWith(300, 400)
     })

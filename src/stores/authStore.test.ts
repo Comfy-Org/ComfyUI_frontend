@@ -730,6 +730,39 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('getAuthHeaderOrThrow', () => {
+    it('returns auth header when authenticated', async () => {
+      const header = await store.getAuthHeaderOrThrow()
+      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
+    })
+
+    it('throws AuthStoreError when not authenticated', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.getAuthHeaderOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+  })
+
+  describe('getFirebaseAuthHeaderOrThrow', () => {
+    it('returns Firebase auth header when authenticated', async () => {
+      const header = await store.getFirebaseAuthHeaderOrThrow()
+      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
+    })
+
+    it('throws AuthStoreError when not authenticated', async () => {
+      authStateCallback(null)
+
+      await expect(store.getFirebaseAuthHeaderOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+  })
+
   describe('createCustomer', () => {
     it('should succeed with API key auth when no Firebase user is present', async () => {
       authStateCallback(null)

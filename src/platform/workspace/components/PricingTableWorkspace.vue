@@ -310,14 +310,13 @@ import {
   TIER_TO_KEY
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  SubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
-import type { components } from '@/types/comfyRegistryTypes'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 interface Props {

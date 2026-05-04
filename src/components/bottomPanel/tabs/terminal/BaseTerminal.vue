@@ -1,13 +1,22 @@
 <template>
-  <div ref="rootEl" class="relative size-full overflow-hidden bg-neutral-900">
+  <div
+    ref="rootEl"
+    data-testid="terminal-root"
+    class="relative size-full overflow-hidden bg-neutral-900"
+  >
     <div class="p-terminal size-full rounded-none p-2">
-      <div ref="terminalEl" class="terminal-host h-full" />
+      <div
+        ref="terminalEl"
+        data-testid="terminal-host"
+        class="terminal-host h-full"
+      />
     </div>
     <Button
       v-tooltip.left="{
         value: tooltipText,
         showDelay: 300
       }"
+      data-testid="terminal-copy-button"
       variant="secondary"
       size="sm"
       :class="
@@ -34,7 +43,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 import { isDesktop } from '@/platform/distribution/types'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

@@ -1,5 +1,6 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
 
 import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
@@ -64,36 +65,31 @@ describe('ShortcutsList', () => {
   }
 
   it('should render shortcuts organized by subcategories', () => {
-    const wrapper = mount(ShortcutsList, {
+    render(ShortcutsList, {
       props: {
-        commands: mockCommands,
         subcategories: mockSubcategories
       }
     })
 
-    // Check that subcategories are rendered
-    expect(wrapper.text()).toContain('Workflow')
-    expect(wrapper.text()).toContain('Node')
-    expect(wrapper.text()).toContain('Queue')
-
-    // Check that commands are rendered
-    expect(wrapper.text()).toContain('New Blank Workflow')
+    expect(screen.getByText('Workflow')).toBeInTheDocument()
+    expect(screen.getByText('Node')).toBeInTheDocument()
+    expect(screen.getByText('Queue')).toBeInTheDocument()
+    expect(screen.getByText('New Blank Workflow')).toBeInTheDocument()
   })
 
   it('should format keyboard shortcuts correctly', () => {
-    const wrapper = mount(ShortcutsList, {
+    const { container } = render(ShortcutsList, {
       props: {
-        commands: mockCommands,
         subcategories: mockSubcategories
       }
     })
 
-    // Check for formatted keys
-    expect(wrapper.text()).toContain('Ctrl')
-    expect(wrapper.text()).toContain('n')
-    expect(wrapper.text()).toContain('Shift')
-    expect(wrapper.text()).toContain('a')
-    expect(wrapper.text()).toContain('c')
+    const text = container.textContent!
+    expect(text).toContain('Ctrl')
+    expect(text).toContain('n')
+    expect(text).toContain('Shift')
+    expect(text).toContain('a')
+    expect(text).toContain('c')
   })
 
   it('should filter out commands without keybindings', () => {
@@ -107,9 +103,8 @@ describe('ShortcutsList', () => {
       } as ComfyCommandImpl
     ]
 
-    const wrapper = mount(ShortcutsList, {
+    render(ShortcutsList, {
       props: {
-        commands: commandsWithoutKeybinding,
         subcategories: {
           ...mockSubcategories,
           other: [commandsWithoutKeybinding[3]]
@@ -117,7 +112,7 @@ describe('ShortcutsList', () => {
       }
     })
 
-    expect(wrapper.text()).not.toContain('No Keybinding')
+    expect(screen.queryByText('No Keybinding')).not.toBeInTheDocument()
   })
 
   it('should handle special key formatting', () => {
@@ -132,16 +127,15 @@ describe('ShortcutsList', () => {
       }
     } as ComfyCommandImpl
 
-    const wrapper = mount(ShortcutsList, {
+    const { container } = render(ShortcutsList, {
       props: {
-        commands: [specialKeyCommand],
         subcategories: {
           special: [specialKeyCommand]
         }
       }
     })
 
-    const text = wrapper.text()
+    const text = container.textContent!
     expect(text).toContain('Cmd') // Meta -> Cmd
     expect(text).toContain('↑') // ArrowUp -> ↑
     expect(text).toContain('↵') // Enter -> ↵
@@ -150,15 +144,14 @@ describe('ShortcutsList', () => {
   })
 
   it('should use fallback subcategory titles', () => {
-    const wrapper = mount(ShortcutsList, {
+    render(ShortcutsList, {
       props: {
-        commands: mockCommands,
         subcategories: {
           unknown: [mockCommands[0]]
         }
       }
     })
 
-    expect(wrapper.text()).toContain('unknown')
+    expect(screen.getByText('unknown')).toBeInTheDocument()
   })
 })
