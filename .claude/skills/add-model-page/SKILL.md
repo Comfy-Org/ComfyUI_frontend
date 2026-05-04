@@ -27,11 +27,11 @@ Example: `flux1_dev.safetensors` → `flux1-dev`
 
 Models come from two sources merged at build time:
 
-| File                                            | Purpose                                                                                                    |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| File                                            | Purpose                                                                                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/website/src/config/generated-models.json` | Auto-generated from workflow_templates (slug, name, directory, huggingFaceUrl, workflowCount, displayName, thumbnailUrl, docsUrl) |
-| `apps/website/src/config/model-metadata.ts`     | Hand-curated overrides (docsUrl, blogUrl, featured) — only add entries that need overrides                 |
-| `apps/website/src/config/models.ts`             | Merges the two above; exports typed `Model[]`                                                              |
+| `apps/website/src/config/model-metadata.ts`     | Hand-curated overrides (docsUrl, blogUrl, featured) — only add entries that need overrides                                        |
+| `apps/website/src/config/models.ts`             | Merges the two above; exports typed `Model[]`                                                                                     |
 
 To regenerate the JSON from workflow_templates:
 
