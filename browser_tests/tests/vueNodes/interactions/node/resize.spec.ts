@@ -62,15 +62,10 @@ test.describe(
     test('should resize node without position drift after selecting', async ({
       comfyPage
     }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-      const initialBox = await node.boundingBox()
-      if (!initialBox) throw new Error('Node bounding box not found')
-
-      await node.header.click()
-
-      const selectedBox = await node.boundingBox()
-      if (!selectedBox)
-        throw new Error('Node bounding box not found after select')
+      const { node, box: initialBox } = await setupResizableNode(
+        comfyPage,
+        'Load Checkpoint'
+      )
 
       await expect
         .poll(async () => (await node.boundingBox())?.x)
@@ -79,13 +74,7 @@ test.describe(
         .poll(async () => (await node.boundingBox())?.y)
         .toBeCloseTo(initialBox.y, 1)
 
-      const resizeStartX = selectedBox.x + selectedBox.width - 5
-      const resizeStartY = selectedBox.y + selectedBox.height - 5
-
-      await comfyPage.page.mouse.move(resizeStartX, resizeStartY)
-      await comfyPage.page.mouse.down()
-      await comfyPage.page.mouse.move(resizeStartX + 50, resizeStartY + 30)
-      await comfyPage.page.mouse.up()
+      await node.resizeFromCorner('SE', 50, 30)
 
       await expect
         .poll(async () => (await node.boundingBox())?.x)
