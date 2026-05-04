@@ -7,6 +7,7 @@ import PackDetail from '../../../components/cloud-nodes/PackDetail.vue'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import { t } from '../../../i18n/translations'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
+import { escapeJsonLd } from '../../../utils/escapeJsonLd'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const packs = await loadPacksForBuild()
@@ -56,7 +57,7 @@ const softwareJsonLd = {
     is:inline
     slot="head"
     type="application/ld+json"
-    set:html={JSON.stringify(softwareJsonLd)}
+    set:html={escapeJsonLd(softwareJsonLd)}
   />
   <PackDetail pack={pack} />
 </BaseLayout>

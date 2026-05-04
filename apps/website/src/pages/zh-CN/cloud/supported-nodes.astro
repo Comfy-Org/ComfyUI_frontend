@@ -4,6 +4,7 @@ import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
 import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
 import { t } from '../../../i18n/translations'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
+import { escapeJsonLd } from '../../../utils/escapeJsonLd'
 
 const packs = await loadPacksForBuild()
 
@@ -34,7 +35,7 @@ const itemListJsonLd = {
     is:inline
     slot="head"
     type="application/ld+json"
-    set:html={JSON.stringify(itemListJsonLd)}
+    set:html={escapeJsonLd(itemListJsonLd)}
   />
   <HeroSection locale="zh-CN" client:visible />
   <PackGridSection locale="zh-CN" packs={packs} client:visible />

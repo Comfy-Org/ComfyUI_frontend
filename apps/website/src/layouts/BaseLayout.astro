@@ -5,6 +5,7 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import SiteNav from '../components/common/SiteNav.vue'
+import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
 interface Props {
@@ -89,8 +90,8 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
     <slot name="head" />
 
     <!-- Google Tag Manager -->
