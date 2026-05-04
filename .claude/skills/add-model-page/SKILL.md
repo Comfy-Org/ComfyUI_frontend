@@ -18,6 +18,7 @@ Add, update, or remove model pages in the ComfyUI website.
 ## Phase 1 — Parse the request
 
 Extract:
+
 - **action**: `add` | `update` | `remove`
 - **model-name**: raw string (e.g. `flux1-schnell`, `flux1_dev.safetensors`)
 
@@ -30,10 +31,10 @@ Example: `flux1_dev.safetensors` → `flux1-dev`
 
 Find the ComfyUI_frontend repo root. Key files:
 
-| File | Purpose |
-|------|---------|
-| `apps/website/src/config/models.ts` | Model array |
-| `apps/website/src/i18n/translations.ts` | i18n string map |
+| File                                      | Purpose                                    |
+| ----------------------------------------- | ------------------------------------------ |
+| `apps/website/src/config/models.ts`       | Model array                                |
+| `apps/website/src/i18n/translations.ts`   | i18n string map                            |
 | `apps/website/scripts/generate-models.ts` | Derives model data from workflow templates |
 
 Run the generator to find the model:
@@ -47,6 +48,7 @@ pnpm tsx apps/website/scripts/generate-models.ts \
 Replace `MODEL_NAME` with the normalized slug (substring match).
 
 The output object contains:
+
 - `name` — exact filename (e.g. `flux1_dev.safetensors`) or display name for partner nodes
 - `url` — HuggingFace download URL → use as `huggingFaceUrl` (empty `''` for partner nodes)
 - `directory` — model subdirectory (e.g. `diffusion_models`) or `partner_nodes` for API models
@@ -144,6 +146,7 @@ pnpm typecheck 2>&1 | grep -E "error|warning" | head -20
 ```
 
 Fix any type errors before proceeding. Common issues:
+
 - Missing `as TranslationKey` cast on `displayName`/`description`
 - New translation key not yet in `translations.ts` when `models.ts` references it
 
@@ -180,9 +183,9 @@ For REMOVE use `remove-model-page-MODEL-SLUG` and omit the images note.
 
 ## Error states
 
-| Situation | Response |
-|-----------|----------|
+| Situation                       | Response                                                         |
+| ------------------------------- | ---------------------------------------------------------------- |
 | Model not in workflow templates | Ask user to verify spelling or add it manually as a partner node |
-| Slug already exists (add) | Switch to update flow automatically |
-| Slug not found (update/remove) | Stop and ask user to confirm |
-| Typecheck fails | Fix the error before pushing |
+| Slug already exists (add)       | Switch to update flow automatically                              |
+| Slug not found (update/remove)  | Stop and ask user to confirm                                     |
+| Typecheck fails                 | Fix the error before pushing                                     |
