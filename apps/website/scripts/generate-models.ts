@@ -215,7 +215,11 @@ function buildTutorialUrlMap(templatesDir: string): Map<string, string> {
             : undefined
         const templateName =
           typeof entry['name'] === 'string' ? entry['name'] : undefined
-        if (tutorialUrl && templateName && !templateTutorialMap.has(templateName)) {
+        if (
+          tutorialUrl &&
+          templateName &&
+          !templateTutorialMap.has(templateName)
+        ) {
           templateTutorialMap.set(templateName, tutorialUrl)
         }
       }
