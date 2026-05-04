@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Nodes - Slot Context Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -50,7 +50,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     // Slot-specific items should NOT be present
     await expect(
       comfyPage.page.getByRole('menuitem', { name: 'Disconnect Links' })
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Right-clicking an output slot dot shows the slot context menu', async ({
@@ -89,7 +89,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     // Press Escape to close the menu
     await comfyPage.page.keyboard.press('Escape')
 
-    await expect(slotMenu).not.toBeVisible()
+    await expect(slotMenu).toBeHidden()
   })
 
   test('Rename Slot updates the slot label reactively in the DOM', async ({
@@ -129,7 +129,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     await slotMenu.getByRole('menuitem', { name: 'Rename' }).click()
 
     // Menu should close, prompt dialog should appear
-    await expect(slotMenu).not.toBeVisible()
+    await expect(slotMenu).toBeHidden()
 
     const promptInput = comfyPage.page.locator('.prompt-dialog-content input')
     await expect(promptInput).toBeVisible()
@@ -139,7 +139,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     await comfyPage.page.locator('.prompt-dialog-content button').click()
 
     // Wait for dialog to close
-    await expect(promptInput).not.toBeVisible()
+    await expect(promptInput).toBeHidden()
     await comfyPage.nextFrame()
 
     // The slot label in the DOM should reactively reflect the new name
@@ -193,7 +193,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     await slotMenu.getByRole('menuitem', { name: 'Disconnect Links' }).click()
 
     // Menu should close
-    await expect(slotMenu).not.toBeVisible()
+    await expect(slotMenu).toBeHidden()
 
     // Verify the link was removed in the graph
     const linkRemoved = await comfyPage.page.evaluate(
