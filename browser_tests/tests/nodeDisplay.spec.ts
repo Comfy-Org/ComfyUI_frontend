@@ -77,14 +77,42 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
   })
 
-  test('unknown converted widget', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'missing/missing_nodes_converted_widget'
-    )
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_nodes_converted_widget.png'
-    )
-  })
+  test(
+    'unknown converted widget',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_nodes_converted_widget'
+      )
+
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(node).toBeVisible()
+
+      // Title reflects the unknown node type
+      await expect(node).toContainText('UNKNOWN NODE')
+
+      // Inputs include the regular IMAGE input and the converted-widget "foo"
+      // (which is what differentiates this fixture from a plain missing node).
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById('1')
+      const inputs = (await nodeRef.getProperty('inputs')) as {
+        name: string
+        type: string
+        widget?: { name: string }
+      }[]
+      expect(inputs.map((i) => i.name)).toEqual(['image', 'foo'])
+
+      const fooInput = inputs.find((i) => i.name === 'foo')
+      expect(fooInput?.type).toBe('STRING')
+      expect(fooInput?.widget?.name).toBe('foo')
+
+      // Per-node DOM screenshot localizes any visual regression to this node.
+      // A canvas-wide screenshot turns a 1-row label drift into a "763 px diff"
+      // with no signal about which widget is responsible.
+      await expect(node).toHaveScreenshot(
+        'missing_nodes_converted_widget_node.png'
+      )
+    }
+  )
 
   test('dynamically added input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/dynamically_added_input')
