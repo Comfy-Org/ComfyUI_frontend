@@ -35,7 +35,8 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: true
   },
   'hunyuan-video': {
-    docsUrl: 'https://docs.comfy.org/tutorials/video/hunyuan/hunyuan-video',
+    docsUrl:
+      'https://docs.comfy.org/tutorials/video/hunyuan/hunyuan-video',
     featured: true
   },
   // Wave 3

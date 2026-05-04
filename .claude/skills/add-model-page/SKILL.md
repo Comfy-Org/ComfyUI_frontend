@@ -18,7 +18,6 @@ Add, update, or remove model pages in the ComfyUI website.
 ## Phase 1 — Parse the request
 
 Extract:
-
 - **action**: `add` | `update` | `remove`
 - **model-name**: raw string (e.g. `flux1-schnell`, `flux1_dev.safetensors`)
 
@@ -31,11 +30,11 @@ Example: `flux1_dev.safetensors` → `flux1-dev`
 
 Models come from two sources merged at build time:
 
-| File                                            | Purpose                                                                                                    |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| File | Purpose |
+|------|---------|
 | `apps/website/src/config/generated-models.json` | Auto-generated from workflow_templates (slug, name, directory, huggingFaceUrl, workflowCount, displayName) |
-| `apps/website/src/config/model-metadata.ts`     | Hand-curated overrides (docsUrl, blogUrl, featured) — only add entries that need overrides                 |
-| `apps/website/src/config/models.ts`             | Merges the two above; exports typed `Model[]`                                                              |
+| `apps/website/src/config/model-metadata.ts` | Hand-curated overrides (docsUrl, blogUrl, featured) — only add entries that need overrides |
+| `apps/website/src/config/models.ts` | Merges the two above; exports typed `Model[]` |
 
 To regenerate the JSON from workflow_templates:
 
@@ -60,7 +59,6 @@ jq '.[] | select(.slug | contains("MODEL_SLUG"))' \
 ```
 
 The JSON fields are:
-
 - `slug` — URL slug
 - `name` — exact filename or display name for partner nodes
 - `huggingFaceUrl` — download URL (empty for partner nodes)
@@ -133,7 +131,6 @@ pnpm typecheck 2>&1 | grep -E "error|warning" | head -20
 ```
 
 Fix any type errors before proceeding. Common issues:
-
 - `ModelDirectory` type not matching a new `directory` value — add it to the union
 - JSON import shape mismatch — `generated-models.json` must match `OutputModel`
 
@@ -170,9 +167,9 @@ For REMOVE use `remove-model-page-MODEL-SLUG` and omit the images note.
 
 ## Error states
 
-| Situation                       | Response                                                         |
-| ------------------------------- | ---------------------------------------------------------------- |
+| Situation | Response |
+|-----------|----------|
 | Model not in workflow templates | Ask user to verify spelling or add it manually as a partner node |
-| Slug already exists (add)       | Switch to update flow automatically                              |
-| Slug not found (update/remove)  | Stop and ask user to confirm                                     |
-| Typecheck fails                 | Fix the error before pushing                                     |
+| Slug already exists (add) | Switch to update flow automatically |
+| Slug not found (update/remove) | Stop and ask user to confirm |
+| Typecheck fails | Fix the error before pushing |
