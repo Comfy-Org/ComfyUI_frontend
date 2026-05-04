@@ -6,6 +6,7 @@
     :class="cn('font-bold', fluid && 'w-full')"
     @click="handleSubscribe"
   >
+    <i v-if="showLockIcon" class="icon-[lucide--lock] size-4" />
     {{ label || $t('subscription.required.subscribe') }}
   </Button>
 </template>
@@ -25,13 +26,15 @@ const {
   fluid = true,
   buttonVariant = 'default',
   label,
-  disabled = false
+  disabled = false,
+  showLockIcon = false
 } = defineProps<{
   label?: string
   size?: 'sm' | 'lg'
   buttonVariant?: 'default' | 'gradient'
   fluid?: boolean
   disabled?: boolean
+  showLockIcon?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -33,23 +33,9 @@ interface WorkspaceUIConfig {
 }
 
 function getPermissions(
-  type: WorkspaceType,
+  _type: WorkspaceType,
   role: WorkspaceRole
 ): WorkspacePermissions {
-  if (type === 'personal') {
-    return {
-      canViewOtherMembers: false,
-      canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canRemoveMembers: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
-      canManageSubscription: true,
-      canTopUp: true
-    }
-  }
-
   if (role === 'owner') {
     return {
       canViewOtherMembers: true,
@@ -79,25 +65,9 @@ function getPermissions(
 }
 
 function getUIConfig(
-  type: WorkspaceType,
+  _type: WorkspaceType,
   role: WorkspaceRole
 ): WorkspaceUIConfig {
-  if (type === 'personal') {
-    return {
-      showMembersList: false,
-      showPendingTab: false,
-      showSearch: false,
-      showDateColumn: false,
-      showRoleBadge: false,
-      membersGridCols: 'grid-cols-1',
-      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: false,
-      workspaceMenuAction: null,
-      workspaceMenuDisabledTooltip: null
-    }
-  }
-
   if (role === 'owner') {
     return {
       showMembersList: true,

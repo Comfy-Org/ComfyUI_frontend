@@ -3,55 +3,51 @@
     class="flex w-full max-w-[400px] flex-col rounded-2xl border border-border-default bg-base-background"
   >
     <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
+    <div class="flex h-12 items-center border-b border-border-default px-4">
       <h2 class="m-0 text-sm font-normal text-base-foreground">
         {{ $t('workspacePanel.createWorkspaceDialog.title') }}
       </h2>
-      <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onCancel"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
     </div>
 
     <!-- Body -->
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
+    <div class="flex flex-col gap-6 p-4">
+      <p class="m-0 text-sm/5 text-muted-foreground">
         {{ $t('workspacePanel.createWorkspaceDialog.message') }}
       </p>
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-base-foreground">
+        <label class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
         </label>
         <input
           v-model="workspaceName"
           type="text"
-          class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
+          class="focus:ring-secondary-foreground h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
           :placeholder="
             $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
           "
-          @keydown.enter="isValidName && onCreate()"
+          @keydown.enter="isValidName && onNext()"
         />
+      </div>
+      <div
+        class="flex items-center gap-2 rounded-lg border border-border-subtle bg-secondary-background p-4"
+      >
+        <i class="icon-[lucide--info] size-4 shrink-0 text-base-foreground" />
+        <p class="m-0 text-sm/5 text-base-foreground">
+          {{ $t('workspacePanel.createWorkspaceDialog.personalStaysInfo') }}
+        </p>
       </div>
     </div>
 
     <!-- Footer -->
     <div class="flex items-center justify-end gap-2 p-4">
-      <Button variant="muted-textonly" size="lg" @click="onCancel">
-        {{ $t('g.cancel') }}
-      </Button>
       <Button
-        variant="primary"
+        variant="secondary"
         size="lg"
         :loading
         :disabled="!isValidName"
-        @click="onCreate"
+        @click="onNext"
       >
-        {{ $t('workspacePanel.createWorkspaceDialog.create') }}
+        {{ $t('workspacePanel.createWorkspaceDialog.next') }}
       </Button>
     </div>
   </div>
@@ -83,22 +79,19 @@ const isValidName = computed(() => {
   return name.length >= 1 && name.length <= 50 && safeNameRegex.test(name)
 })
 
-function onCancel() {
-  dialogStore.closeDialog({ key: 'create-workspace' })
-}
-
-async function onCreate() {
+async function onNext() {
   if (!isValidName.value) return
   loading.value = true
   try {
     const name = workspaceName.value.trim()
-    // Call optional callback if provided
     await onConfirm?.(name)
-    dialogStore.closeDialog({ key: 'create-workspace' })
-    // Create workspace and switch to it (triggers reload internally)
+    dialogStore.closeDialog({ key: 'create-team-workspace' })
     await workspaceStore.createWorkspace(name)
   } catch (error) {
-    console.error('[CreateWorkspaceDialog] Failed to create workspace:', error)
+    console.error(
+      '[CreateTeamWorkspaceDialog] Failed to create workspace:',
+      error
+    )
     toast.add({
       severity: 'error',
       summary: t('workspacePanel.toast.failedToCreateWorkspace'),

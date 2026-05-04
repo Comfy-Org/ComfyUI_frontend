@@ -24,36 +24,40 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div
-      class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
-      @click="toggleWorkspaceSwitcher"
-    >
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <WorkspaceProfilePic
-          class="size-6 shrink-0 text-xs"
-          :workspace-name="workspaceName"
-        />
-        <span class="truncate text-sm text-base-foreground">{{
-          workspaceName
-        }}</span>
-      </div>
-      <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-    </div>
-
-    <Popover
-      ref="workspaceSwitcherPopover"
-      append-to="body"
-      :pt="{
-        content: {
-          class: 'p-0'
-        }
-      }"
-    >
-      <WorkspaceSwitcherPopover
-        @select="workspaceSwitcherPopover?.hide()"
-        @create="handleCreateWorkspace"
-      />
-    </Popover>
+    <PopoverRoot v-model:open="isWorkspaceSwitcherOpen">
+      <PopoverTrigger as-child>
+        <div
+          class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        >
+          <div class="flex min-w-0 flex-1 items-center gap-2">
+            <WorkspaceProfilePic
+              class="size-6 shrink-0 text-xs"
+              :workspace-name="workspaceName"
+            />
+            <span class="truncate text-sm text-base-foreground">{{
+              workspaceName
+            }}</span>
+          </div>
+          <i
+            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground"
+          />
+        </div>
+      </PopoverTrigger>
+      <PopoverPortal>
+        <PopoverContent
+          side="left"
+          align="start"
+          :side-offset="16"
+          :collision-padding="10"
+          class="data-[state=open]:data-[side=left]:animate-slideRightAndFade z-1700 rounded-lg border border-border-subtle bg-base-background shadow-sm will-change-[transform,opacity]"
+        >
+          <WorkspaceSwitcherPopover
+            @select="isWorkspaceSwitcherOpen = false"
+            @create="handleCreateWorkspace"
+          />
+        </PopoverContent>
+      </PopoverPortal>
+    </PopoverRoot>
 
     <!-- Credits Section -->
 
@@ -104,6 +108,7 @@
         "
         size="sm"
         button-variant="gradient"
+        show-lock-icon
       />
       <Button
         v-if="showSubscribeAction && !isPersonalWorkspace"
@@ -210,8 +215,13 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
-import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
+import {
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot,
+  PopoverTrigger
+} from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -240,7 +250,7 @@ const {
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
-const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
+const isWorkspaceSwitcherOpen = ref(false)
 
 const emit = defineEmits<{
   close: []
@@ -352,13 +362,9 @@ const handleLogout = async () => {
 }
 
 const handleCreateWorkspace = () => {
-  workspaceSwitcherPopover.value?.hide()
+  isWorkspaceSwitcherOpen.value = false
   dialogService.showCreateWorkspaceDialog()
   emit('close')
-}
-
-const toggleWorkspaceSwitcher = (event: MouseEvent) => {
-  workspaceSwitcherPopover.value?.toggle(event)
 }
 
 const refreshBalance = () => {
