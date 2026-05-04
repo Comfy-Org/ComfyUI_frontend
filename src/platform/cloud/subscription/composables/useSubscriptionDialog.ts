@@ -27,7 +27,10 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: FREE_TIER_DIALOG_KEY })
   }
 
-  function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
+  function showPricingTable(options?: {
+    reason?: SubscriptionDialogReason
+    defaultTab?: 'personal' | 'teams'
+  }) {
     if (!isCloud) return
 
     const useWorkspaceVariant =
@@ -46,6 +49,7 @@ export const useSubscriptionDialog = () => {
     const personalProps = {
       onClose: hide,
       reason: options?.reason,
+      defaultTab: options?.defaultTab,
       onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
     }
     const workspaceProps = {
@@ -53,26 +57,33 @@ export const useSubscriptionDialog = () => {
       reason: options?.reason
     }
 
+    const dialogStyle = useWorkspaceVariant
+      ? 'width: min(960px, 95vw); max-height: 95vh;'
+      : 'width: min(1328px, 95vw); max-height: 95vh;'
+
+    const dialogPt = {
+      root: { class: 'rounded-2xl bg-transparent' },
+      content: {
+        class:
+          '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+      }
+    }
+
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component,
       props: useWorkspaceVariant ? workspaceProps : personalProps,
       dialogComponentProps: {
-        style: 'width: min(1328px, 95vw); max-height: 958px;',
-        pt: {
-          root: {
-            class: 'rounded-2xl bg-transparent h-full'
-          },
-          content: {
-            class:
-              '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
-          }
-        }
+        style: dialogStyle,
+        pt: dialogPt
       }
     })
   }
 
-  function show(options?: { reason?: SubscriptionDialogReason }) {
+  function show(options?: {
+    reason?: SubscriptionDialogReason
+    defaultTab?: 'personal' | 'teams'
+  }) {
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
       const component = defineAsyncComponent(
         () =>

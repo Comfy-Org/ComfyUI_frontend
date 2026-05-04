@@ -5,66 +5,112 @@
         class="size-12 text-3xl!"
         :workspace-name="workspaceName"
       />
-      <h1 class="text-3xl text-base-foreground">
+      <h1 class="text-2xl font-semibold text-base-foreground">
         {{ workspaceName }}
       </h1>
     </header>
     <TabsRoot v-model="activeTab">
       <div class="flex w-full items-center justify-between">
         <TabsList class="flex items-center gap-2 pb-1">
-          <TabsTrigger
-            value="plan"
-            :class="
-              cn(
-                tabTriggerBase,
-                activeTab === 'plan' ? tabTriggerActive : tabTriggerInactive
-              )
-            "
-          >
-            {{ $t('workspacePanel.tabs.planCredits') }}
+          <TabsTrigger value="plan" as-child>
+            <Button
+              :variant="activeTab === 'plan' ? 'secondary' : 'muted-textonly'"
+              size="lg"
+            >
+              {{ $t('workspacePanel.tabs.planCredits') }}
+            </Button>
           </TabsTrigger>
-          <TabsTrigger
-            value="members"
-            :class="
-              cn(
-                tabTriggerBase,
-                activeTab === 'members' ? tabTriggerActive : tabTriggerInactive
-              )
-            "
-          >
-            {{
-              $t('workspacePanel.tabs.membersCount', {
-                count: members.length
-              })
-            }}
+          <TabsTrigger value="members" as-child>
+            <Button
+              :variant="
+                activeTab === 'members' ? 'secondary' : 'muted-textonly'
+              "
+              size="lg"
+            >
+              {{
+                members.length <= 1
+                  ? $t('workspacePanel.tabs.members')
+                  : $t('workspacePanel.tabs.membersCount', {
+                      count: members.length
+                    })
+              }}
+            </Button>
           </TabsTrigger>
         </TabsList>
-        <div class="flex items-center gap-1">
+        <!-- Plan tab actions -->
+        <div v-if="activeTab === 'plan'" class="flex items-center gap-2">
+          <Button
+            v-if="showSubscribePrompt"
+            size="lg"
+            variant="inverted"
+            @click="handleSubscribeWorkspace"
+          >
+            {{ $t('subscription.subscribe') }}
+          </Button>
+          <template
+            v-else-if="
+              isActiveSubscription && permissions.canManageSubscription
+            "
+          >
+            <template v-if="isCancelled">
+              <Button
+                size="lg"
+                variant="inverted"
+                :loading="isResubscribing"
+                @click="handleResubscribe"
+              >
+                {{ $t('subscription.resubscribe') }}
+              </Button>
+            </template>
+            <template v-else>
+              <Button
+                v-if="!isFreeTierPlan"
+                size="lg"
+                variant="secondary"
+                @click="manageSubscription"
+              >
+                {{ $t('subscription.managePayment') }}
+              </Button>
+              <Button size="lg" variant="inverted" @click="handleUpgrade">
+                {{ $t('subscription.upgradePlan') }}
+              </Button>
+              <Button
+                v-if="!isFreeTierPlan"
+                v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                variant="secondary"
+                size="icon-lg"
+                :aria-label="$t('g.moreOptions')"
+                @click="planMenu?.toggle($event)"
+              >
+                <i class="pi pi-ellipsis-h" />
+              </Button>
+              <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
+            </template>
+          </template>
+        </div>
+
+        <!-- Members tab actions -->
+        <div v-if="activeTab === 'members'" class="flex items-center gap-2">
           <Button
             v-if="permissions.canInviteMembers"
             v-tooltip="
-              inviteTooltip
-                ? { value: inviteTooltip, showDelay: 0 }
-                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+              inviteTooltip ? { value: inviteTooltip, showDelay: 0 } : undefined
             "
             variant="secondary"
             size="lg"
-            :disabled="!isSingleSeatPlan && isInviteLimitReached"
-            :class="
-              !isSingleSeatPlan &&
-              isInviteLimitReached &&
-              'cursor-not-allowed opacity-50'
-            "
+            :disabled="isInviteDisabled"
+            :class="isInviteDisabled && 'cursor-not-allowed opacity-30'"
             :aria-label="$t('workspacePanel.inviteMember')"
             @click="handleInviteMember"
           >
+            {{ $t('workspacePanel.invite') }}
             <i class="pi pi-plus text-sm" />
           </Button>
           <template v-if="permissions.canAccessWorkspaceMenu">
             <Button
               v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-              variant="muted-textonly"
-              size="icon"
+              variant="secondary"
+              size="icon-lg"
               :aria-label="$t('g.moreOptions')"
               @click="menu?.toggle($event)"
             >
@@ -124,34 +170,41 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useToast } from 'primevue/usetoast'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
-
-const tabTriggerBase =
-  'flex items-center justify-center shrink-0 px-2.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-200 outline-hidden border-none'
-const tabTriggerActive =
-  'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
-const tabTriggerInactive =
-  'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string
 }>()
 
 const { t } = useI18n()
+const toast = useToast()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
   showInviteMemberDialog,
   showInviteMemberUpsellDialog,
-  showEditWorkspaceDialog
+  showEditWorkspaceDialog,
+  showCancelSubscriptionDialog
 } = useDialogService()
-const { isActiveSubscription, subscription, getMaxSeats } = useBillingContext()
+const {
+  isActiveSubscription,
+  isFreeTier: isFreeTierPlan,
+  subscription,
+  getMaxSeats,
+  manageSubscription,
+  showSubscriptionDialog
+} = useBillingContext()
+const { showPricingTable } = useSubscriptionDialog()
 
 const isSingleSeatPlan = computed(() => {
   if (!isActiveSubscription.value) return true
@@ -162,8 +215,13 @@ const isSingleSeatPlan = computed(() => {
   return getMaxSeats(tierKey) <= 1
 })
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceName,
+  members,
+  isInviteLimitReached,
+  isWorkspaceSubscribed,
+  isInPersonalWorkspace
+} = storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
@@ -197,8 +255,13 @@ const deleteTooltip = computed(() => {
   return tooltipKey ? t(tooltipKey) : null
 })
 
+const isInviteDisabled = computed(
+  () => isSingleSeatPlan.value || isInviteLimitReached.value
+)
+
 const inviteTooltip = computed(() => {
-  if (isSingleSeatPlan.value) return null
+  if (isSingleSeatPlan.value)
+    return t('workspacePanel.members.upgradeToAddTeammates')
   if (!isInviteLimitReached.value) return null
   return t('workspacePanel.inviteLimitReached')
 })
@@ -245,6 +308,64 @@ const menuItems = computed(() => {
 
   return items
 })
+
+// Plan tab actions
+const isCancelled = computed(
+  () =>
+    !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
+)
+
+const showSubscribePrompt = computed(() => {
+  if (!permissions.value.canManageSubscription) return false
+  if (isCancelled.value) return false
+  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  return !isWorkspaceSubscribed.value
+})
+
+function handleSubscribeWorkspace() {
+  showSubscriptionDialog()
+}
+
+const isResubscribing = ref(false)
+
+async function handleResubscribe() {
+  isResubscribing.value = true
+  try {
+    await workspaceApi.resubscribe()
+    toast.add({
+      severity: 'success',
+      summary: t('subscription.resubscribeSuccess'),
+      life: 5000
+    })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to resubscribe'
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: message
+    })
+  } finally {
+    isResubscribing.value = false
+  }
+}
+
+function handleUpgrade() {
+  if (isFreeTierPlan.value) showPricingTable()
+  else showSubscriptionDialog()
+}
+
+const planMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+const planMenuItems = computed(() => [
+  {
+    label: t('subscription.cancelSubscription'),
+    icon: 'pi pi-times',
+    command: () => {
+      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+    }
+  }
+])
 
 onMounted(() => {
   fetchMembers()

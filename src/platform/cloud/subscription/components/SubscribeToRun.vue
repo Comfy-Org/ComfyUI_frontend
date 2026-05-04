@@ -4,13 +4,13 @@
       value: $t('subscription.subscribeToRunFull'),
       showDelay: 600
     }"
-    class="subscribe-to-run-button whitespace-nowrap"
+    class="subscribe-to-run-button text-sm whitespace-nowrap"
     variant="gradient"
-    size="sm"
+    size="md"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
   >
-    <i class="pi pi-lock" />
+    <i class="icon-[lucide--lock] size-4" />
     {{ buttonLabel }}
   </Button>
 </template>

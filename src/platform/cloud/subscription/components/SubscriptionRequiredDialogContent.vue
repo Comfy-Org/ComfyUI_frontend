@@ -1,65 +1,13 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
+    class="relative flex flex-col gap-6 overflow-y-auto bg-secondary-background p-4"
   >
-    <Button
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.close')"
-      @click="handleClose"
-    >
-      <i class="pi pi-times text-xl" aria-hidden="true" />
-    </Button>
-    <div class="flex flex-col items-center gap-3">
-      <div
-        class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
-        aria-hidden="true"
-      >
-        <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
-        P
-      </div>
-      <i18n-t
-        keypath="subscription.plansForWorkspace"
-        tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
-        <template #workspace>
-          <span class="text-muted-foreground">
-            {{ $t('subscription.personalWorkspace') }}
-          </span>
-        </template>
-      </i18n-t>
-    </div>
-
-    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
-
-    <!-- Contact and Enterprise Links -->
-    <div class="flex flex-col items-center gap-2">
-      <p class="m-0 text-sm text-text-secondary">
-        {{ $t('subscription.haveQuestions') }}
-      </p>
-      <div class="flex items-center gap-1.5">
-        <Button
-          variant="muted-textonly"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
-          @click="handleContactUs"
-        >
-          {{ $t('subscription.contactUs') }}
-          <i class="pi pi-comments" />
-        </Button>
-        <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
-        <Button
-          variant="muted-textonly"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
-          @click="handleViewEnterprise"
-        >
-          {{ $t('subscription.viewEnterprise') }}
-          <i class="pi pi-external-link" />
-        </Button>
-      </div>
-    </div>
+    <PricingTable
+      :default-tab="defaultTab"
+      @choose-team-workspace="handleChooseTeam"
+      @close="handleClose"
+    />
   </div>
   <div v-else class="legacy-dialog relative grid h-full grid-cols-5">
     <!-- Custom close button -->
@@ -155,14 +103,13 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const { onClose, reason, onChooseTeam } = defineProps<{
+const { onClose, reason, onChooseTeam, defaultTab } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
   onChooseTeam?: () => void
+  defaultTab?: 'personal' | 'teams'
 }>()
 
 const emit = defineEmits<{
@@ -184,8 +131,6 @@ const formattedMonthlyPrice = new Intl.NumberFormat(
     maximumFractionDigits: 0
   }
 ).format(MONTHLY_SUBSCRIPTION_PRICE)
-const commandStore = useCommandStore()
-const telemetry = useTelemetry()
 
 // Always show custom pricing table for cloud subscriptions
 const showCustomPricingTable = computed(() => isSubscriptionEnabled())
@@ -213,24 +158,6 @@ const handleChooseTeam = () => {
 
 const handleClose = () => {
   onClose()
-}
-
-const handleContactUs = async () => {
-  telemetry?.trackHelpResourceClicked({
-    resource_type: 'help_feedback',
-    is_external: true,
-    source: 'subscription'
-  })
-  await commandStore.execute('Comfy.ContactSupport')
-}
-
-const handleViewEnterprise = () => {
-  telemetry?.trackHelpResourceClicked({
-    resource_type: 'docs',
-    is_external: true,
-    source: 'subscription'
-  })
-  window.open('https://www.comfy.org/cloud/enterprise', '_blank')
 }
 </script>
 

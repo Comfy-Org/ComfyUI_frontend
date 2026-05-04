@@ -1,5 +1,5 @@
 <template>
-  <div class="grow overflow-auto pt-6">
+  <div class="flex grow flex-col gap-6 overflow-auto pt-6">
     <div
       class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
@@ -8,15 +8,7 @@
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
-              {{
-                $t('workspacePanel.members.membersCount', {
-                  count:
-                    isSingleSeatPlan || isPersonalWorkspace
-                      ? 1
-                      : members.length,
-                  maxSeats: maxSeats
-                })
-              }}
+              {{ $t('workspacePanel.tabs.members') }}
             </template>
             <template v-else-if="permissions.canViewPendingInvites">
               {{
@@ -127,49 +119,26 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <!-- Personal Workspace: show only current user -->
-            <template v-if="isPersonalWorkspace">
-              <MemberListItem
-                :member="personalWorkspaceMember"
-                :is-current-user="true"
-                :photo-url="userPhotoUrl ?? undefined"
-                :grid-cols="uiConfig.membersGridCols"
-                :show-role-badge="uiConfig.showRoleBadge"
-              />
-            </template>
+            <MemberListItem
+              v-for="(member, index) in filteredMembers"
+              :key="member.id"
+              :member="member"
+              :is-current-user="isCurrentUser(member)"
+              :photo-url="
+                isCurrentUser(member) ? (userPhotoUrl ?? undefined) : undefined
+              "
+              :grid-cols="uiConfig.membersGridCols"
+              :show-role-badge="uiConfig.showRoleBadge"
+              :show-date-column="uiConfig.showDateColumn"
+              :can-remove-members="permissions.canRemoveMembers"
+              :is-single-seat-plan="isSingleSeatPlan"
+              :striped="index % 2 === 1"
+              @show-menu="showMemberMenu($event, member)"
+            />
 
-            <!-- Team Workspace: sorted list -->
-            <template v-else>
-              <MemberListItem
-                v-for="(member, index) in filteredMembers"
-                :key="member.id"
-                :member="member"
-                :is-current-user="isCurrentUser(member)"
-                :photo-url="
-                  isCurrentUser(member)
-                    ? (userPhotoUrl ?? undefined)
-                    : undefined
-                "
-                :grid-cols="uiConfig.membersGridCols"
-                :show-role-badge="uiConfig.showRoleBadge"
-                :show-date-column="uiConfig.showDateColumn"
-                :can-remove-members="permissions.canRemoveMembers"
-                :is-single-seat-plan="isSingleSeatPlan"
-                :striped="index % 2 === 1"
-                @show-menu="showMemberMenu($event, member)"
-              />
-
-              <!-- Member actions menu (shared for all members) -->
-              <Menu ref="memberMenu" :model="memberMenuItems" :popup="true" />
-            </template>
+            <!-- Member actions menu (shared for all members) -->
+            <Menu ref="memberMenu" :model="memberMenuItems" :popup="true" />
           </template>
-
-          <!-- Upsell Banner -->
-          <MemberUpsellBanner
-            v-if="isSingleSeatPlan"
-            :is-active-subscription="isActiveSubscription"
-            @show-plans="showSubscriptionDialog()"
-          />
 
           <!-- Pending Invites -->
           <PendingInvitesList
@@ -182,17 +151,28 @@
         </div>
       </div>
     </div>
-    <!-- Personal Workspace Message -->
-    <div v-if="isPersonalWorkspace" class="flex items-center">
-      <p class="text-sm text-muted-foreground">
-        {{ $t('workspacePanel.members.personalWorkspaceMessage') }}
-      </p>
-      <button
-        class="cursor-pointer border-none bg-transparent underline"
-        @click="handleCreateWorkspace"
+    <!-- Upgrade upsell (shown when not on a team plan) -->
+    <div
+      v-if="showUpgradeUpsell"
+      class="flex items-center justify-between rounded-2xl border border-interface-stroke bg-secondary-background p-6"
+    >
+      <div class="flex items-center gap-2">
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('workspacePanel.members.upgradeToAddTeammates') }}
+        </p>
+      </div>
+      <Button
+        variant="inverted"
+        size="lg"
+        class="shrink-0"
+        @click="showPricingDialog({ defaultTab: 'teams' })"
       >
-        {{ $t('workspacePanel.members.createNewWorkspace') }}
-      </button>
+        {{ $t('workspacePanel.members.upgradeToTeam') }}
+      </Button>
     </div>
   </div>
 </template>
@@ -210,8 +190,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
-import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
@@ -224,28 +204,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const toast = useToast()
 const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
-const {
-  showRemoveMemberDialog,
-  showRevokeInviteDialog,
-  showCreateWorkspaceDialog
-} = useDialogService()
+const { showRemoveMemberDialog, showRevokeInviteDialog } = useDialogService()
 const workspaceStore = useTeamWorkspaceStore()
-const {
-  members,
-  pendingInvites,
-  isInPersonalWorkspace: isPersonalWorkspace
-} = storeToRefs(workspaceStore)
+const { members, pendingInvites } = storeToRefs(workspaceStore)
 const { copyInviteLink } = workspaceStore
 const { permissions, uiConfig } = useWorkspaceUI()
-const {
-  isActiveSubscription,
-  subscription,
-  showSubscriptionDialog,
-  getMaxSeats
-} = useBillingContext()
+const { show: showPricingDialog } = useSubscriptionDialog()
+const { isActiveSubscription, subscription, getMaxSeats } = useBillingContext()
 
 const maxSeats = computed(() => {
-  if (isPersonalWorkspace.value) return 1
   const tier = subscription.value?.tier
   if (!tier) return 1
   const tierKey = TIER_TO_KEY[tier]
@@ -254,18 +221,13 @@ const maxSeats = computed(() => {
 })
 
 const isSingleSeatPlan = computed(() => {
-  if (isPersonalWorkspace.value) return false
   if (!isActiveSubscription.value) return true
   return maxSeats.value <= 1
 })
 
-const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
-  id: 'self',
-  name: userDisplayName.value ?? '',
-  email: userEmail.value ?? '',
-  role: 'owner' as const,
-  joinDate: new Date(0)
-}))
+const showUpgradeUpsell = computed(
+  () => isSingleSeatPlan.value && permissions.value.canManageSubscription
+)
 
 const searchQuery = ref('')
 const activeView = ref<'active' | 'pending'>('active')
@@ -296,8 +258,21 @@ function isCurrentUser(member: WorkspaceMember): boolean {
   return member.email.toLowerCase() === userEmail.value?.toLowerCase()
 }
 
+const effectiveMembers = computed<WorkspaceMember[]>(() => {
+  if (members.value.length > 0) return members.value
+  return [
+    {
+      id: 'self',
+      name: userDisplayName.value ?? '',
+      email: userEmail.value ?? '',
+      role: 'owner' as const,
+      joinDate: new Date(0)
+    }
+  ]
+})
+
 const filteredMembers = computed(() => {
-  let result = [...members.value]
+  let result = [...effectiveMembers.value]
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -375,10 +350,6 @@ async function handleCopyInviteLink(invite: PendingInvite) {
 
 function handleRevokeInvite(invite: PendingInvite) {
   showRevokeInviteDialog(invite.id)
-}
-
-function handleCreateWorkspace() {
-  showCreateWorkspaceDialog()
 }
 
 function handleRemoveMember(member: WorkspaceMember) {

@@ -2390,7 +2390,7 @@
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
     "billedMonthly": "Billed monthly",
-    "billedYearly": "{total} Billed yearly",
+    "billedYearly": "{total} billed yearly",
     "monthly": "Monthly",
     "yearly": "Yearly",
     "tierNameYearly": "{name} Yearly",
@@ -2433,6 +2433,7 @@
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
     "upgradeToAddCredits": "Upgrade to add credits",
+    "subscribe": "Subscribe",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
@@ -2491,6 +2492,52 @@
       "pro": "1 hr",
       "founder": "30 min"
     },
+    "forPersonal": "For Personal",
+    "forTeams": "For Teams",
+    "choosePlan": "Choose a Plan",
+    "choosePersonalPlan": "Choose a Personal Plan",
+    "personalDisclaimer": "Personal plans are for individual use only. {teamBold}.",
+    "personalDisclaimerTeam": "To add teammates, upgrade to the Team plan",
+    "lookingForSimpler": "Looking for simpler fixed plans? See personal plans.",
+    "everythingInPlus": "Everything in {tier}, plus:",
+    "freeVideoEstimate": "Generates ~{count} 5s videos*",
+    "freeTierMaxRuntime": "10-minute max runtime",
+    "standardMaxRuntime": "30 minute max workflow runtime",
+    "proMaxRuntimeLong": "Longer workflow runtime (up to 1 hr)",
+    "addMoreCreditsAnytime": "Add more credits anytime",
+    "importOwnLoRAs": "Import your own LoRAs",
+    "teamPlanSubtitle": "For growing teams running Comfy in production. Need more? {learnMore} about enterprise.",
+    "teamPlanLearnMore": "Learn more",
+    "teamPlan": {
+      "title": "Team Plan",
+      "customizeYourPlan": "Customize your plan",
+      "planDetails": "Plan details",
+      "saveUpTo": "Save up to {percent}%",
+      "save": "Save {percent}%",
+      "monthlyCredits": "monthly credits",
+      "billedYearlyAmount": "${amount} billed yearly",
+      "largerDiscount": "Get a larger discount when you select more credits.",
+      "generatesVideos": "Generates ~{count} 5s videos*",
+      "subscribeToYearly": "Subscribe to Yearly",
+      "subscribeToMonthly": "Subscribe to Monthly",
+      "subscribeAndCreate": "Subscribe to Team",
+      "maxRuntime": "1 hr max workflow runtime",
+      "addCredits": "Add more credits anytime",
+      "importLoRAs": "Import your own LoRAs",
+      "centralizedBilling": "Centralized billing for the whole team",
+      "roleBasedPermissions": "Role-based permissions",
+      "comingSoon": "Coming soon:",
+      "projectManagement": "Project & asset management",
+      "memberDescription": "Add, remove, and manage up to 30 members in your workspace. All members automatically get Pro tier benefits and their own concurrency.",
+      "memberNeedMore": "Need more than 30?",
+      "videoDisclaimer": "*Based on this template. {details}.",
+      "clickForDetails": "Click for details",
+      "wanTemplate": "Wan 2.2 Image-to-Video template",
+      "contactFooter": "Contact us for {questions} or {enterprise}. For more pricing details, {pricing}.",
+      "questions": "questions",
+      "enterpriseDiscussions": "enterprise discussions",
+      "clickHere": "click here"
+    },
     "billingComingSoon": {
       "title": "Coming Soon",
       "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
@@ -2515,7 +2562,38 @@
       "addCreditCard": "Add credit card",
       "confirm": "Confirm",
       "backToAllPlans": "Back to all plans"
-    }
+    },
+    "teamWorkspacePlan": "Team Workspace Plan",
+    "customizeYourPlan": "Customize your plan",
+    "planDetails": "Plan details",
+    "saveUpTo": "Save up to {percent}%",
+    "save": "Save {percent}%",
+    "monthlyCredits": "monthly credits",
+    "billedYearlyAmount": "${amount} billed yearly",
+    "billedMonthlyAmount": "Billed monthly",
+    "largerDiscount": "Get a larger discount when you select more credits.",
+    "generatesVideos": "Generates ~{count} 5s videos*",
+    "subscribeToYearly": "Subscribe to Yearly",
+    "subscribeToMonthly": "Subscribe to Monthly",
+    "subscribeAndCreate": "Subscribe to Team",
+    "features": {
+      "maxRuntime": "1 hr max workflow runtime",
+      "addCredits": "Add more credits anytime",
+      "importLoRAs": "Import your own LoRAs",
+      "centralizedBilling": "Centralized billing for the whole team",
+      "roleBasedPermissions": "Role-based permissions"
+    },
+    "comingSoon": "Coming soon:",
+    "comingSoonFeatures": {
+      "projectManagement": "Project & asset management"
+    },
+    "memberDescription": "Add, remove, and manage up to 30 members in your workspace. All members automatically get Pro tier benefits and their own concurrency. Need more than 30?",
+    "videoDisclaimer": "*Based on 5s videos created with the {template} using default settings (81 frames, 18fps, 640×640, 4-step sampler).",
+    "wanTemplate": "Wan 2.2 Image-to-Video template",
+    "contactForQuestions": "Contact us for {questions} or {enterprise}. For more pricing details, {pricing}.",
+    "questions": "questions",
+    "enterpriseDiscussions": "enterprise discussions",
+    "clickHere": "click here"
   },
   "userSettings": {
     "title": "My Account Settings",
@@ -2534,13 +2612,14 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
+      "members": "Members",
       "membersCount": "Members ({count})"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/{maxSeats} Members",
+      "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2562,7 +2641,12 @@
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
-      "createNewWorkspace": "create a new one."
+      "createNewWorkspace": "create a new one.",
+      "personalWorkspaceDisclaimer": "Personal workspaces are for individual use only. {teamBold}",
+      "personalWorkspaceDisclaimerTeam": "To add teammates, create a team workspace.",
+      "seeTeamPlan": "See Team plan",
+      "upgradeToAddTeammates": "To add teammates, upgrade your plan.",
+      "upgradeToTeam": "Upgrade to Team"
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
@@ -2621,10 +2705,12 @@
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
-      "message": "Workspaces create a new credit pool that can be shared among members. You'll become the owner after creating this.",
-      "nameLabel": "Workspace name*",
+      "message": "Workspaces keep your projects and files organized. Subscribe to a Team plan to invite members.",
+      "nameLabel": "Workspace name",
       "namePlaceholder": "Enter workspace name",
-      "create": "Create"
+      "personalStaysInfo": "Your personal workspace stays. Swap between this new workspace and your personal at any time.",
+      "create": "Create",
+      "next": "Next"
     },
     "toast": {
       "workspaceCreated": {
@@ -2669,7 +2755,9 @@
     "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
+    "teamWorkspacesSection": "TEAM WORKSPACES",
     "createWorkspace": "Create new workspace",
+    "createTeamWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "failedToSwitch": "Failed to switch workspace"
   },
