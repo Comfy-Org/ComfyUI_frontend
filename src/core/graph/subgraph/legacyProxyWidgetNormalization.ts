@@ -2,6 +2,8 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
+// Collision: a widget literally named `"<digits>: rest"` is ambiguous;
+// `normalizeLegacyProxyWidgetEntry` resolves the literal name first.
 const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
 
 type PromotedWidgetPatch = Omit<PromotedWidgetSource, 'sourceNodeId'>

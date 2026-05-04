@@ -110,15 +110,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * lifecycle to persist.
    */
   private _pendingPromotions: PromotedWidgetSource[] = []
-  /**
-   * Widget values buffered during `configure()` when the SubgraphNode is not
-   * yet attached (`id === -1`). The PromotedWidgetView setters short-circuit
-   * at id === -1 to avoid orphan cells in the widget value store, so we stash
-   * the replay values here and drain them in `onAdded()` once the node has a
-   * real id. This preserves per-instance promoted widget values across
-   * `LGraphNode.clone()` (Ctrl+C/V), which configures the cloned node before
-   * adding it to the graph.
-   */
+  /** Widgets_values buffered during pre-attach configure(); drained in onAdded(). */
   private _pendingWidgetsValuesReplay?: TWidgetValue[]
   private _cacheVersion = 0
   private _linkedEntriesCache?: {
@@ -1685,7 +1677,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       merged[idx] =
         value != null && typeof value === 'object'
           ? (structuredClone(toRaw(value)) as TWidgetValue)
-          : (value ?? undefined)
+          : (value as TWidgetValue)
     })
     if (merged.length > 0) serialized.widgets_values = merged
 

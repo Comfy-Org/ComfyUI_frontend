@@ -324,13 +324,13 @@ function safeWidgetMapper(
       const sourceWidgetName = isPromotedWidgetView(widget)
         ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
         : undefined
-      const sourceLocalId = isPromotedWidgetView(widget)
-        ? String(
-            sourceNode?.id ??
-              promotedSource?.disambiguatingSourceNodeId ??
-              promotedSource?.sourceNodeId
-          )
+      const rawSourceLocalId = isPromotedWidgetView(widget)
+        ? (sourceNode?.id ??
+          promotedSource?.disambiguatingSourceNodeId ??
+          promotedSource?.sourceNodeId)
         : undefined
+      const sourceLocalId =
+        rawSourceLocalId != null ? String(rawSourceLocalId) : undefined
       const source: PromotedWidgetSource | undefined =
         isPromotedWidgetView(widget) && sourceLocalId && sourceWidgetName
           ? {

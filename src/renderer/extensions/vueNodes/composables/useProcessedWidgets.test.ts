@@ -14,6 +14,7 @@ import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -411,7 +412,11 @@ describe('per-instance value lookup for promoted widgets', () => {
   const GRAPH_ID = 'graph-test'
   const INTERIOR_NODE_ID = '5'
   const INTERIOR_WIDGET_NAME = 'text'
-  const STORE_NAME = `${INTERIOR_NODE_ID}\u0001${INTERIOR_WIDGET_NAME}\u0001`
+  const STORE_NAME = makeCompositeKey([
+    INTERIOR_NODE_ID,
+    INTERIOR_WIDGET_NAME,
+    ''
+  ])
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

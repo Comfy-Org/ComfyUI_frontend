@@ -179,6 +179,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return state?.label ?? this.displayName
   }
 
+  /** Slot-bound: only update existing cell. Unbound: materialize. */
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
     if (slot) slot.label = value || undefined
@@ -186,12 +187,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     // Pre-attach sentinel guard: skip per-instance cell write before LGraph.add().
     if (this.subgraphNode.id === -1) return
 
-    // When a slot exists it is the durable home for the label, so only update
-    // an already-materialized per-instance cell. When no slot is bound (e.g.
-    // a freshly selected promoted widget that has no subgraph IO yet), the
-    // per-instance cell is the only place the new label can live, so
-    // materialize it on demand. Without this the rename would silently no-op
-    // and the getter would return `displayName` after the slot-fallback.
     if (slot) {
       const existing = this.getWidgetState()
       if (existing) existing.label = value
@@ -219,19 +214,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    // Identity match wins; otherwise fall back to source-identity match
+    // (sibling view bound to the same promoted source).
+    let sourceMatch: SubgraphSlotRef | undefined
     for (const input of this.subgraphNode.inputs ?? []) {
       const slot = input._subgraphSlot as SubgraphSlotRef | undefined
       if (!slot) continue
 
-      if (input._widget === this) {
-        return slot
-      }
-    }
+      if (input._widget === this) return slot
 
-    for (const input of this.subgraphNode.inputs ?? []) {
-      const slot = input._subgraphSlot as SubgraphSlotRef | undefined
-      if (!slot) continue
-
+      if (sourceMatch) continue
       const w = input._widget
       if (
         w &&
@@ -240,10 +232,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
         w.sourceWidgetName === this.sourceWidgetName &&
         w.disambiguatingSourceNodeId === this.disambiguatingSourceNodeId
       ) {
-        return slot
+        sourceMatch = slot
       }
     }
-    return undefined
+    return sourceMatch
   }
 
   get hidden(): boolean {
