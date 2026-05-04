@@ -24,10 +24,20 @@ test.describe(
       await note.locator('.lg-node-header').click()
       await expect(note).toHaveClass(/outline-node-component-outline/)
 
+      const box = await note.boundingBox()
+      if (!box) throw new Error('Node bounding box not available')
+      const PAD = 16
+      const clip = {
+        x: Math.max(0, Math.floor(box.x - PAD)),
+        y: Math.max(0, Math.floor(box.y - PAD)),
+        width: Math.ceil(box.width + PAD * 2),
+        height: Math.ceil(box.height + PAD * 2)
+      }
+
       await comfyPage.page.keyboard.down('Shift')
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'vue-node-shift-focus-outline.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'vue-node-shift-focus-outline.png',
+        { clip }
       )
     })
   }
