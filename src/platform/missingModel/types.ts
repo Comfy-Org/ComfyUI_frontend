@@ -60,6 +60,7 @@ export type MissingModelDownloadRef =
     }
   | {
       kind: 'electron-download'
+      downloadId?: string
       url: string
     }
 

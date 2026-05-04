@@ -139,7 +139,7 @@ describe('MissingModelCard', () => {
     mockIsCloud.value = true
     mockIsDesktop.value = false
     mockDownloadModel.mockReset()
-    mockDownloadModel.mockResolvedValue(true)
+    mockDownloadModel.mockResolvedValue({ started: true })
   })
 
   describe('Rendering & Props', () => {
@@ -259,7 +259,7 @@ describe('MissingModelCard (OSS)', () => {
     mockIsCloud.value = false
     mockIsDesktop.value = false
     mockDownloadModel.mockReset()
-    mockDownloadModel.mockResolvedValue(true)
+    mockDownloadModel.mockResolvedValue({ started: true })
   })
 
   afterEach(() => {
@@ -346,9 +346,15 @@ describe('MissingModelCard (OSS)', () => {
   it('tracks each successfully started desktop download from Download all', async () => {
     mockIsDesktop.value = true
     mockDownloadModel
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce({
+        started: true,
+        downloadId: '/models/checkpoints/a.safetensors'
+      })
+      .mockResolvedValueOnce({ started: false })
+      .mockResolvedValueOnce({
+        started: true,
+        downloadId: '/models/checkpoints/c.safetensors'
+      })
 
     mountCard({
       missingModelGroups: [
@@ -369,6 +375,7 @@ describe('MissingModelCard (OSS)', () => {
       store.downloadRefs['unsupported::checkpoints::a.safetensors']
     ).toEqual({
       kind: 'electron-download',
+      downloadId: '/models/checkpoints/a.safetensors',
       url: 'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
     })
     expect(
@@ -384,6 +391,7 @@ describe('MissingModelCard (OSS)', () => {
       store.downloadRefs['unsupported::checkpoints::c.safetensors']
     ).toEqual({
       kind: 'electron-download',
+      downloadId: '/models/checkpoints/c.safetensors',
       url: 'https://huggingface.co/comfy/test/resolve/main/c.safetensors'
     })
     expect(

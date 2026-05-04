@@ -15,6 +15,7 @@ const mockGetAssetFilename = vi.fn((a: { name: string }) => a.name)
 const mockGetAssets = vi.fn()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetAllNodeProviders = vi.fn()
+const mockFindElectronDownloadById = vi.fn()
 const mockFindElectronDownloadByUrl = vi.fn()
 const mockDownloadList = vi.fn(
   (): Array<{
@@ -80,6 +81,8 @@ vi.mock('@/stores/assetDownloadStore', () => ({
 
 vi.mock('@/stores/electronDownloadStore', () => ({
   useElectronDownloadStore: () => ({
+    findByDownloadId: (...args: unknown[]) =>
+      mockFindElectronDownloadById(...args),
     findByUrl: (...args: unknown[]) => mockFindElectronDownloadByUrl(...args)
   })
 }))
@@ -154,6 +157,8 @@ describe('useMissingModelInteractions', () => {
     mockDownloadList.mockImplementation(
       (): Array<{ taskId: string; status: string }> => []
     )
+    mockFindElectronDownloadById.mockReset()
+    mockFindElectronDownloadById.mockReturnValue(null)
     mockFindElectronDownloadByUrl.mockReset()
     mockFindElectronDownloadByUrl.mockReturnValue(null)
     ;(app as { rootGraph: unknown }).rootGraph = null
@@ -412,6 +417,33 @@ describe('useMissingModelInteractions', () => {
         status: 'paused',
         error: 'network stalled'
       })
+    })
+
+    it('prefers download id over URL for Electron download status', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadById.mockReturnValue({
+        progress: 0.8,
+        status: 'running'
+      })
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 0.1,
+        status: 'paused'
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        progress: 0.8,
+        status: 'running',
+        error: undefined
+      })
+      expect(mockFindElectronDownloadById).toHaveBeenCalledWith(
+        '/models/checkpoints/model.safetensors'
+      )
     })
 
     it('returns null when no tracked download ref exists', () => {

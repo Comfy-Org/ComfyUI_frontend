@@ -292,7 +292,18 @@ export function useMissingModelInteractions() {
         : null
     }
 
-    return electronDownloadStore.findByUrl(downloadRef.url) ?? null
+    const electronDownload = downloadRef.downloadId
+      ? electronDownloadStore.findByDownloadId(downloadRef.downloadId)
+      : null
+    const download =
+      electronDownload ?? electronDownloadStore.findByUrl(downloadRef.url)
+    return download
+      ? {
+          progress: download.progress,
+          status: download.status,
+          error: download.error
+        }
+      : null
   }
 
   function handleAsyncPending(

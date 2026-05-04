@@ -18,9 +18,26 @@ type DesktopDownloadSnapshot = Pick<
   'url' | 'filename'
 > &
   Partial<DownloadState> &
-  Partial<DownloadProgressUpdate>
+  Partial<DownloadProgressUpdate> & {
+    downloadId?: string
+  }
+
+type DesktopStartDownloadResult =
+  | boolean
+  | {
+      ok: boolean
+      download?: DesktopDownloadSnapshot
+      error?: string
+    }
+
+interface ElectronDownloadStartResult {
+  started: boolean
+  download?: ElectronDownload
+  error?: string
+}
 
 export interface ElectronDownload extends DownloadLifecycleState {
+  downloadId?: string
   url: string
   filename: string
   savePath: string
@@ -42,6 +59,8 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   const findByUrl = (url: string) =>
     downloads.value.find((download) => url === download.url)
+  const findByDownloadId = (downloadId: string) =>
+    downloads.value.find((download) => download.downloadId === downloadId)
 
   function normalizeStatus(
     status?: DownloadStatus,
@@ -51,7 +70,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
       return 'paused'
     }
 
-    if (!status) return 'failed'
+    if (status == null) return 'created'
 
     return desktopStatusToLifecycleStatus[status]
   }
@@ -84,6 +103,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     )
 
     return {
+      ...(download.downloadId ? { downloadId: download.downloadId } : {}),
       url: download.url,
       filename: download.filename,
       savePath: download.savePath ?? '',
@@ -95,14 +115,17 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   function upsertDownload(download: DesktopDownloadSnapshot) {
     const normalizedDownload = normalizeDownload(download)
-    const existingDownload = findByUrl(normalizedDownload.url)
+    const existingDownload = normalizedDownload.downloadId
+      ? findByDownloadId(normalizedDownload.downloadId)
+      : findByUrl(normalizedDownload.url)
 
     if (existingDownload) {
       Object.assign(existingDownload, normalizedDownload)
-      return
+      return existingDownload
     }
 
     downloads.value.push(normalizedDownload)
+    return normalizedDownload
   }
 
   const initialize = async () => {
@@ -121,7 +144,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   void initialize()
 
-  const start = ({
+  const start = async ({
     url,
     savePath,
     filename
@@ -129,11 +152,41 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     url: string
     savePath: string
     filename: string
-  }): Promise<boolean> =>
-    DownloadManager!.startDownload(url, savePath, filename)
-  const pause = (url: string) => DownloadManager!.pauseDownload(url)
-  const resume = (url: string) => DownloadManager!.resumeDownload(url)
-  const cancel = (url: string) => DownloadManager!.cancelDownload(url)
+  }): Promise<ElectronDownloadStartResult> => {
+    const result = (await DownloadManager!.startDownload(
+      url,
+      savePath,
+      filename
+    )) as DesktopStartDownloadResult
+
+    if (typeof result === 'boolean') {
+      return { started: result }
+    }
+
+    if (!result.ok) {
+      if (result.download) {
+        upsertDownload(result.download)
+      }
+      return {
+        started: false,
+        ...(result.error ? { error: result.error } : {})
+      }
+    }
+
+    const download = result.download
+      ? upsertDownload(result.download)
+      : undefined
+    return {
+      started: true,
+      ...(download ? { download } : {})
+    }
+  }
+  const pause = (downloadIdOrUrl: string) =>
+    DownloadManager!.pauseDownload(downloadIdOrUrl)
+  const resume = (downloadIdOrUrl: string) =>
+    DownloadManager!.resumeDownload(downloadIdOrUrl)
+  const cancel = (downloadIdOrUrl: string) =>
+    DownloadManager!.cancelDownload(downloadIdOrUrl)
 
   return {
     downloads,
@@ -141,6 +194,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     pause,
     resume,
     cancel,
+    findByDownloadId,
     findByUrl,
     initialize,
     inProgressDownloads: computed(() =>

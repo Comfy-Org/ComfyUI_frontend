@@ -294,14 +294,15 @@ const downloadLabel = computed(() => {
 async function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    const started = await downloadModel(
+    const result = await downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths
     )
 
-    if (started && isDesktop) {
+    if (result.started && isDesktop) {
       store.downloadRefs[modelKey.value] = {
         kind: 'electron-download',
+        ...(result.downloadId ? { downloadId: result.downloadId } : {}),
         url: rep.url
       }
       handleComboSelect(modelKey.value, rep.name)

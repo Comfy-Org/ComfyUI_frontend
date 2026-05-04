@@ -176,7 +176,10 @@ describe('MissingModelRow', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockDownloadModel.mockReset()
-    mockDownloadModel.mockResolvedValue(true)
+    mockDownloadModel.mockResolvedValue({
+      started: true,
+      downloadId: '/models/checkpoints/z_image_turbo_bf16.safetensors'
+    })
     mockFetchModelMetadata.mockReset()
     mockFetchModelMetadata.mockResolvedValue({
       fileSize: null,
@@ -209,6 +212,7 @@ describe('MissingModelRow', () => {
     )
     expect(store.downloadRefs[modelKey]).toEqual({
       kind: 'electron-download',
+      downloadId: '/models/checkpoints/z_image_turbo_bf16.safetensors',
       url: model.representative.url
     })
     expect(store.selectedLibraryModel[modelKey]).toBe(model.representative.name)
@@ -238,7 +242,7 @@ describe('MissingModelRow', () => {
 
   it('does not create UI state when the Electron download does not start', async () => {
     mockIsDesktop.value = true
-    mockDownloadModel.mockResolvedValue(false)
+    mockDownloadModel.mockResolvedValue({ started: false })
     const user = userEvent.setup()
     const store = useMissingModelStore()
     renderComponent()

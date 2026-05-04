@@ -32,6 +32,12 @@ export interface ModelWithUrl {
   directory: string
 }
 
+export interface DownloadModelResult {
+  started: boolean
+  downloadId?: string
+  error?: string
+}
+
 /**
  * Converts a model download URL to a browsable page URL.
  * - HuggingFace: `/resolve/` → `/blob/` (file page with model info)
@@ -56,10 +62,10 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
-export function downloadModel(
+export async function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
-): Promise<boolean> {
+): Promise<DownloadModelResult> {
   if (!isDesktop) {
     const link = document.createElement('a')
     link.href = model.url
@@ -67,19 +73,26 @@ export function downloadModel(
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
     link.click()
-    return Promise.resolve(true)
+    return { started: true }
   }
 
   const modelPaths = paths[model.directory]
   if (modelPaths?.[0]) {
-    return useElectronDownloadStore().start({
+    const result = await useElectronDownloadStore().start({
       url: model.url,
       savePath: modelPaths[0],
       filename: model.name
     })
+    return {
+      started: result.started,
+      ...(result.download?.downloadId
+        ? { downloadId: result.download.downloadId }
+        : {}),
+      ...(result.error ? { error: result.error } : {})
+    }
   }
 
-  return Promise.resolve(false)
+  return { started: false }
 }
 
 interface ModelMetadata {

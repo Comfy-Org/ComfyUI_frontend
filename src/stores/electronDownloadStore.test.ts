@@ -11,6 +11,7 @@ const mockCancelDownload = vi.fn()
 
 let downloadProgressHandler:
   | ((download: {
+      downloadId?: string
       url: string
       filename: string
       savePath?: string
@@ -61,6 +62,7 @@ describe('electronDownloadStore', () => {
   it('normalizes canonical desktop snapshots during initialization', async () => {
     mockGetAllDownloads.mockResolvedValue([
       {
+        downloadId: '/models/checkpoints/model.safetensors',
         url: 'https://example.com/model.safetensors',
         filename: 'model.safetensors',
         savePath: '/models/checkpoints/model.safetensors',
@@ -78,6 +80,7 @@ describe('electronDownloadStore', () => {
 
     expect(store.downloads).toEqual([
       {
+        downloadId: '/models/checkpoints/model.safetensors',
         url: 'https://example.com/model.safetensors',
         filename: 'model.safetensors',
         savePath: '/models/checkpoints/model.safetensors',
@@ -120,6 +123,7 @@ describe('electronDownloadStore', () => {
     await flushStoreSetup()
 
     downloadProgressHandler?.({
+      downloadId: '/models/checkpoints/model.safetensors',
       url: 'https://example.com/model.safetensors',
       filename: 'model.safetensors',
       savePath: '/models/checkpoints/model.safetensors',
@@ -127,6 +131,7 @@ describe('electronDownloadStore', () => {
       status: DownloadStatus.PENDING
     })
     downloadProgressHandler?.({
+      downloadId: '/models/checkpoints/model.safetensors',
       url: 'https://example.com/model.safetensors',
       filename: 'model.safetensors',
       savePath: '/models/checkpoints/model.safetensors',
@@ -136,6 +141,7 @@ describe('electronDownloadStore', () => {
 
     expect(store.downloads).toEqual([
       {
+        downloadId: '/models/checkpoints/model.safetensors',
         url: 'https://example.com/model.safetensors',
         filename: 'model.safetensors',
         savePath: '/models/checkpoints/model.safetensors',
@@ -144,5 +150,77 @@ describe('electronDownloadStore', () => {
         error: undefined
       }
     ])
+  })
+
+  it('keeps same-url downloads separate when desktop supplies download ids', async () => {
+    const store = useElectronDownloadStore()
+    await flushStoreSetup()
+
+    downloadProgressHandler?.({
+      downloadId: '/models/checkpoints/model.safetensors',
+      url: 'https://example.com/model.safetensors',
+      filename: 'model.safetensors',
+      savePath: '/models/checkpoints/model.safetensors',
+      progress: 0.2,
+      status: DownloadStatus.IN_PROGRESS
+    })
+    downloadProgressHandler?.({
+      downloadId: '/models/loras/model.safetensors',
+      url: 'https://example.com/model.safetensors',
+      filename: 'model.safetensors',
+      savePath: '/models/loras/model.safetensors',
+      progress: 0.7,
+      status: DownloadStatus.IN_PROGRESS
+    })
+
+    expect(store.downloads).toEqual([
+      expect.objectContaining({
+        downloadId: '/models/checkpoints/model.safetensors',
+        savePath: '/models/checkpoints/model.safetensors',
+        progress: 0.2
+      }),
+      expect.objectContaining({
+        downloadId: '/models/loras/model.safetensors',
+        savePath: '/models/loras/model.safetensors',
+        progress: 0.7
+      })
+    ])
+  })
+
+  it('normalizes the desktop start result and stores its download id', async () => {
+    mockStartDownload.mockResolvedValue({
+      ok: true,
+      download: {
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        filename: 'model.safetensors',
+        savePath: '/models/checkpoints/model.safetensors',
+        progress: 0,
+        status: DownloadStatus.PENDING
+      }
+    })
+    const store = useElectronDownloadStore()
+    await flushStoreSetup()
+
+    const result = await store.start({
+      url: 'https://example.com/model.safetensors',
+      savePath: '/models/checkpoints',
+      filename: 'model.safetensors'
+    })
+
+    expect(result).toEqual({
+      started: true,
+      download: expect.objectContaining({
+        downloadId: '/models/checkpoints/model.safetensors',
+        status: 'created'
+      })
+    })
+    expect(
+      store.findByDownloadId('/models/checkpoints/model.safetensors')
+    ).toEqual(
+      expect.objectContaining({
+        url: 'https://example.com/model.safetensors'
+      })
+    )
   })
 })

@@ -91,17 +91,21 @@ const getDownloadLabel = (savePath: string) => {
   return `${dir}/${name}`
 }
 
+const getDownloadIdentifier = () =>
+  props.download.downloadId ?? props.download.url
+
 const triggerCancelDownload = () =>
-  electronDownloadStore.cancel(props.download.url)
+  electronDownloadStore.cancel(getDownloadIdentifier())
 const triggerPauseDownload = () =>
-  electronDownloadStore.pause(props.download.url)
+  electronDownloadStore.pause(getDownloadIdentifier())
 const triggerResumeDownload = () =>
-  electronDownloadStore.resume(props.download.url)
+  electronDownloadStore.resume(getDownloadIdentifier())
 
 const handleRemoveDownload = () => {
   electronDownloadStore.$patch((state) => {
     state.downloads = state.downloads.filter(
-      ({ url }) => url !== props.download.url
+      (download) =>
+        (download.downloadId ?? download.url) !== getDownloadIdentifier()
     )
   })
 }

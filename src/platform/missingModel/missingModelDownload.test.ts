@@ -246,7 +246,7 @@ describe('downloadModel', () => {
         target: ''
       } as unknown as HTMLAnchorElement)
 
-    const started = await downloadModel(
+    const result = await downloadModel(
       {
         name: 'model.safetensors',
         url: 'https://example.com/model.safetensors',
@@ -255,7 +255,7 @@ describe('downloadModel', () => {
       { checkpoints: ['/models/checkpoints'] }
     )
 
-    expect(started).toBe(true)
+    expect(result).toEqual({ started: true })
     expect(click).toHaveBeenCalledOnce()
 
     createElementSpy.mockRestore()
@@ -263,9 +263,14 @@ describe('downloadModel', () => {
 
   it('starts an Electron download when a desktop save path exists', async () => {
     mockIsDesktop.value = true
-    mockStartElectronDownload.mockResolvedValue(true)
+    mockStartElectronDownload.mockResolvedValue({
+      started: true,
+      download: {
+        downloadId: '/models/checkpoints/model.safetensors'
+      }
+    })
 
-    const started = await downloadModel(
+    const result = await downloadModel(
       {
         name: 'model.safetensors',
         url: 'https://example.com/model.safetensors',
@@ -274,7 +279,10 @@ describe('downloadModel', () => {
       { checkpoints: ['/models/checkpoints'] }
     )
 
-    expect(started).toBe(true)
+    expect(result).toEqual({
+      started: true,
+      downloadId: '/models/checkpoints/model.safetensors'
+    })
     expect(mockStartElectronDownload).toHaveBeenCalledWith({
       url: 'https://example.com/model.safetensors',
       savePath: '/models/checkpoints',
@@ -282,7 +290,7 @@ describe('downloadModel', () => {
     })
   })
 
-  it('returns false on desktop when no save path exists for the model directory', async () => {
+  it('returns not started on desktop when no save path exists for the model directory', async () => {
     mockIsDesktop.value = true
 
     await expect(
@@ -294,7 +302,7 @@ describe('downloadModel', () => {
         },
         {}
       )
-    ).resolves.toBe(false)
+    ).resolves.toEqual({ started: false })
 
     expect(mockStartElectronDownload).not.toHaveBeenCalled()
   })

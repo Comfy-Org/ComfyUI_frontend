@@ -162,11 +162,12 @@ async function downloadAndTrackModel({
   model: ModelWithUrl
 }) {
   try {
-    const started = await downloadModel(model, missingModelStore.folderPaths)
-    if (!started || !isDesktop) return
+    const result = await downloadModel(model, missingModelStore.folderPaths)
+    if (!result.started || !isDesktop) return
 
     missingModelStore.downloadRefs[key] = {
       kind: 'electron-download',
+      ...(result.downloadId ? { downloadId: result.downloadId } : {}),
       url: model.url
     }
     missingModelStore.selectedLibraryModel[key] = model.name
