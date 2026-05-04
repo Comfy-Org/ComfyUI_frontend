@@ -13,11 +13,14 @@ const items: FormDropdownItem[] = [
 ]
 
 const uploadLabel = 'Upload'
+const loadingLabel = 'Loading'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { upload: uploadLabel } } }
+  messages: {
+    en: { g: { upload: uploadLabel, loading: loadingLabel } }
+  }
 })
 
 function renderInput(
@@ -130,6 +133,46 @@ describe('FormDropdownInput', () => {
         new File(['hi'], 'hi.txt', { type: 'text/plain' })
       )
       expect(onFileChange).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Loading state', () => {
+    it('disables the trigger and file input and sets aria-busy when loading', () => {
+      renderInput({ uploadable: true, loading: true })
+
+      const trigger = screen.getByRole('button')
+      expect(trigger).toBeDisabled()
+      expect(trigger).toHaveAttribute('aria-busy', 'true')
+
+      const fileInput = screen.getByLabelText(uploadLabel)
+      expect(fileInput).toBeDisabled()
+    })
+
+    it('replaces the placeholder with a localized loading label', () => {
+      renderInput({
+        uploadable: true,
+        loading: true,
+        placeholder: 'Pick a file'
+      })
+
+      expect(screen.getByText(`${loadingLabel}...`)).toBeInTheDocument()
+      expect(screen.queryByText('Pick a file')).toBeNull()
+    })
+
+    it('keeps the trigger and file input enabled when idle', () => {
+      renderInput({ uploadable: true, loading: false })
+
+      const trigger = screen.getByRole('button')
+      expect(trigger).not.toBeDisabled()
+      expect(trigger).not.toHaveAttribute('aria-busy')
+
+      const fileInput = screen.getByLabelText(uploadLabel)
+      expect(fileInput).not.toBeDisabled()
+    })
+
+    it('keeps the file input disabled when disabled, regardless of loading', () => {
+      renderInput({ uploadable: true, disabled: true, loading: false })
+      expect(screen.getByLabelText(uploadLabel)).toBeDisabled()
     })
   })
 })

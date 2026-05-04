@@ -29,6 +29,7 @@ interface Props {
   multiple?: boolean | number
 
   uploadable?: boolean
+  loading?: boolean
   disabled?: boolean
   accept?: string
   filterOptions?: FilterOption[]
@@ -55,6 +56,7 @@ const {
   placeholder,
   multiple = false,
   uploadable = false,
+  loading = false,
   disabled = false,
   accept,
   filterOptions = [],
@@ -141,7 +143,7 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 }
 
 const toggleDropdown = (event: Event) => {
-  if (disabled) return
+  if (disabled || loading) return
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle?.(event, triggerRef.value)
     isOpen.value = !isOpen.value
@@ -156,7 +158,7 @@ const closeDropdown = () => {
 }
 
 function handleFileChange(event: Event) {
-  if (disabled) return
+  if (disabled || loading) return
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   if (target.files) {
@@ -200,6 +202,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       :max-selectable
       :selected
       :uploadable
+      :loading
       :disabled
       :accept
       @select-click="toggleDropdown"

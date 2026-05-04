@@ -39,6 +39,12 @@ export interface FormDropdownInputProps {
   uploadable: boolean
   disabled: boolean
   accept?: string
+  /**
+   * When true, indicates an upload is in progress. The trigger swaps its label
+   * to a localized "Loading…" string, the upload icon swaps to a loader-circle,
+   * the underlying file input is disabled, and aria-busy is set.
+   */
+  loading?: boolean
 }
 
 export interface FormDropdownMenuItemProps {
