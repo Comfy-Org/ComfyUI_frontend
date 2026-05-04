@@ -133,15 +133,26 @@ const supportedLocaleByLower = new Map<string, SupportedLocale>(
   SUPPORTED_LOCALES.map((locale) => [locale.toLowerCase(), locale])
 )
 
+function matchSingle(candidate: string): SupportedLocale | undefined {
+  const normalized = candidate.toLowerCase()
+  return (
+    supportedLocaleByLower.get(normalized) ??
+    supportedLocaleByLower.get(normalized.split('-')[0])
+  )
+}
+
 export function resolveSupportedLocale(
-  input: string | undefined | null
+  input?: string | readonly string[] | null
 ): SupportedLocale {
-  if (!input) return 'en'
-  const normalized = input.toLowerCase()
-  const exact = supportedLocaleByLower.get(normalized)
-  if (exact) return exact
-  const base = normalized.split('-')[0]
-  const baseMatch = supportedLocaleByLower.get(base)
-  if (baseMatch) return baseMatch
+  const candidates = Array.isArray(input) ? input : input ? [input] : []
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const matched = matchSingle(candidate)
+    if (matched) return matched
+  }
   return 'en'
+}
+
+export function getDefaultLocale(): SupportedLocale {
+  return resolveSupportedLocale(navigator.languages)
 }

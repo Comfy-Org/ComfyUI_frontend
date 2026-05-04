@@ -6,6 +6,7 @@ let i18n: typeof I18nModule.i18n
 let loadLocale: typeof I18nModule.loadLocale
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
+let setActiveLocale: typeof I18nModule.setActiveLocale
 
 async function importI18nModule() {
   const i18nModule = await import('./i18n')
@@ -13,6 +14,7 @@ async function importI18nModule() {
   loadLocale = i18nModule.loadLocale
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
+  setActiveLocale = i18nModule.setActiveLocale
 }
 
 // Mock the JSON imports before importing i18n module
@@ -188,40 +190,41 @@ describe('i18n', () => {
     it('should not reload already loaded locale', async () => {
       await loadLocale('zh')
       await loadLocale('zh')
-
-      // Should complete without error (second call returns early)
     })
 
-    it('should clamp unsupported locale to en (loaded eagerly)', async () => {
-      const resolved = await loadLocale('de')
-      expect(resolved).toBe('en')
-    })
-
-    it('should preserve full BCP-47 tag for shipped variants', async () => {
-      const resolved = await loadLocale('zh-TW')
-      expect(resolved).toBe('zh-TW')
-    })
-
-    it('should preserve shipped pt-BR locale through loadLocale', async () => {
-      const resolved = await loadLocale('pt-BR')
-
-      expect(resolved).toBe('pt-BR')
-      expect(i18n.global.getLocaleMessage('pt-BR')).toEqual(
+    it('should load shipped BCP-47 variants', async () => {
+      await loadLocale('zh-TW')
+      expect(i18n.global.getLocaleMessage('zh-TW')).toEqual(
         expect.objectContaining({
           commands: expect.any(Object),
           nodeDefs: expect.any(Object),
           settings: expect.any(Object)
         })
       )
-
-      expect(await loadLocale('pt')).toBe('en')
     })
 
     it('should handle concurrent load requests for same locale', async () => {
-      // Start multiple loads concurrently
       const promises = [loadLocale('zh'), loadLocale('zh'), loadLocale('zh')]
-
       await Promise.all(promises)
+    })
+  })
+
+  describe('setActiveLocale', () => {
+    it('clamps unsupported input to en', async () => {
+      expect(await setActiveLocale('de')).toBe('en')
+      expect(i18n.global.locale.value).toBe('en')
+    })
+
+    it('resolves shipped variants and sets the active locale', async () => {
+      expect(await setActiveLocale('pt-BR')).toBe('pt-BR')
+      expect(i18n.global.locale.value).toBe('pt-BR')
+      // pt is not shipped — pt-BR must not be promoted as a base match
+      expect(await setActiveLocale('pt')).toBe('en')
+    })
+
+    it('honors prioritized navigator.languages', async () => {
+      // First preference unsupported, second shipped — should land on French.
+      expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
     })
   })
 
@@ -261,6 +264,14 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('')).toBe('en')
       expect(resolveSupportedLocale(undefined)).toBe('en')
       expect(resolveSupportedLocale(null)).toBe('en')
+    })
+
+    it('walks a prioritized array per RFC 4647 lookup order', () => {
+      // First shipped match wins (de unshipped → fr shipped → fr).
+      expect(resolveSupportedLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      // Empty / all-unshipped arrays fall back to en.
+      expect(resolveSupportedLocale([])).toBe('en')
+      expect(resolveSupportedLocale(['de', 'it'])).toBe('en')
     })
   })
 })

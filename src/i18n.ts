@@ -1,6 +1,7 @@
 import { createI18n } from 'vue-i18n'
 
 import {
+  getDefaultLocale,
   localeDefinitions,
   resolveSupportedLocale
 } from '@/locales/localeConfig'
@@ -38,28 +39,26 @@ const loadingLocales = new Map<string, Promise<void>>()
 const customNodesI18nData: Record<string, unknown> = {}
 
 /**
- * Dynamically load a locale and its associated files (nodeDefs, commands, settings).
- * Unsupported locales are clamped to `'en'`.
+ * Dynamically load a shipped locale's bundles (nodeDefs, commands, settings).
+ * Callers must pre-resolve untrusted input via `resolveSupportedLocale` or
+ * `setActiveLocale`, which is the boundary helper for arbitrary input.
  */
-export async function loadLocale(locale: string): Promise<SupportedLocale> {
-  const resolved = resolveSupportedLocale(locale)
-  if (loadedLocales.has(resolved)) {
-    return resolved
+export async function loadLocale(locale: SupportedLocale): Promise<void> {
+  if (loadedLocales.has(locale)) {
+    return
   }
 
-  // If already loading, return the existing promise to prevent duplicate loads
-  const existingLoad = loadingLocales.get(resolved)
+  const existingLoad = loadingLocales.get(locale)
   if (existingLoad) {
     await existingLoad
-    return resolved
+    return
   }
 
-  const loaders = localeDefinitions[resolved].loaders
+  const loaders = localeDefinitions[locale].loaders
   if (!loaders) {
-    return resolved
+    return
   }
 
-  // Create and track the loading promise
   const loadPromise = (async () => {
     try {
       const [main, nodes, commands, settings] = await Promise.all([
@@ -76,23 +75,34 @@ export async function loadLocale(locale: string): Promise<SupportedLocale> {
         settings.default
       )
 
-      i18n.global.setLocaleMessage(resolved, messages as LocaleMessages)
-      loadedLocales.add(resolved)
+      i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
+      loadedLocales.add(locale)
 
-      if (customNodesI18nData[resolved]) {
-        i18n.global.mergeLocaleMessage(resolved, customNodesI18nData[resolved])
+      if (customNodesI18nData[locale]) {
+        i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
       }
     } catch (error) {
-      console.error(`Failed to load locale "${resolved}":`, error)
+      console.error(`Failed to load locale "${locale}":`, error)
       throw error
     } finally {
-      // Clean up the loading promise once complete
-      loadingLocales.delete(resolved)
+      loadingLocales.delete(locale)
     }
   })()
 
-  loadingLocales.set(resolved, loadPromise)
+  loadingLocales.set(locale, loadPromise)
   await loadPromise
+}
+
+/**
+ * Boundary helper for arbitrary locale input (settings, browser preferences):
+ * resolves to a shipped tag, loads it, and updates the active locale.
+ */
+export async function setActiveLocale(
+  input: string | readonly string[] | null | undefined
+): Promise<SupportedLocale> {
+  const resolved = resolveSupportedLocale(input)
+  await loadLocale(resolved)
+  i18n.global.locale.value = resolved
   return resolved
 }
 
@@ -114,18 +124,18 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
   }
 }
 
-// Only include English in the initial bundle
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings)
-}
+// Only include English in the initial bundle; other locales lazy-load.
+const enMessages = buildLocale(en, enNodes, enCommands, enSettings)
+type LocaleMessages = typeof enMessages
 
-// Type for locale messages - inferred from the English locale structure
-type LocaleMessages = typeof messages.en
+const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
+  en: enMessages
+}
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
-  locale: resolveSupportedLocale(navigator.language),
+  locale: getDefaultLocale(),
   fallbackLocale: 'en',
   escapeParameter: true,
   messages,

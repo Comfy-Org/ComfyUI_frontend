@@ -1,6 +1,6 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
-  resolveSupportedLocale,
+  getDefaultLocale,
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
@@ -434,7 +434,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Language',
     type: 'combo',
     options: SUPPORTED_LOCALE_OPTIONS,
-    defaultValue: () => resolveSupportedLocale(navigator.language)
+    defaultValue: getDefaultLocale
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',

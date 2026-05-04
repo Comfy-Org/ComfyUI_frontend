@@ -60,7 +60,7 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import { i18n, loadLocale } from '@/i18n'
+import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
@@ -189,14 +189,11 @@ watchEffect(() => {
 
 watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
-  if (locale) {
-    try {
-      // loadLocale clamps unsupported tags to a locale we actually ship.
-      const resolved = await loadLocale(locale)
-      i18n.global.locale.value = resolved as typeof i18n.global.locale.value
-    } catch (error) {
-      console.error(`Failed to switch to locale "${locale}":`, error)
-    }
+  if (!locale) return
+  try {
+    await setActiveLocale(locale)
+  } catch (error) {
+    console.error(`Failed to switch to locale "${locale}":`, error)
   }
 })
 
