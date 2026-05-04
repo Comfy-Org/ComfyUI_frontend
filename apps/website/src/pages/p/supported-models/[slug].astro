@@ -21,6 +21,25 @@ if (model.canonicalSlug) {
 const { displayName } = model
 const canonicalURL = new URL(`/p/supported-models/${model.slug}`, Astro.site)
 
+const dirDescriptions: Record<string, string> = {
+  diffusion_models: 'a diffusion model that generates images or video from text and image prompts',
+  checkpoints: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
+  loras: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
+  controlnet: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
+  clip_vision: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
+  vae: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
+  text_encoders: 'a text encoder that converts prompts into embeddings used to guide generation',
+  audio_encoders: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
+  upscale_models: 'an upscale model that increases image resolution while preserving or enhancing detail',
+  latent_upscale_models: 'a latent upscale model that refines latents at higher resolution before decoding',
+  style_models: 'a style model that transfers artistic style onto generated images',
+  model_patches: 'a model patch that modifies or extends the behavior of an existing base model',
+  partner_nodes: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
+}
+
+const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
+const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Hub, ready to load and customize.`
+
 const softwareAppJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -68,7 +87,7 @@ const faqJsonLd = {
       name: `What is ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `${displayName} is an AI model you can run locally in ComfyUI with full control over every parameter. ComfyUI's node-based workflow editor lets you connect ${displayName} with other models, ControlNets, and custom nodes to build any image or video pipeline you need.`
+        text: whatIsDescription
       }
     },
     {
@@ -142,7 +161,7 @@ const pageDescription = `Run ${displayName} in ComfyUI with full parameter contr
       {t('models.whatIs.heading').replace('{name}', displayName)}
     </h2>
     <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
-      {pageDescription}
+      {whatIsDescription}
     </p>
     {model.docsUrl && (
       <a

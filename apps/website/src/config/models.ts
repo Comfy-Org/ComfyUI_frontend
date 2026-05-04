@@ -57,6 +57,25 @@ export const models: readonly Model[] = (
   ...modelMetadata[m.slug]
 }))
 
+const slugSet = new Set(models.map((m) => m.slug))
+if (slugSet.size !== models.length) {
+  for (const model of models) {
+    if (models.filter((m) => m.slug === model.slug).length > 1) {
+      throw new Error(`Duplicate model slug: ${model.slug}`)
+    }
+  }
+}
+for (const model of models) {
+  if (
+    model.canonicalSlug !== undefined &&
+    (!slugSet.has(model.canonicalSlug) || model.canonicalSlug === model.slug)
+  ) {
+    throw new Error(
+      `Invalid canonicalSlug "${model.canonicalSlug}" on "${model.slug}"`
+    )
+  }
+}
+
 export function getModelBySlug(slug: string): Model | undefined {
   return models.find((m) => m.slug === slug)
 }
