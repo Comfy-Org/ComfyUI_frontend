@@ -18,7 +18,7 @@ test.describe('Properties panel - Title editing', () => {
 
   test('should enter edit mode on pencil click', async () => {
     await panel.titleEditIcon.click()
-    await expect(panel.titleInput).toBeVisible()
+    await panel.titleEditor.expectVisible()
   })
 
   test('should update node title on edit', async () => {

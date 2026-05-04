@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Desktop navigation @smoke', () => {
   test.beforeEach(async ({ page }) => {

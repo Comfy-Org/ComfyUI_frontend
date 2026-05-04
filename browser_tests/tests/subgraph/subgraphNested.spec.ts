@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { getPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 
 test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
   test.describe('Nested subgraph configure order', () => {
@@ -187,6 +188,108 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         const seedWidget = outerNode.getByLabel('seed', { exact: true })
         await comfyExpect(seedWidget).toBeVisible()
+      })
+    }
+  )
+
+  test.describe(
+    'Nested subgraph input target resolution',
+    { tag: ['@widget', '@vue-nodes'] },
+    () => {
+      const WORKFLOW = 'subgraphs/subgraph-nested-promotion'
+      const OUTER_NODE_ID = '5'
+      const INNER_SUBGRAPH_NODE_ID = '6'
+
+      test('Nested SubgraphNode promoted widgets render without resolution failures', async ({
+        comfyPage
+      }) => {
+        const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
+          comfyPage.page,
+          ['No link found', 'Failed to resolve legacy -1']
+        )
+
+        try {
+          await comfyPage.workflow.loadWorkflow(WORKFLOW)
+          await comfyPage.vueNodes.waitForNodes()
+
+          const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+          await comfyExpect(outerNode).toBeVisible()
+
+          const widgets = outerNode.getByTestId(TestIds.widgets.widget)
+          await comfyExpect(
+            widgets,
+            'asset has 4 promoted widgets on outer subgraph node'
+          ).toHaveCount(4)
+
+          expect(warnings).toEqual([])
+        } finally {
+          dispose()
+        }
+      })
+
+      test('Promoted widgets from inner SubgraphNode are visible with correct values', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+        await comfyExpect(outerNode).toBeVisible()
+
+        const widgets = outerNode.getByTestId(TestIds.widgets.widget)
+        await comfyExpect(widgets).toHaveCount(4)
+
+        const valueWidget = outerNode
+          .getByRole('textbox', { name: 'value' })
+          .first()
+        await comfyExpect(valueWidget).toBeVisible()
+        await comfyExpect(valueWidget).toHaveValue(/Inner 1/)
+      })
+
+      test('Promoted widgets from inner SubgraphNode carry correct source identity', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        await expect
+          .poll(async () => {
+            const widgets = await getPromotedWidgets(comfyPage, OUTER_NODE_ID)
+            return widgets
+              .filter(
+                ([sourceNodeId]) => sourceNodeId === INNER_SUBGRAPH_NODE_ID
+              )
+              .map(([, sourceWidgetName]) => sourceWidgetName)
+          })
+          .toContain('value')
+      })
+
+      test('Serialize and reload preserves nested promoted widget visibility', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+        const widgets = outerNode.getByTestId(TestIds.widgets.widget)
+        await comfyExpect(
+          widgets,
+          'asset has 4 promoted widgets on outer subgraph node'
+        ).toHaveCount(4)
+        const initialCount = await widgets.count()
+
+        await comfyPage.subgraph.serializeAndReload()
+        await comfyPage.vueNodes.waitForNodes()
+
+        const outerNodeAfter = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+        const widgetsAfter = outerNodeAfter.getByTestId(TestIds.widgets.widget)
+        await comfyExpect(widgetsAfter).toHaveCount(initialCount)
+
+        const valueWidget = outerNodeAfter
+          .getByRole('textbox', { name: 'value' })
+          .first()
+        await comfyExpect(valueWidget).toBeVisible()
+        await comfyExpect(valueWidget).toHaveValue(/Inner 1/)
       })
     }
   )

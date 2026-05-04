@@ -472,6 +472,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
+    "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "비디오의 첫 프레임 이미지입니다."
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "첫 프레임으로 사용할 Seedance asset_id입니다. first_frame 이미지 입력과는 상호 배타적입니다."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "비디오의 마지막 프레임 이미지입니다."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "마지막 프레임으로 사용할 Seedance asset_id입니다. last_frame 이미지 입력과는 상호 배타적입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0을 사용하여 레퍼런스 이미지, 비디오, 오디오로 비디오를 생성, 편집 또는 확장합니다. 멀티모달 레퍼런스, 비디오 편집, 비디오 확장을 지원합니다.",
+    "display_name": "ByteDance Seedance 2.0 레퍼런스에서 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "텍스트 프롬프트를 기반으로 Seedance 2.0 모델로 비디오를 생성합니다.",
+    "display_name": "ByteDance Seedance 2.0 텍스트에서 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Seedance 2.0 개인 이미지 에셋을 생성합니다. 입력 이미지를 업로드하고 지정된 에셋 그룹에 등록합니다. group_id가 비어 있으면, 새로운 그룹을 생성하기 전에 실명 인증(H5 인증)을 진행합니다.",
+    "display_name": "ByteDance 이미지 에셋 생성",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "동일 인물에 대한 반복 인증을 건너뛰기 위해 기존 Seedance 에셋 그룹 ID를 재사용합니다. 비워두면 브라우저에서 실명 인증을 진행하고 새 그룹을 생성합니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "개인 에셋으로 등록할 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Seedance 2.0 개인 비디오 에셋을 생성합니다. 입력 비디오를 업로드하고 지정된 에셋 그룹에 등록합니다. group_id가 비어 있으면, 새로운 그룹을 생성하기 전에 실명 인증(H5 인증)을 진행합니다.",
+    "display_name": "ByteDance 비디오 에셋 생성",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "동일 인물에 대한 반복 인증을 건너뛰기 위해 기존 Seedance 에셋 그룹 ID를 재사용합니다. 비워두면 브라우저에서 실명 인증을 진행하고 새 그룹을 생성합니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "개인 에셋으로 등록할 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "프롬프트와 첫 번째 및 마지막 프레임을 사용하여 비디오를 생성합니다.",
     "display_name": "ByteDance 첫-마지막-프레임에서 비디오 생성",
@@ -1358,6 +1548,36 @@
     "outputs": {
       "0": {
         "name": "rgb_정수",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "여러 알고리즘을 사용하여 한 이미지의 색상을 다른 이미지와 일치시킵니다.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "색상을 맞출 기준 이미지(들)입니다. 제공되지 않으면 처리가 건너뜁니다."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "색상 변환을 적용할 이미지(들)입니다."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: 각 프레임을 image_ref에 개별적으로 맞춥니다. uniform: 모든 소스 프레임의 통계를 풀링하여 기준선으로 사용하고, image_ref에 맞춥니다. target_frame: 선택한 한 프레임을 변환의 기준선으로 사용하여 image_ref에 일괄 적용합니다(상대적 차이 유지)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -3530,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "프레임 보간",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "배수"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "프레임 보간 모델 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "불러올 프레임 보간 모델을 선택하세요. 모델은 반드시 'frame_interpolation' 폴더에 위치해야 합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "주파수에 따라 가이던스에 스케일을 적용합니다",
     "display_name": "FreSca",
@@ -4273,6 +4526,156 @@
       },
       "tapered_corners": {
         "name": "마름모 모서리"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "HappyHorse 모델을 사용하여 첫 프레임 이미지를 기반으로 비디오를 생성합니다.",
+    "display_name": "HappyHorse 이미지 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "첫 프레임 이미지입니다. 출력 비율은 이 이미지에서 파생됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "HappyHorse 모델을 사용하여 참조 자료에서 인물 또는 객체가 등장하는 비디오를 생성합니다. 단일 캐릭터 연기와 다중 캐릭터 상호작용을 지원합니다.",
+    "display_name": "HappyHorse 참조 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "HappyHorse 모델을 사용하여 텍스트 프롬프트를 기반으로 비디오를 생성합니다.",
+    "display_name": "HappyHorse 텍스트 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "HappyHorse 모델을 사용하여 텍스트 지시문 또는 참조 이미지를 통해 비디오를 편집합니다. 출력 지속 시간은 3~15초이며 입력 비디오와 일치합니다. 15초를 초과하는 입력은 잘립니다.",
+    "display_name": "HappyHorse 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "편집할 비디오입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
       }
     },
     "outputs": {
@@ -5453,6 +5856,22 @@
       },
       "image": {
         "name": "이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "JSON에서 문자열 추출",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -11416,6 +11835,14 @@
       "control_after_generate": {
         "name": "생성 후 제어"
       },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "`size`가 'Custom'일 때만 사용됩니다. 16의 배수여야 합니다(GPT Image 2 전용)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "`size`가 'Custom'일 때만 사용됩니다. 16의 배수여야 합니다(GPT Image 2 전용)."
+      },
       "image": {
         "name": "참조 이미지",
         "tooltip": "이미지 편집을 위한 선택적 참조 이미지."
@@ -13618,6 +14045,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 감지",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "분할할 바운딩 박스"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "CLIPTextEncode의 텍스트 컨디셔닝"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "객체별 mask를 개별적으로 출력 (합집합이 아닌)"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negative_coords",
+        "tooltip": "음성 포인트 프롬프트(JSON 형식: [{\"x\": int, \"y\": int}, ...], 픽셀 좌표)"
+      },
+      "positive_coords": {
+        "name": "positive_coords",
+        "tooltip": "양성 포인트 프롬프트(JSON 형식: [{\"x\": int, \"y\": int}, ...], 픽셀 좌표)"
+      },
+      "refine_iterations": {
+        "name": "refine_iterations",
+        "tooltip": "SAM 디코더 정제 반복 횟수 (0=원시 감지자 mask 사용)"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 트랙 미리보기",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 트랙 → mask",
+    "inputs": {
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "포함할 객체 인덱스(쉼표로 구분, 예: '0,2,3'). 비워두면 모든 객체."
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 비디오 트랙",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "추적 중 새 객체 감지를 위한 텍스트 컨디셔닝"
+      },
+      "detect_interval": {
+        "name": "detect_interval",
+        "tooltip": "N 프레임마다 감지 실행 (1=매 프레임). 값이 높을수록 연산 절약."
+      },
+      "detection_threshold": {
+        "name": "detection_threshold",
+        "tooltip": "텍스트 프롬프트 감지 점수 임계값"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "비디오 프레임(배치된 이미지)"
+      },
+      "initial_mask": {
+        "name": "initial_mask",
+        "tooltip": "첫 프레임에서 추적할 mask(객체별 1개씩)"
+      },
+      "max_objects": {
+        "name": "max_objects",
+        "tooltip": "최대 추적 객체 수 (0=무제한). 초기 mask도 포함."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -13751,6 +14299,44 @@
       },
       "2": {
         "name": "잠재 이미지",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "디노이즈된 출력을 입력 latent로 끌어당깁니다. 값이 높을수록 입력에 더 충실합니다. 0은 비활성화."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "restore_cfg가 비활성화되는 시그마 임계값입니다."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "샘플링 종료 시(낮은 시그마) 강도 제어. 시작값에서 선형 보간됩니다."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "샘플링 시작 시(높은 시그마) 강도 제어."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14753,6 +15339,58 @@
       },
       "width": {
         "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloTextToMusic": {
+    "description": "Sonilo의 AI 모델을 사용하여 텍스트 프롬프트로부터 음악을 생성합니다. 지속 시간을 0으로 두면 프롬프트에서 자동으로 추론합니다.",
+    "display_name": "Sonilo 텍스트로 음악 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "목표 지속 시간(초). 0으로 설정하면 프롬프트에서 자동으로 추론합니다. 최대: 6분."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "생성할 음악을 설명하는 텍스트 프롬프트입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "재현성을 위한 시드 값입니다. 현재 Sonilo 서비스에서는 무시되지만 그래프 일관성을 위해 유지됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Sonilo의 AI 모델을 사용하여 비디오 콘텐츠로부터 음악을 생성합니다. 비디오를 분석하여 어울리는 음악을 만듭니다.",
+    "display_name": "Sonilo 비디오로 음악 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "음악 생성에 참고할 선택적 텍스트 프롬프트입니다. 비워두면 최상의 품질로 모델이 비디오 내용을 완전히 분석합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "재현성을 위한 시드 값입니다. 현재 Sonilo 서비스에서는 무시되지만 그래프 일관성을 위해 유지됩니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "음악을 생성할 입력 비디오입니다. 최대 지속 시간: 6분."
       }
     },
     "outputs": {
@@ -16025,6 +16663,10 @@
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "모델에 내장된 시스템 프롬프트/템플릿이 있으면 사용합니다."
       }
     },
     "outputs": {
@@ -16076,6 +16718,10 @@
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "모델에 내장된 시스템 프롬프트/템플릿이 있으면 사용합니다."
       }
     },
     "outputs": {
@@ -17231,6 +17877,10 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "비디오의 텍스트 설명"
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 비디오 해상도입니다. 4K는 veo-3.1-lite 및 veo-3.0 모델에서 지원되지 않습니다."
       },
       "seed": {
         "name": "시드",

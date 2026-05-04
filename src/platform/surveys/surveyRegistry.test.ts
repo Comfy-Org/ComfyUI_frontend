@@ -5,6 +5,7 @@ import type { FeatureSurveyConfig } from './useSurveyEligibility'
 import {
   FEATURE_SURVEYS,
   getEnabledSurveys,
+  getFloatingSurveys,
   getSurveyConfig
 } from './surveyRegistry'
 
@@ -70,6 +71,47 @@ describe('surveyRegistry', () => {
 
       const enabled = getEnabledSurveys()
       expect(enabled).not.toContainEqual(disabledConfig)
+    })
+  })
+
+  describe('getFloatingSurveys', () => {
+    it('includes entries without a presentation field (defaults to floating)', () => {
+      const floating = getFloatingSurveys()
+      expect(floating).toContainEqual(TEST_CONFIG)
+    })
+
+    it('includes entries with presentation: "floating"', () => {
+      const explicitFloating: FeatureSurveyConfig = {
+        featureId: '__explicit-floating__',
+        typeformId: 'form-1',
+        presentation: 'floating'
+      }
+      FEATURE_SURVEYS['__explicit-floating__'] = explicitFloating
+
+      expect(getFloatingSurveys()).toContainEqual(explicitFloating)
+    })
+
+    it('excludes entries with presentation: "inline-cta"', () => {
+      const inlineCta: FeatureSurveyConfig = {
+        featureId: '__inline__',
+        typeformId: 'form-2',
+        presentation: 'inline-cta'
+      }
+      FEATURE_SURVEYS['__inline__'] = inlineCta
+
+      expect(getFloatingSurveys()).not.toContainEqual(inlineCta)
+    })
+
+    it('excludes entries with enabled: false even when presentation is floating', () => {
+      const disabledFloating: FeatureSurveyConfig = {
+        featureId: '__disabled-floating__',
+        typeformId: 'form-3',
+        presentation: 'floating',
+        enabled: false
+      }
+      FEATURE_SURVEYS['__disabled-floating__'] = disabledFloating
+
+      expect(getFloatingSurveys()).not.toContainEqual(disabledFloating)
     })
   })
 })
