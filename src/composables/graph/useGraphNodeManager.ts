@@ -3,7 +3,8 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { effectScope, reactive, shallowReactive } from 'vue'
+import type { EffectScope } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -405,25 +406,99 @@ function buildSlotMetadata(
   return metadata
 }
 
-// Extract safe data from LiteGraph node for Vue consumption
-export function extractVueNodeData(node: LGraphNode): VueNodeData {
-  // Determine subgraph ID - null for root graph, string for subgraphs
-  const subgraphId =
-    node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
-      ? String(node.graph.id)
-      : null
-  // Extract safe widget data
-  const slotMetadata = new Map<string, WidgetSlotMetadata>()
+/**
+ * Tracks reactive instrumentation applied to a LiteGraph node.
+ * Stored in a WeakMap so entries are GC'd when the node is collected.
+ */
+interface NodeInstrumentation {
+  reactiveWidgets: IBaseWidget[]
+  reactiveInputs: INodeInputSlot[]
+  reactiveOutputs: INodeOutputSlot[]
+  originalWidgetsDescriptor: PropertyDescriptor | undefined
+  originalInputsDescriptor: PropertyDescriptor | undefined
+  originalOutputsDescriptor: PropertyDescriptor | undefined
+  scope: EffectScope
+  safeWidgets?: SafeWidgetData[]
+}
 
-  const existingWidgetsDescriptor = Object.getOwnPropertyDescriptor(
+const instrumentedNodes = new WeakMap<LGraphNode, NodeInstrumentation>()
+
+/**
+ * Restores original property descriptors on a node and stops its
+ * reactive effect scope. Called during cleanup to prevent leaked
+ * Vue reactivity objects (Link, Dep, ComputedRefImpl).
+ */
+export function uninstrumentNode(node: LGraphNode): void {
+  const inst = instrumentedNodes.get(node)
+  if (!inst) return
+
+  inst.scope.stop()
+
+  restoreDescriptor(node, 'widgets', inst.originalWidgetsDescriptor)
+  restoreDescriptor(node, 'inputs', inst.originalInputsDescriptor)
+  restoreDescriptor(node, 'outputs', inst.originalOutputsDescriptor)
+
+  instrumentedNodes.delete(node)
+}
+
+function restoreDescriptor(
+  node: LGraphNode,
+  prop: string,
+  descriptor: PropertyDescriptor | undefined
+) {
+  if (descriptor) {
+    Object.defineProperty(node, prop, descriptor)
+  } else {
+    // The property did not exist before instrumentation.
+    // If it now holds a plain data value (e.g. an array populated while
+    // instrumented), preserve it instead of deleting — otherwise lazily
+    // created widgets/inputs/outputs arrays would be silently dropped.
+    const live = Object.getOwnPropertyDescriptor(node, prop)
+    if (live && !live.get && !live.set && live.value != null) {
+      // Replace the reactive getter/setter with a plain data descriptor
+      // so the value survives without Vue reactivity overhead.
+      Object.defineProperty(node, prop, {
+        value: live.value,
+        writable: true,
+        configurable: true,
+        enumerable: true
+      })
+    } else {
+      delete (node as unknown as Record<string, unknown>)[prop]
+    }
+  }
+}
+
+/**
+ * Instruments a LiteGraph node's widgets/inputs/outputs with Vue reactive
+ * wrappers so that Vue components receive reactive data.
+ *
+ * **Idempotent**: if the node is already instrumented the existing reactive
+ * containers are reused and their contents are synced. This prevents the
+ * memory leak that occurred when repeated calls created new shallowReactive
+ * arrays, new reactiveComputed effects, and chained property descriptors
+ * without ever stopping the old effects.
+ */
+function instrumentNode(node: LGraphNode): NodeInstrumentation {
+  const existing = instrumentedNodes.get(node)
+  if (existing) return existing
+
+  const originalWidgetsDescriptor = Object.getOwnPropertyDescriptor(
     node,
     'widgets'
   )
+  const originalInputsDescriptor = Object.getOwnPropertyDescriptor(
+    node,
+    'inputs'
+  )
+  const originalOutputsDescriptor = Object.getOwnPropertyDescriptor(
+    node,
+    'outputs'
+  )
+
   const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
-  if (existingWidgetsDescriptor?.get) {
-    // Node has a custom widgets getter (e.g. SubgraphNode's synthetic getter).
-    // Preserve it but sync results into a reactive array for Vue.
-    const originalGetter = existingWidgetsDescriptor.get
+  if (originalWidgetsDescriptor?.get) {
+    const originalGetter = originalWidgetsDescriptor.get
     Object.defineProperty(node, 'widgets', {
       get() {
         const current: IBaseWidget[] = originalGetter.call(node) ?? []
@@ -435,7 +510,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
         }
         return reactiveWidgets
       },
-      set: existingWidgetsDescriptor.set ?? (() => {}),
+      set: originalWidgetsDescriptor.set ?? (() => {}),
       configurable: true,
       enumerable: true
     })
@@ -451,6 +526,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       enumerable: true
     })
   }
+
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
   Object.defineProperty(node, 'inputs', {
     get() {
@@ -462,6 +538,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     configurable: true,
     enumerable: true
   })
+
   const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
   Object.defineProperty(node, 'outputs', {
     get() {
@@ -474,16 +551,63 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     enumerable: true
   })
 
-  const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-    const widgetsSnapshot = node.widgets ?? []
+  const scope = effectScope()
 
-    const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
-    slotMetadata.clear()
-    for (const [key, value] of freshMetadata) {
-      slotMetadata.set(key, value)
-    }
-    return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
-  })
+  const inst: NodeInstrumentation = {
+    reactiveWidgets,
+    reactiveInputs,
+    reactiveOutputs,
+    originalWidgetsDescriptor,
+    originalInputsDescriptor,
+    originalOutputsDescriptor,
+    scope
+  }
+  instrumentedNodes.set(node, inst)
+  return inst
+}
+
+// Extract safe data from LiteGraph node for Vue consumption
+export function extractVueNodeData(node: LGraphNode): VueNodeData {
+  // Determine subgraph ID - null for root graph, string for subgraphs
+  const subgraphId =
+    node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
+      ? String(node.graph.id)
+      : null
+
+  const inst = instrumentNode(node)
+  const { reactiveInputs, reactiveOutputs } = inst
+
+  // Sync reactive arrays with current node state (idempotent)
+  const currentWidgets = node.widgets ?? []
+  if (
+    currentWidgets.length !== inst.reactiveWidgets.length ||
+    currentWidgets.some((w, i) => w !== inst.reactiveWidgets[i])
+  ) {
+    inst.reactiveWidgets.splice(
+      0,
+      inst.reactiveWidgets.length,
+      ...currentWidgets
+    )
+  }
+
+  // Reuse the cached reactiveComputed if it already exists on the
+  // instrumentation record; otherwise create it inside the node's
+  // effect scope so it is stopped when the node is uninstrumented.
+  if (!inst.safeWidgets) {
+    const slotMetadata = new Map<string, WidgetSlotMetadata>()
+    inst.scope.run(() => {
+      inst.safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+        const widgetsSnapshot = node.widgets ?? []
+        const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
+        slotMetadata.clear()
+        for (const [key, value] of freshMetadata) {
+          slotMetadata.set(key, value)
+        }
+        return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
+      })
+    })
+  }
+  const safeWidgets = inst.safeWidgets!
 
   const nodeType =
     node.type ||
@@ -502,7 +626,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     mode: node.mode || 0,
     titleMode: node.title_mode,
     selected: node.selected || false,
-    executing: false, // Will be updated separately based on execution state
+    executing: false,
     subgraphId,
     apiNode,
     badges,
@@ -552,9 +676,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
 
-    // Remove deleted nodes
+    // Remove deleted nodes and uninstrument them
     for (const id of Array.from(vueNodeData.keys())) {
       if (!currentNodes.has(id)) {
+        const node = nodeRefs.get(id)
+        if (node) uninstrumentNode(node)
         nodeRefs.delete(id)
         vueNodeData.delete(id)
       }
@@ -563,6 +689,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Add/update existing nodes
     graph._nodes.forEach((node) => {
       const id = String(node.id)
+      const previousNode = nodeRefs.get(id)
+      if (previousNode && previousNode !== node) {
+        uninstrumentNode(previousNode)
+      }
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
@@ -618,6 +748,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       node.onAfterGraphConfigured = useChainCallback(
         node.onAfterGraphConfigured,
         () => {
+          // Guard: if cleanup() already ran, do not recreate instrumentation.
+          if (!nodeRefs.has(id)) return
           // Re-extract data now that configure() has populated title/slots/widgets/etc.
           vueNodeData.set(id, extractVueNodeData(node))
           initializeVueNodeLayout()
@@ -648,6 +780,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
 
+    // Stop reactive effects and restore original property descriptors
+    uninstrumentNode(node)
+
     // Clean up all tracking references
     nodeRefs.delete(id)
     vueNodeData.delete(id)
@@ -671,6 +806,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       graph.onNodeAdded = originalOnNodeAdded || undefined
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
       graph.onTrigger = originalOnTrigger || undefined
+
+      // Uninstrument all tracked nodes to stop their effect scopes
+      // and restore original property descriptors
+      for (const node of nodeRefs.values()) {
+        uninstrumentNode(node)
+      }
 
       // Clear all state maps
       nodeRefs.clear()
@@ -810,8 +951,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
-        // Re-extract widget data so promotedLabel reflects the rename
-        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }
 
@@ -846,16 +985,52 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     )
   }
 
-  // Set up event listeners immediately
+  // Set up event listeners immediately.
+  // setupEventListeners() calls syncWithGraph() which populates all existing
+  // nodes. We intentionally do NOT replay onNodeAdded for existing nodes here
+  // — syncWithGraph already calls extractVueNodeData for each node, and
+  // handleNodeAdded would call it again, causing duplicate reactive
+  // instrumentation that leaked memory.
   const cleanup = setupEventListeners()
 
-  // Process any existing nodes after event listeners are set up
+  // Initialize layout for existing nodes (the part handleNodeAdded does
+  // beyond extractVueNodeData)
   if (graph._nodes && graph._nodes.length > 0) {
-    graph._nodes.forEach((node: LGraphNode) => {
-      if (graph.onNodeAdded) {
-        graph.onNodeAdded(node)
+    for (const node of graph._nodes) {
+      const id = String(node.id)
+      if (!nodeRefs.has(id)) continue
+
+      const existingLayout = layoutStore.getNodeLayoutRef(id).value
+      if (existingLayout) continue
+
+      if (window.app?.configuringGraph) {
+        node.onAfterGraphConfigured = useChainCallback(
+          node.onAfterGraphConfigured,
+          () => {
+            if (!nodeRefs.has(id)) return
+            vueNodeData.set(id, extractVueNodeData(node))
+            const nodePosition = { x: node.pos[0], y: node.pos[1] }
+            const nodeSize = { width: node.size[0], height: node.size[1] }
+            if (layoutStore.getNodeLayoutRef(id).value) return
+            setSource(LayoutSource.Canvas)
+            void createNode(id, {
+              position: nodePosition,
+              size: nodeSize,
+              zIndex: node.order || 0,
+              visible: true
+            })
+          }
+        )
+      } else {
+        setSource(LayoutSource.Canvas)
+        void createNode(id, {
+          position: { x: node.pos[0], y: node.pos[1] },
+          size: { width: node.size[0], height: node.size[1] },
+          zIndex: node.order || 0,
+          visible: true
+        })
       }
-    })
+    }
   }
 
   return {
