@@ -95,6 +95,22 @@ describe('useCanvasViewportInsets', () => {
     })
   })
 
+  it('returns zero insets when the panel element is absent', async () => {
+    panelEl.remove()
+    mockRect(canvasEl, {
+      left: 0,
+      right: 1920,
+      top: 0,
+      bottom: 1080,
+      width: 1920,
+      height: 1080
+    })
+
+    const insets = await load()
+    await nextTick()
+    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
+  })
+
   it('clamps negative differences to zero', async () => {
     mockRect(canvasEl, {
       left: 100,

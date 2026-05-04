@@ -24,12 +24,17 @@ export function useCanvasViewportInsets(): ComputedRef<ViewportInsets> {
     document.querySelector<HTMLElement>('.graph-canvas-panel')
   )
 
-  shared = computed<ViewportInsets>(() => ({
-    left: Math.max(0, panel.left.value - canvas.left.value),
-    right: Math.max(0, canvas.right.value - panel.right.value),
-    top: Math.max(0, panel.top.value - canvas.top.value),
-    bottom: Math.max(0, canvas.bottom.value - panel.bottom.value)
-  }))
+  shared = computed<ViewportInsets>(() => {
+    const panelMissing = panel.width.value === 0 && panel.height.value === 0
+    if (panelMissing) return { left: 0, right: 0, top: 0, bottom: 0 }
+
+    return {
+      left: Math.max(0, panel.left.value - canvas.left.value),
+      right: Math.max(0, canvas.right.value - panel.right.value),
+      top: Math.max(0, panel.top.value - canvas.top.value),
+      bottom: Math.max(0, canvas.bottom.value - panel.bottom.value)
+    }
+  })
 
   return shared
 }
