@@ -93,7 +93,7 @@ import { warnDeprecated } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
-import { toConcreteWidget } from './widgets/widgetMap'
+import { isNumericWidget, toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
@@ -920,19 +920,11 @@ export class LGraphNode
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
           const incoming = info.widgets_values[i++]
-          const isNumeric = [
-            'number',
-            'slider',
-            'gradientslider',
-            'knob'
-          ].includes(widget.type)
           const isInvalid =
-            incoming === null ||
-            incoming === undefined ||
+            incoming == null ||
             (typeof incoming === 'number' && !Number.isFinite(incoming))
-          if (!(isNumeric && isInvalid)) {
-            widget.value = incoming
-          }
+          if (isNumericWidget(widget) && isInvalid) continue
+          widget.value = incoming
         }
       }
     }

@@ -1,12 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
+// Mirrors JSON.stringify(NaN) === "null" — the real source of null in workflows.
+const roundTrip = <T>(v: T): T => JSON.parse(JSON.stringify(v))
+
 function serialisedNode(
-  overrides: Partial<ISerialisedNode> = {}
+  overrides: Partial<Omit<ISerialisedNode, 'widgets_values'>> & {
+    widgets_values?: unknown[]
+  } = {}
 ): ISerialisedNode {
   return {
     id: 1,
@@ -17,24 +20,20 @@ function serialisedNode(
     order: 0,
     mode: 0,
     ...overrides
-  }
+  } as ISerialisedNode
 }
 
 describe('LGraphNode.configure numeric widget sanitization', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     node = new LGraphNode('TestNode')
   })
 
   it('preserves default when widgets_values contains null for a number widget', () => {
     node.addWidget('number', 'seed', 42, null, {})
 
-    // null can appear in widgets_values after JSON round-trip of NaN
-    node.configure(
-      serialisedNode({ widgets_values: [null] as unknown[] as number[] })
-    )
+    node.configure(serialisedNode({ widgets_values: roundTrip([NaN]) }))
 
     expect(node.widgets![0].value).toBe(42)
   })
@@ -59,20 +58,31 @@ describe('LGraphNode.configure numeric widget sanitization', () => {
   it('preserves default when widgets_values contains null for a gradientslider widget', () => {
     node.addWidget('gradientslider', 'denoise', 0.75, null, {})
 
-    node.configure(
-      serialisedNode({ widgets_values: [null] as unknown[] as number[] })
-    )
+    node.configure(serialisedNode({ widgets_values: roundTrip([NaN]) }))
 
     expect(node.widgets![0].value).toBe(0.75)
   })
 
   it('does not sanitize null for non-numeric widget types', () => {
+    // TODO: null from a serialized workflow probably should not clobber text
+    // widgets either; this test documents the current intentional scope limit.
     node.addWidget('text', 'prompt', 'default text', null, {})
 
-    node.configure(
-      serialisedNode({ widgets_values: [null] as unknown[] as string[] })
-    )
+    node.configure(serialisedNode({ widgets_values: [null] }))
 
     expect(node.widgets![0].value).toBeNull()
+  })
+
+  it('preserves correct slot ordering when a non-serialized widget precedes a sanitized numeric widget', () => {
+    // widget A has serialize:false and must not consume a slot in widgets_values
+    const widgetA = node.addWidget('text', 'label', 'hello', null, {})
+    widgetA.serialize = false
+    node.addWidget('number', 'seed', 42, null, {})
+
+    // widgets_values has one entry — for the number widget only
+    node.configure(serialisedNode({ widgets_values: roundTrip([NaN]) }))
+
+    expect(node.widgets![0].value).toBe('hello') // non-serialized, untouched
+    expect(node.widgets![1].value).toBe(42) // sanitized, default preserved
   })
 })
