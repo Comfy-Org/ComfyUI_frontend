@@ -17,6 +17,10 @@ function expectedCredits(usd: number): string {
   return (usd * CREDITS_PER_USD).toLocaleString('en-US')
 }
 
+function expectedCreditsInput(usd: number): string {
+  return expectedCredits(usd).replaceAll(',', '')
+}
+
 test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
   let dialog: TopUpCreditsDialog
 
@@ -131,7 +135,7 @@ test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
   })
 
   test('typing in credits stepper updates pay', async () => {
-    const credits = String(50 * CREDITS_PER_USD)
+    const credits = expectedCreditsInput(50)
 
     await dialog.creditsInput.fill('')
     await dialog.creditsInput.pressSequentially(credits)
