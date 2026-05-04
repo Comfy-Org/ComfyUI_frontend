@@ -1,0 +1,158 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
+import { models, getModelBySlug } from '../../../config/models'
+import { t } from '../../../i18n/translations'
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return models.map((model) => ({
+    params: { slug: model.slug }
+  }))
+}
+
+const { slug } = Astro.params
+const model = getModelBySlug(slug as string)!
+
+if (model.canonicalSlug) {
+  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}`, 301)
+}
+
+const { displayName } = model
+const canonicalURL = new URL(`/p/supported-models/${model.slug}`, Astro.site)
+
+const softwareAppJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: displayName,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+  url: canonicalURL.href,
+  author: {
+    '@type': 'Organization',
+    name: 'Comfy Org',
+    url: 'https://comfy.org'
+  }
+}
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: t('models.breadcrumb.home'),
+      item: 'https://comfy.org'
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: t('models.breadcrumb.models'),
+      item: 'https://comfy.org/p/supported-models'
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: displayName
+    }
+  ]
+}
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: `What is ${displayName}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${displayName} is an AI model supported in ComfyUI.`
+      }
+    },
+    {
+      '@type': 'Question',
+      name: `How do I use ${displayName} in ComfyUI?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: model.docsUrl
+          ? `Follow the step-by-step tutorial at ${model.docsUrl}.`
+          : `Open ComfyUI, find "${displayName}" in the model browser, and load it into your workflow.`
+      }
+    },
+    {
+      '@type': 'Question',
+      name: `How many ComfyUI workflows use ${displayName}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${model.workflowCount} community workflow templates use ${displayName}.`
+      }
+    }
+  ]
+}
+
+const pageTitle = `${displayName} in ComfyUI`
+const pageDescription = `Run ${displayName} in ComfyUI. ${model.workflowCount} workflow templates, step-by-step tutorials, and full model control.`
+---
+
+<BaseLayout
+  title={`${pageTitle} — Comfy`}
+  description={pageDescription}
+  ogImage={model.thumbnailUrl}
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(softwareAppJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(faqJsonLd)}
+    />
+  </Fragment>
+
+  <ModelHeroSection
+    slug={model.slug}
+    displayName={displayName}
+    huggingFaceUrl={model.huggingFaceUrl}
+    docsUrl={model.docsUrl}
+    blogUrl={model.blogUrl}
+    workflowCount={model.workflowCount}
+    directory={model.directory}
+  />
+
+  <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+    <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
+      {t('models.whatIs.heading').replace('{name}', displayName)}
+    </h2>
+    <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
+      {pageDescription}
+    </p>
+    {model.docsUrl && (
+      <a
+        href={model.docsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
+      >
+        {t('models.whatIs.tutorialLink')}
+      </a>
+    )}
+  </section>
+
+  <section>
+    {/* TODO: workflow gallery — pulls from hub API */}
+  </section>
+
+  <section>
+    {/* TODO: shared HowComfyWorks component */}
+  </section>
+</BaseLayout>
