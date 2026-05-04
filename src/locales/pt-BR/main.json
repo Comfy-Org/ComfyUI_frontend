@@ -99,6 +99,7 @@
     "findInLibrary": "Encontre na seção {type} da biblioteca de modelos.",
     "finish": "Concluir",
     "genericLinkPlaceholder": "Cole o link aqui",
+    "gridView": "Visualização em grade",
     "importAnother": "Importar outro",
     "imported": "Importado",
     "invalidAsset": "Ativo inválido",
@@ -106,6 +107,7 @@
     "invalidFilename": "Nome de arquivo inválido",
     "invalidFilenameDetail": "Não foi possível determinar o nome do arquivo do ativo. Por favor, tente novamente.",
     "jobId": "ID do trabalho",
+    "listView": "Visualização em lista",
     "loadingModels": "Carregando {type}...",
     "maxFileSize": "Tamanho máximo do arquivo: {size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "Padrão",
     "sortPopular": "Popular",
     "sortRecent": "Recentes",
+    "sortUnsorted": "Sem ordenação",
     "sortZA": "Z-A",
     "sortingType": "Tipo de ordenação",
     "tags": "Tags",
@@ -332,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "App",
+    "blueprint": "Blueprint",
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
@@ -457,6 +461,12 @@
       "wantToRun": "Prefere rodar o ComfyUI localmente?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Por favor, escolha uma opção.",
+        "describeAnswer": "Por favor, descreva sua resposta.",
+        "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
+      },
+      "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Usuário avançado (fluxos de trabalho personalizados)",
@@ -465,45 +475,43 @@
           "new": "Novo no ComfyUI (nunca usei antes)",
           "starting": "Começando agora (seguindo tutoriais)"
         },
-        "industry": {
-          "architecture": "Arquitetura",
-          "education": "Educação",
-          "film_tv_animation": "Filmes, TV e animação",
-          "fine_art": "Belas artes e ilustração",
-          "gaming": "Jogos",
-          "marketing": "Marketing e publicidade",
-          "other": "Outro",
-          "otherPlaceholder": "Por favor, especifique",
-          "product_design": "Design de produto e gráfico",
-          "software": "Software e tecnologia"
-        },
-        "making": {
-          "3d": "Assets 3D",
+        "intent": {
+          "3d_game": "Assets 3D / assets para jogos",
+          "api": "Endpoints de API para executar workflows",
+          "apps": "Apps simplificados a partir de workflows",
           "audio": "Áudio / música",
-          "custom_nodes": "Nós e fluxos de trabalho personalizados",
+          "custom_nodes": "Nodes personalizados",
           "images": "Imagens",
-          "video": "Vídeo e animação"
+          "not_sure": "Não tenho certeza",
+          "videos": "Vídeos",
+          "workflows": "Workflows ou pipelines personalizados"
         },
-        "purpose": {
-          "client": "Trabalho para clientes (freelancer)",
-          "community": "Contribuições para a comunidade (nós, fluxos de trabalho, etc.)",
-          "inhouse": "No meu próprio local de trabalho (interno)",
-          "personal": "Projetos pessoais / hobby",
-          "research": "Pesquisa acadêmica"
+        "source": {
+          "conference": "Conferência ou evento",
+          "discord": "Discord / comunidade",
+          "friend": "Amigo ou colega",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter ou blog",
+          "other": "Outro",
+          "reddit": "Reddit",
+          "search": "Google / busca",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Educação (estudante ou educador)",
+          "personal": "Uso pessoal",
+          "work": "Trabalho"
         }
       },
       "placeholder": "Espaço reservado para perguntas da pesquisa",
-      "questions": {
-        "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "industry": "Qual é o seu setor principal?",
-        "making": "O que você planeja criar?",
-        "purpose": "Para que você pretende usar principalmente o ComfyUI?"
-      },
       "steps": {
         "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "industry": "Qual é o seu setor principal?",
-        "making": "O que você planeja criar?",
-        "purpose": "Para que você pretende usar principalmente o ComfyUI?"
+        "intent": "O que você deseja criar com o ComfyUI?",
+        "source": "Onde você ouviu falar do ComfyUI?",
+        "usage": "Como você pretende usar o ComfyUI?"
       },
       "title": "Pesquisa da Nuvem"
     }
@@ -518,9 +526,9 @@
   "cloudStart_title": "comece a criar em segundos",
   "cloudStart_wantToRun": "Prefere rodar o ComfyUI localmente?",
   "cloudSurvey_steps_familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-  "cloudSurvey_steps_industry": "Qual é o seu setor principal?",
-  "cloudSurvey_steps_making": "O que você planeja criar?",
-  "cloudSurvey_steps_purpose": "Para que você pretende usar principalmente o ComfyUI?",
+  "cloudSurvey_steps_intent": "O que você deseja criar com o ComfyUI?",
+  "cloudSurvey_steps_source": "Onde você ouviu falar do ComfyUI?",
+  "cloudSurvey_steps_usage": "Como você pretende usar o ComfyUI?",
   "cloudWaitlist_contactLink": "aqui",
   "cloudWaitlist_questionsText": "Dúvidas? Entre em contato conosco",
   "color": {
@@ -584,6 +592,8 @@
     "publishButton": "Publicar no ComfyHub",
     "publishFailedDescription": "Algo deu errado ao publicar seu fluxo de trabalho. Por favor, tente novamente.",
     "publishFailedTitle": "Falha ao publicar",
+    "publishSuccessDescription": "Seu fluxo de trabalho está agora disponível no ComfyHub.",
+    "publishSuccessTitle": "Publicado com sucesso",
     "removeExampleImage": "Remover imagem de exemplo",
     "selectAThumbnail": "Selecione uma miniatura",
     "shareAs": "Compartilhar como",
@@ -805,6 +815,7 @@
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
+    "INTERP_MODEL": "MODELO_INTERP",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERAÇÃO LATENT",
     "LATENT_UPSCALE_MODEL": "MODELO DE AUMENTO DE LATENT",
@@ -832,6 +843,7 @@
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
     "RETARGET_TASK_ID": "ID DA TAREFA DE REDIRECIONAMENTO",
     "RIG_TASK_ID": "ID DA TAREFA DE RIG",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "AMOSTRADOR",
     "SIGMAS": "SIGMAS",
     "STRING": "TEXTO",
@@ -910,6 +922,10 @@
     "showMissingNodes": "Mostrar nós ausentes",
     "showSwapNodes": "Mostrar nós alternativos",
     "swapNodes": "Alguns nós podem ser substituídos por alternativas"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Enviar feedback",
+    "ctaText": "O que achou do novo painel de erros?"
   },
   "essentials": {
     "batchImage": "Imagem em lote",
@@ -996,13 +1012,16 @@
     "back": "Voltar",
     "batchRename": "Renomear em lote",
     "beta": "BETA",
+    "blueprints": "Modelos",
     "bookmark": "Salvar na biblioteca",
+    "bookmarked": "Favoritos",
     "browserReservedKeybinding": "Este atalho é reservado por alguns navegadores e pode ter resultados inesperados.",
     "browserReservedKeybindingTooltip": "Este atalho entra em conflito com atalhos reservados do navegador",
     "calculatingDimensions": "Calculando dimensões",
     "cancel": "Cancelar",
     "cancelled": "Cancelado",
     "capture": "capturar",
+    "categories": "Categorias",
     "category": "Categoria",
     "changeKeybinding": "Alterar atalho",
     "chart": "Gráfico",
@@ -1214,13 +1233,16 @@
     "nothingToDelete": "Nada para excluir",
     "nothingToDuplicate": "Nada para duplicar",
     "nothingToRename": "Nada para renomear",
+    "off": "Desligado",
     "ok": "OK",
+    "on": "Ligado",
     "openManager": "Abrir gerenciador",
     "openNewIssue": "Abrir novo problema",
     "or": "ou",
     "output": "Saída",
     "overwrite": "Sobrescrever",
     "partner": "Parceiro",
+    "partnerNodes": "Nós Parceiros",
     "pause": "Pausar",
     "play": "Reproduzir",
     "playPause": "Reproduzir/Pausar",
@@ -1641,7 +1663,16 @@
     "exportModel": "Exportar Modelo",
     "exportRecording": "Exportar Gravação",
     "exportingModel": "Exportando modelo...",
+    "fitToViewer": "Ajustar ao Visualizador",
     "fov": "Campo de Visão (FOV)",
+    "gizmo": {
+      "label": "Gizmo",
+      "reset": "Redefinir Transformação",
+      "rotate": "Rotacionar",
+      "scale": "Escalar",
+      "toggle": "Alternar Gizmo",
+      "translate": "Mover"
+    },
     "hdri": {
       "changeFile": "Alterar HDRI",
       "intensity": "Intensidade",
@@ -1808,6 +1839,10 @@
     "gettingInfo": "Obtendo informações...",
     "importFailedGenericError": "Falha ao importar o pacote. Verifique o console para mais detalhes.",
     "inWorkflow": "No Workflow",
+    "incompatibleVersion": {
+      "message": "Por favor, atualize o ComfyUI-Manager para a versão 4.2.1 ou superior.\n• Desktop: Atualize o aplicativo ComfyUI Desktop\n• Standalone: Execute pip install -U comfyui-manager e reinicie\nSaiba mais: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Atualização do ComfyUI-Manager necessária"
+    },
     "infoPanelEmpty": "Clique em um item para ver as informações",
     "installAllMissingNodes": "Instalar Todos",
     "installError": "Erro de Instalação",
@@ -2228,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2236,6 +2270,7 @@
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
+    "Sonilo": "Sonilo",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
     "Tencent": "Tencent",
@@ -2309,6 +2344,7 @@
     "stable_cascade": "stable_cascade",
     "string": "string",
     "style_model": "modelo_de_estilo",
+    "supir": "supir",
     "text": "texto",
     "textgen": "textgen",
     "training": "treinamento",
@@ -2495,6 +2531,8 @@
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "bypass": "Ignorar",
     "color": "Cor do nó",
+    "editSubgraph": "Editar subgrafo",
+    "editTitle": "Editar título",
     "enterSubgraph": "Entrar no subgrafo",
     "errorHelp": "Para mais ajuda, {github} ou {support}",
     "errorHelpGithub": "enviar um issue no GitHub",
@@ -2576,6 +2614,9 @@
       "metadataFetchFailed": "Falha ao obter metadados. Verifique o link e tente novamente.",
       "missingModelsTitle": "Modelos Ausentes",
       "or": "OU",
+      "refresh": "Atualizar",
+      "refreshFailed": "Falha ao atualizar modelos ausentes. Por favor, tente novamente.",
+      "refreshing": "Atualizando modelos ausentes.",
       "typeMismatch": "Este modelo parece ser um \"{detectedType}\". Tem certeza?",
       "unknownCategory": "Desconhecido",
       "unsupportedUrl": "Apenas URLs do Civitai e Hugging Face são suportadas.",
@@ -3457,7 +3498,9 @@
     "failedToPurchaseCredits": "Falha ao comprar créditos: {error}",
     "failedToQueue": "Falha ao enfileirar",
     "failedToSaveDraft": "Falha ao salvar o rascunho do fluxo de trabalho",
+    "failedToSetGizmoMode": "Falha ao definir o modo do gizmo",
     "failedToToggleCamera": "Falha ao alternar câmera",
+    "failedToToggleGizmo": "Falha ao alternar o gizmo",
     "failedToToggleGrid": "Falha ao alternar grade",
     "failedToUpdateBackgroundColor": "Falha ao atualizar cor de fundo",
     "failedToUpdateBackgroundImage": "Falha ao atualizar imagem de fundo",
@@ -3479,6 +3522,7 @@
     "no3dScene": "Nenhuma cena 3D para aplicar textura",
     "no3dSceneToExport": "Nenhuma cena 3D para exportar",
     "noTemplatesToExport": "Nenhum template para exportar",
+    "nodeDefinitionsUpdateFailed": "Falha ao atualizar definições de nós",
     "nodeDefinitionsUpdated": "Definições de nós atualizadas",
     "nothingSelected": "Nada selecionado",
     "nothingToGroup": "Nada para agrupar",

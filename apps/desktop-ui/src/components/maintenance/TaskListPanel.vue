@@ -76,7 +76,7 @@ const executeTask = async (task: MaintenanceTask) => {
 
     message = t('maintenance.error.taskFailed')
   } catch (error) {
-    message = (error as Error)?.message
+    message = error instanceof Error ? error.message : undefined
   }
 
   toast.add({

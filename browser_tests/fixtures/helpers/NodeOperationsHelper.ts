@@ -1,6 +1,10 @@
 import type { Locator } from '@playwright/test'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  GraphAddOptions,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyWorkflowJSON,
   NodeId
@@ -37,6 +41,48 @@ export class NodeOperationsHelper {
         ).length || 0
       )
     })
+  }
+
+  async getSelectedNodeIds(): Promise<NodeId[]> {
+    return await this.page.evaluate(() => {
+      const selected = window.app?.canvas?.selected_nodes
+      if (!selected) return []
+      return Object.keys(selected).map(Number)
+    })
+  }
+
+  /**
+   * Add a node to the graph by type.
+   * @param type - The node type (e.g. 'KSampler', 'VAEDecode')
+   * @param options - GraphAddOptions (ghost, skipComputeOrder). When ghost is
+   *   true and position is provided, a synthetic MouseEvent is created as the
+   *   dragEvent.
+   * @param position - When ghost is true, client coordinates for the ghost
+   *   placement dragEvent. Otherwise, world coordinates assigned to node.pos.
+   */
+  async addNode(
+    type: string,
+    options?: Omit<GraphAddOptions, 'dragEvent'>,
+    position?: Position
+  ): Promise<NodeReference> {
+    const id = await this.page.evaluate(
+      ([nodeType, opts, pos]) => {
+        const node = window.LiteGraph!.createNode(nodeType)!
+        const addOpts: Record<string, unknown> = { ...opts }
+        if (opts?.ghost && pos) {
+          addOpts.dragEvent = new MouseEvent('click', {
+            clientX: pos.x,
+            clientY: pos.y
+          })
+        } else if (pos) {
+          node.pos = [pos.x, pos.y]
+        }
+        window.app!.graph.add(node, addOpts as GraphAddOptions)
+        return node.id
+      },
+      [type, options ?? {}, position ?? null] as const
+    )
+    return new NodeReference(id, this.comfyPage)
   }
 
   /** Remove all nodes from the graph and clean. */

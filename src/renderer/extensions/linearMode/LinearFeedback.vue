@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { side, widgetId } = defineProps<{
   side: 'left' | 'right'
