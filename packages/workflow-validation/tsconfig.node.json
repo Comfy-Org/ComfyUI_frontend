@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist/.tsnode",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  },
+  "include": ["vite.config.mts"]
+}
