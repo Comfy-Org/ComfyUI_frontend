@@ -24,7 +24,7 @@ apps/website/scripts/process-videos.sh \
 
 For each source video at `./video-sources/foo.mp4`, you get:
 
-```
+```text
 foo-640.webm   foo-640.mp4
 foo-960.webm   foo-960.mp4
 foo-1280.webm  foo-1280.mp4
