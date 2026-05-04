@@ -74,11 +74,11 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSlug: 'hunyuan-3d',
     featured: true
   },
-  'vidu': {
+  vidu: {
     hubSlug: 'vidu',
     featured: true
   },
-  'runway': {
+  runway: {
     hubSlug: 'runway',
     featured: true
   },
@@ -98,7 +98,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSlug: 'luma',
     featured: false
   },
-  'moonvalley': {
+  moonvalley: {
     hubSlug: 'moonvalley',
     featured: false
   },
@@ -106,7 +106,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSlug: 'magnific',
     featured: false
   },
-  'pixverse': {
+  pixverse: {
     hubSlug: 'pixverse',
     featured: false
   },
@@ -114,7 +114,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSlug: 'rodin',
     featured: false
   },
-  'recraft': {
+  recraft: {
     hubSlug: 'recraft',
     featured: false
   },
@@ -126,11 +126,11 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSlug: 'topaz',
     featured: false
   },
-  'wavespeed': {
+  wavespeed: {
     hubSlug: 'wavespeed',
     featured: false
   },
-  'ideogram': {
+  ideogram: {
     hubSlug: 'ideogram',
     featured: false
   },
