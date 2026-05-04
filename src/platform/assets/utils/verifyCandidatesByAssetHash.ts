@@ -8,10 +8,7 @@ import { isAbortError } from '@/utils/typeGuardUtil'
  * Returns true when the status fully resolves the group; false leaves the group
  * for the caller's fallback path.
  */
-export type ApplyAssetHashStatus<T> = (
-  status: AssetHashStatus,
-  group: T[]
-) => boolean
+type ApplyAssetHashStatus<T> = (status: AssetHashStatus, group: T[]) => boolean
 
 /**
  * Verifies grouped candidates against the asset hash endpoint in parallel.
