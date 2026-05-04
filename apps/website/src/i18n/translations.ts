@@ -735,6 +735,68 @@ const translations = {
     'zh-CN': '免费试用 COMFY CLOUD'
   },
 
+  'cloudNodes.hero.label': {
+    en: 'CLOUD NODES',
+    'zh-CN': '云端节点目录'
+  },
+  'cloudNodes.hero.heading': {
+    en: 'Custom nodes on Comfy Cloud',
+    'zh-CN': 'Comfy Cloud 上的自定义节点'
+  },
+  'cloudNodes.hero.body': {
+    en: 'Browse custom-node packs currently supported on Comfy Cloud, with pack metadata and included node lists.',
+    'zh-CN':
+      '浏览当前在 Comfy Cloud 上可用的自定义节点包，查看每个节点包的概览信息与包含节点。'
+  },
+  'cloudNodes.section.heading': {
+    en: 'Supported custom-node packs',
+    'zh-CN': '已支持的自定义节点包'
+  },
+  'cloudNodes.search.placeholder': {
+    en: 'Search packs or nodes',
+    'zh-CN': '搜索节点包或节点名称'
+  },
+  'cloudNodes.sort.mostNodes': {
+    en: 'Most nodes',
+    'zh-CN': '按节点数量'
+  },
+  'cloudNodes.sort.az': {
+    en: 'A → Z',
+    'zh-CN': '按名称 A → Z'
+  },
+  'cloudNodes.sort.recentlyUpdated': {
+    en: 'Recently updated',
+    'zh-CN': '最近更新'
+  },
+  'cloudNodes.empty.heading': {
+    en: 'No matching packs',
+    'zh-CN': '未找到匹配的节点包'
+  },
+  'cloudNodes.empty.body': {
+    en: 'Try a different search term or clear your filters.',
+    'zh-CN': '试试其他关键词，或清空筛选条件。'
+  },
+  'cloudNodes.card.nodeCountOne': {
+    en: '{count} node',
+    'zh-CN': '{count} 个节点'
+  },
+  'cloudNodes.card.nodeCountOther': {
+    en: '{count} nodes',
+    'zh-CN': '{count} 个节点'
+  },
+  'cloudNodes.card.viewRepo': {
+    en: 'View repository',
+    'zh-CN': '查看仓库'
+  },
+  'cloudNodes.card.unavailableDescription': {
+    en: 'Description unavailable.',
+    'zh-CN': '暂无描述信息。'
+  },
+  'cloudNodes.card.nodesHeading': {
+    en: 'Included nodes',
+    'zh-CN': '包含节点'
+  },
+
   // Cloud – ReasonSection
   'cloud.reason.heading': {
     en: 'Why\nprofessionals\nchoose ',

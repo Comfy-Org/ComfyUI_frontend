@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
+import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
+import { fetchCloudNodesForBuild } from '../../../utils/cloudNodes'
+import { reportCloudNodesOutcome } from '../../../utils/cloudNodes.ci'
+
+const outcome = await fetchCloudNodesForBuild()
+reportCloudNodesOutcome(outcome)
+
+if (outcome.status === 'failed') {
+  throw new Error(
+    `Cloud nodes fetch failed and no snapshot is available. Reason: ${outcome.reason}. ` +
+      'Run `pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot` locally and commit the snapshot.'
+  )
+}
+
+const packs = outcome.snapshot.packs
+---
+
+<BaseLayout
+  title="Comfy Cloud 上的自定义节点 — Comfy"
+  description="浏览 Comfy Cloud 支持的自定义节点包，查看包信息与包含的节点。"
+>
+  <HeroSection locale="zh-CN" client:visible />
+  <PackGridSection locale="zh-CN" packs={packs} client:visible />
+</BaseLayout>
