@@ -1,6 +1,14 @@
 import '@testing-library/jest-dom/vitest'
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 import 'vue'
+
+import { resetWorldInstance } from '@/world/worldInstance'
+
+// The World is a module-level singleton; reset it between tests so widget
+// state registered via the widgetValueStore facade does not leak across tests.
+beforeEach(() => {
+  resetWorldInstance()
+})
 
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
 vi.mock('@sparkjsdev/spark', () => ({
