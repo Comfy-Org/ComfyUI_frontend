@@ -13,52 +13,26 @@ jobs:
       issues: write
 
     steps:
+      - name: Fetch model labels from hub API
+        id: hub
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://comfy.org/api/hub/labels?type=model' -o hub-labels.json
+          echo "Fetched $(jq '.labels | length' hub-labels.json) model labels from hub"
+
       - name: Checkout ComfyUI_frontend
         uses: actions/checkout@v6
         with:
-          path: ComfyUI_frontend
+          sparse-checkout: apps/website/src/config/generated-models.json
 
-      - name: Checkout workflow_templates
-        uses: actions/checkout@v6
-        with:
-          repository: Comfy-Org/workflow_templates
-          path: workflow_templates
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-        with:
-          version: latest
-          run_install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: ComfyUI_frontend
-
-      - name: Run model discovery script
-        run: pnpm tsx apps/website/scripts/generate-models.ts out.json
-        working-directory: ComfyUI_frontend
-        env:
-          WORKFLOW_TEMPLATES_PATH: ${{ github.workspace }}/workflow_templates
-
-      - name: Compare against existing models config
+      - name: Compare against existing models
         id: compare
         shell: bash
         run: |
           set -euo pipefail
-          cd ComfyUI_frontend
 
-          NEW_SLUGS=$(node -e "
-            const fs = require('fs');
-            const models = JSON.parse(fs.readFileSync('out.json', 'utf8'));
-            const arr = Array.isArray(models) ? models : Object.values(models);
-            const slugs = arr.map(m => m.slug).filter(Boolean);
-            console.log(JSON.stringify(slugs));
-          ")
+          HUB_SLUGS=$(jq -r '[.labels[].name]' hub-labels.json)
 
           EXISTING_SLUGS=$(node -e "
             const fs = require('fs');
@@ -68,30 +42,44 @@ jobs:
                 'utf8'
               )
             );
-            const slugs = models.map(m => m.slug).filter(Boolean);
-            console.log(JSON.stringify(slugs));
+            console.log(JSON.stringify(models.map(m => m.slug)));
           " 2>/dev/null || echo '[]')
 
           ADDED_SLUGS=$(node -e "
-            const newSlugs = $NEW_SLUGS;
-            const existing = $EXISTING_SLUGS;
-            const existingSet = new Set(existing);
-            const added = newSlugs.filter(s => !existingSet.has(s));
-            console.log(JSON.stringify(added));
+            const hub = $HUB_SLUGS;
+            const existing = new Set($EXISTING_SLUGS);
+            console.log(JSON.stringify(hub.filter(s => !existing.has(s))));
           ")
 
           COUNT=$(node -e "console.log($ADDED_SLUGS.length)")
-          echo "new_count=$COUNT" >> $GITHUB_OUTPUT
-          echo "new_slugs=$ADDED_SLUGS" >> $GITHUB_OUTPUT
+          echo "new_count=$COUNT" >> \$GITHUB_OUTPUT
+          echo "new_slugs=$ADDED_SLUGS" >> \$GITHUB_OUTPUT
 
-          if [ "$COUNT" -eq 0 ]; then
+          if [ "\$COUNT" -eq 0 ]; then
             echo "No new models found."
           else
-            echo "Found $COUNT new model(s): $ADDED_SLUGS"
+            echo "Found \$COUNT new model(s)"
           fi
 
-      - name: Open GitHub issue for new models
+      - name: Check for existing open discovery issue
+        id: existing_issue
         if: steps.compare.outputs.new_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          COUNT=$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --search 'in:title "New models detected"' \
+            --json number \
+            --jq 'length')
+          echo "open_count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Open GitHub issue for new models
+        if: |
+          steps.compare.outputs.new_count != '0' &&
+          steps.existing_issue.outputs.open_count == '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_SLUGS: ${{ steps.compare.outputs.new_slugs }}
@@ -106,10 +94,10 @@ jobs:
           gh issue create \
             --repo "$GITHUB_REPOSITORY" \
             --title "New models detected — add to model pages" \
-            --body "## $NEW_COUNT new model(s) found in workflow_templates
+            --body "## $NEW_COUNT new model(s) found in hub
 
-          The weekly model discovery scan found models not yet in
-          \`apps/website/src/config/models.ts\`.
+          The weekly model discovery scan found model labels on the hub not yet in
+          \`apps/website/src/config/generated-models.json\`.
 
           ### New slugs ($NEW_COUNT)
 
@@ -118,11 +106,17 @@ jobs:
           ### Next steps
 
           1. Review which of these warrant an SEO model page
-          2. Run \`pnpm tsx apps/website/scripts/generate-models.ts\` locally
-          3. Add entries to \`apps/website/src/config/models.ts\` via PR
+          2. For local models: run \`SKIP_THUMBNAILS=1 pnpm generate:models\` and commit the result
+          3. For partner/API models: add to \`API_PROVIDER_MAP\` in \`generate-models.ts\`, regenerate, commit
 
           ---
           *Generated by the [model-page-discovery workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/model-page-discovery.yaml)*"
+
+      - name: Skip — open issue already exists
+        if: |
+          steps.compare.outputs.new_count != '0' &&
+          steps.existing_issue.outputs.open_count != '0'
+        run: echo "An open discovery issue already exists — skipping creation."
 
       - name: No new models found
         if: steps.compare.outputs.new_count == '0'
