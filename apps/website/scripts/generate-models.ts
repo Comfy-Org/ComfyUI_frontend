@@ -38,6 +38,7 @@ interface OutputModel {
   directory: string
   workflowCount: number
   displayName: string
+  docsUrl?: string
   thumbnailUrl?: string
   canonicalSlug?: string
 }
@@ -178,6 +179,87 @@ function extractApiModels(files: string[]): ApiModelData[] {
   })
 }
 
+// Reads all locale index.json files to build a map of
+// raw model filename → tutorialUrl. Index entries name the template file;
+// that file's embedded model objects give the actual filenames.
+function buildTutorialUrlMap(templatesDir: string): Map<string, string> {
+  const map = new Map<string, string>()
+  const indexFiles = readdirSync(templatesDir).filter(
+    (f) =>
+      f.startsWith('index') &&
+      f.endsWith('.json') &&
+      !f.includes('schema') &&
+      !f.includes('logo')
+  )
+  // Collect template-name → tutorialUrl from all locale indexes (first wins)
+  const templateTutorialMap = new Map<string, string>()
+  const sorted = ['index.json', ...indexFiles.filter((f) => f !== 'index.json')]
+  for (const file of sorted) {
+    let data: unknown
+    try {
+      data = JSON.parse(readFileSync(join(templatesDir, file), 'utf8'))
+    } catch {
+      continue
+    }
+    if (!Array.isArray(data)) continue
+    for (const cat of data as unknown[]) {
+      if (typeof cat !== 'object' || cat === null) continue
+      const templates = (cat as Record<string, unknown>)['templates']
+      if (!Array.isArray(templates)) continue
+      for (const t of templates) {
+        if (typeof t !== 'object' || t === null) continue
+        const entry = t as Record<string, unknown>
+        const tutorialUrl =
+          typeof entry['tutorialUrl'] === 'string'
+            ? entry['tutorialUrl']
+            : undefined
+        const templateName =
+          typeof entry['name'] === 'string' ? entry['name'] : undefined
+        if (tutorialUrl && templateName && !templateTutorialMap.has(templateName)) {
+          templateTutorialMap.set(templateName, tutorialUrl)
+        }
+      }
+    }
+  }
+
+  // For each template with a tutorialUrl, open the template file and map
+  // every embedded model filename to that tutorialUrl
+  for (const [templateName, tutorialUrl] of templateTutorialMap) {
+    const filePath = join(templatesDir, `${templateName}.json`)
+    let data: unknown
+    try {
+      data = JSON.parse(readFileSync(filePath, 'utf8'))
+    } catch {
+      continue
+    }
+
+    function extractModelNames(obj: unknown): void {
+      if (obj === null || typeof obj !== 'object') return
+      if (Array.isArray(obj)) {
+        for (const item of obj) extractModelNames(item)
+        return
+      }
+      const record = obj as Record<string, unknown>
+      if (Array.isArray(record['models'])) {
+        for (const m of record['models'] as unknown[]) {
+          if (m === null || typeof m !== 'object' || Array.isArray(m)) continue
+          const model = m as Record<string, unknown>
+          if (typeof model['name'] === 'string' && !map.has(model['name'])) {
+            map.set(model['name'], tutorialUrl)
+          }
+        }
+      }
+      for (const value of Object.values(record)) {
+        extractModelNames(value)
+      }
+    }
+
+    extractModelNames(data)
+  }
+
+  return map
+}
+
 const HUB_BASE = 'https://comfy.org'
 
 async function fetchThumbnail(slug: string): Promise<string | undefined> {
@@ -220,6 +302,7 @@ async function run(): Promise<void> {
   }
 
   const apiModels = extractApiModels(files)
+  const tutorialUrlMap = buildTutorialUrlMap(TEMPLATES_DIR)
 
   const sorted = [...models.entries()].sort(
     ([, a], [, b]) => b.templates.size - a.templates.size
@@ -260,6 +343,8 @@ async function run(): Promise<void> {
       workflowCount: data.templates.size,
       displayName: makeDisplayName(name)
     }
+    const docsUrl = tutorialUrlMap.get(name)
+    if (docsUrl) result.docsUrl = docsUrl
     if (canonicalRaw !== null) {
       result.canonicalSlug = makeSlug(canonicalRaw)
     }

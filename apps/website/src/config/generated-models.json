@@ -1,1661 +1,1767 @@
 [
   {
+    "slug": "kling-ai",
     "name": "Kling AI",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 11,
-    "slug": "kling-ai",
     "displayName": "Kling AI"
   },
   {
+    "slug": "openai-dall-e",
     "name": "OpenAI DALL-E",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 10,
-    "slug": "openai-dall-e",
     "displayName": "OpenAI DALL-E"
   },
   {
+    "slug": "vidu",
     "name": "Vidu",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 8,
-    "slug": "vidu",
     "displayName": "Vidu"
   },
   {
-    "name": "Stability AI",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 7,
-    "slug": "stability-ai",
-    "displayName": "Stability AI"
-  },
-  {
+    "slug": "seedance-bytedance",
     "name": "Seedance (ByteDance)",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 7,
-    "slug": "seedance-bytedance",
     "displayName": "Seedance (ByteDance)"
   },
   {
-    "name": "Wan API",
+    "slug": "stability-ai",
+    "name": "Stability AI",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 7,
+    "displayName": "Stability AI"
+  },
+  {
+    "slug": "wan-api",
+    "name": "Wan (API)",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 6,
-    "slug": "wan-api",
-    "displayName": "Wan API"
+    "displayName": "Wan (API)"
   },
   {
+    "slug": "flux-api",
+    "name": "Flux (API)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 5,
+    "displayName": "Flux (API)"
+  },
+  {
+    "slug": "runway",
     "name": "Runway",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 5,
-    "slug": "runway",
     "displayName": "Runway"
   },
   {
+    "slug": "tripo-3d",
     "name": "Tripo 3D",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 5,
-    "slug": "tripo-3d",
     "displayName": "Tripo 3D"
   },
   {
-    "name": "Flux API (BFL)",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 5,
-    "slug": "flux-api-bfl",
-    "displayName": "Flux API (BFL)"
-  },
-  {
-    "name": "Luma Dream Machine",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 4,
-    "slug": "luma-dream-machine",
-    "displayName": "Luma Dream Machine"
-  },
-  {
-    "name": "Moonvalley",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 4,
-    "slug": "moonvalley",
-    "displayName": "Moonvalley"
-  },
-  {
+    "slug": "grok-image",
     "name": "Grok Image",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 4,
-    "slug": "grok-image",
     "displayName": "Grok Image"
   },
   {
-    "name": "Magnific AI",
+    "slug": "luma-dream-machine",
+    "name": "Luma Dream Machine",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
-    "workflowCount": 3,
-    "slug": "magnific-ai",
-    "displayName": "Magnific AI"
+    "workflowCount": 4,
+    "displayName": "Luma Dream Machine"
   },
   {
-    "name": "Pixverse",
+    "slug": "moonvalley",
+    "name": "Moonvalley",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
-    "workflowCount": 3,
-    "slug": "pixverse",
-    "displayName": "Pixverse"
+    "workflowCount": 4,
+    "displayName": "Moonvalley"
   },
   {
-    "name": "Rodin 3D",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 3,
-    "slug": "rodin-3d",
-    "displayName": "Rodin 3D"
-  },
-  {
-    "name": "Meshy AI",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 3,
-    "slug": "meshy-ai",
-    "displayName": "Meshy AI"
-  },
-  {
-    "name": "Recraft",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 3,
-    "slug": "recraft",
-    "displayName": "Recraft"
-  },
-  {
+    "slug": "hailuo-minimax",
     "name": "Hailuo MiniMax",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 3,
-    "slug": "hailuo-minimax",
     "displayName": "Hailuo MiniMax"
   },
   {
-    "name": "Hunyuan 3D",
+    "slug": "magnific-ai",
+    "name": "Magnific AI",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
-    "workflowCount": 2,
-    "slug": "hunyuan-3d",
-    "displayName": "Hunyuan 3D"
+    "workflowCount": 3,
+    "displayName": "Magnific AI"
   },
   {
-    "name": "LTX Video API",
+    "slug": "meshy-ai",
+    "name": "Meshy AI",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
-    "workflowCount": 2,
-    "slug": "ltxv-api",
-    "displayName": "LTX Video API"
+    "workflowCount": 3,
+    "displayName": "Meshy AI"
   },
   {
-    "name": "Wavespeed",
+    "slug": "pixverse",
+    "name": "Pixverse",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
-    "workflowCount": 2,
-    "slug": "wavespeed",
-    "displayName": "Wavespeed"
+    "workflowCount": 3,
+    "displayName": "Pixverse"
   },
   {
+    "slug": "recraft",
+    "name": "Recraft",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 3,
+    "displayName": "Recraft"
+  },
+  {
+    "slug": "rodin-3d",
+    "name": "Rodin 3D",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 3,
+    "displayName": "Rodin 3D"
+  },
+  {
+    "slug": "bria-ai",
     "name": "Bria AI",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 2,
-    "slug": "bria-ai",
     "displayName": "Bria AI"
   },
   {
-    "name": "Topaz Labs",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 2,
-    "slug": "topaz-labs",
-    "displayName": "Topaz Labs"
-  },
-  {
+    "slug": "gemini-image",
     "name": "Gemini Image",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 2,
-    "slug": "gemini-image",
     "displayName": "Gemini Image"
   },
   {
+    "slug": "hunyuan-3d",
+    "name": "Hunyuan 3D",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Hunyuan 3D"
+  },
+  {
+    "slug": "ltxv-api",
+    "name": "LTX Video (API)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "LTX Video (API)"
+  },
+  {
+    "slug": "topaz-labs",
+    "name": "Topaz Labs",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Topaz Labs"
+  },
+  {
+    "slug": "wavespeed",
+    "name": "Wavespeed",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Wavespeed"
+  },
+  {
+    "slug": "ideogram",
     "name": "Ideogram",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 1,
-    "slug": "ideogram",
     "displayName": "Ideogram"
   },
   {
-    "name": "Veo 2",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 1,
-    "slug": "veo-2",
-    "displayName": "Veo 2"
-  },
-  {
+    "slug": "nano-banana",
     "name": "Nano Banana",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 1,
-    "slug": "nano-banana",
     "displayName": "Nano Banana"
   },
   {
+    "slug": "veo-2",
+    "name": "Veo 2",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 1,
+    "displayName": "Veo 2"
+  },
+  {
+    "slug": "umt5-xxl-fp8-e4m3fn-scaled",
     "name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
     "directory": "text_encoders",
     "workflowCount": 34,
-    "slug": "umt5-xxl-fp8-e4m3fn-scaled",
-    "displayName": "Umt5 Xxl FP8 e4m3fn scaled"
+    "displayName": "Umt5 Xxl FP8 e4m3fn scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
+    "slug": "wan-2-1-vae",
     "name": "wan_2.1_vae.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
     "directory": "vae",
     "workflowCount": 29,
-    "slug": "wan-2-1-vae",
-    "displayName": "Wan 2 1 Vae"
+    "displayName": "Wan 2.1 Vae",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
+    "slug": "ae",
     "name": "ae.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/resolve/main/split_files/vae/ae.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
     "directory": "vae",
     "workflowCount": 26,
-    "slug": "ae",
-    "displayName": "Ae"
+    "displayName": "Ae",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image"
   },
   {
+    "slug": "qwen-2-5-vl-7b-fp8-scaled",
     "name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
     "directory": "text_encoders",
     "workflowCount": 25,
-    "slug": "qwen-2-5-vl-7b-fp8-scaled",
-    "displayName": "Qwen 2 5 Vl 7b FP8 scaled"
+    "displayName": "Qwen 2.5 Vl 7b FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"
   },
   {
+    "slug": "qwen-image-vae",
     "name": "qwen_image_vae.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
     "directory": "vae",
     "workflowCount": 19,
-    "slug": "qwen-image-vae",
-    "displayName": "Qwen Image Vae"
+    "displayName": "Qwen Image Vae",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"
   },
   {
+    "slug": "clip-l",
     "name": "clip_l.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors?download=true",
+    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors",
     "directory": "text_encoders",
     "workflowCount": 14,
-    "slug": "clip-l",
-    "displayName": "Clip L"
+    "displayName": "Clip L",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-fill-dev"
   },
   {
+    "slug": "t5xxl-fp16",
     "name": "t5xxl_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors?download=true",
+    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors",
     "directory": "text_encoders",
     "workflowCount": 12,
-    "slug": "t5xxl-fp16",
-    "displayName": "T5xxl FP16"
+    "displayName": "T5xxl FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-fill-dev"
   },
   {
+    "slug": "clip-vision-h",
     "name": "clip_vision_h.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors",
     "directory": "clip_vision",
     "workflowCount": 12,
-    "slug": "clip-vision-h",
-    "displayName": "Clip Vision H"
+    "displayName": "Clip Vision H",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate"
   },
   {
+    "slug": "flux2-vae",
     "name": "flux2-vae.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors",
     "directory": "vae",
     "workflowCount": 9,
-    "slug": "flux2-vae",
-    "displayName": "Flux2 Vae"
+    "displayName": "Flux2 Vae",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein"
   },
   {
-    "name": "t5xxl_fp8_e4m3fn_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 8,
-    "slug": "t5xxl-fp8-e4m3fn-scaled",
-    "displayName": "T5xxl FP8 e4m3fn scaled",
-    "canonicalSlug": "t5xxl-fp16"
-  },
-  {
+    "slug": "qwen-3-4b",
     "name": "qwen_3_4b.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors",
     "directory": "text_encoders",
     "workflowCount": 8,
-    "slug": "qwen-3-4b",
-    "displayName": "Qwen 3 4b"
+    "displayName": "Qwen 3 4b",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image"
   },
   {
+    "slug": "qwen-image-edit-2509-fp8-e4m3fn",
     "name": "qwen_image_edit_2509_fp8_e4m3fn.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 8,
-    "slug": "qwen-image-edit-2509-fp8-e4m3fn",
-    "displayName": "Qwen Image Edit 2509 FP8 e4m3fn"
+    "displayName": "Qwen Image Edit 2509 FP8 e4m3fn",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"
   },
   {
-    "name": "gemma_3_12B_it_fp4_mixed.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors",
+    "slug": "t5xxl-fp8-e4m3fn-scaled",
+    "name": "t5xxl_fp8_e4m3fn_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors",
     "directory": "text_encoders",
-    "workflowCount": 7,
-    "slug": "gemma-3-12b-it-fp4-mixed",
-    "displayName": "Gemma 3 12B It FP4 mixed"
+    "workflowCount": 8,
+    "displayName": "T5xxl FP8 e4m3fn scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-kontext-dev",
+    "canonicalSlug": "t5xxl-fp16"
   },
   {
-    "name": "ltx-2-spatial-upscaler-x2-1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-spatial-upscaler-x2-1.0.safetensors",
-    "directory": "latent_upscale_models",
-    "workflowCount": 7,
-    "slug": "ltx-2-spatial-upscaler-x2-1-0",
-    "displayName": "Ltx 2 Spatial Upscaler X2 1 0"
-  },
-  {
+    "slug": "wan2-2-i2v-lightx2v-4steps-lora-v1-high-noise",
     "name": "wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors",
     "directory": "loras",
     "workflowCount": 7,
-    "slug": "wan2-2-i2v-lightx2v-4steps-lora-v1-high-noise",
-    "displayName": "Wan2 2 I2v Lightx2v 4steps Lora V1 High Noise"
+    "displayName": "Wan2.2 I2v Lightx2v 4steps Lora V1 High Noise",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
+    "slug": "wan2-2-i2v-lightx2v-4steps-lora-v1-low-noise",
     "name": "wan2.2_i2v_lightx2v_4steps_lora_v1_low_noise.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_i2v_lightx2v_4steps_lora_v1_low_noise.safetensors",
     "directory": "loras",
     "workflowCount": 7,
-    "slug": "wan2-2-i2v-lightx2v-4steps-lora-v1-low-noise",
-    "displayName": "Wan2 2 I2v Lightx2v 4steps Lora V1 Low Noise"
+    "displayName": "Wan2.2 I2v Lightx2v 4steps Lora V1 Low Noise",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
-    "name": "wan2.1_vace_1.3B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_vace_1.3B_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 6,
-    "slug": "wan2-1-vace-1-3b-fp16",
-    "displayName": "Wan2 1 Vace 1 3B FP16"
-  },
-  {
-    "name": "Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors",
-    "directory": "loras",
-    "workflowCount": 6,
-    "slug": "wan21-causvid-bidirect2-t2v-1-3b-lora-rank32",
-    "displayName": "Wan21 CausVid Bidirect2 T2V 1 3B Lora Rank32"
-  },
-  {
-    "name": "umt5_xxl_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors",
+    "slug": "gemma-3-12b-it-fp4-mixed",
+    "name": "gemma_3_12B_it_fp4_mixed.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors",
     "directory": "text_encoders",
-    "workflowCount": 6,
-    "slug": "umt5-xxl-fp16",
-    "displayName": "Umt5 Xxl FP16",
-    "canonicalSlug": "umt5-xxl-fp8-e4m3fn-scaled"
+    "workflowCount": 7,
+    "displayName": "Gemma 3 12B It FP4 mixed"
   },
   {
-    "name": "wan2.1_vace_14B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_vace_14B_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 6,
-    "slug": "wan2-1-vace-14b-fp16",
-    "displayName": "Wan2 1 Vace 14B FP16"
+    "slug": "ltx-2-spatial-upscaler-x2-1-0",
+    "name": "ltx-2-spatial-upscaler-x2-1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-spatial-upscaler-x2-1.0.safetensors",
+    "directory": "latent_upscale_models",
+    "workflowCount": 7,
+    "displayName": "Ltx 2 Spatial Upscaler X2 1.0"
   },
   {
-    "name": "Wan21_CausVid_14B_T2V_lora_rank32.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_CausVid_14B_T2V_lora_rank32.safetensors",
-    "directory": "loras",
-    "workflowCount": 6,
-    "slug": "wan21-causvid-14b-t2v-lora-rank32",
-    "displayName": "Wan21 CausVid 14B T2V Lora Rank32"
-  },
-  {
+    "slug": "qwen-image-edit-2509-lightning-4steps-v1-0-bf16",
     "name": "Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors",
     "directory": "loras",
     "workflowCount": 6,
-    "slug": "qwen-image-edit-2509-lightning-4steps-v1-0-bf16",
-    "displayName": "Qwen Image Edit 2509 Lightning 4steps V1 0 BF16"
+    "displayName": "Qwen Image Edit 2509 Lightning 4steps V1.0 BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"
   },
   {
-    "name": "vae-ft-mse-840000-ema-pruned.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors",
-    "directory": "vae",
-    "workflowCount": 5,
-    "slug": "vae-ft-mse-840000-ema-pruned",
-    "displayName": "Vae Ft Mse 840000 Ema Pruned"
-  },
-  {
-    "name": "lotus-depth-d-v1-1.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/lotus/resolve/main/lotus-depth-d-v1-1.safetensors",
+    "slug": "wan2-1-vace-1-3b-fp16",
+    "name": "wan2.1_vace_1.3B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_vace_1.3B_fp16.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 5,
-    "slug": "lotus-depth-d-v1-1",
-    "displayName": "Lotus Depth D V1 1"
+    "workflowCount": 6,
+    "displayName": "Wan2.1 Vace 1.3B FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace"
   },
   {
-    "name": "ltx-2-19b-dev-fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-dev-fp8.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 5,
-    "slug": "ltx-2-19b-dev-fp8",
-    "displayName": "Ltx 2 19b Dev FP8"
-  },
-  {
-    "name": "ltx-2-19b-distilled-lora-384.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors",
+    "slug": "wan21-causvid-bidirect2-t2v-1-3b-lora-rank32",
+    "name": "Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors",
     "directory": "loras",
-    "workflowCount": 5,
-    "slug": "ltx-2-19b-distilled-lora-384",
-    "displayName": "Ltx 2 19b Distilled Lora 384"
+    "workflowCount": 6,
+    "displayName": "Wan21 CausVid Bidirect2 T2V 1 3B Lora Rank32",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace"
   },
   {
-    "name": "qwen_image_fp8_e4m3fn.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors",
+    "slug": "umt5-xxl-fp16",
+    "name": "umt5_xxl_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 6,
+    "displayName": "Umt5 Xxl FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
+    "canonicalSlug": "umt5-xxl-fp8-e4m3fn-scaled"
+  },
+  {
+    "slug": "wan2-1-vace-14b-fp16",
+    "name": "wan2.1_vace_14B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_vace_14B_fp16.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 5,
-    "slug": "qwen-image-fp8-e4m3fn",
-    "displayName": "Qwen Image FP8 e4m3fn"
+    "workflowCount": 6,
+    "displayName": "Wan2.1 Vace 14B FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace"
   },
   {
-    "name": "Qwen-Image-Lightning-4steps-V1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors",
+    "slug": "wan21-causvid-14b-t2v-lora-rank32",
+    "name": "Wan21_CausVid_14B_T2V_lora_rank32.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_CausVid_14B_T2V_lora_rank32.safetensors",
     "directory": "loras",
-    "workflowCount": 5,
-    "slug": "qwen-image-lightning-4steps-v1-0",
-    "displayName": "Qwen Image Lightning 4steps V1 0"
+    "workflowCount": 6,
+    "displayName": "Wan21 CausVid 14B T2V Lora Rank32",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace"
   },
   {
-    "name": "ltx-2-19b-distilled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 5,
-    "slug": "ltx-2-19b-distilled",
-    "displayName": "Ltx 2 19b Distilled"
-  },
-  {
-    "name": "clip_l_hidream.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_l_hidream.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 5,
-    "slug": "clip-l-hidream",
-    "displayName": "Clip L Hidream"
-  },
-  {
-    "name": "clip_g_hidream.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_g_hidream.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 5,
-    "slug": "clip-g-hidream",
-    "displayName": "Clip G Hidream"
-  },
-  {
-    "name": "llama_3.1_8b_instruct_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/llama_3.1_8b_instruct_fp8_scaled.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 5,
-    "slug": "llama-3-1-8b-instruct-fp8-scaled",
-    "displayName": "Llama 3 1 8b Instruct FP8 scaled"
-  },
-  {
-    "name": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
-    "directory": "loras",
-    "workflowCount": 5,
-    "slug": "lightx2v-i2v-14b-480p-cfg-step-distill-rank64-bf16",
-    "displayName": "Lightx2v I2V 14B 480p Cfg Step Distill Rank64 BF16"
-  },
-  {
+    "slug": "wan2-2-i2v-high-noise-14b-fp8-scaled",
     "name": "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 5,
-    "slug": "wan2-2-i2v-high-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 I2v High Noise 14B FP8 scaled"
+    "displayName": "Wan2.2 I2v High Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
+    "slug": "wan2-2-i2v-low-noise-14b-fp8-scaled",
     "name": "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 5,
-    "slug": "wan2-2-i2v-low-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 I2v Low Noise 14B FP8 scaled"
+    "displayName": "Wan2.2 I2v Low Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
-    "name": "ltx-2-19b-lora-camera-control-dolly-left.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Left/resolve/main/ltx-2-19b-lora-camera-control-dolly-left.safetensors",
+    "slug": "vae-ft-mse-840000-ema-pruned",
+    "name": "vae-ft-mse-840000-ema-pruned.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors",
+    "directory": "vae",
+    "workflowCount": 5,
+    "displayName": "Vae Ft Mse 840000 Ema Pruned",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
+  },
+  {
+    "slug": "lotus-depth-d-v1-1",
+    "name": "lotus-depth-d-v1-1.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/lotus/resolve/main/lotus-depth-d-v1-1.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 5,
+    "displayName": "Lotus Depth D V1 1",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
+  },
+  {
+    "slug": "clip-g-hidream",
+    "name": "clip_g_hidream.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_g_hidream.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 5,
+    "displayName": "Clip G Hidream",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-i1"
+  },
+  {
+    "slug": "clip-l-hidream",
+    "name": "clip_l_hidream.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_l_hidream.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 5,
+    "displayName": "Clip L Hidream",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-i1"
+  },
+  {
+    "slug": "llama-3-1-8b-instruct-fp8-scaled",
+    "name": "llama_3.1_8b_instruct_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/llama_3.1_8b_instruct_fp8_scaled.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 5,
+    "displayName": "Llama 3.1 8b Instruct FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-i1"
+  },
+  {
+    "slug": "qwen-image-lightning-4steps-v1-0",
+    "name": "Qwen-Image-Lightning-4steps-V1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors",
     "directory": "loras",
-    "workflowCount": 4,
-    "slug": "ltx-2-19b-lora-camera-control-dolly-left",
-    "displayName": "Ltx 2 19b Lora Camera Control Dolly Left"
+    "workflowCount": 5,
+    "displayName": "Qwen Image Lightning 4steps V1.0",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
   },
   {
-    "name": "ace_step_v1_3.5b.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/ACE-Step_ComfyUI_repackaged/resolve/main/all_in_one/ace_step_v1_3.5b.safetensors?download=true",
+    "slug": "qwen-image-fp8-e4m3fn",
+    "name": "qwen_image_fp8_e4m3fn.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 5,
+    "displayName": "Qwen Image FP8 e4m3fn",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
+  },
+  {
+    "slug": "lightx2v-i2v-14b-480p-cfg-step-distill-rank64-bf16",
+    "name": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+    "directory": "loras",
+    "workflowCount": 5,
+    "displayName": "Lightx2v I2V 14B 480p Cfg Step Distill Rank64 BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate"
+  },
+  {
+    "slug": "ltx-2-19b-dev-fp8",
+    "name": "ltx-2-19b-dev-fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-dev-fp8.safetensors",
     "directory": "checkpoints",
-    "workflowCount": 4,
-    "slug": "ace-step-v1-3-5b",
-    "displayName": "Ace Step V1 3 5b"
+    "workflowCount": 5,
+    "displayName": "Ltx 2 19b Dev FP8"
   },
   {
+    "slug": "ltx-2-19b-distilled-lora-384",
+    "name": "ltx-2-19b-distilled-lora-384.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors",
+    "directory": "loras",
+    "workflowCount": 5,
+    "displayName": "Ltx 2 19b Distilled Lora 384"
+  },
+  {
+    "slug": "ltx-2-19b-distilled",
+    "name": "ltx-2-19b-distilled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 5,
+    "displayName": "Ltx 2 19b Distilled"
+  },
+  {
+    "slug": "z-image-turbo-bf16",
     "name": "z_image_turbo_bf16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 4,
-    "slug": "z-image-turbo-bf16",
-    "displayName": "Z Image Turbo BF16"
+    "displayName": "Z Image Turbo BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image-turbo"
   },
   {
-    "name": "sd_xl_base_1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true",
+    "slug": "ace-step-v1-3-5b",
+    "name": "ace_step_v1_3.5b.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/ACE-Step_ComfyUI_repackaged/resolve/main/all_in_one/ace_step_v1_3.5b.safetensors?download=true",
     "directory": "checkpoints",
     "workflowCount": 4,
-    "slug": "sd-xl-base-1-0",
-    "displayName": "Sd Xl Base 1 0"
+    "displayName": "Ace Step V1 3.5b",
+    "docsUrl": "https://docs.comfy.org/tutorials/audio/ace-step/ace-step-v1"
   },
   {
+    "slug": "sd3-5-large-fp8-scaled",
     "name": "sd3.5_large_fp8_scaled.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/sd3.5_large_fp8_scaled.safetensors?download=true",
     "directory": "checkpoints",
     "workflowCount": 4,
-    "slug": "sd3-5-large-fp8-scaled",
-    "displayName": "Sd3 5 Large FP8 scaled"
+    "displayName": "Sd3.5 Large FP8 scaled",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets"
   },
   {
-    "name": "wan2.2_vae.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors",
-    "directory": "vae",
-    "workflowCount": 3,
-    "slug": "wan2-2-vae",
-    "displayName": "Wan2 2 Vae"
+    "slug": "sd-xl-base-1-0",
+    "name": "sd_xl_base_1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true",
+    "directory": "checkpoints",
+    "workflowCount": 4,
+    "displayName": "Sd Xl Base 1.0",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sdxl/"
   },
   {
-    "name": "flux1-dev.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 3,
-    "slug": "flux1-dev",
-    "displayName": "Flux1 Dev"
+    "slug": "ltx-2-19b-lora-camera-control-dolly-left",
+    "name": "ltx-2-19b-lora-camera-control-dolly-left.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Left/resolve/main/ltx-2-19b-lora-camera-control-dolly-left.safetensors",
+    "directory": "loras",
+    "workflowCount": 4,
+    "displayName": "Ltx 2 19b Lora Camera Control Dolly Left"
   },
   {
-    "name": "hunyuan_video_vae_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_vae_bf16.safetensors",
-    "directory": "vae",
-    "workflowCount": 3,
-    "slug": "hunyuan-video-vae-bf16",
-    "displayName": "Hunyuan Video Vae BF16"
-  },
-  {
+    "slug": "sigclip-vision-patch14-384",
     "name": "sigclip_vision_patch14_384.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/sigclip_vision_384/resolve/main/sigclip_vision_patch14_384.safetensors",
     "directory": "clip_vision",
     "workflowCount": 3,
-    "slug": "sigclip-vision-patch14-384",
-    "displayName": "Sigclip Vision Patch14 384"
+    "displayName": "Sigclip Vision Patch14 384",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-uso"
   },
   {
+    "slug": "flux1-dev",
+    "name": "flux1-dev.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 3,
+    "displayName": "Flux1 Dev",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-text-to-image"
+  },
+  {
+    "slug": "hunyuan-video-vae-bf16",
+    "name": "hunyuan_video_vae_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/vae/hunyuan_video_vae_bf16.safetensors?download=true",
+    "directory": "vae",
+    "workflowCount": 3,
+    "displayName": "Hunyuan Video Vae BF16",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/"
+  },
+  {
+    "slug": "qwen-image-edit-2511-bf16",
     "name": "qwen_image_edit_2511_bf16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_bf16.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 3,
-    "slug": "qwen-image-edit-2511-bf16",
     "displayName": "Qwen Image Edit 2511 BF16"
   },
   {
+    "slug": "flux2-dev-fp8mixed",
     "name": "flux2_dev_fp8mixed.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/diffusion_models/flux2_dev_fp8mixed.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 3,
-    "slug": "flux2-dev-fp8mixed",
     "displayName": "Flux2 Dev fp8mixed"
   },
   {
+    "slug": "qwen-3-8b-fp8mixed",
     "name": "qwen_3_8b_fp8mixed.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-klein-9B/resolve/main/split_files/text_encoders/qwen_3_8b_fp8mixed.safetensors",
     "directory": "text_encoders",
     "workflowCount": 3,
-    "slug": "qwen-3-8b-fp8mixed",
-    "displayName": "Qwen 3 8b fp8mixed"
+    "displayName": "Qwen 3 8b fp8mixed",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein"
   },
   {
-    "name": "flux1-dev-fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "flux1-dev-fp8",
-    "displayName": "Flux1 Dev FP8"
+    "slug": "wan2-2-vae",
+    "name": "wan2.2_vae.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors",
+    "directory": "vae",
+    "workflowCount": 3,
+    "displayName": "Wan2.2 Vae"
   },
   {
+    "slug": "hunyuan-3d-v2-1",
     "name": "hunyuan_3d_v2.1.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/hunyuan3D_2.1_repackaged/resolve/main/hunyuan_3d_v2.1.safetensors",
     "directory": "checkpoints",
     "workflowCount": 2,
-    "slug": "hunyuan-3d-v2-1",
-    "displayName": "Hunyuan 3d V2 1"
+    "displayName": "Hunyuan 3d V2.1",
+    "docsUrl": "https://docs.comfy.org/tutorials/3d/hunyuan3D-2"
   },
   {
-    "name": "Wan21-WanMove_fp8_scaled_e4m3fn_KJ.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/WanMove/Wan21-WanMove_fp8_scaled_e4m3fn_KJ.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "wan21-wanmove-fp8-scaled-e4m3fn-kj",
-    "displayName": "Wan21 WanMove FP8 scaled e4m3fn KJ"
-  },
-  {
-    "name": "sd_xl_refiner_1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors?download=true",
+    "slug": "flux1-dev-fp8",
+    "name": "flux1-dev-fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors",
     "directory": "checkpoints",
     "workflowCount": 2,
-    "slug": "sd-xl-refiner-1-0",
-    "displayName": "Sd Xl Refiner 1 0"
+    "displayName": "Flux1 Dev FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-uso"
   },
   {
-    "name": "qwen_image_2512_fp8_e4m3fn.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_2512_fp8_e4m3fn.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "qwen-image-2512-fp8-e4m3fn",
-    "displayName": "Qwen Image 2512 FP8 e4m3fn"
-  },
-  {
-    "name": "Qwen-Edit-2509-Multiple-angles.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Edit-2509-Multiple-angles.safetensors",
-    "directory": "loras",
-    "workflowCount": 2,
-    "slug": "qwen-edit-2509-multiple-angles",
-    "displayName": "Qwen Edit 2509 Multiple Angles"
-  },
-  {
-    "name": "mistral_3_small_flux2_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/text_encoders/mistral_3_small_flux2_bf16.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 2,
-    "slug": "mistral-3-small-flux2-bf16",
-    "displayName": "Mistral 3 Small Flux2 BF16"
-  },
-  {
-    "name": "flux-2-klein-9b-fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-fp8/resolve/main/flux-2-klein-9b-fp8.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "flux-2-klein-9b-fp8",
-    "displayName": "Flux 2 Klein 9b FP8"
-  },
-  {
-    "name": "qwen_2.5_vl_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Omnigen2_ComfyUI_repackaged/resolve/main/split_files/text_encoders/qwen_2.5_vl_fp16.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 2,
-    "slug": "qwen-2-5-vl-fp16",
-    "displayName": "Qwen 2 5 Vl FP16"
-  },
-  {
-    "name": "omnigen2_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Omnigen2_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/omnigen2_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "omnigen2-fp16",
-    "displayName": "Omnigen2 FP16"
-  },
-  {
-    "name": "qwen_image_layered_vae.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Layered_ComfyUI/resolve/main/split_files/vae/qwen_image_layered_vae.safetensors",
-    "directory": "vae",
-    "workflowCount": 2,
-    "slug": "qwen-image-layered-vae",
-    "displayName": "Qwen Image Layered Vae"
-  },
-  {
-    "name": "flux-2-klein-base-9b-fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9b-fp8/resolve/main/flux-2-klein-base-9b-fp8.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "flux-2-klein-base-9b-fp8",
-    "displayName": "Flux 2 Klein Base 9b FP8"
-  },
-  {
-    "name": "Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors",
-    "directory": "loras",
-    "workflowCount": 2,
-    "slug": "qwen-image-edit-2509-lightning-8steps-v1-0-bf16",
-    "displayName": "Qwen Image Edit 2509 Lightning 8steps V1 0 BF16"
-  },
-  {
-    "name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
-    "directory": "loras",
-    "workflowCount": 2,
-    "slug": "qwen-image-edit-2511-lightning-4steps-v1-0-bf16",
-    "displayName": "Qwen Image Edit 2511 Lightning 4steps V1 0 BF16"
-  },
-  {
-    "name": "Wan2_1_VAE_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1_VAE_bf16.safetensors",
-    "directory": "vae",
-    "workflowCount": 2,
-    "slug": "wan2-1-vae-bf16",
-    "displayName": "Wan2 1 VAE BF16"
-  },
-  {
-    "name": "Wan2_1-I2V-ATI-14B_fp8_e4m3fn.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1-I2V-ATI-14B_fp8_e4m3fn.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "wan2-1-i2v-ati-14b-fp8-e4m3fn",
-    "displayName": "Wan2 1 I2V ATI 14B FP8 e4m3fn"
-  },
-  {
-    "name": "byt5_small_glyphxl_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 2,
-    "slug": "byt5-small-glyphxl-fp16",
-    "displayName": "Byt5 Small Glyphxl FP16"
-  },
-  {
-    "name": "hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/diffusion_models/hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "slug": "hunyuanvideo1-5-1080p-sr-distilled-fp16",
-    "displayName": "Hunyuanvideo1 5 1080p Sr Distilled FP16"
-  },
-  {
-    "name": "hunyuanvideo15_vae_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
-    "directory": "vae",
-    "workflowCount": 2,
-    "slug": "hunyuanvideo15-vae-fp16",
-    "displayName": "Hunyuanvideo15 Vae FP16"
-  },
-  {
-    "name": "hunyuanvideo15_latent_upsampler_1080p.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/latent_upscale_models/hunyuanvideo15_latent_upsampler_1080p.safetensors",
-    "directory": "latent_upscale_models",
-    "workflowCount": 2,
-    "slug": "hunyuanvideo15-latent-upsampler-1080p",
-    "displayName": "Hunyuanvideo15 Latent Upsampler 1080p"
-  },
-  {
-    "name": "wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors",
-    "directory": "loras",
-    "workflowCount": 2,
-    "slug": "wan2-2-t2v-lightx2v-4steps-lora-v1-1-high-noise",
-    "displayName": "Wan2 2 T2v Lightx2v 4steps Lora V1 1 High Noise"
-  },
-  {
+    "slug": "flux1-fill-dev",
     "name": "flux1-fill-dev.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/split_files/diffusion_models/flux1-fill-dev.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 2,
-    "slug": "flux1-fill-dev",
-    "displayName": "Flux1 Fill Dev"
+    "displayName": "Flux1 Fill Dev",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-fill-dev"
   },
   {
-    "name": "qwen_image_edit_fp8_e4m3fn.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_fp8_e4m3fn.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "qwen-image-edit-fp8-e4m3fn",
-    "displayName": "Qwen Image Edit FP8 e4m3fn"
-  },
-  {
-    "name": "Qwen-Image-Edit-Lightning-4steps-V1.0-bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-Lightning-4steps-V1.0-bf16.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "qwen-image-edit-lightning-4steps-v1-0-bf16",
-    "displayName": "Qwen Image Edit Lightning 4steps V1 0 BF16"
-  },
-  {
-    "name": "chroma-radiance-x0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Chroma1-Radiance_Repackaged/resolve/main/split_files/diffusion_models/chroma-radiance-x0.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "chroma-radiance-x0",
-    "displayName": "Chroma Radiance X0"
-  },
-  {
-    "name": "flux1-depth-dev-lora.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/split_files/loras/flux1-depth-dev-lora.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "flux1-depth-dev-lora",
-    "displayName": "Flux1 Depth Dev Lora"
-  },
-  {
-    "name": "wan2.2_fun_control_5B_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_control_5B_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-control-5b-bf16",
-    "displayName": "Wan2 2 Fun Control 5B BF16"
-  },
-  {
-    "name": "qwen_image_canny_diffsynth_controlnet.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/model_patches/qwen_image_canny_diffsynth_controlnet.safetensors",
-    "directory": "model_patches",
-    "workflowCount": 1,
-    "slug": "qwen-image-canny-diffsynth-controlnet",
-    "displayName": "Qwen Image Canny Diffsynth Controlnet"
-  },
-  {
-    "name": "wan2.2_fun_inpaint_high_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_inpaint_high_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-inpaint-high-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 Fun Inpaint High Noise 14B FP8 scaled"
-  },
-  {
-    "name": "wan2.2_fun_inpaint_low_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_inpaint_low_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-inpaint-low-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 Fun Inpaint Low Noise 14B FP8 scaled"
-  },
-  {
-    "name": "NetaYumev35_pretrained_all_in_one.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/duongve/NetaYume-Lumina-Image-2.0/resolve/main/NetaYumev35_pretrained_all_in_one.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "netayumev35-pretrained-all-in-one",
-    "displayName": "NetaYumev35 Pretrained All In One"
-  },
-  {
-    "name": "ltx-2-19b-ic-lora-depth-control.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Depth-Control/resolve/main/ltx-2-19b-ic-lora-depth-control.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "ltx-2-19b-ic-lora-depth-control",
-    "displayName": "Ltx 2 19b Ic Lora Depth Control"
-  },
-  {
-    "name": "hidream_i1_dev_fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_dev_fp8.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hidream-i1-dev-fp8",
-    "displayName": "Hidream I1 Dev FP8"
-  },
-  {
-    "name": "humo_17B_fp8_e4m3fn.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HuMo_ComfyUI/resolve/main/split_files/diffusion_models/humo_17B_fp8_e4m3fn.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "humo-17b-fp8-e4m3fn",
-    "displayName": "Humo 17B FP8 e4m3fn"
-  },
-  {
-    "name": "whisper_large_v3_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HuMo_ComfyUI/resolve/main/split_files/audio_encoders/whisper_large_v3_fp16.safetensors",
-    "directory": "audio_encoders",
-    "workflowCount": 1,
-    "slug": "whisper-large-v3-fp16",
-    "displayName": "Whisper Large V3 FP16"
-  },
-  {
-    "name": "ltx-video-2b-v0.9.5.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "ltx-video-2b-v0-9-5",
-    "displayName": "Ltx Video 2b V0 9 5"
-  },
-  {
-    "name": "Z-Image-Turbo-Fun-Controlnet-Union.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union/resolve/main/Z-Image-Turbo-Fun-Controlnet-Union.safetensors",
-    "directory": "model_patches",
-    "workflowCount": 1,
-    "slug": "z-image-turbo-fun-controlnet-union",
-    "displayName": "Z Image Turbo Fun Controlnet Union"
-  },
-  {
-    "name": "clip_vision_g.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/clip_vision_g/resolve/main/clip_vision_g.safetensors?download=true",
-    "directory": "clip_vision",
-    "workflowCount": 1,
-    "slug": "clip-vision-g",
-    "displayName": "Clip Vision G"
-  },
-  {
-    "name": "WanAnimate_relight_lora_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Wan22_relight/WanAnimate_relight_lora_fp16.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "wananimate-relight-lora-fp16",
-    "displayName": "WanAnimate Relight Lora FP16"
-  },
-  {
-    "name": "Wan2_2-Animate-14B_fp8_e4m3fn_scaled_KJ.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/Wan22Animate/Wan2_2-Animate-14B_fp8_e4m3fn_scaled_KJ.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-animate-14b-fp8-e4m3fn-scaled-kj",
-    "displayName": "Wan2 2 Animate 14B FP8 e4m3fn scaled KJ"
-  },
-  {
-    "name": "Qwen-Image-InstantX-ControlNet-Union.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-InstantX-ControlNets/resolve/main/split_files/controlnet/Qwen-Image-InstantX-ControlNet-Union.safetensors",
-    "directory": "controlnet",
-    "workflowCount": 1,
-    "slug": "qwen-image-instantx-controlnet-union",
-    "displayName": "Qwen Image InstantX ControlNet Union"
-  },
-  {
-    "name": "kandinsky5lite_t2v_sft_5s.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/kandinskylab/Kandinsky-5.0-T2V-Lite-sft-5s/resolve/main/model/kandinsky5lite_t2v_sft_5s.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "kandinsky5lite-t2v-sft-5s",
-    "displayName": "Kandinsky5lite T2v Sft 5s"
-  },
-  {
-    "name": "flux1-krea-dev_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/FLUX.1-Krea-dev_ComfyUI/resolve/main/split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "flux1-krea-dev-fp8-scaled",
-    "displayName": "Flux1 Krea Dev FP8 scaled"
-  },
-  {
-    "name": "Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps/resolve/main/Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "wuli-qwen-image-2512-turbo-lora-2steps-v1-0-bf16",
-    "displayName": "Wuli Qwen Image 2512 Turbo LoRA 2steps V1 0 BF16"
-  },
-  {
-    "name": "uso-flux1-projector-v1.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/USO_1.0_Repackaged/resolve/main/split_files/model_patches/uso-flux1-projector-v1.safetensors",
-    "directory": "model_patches",
-    "workflowCount": 1,
-    "slug": "uso-flux1-projector-v1",
-    "displayName": "Uso Flux1 Projector V1"
-  },
-  {
-    "name": "uso-flux1-dit-lora-v1.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/USO_1.0_Repackaged/resolve/main/split_files/loras/uso-flux1-dit-lora-v1.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "uso-flux1-dit-lora-v1",
-    "displayName": "Uso Flux1 Dit Lora V1"
-  },
-  {
-    "name": "ovis_image_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Ovis-Image/resolve/main/split_files/diffusion_models/ovis_image_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "ovis-image-bf16",
-    "displayName": "Ovis Image BF16"
-  },
-  {
-    "name": "ovis_2.5.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Ovis-Image/resolve/main/split_files/text_encoders/ovis_2.5.safetensors",
+    "slug": "mistral-3-small-flux2-bf16",
+    "name": "mistral_3_small_flux2_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/text_encoders/mistral_3_small_flux2_bf16.safetensors",
     "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "ovis-2-5",
-    "displayName": "Ovis 2 5"
+    "workflowCount": 2,
+    "displayName": "Mistral 3 Small Flux2 BF16"
   },
   {
-    "name": "flux1-dev-kontext_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-kontext-dev_ComfyUI/resolve/main/split_files/diffusion_models/flux1-dev-kontext_fp8_scaled.safetensors",
+    "slug": "flux-2-klein-base-9b-fp8",
+    "name": "flux-2-klein-base-9b-fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9b-fp8/resolve/main/flux-2-klein-base-9b-fp8.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "flux1-dev-kontext-fp8-scaled",
-    "displayName": "Flux1 Dev Kontext FP8 scaled"
+    "workflowCount": 2,
+    "displayName": "Flux 2 Klein Base 9b FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein"
   },
   {
-    "name": "wan2.1_flf2v_720p_14B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_flf2v_720p_14B_fp16.safetensors?download=true",
+    "slug": "flux-2-klein-9b-fp8",
+    "name": "flux-2-klein-9b-fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-fp8/resolve/main/flux-2-klein-9b-fp8.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-flf2v-720p-14b-fp16",
-    "displayName": "Wan2 1 Flf2v 720p 14B FP16"
+    "workflowCount": 2,
+    "displayName": "Flux 2 Klein 9b FP8"
   },
   {
-    "name": "sd_xl_turbo_1.0_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/stabilityai/sdxl-turbo/resolve/main/sd_xl_turbo_1.0_fp16.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "sd-xl-turbo-1-0-fp16",
-    "displayName": "Sd Xl Turbo 1 0 FP16"
-  },
-  {
-    "name": "Qwen_Image_Edit_2511-SYSTMS_INFL8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/systms/SYSTMS-INFL8-LoRA-Qwen-Image-Edit-2511/resolve/main/SYSTMS_INFL8_LoRA_Qwen_Image_Edit_2511.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "qwen-image-edit-2511-systms-infl8",
-    "displayName": "Qwen Image Edit 2511 SYSTMS INFL8"
-  },
-  {
-    "name": "svd_xt.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors?download=true",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "svd-xt",
-    "displayName": "Svd Xt"
-  },
-  {
-    "name": "hidream_i1_full_fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_full_fp8.safetensors?download=true",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hidream-i1-full-fp8",
-    "displayName": "Hidream I1 Full FP8"
-  },
-  {
-    "name": "flux-2-klein-4b-fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4b-fp8/resolve/main/flux-2-klein-4b-fp8.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "flux-2-klein-4b-fp8",
-    "displayName": "Flux 2 Klein 4b FP8"
-  },
-  {
-    "name": "Qwen-Image-Lightning-8steps-V1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-8steps-V1.0.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "qwen-image-lightning-8steps-v1-0",
-    "displayName": "Qwen Image Lightning 8steps V1 0"
-  },
-  {
-    "name": "sd3.5_large_controlnet_blur.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-controlnets_ComfyUI_repackaged/resolve/main/split_files/controlnet/sd3.5_large_controlnet_blur.safetensors",
-    "directory": "controlnet",
-    "workflowCount": 1,
-    "slug": "sd3-5-large-controlnet-blur",
-    "displayName": "Sd3 5 Large Controlnet Blur"
-  },
-  {
-    "name": "v1-5-pruned-emaonly-fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "v1-5-pruned-emaonly-fp16",
-    "displayName": "V1 5 Pruned Emaonly FP16"
-  },
-  {
-    "name": "wan2.1_t2v_1.3B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors?download=true",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-t2v-1-3b-fp16",
-    "displayName": "Wan2 1 T2v 1 3B FP16"
-  },
-  {
-    "name": "Qwen-Image-InstantX-ControlNet-Inpainting.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-InstantX-ControlNets/resolve/main/split_files/controlnet/Qwen-Image-InstantX-ControlNet-Inpainting.safetensors",
-    "directory": "controlnet",
-    "workflowCount": 1,
-    "slug": "qwen-image-instantx-controlnet-inpainting",
-    "displayName": "Qwen Image InstantX ControlNet Inpainting"
-  },
-  {
-    "name": "wan2.1_fun_camera_v1.1_14B_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_camera_v1.1_14B_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-fun-camera-v1-1-14b-bf16",
-    "displayName": "Wan2 1 Fun Camera V1 1 14B BF16"
-  },
-  {
-    "name": "ltx-2-19b-ic-lora-pose-control.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Pose-Control/resolve/main/ltx-2-19b-ic-lora-pose-control.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "ltx-2-19b-ic-lora-pose-control",
-    "displayName": "Ltx 2 19b Ic Lora Pose Control"
-  },
-  {
-    "name": "wan2.1_fun_camera_v1.1_1.3B_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_camera_v1.1_1.3B_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-fun-camera-v1-1-1-3b-bf16",
-    "displayName": "Wan2 1 Fun Camera V1 1 1 3B BF16"
-  },
-  {
-    "name": "hunyuan3d-dit-v2-mv-turbo_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/hunyuan3D_2.0_repackaged/resolve/main/split_files/hunyuan3d-dit-v2-mv-turbo_fp16.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "hunyuan3d-dit-v2-mv-turbo-fp16",
-    "displayName": "Hunyuan3d Dit V2 Mv Turbo FP16"
-  },
-  {
-    "name": "llava_llama3_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/llava_llama3_fp8_scaled.safetensors?download=true",
+    "slug": "qwen-2-5-vl-fp16",
+    "name": "qwen_2.5_vl_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Omnigen2_ComfyUI_repackaged/resolve/main/split_files/text_encoders/qwen_2.5_vl_fp16.safetensors",
     "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "llava-llama3-fp8-scaled",
-    "displayName": "Llava Llama3 FP8 scaled"
+    "workflowCount": 2,
+    "displayName": "Qwen 2.5 Vl FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/omnigen/omnigen2"
   },
   {
-    "name": "hunyuan_video_t2v_720p_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors?download=true",
+    "slug": "omnigen2-fp16",
+    "name": "omnigen2_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Omnigen2_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/omnigen2_fp16.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hunyuan-video-t2v-720p-bf16",
-    "displayName": "Hunyuan Video T2v 720p BF16"
+    "workflowCount": 2,
+    "displayName": "Omnigen2 FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/omnigen/omnigen2"
   },
   {
-    "name": "stable-audio-open-1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-audio-open-1.0_repackaged/resolve/main/stable-audio-open-1.0.safetensors",
+    "slug": "qwen-image-2512-fp8-e4m3fn",
+    "name": "qwen_image_2512_fp8_e4m3fn.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_2512_fp8_e4m3fn.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 2,
+    "displayName": "Qwen Image 2512 FP8 e4m3fn"
+  },
+  {
+    "slug": "qwen-image-edit-2511-lightning-4steps-v1-0-bf16",
+    "name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+    "directory": "loras",
+    "workflowCount": 2,
+    "displayName": "Qwen Image Edit 2511 Lightning 4steps V1.0 BF16"
+  },
+  {
+    "slug": "qwen-image-layered-vae",
+    "name": "qwen_image_layered_vae.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Layered_ComfyUI/resolve/main/split_files/vae/qwen_image_layered_vae.safetensors",
+    "directory": "vae",
+    "workflowCount": 2,
+    "displayName": "Qwen Image Layered Vae"
+  },
+  {
+    "slug": "sd-xl-refiner-1-0",
+    "name": "sd_xl_refiner_1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors?download=true",
     "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "stable-audio-open-1-0",
-    "displayName": "Stable Audio Open 1 0"
+    "workflowCount": 2,
+    "displayName": "Sd Xl Refiner 1.0",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sdxl/"
   },
   {
-    "name": "t5-base.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/ComfyUI-Wiki/t5-base/resolve/main/t5-base.safetensors",
+    "slug": "wan2-1-vae-bf16",
+    "name": "Wan2_1_VAE_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1_VAE_bf16.safetensors",
+    "directory": "vae",
+    "workflowCount": 2,
+    "displayName": "Wan2 1 VAE BF16"
+  },
+  {
+    "slug": "wan2-1-i2v-ati-14b-fp8-e4m3fn",
+    "name": "Wan2_1-I2V-ATI-14B_fp8_e4m3fn.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1-I2V-ATI-14B_fp8_e4m3fn.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 2,
+    "displayName": "Wan2 1 I2V ATI 14B FP8 e4m3fn",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan-ati"
+  },
+  {
+    "slug": "qwen-edit-2509-multiple-angles",
+    "name": "Qwen-Edit-2509-Multiple-angles.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Edit-2509-Multiple-angles.safetensors",
+    "directory": "loras",
+    "workflowCount": 2,
+    "displayName": "Qwen Edit 2509 Multiple Angles"
+  },
+  {
+    "slug": "qwen-image-edit-2509-lightning-8steps-v1-0-bf16",
+    "name": "Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors",
+    "directory": "loras",
+    "workflowCount": 2,
+    "displayName": "Qwen Image Edit 2509 Lightning 8steps V1.0 BF16"
+  },
+  {
+    "slug": "byt5-small-glyphxl-fp16",
+    "name": "byt5_small_glyphxl_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
     "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "t5-base",
-    "displayName": "T5 Base"
+    "workflowCount": 2,
+    "displayName": "Byt5 Small Glyphxl FP16"
   },
   {
-    "name": "hidream_i1_fast_fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_fast_fp8.safetensors?download=true",
+    "slug": "hunyuanvideo15-latent-upsampler-1080p",
+    "name": "hunyuanvideo15_latent_upsampler_1080p.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/latent_upscale_models/hunyuanvideo15_latent_upsampler_1080p.safetensors",
+    "directory": "latent_upscale_models",
+    "workflowCount": 2,
+    "displayName": "Hunyuanvideo15 Latent Upsampler 1080p"
+  },
+  {
+    "slug": "hunyuanvideo1-5-1080p-sr-distilled-fp16",
+    "name": "hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/diffusion_models/hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hidream-i1-fast-fp8",
-    "displayName": "Hidream I1 Fast FP8"
+    "workflowCount": 2,
+    "displayName": "Hunyuanvideo1.5 1080p Sr Distilled FP16"
   },
   {
-    "name": "ltx-2-19b-ic-lora-canny-control.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Canny-Control/resolve/main/ltx-2-19b-ic-lora-canny-control.safetensors",
+    "slug": "hunyuanvideo15-vae-fp16",
+    "name": "hunyuanvideo15_vae_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "directory": "vae",
+    "workflowCount": 2,
+    "displayName": "Hunyuanvideo15 Vae FP16"
+  },
+  {
+    "slug": "wan2-2-t2v-lightx2v-4steps-lora-v1-1-high-noise",
+    "name": "wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors",
     "directory": "loras",
-    "workflowCount": 1,
-    "slug": "ltx-2-19b-ic-lora-canny-control",
-    "displayName": "Ltx 2 19b Ic Lora Canny Control"
+    "workflowCount": 2,
+    "displayName": "Wan2.2 T2v Lightx2v 4steps Lora V1.1 High Noise",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
   },
   {
-    "name": "flux1-schnell-fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors?download=true",
-    "directory": "checkpoints",
-    "workflowCount": 1,
-    "slug": "flux1-schnell-fp8",
-    "displayName": "Flux1 Schnell FP8"
-  },
-  {
-    "name": "wan2.1_fun_control_1.3B_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_control_1.3B_bf16.safetensors?download=true",
+    "slug": "wan21-wanmove-fp8-scaled-e4m3fn-kj",
+    "name": "Wan21-WanMove_fp8_scaled_e4m3fn_KJ.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/WanMove/Wan21-WanMove_fp8_scaled_e4m3fn_KJ.safetensors",
     "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-fun-control-1-3b-bf16",
-    "displayName": "Wan2 1 Fun Control 1 3B BF16"
+    "workflowCount": 2,
+    "displayName": "Wan21 WanMove FP8 scaled e4m3fn KJ"
   },
   {
-    "name": "wan2.2_fun_inpaint_5B_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_inpaint_5B_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-inpaint-5b-bf16",
-    "displayName": "Wan2 2 Fun Inpaint 5B BF16"
-  },
-  {
-    "name": "qwen_image_layered_control_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/DiffSynth-Studio/Qwen-Image-Layered-Control/resolve/main/qwen_image_layered_control_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "qwen-image-layered-control-bf16",
-    "displayName": "Qwen Image Layered Control BF16"
-  },
-  {
-    "name": "wan2.2_ti2v_5B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-ti2v-5b-fp16",
-    "displayName": "Wan2 2 Ti2v 5B FP16"
-  },
-  {
-    "name": "pixel_art_style_z_image_turbo.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/tarn59/pixel_art_style_lora_z_image_turbo/resolve/main/pixel_art_style_z_image_turbo.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "pixel-art-style-z-image-turbo",
-    "displayName": "Pixel Art Style Z Image Turbo"
-  },
-  {
-    "name": "RealESRGAN_x4plus.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Real-ESRGAN_repackaged/resolve/main/RealESRGAN_x4plus.safetensors",
-    "directory": "upscale_models",
-    "workflowCount": 1,
-    "slug": "realesrgan-x4plus",
-    "displayName": "RealESRGAN X4plus"
-  },
-  {
-    "name": "sd3.5_large_controlnet_depth.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-controlnets_ComfyUI_repackaged/resolve/main/split_files/controlnet/sd3.5_large_controlnet_depth.safetensors",
-    "directory": "controlnet",
-    "workflowCount": 1,
-    "slug": "sd3-5-large-controlnet-depth",
-    "displayName": "Sd3 5 Large Controlnet Depth"
-  },
-  {
-    "name": "Qwen-Image-Edit-2509-Light-Migration.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Light-Migration.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "qwen-image-edit-2509-light-migration",
-    "displayName": "Qwen Image Edit 2509 Light Migration"
-  },
-  {
-    "name": "Qwen-Image-Edit-2509-Relight.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Relight.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "qwen-image-edit-2509-relight",
-    "displayName": "Qwen Image Edit 2509 Relight"
-  },
-  {
-    "name": "Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "wan21-t2v-14b-lightx2v-cfg-step-distill-lora-rank32",
-    "displayName": "Wan21 T2V 14B Lightx2v Cfg Step Distill Lora Rank32"
-  },
-  {
-    "name": "umt5-xxl-enc-bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/umt5-xxl-enc-bf16.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "umt5-xxl-enc-bf16",
-    "displayName": "Umt5 Xxl Enc BF16"
-  },
-  {
-    "name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/CLIP-ViT-H-14-laion2B-s32B-b79K_repackaged/resolve/main/split_files/clip_vision/CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
-    "directory": "clip_vision",
-    "workflowCount": 1,
-    "slug": "clip-vit-h-14-laion2b-s32b-b79k",
-    "displayName": "CLIP ViT H 14 Laion2B S32B B79K"
-  },
-  {
-    "name": "sd3.5_large_controlnet_canny.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-controlnets_ComfyUI_repackaged/resolve/main/split_files/controlnet/sd3.5_large_controlnet_canny.safetensors",
-    "directory": "controlnet",
-    "workflowCount": 1,
-    "slug": "sd3-5-large-controlnet-canny",
-    "displayName": "Sd3 5 Large Controlnet Canny"
-  },
-  {
-    "name": "hidream_e1_1_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_e1_1_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hidream-e1-1-bf16",
-    "displayName": "Hidream E1 1 BF16"
-  },
-  {
-    "name": "hunyuanvideo1.5_720p_t2v_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/diffusion_models/hunyuanvideo1.5_720p_t2v_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hunyuanvideo1-5-720p-t2v-fp16",
-    "displayName": "Hunyuanvideo1 5 720p T2v FP16"
-  },
-  {
-    "name": "wan2.1_i2v_480p_14B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-i2v-480p-14b-fp16",
-    "displayName": "Wan2 1 I2v 480p 14B FP16"
-  },
-  {
-    "name": "wan2.2_fun_control_high_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_control_high_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-control-high-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 Fun Control High Noise 14B FP8 scaled"
-  },
-  {
-    "name": "wan2.2_fun_control_low_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_control_low_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-control-low-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 Fun Control Low Noise 14B FP8 scaled"
-  },
-  {
-    "name": "Chroma1-HD-fp8mixed.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Chroma1-HD_repackaged/resolve/main/split_files/diffusion_models/Chroma1-HD-fp8mixed.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "chroma1-hd-fp8mixed",
-    "displayName": "Chroma1 HD fp8mixed"
-  },
-  {
-    "name": "flux1-schnell.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "flux1-schnell",
-    "displayName": "Flux1 Schnell"
-  },
-  {
-    "name": "z_image_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/z_image/resolve/main/split_files/diffusion_models/z_image_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "z-image-bf16",
-    "displayName": "Z Image BF16"
-  },
-  {
-    "name": "kandinsky5lite_i2v_5s.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/kandinskylab/Kandinsky-5.0-I2V-Lite-5s/resolve/main/model/kandinsky5lite_i2v_5s.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "kandinsky5lite-i2v-5s",
-    "displayName": "Kandinsky5lite I2v 5s"
-  },
-  {
+    "slug": "hunyuan3d-dit-v2-fp16",
     "name": "hunyuan3d-dit-v2_fp16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/hunyuan3D_2.0_repackaged/resolve/main/split_files/hunyuan3d-dit-v2_fp16.safetensors",
     "directory": "checkpoints",
     "workflowCount": 1,
-    "slug": "hunyuan3d-dit-v2-fp16",
     "displayName": "Hunyuan3d Dit V2 FP16"
   },
   {
-    "name": "NewBie-Image-Exp0.1-bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/NewBie-image-Exp0.1_repackaged/resolve/main/split_files/diffusion_models/NewBie-Image-Exp0.1-bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "newbie-image-exp0-1-bf16",
-    "displayName": "NewBie Image Exp0 1 BF16"
-  },
-  {
-    "name": "gemma_3_4b_it_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/NewBie-image-Exp0.1_repackaged/resolve/main/split_files/text_encoders/gemma_3_4b_it_bf16.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "gemma-3-4b-it-bf16",
-    "displayName": "Gemma 3 4b It BF16"
-  },
-  {
-    "name": "jina_clip_v2_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/NewBie-image-Exp0.1_repackaged/resolve/main/split_files/text_encoders/jina_clip_v2_bf16.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "jina-clip-v2-bf16",
-    "displayName": "Jina Clip V2 BF16"
-  },
-  {
-    "name": "Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/I2V/Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-1-i2v-14b-480p-fp8-e4m3fn-scaled-kj",
-    "displayName": "Wan2 1 I2V 14B 480p FP8 e4m3fn scaled KJ"
-  },
-  {
-    "name": "wan2.1_infiniteTalk_multi_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/model_patches/wan2.1_infiniteTalk_multi_fp16.safetensors",
-    "directory": "model_patches",
-    "workflowCount": 1,
-    "slug": "wan2-1-infinitetalk-multi-fp16",
-    "displayName": "Wan2 1 InfiniteTalk Multi FP16"
-  },
-  {
-    "name": "wav2vec2-chinese-base_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/wav2vec2_safetensors/resolve/main/wav2vec2-chinese-base_fp16.safetensors",
-    "directory": "audio_encoders",
-    "workflowCount": 1,
-    "slug": "wav2vec2-chinese-base-fp16",
-    "displayName": "Wav2vec2 Chinese Base FP16"
-  },
-  {
-    "name": "chronoedit_distill_lora.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/chronoedit_distill_lora.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "chronoedit-distill-lora",
-    "displayName": "Chronoedit Distill Lora"
-  },
-  {
-    "name": "chrono_edit_14B_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/chrono_edit_14B_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "chrono-edit-14b-fp16",
-    "displayName": "Chrono Edit 14B FP16"
-  },
-  {
-    "name": "flux1-redux-dev.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Flux1-Redux-Dev/resolve/main/flux1-redux-dev.safetensors",
-    "directory": "style_models",
-    "workflowCount": 1,
-    "slug": "flux1-redux-dev",
-    "displayName": "Flux1 Redux Dev"
-  },
-  {
-    "name": "qwen_image_layered_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Layered_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_layered_bf16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "qwen-image-layered-bf16",
-    "displayName": "Qwen Image Layered BF16"
-  },
-  {
-    "name": "wav2vec2_large_english_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors",
-    "directory": "audio_encoders",
-    "workflowCount": 1,
-    "slug": "wav2vec2-large-english-fp16",
-    "displayName": "Wav2vec2 Large English FP16"
-  },
-  {
-    "name": "wan2.2_s2v_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-s2v-14b-fp8-scaled",
-    "displayName": "Wan2 2 S2v 14B FP8 scaled"
-  },
-  {
-    "name": "mistral_3_small_flux2_fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/text_encoders/mistral_3_small_flux2_fp8.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 1,
-    "slug": "mistral-3-small-flux2-fp8",
-    "displayName": "Mistral 3 Small Flux2 FP8",
-    "canonicalSlug": "mistral-3-small-flux2-bf16"
-  },
-  {
-    "name": "Flux2TurboComfyv2.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/loras/Flux2TurboComfyv2.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "flux2turbocomfyv2",
-    "displayName": "Flux2TurboComfyv2"
-  },
-  {
-    "name": "hunyuanvideo1.5_720p_i2v_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/diffusion_models/hunyuanvideo1.5_720p_i2v_fp16.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "hunyuanvideo1-5-720p-i2v-fp16",
-    "displayName": "Hunyuanvideo1 5 720p I2v FP16"
-  },
-  {
-    "name": "flux.1-fill-dev-OneReward-transformer_fp8.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/OneReward_repackaged/resolve/main/split_files/diffusion_models/flux.1-fill-dev-OneReward-transformer_fp8.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "flux-1-fill-dev-onereward-transformer-fp8",
-    "displayName": "Flux 1 Fill Dev OneReward Transformer FP8"
-  },
-  {
-    "name": "removal_timestep_alpha-2-1740.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lrzjason/ObjectRemovalFluxFill/resolve/main/removal_timestep_alpha-2-1740.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "removal-timestep-alpha-2-1740",
-    "displayName": "Removal Timestep Alpha 2 1740"
-  },
-  {
-    "name": "Flux_2-Turbo-LoRA_comfyui.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/ByteZSzn/Flux.2-Turbo-ComfyUI/resolve/main/Flux_2-Turbo-LoRA_comfyui.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "flux-2-turbo-lora-comfyui",
-    "displayName": "Flux 2 Turbo LoRA Comfyui"
-  },
-  {
-    "name": "flux1-canny-dev.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/split_files/diffusion_models/flux1-canny-dev.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "flux1-canny-dev",
-    "displayName": "Flux1 Canny Dev"
-  },
-  {
+    "slug": "hunyuan3d-dit-v2-mv-fp16",
     "name": "hunyuan3d-dit-v2-mv_fp16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/hunyuan3D_2.0_repackaged/resolve/main/split_files/hunyuan3d-dit-v2-mv_fp16.safetensors",
     "directory": "checkpoints",
     "workflowCount": 1,
-    "slug": "hunyuan3d-dit-v2-mv-fp16",
     "displayName": "Hunyuan3d Dit V2 Mv FP16"
   },
   {
-    "name": "wan2.1_t2v_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_scaled.safetensors",
+    "slug": "hunyuan3d-dit-v2-mv-turbo-fp16",
+    "name": "hunyuan3d-dit-v2-mv-turbo_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/hunyuan3D_2.0_repackaged/resolve/main/split_files/hunyuan3d-dit-v2-mv-turbo_fp16.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "Hunyuan3d Dit V2 Mv Turbo FP16"
+  },
+  {
+    "slug": "stable-audio-open-1-0",
+    "name": "stable-audio-open-1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-audio-open-1.0_repackaged/resolve/main/stable-audio-open-1.0.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "Stable Audio Open 1.0",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/audio/"
+  },
+  {
+    "slug": "t5-base",
+    "name": "t5-base.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/ComfyUI-Wiki/t5-base/resolve/main/t5-base.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "T5 Base",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/audio/"
+  },
+  {
+    "slug": "v1-5-pruned-emaonly-fp16",
+    "name": "v1-5-pruned-emaonly-fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "V1 5 Pruned Emaonly FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/basic/text-to-image"
+  },
+  {
+    "slug": "uso-flux1-projector-v1",
+    "name": "uso-flux1-projector-v1.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/USO_1.0_Repackaged/resolve/main/split_files/model_patches/uso-flux1-projector-v1.safetensors",
+    "directory": "model_patches",
+    "workflowCount": 1,
+    "displayName": "Uso Flux1 Projector V1",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-uso"
+  },
+  {
+    "slug": "uso-flux1-dit-lora-v1",
+    "name": "uso-flux1-dit-lora-v1.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/USO_1.0_Repackaged/resolve/main/split_files/loras/uso-flux1-dit-lora-v1.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Uso Flux1 Dit Lora V1",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-uso"
+  },
+  {
+    "slug": "flux1-krea-dev-fp8-scaled",
+    "name": "flux1-krea-dev_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/FLUX.1-Krea-dev_ComfyUI/resolve/main/split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "wan2-1-t2v-14b-fp8-scaled",
-    "displayName": "Wan2 1 T2v 14B FP8 scaled"
+    "displayName": "Flux1 Krea Dev FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux1-krea-dev"
   },
   {
-    "name": "wan_alpha_2.1_rgba_lora.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/loras/wan_alpha_2.1_rgba_lora.safetensors",
+    "slug": "flux1-canny-dev",
+    "name": "flux1-canny-dev.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/split_files/diffusion_models/flux1-canny-dev.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Flux1 Canny Dev",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-controlnet"
+  },
+  {
+    "slug": "flux1-depth-dev-lora",
+    "name": "flux1-depth-dev-lora.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/split_files/loras/flux1-depth-dev-lora.safetensors",
     "directory": "loras",
     "workflowCount": 1,
-    "slug": "wan-alpha-2-1-rgba-lora",
-    "displayName": "Wan Alpha 2 1 Rgba Lora"
+    "displayName": "Flux1 Depth Dev Lora",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-controlnet"
   },
   {
-    "name": "wan_alpha_2.1_vae_rgb_channel.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_alpha_2.1_vae_rgb_channel.safetensors",
-    "directory": "vae",
+    "slug": "flux1-dev-kontext-fp8-scaled",
+    "name": "flux1-dev-kontext_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-kontext-dev_ComfyUI/resolve/main/split_files/diffusion_models/flux1-dev-kontext_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "wan-alpha-2-1-vae-rgb-channel",
-    "displayName": "Wan Alpha 2 1 Vae Rgb Channel"
+    "displayName": "Flux1 Dev Kontext FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-kontext-dev"
   },
   {
-    "name": "wan_alpha_2.1_vae_alpha_channel.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_alpha_2.1_vae_alpha_channel.safetensors",
-    "directory": "vae",
+    "slug": "flux1-redux-dev",
+    "name": "flux1-redux-dev.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Flux1-Redux-Dev/resolve/main/flux1-redux-dev.safetensors",
+    "directory": "style_models",
     "workflowCount": 1,
-    "slug": "wan-alpha-2-1-vae-alpha-channel",
-    "displayName": "Wan Alpha 2 1 Vae Alpha Channel"
+    "displayName": "Flux1 Redux Dev",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-controlnet"
   },
   {
-    "name": "lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16.safetensors",
-    "directory": "loras",
+    "slug": "flux1-schnell-fp8",
+    "name": "flux1-schnell-fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors?download=true",
+    "directory": "checkpoints",
     "workflowCount": 1,
-    "slug": "lightx2v-t2v-14b-cfg-step-distill-v2-lora-rank64-bf16",
-    "displayName": "Lightx2v T2V 14B Cfg Step Distill V2 Lora Rank64 BF16"
+    "displayName": "Flux1 Schnell FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-text-to-image"
   },
   {
+    "slug": "flux1-schnell",
+    "name": "flux1-schnell.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Flux1 Schnell",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-text-to-image"
+  },
+  {
+    "slug": "hidream-e1-1-bf16",
+    "name": "hidream_e1_1_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_e1_1_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hidream E1 1 BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-e1"
+  },
+  {
+    "slug": "hidream-e1-full-bf16",
     "name": "hidream_e1_full_bf16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_e1_full_bf16.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "hidream-e1-full-bf16",
-    "displayName": "Hidream E1 Full BF16"
+    "displayName": "Hidream E1 Full BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-e1"
   },
   {
+    "slug": "hidream-i1-dev-fp8",
+    "name": "hidream_i1_dev_fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_dev_fp8.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hidream I1 Dev FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-i1"
+  },
+  {
+    "slug": "hidream-i1-fast-fp8",
+    "name": "hidream_i1_fast_fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_fast_fp8.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hidream I1 Fast FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-i1"
+  },
+  {
+    "slug": "hidream-i1-full-fp8",
+    "name": "hidream_i1_full_fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_full_fp8.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hidream I1 Full FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-i1"
+  },
+  {
+    "slug": "llava-llama3-fp8-scaled",
+    "name": "llava_llama3_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/llava_llama3_fp8_scaled.safetensors?download=true",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "Llava Llama3 FP8 scaled",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/"
+  },
+  {
+    "slug": "hunyuan-video-t2v-720p-bf16",
+    "name": "hunyuan_video_t2v_720p_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hunyuan Video T2v 720p BF16",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/"
+  },
+  {
+    "slug": "qwen-image-edit-2511-systms-infl8",
+    "name": "Qwen_Image_Edit_2511-SYSTMS_INFL8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/systms/SYSTMS-INFL8-LoRA-Qwen-Image-Edit-2511/resolve/main/SYSTMS_INFL8_LoRA_Qwen_Image_Edit_2511.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit 2511 SYSTMS INFL8"
+  },
+  {
+    "slug": "chroma-radiance-x0",
+    "name": "chroma-radiance-x0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Chroma1-Radiance_Repackaged/resolve/main/split_files/diffusion_models/chroma-radiance-x0.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Chroma Radiance X0"
+  },
+  {
+    "slug": "chroma1-hd-fp8mixed",
+    "name": "Chroma1-HD-fp8mixed.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Chroma1-HD_repackaged/resolve/main/split_files/diffusion_models/Chroma1-HD-fp8mixed.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Chroma1 HD fp8mixed"
+  },
+  {
+    "slug": "chronoedit-distill-lora",
+    "name": "chronoedit_distill_lora.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/chronoedit_distill_lora.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Chronoedit Distill Lora"
+  },
+  {
+    "slug": "chrono-edit-14b-fp16",
+    "name": "chrono_edit_14B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/chrono_edit_14B_fp16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Chrono Edit 14B FP16"
+  },
+  {
+    "slug": "flux-1-fill-dev-onereward-transformer-fp8",
+    "name": "flux.1-fill-dev-OneReward-transformer_fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/OneReward_repackaged/resolve/main/split_files/diffusion_models/flux.1-fill-dev-OneReward-transformer_fp8.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Flux.1 Fill Dev OneReward Transformer FP8"
+  },
+  {
+    "slug": "removal-timestep-alpha-2-1740",
+    "name": "removal_timestep_alpha-2-1740.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lrzjason/ObjectRemovalFluxFill/resolve/main/removal_timestep_alpha-2-1740.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Removal Timestep Alpha 2 1740"
+  },
+  {
+    "slug": "flux-2-turbo-lora-comfyui",
+    "name": "Flux_2-Turbo-LoRA_comfyui.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/ByteZSzn/Flux.2-Turbo-ComfyUI/resolve/main/Flux_2-Turbo-LoRA_comfyui.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Flux 2 Turbo LoRA Comfyui"
+  },
+  {
+    "slug": "mistral-3-small-flux2-fp8",
+    "name": "mistral_3_small_flux2_fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/text_encoders/mistral_3_small_flux2_fp8.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "Mistral 3 Small Flux2 FP8",
+    "canonicalSlug": "mistral-3-small-flux2-bf16"
+  },
+  {
+    "slug": "flux2turbocomfyv2",
+    "name": "Flux2TurboComfyv2.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/loras/Flux2TurboComfyv2.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Flux2TurboComfyv2"
+  },
+  {
+    "slug": "flux-2-klein-base-4b-fp8",
     "name": "flux-2-klein-base-4b-fp8.safetensors",
     "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4b-fp8/resolve/main/flux-2-klein-base-4b-fp8.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "flux-2-klein-base-4b-fp8",
-    "displayName": "Flux 2 Klein Base 4b FP8"
+    "displayName": "Flux 2 Klein Base 4b FP8",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein"
   },
   {
-    "name": "wan2.2_fun_camera_high_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_camera_high_noise_14B_fp8_scaled.safetensors",
+    "slug": "flux-2-klein-4b-fp8",
+    "name": "flux-2-klein-4b-fp8.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4b-fp8/resolve/main/flux-2-klein-4b-fp8.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "wan2-2-fun-camera-high-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 Fun Camera High Noise 14B FP8 scaled"
+    "displayName": "Flux 2 Klein 4b FP8"
   },
   {
-    "name": "wan2.2_fun_camera_low_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_camera_low_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-fun-camera-low-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 Fun Camera Low Noise 14B FP8 scaled"
-  },
-  {
-    "name": "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-t2v-low-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 T2v Low Noise 14B FP8 scaled"
-  },
-  {
-    "name": "wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 1,
-    "slug": "wan2-2-t2v-high-noise-14b-fp8-scaled",
-    "displayName": "Wan2 2 T2v High Noise 14B FP8 scaled"
-  },
-  {
-    "name": "wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "wan2-2-t2v-lightx2v-4steps-lora-v1-1-low-noise",
-    "displayName": "Wan2 2 T2v Lightx2v 4steps Lora V1 1 Low Noise"
-  },
-  {
-    "name": "Qwen-Image-Edit-2509-Fusion.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Fusion.safetensors",
-    "directory": "loras",
-    "workflowCount": 1,
-    "slug": "qwen-image-edit-2509-fusion",
-    "displayName": "Qwen Image Edit 2509 Fusion"
-  },
-  {
+    "slug": "flux-2-klein-base-4b",
     "name": "flux-2-klein-base-4b.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-klein/resolve/main/split_files/diffusion_models/flux-2-klein-base-4b.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "flux-2-klein-base-4b",
-    "displayName": "Flux 2 Klein Base 4b"
+    "displayName": "Flux 2 Klein Base 4b",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein"
   },
   {
+    "slug": "flux-2-klein-4b",
     "name": "flux-2-klein-4b.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/flux2-klein/resolve/main/split_files/diffusion_models/flux-2-klein-4b.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "flux-2-klein-4b",
-    "displayName": "Flux 2 Klein 4b"
+    "displayName": "Flux 2 Klein 4b",
+    "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein"
   },
   {
-    "name": "wan2.1_fun_inp_1.3B_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_inp_1.3B_bf16.safetensors?download=true",
+    "slug": "netayumev35-pretrained-all-in-one",
+    "name": "NetaYumev35_pretrained_all_in_one.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/duongve/NetaYume-Lumina-Image-2.0/resolve/main/NetaYumev35_pretrained_all_in_one.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "NetaYumev35 Pretrained All In One",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/newbie-image/newbie-image-exp-0-1"
+  },
+  {
+    "slug": "newbie-image-exp0-1-bf16",
+    "name": "NewBie-Image-Exp0.1-bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/NewBie-image-Exp0.1_repackaged/resolve/main/split_files/diffusion_models/NewBie-Image-Exp0.1-bf16.safetensors",
     "directory": "diffusion_models",
     "workflowCount": 1,
-    "slug": "wan2-1-fun-inp-1-3b-bf16",
-    "displayName": "Wan2 1 Fun Inp 1 3B BF16"
+    "displayName": "NewBie Image Exp0.1 BF16"
   },
   {
-    "name": "Qwen-Image-Edit-2509-Anything2RealAlpha.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Anything2RealAlpha.safetensors",
+    "slug": "gemma-3-4b-it-bf16",
+    "name": "gemma_3_4b_it_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/NewBie-image-Exp0.1_repackaged/resolve/main/split_files/text_encoders/gemma_3_4b_it_bf16.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "Gemma 3 4b It BF16"
+  },
+  {
+    "slug": "jina-clip-v2-bf16",
+    "name": "jina_clip_v2_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/NewBie-image-Exp0.1_repackaged/resolve/main/split_files/text_encoders/jina_clip_v2_bf16.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "Jina Clip V2 BF16"
+  },
+  {
+    "slug": "ovis-image-bf16",
+    "name": "ovis_image_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Ovis-Image/resolve/main/split_files/diffusion_models/ovis_image_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Ovis Image BF16"
+  },
+  {
+    "slug": "ovis-2-5",
+    "name": "ovis_2.5.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Ovis-Image/resolve/main/split_files/text_encoders/ovis_2.5.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "Ovis 2.5"
+  },
+  {
+    "slug": "qwen-image-lightning-8steps-v1-0",
+    "name": "Qwen-Image-Lightning-8steps-V1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-8steps-V1.0.safetensors",
     "directory": "loras",
     "workflowCount": 1,
-    "slug": "qwen-image-edit-2509-anything2realalpha",
-    "displayName": "Qwen Image Edit 2509 Anything2RealAlpha"
+    "displayName": "Qwen Image Lightning 8steps V1.0",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
   },
   {
+    "slug": "wuli-qwen-image-2512-turbo-lora-2steps-v1-0-bf16",
+    "name": "Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps/resolve/main/Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Wuli Qwen Image 2512 Turbo LoRA 2steps V1.0 BF16"
+  },
+  {
+    "slug": "qwen-image-canny-diffsynth-controlnet",
+    "name": "qwen_image_canny_diffsynth_controlnet.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/model_patches/qwen_image_canny_diffsynth_controlnet.safetensors",
+    "directory": "model_patches",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Canny Diffsynth Controlnet",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
+  },
+  {
+    "slug": "qwen-image-edit-fp8-e4m3fn",
+    "name": "qwen_image_edit_fp8_e4m3fn.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_fp8_e4m3fn.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit FP8 e4m3fn",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"
+  },
+  {
+    "slug": "qwen-image-edit-lightning-4steps-v1-0-bf16",
+    "name": "Qwen-Image-Edit-Lightning-4steps-V1.0-bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-Lightning-4steps-V1.0-bf16.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit Lightning 4steps V1.0 BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit"
+  },
+  {
+    "slug": "qwen-image-edit-2509-relight",
+    "name": "Qwen-Image-Edit-2509-Relight.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Relight.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit 2509 Relight"
+  },
+  {
+    "slug": "qwen-image-instantx-controlnet-union",
+    "name": "Qwen-Image-InstantX-ControlNet-Union.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-InstantX-ControlNets/resolve/main/split_files/controlnet/Qwen-Image-InstantX-ControlNet-Union.safetensors",
+    "directory": "controlnet",
+    "workflowCount": 1,
+    "displayName": "Qwen Image InstantX ControlNet Union",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
+  },
+  {
+    "slug": "qwen-image-instantx-controlnet-inpainting",
+    "name": "Qwen-Image-InstantX-ControlNet-Inpainting.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-InstantX-ControlNets/resolve/main/split_files/controlnet/Qwen-Image-InstantX-ControlNet-Inpainting.safetensors",
+    "directory": "controlnet",
+    "workflowCount": 1,
+    "displayName": "Qwen Image InstantX ControlNet Inpainting",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
+  },
+  {
+    "slug": "qwen-image-layered-bf16",
+    "name": "qwen_image_layered_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Layered_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_layered_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Layered BF16"
+  },
+  {
+    "slug": "qwen-image-layered-control-bf16",
+    "name": "qwen_image_layered_control_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/DiffSynth-Studio/Qwen-Image-Layered-Control/resolve/main/qwen_image_layered_control_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Layered Control BF16"
+  },
+  {
+    "slug": "qwen-image-union-diffsynth-lora",
     "name": "qwen_image_union_diffsynth_lora.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/loras/qwen_image_union_diffsynth_lora.safetensors",
     "directory": "loras",
     "workflowCount": 1,
-    "slug": "qwen-image-union-diffsynth-lora",
-    "displayName": "Qwen Image Union Diffsynth Lora"
+    "displayName": "Qwen Image Union Diffsynth Lora",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image"
   },
   {
+    "slug": "wan2-1-i2v-480p-14b-fp16",
+    "name": "wan2.1_i2v_480p_14B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 I2v 480p 14B FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan-video"
+  },
+  {
+    "slug": "z-image-bf16",
+    "name": "z_image_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/z_image/resolve/main/split_files/diffusion_models/z_image_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Z Image BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image"
+  },
+  {
+    "slug": "pixel-art-style-z-image-turbo",
+    "name": "pixel_art_style_z_image_turbo.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/tarn59/pixel_art_style_lora_z_image_turbo/resolve/main/pixel_art_style_z_image_turbo.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Pixel Art Style Z Image Turbo"
+  },
+  {
+    "slug": "z-image-turbo-fun-controlnet-union",
+    "name": "Z-Image-Turbo-Fun-Controlnet-Union.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union/resolve/main/Z-Image-Turbo-Fun-Controlnet-Union.safetensors",
+    "directory": "model_patches",
+    "workflowCount": 1,
+    "displayName": "Z Image Turbo Fun Controlnet Union"
+  },
+  {
+    "slug": "ltx-video-2b-v0-9-5",
+    "name": "ltx-video-2b-v0.9.5.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "Ltx Video 2b V0.9.5",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/ltxv"
+  },
+  {
+    "slug": "ltx-video-2b-v0-9",
     "name": "ltx-video-2b-v0.9.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.safetensors?download=true",
     "directory": "checkpoints",
     "workflowCount": 1,
-    "slug": "ltx-video-2b-v0-9",
-    "displayName": "Ltx Video 2b V0 9"
+    "displayName": "Ltx Video 2b V0.9",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/ltxv"
+  },
+  {
+    "slug": "sd3-5-large-controlnet-blur",
+    "name": "sd3.5_large_controlnet_blur.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-controlnets_ComfyUI_repackaged/resolve/main/split_files/controlnet/sd3.5_large_controlnet_blur.safetensors",
+    "directory": "controlnet",
+    "workflowCount": 1,
+    "displayName": "Sd3.5 Large Controlnet Blur",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets"
+  },
+  {
+    "slug": "sd3-5-large-controlnet-canny",
+    "name": "sd3.5_large_controlnet_canny.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-controlnets_ComfyUI_repackaged/resolve/main/split_files/controlnet/sd3.5_large_controlnet_canny.safetensors",
+    "directory": "controlnet",
+    "workflowCount": 1,
+    "displayName": "Sd3.5 Large Controlnet Canny",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets"
+  },
+  {
+    "slug": "sd3-5-large-controlnet-depth",
+    "name": "sd3.5_large_controlnet_depth.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-controlnets_ComfyUI_repackaged/resolve/main/split_files/controlnet/sd3.5_large_controlnet_depth.safetensors",
+    "directory": "controlnet",
+    "workflowCount": 1,
+    "displayName": "Sd3.5 Large Controlnet Depth",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets"
+  },
+  {
+    "slug": "clip-vision-g",
+    "name": "clip_vision_g.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/comfyanonymous/clip_vision_g/resolve/main/clip_vision_g.safetensors?download=true",
+    "directory": "clip_vision",
+    "workflowCount": 1,
+    "displayName": "Clip Vision G",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sdxl/#revision"
+  },
+  {
+    "slug": "sd-xl-turbo-1-0-fp16",
+    "name": "sd_xl_turbo_1.0_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/stabilityai/sdxl-turbo/resolve/main/sd_xl_turbo_1.0_fp16.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "Sd Xl Turbo 1.0 FP16",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sdturbo/"
+  },
+  {
+    "slug": "wan21-t2v-14b-lightx2v-cfg-step-distill-lora-rank32",
+    "name": "Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Wan21 T2V 14B Lightx2v Cfg Step Distill Lora Rank32"
+  },
+  {
+    "slug": "umt5-xxl-enc-bf16",
+    "name": "umt5-xxl-enc-bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/umt5-xxl-enc-bf16.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 1,
+    "displayName": "Umt5 Xxl Enc BF16"
+  },
+  {
+    "slug": "clip-vit-h-14-laion2b-s32b-b79k",
+    "name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/CLIP-ViT-H-14-laion2B-s32B-b79K_repackaged/resolve/main/split_files/clip_vision/CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+    "directory": "clip_vision",
+    "workflowCount": 1,
+    "displayName": "CLIP ViT H 14 Laion2B S32B B79K"
+  },
+  {
+    "slug": "qwen-image-edit-2509-anything2realalpha",
+    "name": "Qwen-Image-Edit-2509-Anything2RealAlpha.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Anything2RealAlpha.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit 2509 Anything2RealAlpha"
+  },
+  {
+    "slug": "qwen-image-edit-2509-light-migration",
+    "name": "Qwen-Image-Edit-2509-Light-Migration.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Light-Migration.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit 2509 Light Migration"
+  },
+  {
+    "slug": "qwen-image-edit-2509-fusion",
+    "name": "Qwen-Image-Edit-2509-Fusion.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Image-Edit-2509-Fusion.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Qwen Image Edit 2509 Fusion"
+  },
+  {
+    "slug": "wan2-1-t2v-1-3b-fp16",
+    "name": "wan2.1_t2v_1.3B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 T2v 1.3B FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan-video"
+  },
+  {
+    "slug": "svd-xt",
+    "name": "svd_xt.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors?download=true",
+    "directory": "checkpoints",
+    "workflowCount": 1,
+    "displayName": "Svd Xt",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video"
+  },
+  {
+    "slug": "realesrgan-x4plus",
+    "name": "RealESRGAN_x4plus.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Real-ESRGAN_repackaged/resolve/main/RealESRGAN_x4plus.safetensors",
+    "directory": "upscale_models",
+    "workflowCount": 1,
+    "displayName": "RealESRGAN X4plus"
+  },
+  {
+    "slug": "humo-17b-fp8-e4m3fn",
+    "name": "humo_17B_fp8_e4m3fn.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HuMo_ComfyUI/resolve/main/split_files/diffusion_models/humo_17B_fp8_e4m3fn.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Humo 17B FP8 e4m3fn"
+  },
+  {
+    "slug": "whisper-large-v3-fp16",
+    "name": "whisper_large_v3_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HuMo_ComfyUI/resolve/main/split_files/audio_encoders/whisper_large_v3_fp16.safetensors",
+    "directory": "audio_encoders",
+    "workflowCount": 1,
+    "displayName": "Whisper Large V3 FP16"
+  },
+  {
+    "slug": "hunyuanvideo1-5-720p-i2v-fp16",
+    "name": "hunyuanvideo1.5_720p_i2v_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/diffusion_models/hunyuanvideo1.5_720p_i2v_fp16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hunyuanvideo1.5 720p I2v FP16"
+  },
+  {
+    "slug": "hunyuanvideo1-5-720p-t2v-fp16",
+    "name": "hunyuanvideo1.5_720p_t2v_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/diffusion_models/hunyuanvideo1.5_720p_t2v_fp16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Hunyuanvideo1.5 720p T2v FP16"
+  },
+  {
+    "slug": "kandinsky5lite-i2v-5s",
+    "name": "kandinsky5lite_i2v_5s.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/kandinskylab/Kandinsky-5.0-I2V-Lite-5s/resolve/main/model/kandinsky5lite_i2v_5s.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Kandinsky5lite I2v 5s"
+  },
+  {
+    "slug": "kandinsky5lite-t2v-sft-5s",
+    "name": "kandinsky5lite_t2v_sft_5s.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/kandinskylab/Kandinsky-5.0-T2V-Lite-sft-5s/resolve/main/model/kandinsky5lite_t2v_sft_5s.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Kandinsky5lite T2v Sft 5s"
+  },
+  {
+    "slug": "ltx-2-19b-ic-lora-canny-control",
+    "name": "ltx-2-19b-ic-lora-canny-control.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Canny-Control/resolve/main/ltx-2-19b-ic-lora-canny-control.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Ltx 2 19b Ic Lora Canny Control"
+  },
+  {
+    "slug": "ltx-2-19b-ic-lora-depth-control",
+    "name": "ltx-2-19b-ic-lora-depth-control.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Depth-Control/resolve/main/ltx-2-19b-ic-lora-depth-control.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Ltx 2 19b Ic Lora Depth Control"
+  },
+  {
+    "slug": "ltx-2-19b-ic-lora-pose-control",
+    "name": "ltx-2-19b-ic-lora-pose-control.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Pose-Control/resolve/main/ltx-2-19b-ic-lora-pose-control.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Ltx 2 19b Ic Lora Pose Control"
+  },
+  {
+    "slug": "wan2-1-t2v-14b-fp8-scaled",
+    "name": "wan2.1_t2v_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 T2v 14B FP8 scaled"
+  },
+  {
+    "slug": "wan-alpha-2-1-rgba-lora",
+    "name": "wan_alpha_2.1_rgba_lora.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/loras/wan_alpha_2.1_rgba_lora.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Wan Alpha 2.1 Rgba Lora"
+  },
+  {
+    "slug": "wan-alpha-2-1-vae-rgb-channel",
+    "name": "wan_alpha_2.1_vae_rgb_channel.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_alpha_2.1_vae_rgb_channel.safetensors",
+    "directory": "vae",
+    "workflowCount": 1,
+    "displayName": "Wan Alpha 2.1 Vae Rgb Channel"
+  },
+  {
+    "slug": "wan-alpha-2-1-vae-alpha-channel",
+    "name": "wan_alpha_2.1_vae_alpha_channel.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_alpha_2.1_vae_alpha_channel.safetensors",
+    "directory": "vae",
+    "workflowCount": 1,
+    "displayName": "Wan Alpha 2.1 Vae Alpha Channel"
+  },
+  {
+    "slug": "lightx2v-t2v-14b-cfg-step-distill-v2-lora-rank64-bf16",
+    "name": "lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Lightx2v T2V 14B Cfg Step Distill V2 Lora Rank64 BF16"
+  },
+  {
+    "slug": "wan2-1-fun-camera-v1-1-1-3b-bf16",
+    "name": "wan2.1_fun_camera_v1.1_1.3B_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_camera_v1.1_1.3B_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 Fun Camera V1.1 1.3B BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/fun-control"
+  },
+  {
+    "slug": "wan2-1-fun-camera-v1-1-14b-bf16",
+    "name": "wan2.1_fun_camera_v1.1_14B_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_camera_v1.1_14B_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 Fun Camera V1.1 14B BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/fun-control"
+  },
+  {
+    "slug": "wan2-1-i2v-14b-480p-fp8-e4m3fn-scaled-kj",
+    "name": "Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/I2V/Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2 1 I2V 14B 480p FP8 e4m3fn scaled KJ"
+  },
+  {
+    "slug": "wan2-1-infinitetalk-multi-fp16",
+    "name": "wan2.1_infiniteTalk_multi_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/model_patches/wan2.1_infiniteTalk_multi_fp16.safetensors",
+    "directory": "model_patches",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 InfiniteTalk Multi FP16"
+  },
+  {
+    "slug": "wav2vec2-chinese-base-fp16",
+    "name": "wav2vec2-chinese-base_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/wav2vec2_safetensors/resolve/main/wav2vec2-chinese-base_fp16.safetensors",
+    "directory": "audio_encoders",
+    "workflowCount": 1,
+    "displayName": "Wav2vec2 Chinese Base FP16"
+  },
+  {
+    "slug": "wananimate-relight-lora-fp16",
+    "name": "WanAnimate_relight_lora_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Wan22_relight/WanAnimate_relight_lora_fp16.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "WanAnimate Relight Lora FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate"
+  },
+  {
+    "slug": "wan2-2-animate-14b-fp8-e4m3fn-scaled-kj",
+    "name": "Wan2_2-Animate-14B_fp8_e4m3fn_scaled_KJ.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/Wan22Animate/Wan2_2-Animate-14B_fp8_e4m3fn_scaled_KJ.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2 2 Animate 14B FP8 e4m3fn scaled KJ",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate"
+  },
+  {
+    "slug": "wan2-2-fun-camera-high-noise-14b-fp8-scaled",
+    "name": "wan2.2_fun_camera_high_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_camera_high_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Camera High Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-fun-camera"
+  },
+  {
+    "slug": "wan2-2-fun-camera-low-noise-14b-fp8-scaled",
+    "name": "wan2.2_fun_camera_low_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_camera_low_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Camera Low Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-fun-camera"
+  },
+  {
+    "slug": "wan2-2-fun-control-high-noise-14b-fp8-scaled",
+    "name": "wan2.2_fun_control_high_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_control_high_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Control High Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-fun-control"
+  },
+  {
+    "slug": "wan2-2-fun-control-low-noise-14b-fp8-scaled",
+    "name": "wan2.2_fun_control_low_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_control_low_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Control Low Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-fun-control"
+  },
+  {
+    "slug": "wan2-2-fun-inpaint-high-noise-14b-fp8-scaled",
+    "name": "wan2.2_fun_inpaint_high_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_inpaint_high_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Inpaint High Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-fun-inp"
+  },
+  {
+    "slug": "wan2-2-fun-inpaint-low-noise-14b-fp8-scaled",
+    "name": "wan2.2_fun_inpaint_low_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_inpaint_low_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Inpaint Low Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-fun-inp"
+  },
+  {
+    "slug": "wav2vec2-large-english-fp16",
+    "name": "wav2vec2_large_english_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors",
+    "directory": "audio_encoders",
+    "workflowCount": 1,
+    "displayName": "Wav2vec2 Large English FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-s2v"
+  },
+  {
+    "slug": "wan2-2-s2v-14b-fp8-scaled",
+    "name": "wan2.2_s2v_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 S2v 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-s2v"
+  },
+  {
+    "slug": "wan2-2-t2v-low-noise-14b-fp8-scaled",
+    "name": "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 T2v Low Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
+  },
+  {
+    "slug": "wan2-2-t2v-high-noise-14b-fp8-scaled",
+    "name": "wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 T2v High Noise 14B FP8 scaled",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
+  },
+  {
+    "slug": "wan2-2-t2v-lightx2v-4steps-lora-v1-1-low-noise",
+    "name": "wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
+    "directory": "loras",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 T2v Lightx2v 4steps Lora V1.1 Low Noise",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2"
+  },
+  {
+    "slug": "wan2-2-fun-control-5b-bf16",
+    "name": "wan2.2_fun_control_5B_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_control_5B_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Control 5B BF16"
+  },
+  {
+    "slug": "wan2-2-fun-inpaint-5b-bf16",
+    "name": "wan2.2_fun_inpaint_5B_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_fun_inpaint_5B_bf16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Fun Inpaint 5B BF16"
+  },
+  {
+    "slug": "wan2-2-ti2v-5b-fp16",
+    "name": "wan2.2_ti2v_5B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.2 Ti2v 5B FP16"
+  },
+  {
+    "slug": "wan2-1-flf2v-720p-14b-fp16",
+    "name": "wan2.1_flf2v_720p_14B_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_flf2v_720p_14B_fp16.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 Flf2v 720p 14B FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan-flf"
+  },
+  {
+    "slug": "wan2-1-fun-control-1-3b-bf16",
+    "name": "wan2.1_fun_control_1.3B_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_control_1.3B_bf16.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 Fun Control 1.3B BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/fun-control"
+  },
+  {
+    "slug": "wan2-1-fun-inp-1-3b-bf16",
+    "name": "wan2.1_fun_inp_1.3B_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_fun_inp_1.3B_bf16.safetensors?download=true",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Wan2.1 Fun Inp 1.3B BF16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/fun-inp"
   }
 ]

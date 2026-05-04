@@ -5,7 +5,6 @@ interface ModelOverride {
 }
 
 export const modelMetadata: Record<string, ModelOverride> = {
-  // Wave 1 — partner nodes (FE-421 priority)
   'nano-banana': {
     docsUrl:
       'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-pro',
@@ -20,7 +19,18 @@ export const modelMetadata: Record<string, ModelOverride> = {
     docsUrl: 'https://docs.comfy.org/tutorials/partner-nodes/meshy/meshy-6',
     featured: true
   },
-  // Wave 1 — local models
+  'openai-dall-e': {
+    docsUrl: 'https://docs.comfy.org/tutorials/partner-nodes/openai/dall-e-3',
+    featured: true
+  },
+  'ltxv-api': {
+    docsUrl: 'https://docs.comfy.org/tutorials/video/ltxv',
+    featured: true
+  },
+  'wan-api': {
+    docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan2_2',
+    featured: true
+  },
   'wan-2-2': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan2_2',
     featured: true
@@ -29,18 +39,17 @@ export const modelMetadata: Record<string, ModelOverride> = {
     docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan-video',
     featured: true
   },
-  // Wave 2
   'flux-1-kontext-dev': {
-    docsUrl: 'https://docs.comfy.org/tutorials/flux/flux-1-kontext-dev',
+    docsUrl:
+      'https://docs.comfy.org/tutorials/partner-nodes/black-forest-labs/flux-1-kontext',
+    featured: true
+  },
+  'flux-1-dev': {
+    docsUrl: 'https://docs.comfy.org/tutorials/flux/flux-1-text-to-image',
     featured: true
   },
   'hunyuan-video': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/hunyuan/hunyuan-video',
-    featured: true
-  },
-  // Wave 3
-  'flux-1-dev': {
-    docsUrl: 'https://docs.comfy.org/tutorials/flux/flux-1-text-to-image',
     featured: true
   },
   'hunyuan-3d': {

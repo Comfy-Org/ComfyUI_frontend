@@ -38,6 +38,7 @@ export const models: readonly Model[] = (
     displayName: string
     directory: string
     huggingFaceUrl: string
+    docsUrl?: string
     thumbnailUrl?: string
     workflowCount: number
   }>
@@ -48,6 +49,7 @@ export const models: readonly Model[] = (
   displayName: m.displayName,
   directory: m.directory as ModelDirectory,
   huggingFaceUrl: m.huggingFaceUrl,
+  ...(m.docsUrl ? { docsUrl: m.docsUrl } : {}),
   ...(m.thumbnailUrl ? { thumbnailUrl: m.thumbnailUrl } : {}),
   featured: false,
   workflowCount: m.workflowCount,
