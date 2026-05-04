@@ -3592,6 +3592,49 @@ const translations = {
   'customers.feedback.role3': {
     en: 'Head of AI at Creative Studios',
     'zh-CN': 'Creative Studios AI 负责人'
+  },
+
+  // Payment status pages
+  'payment.success.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.success.title': {
+    en: 'Payment successful',
+    'zh-CN': '支付成功'
+  },
+  'payment.success.subtitle': {
+    en: "Thanks for your purchase. Your account has been credited and you're ready to keep building.",
+    'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
+  },
+  'payment.success.primaryCta': {
+    en: 'CONTINUE TO COMFY CLOUD',
+    'zh-CN': '前往 COMFY CLOUD'
+  },
+  'payment.success.secondaryCta': {
+    en: 'VIEW USAGE & PAYMENTS',
+    'zh-CN': '查看用量与支付'
+  },
+  'payment.failed.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.failed.title': {
+    en: 'Payment was not completed',
+    'zh-CN': '支付未完成'
+  },
+  'payment.failed.subtitle': {
+    en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",
+    'zh-CN':
+      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅订阅文档。'
+  },
+  'payment.failed.primaryCta': {
+    en: 'CONTACT SUPPORT',
+    'zh-CN': '联系支持'
+  },
+  'payment.failed.secondaryCta': {
+    en: 'READ SUBSCRIPTION DOCS',
+    'zh-CN': '查看订阅文档'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
