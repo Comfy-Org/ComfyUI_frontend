@@ -10,7 +10,7 @@ const {
   docsUrl,
   blogUrl,
   workflowCount,
-  directory,
+  directory
 } = defineProps<{
   displayName: string
   description: string
@@ -34,7 +34,7 @@ const dirDisplayMap: Record<string, string> = {
   latent_upscale_models: 'Latent Upscale Model',
   upscale_models: 'Upscale Model',
   style_models: 'Style Model',
-  partner_nodes: 'Partner Node',
+  partner_nodes: 'Partner Node'
 }
 
 const eyebrow = dirDisplayMap[directory] ?? directory
@@ -51,7 +51,9 @@ const isPartnerNode = directory === 'partner_nodes'
     "
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
-      <p class="text-sm font-medium uppercase tracking-widest text-[var(--color-primary-comfy-yellow)]">
+      <p
+        class="text-sm font-medium tracking-widest text-(--color-primary-comfy-yellow) uppercase"
+      >
         {{ eyebrow }}
       </p>
 
@@ -101,7 +103,12 @@ const isPartnerNode = directory === 'partner_nodes'
       </div>
 
       <div v-if="blogUrl" class="flex gap-4 text-sm text-white/50">
-        <a :href="blogUrl" target="_blank" rel="noopener noreferrer" class="hover:text-white/80 underline">
+        <a
+          :href="blogUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline hover:text-white/80"
+        >
           Read blog post
         </a>
       </div>
