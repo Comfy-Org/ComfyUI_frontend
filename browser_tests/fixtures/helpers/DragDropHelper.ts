@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import type { Page } from '@playwright/test'
 
 import type { Position } from '@e2e/fixtures/types'
-import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
+import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 

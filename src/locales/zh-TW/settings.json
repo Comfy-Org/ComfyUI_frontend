@@ -272,6 +272,10 @@
       "v1 (legacy)": "v1（舊版）"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "新增節點跟隨游標",
+    "tooltip": "啟用後，從搜尋框新增的節點會跟隨游標，直到點擊以放置。僅適用於預設實作。"
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "節點預覽",
     "tooltip": "僅適用於預設實作"

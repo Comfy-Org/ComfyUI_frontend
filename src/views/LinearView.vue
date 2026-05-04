@@ -14,7 +14,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
@@ -94,9 +94,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 
 function dragDrop(e: DragEvent) {
   const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  linearWorkflowRef.value?.handleDragDrop(e)
+  if (dataTransfer) linearWorkflowRef.value?.handleDragDrop()
 }
 </script>
 <template>

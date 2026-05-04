@@ -15,15 +15,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('gallery.contact.label', locale) }}
     </span>
     <h2
-      class="text-primary-comfy-canvas mt-4 text-3xl font-light whitespace-pre-line"
-    >
-      {{ t('gallery.contact.heading', locale) }}
-    </h2>
-    <a
-      href="mailto:contact@comfy.org"
-      class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink mt-8 inline-flex items-center justify-center rounded-2xl border-2 px-8 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
-    >
-      {{ t('gallery.contact.cta', locale) }}
-    </a>
+      class="text-primary-comfy-canvas mt-4 max-w-2xl text-2xl font-light whitespace-pre-line"
+      v-html="t('gallery.contact.heading', locale)"
+    />
   </section>
 </template>
