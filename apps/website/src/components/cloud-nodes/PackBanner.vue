@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
-const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
+import { useBannerImage } from '../../composables/useBannerImage'
 
 const { bannerUrl, iconUrl, name } = defineProps<{
   bannerUrl?: string
@@ -9,10 +7,16 @@ const { bannerUrl, iconUrl, name } = defineProps<{
   name: string
 }>()
 
-const isImageError = ref(false)
-
-const showDefaultBanner = computed(() => !bannerUrl && !iconUrl)
-const imgSrc = computed(() => bannerUrl || iconUrl)
+const {
+  DEFAULT_BANNER,
+  isImageError,
+  showDefaultBanner,
+  imgSrc,
+  onImageError
+} = useBannerImage({
+  bannerUrl: () => bannerUrl,
+  iconUrl: () => iconUrl
+})
 </script>
 
 <template>
@@ -41,7 +45,7 @@ const imgSrc = computed(() => bannerUrl || iconUrl)
             ? 'relative z-10 size-full object-cover'
             : 'relative z-10 size-full object-contain'
         "
-        @error="isImageError = true"
+        @error="onImageError"
       />
     </div>
   </div>
