@@ -411,10 +411,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const changed = this.state.readOnly !== value
     this.state.readOnly = value
     this._updateCursorStyle()
-    if (changed) this.onReadOnlyChanged?.(value)
+    if (changed) {
+      this.dispatchEvent('litegraph:read-only-changed', { readOnly: value })
+    }
   }
-
-  onReadOnlyChanged?: (readOnly: boolean) => void
 
   get isDragging(): boolean {
     return this.state.draggingItems

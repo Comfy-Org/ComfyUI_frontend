@@ -41,20 +41,24 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as Record<string, unknown>),
-    useEventListener: vi.fn()
+    useEventListener: vi.fn(
+      (
+        target: EventTarget,
+        event: string,
+        handler: EventListenerOrEventListenerObject
+      ) => {
+        target.addEventListener(event, handler)
+        return () => target.removeEventListener(event, handler)
+      }
+    )
   }
 })
 
-function createMockCanvas(
-  readOnly = false
-): LGraphCanvas & { onReadOnlyChanged?: (v: boolean) => void } {
+function createMockCanvas(readOnly = false): LGraphCanvas {
   return {
     read_only: readOnly,
-    canvas: document.createElement('canvas'),
-    onReadOnlyChanged: undefined
-  } as unknown as LGraphCanvas & {
-    onReadOnlyChanged?: (v: boolean) => void
-  }
+    canvas: document.createElement('canvas')
+  } as unknown as LGraphCanvas
 }
 
 describe('useCanvasStore', () => {
@@ -117,7 +121,7 @@ describe('useCanvasStore', () => {
       expect(store.isReadOnly).toBe(true)
     })
 
-    it('updates isReadOnly when onReadOnlyChanged callback fires', async () => {
+    it('updates isReadOnly when litegraph:read-only-changed event fires', async () => {
       const mockCanvas = createMockCanvas(false)
 
       store.canvas = mockCanvas as unknown as LGraphCanvas
@@ -126,24 +130,22 @@ describe('useCanvasStore', () => {
       expect(store.isReadOnly).toBe(false)
 
       // Simulate space key press → LGraphCanvas sets read_only = true
-      mockCanvas.onReadOnlyChanged?.(true)
+      mockCanvas.canvas.dispatchEvent(
+        new CustomEvent('litegraph:read-only-changed', {
+          detail: { readOnly: true }
+        })
+      )
 
       expect(store.isReadOnly).toBe(true)
 
       // Simulate space key release
-      mockCanvas.onReadOnlyChanged?.(false)
+      mockCanvas.canvas.dispatchEvent(
+        new CustomEvent('litegraph:read-only-changed', {
+          detail: { readOnly: false }
+        })
+      )
 
       expect(store.isReadOnly).toBe(false)
-    })
-
-    it('registers onReadOnlyChanged callback on the canvas', async () => {
-      const mockCanvas = createMockCanvas(false)
-
-      store.canvas = mockCanvas as unknown as LGraphCanvas
-      await nextTick()
-
-      expect(mockCanvas.onReadOnlyChanged).toBeDefined()
-      expect(typeof mockCanvas.onReadOnlyChanged).toBe('function')
     })
   })
 })
