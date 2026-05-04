@@ -671,14 +671,7 @@ describe('useWorkspaceAuthStore', () => {
   })
 
   describe('refreshToken retry/race paths', () => {
-    // NOTE: This test documents the CURRENT behavior — exhausted refresh
-    // retries clear the workspace context unconditionally, even when the
-    // existing workspace token is still within its expiry window. That is a
-    // UX gap (transient backend outage manifests as forced logout) and the
-    // store should preserve a still-valid token across transient
-    // TOKEN_EXCHANGE_FAILED errors. Update the assertion alongside any source
-    // change that tracks token expiry to skip the context clear.
-    it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then clears context', async () => {
+    it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then preserves valid context', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
       // Initial successful switchWorkspace establishes context.
@@ -689,10 +682,11 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { currentWorkspace } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken, error } = storeToRefs(store)
 
       await store.switchWorkspace('workspace-123')
-      expect(currentWorkspace.value).not.toBeNull()
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('workspace-token-abc')
 
       // Subsequent refresh attempts all fail with 500 (TOKEN_EXCHANGE_FAILED).
       mockFetch.mockResolvedValue({
@@ -711,8 +705,11 @@ describe('useWorkspaceAuthStore', () => {
 
       const refreshPromise = store.refreshToken()
 
-      // Drain the four attempts (initial + 3 retries) and their backoff delays.
-      await vi.runAllTimersAsync()
+      // Drain only the retry backoff delays; do not advance to the scheduled
+      // proactive refresh timer for the still-valid token.
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
       await refreshPromise
 
       // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
@@ -734,8 +731,32 @@ describe('useWorkspaceAuthStore', () => {
         )
       ).toBe(true)
 
-      // After the final failure the context is cleared.
-      expect(currentWorkspace.value).toBeNull()
+      // After the final transient failure the still-valid context is preserved.
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('workspace-token-abc')
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify(mockWorkspaceWithRole))
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'workspace-token-abc'
+      )
+      expect(error.value).toBeNull()
+      expect(consoleErrorSpy).not.toHaveBeenCalled()
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
+      })
+
+      await vi.advanceTimersByTimeAsync(7999)
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockFetch).toHaveBeenCalledTimes(6)
+      await vi.waitFor(() => {
+        expect(workspaceToken.value).toBe('retry-token')
+      })
 
       consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()
@@ -776,16 +797,7 @@ describe('useWorkspaceAuthStore', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    // KNOWN BUG (.fails): when an in-flight refresh's switchWorkspace call is
-    // already past its requestId-staleness check and awaiting the token-exchange
-    // fetch, switchWorkspace has no post-await commit guard. If the user
-    // switches workspaces and the stale refresh's fetch resolves AFTER the new
-    // switch has committed, the stale response will overwrite the new
-    // workspace's currentWorkspace/workspaceToken/sessionStorage. Mark this
-    // expected-fail until switchWorkspace gains a commit-time staleness check
-    // (e.g. compare captured requestId or expected workspaceId before
-    // assigning state). Removing `.fails` once fixed will catch regressions.
-    it.fails('the new workspace wins when the stale refresh resolves last', async () => {
+    it('the new workspace wins when the stale refresh resolves last', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
       const mockFetch = vi.fn().mockResolvedValueOnce({
@@ -824,10 +836,15 @@ describe('useWorkspaceAuthStore', () => {
       // New workspace is committed at this point.
       expect(currentWorkspace.value?.id).toBe('workspace-other')
       expect(workspaceToken.value).toBe('new-workspace-token')
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify({ ...newWorkspace, role: 'owner' }))
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'new-workspace-token'
+      )
 
       // Now resolve the stale refresh fetch — it carries an OLD-workspace
-      // token, and the source has no commit-time staleness check, so it
-      // clobbers the new workspace state.
+      // token. It must not clobber the new workspace state or sessionStorage.
       resolveRefreshFetch({
         ok: true,
         json: () =>
@@ -835,10 +852,14 @@ describe('useWorkspaceAuthStore', () => {
       })
       await refreshPromise
 
-      // Once the source-side guard is added, both of these become true
-      // (the test stops failing) and `.fails` should be dropped.
       expect(currentWorkspace.value?.id).toBe('workspace-other')
       expect(workspaceToken.value).toBe('new-workspace-token')
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify({ ...newWorkspace, role: 'owner' }))
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'new-workspace-token'
+      )
     })
   })
 
@@ -853,27 +874,40 @@ describe('useWorkspaceAuthStore', () => {
         })
       )
 
-      const setItemSpy = vi
-        .spyOn(sessionStorage, 'setItem')
-        .mockImplementation(() => {
+      const originalSessionStorage = globalThis.sessionStorage
+      const throwingSessionStorage = {
+        get length() {
+          return originalSessionStorage.length
+        },
+        key: originalSessionStorage.key.bind(originalSessionStorage),
+        getItem: originalSessionStorage.getItem.bind(originalSessionStorage),
+        setItem: vi.fn(() => {
           throw new Error('QuotaExceededError')
-        })
+        }),
+        removeItem: originalSessionStorage.removeItem.bind(
+          originalSessionStorage
+        ),
+        clear: originalSessionStorage.clear.bind(originalSessionStorage)
+      } satisfies Storage
+      vi.stubGlobal('sessionStorage', throwingSessionStorage)
       const consoleWarnSpy = vi
         .spyOn(console, 'warn')
         .mockImplementation(() => {})
 
-      const store = useWorkspaceAuthStore()
-      const { workspaceToken } = storeToRefs(store)
+      try {
+        const store = useWorkspaceAuthStore()
+        const { workspaceToken } = storeToRefs(store)
 
-      await store.switchWorkspace('workspace-123')
+        await store.switchWorkspace('workspace-123')
 
-      expect(workspaceToken.value).toBe('workspace-token-abc')
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Failed to persist workspace context to sessionStorage'
-      )
-
-      setItemSpy.mockRestore()
-      consoleWarnSpy.mockRestore()
+        expect(workspaceToken.value).toBe('workspace-token-abc')
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          'Failed to persist workspace context to sessionStorage'
+        )
+      } finally {
+        vi.stubGlobal('sessionStorage', originalSessionStorage)
+        consoleWarnSpy.mockRestore()
+      }
     })
   })
 
