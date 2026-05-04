@@ -1,12 +1,14 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { externalLinks } from '../src/config/routes'
+import { externalLinks, getRoutes } from '../src/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 
 const APP_URL = externalLinks.app
 const PLATFORM_URL = externalLinks.platform
 const BILLING_DOCS_URL = externalLinks.docsApi
+const EN_ROUTES = getRoutes('en')
+const ZH_CN_ROUTES = getRoutes('zh-CN')
 
 async function expectNoIndex(page: Page) {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -70,7 +72,7 @@ test.describe('Payment failed page @smoke', () => {
   test('primary CTA links to contact page', async ({ page }) => {
     const cta = page.getByRole('link', { name: /CONTACT SUPPORT/i })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/contact')
+    await expect(cta).toHaveAttribute('href', EN_ROUTES.contact)
   })
 
   test('secondary CTA links to billing docs', async ({ page }) => {
@@ -110,7 +112,7 @@ test.describe('Payment pages zh-CN @smoke', () => {
     ).toBeVisible()
     await expect(page.getByRole('link', { name: '联系支持' })).toHaveAttribute(
       'href',
-      '/zh-CN/contact'
+      ZH_CN_ROUTES.contact
     )
     await expect(
       page.getByRole('link', { name: '查看计费文档' })

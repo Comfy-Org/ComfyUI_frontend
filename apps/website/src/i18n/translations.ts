@@ -3624,9 +3624,9 @@ const translations = {
     'zh-CN': '支付未完成'
   },
   'payment.failed.subtitle': {
-    en: "Your payment didn't go through and you have not been charged. You can retry from where you started, or check the billing docs if the issue continues.",
+    en: "Your payment didn't go through and you have not been charged. Reach out to support or check the billing docs if you need help.",
     'zh-CN':
-      '您的支付未能完成，未发生扣款。您可以从原页面重试，或查阅计费文档了解更多信息。'
+      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅计费文档。'
   },
   'payment.failed.primaryCta': {
     en: 'CONTACT SUPPORT',
