@@ -1557,8 +1557,7 @@ describe('verifyAssetSupportedCandidates', () => {
 
   it('should not warn or fall back when hash verification is aborted', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const abortError = new Error('aborted')
-    abortError.name = 'AbortError'
+    const abortError = new DOMException('aborted', 'AbortError')
     const hash =
       '4444444444444444444444444444444444444444444444444444444444444444'
     const candidates = [
