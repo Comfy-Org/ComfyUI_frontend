@@ -231,6 +231,31 @@ export default defineConfig([
     }
   },
   {
+    name: 'comfy/no-unsafe-error-assertion',
+    files: [
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      'src/**/*.vue',
+      'apps/*/src/**/*.ts',
+      'apps/*/src/**/*.tsx',
+      'apps/*/src/**/*.vue'
+    ],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          // Bans `value as Error` and `value as Error & { ... }`.
+          // Use `error instanceof Error` narrowing or `toError()` from
+          // @/utils/errorUtil instead — see issue #11429.
+          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use `as Error` assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.spec.ts'],
     ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
