@@ -10,6 +10,7 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 const zJobId = z.string()
 export type JobId = z.infer<typeof zJobId>
+const zWorkflowId = z.string()
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
@@ -56,6 +57,7 @@ const zProgressWsMessage = z.object({
   value: z.number().int(),
   max: z.number().int(),
   prompt_id: zJobId,
+  workflow_id: zWorkflowId.optional(),
   node: zNodeId
 })
 
@@ -65,6 +67,7 @@ const zNodeProgressState = z.object({
   state: z.enum(['pending', 'running', 'finished', 'error']),
   node_id: zNodeId,
   prompt_id: zJobId,
+  workflow_id: zWorkflowId.optional(),
   display_node_id: zNodeId.optional(),
   parent_node_id: zNodeId.optional(),
   real_node_id: zNodeId.optional()
@@ -72,13 +75,15 @@ const zNodeProgressState = z.object({
 
 const zProgressStateWsMessage = z.object({
   prompt_id: zJobId,
+  workflow_id: zWorkflowId.optional(),
   nodes: z.record(zNodeId, zNodeProgressState)
 })
 
 const zExecutingWsMessage = z.object({
   node: zNodeId,
   display_node: zNodeId,
-  prompt_id: zJobId
+  prompt_id: zJobId,
+  workflow_id: zWorkflowId.optional()
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
@@ -88,6 +93,7 @@ const zExecutedWsMessage = zExecutingWsMessage.extend({
 
 const zExecutionWsMessageBase = z.object({
   prompt_id: zJobId,
+  workflow_id: zWorkflowId.optional(),
   timestamp: z.number().int()
 })
 
@@ -115,7 +121,8 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 const zProgressTextWsMessage = z.object({
   nodeId: zNodeId,
   text: z.string(),
-  prompt_id: z.string().optional()
+  prompt_id: z.string().optional(),
+  workflow_id: zWorkflowId.optional()
 })
 
 const zNotificationWsMessage = z.object({
