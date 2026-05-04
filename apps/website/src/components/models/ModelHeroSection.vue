@@ -1,0 +1,110 @@
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import BrandButton from '../common/BrandButton.vue'
+import { externalLinks } from '../../config/routes'
+
+const {
+  displayName,
+  description,
+  huggingFaceUrl,
+  docsUrl,
+  blogUrl,
+  workflowCount,
+  directory,
+} = defineProps<{
+  displayName: string
+  description: string
+  huggingFaceUrl: string
+  docsUrl?: string
+  blogUrl?: string
+  workflowCount: number
+  directory: string
+}>()
+
+const dirDisplayMap: Record<string, string> = {
+  diffusion_models: 'Diffusion Model',
+  checkpoints: 'Checkpoint',
+  loras: 'LoRA',
+  controlnet: 'ControlNet',
+  clip_vision: 'CLIP Vision',
+  model_patches: 'Model Patch',
+  vae: 'VAE',
+  text_encoders: 'Text Encoder',
+  audio_encoders: 'Audio Encoder',
+  latent_upscale_models: 'Latent Upscale Model',
+  upscale_models: 'Upscale Model',
+  style_models: 'Style Model',
+  partner_nodes: 'Partner Node',
+}
+
+const eyebrow = dirDisplayMap[directory] ?? directory
+const isPartnerNode = directory === 'partner_nodes'
+</script>
+
+<template>
+  <section
+    :class="
+      cn(
+        'mx-auto flex max-w-7xl flex-col gap-8 px-6 py-16',
+        'lg:flex-row lg:items-center lg:gap-16 lg:px-8 lg:py-24'
+      )
+    "
+  >
+    <div class="flex max-w-2xl flex-1 flex-col gap-6">
+      <p class="text-sm font-medium uppercase tracking-widest text-[var(--color-primary-comfy-yellow)]">
+        {{ eyebrow }}
+      </p>
+
+      <h1 class="text-4xl font-bold text-white lg:text-6xl">
+        {{ displayName }}
+      </h1>
+
+      <p class="text-base/relaxed text-white/70 lg:text-lg/relaxed">
+        {{ description }}
+      </p>
+
+      <p class="text-sm text-white/50">
+        {{ workflowCount }} workflows use this model
+      </p>
+
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <BrandButton
+          :href="externalLinks.workflows"
+          variant="primary"
+          size="lg"
+          class="w-full uppercase sm:w-auto sm:min-w-48"
+        >
+          TRY IN COMFY
+        </BrandButton>
+
+        <BrandButton
+          v-if="!isPartnerNode"
+          :href="huggingFaceUrl"
+          target="_blank"
+          variant="outline"
+          size="lg"
+          class="w-full uppercase sm:w-auto sm:min-w-48"
+        >
+          DOWNLOAD MODEL
+        </BrandButton>
+
+        <BrandButton
+          v-if="docsUrl"
+          :href="docsUrl"
+          target="_blank"
+          variant="outline"
+          size="lg"
+          class="w-full uppercase sm:w-auto sm:min-w-48"
+        >
+          VIEW TUTORIAL
+        </BrandButton>
+      </div>
+
+      <div v-if="blogUrl" class="flex gap-4 text-sm text-white/50">
+        <a :href="blogUrl" target="_blank" class="hover:text-white/80 underline">
+          Read blog post
+        </a>
+      </div>
+    </div>
+  </section>
+</template>
