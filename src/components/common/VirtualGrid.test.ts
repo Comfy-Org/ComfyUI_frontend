@@ -297,6 +297,41 @@ describe('VirtualGrid', () => {
     expect(renderedItems.length).toBeGreaterThan(0)
   })
 
+  it('renders last page of large list when scrollY exceeds natural max (FE-535)', async () => {
+    // Covers the maxOffsetRows > 0 branch: a list with valid scroll range
+    // (totalRows > viewRows) where scrollY drifts far past the natural max.
+    // Without clamping, fromCol overshoots items.length and the grid renders
+    // empty; with the clamp, offsetRows snaps to maxOffsetRows so the last
+    // page (including the final item) stays visible.
+    const items = createItems(100)
+    mockedWidth.value = 400
+    mockedHeight.value = 480
+    mockedScrollY.value = 100000
+
+    render(VirtualGrid, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 120,
+        defaultItemWidth: 100,
+        maxColumns: 4,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+
+    await nextTick()
+
+    const rendered = screen.queryAllByText(/^Item \d+$/)
+    expect(rendered.length).toBeGreaterThan(0)
+    expect(rendered.some((el) => el.textContent === 'Item 99')).toBe(true)
+  })
+
   it('forces cols to maxColumns when maxColumns is finite', async () => {
     mockedWidth.value = 100
     mockedHeight.value = 200
