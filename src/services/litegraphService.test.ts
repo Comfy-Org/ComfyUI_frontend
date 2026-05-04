@@ -1,8 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+
+async function invokeMenuCallback(option: IContextMenuValue): Promise<void> {
+  // Production callbacks under test do not reference `this`; ContextMenuDivElement
+  // is a DOM element decorated with extra fields, not realistic to construct in tests.
+  await option.callback?.call({} as ContextMenuDivElement)
+}
 
 const mockPrompt = vi.fn()
 const mockCanvas = vi.hoisted(() => ({
@@ -11,7 +22,9 @@ const mockCanvas = vi.hoisted(() => ({
   ds: {
     scale: 1,
     offset: [0, 0] as [number, number],
-    visible_area: [0, 0, 800, 600],
+    visible_area: [0, 0, 800, 600] as
+      | [number, number, number, number]
+      | undefined,
     fitToBounds: vi.fn()
   },
   graph: {
@@ -231,7 +244,7 @@ vi.mock('@/stores/nodeDefStore', () => ({
   ComfyNodeDefImpl: vi.fn().mockImplementation((def: unknown) => def)
 }))
 
-function createMockNode(overrides: Record<string, unknown> = {}) {
+function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
   return {
     id: 1,
     inputs: [],
@@ -239,18 +252,20 @@ function createMockNode(overrides: Record<string, unknown> = {}) {
     constructor: { nodeData: { name: 'TestNode' } },
     getWidgetOnPos: vi.fn(),
     ...overrides
-  }
+  } as unknown as LGraphNode
 }
 
-function createMockWidget(overrides: Record<string, unknown> = {}) {
+function createMockWidget(
+  overrides: Record<string, unknown> = {}
+): IBaseWidget {
   return {
     name: 'test_widget',
-    label: undefined as string | undefined,
+    label: undefined,
     value: 42,
     callback: vi.fn(),
     options: {},
     ...overrides
-  }
+  } as unknown as IBaseWidget
 }
 
 describe('litegraphService', () => {
@@ -272,7 +287,7 @@ describe('litegraphService', () => {
       const widget = createMockWidget()
       mockFavoritedWidgetsStore.isFavorited.mockReturnValue(false)
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       expect(options).toHaveLength(1)
       expect(options[0].content).toContain('contextMenu.FavoriteWidget')
@@ -284,7 +299,7 @@ describe('litegraphService', () => {
       const widget = createMockWidget()
       mockFavoritedWidgetsStore.isFavorited.mockReturnValue(true)
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       expect(options[0].content).toContain('contextMenu.UnfavoriteWidget')
     })
@@ -294,7 +309,7 @@ describe('litegraphService', () => {
       const widget = createMockWidget({ label: 'My Label' })
       mockFavoritedWidgetsStore.isFavorited.mockReturnValue(false)
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       expect(options[0].content).toContain('My Label')
     })
@@ -303,9 +318,9 @@ describe('litegraphService', () => {
       const node = createMockNode()
       const widget = createMockWidget()
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
-      void options[0].callback?.call(null as never)
+      void invokeMenuCallback(options[0])
       expect(mockFavoritedWidgetsStore.toggleFavorite).toHaveBeenCalledWith(
         node,
         'test_widget'
@@ -318,7 +333,7 @@ describe('litegraphService', () => {
         inputs: [{ widget: { name: 'seed' } }]
       })
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       // rename is unshifted first, then favorite is unshifted (ends up first)
       expect(options).toHaveLength(2)
@@ -335,12 +350,12 @@ describe('litegraphService', () => {
       const node = createMockNode({ inputs: [input] })
       mockPrompt.mockResolvedValue('New Name')
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       const renameOption = options.find((o: IContextMenuValue) =>
         o.content?.includes('contextMenu.RenameWidget')
       )
-      await renameOption!.callback?.call(null as never)
+      await invokeMenuCallback(renameOption!)
 
       expect(widget.label).toBe('New Name')
       expect(input.label).toBe('New Name')
@@ -357,12 +372,12 @@ describe('litegraphService', () => {
       const node = createMockNode({ inputs: [input] })
       mockPrompt.mockResolvedValue('')
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       const renameOption = options.find((o: IContextMenuValue) =>
         o.content?.includes('contextMenu.RenameWidget')
       )
-      await renameOption!.callback?.call(null as never)
+      await invokeMenuCallback(renameOption!)
 
       expect(widget.label).toBeUndefined()
       expect(input.label).toBeUndefined()
@@ -374,12 +389,12 @@ describe('litegraphService', () => {
       const node = createMockNode({ inputs: [input] })
       mockPrompt.mockResolvedValue(null)
 
-      const options = getExtraOptionsForWidget(node as never, widget as never)
+      const options = getExtraOptionsForWidget(node, widget)
 
       const renameOption = options.find((o: IContextMenuValue) =>
         o.content?.includes('contextMenu.RenameWidget')
       )
-      await renameOption!.callback?.call(null as never)
+      await invokeMenuCallback(renameOption!)
 
       expect(widget.label).toBe('Original')
       expect(input.label).toBe('Original')
@@ -394,7 +409,7 @@ describe('litegraphService', () => {
       })
       const widget = createMockWidget()
 
-      getExtraOptionsForWidget(node as never, widget as never)
+      getExtraOptionsForWidget(node, widget)
 
       expect(addWidgetPromotionOptions).toHaveBeenCalled()
     })
@@ -406,7 +421,7 @@ describe('litegraphService', () => {
       const node = createMockNode({ graph: null })
       const widget = createMockWidget()
 
-      getExtraOptionsForWidget(node as never, widget as never)
+      getExtraOptionsForWidget(node, widget)
 
       expect(addWidgetPromotionOptions).not.toHaveBeenCalled()
     })
@@ -441,7 +456,7 @@ describe('litegraphService', () => {
 
       it('returns [0, 0] when no visible area', async () => {
         const savedVisibleArea = mockCanvas.ds.visible_area
-        mockCanvas.ds.visible_area = undefined as never
+        mockCanvas.ds.visible_area = undefined
 
         const service = await getService()
         const center = service.getCanvasCenter()
@@ -472,7 +487,7 @@ describe('litegraphService', () => {
         mockCanvas.graph.getNodeById.mockReturnValue(graphNode)
 
         const service = await getService()
-        service.goToNode(42 as never)
+        service.goToNode(42)
 
         expect(mockCanvas.animateToBounds).toHaveBeenCalledWith(bounds)
       })
@@ -481,7 +496,7 @@ describe('litegraphService', () => {
         mockCanvas.graph.getNodeById.mockReturnValue(null)
 
         const service = await getService()
-        service.goToNode(999 as never)
+        service.goToNode(999)
 
         expect(mockCanvas.animateToBounds).not.toHaveBeenCalled()
       })
@@ -542,7 +557,7 @@ describe('litegraphService', () => {
         })
 
         const service = await getService()
-        const badNode = { flags: { collapsed: false } } as never
+        const badNode = createMockNode({ flags: { collapsed: false } })
         expect(() => service.updatePreviews(badNode)).not.toThrow()
         expect(consoleSpy).toHaveBeenCalledWith(
           'Error drawing node background',
@@ -554,12 +569,12 @@ describe('litegraphService', () => {
 
       it('skips collapsed nodes', async () => {
         const service = await getService()
-        const node = {
+        const node = createMockNode({
           flags: { collapsed: true },
-          imgs: null,
-          images: null,
-          preview: null
-        } as never
+          imgs: undefined,
+          images: undefined,
+          preview: undefined
+        })
 
         service.updatePreviews(node)
 
