@@ -24,11 +24,12 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import type { AssetHashStatus } from '@/platform/assets/services/assetService'
 import {
   assetService,
   toBlake3AssetHash
 } from '@/platform/assets/services/assetService'
+import { verifyCandidatesByAssetHash } from '@/platform/assets/utils/assetHashVerification'
+import type { AssetHashVerifier } from '@/platform/assets/utils/assetHashVerification'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
@@ -450,11 +451,6 @@ interface AssetVerifier {
   getAssets: (nodeType: string) => AssetItem[] | undefined
 }
 
-type AssetHashVerifier = (
-  assetHash: string,
-  signal?: AbortSignal
-) => Promise<AssetHashStatus>
-
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal,
@@ -468,47 +464,25 @@ export async function verifyAssetSupportedCandidates(
   )
   if (pendingCandidates.length === 0) return
 
-  const pendingNodeTypes = new Set<string>()
-  const candidatesByHash = new Map<string, MissingModelCandidate[]>()
-
-  for (const candidate of pendingCandidates) {
-    const assetHash = getBlake3AssetHash(candidate)
-    if (!assetHash) {
-      pendingNodeTypes.add(candidate.nodeType)
-      continue
+  const verification = await verifyCandidatesByAssetHash({
+    candidates: pendingCandidates,
+    getAssetHash: getBlake3AssetHash,
+    signal,
+    checkAssetHash,
+    onError: (err) => {
+      console.warn('[Missing Model Pipeline] Failed to verify asset hash:', err)
     }
+  })
+  if (verification.aborted) return
 
-    const hashCandidates = candidatesByHash.get(assetHash)
-    if (hashCandidates) hashCandidates.push(candidate)
-    else candidatesByHash.set(assetHash, [candidate])
+  for (const candidate of verification.existing) {
+    candidate.isMissing = false
   }
 
-  await Promise.all(
-    Array.from(candidatesByHash, async ([assetHash, hashCandidates]) => {
-      if (signal?.aborted) return
-
-      try {
-        const status = await checkAssetHash(assetHash, signal)
-        if (signal?.aborted) return
-
-        if (status === 'exists') {
-          for (const candidate of hashCandidates) {
-            candidate.isMissing = false
-          }
-          return
-        }
-      } catch (err) {
-        if (signal?.aborted || isAbortError(err)) return
-        console.warn(
-          '[Missing Model Pipeline] Failed to verify asset hash:',
-          err
-        )
-      }
-
-      for (const candidate of hashCandidates) {
-        pendingNodeTypes.add(candidate.nodeType)
-      }
-    })
+  const pendingNodeTypes = new Set(
+    [...verification.missing, ...verification.fallback].map(
+      (candidate) => candidate.nodeType
+    )
   )
 
   if (signal?.aborted) return
@@ -547,15 +521,6 @@ export async function verifyAssetSupportedCandidates(
 function getBlake3AssetHash(candidate: MissingModelCandidate): string | null {
   if (candidate.hashType?.toLowerCase() !== 'blake3') return null
   return toBlake3AssetHash(candidate.hash)
-}
-
-function isAbortError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'name' in err &&
-    err.name === 'AbortError'
-  )
 }
 
 function normalizePath(path: string): string {
