@@ -74,6 +74,7 @@ vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
     name: 'AllNodesPanel',
     template: `
       <div data-testid="all-panel">
+        <div data-testid="expanded-keys">{{ (expandedKeys ?? []).join(',') }}</div>
         <button data-testid="all-emit-node" @click="$emit('node-click', { type: 'node', data: { name: 'TestNode' } })">emit-node</button>
         <button data-testid="all-emit-folder" @click="$emit('node-click', { type: 'folder', key: 'folder-a' })">emit-folder</button>
       </div>
@@ -287,8 +288,13 @@ describe('NodeLibrarySidebarTabV2', () => {
 
       // First click expands
       await user.click(screen.getByTestId('all-emit-folder'))
+      await nextTick()
+      expect(screen.getByTestId('expanded-keys')).toHaveTextContent('folder-a')
+
       // Second click collapses (covers both branches of handleNodeClick)
       await user.click(screen.getByTestId('all-emit-folder'))
+      await nextTick()
+      expect(screen.getByTestId('expanded-keys')).toHaveTextContent('')
 
       // No drag emitted for folder clicks
       expect(mockStartDrag).not.toHaveBeenCalled()
@@ -300,13 +306,20 @@ describe('NodeLibrarySidebarTabV2', () => {
       const user = userEvent.setup()
       mockSearchNode.mockReturnValue([])
       renderComponent()
+      await user.click(screen.getByRole('tab', { name: /all/i }))
+      await nextTick()
+
+      // Pre-expand a folder so we can verify clearing actually happens
+      await user.click(screen.getByTestId('all-emit-folder'))
+      await nextTick()
+      expect(screen.getByTestId('expanded-keys')).toHaveTextContent('folder-a')
 
       await user.type(screen.getByTestId('search-box'), 'nonexistent')
       await user.click(screen.getByTestId('search-trigger'))
       await nextTick()
 
-      // handleSearch executed without throwing on empty filteredNodeDefs
       expect(mockSearchNode).toHaveBeenCalled()
+      expect(screen.getByTestId('expanded-keys')).toHaveTextContent('')
     })
 
     it('should expand folder keys when search returns results', async () => {
@@ -346,6 +359,9 @@ describe('NodeLibrarySidebarTabV2', () => {
         [],
         { limit: 64 },
         { matchWildcards: false }
+      )
+      expect(screen.getByTestId('expanded-keys')).toHaveTextContent(
+        'root/folder1'
       )
     })
   })
