@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, basename } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const TEMPLATES_DIR = fileURLToPath(
@@ -16,7 +16,7 @@ const QUANT_SUFFIXES = [
   '_fp16',
   '_fp4',
   '_bf16',
-  '_int8',
+  '_int8'
 ]
 
 interface RawModel {
@@ -77,7 +77,7 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   veo3: { name: 'Veo 3', slug: 'veo-3' },
   flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
   wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
-  wavespped: { name: 'Wavespeed', slug: 'wavespeed' },
+  wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
 }
 
 function stripExt(name: string): string {
@@ -103,7 +103,7 @@ function makeSlug(name: string): string {
 function makeDisplayName(name: string): string {
   const base = stripExt(name)
   return base
-    .split(/[_\-]/)
+    .split(/[_-]/)
     .map((part) => {
       if (/^(fp\d+|bf\d+|int\d+)$/i.test(part)) return part.toUpperCase()
       if (/^(e4m3fn|scaled|mixed|fp8mixed)$/i.test(part)) return part
@@ -172,7 +172,7 @@ function extractApiModels(files: string[]): ApiModelData[] {
       slug,
       name: found.name,
       directory: 'partner_nodes' as const,
-      templateCount: count,
+      templateCount: count
     }
   })
 }
@@ -232,7 +232,7 @@ function run(): void {
       huggingFaceUrl: data.url,
       directory: data.directory,
       workflowCount: data.templates.size,
-      displayName: makeDisplayName(name),
+      displayName: makeDisplayName(name)
     }
     if (canonicalRaw !== null) {
       result.canonicalSlug = makeSlug(canonicalRaw)
@@ -248,7 +248,7 @@ function run(): void {
       huggingFaceUrl: '',
       directory: m.directory,
       workflowCount: m.templateCount,
-      displayName: m.name,
+      displayName: m.name
     }))
 
   const combined = [...apiOutput, ...output]
