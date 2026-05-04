@@ -102,8 +102,7 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'packages/workflow-validation/vite.config.mts'
+            'vite.types.config.mts'
           ]
         }
       }
