@@ -938,7 +938,7 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
+    const dpi = app.canvas?.dpr ?? 1
     const visibleArea = app.canvas?.ds?.visible_area
     if (!visibleArea) {
       return [0, 0]

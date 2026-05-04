@@ -194,6 +194,9 @@ export class DragAndScale {
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
+    // DPR is stable between viewport application and fit-to-bounds calls.
+    // DragAndScale intentionally reads window.devicePixelRatio directly
+    // because it doesn't have access to the viewport system.
     const [width, height] =
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]

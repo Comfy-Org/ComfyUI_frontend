@@ -971,9 +971,11 @@ export class ComfyApp {
     )
   }
 
+  /** @deprecated Use {@link measureViewportFromElement} + {@link applyViewport} directly. */
   private resizeCanvas(canvas: HTMLCanvasElement) {
     const viewport = measureViewportFromElement(canvas)
     applyViewport(viewport, canvas, this.canvas.bgcanvas)
+    this.canvas.dpr = viewport.dpr
     this.canvas?.draw(true, true)
   }
 
@@ -1342,7 +1344,15 @@ export class ComfyApp {
         }
 
         canvasScheduler.schedule(() => {
-          this.resizeCanvas(this.canvasEl)
+          const vp = measureViewportFromElement(this.canvasEl)
+          applyViewport(vp, this.canvasEl, this.canvas.bgcanvas)
+          this.canvas.dpr = vp.dpr
+          // Match the deprecated resizeCanvas() flush so the canvas paints
+          // immediately after the scheduler restores its size; without this
+          // the template-load path can leave #graph-canvas at width=0/height=0
+          // when transitioning from app mode (regression of
+          // appModeTemplateViewport.spec.ts).
+          this.canvas?.draw(true, true)
           fitView()
         })
       } catch (error) {
