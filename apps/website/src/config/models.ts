@@ -1,7 +1,7 @@
 import generatedModels from './generated-models.json'
 import { modelMetadata } from './model-metadata'
 
-export type ModelDirectory =
+type ModelDirectory =
   | 'diffusion_models'
   | 'checkpoints'
   | 'loras'
@@ -16,7 +16,7 @@ export type ModelDirectory =
   | 'style_models'
   | 'partner_nodes'
 
-export interface Model {
+interface Model {
   readonly slug: string
   readonly canonicalSlug?: string
   readonly name: string
