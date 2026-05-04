@@ -65,12 +65,8 @@
       "latestVersion": "1.27.4",
       "license": "See repository LICENSE",
       "lastUpdated": "2025-10-26T19:11:09.943366Z",
-      "supportedOs": [
-        "OS Independent"
-      ],
-      "supportedAccelerators": [
-        "GPU :: NVIDIA CUDA"
-      ],
+      "supportedOs": ["OS Independent"],
+      "supportedAccelerators": ["GPU :: NVIDIA CUDA"],
       "nodes": [
         {
           "name": "CCrystools_Show_Resources",

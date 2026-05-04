@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 import type { Pack, PackNode } from '../data/cloudNodes'
 
-import { useFilteredPacks } from './useFilteredPacks';
-import type { PackSortMode } from './useFilteredPacks';
+import { useFilteredPacks } from './useFilteredPacks'
+import type { PackSortMode } from './useFilteredPacks'
 
 function pack(overrides: Partial<Pack> = {}): Pack {
   return {

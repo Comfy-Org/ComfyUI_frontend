@@ -34,9 +34,7 @@ function buildAnnotations(outcome: FetchOutcome): string[] {
     const nodeCount = outcome.droppedCount === 1 ? 'node' : 'nodes'
     const drops = outcome.droppedNodes
       .map((d) => {
-        const name = escapeAnnotation(
-          d.name ? `"${d.name}"` : '(unnamed)'
-        )
+        const name = escapeAnnotation(d.name ? `"${d.name}"` : '(unnamed)')
         const reason = escapeAnnotation(d.reason)
         return `  - ${name}: ${reason}`
       })
@@ -70,10 +68,7 @@ function staleAnnotation(reason: string): string {
 }
 
 function escapeAnnotation(value: string): string {
-  return value
-    .replace(/%/g, '%25')
-    .replace(/\r/g, '%0D')
-    .replace(/\n/g, '%0A')
+  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')
 }
 
 function buildStepSummary(outcome: FetchOutcome): string {
