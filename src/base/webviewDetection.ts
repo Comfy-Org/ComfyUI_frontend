@@ -62,7 +62,7 @@ export function isEmbeddedWebView(ua: string = navigator.userAgent): boolean {
  * "if blocked, here's why" rather than an opaque boolean. Extend this union
  * (e.g. `'unauthorized-host'`) as new blocking conditions are detected.
  */
-export type GoogleSsoBlockedReason = 'embedded-webview' | null
+type GoogleSsoBlockedReason = 'embedded-webview' | null
 
 export function getGoogleSsoBlockedReason(
   ua: string = navigator.userAgent
