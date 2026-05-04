@@ -7,7 +7,7 @@
       :pt="{
         root: {
           class: useSearchBoxV2
-            ? 'w-4/5 min-w-[32rem] max-w-[56rem] border-0 bg-transparent mt-[10vh] max-md:w-[95%] max-md:min-w-0 overflow-visible'
+            ? 'w-full max-w-[56rem] min-w-[32rem] max-md:min-w-0 bg-transparent border-0 overflow-visible'
             : 'invisible-dialog-root'
         },
         mask: {
@@ -36,7 +36,9 @@
             v-if="hoveredNodeDef && enableNodePreview"
             :key="hoveredNodeDef.name"
             :node-def="hoveredNodeDef"
+            :scale-factor="0.625"
             show-category-path
+            inert
             class="absolute top-0 left-full ml-3"
           />
         </div>
@@ -127,10 +129,11 @@ function closeDialog() {
 const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
+  const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
   const node = litegraphService.addNodeOnGraph(
     nodeDef,
     { pos: getNewNodeLocation() },
-    { ghost: useSearchBoxV2.value, dragEvent }
+    { ghost: useSearchBoxV2.value && followCursor, dragEvent }
   )
   if (!node) return
 
@@ -143,7 +146,7 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   disconnectOnReset = false
 
   // Notify changeTracker - new step should be added
-  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
+  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
   window.requestAnimationFrame(closeDialog)
 }
 

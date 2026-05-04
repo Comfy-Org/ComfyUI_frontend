@@ -8,8 +8,8 @@ const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
     fetchBalance: mockFetchBalance
   })
 }))

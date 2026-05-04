@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useQueueSettingsStore } from '@/stores/queueStore'
@@ -33,7 +33,7 @@ const i18n = createI18n({
   }
 })
 
-function createWrapper(initialBatchCount = 1) {
+function renderComponent(initialBatchCount = 1) {
   const pinia = createTestingPinia({
     createSpy: vi.fn,
     stubActions: false,
@@ -44,7 +44,9 @@ function createWrapper(initialBatchCount = 1) {
     }
   })
 
-  const wrapper = mount(BatchCountEdit, {
+  const user = userEvent.setup()
+
+  render(BatchCountEdit, {
     global: {
       plugins: [pinia, i18n],
       directives: {
@@ -55,44 +57,42 @@ function createWrapper(initialBatchCount = 1) {
 
   const queueSettingsStore = useQueueSettingsStore()
 
-  return { wrapper, queueSettingsStore }
+  return { user, queueSettingsStore }
 }
 
 describe('BatchCountEdit', () => {
   it('doubles the current batch count when increment is clicked', async () => {
-    const { wrapper, queueSettingsStore } = createWrapper(3)
+    const { user, queueSettingsStore } = renderComponent(3)
 
-    await wrapper.get('button[aria-label="Increment"]').trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Increment' }))
 
     expect(queueSettingsStore.batchCount).toBe(6)
   })
 
   it('halves the current batch count when decrement is clicked', async () => {
-    const { wrapper, queueSettingsStore } = createWrapper(9)
+    const { user, queueSettingsStore } = renderComponent(9)
 
-    await wrapper.get('button[aria-label="Decrement"]').trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Decrement' }))
 
     expect(queueSettingsStore.batchCount).toBe(4)
   })
 
   it('clamps typed values to queue limits on blur', async () => {
-    const { wrapper, queueSettingsStore } = createWrapper(2)
-    const input = wrapper.get('input')
+    const { user, queueSettingsStore } = renderComponent(2)
+    const input = screen.getByRole('textbox', { name: 'Batch Count' })
 
-    await input.setValue('999')
-    await input.trigger('blur')
-    await nextTick()
+    await user.clear(input)
+    await user.type(input, '999')
+    await user.tab()
 
     expect(queueSettingsStore.batchCount).toBe(maxBatchCount)
-    expect((input.element as HTMLInputElement).value).toBe(
-      String(maxBatchCount)
-    )
+    expect(input).toHaveValue(String(maxBatchCount))
 
-    await input.setValue('0')
-    await input.trigger('blur')
-    await nextTick()
+    await user.clear(input)
+    await user.type(input, '0')
+    await user.tab()
 
     expect(queueSettingsStore.batchCount).toBe(1)
-    expect((input.element as HTMLInputElement).value).toBe('1')
+    expect(input).toHaveValue('1')
   })
 })

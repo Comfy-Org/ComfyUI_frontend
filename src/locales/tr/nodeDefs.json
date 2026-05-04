@@ -472,6 +472,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0 kullanarak bir ilk kare görseli ve isteğe bağlı son kare görseli ile video oluşturun.",
+    "display_name": "ByteDance Seedance 2.0 İlk-Son-Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Video için ilk kare görseli."
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "İlk kare olarak kullanılacak Seedance asset_id. first_frame görsel girişiyle karşılıklı olarak dışlayıcıdır."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Video için son kare görseli."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "Son kare olarak kullanılacak Seedance asset_id. last_frame görsel girişiyle karşılıklı olarak dışlayıcıdır."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0 ile referans görseller, videolar ve sesler kullanarak video oluşturun, düzenleyin veya uzatın. Çok modlu referans, video düzenleme ve video uzatma desteklenir.",
+    "display_name": "ByteDance Seedance 2.0 Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_auto_downscale": {
+        "name": "otomatik_küçültme"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Seedance 2.0 modelleriyle metin istemine dayalı video oluşturun.",
+    "display_name": "ByteDance Seedance 2.0 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Seedance 2.0 kişisel görsel varlığı oluşturur. Girdi görselini yükler ve belirtilen varlık grubuna kaydeder. group_id boşsa, yeni bir grup oluşturmak için gerçek kişi H5 doğrulama akışını başlatır ve ardından varlığı ekler.",
+    "display_name": "ByteDance Görsel Varlık Oluştur",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Aynı kişi için tekrar eden insan doğrulamasını atlamak için mevcut bir Seedance varlık grup kimliğini kullanın. Boş bırakılırsa, tarayıcıda gerçek kişi doğrulaması yapılır ve yeni bir grup oluşturulur."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Kişisel varlık olarak kaydedilecek görsel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Seedance 2.0 kişisel video varlığı oluşturur. Girdi videosunu yükler ve belirtilen varlık grubuna kaydeder. group_id boşsa, yeni bir grup oluşturmak için gerçek kişi H5 doğrulama akışını başlatır ve ardından varlığı ekler.",
+    "display_name": "ByteDance Video Varlık Oluştur",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Aynı kişi için tekrar eden insan doğrulamasını atlamak için mevcut bir Seedance varlık grup kimliğini kullanın. Boş bırakılırsa, tarayıcıda gerçek kişi doğrulaması yapılır ve yeni bir grup oluşturulur."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Kişisel varlık olarak kaydedilecek video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "İlk ve son kareleri kullanarak video oluşturun.",
     "display_name": "ByteDance İlk-Son-Kare'den Videoya",
@@ -1362,6 +1552,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "Bir görüntünün renklerini çeşitli algoritmalar kullanarak başka bir görüntüye eşleştirir.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Renklerin eşleştirileceği referans görüntü(ler). Sağlanmazsa işleme atlanır."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Renk dönüşümünün uygulanacağı görüntü(ler)."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: Her kare ayrı ayrı image_ref ile eşleştirilir. uniform: Tüm kaynak karelerin istatistikleri havuzlanır ve temel olarak alınır, image_ref ile eşleştirilir. target_frame: Seçilen bir kare dönüşüm için temel alınır ve tüm karelere eşit şekilde uygulanır (göreli farklılıkları korur)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Kancaları Birleştir [2]",
     "inputs": {
@@ -2190,6 +2410,10 @@
       "image": {
         "name": "görüntü"
       },
+      "keep_aspect": {
+        "name": "oranı_koru",
+        "tooltip": "Kırpmanın çıktı boyutuna sığması için esnetilip esnetilmeyeceği veya en-boy oranını korumak için siyah piksellerle doldurulup doldurulmayacağı."
+      },
       "output_height": {
         "name": "çıktı_yüksekliği",
         "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
@@ -2309,6 +2533,23 @@
     "display_name": "Gürültüyü Devre Dışı Bırak",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "BBox'ları Çiz",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxlar"
+      },
+      "image": {
+        "name": "görsel"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "çıktı_görseli",
         "tooltip": null
       }
     }
@@ -3509,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "Kare Enterpolasyonu",
+    "inputs": {
+      "images": {
+        "name": "görseller"
+      },
+      "interp_model": {
+        "name": "enterpolasyon_modeli"
+      },
+      "multiplier": {
+        "name": "çarpan"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Kare Enterpolasyon Modeli Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_adı",
+        "tooltip": "'frame_interpolation' klasörüne yerleştirilmiş bir kare enterpolasyon modeli seçin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "Rehberliğe frekansa bağlı ölçeklendirme uygular",
     "display_name": "FreSca",
@@ -3645,6 +3919,14 @@
     "description": "Görüntülere GLSL ES fragment shader'ları uygula. u_resolution (vec2) her zaman kullanılabilir.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "Boolean değerler, shader kodunda u_bool0-9 (bool) olarak kullanılabilir"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Eğriler, shader kodunda u_curve0-3 (sampler2D, 1D LUT) olarak kullanılabilir. texture(u_curve0, vec2(x, 0.5)).r ile örnekleyin"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Floats shader kodunda u_float0-4 olarak kullanılabilir"
@@ -4244,6 +4526,156 @@
       },
       "tapered_corners": {
         "name": "sivri_köşeler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "HappyHorse modeliyle ilk kare görüntüsünden bir video oluşturun.",
+    "display_name": "HappyHorse Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "first_frame": {
+        "name": "ilk_kare",
+        "tooltip": "İlk kare görüntüsü. Çıktı en-boy oranı bu görüntüden alınır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "HappyHorse modeliyle referans materyallerden bir kişi veya nesne içeren video oluşturun. Tek karakter performanslarını ve çok karakterli etkileşimleri destekler.",
+    "display_name": "HappyHorse Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "HappyHorse modeliyle metin istemine dayalı bir video oluşturur.",
+    "display_name": "HappyHorse Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "HappyHorse modeliyle metin talimatları veya referans görüntüler kullanarak bir videoyu düzenleyin. Çıktı süresi 3-15 saniyedir ve giriş videosuyla eşleşir; 15 saniyeden uzun girişler kısaltılır.",
+    "display_name": "HappyHorse Video Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek video."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulmuş bir filigran eklenip eklenmeyeceği."
       }
     },
     "outputs": {
@@ -4977,6 +5409,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Görüntü Histogramı",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "parlaklık",
+        "tooltip": null
+      },
+      "2": {
+        "name": "kırmızı",
+        "tooltip": null
+      },
+      "3": {
+        "name": "yeşil",
+        "tooltip": null
+      },
+      "4": {
+        "name": "mavi",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Görüntüyü Ters Çevir",
     "inputs": {
@@ -5394,6 +5856,22 @@
       },
       "image": {
         "name": "görüntü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "JSON'dan Dize Çıkar",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -11357,6 +11835,14 @@
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
+      "custom_height": {
+        "name": "özel_yükseklik",
+        "tooltip": "`boyut` 'Özel' olarak ayarlandığında kullanılır. Yalnızca 16'nın katı olmalıdır (yalnızca GPT Image 2 için)."
+      },
+      "custom_width": {
+        "name": "özel_genişlik",
+        "tooltip": "`boyut` 'Özel' olarak ayarlandığında kullanılır. Yalnızca 16'nın katı olmalıdır (yalnızca GPT Image 2 için)."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Görüntü düzenleme için isteğe bağlı referans görüntü."
@@ -12215,6 +12701,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Tespit",
+    "inputs": {
+      "class_name": {
+        "name": "sınıf_adı",
+        "tooltip": "Tespitleri sınıfa göre filtrele. Filtrelemeyi devre dışı bırakmak için 'all' olarak ayarlayın."
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "max_detections": {
+        "name": "maksimum_tespit",
+        "tooltip": "Görsel başına döndürülecek en fazla tespit sayısı. Güven puanına göre azalan sırada."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxlar",
+        "tooltip": null
       }
     }
   },
@@ -13531,6 +14045,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Tespit",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "İçinde segmentasyon yapılacak sınırlayıcı kutular"
+      },
+      "conditioning": {
+        "name": "koşullandırma",
+        "tooltip": "CLIPTextEncode'dan metin koşullandırması"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "individual_masks": {
+        "name": "bireysel_maskeler",
+        "tooltip": "Birleşim yerine nesne başına maske çıktısı"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negatif_koordinatlar",
+        "tooltip": "JSON olarak negatif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+      },
+      "positive_coords": {
+        "name": "pozitif_koordinatlar",
+        "tooltip": "JSON olarak pozitif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+      },
+      "refine_iterations": {
+        "name": "iyileştirme_iterasyonları",
+        "tooltip": "SAM kod çözücü iyileştirme geçişleri (0=ham dedektör maskelerini kullan)"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 İz Önizleme",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "görüntüler"
+      },
+      "opacity": {
+        "name": "opaklık"
+      },
+      "track_data": {
+        "name": "iz_verisi"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 İzden Maskeye",
+    "inputs": {
+      "object_indices": {
+        "name": "nesne_indeksleri",
+        "tooltip": "Dahil edilecek nesne indeksleri virgülle ayrılmış şekilde (örn. '0,2,3'). Boş = tüm nesneler."
+      },
+      "track_data": {
+        "name": "iz_verisi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maskeler",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video İzleme",
+    "inputs": {
+      "conditioning": {
+        "name": "koşullandırma",
+        "tooltip": "İzleme sırasında yeni nesneleri tespit etmek için metin koşullandırması"
+      },
+      "detect_interval": {
+        "name": "tespit_aralığı",
+        "tooltip": "Her N karede bir tespit çalıştır (1=her karede). Daha yüksek değerler işlem tasarrufu sağlar."
+      },
+      "detection_threshold": {
+        "name": "tespit_eşiği",
+        "tooltip": "Metin istemli tespit için skor eşiği"
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Toplu görüntüler olarak video kareleri"
+      },
+      "initial_mask": {
+        "name": "ilk_maske",
+        "tooltip": "İlk kare için izlenecek maske(ler) (her nesne için bir tane)"
+      },
+      "max_objects": {
+        "name": "maks_nesne",
+        "tooltip": "Maksimum izlenen nesne (0=sınırsız). İlk maskeler bu sınıra dahildir."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iz_verisi",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -13664,6 +14299,44 @@
       },
       "2": {
         "name": "gizli",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Gürültüsüz çıktıyı giriş latent'ine yaklaştırır. Yüksek değer = girdiye daha yüksek sadakat. 0 devre dışı bırakır."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "restore_cfg'nin devre dışı bırakıldığı sigma eşiği."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Örnekleme sonunda (düşük sigma) kontrol gücü. Başlangıçtan sona doğrusal olarak enterpole edilir."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Örnekleme başlangıcında (yüksek sigma) kontrol gücü."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14674,6 +15347,58 @@
       }
     }
   },
+  "SoniloTextToMusic": {
+    "description": "Sonilo'nun yapay zeka modeliyle bir metin isteminden müzik oluşturun. Süreyi 0 olarak bırakın, model süreyi istemden çıkarsın.",
+    "display_name": "Sonilo Metinden Müzik Üret",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Hedef süre (saniye cinsinden). 0 olarak ayarlayın, model süreyi istemden çıkarsın. Maksimum: 6 dakika."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak müziği tanımlayan metin istemi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Tekrarlanabilirlik için tohum değeri. Şu anda Sonilo servisi tarafından dikkate alınmıyor, ancak grafik tutarlılığı için korunuyor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Sonilo'nun yapay zeka modeliyle video içeriğinden müzik oluşturun. Videoyu analiz eder ve uyumlu müzik üretir.",
+    "display_name": "Sonilo Videodan Müzik Üret",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Müzik üretimini yönlendirmek için isteğe bağlı metin istemi. En iyi kalite için boş bırakın - model video içeriğini tamamen analiz edecektir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Tekrarlanabilirlik için tohum değeri. Şu anda Sonilo servisi tarafından dikkate alınmıyor, ancak grafik tutarlılığı için korunuyor."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Müzik üretilecek giriş videosu. Maksimum süre: 6 dakika."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Sesi sol ve sağ kanallara ayırır.",
     "display_name": "Ses Kanallarını Ayır",
@@ -15623,6 +16348,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_görüntüsü",
+        "tooltip": null
       }
     }
   },
@@ -15913,6 +16642,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "tekrar_cezası"
       },
@@ -15927,6 +16659,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalış."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
       }
     },
     "outputs": {
@@ -15957,6 +16697,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "tekrar_cezası"
       },
@@ -15971,6 +16714,14 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalış."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
       }
     },
     "outputs": {
@@ -16239,6 +16990,10 @@
       "positive": {
         "name": "pozitif",
         "tooltip": "Eğitim için kullanılacak pozitif koşullandırma."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Eğer training_dtype 'none' olarak ayarlanmışsa ve quantized bir modelde eğitim yapılıyorsa, etkinleştirildiğinde backward işlemi quantized matmul ile yapılır."
       },
       "rank": {
         "name": "rütbe",
@@ -17123,6 +17878,10 @@
         "name": "istem",
         "tooltip": "Videonun metin açıklaması"
       },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite ve veo-3.0 modelleri için mevcut değildir."
+      },
       "seed": {
         "name": "tohum",
         "tooltip": "Video oluşturma için tohum (rastgele için 0)"
@@ -17864,6 +18623,241 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "İlk kare görüntüsünden bir video oluşturun, isteğe bağlı olarak son kare görüntüsü ve ses ekleyin.",
+    "display_name": "Wan 2.7 Görüntüden Videoya",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Video oluşturmayı yönlendiren ses (ör. dudak senkronizasyonu, ritme uygun hareket). Süre: 2-30 saniye. Sağlanmazsa, model otomatik olarak uyumlu arka plan müziği veya ses efektleri üretir."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "İlk kare görüntüsü. Çıktı en-boy oranı bu görüntüden alınır."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Son kare görüntüsü. Model, ilk kareden son kareye geçiş yapan bir video oluşturur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istek"
+      },
+      "model_prompt": {
+        "name": "istek"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "İsteğin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Referans materyallerden bir kişi veya nesne içeren video oluşturun. Tek karakterli performansları ve çok karakterli etkileşimleri destekler.",
+    "display_name": "Wan 2.7 Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istek"
+      },
+      "model_prompt": {
+        "name": "istek"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Wan 2.7 modeli kullanılarak bir metin istemine dayalı video oluşturur.",
+    "display_name": "Wan 2.7 Metinden Videoya",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Video oluşturmayı yönlendirmek için ses (ör. dudak senkronizasyonu, ritme uygun hareket). Süre: 3-30 sn. Sağlanmazsa, model otomatik olarak uygun arka plan müziği veya ses efektleri üretir."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt_extend": {
+        "name": "istem_genişlet",
+        "tooltip": "İstemin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Bir videoyu kaldığı yerden devam ettirin, isteğe bağlı olarak son kare kontrolüyle.",
+    "display_name": "Wan 2.7 Video Devamı",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "first_clip": {
+        "name": "ilk_klip",
+        "tooltip": "Devam edilecek giriş videosu. Süre: 2-10 sn. Çıktı en-boy oranı bu videodan alınır."
+      },
+      "last_frame": {
+        "name": "son_kare",
+        "tooltip": "Son kare görseli. Devam bu kareye doğru geçiş yapacaktır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt_extend": {
+        "name": "istem_genişlet",
+        "tooltip": "İstemin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Bir videoyu metin talimatları, referans görseller veya stil transferi ile düzenleyin.",
+    "display_name": "Wan 2.7 Video Düzenleme",
+    "inputs": {
+      "audio_setting": {
+        "name": "ses_ayarı",
+        "tooltip": "'auto': model, isteme göre sesi yeniden oluşturup oluşturmayacağına karar verir. 'origin': giriş videosundaki orijinal sesi korur."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek video."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
       }
     },
     "outputs": {

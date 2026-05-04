@@ -157,31 +157,6 @@ describe('useNodePointerInteractions', () => {
     expect(startDrag).toHaveBeenCalledWith(leftClickEvent, 'test-node-123')
   })
 
-  it.skip('should call onNodeSelect on pointer down', async () => {
-    const { handleNodeSelect } = useNodeEventHandlers()
-
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
-
-    // Selection should happen on pointer down
-    const downEvent = createPointerEvent('pointerdown', {
-      clientX: 100,
-      clientY: 100
-    })
-    pointerHandlers.onPointerdown(downEvent)
-
-    expect(handleNodeSelect).toHaveBeenCalledWith(downEvent, 'test-node-123')
-
-    vi.mocked(handleNodeSelect).mockClear()
-
-    // Even if we drag, selection already happened on pointer down
-    pointerHandlers.onPointerup(
-      createPointerEvent('pointerup', { clientX: 200, clientY: 200 })
-    )
-
-    // onNodeSelect should not be called again on pointer up
-    expect(handleNodeSelect).not.toHaveBeenCalled()
-  })
-
   it('should handle drag termination via cancel and context menu', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
 
