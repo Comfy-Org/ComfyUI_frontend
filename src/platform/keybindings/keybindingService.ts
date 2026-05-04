@@ -56,7 +56,16 @@ export function useKeybindingService() {
       }
 
       event.preventDefault()
-      event.stopPropagation()
+      // Bare Escape must keep propagating so element-level handlers (Reka UI
+      // menus, PrimeVue dialogs, BuilderFooterToolbar) can still close themselves.
+      const isBareEscape =
+        event.key === 'Escape' &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey
+      if (!isBareEscape) {
+        event.stopPropagation()
+      }
       const runCommandIds = new Set([
         'Comfy.QueuePrompt',
         'Comfy.QueuePromptFront',
