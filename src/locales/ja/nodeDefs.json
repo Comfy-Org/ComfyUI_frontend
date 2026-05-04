@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "HappyHorseモデルを使用して、最初のフレーム画像から動画を生成します。",
+    "display_name": "HappyHorse 画像から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "最初のフレーム画像。この画像から出力のアスペクト比が決まります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "HappyHorseモデルで参照素材から人物や物体を含む動画を生成します。単一キャラクターの演技や複数キャラクターのインタラクションに対応しています。",
+    "display_name": "HappyHorse 参照から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "HappyHorseモデルを使用してテキストプロンプトから動画を生成します。",
+    "display_name": "HappyHorse テキストから動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "HappyHorseモデルを使い、テキスト指示や参照画像で動画を編集します。出力の継続時間は3～15秒で、入力動画と一致します。15秒を超える入力は切り捨てられます。",
+    "display_name": "HappyHorse 動画編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "編集する動画。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "低解像度画像を超解像度にアップスケールし、アーティファクトやノイズを除去します。最大出力：32メガピクセル。",
     "display_name": "HitPaw 一般画像強化",
@@ -11684,6 +11834,14 @@
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "「サイズ」が「カスタム」の場合のみ使用されます。16の倍数である必要があります（GPT Image 2 のみ）。"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "「サイズ」が「カスタム」の場合のみ使用されます。16の倍数である必要があります（GPT Image 2 のみ）。"
       },
       "image": {
         "name": "参照画像",

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -32,6 +34,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       >
         {{ t('hero.subtitle', locale) }}
       </p>
+
+      <BrandButton
+        :href="externalLinks.workflows"
+        variant="outline"
+        size="lg"
+        class="mt-8 w-full p-4 uppercase lg:w-auto lg:min-w-60"
+      >
+        {{ t('hero.runFirstWorkflow', locale) }}
+      </BrandButton>
     </div>
   </section>
 </template>

@@ -96,6 +96,17 @@ pnpm test:browser:local                    # Run all tests
 pnpm test:browser:local widget.spec.ts     # Run specific test file
 ```
 
+### Slowing the browser down for debugging
+
+When running with `--headed` (or `--ui`), set `SLOW_MO` to a millisecond delay
+to slow every Playwright action down so you can watch what is happening. The
+delay only applies when `PLAYWRIGHT_LOCAL` is set (the default for the
+`pnpm test:browser:local` script).
+
+```bash
+SLOW_MO=250 pnpm test:browser:local --headed widget.spec.ts
+```
+
 ## Test Structure
 
 Browser tests in this project follow a specific organization pattern:
@@ -140,12 +151,9 @@ Always check for existing helpers and fixtures before implementing new ones:
 
 - **ComfyPage**: Main fixture with methods for canvas interaction and node management
 - **ComfyMouse**: Helper for precise mouse operations on the canvas
-- **Helpers**: Check `browser_tests/helpers/` for specialized helpers like:
-  - `actionbar.ts`: Interact with the action bar
-  - `manageGroupNode.ts`: Group node management operations
-  - `templates.ts`: Template workflows operations
-- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component helpers
-- **Utility Functions**: Check `browser_tests/utils/` and `browser_tests/fixtures/utils/` for shared utilities
+- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component page objects (e.g. `Actionbar.ts`, `Templates.ts`, `ContextMenu.ts`)
+- **Helper Classes**: Check `browser_tests/fixtures/helpers/` for domain-specific helper classes wired into ComfyPage (e.g. `CanvasHelper.ts`, `WorkflowHelper.ts`)
+- **Utility Functions**: Check `browser_tests/fixtures/utils/` for standalone utilities (e.g. `fitToView.ts`, `clipboardSpy.ts`, `builderTestUtils.ts`)
 
 Most common testing needs are already addressed by these helpers, which will make your tests more consistent and reliable.
 

@@ -274,6 +274,7 @@ export function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
       console.error('FileReader: Error reading ISOBMFF file:', err)
       resolve({})
     }
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
   })
 }
