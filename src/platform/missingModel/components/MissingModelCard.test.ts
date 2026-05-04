@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,11 +23,21 @@ vi.mock('./MissingModelRow.vue', () => ({
   }
 }))
 
+const mockDownloadModel = vi.hoisted(() => vi.fn())
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
+  },
+  get isDesktop() {
+    return mockIsDesktop.value
   }
+}))
+
+vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+  downloadModel: (...args: unknown[]) => mockDownloadModel(...args),
+  isModelDownloadable: () => true
 }))
 
 import MissingModelCard from './MissingModelCard.vue'
@@ -127,6 +137,9 @@ function mountCard(
 describe('MissingModelCard', () => {
   beforeEach(() => {
     mockIsCloud.value = true
+    mockIsDesktop.value = false
+    mockDownloadModel.mockReset()
+    mockDownloadModel.mockResolvedValue(true)
   })
 
   describe('Rendering & Props', () => {
@@ -244,6 +257,9 @@ describe('MissingModelCard', () => {
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockIsDesktop.value = false
+    mockDownloadModel.mockReset()
+    mockDownloadModel.mockResolvedValue(true)
   })
 
   afterEach(() => {
@@ -325,5 +341,76 @@ describe('MissingModelCard (OSS)', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Refreshing missing models.'
     )
+  })
+
+  it('tracks each successfully started desktop download from Download all', async () => {
+    mockIsDesktop.value = true
+    mockDownloadModel
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+
+    mountCard({
+      missingModelGroups: [
+        makeGroup({
+          isAssetSupported: false,
+          withDownloadUrls: true,
+          modelNames: ['a.safetensors', 'b.safetensors', 'c.safetensors']
+        })
+      ]
+    })
+    const store = useMissingModelStore()
+    store.folderPaths = { checkpoints: ['/models/checkpoints'] }
+
+    await userEvent.click(screen.getByRole('button', { name: /Download all/ }))
+
+    await waitFor(() => expect(mockDownloadModel).toHaveBeenCalledTimes(3))
+    expect(
+      store.downloadRefs['unsupported::checkpoints::a.safetensors']
+    ).toEqual({
+      kind: 'electron-download',
+      url: 'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
+    })
+    expect(
+      store.selectedLibraryModel['unsupported::checkpoints::a.safetensors']
+    ).toBe('a.safetensors')
+    expect(
+      store.downloadRefs['unsupported::checkpoints::b.safetensors']
+    ).toBeUndefined()
+    expect(
+      store.selectedLibraryModel['unsupported::checkpoints::b.safetensors']
+    ).toBeUndefined()
+    expect(
+      store.downloadRefs['unsupported::checkpoints::c.safetensors']
+    ).toEqual({
+      kind: 'electron-download',
+      url: 'https://huggingface.co/comfy/test/resolve/main/c.safetensors'
+    })
+    expect(
+      store.selectedLibraryModel['unsupported::checkpoints::c.safetensors']
+    ).toBe('c.safetensors')
+  })
+
+  it('does not create desktop tracking state for browser Download all starts', async () => {
+    mountCard({
+      missingModelGroups: [
+        makeGroup({
+          isAssetSupported: false,
+          withDownloadUrls: true,
+          modelNames: ['a.safetensors']
+        })
+      ]
+    })
+    const store = useMissingModelStore()
+
+    await userEvent.click(screen.getByRole('button', { name: /Download all/ }))
+
+    await waitFor(() => expect(mockDownloadModel).toHaveBeenCalledTimes(1))
+    expect(
+      store.downloadRefs['unsupported::checkpoints::a.safetensors']
+    ).toBeUndefined()
+    expect(
+      store.selectedLibraryModel['unsupported::checkpoints::a.safetensors']
+    ).toBeUndefined()
   })
 })

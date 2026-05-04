@@ -24,6 +24,7 @@ import type {
 } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+export { getModelStateKey } from '@/platform/missingModel/missingModelViewUtils'
 
 const importSources = [civitaiImportSource, huggingfaceImportSource]
 
@@ -36,15 +37,6 @@ const MODEL_TYPE_TAGS = [
 ] as const
 
 const URL_DEBOUNCE_MS = 800
-
-export function getModelStateKey(
-  modelName: string,
-  directory: string | null,
-  isAssetSupported: boolean
-): string {
-  const prefix = isAssetSupported ? 'supported' : 'unsupported'
-  return `${prefix}::${directory ?? ''}::${modelName}`
-}
 
 export function getNodeDisplayLabel(
   nodeId: string | number,
@@ -133,7 +125,10 @@ export function useMissingModelInteractions() {
     if (!store.selectedLibraryModel[key]) return false
     if (store.importCategoryMismatch[key]) return false
 
+    const downloadRef = store.downloadRefs[key]
     const status = getDownloadStatus(key)
+    if (downloadRef?.kind === 'electron-download' && !status) return false
+
     return !status || status.status === 'completed'
   }
 

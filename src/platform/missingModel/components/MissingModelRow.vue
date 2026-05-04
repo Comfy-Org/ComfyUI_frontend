@@ -130,6 +130,7 @@
         :is-download-active="isDownloadActive"
         :download-status="downloadStatus"
         :category-mismatch="importCategoryMismatch[modelKey]"
+        :can-cancel-selection="!isActiveElectronDownload"
         @cancel="cancelLibrarySelect(modelKey)"
       />
     </TransitionCollapse>
@@ -225,6 +226,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
+const store = useMissingModelStore()
+const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
+  storeToRefs(store)
 
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
@@ -240,10 +244,13 @@ const isDownloadActive = computed(
     downloadStatus.value?.status === 'running' ||
     downloadStatus.value?.status === 'created'
 )
+const isActiveElectronDownload = computed(() => {
+  const downloadRef = store.downloadRefs[modelKey.value]
+  if (downloadRef?.kind !== 'electron-download') return false
 
-const store = useMissingModelStore()
-const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
-  storeToRefs(store)
+  const status = downloadStatus.value?.status
+  return status === 'created' || status === 'running' || status === 'paused'
+})
 
 onMounted(() => {
   const url = model.representative.url

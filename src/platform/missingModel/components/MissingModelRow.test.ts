@@ -47,9 +47,9 @@ vi.mock(
   () => ({
     default: {
       name: 'MissingModelStatusCard',
-      props: ['downloadStatus'],
+      props: ['downloadStatus', 'canCancelSelection'],
       template:
-        '<div data-testid="missing-model-status-card">{{ downloadStatus?.status ?? "none" }}</div>'
+        '<div data-testid="missing-model-status-card" :data-can-cancel-selection="canCancelSelection ? \'true\' : \'false\'">{{ downloadStatus?.status ?? "none" }}</div>'
     }
   })
 )
@@ -214,6 +214,10 @@ describe('MissingModelRow', () => {
     expect(store.selectedLibraryModel[modelKey]).toBe(model.representative.name)
     expect(screen.getByTestId('missing-model-status-card')).toHaveTextContent(
       'created'
+    )
+    expect(screen.getByTestId('missing-model-status-card')).toHaveAttribute(
+      'data-can-cancel-selection',
+      'false'
     )
   })
 

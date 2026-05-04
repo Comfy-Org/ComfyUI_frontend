@@ -327,6 +327,19 @@ describe('useMissingModelInteractions', () => {
       expect(isSelectionConfirmable('key1')).toBe(true)
     })
 
+    it('returns false when an Electron download ref no longer has a status', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue(null)
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(false)
+    })
+
     it('returns true when a tracked download is completed', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'model.safetensors'

@@ -88,6 +88,7 @@
       </div>
 
       <Button
+        v-if="canCancelSelection"
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.cancelSelection')"
@@ -109,12 +110,14 @@ const {
   modelName,
   isDownloadActive,
   downloadStatus = null,
-  categoryMismatch = null
+  categoryMismatch = null,
+  canCancelSelection = true
 } = defineProps<{
   modelName: string
   isDownloadActive: boolean
   downloadStatus?: MissingModelDownloadStatus | null
   categoryMismatch?: string | null
+  canCancelSelection?: boolean
 }>()
 
 const emit = defineEmits<{
