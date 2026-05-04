@@ -65,46 +65,49 @@
       />
     </ComboboxAnchor>
 
-    <ComboboxContent
-      v-if="suggestions.length > 0"
-      position="popper"
-      :side-offset="4"
-      :class="
-        cn(
-          'z-50 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
-          'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
-        )
-      "
-    >
-      <ComboboxItem
-        v-for="(suggestion, index) in suggestions"
-        :key="suggestionKey(suggestion, index)"
-        :value="suggestionValue(suggestion)"
+    <ComboboxPortal>
+      <ComboboxContent
+        v-if="suggestions.length > 0"
+        position="popper"
+        :side-offset="4"
         :class="
           cn(
-            'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
-            'data-highlighted:bg-secondary-background-hover'
+            'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
+            'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
           )
         "
-        @select.prevent="onSelectSuggestion(suggestion)"
       >
-        <slot name="suggestion" :suggestion>
-          {{ suggestionLabel(suggestion) }}
-        </slot>
-      </ComboboxItem>
-    </ComboboxContent>
+        <ComboboxItem
+          v-for="(suggestion, index) in suggestions"
+          :key="suggestionKey(suggestion, index)"
+          :value="suggestionValue(suggestion)"
+          :class="
+            cn(
+              'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
+              'data-highlighted:bg-secondary-background-hover'
+            )
+          "
+          @select.prevent="onSelectSuggestion(suggestion)"
+        >
+          <slot name="suggestion" :suggestion>
+            {{ suggestionLabel(suggestion) }}
+          </slot>
+        </ComboboxItem>
+      </ComboboxContent>
+    </ComboboxPortal>
   </ComboboxRoot>
 </template>
 
 <script setup lang="ts" generic="T">
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
+  ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'

@@ -24,6 +24,54 @@ type FirebaseRuntimeConfig = {
 }
 
 /**
+ * Server-driven onboarding survey schema.
+ *
+ * The backend ships the entire form definition so onboarding questions can
+ * be tweaked without a frontend release. Field types map 1:1 to a component
+ * in our internal UI library — see `DynamicSurveyField.vue`.
+ */
+export type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
+
+/**
+ * A translatable string. Either:
+ * - a single literal (treated as the fallback in any locale), or
+ * - a locale → text map, e.g. `{ en: 'Personal use', ko: '개인 용도' }`,
+ *   so the backend can ship translations without a frontend release.
+ */
+export type LocalizedString = string | Record<string, string>
+
+export type OnboardingSurveyOption = {
+  value: string
+  label?: LocalizedString
+  labelKey?: string
+}
+
+export type OnboardingSurveyFieldCondition = {
+  field: string
+  equals?: string | string[]
+}
+
+export type OnboardingSurveyField = {
+  id: string
+  type: OnboardingSurveyFieldType
+  labelKey?: string
+  label?: LocalizedString
+  options?: OnboardingSurveyOption[]
+  required?: boolean
+  randomize?: boolean
+  allowOther?: boolean
+  otherFieldId?: string
+  placeholder?: string
+  showWhen?: OnboardingSurveyFieldCondition
+}
+
+export type OnboardingSurvey = {
+  version: number
+  introKey?: string
+  fields: OnboardingSurveyField[]
+}
+
+/**
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
@@ -45,6 +93,7 @@ export type RemoteConfig = {
   asset_rename_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
+  onboarding_survey?: OnboardingSurvey
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
   user_secrets_enabled?: boolean

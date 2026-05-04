@@ -22,44 +22,35 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
   })
 
-  test('Edit > Undo undoes the last action', async ({ comfyPage }) => {
+  test('Edit > Undo undoes and Edit > Redo restores the last action', async ({
+    comfyPage
+  }) => {
     const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
 
-    await comfyPage.page.evaluate(() => {
-      const node = window.LiteGraph!.createNode('Note')
-      window.app!.graph!.add(node)
+    await test.step('Edit > Undo undoes the last action', async () => {
+      await comfyPage.page.evaluate(() => {
+        const node = window.LiteGraph!.createNode('Note')
+        window.app!.graph!.add(node)
+      })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
+
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount)
     })
-    await comfyPage.nextFrame()
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount + 1)
-
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
-
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount)
-  })
-
-  test('Edit > Redo restores an undone action', async ({ comfyPage }) => {
-    const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
-
-    await comfyPage.page.evaluate(() => {
-      const node = window.LiteGraph!.createNode('Note')
-      window.app!.graph!.add(node)
+    await test.step('Edit > Redo restores an undone action', async () => {
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Redo'])
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
     })
-    await comfyPage.nextFrame()
-
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount)
-
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Redo'])
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount + 1)
   })
 
   test('File > Save opens save dialog', async ({ comfyPage }) => {

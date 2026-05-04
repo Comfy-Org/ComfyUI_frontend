@@ -13,8 +13,6 @@ const baseRoutes = {
   customers: '/customers',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
-  videos: '/videos',
-  caseStudies: '/case-studies',
   contact: '/contact'
 } as const
 
@@ -29,11 +27,15 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 }
 
 export const externalLinks = {
-  cloud: 'https://cloud.comfy.org',
-  workflows: 'https://comfy.org/workflows',
+  apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
-  github: 'https://github.com/Comfy-Org/ComfyUI',
+  cloud: 'https://cloud.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
+  docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  github: 'https://github.com/Comfy-Org/ComfyUI',
+  platform: 'https://platform.comfy.org',
+  support: 'https://support.comfy.org/hc/en-us',
+  workflows: 'https://comfy.org/workflows',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
