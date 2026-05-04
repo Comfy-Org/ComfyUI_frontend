@@ -66,7 +66,7 @@
     "name": "Habilitar opciones de modo de desarrollo (guardar API, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Desactivar el redondeo predeterminado del widget float.",
+    "name": "Desactivar el redondeo predeterminado del widget de números flotantes.",
     "tooltip": "(requiere recargar la página) No se puede desactivar el redondeo cuando el redondeo está establecido por el nodo en el backend."
   },
   "Comfy_DisableSliders": {
@@ -261,11 +261,11 @@
   },
   "Comfy_Node_ShowExperimental": {
     "name": "Mostrar nodos experimentales en la búsqueda",
-    "tooltip": "Los nodos experimentales están marcados como tales en la interfaz de usuario y pueden estar sujetos a cambios significativos o eliminación en futuras versiones. Úselos con precaución en flujos de trabajo de producción"
+    "tooltip": "Los nodos experimentales están marcados como tales en la interfaz de usuario y pueden estar sujetos a cambios significativos o eliminación en futuras versiones. Úsalos con precaución en flujos de trabajo de producción."
   },
   "Comfy_Node_SnapHighlightsNode": {
     "name": "Resaltar nodo al ajustar enlace",
-    "tooltip": "Al arrastrar un enlace sobre un nodo con ranura de entrada viable, resalta el nodo"
+    "tooltip": "Al arrastrar un enlace sobre un nodo con ranura de entrada viable, resalta el nodo."
   },
   "Comfy_NodeBadge_NodeIdBadgeMode": {
     "name": "Modo de insignia de ID de nodo",
