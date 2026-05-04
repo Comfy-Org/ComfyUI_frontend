@@ -15,7 +15,14 @@ import type { ComfyMetadata } from '@/types/metadataTypes'
 export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
   // Read the beginning of the file (Opus files metadata is usually in the first couple of pages)
   const MAX_READ_BYTES = 2 * 1024 * 1024
-  const arrayBuffer = await file.slice(0, MAX_READ_BYTES).arrayBuffer()
+  let arrayBuffer: ArrayBuffer
+  try {
+    arrayBuffer = await file.slice(0, MAX_READ_BYTES).arrayBuffer()
+  } catch (err) {
+    console.warn('Ogg metadata file read failed:', err)
+    return { prompt: undefined, workflow: undefined }
+  }
+
   const data = new Uint8Array(arrayBuffer)
   const decoder = new TextDecoder('utf-8')
 

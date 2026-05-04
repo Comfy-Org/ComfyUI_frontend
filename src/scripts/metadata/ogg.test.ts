@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import fs from 'fs'
+import path from 'path'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import { getOggMetadata } from './ogg'
+import { EXPECTED_PROMPT, EXPECTED_WORKFLOW } from './__fixtures__/helpers'
+
+const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.opus')
 
 function createOggWithOpusTags(comments: {
   [key: string]: string
@@ -135,7 +140,32 @@ function createOggWithOpusTags(comments: {
   return combined.buffer
 }
 
+afterEach(() => vi.restoreAllMocks())
+
 describe('getOggMetadata', () => {
+  it('extracts workflow and prompt from a real Opus file fixture', async () => {
+    const bytes = fs.readFileSync(fixturePath)
+    const file = new File([bytes], 'test.opus', { type: 'audio/ogg' })
+
+    const result = await getOggMetadata(file)
+
+    expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+    expect(result.prompt).toEqual(EXPECTED_PROMPT)
+  })
+
+  it('resolves undefined fields when the file reading fails', async () => {
+    const file = new File([new Uint8Array(16)], 'test.ogg', { type: 'audio/ogg' })
+    vi.spyOn(file, 'slice').mockImplementation(() => {
+      return {
+        arrayBuffer: () => Promise.reject(new Error('File read aborted'))
+      } as unknown as Blob
+    })
+
+    const result = await getOggMetadata(file)
+
+    expect(result).toEqual({ prompt: undefined, workflow: undefined })
+  })
+
   it('should extract prompt and workflow from a valid Ogg file', async () => {
     const prompt = { '1': { class_type: 'KSampler' } }
     const workflow = { nodes: [{ id: 1 }] }

@@ -16,8 +16,21 @@ permissions:
   contents: read
 
 jobs:
-  collect:
+  changes:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  collect:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
 
     steps:

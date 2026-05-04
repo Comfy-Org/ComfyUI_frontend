@@ -10,9 +10,23 @@ import { PointCloudModelAdapter, getPLYEngine } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 import type {
   EventManagerInterface,
+  LoadModelOptions,
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
+
+/**
+ * three.js's HttpError attaches the failed `Response` to the thrown Error.
+ * fetchModelData throws a plain Error whose message embeds the status code.
+ * Detect both forms so we can keep the toast for parse / network failures
+ * but stay silent on 404 when the caller opted in.
+ */
+function isNotFoundError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const withResponse = error as Error & { response?: { status?: number } }
+  if (withResponse.response?.status === 404) return true
+  return /\b404\b/.test(error.message)
+}
 
 /**
  * Default adapter set: mesh + pointCloud + splat. Each adapter declares the
@@ -53,7 +67,11 @@ export class LoaderManager implements LoaderManagerInterface {
 
   dispose(): void {}
 
-  async loadModel(url: string, originalFileName?: string): Promise<void> {
+  async loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<void> {
     const loadId = ++this.currentLoadId
 
     try {
@@ -105,7 +123,9 @@ export class LoaderManager implements LoaderManagerInterface {
       if (loadId === this.currentLoadId) {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
-        useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
+        if (!(options?.silentOnNotFound && isNotFoundError(error))) {
+          useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
+        }
       }
     }
   }

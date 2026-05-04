@@ -198,8 +198,23 @@ export interface ModelManagerInterface {
   setupModelMaterials(model: THREE.Object3D): void
 }
 
+export interface LoadModelOptions {
+  /**
+   * When true, suppress the user-facing toast for file-not-found
+   * (HTTP 404) errors. Other errors (parse failures, network drops)
+   * still surface a toast. Use for "preview" surfaces whose model
+   * file is server-produced and may legitimately be absent locally
+   * (e.g. shared workflows on a fresh machine).
+   */
+  silentOnNotFound?: boolean
+}
+
 export interface LoaderManagerInterface {
   init(): void
   dispose(): void
-  loadModel(url: string, originalFileName?: string): Promise<void>
+  loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<void>
 }

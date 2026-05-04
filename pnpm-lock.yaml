@@ -162,6 +162,9 @@ catalogs:
     '@types/three':
       specifier: ^0.169.0
       version: 0.169.0
+    '@vee-validate/zod':
+      specifier: ^4.15.1
+      version: 4.15.1
     '@vercel/analytics':
       specifier: ^2.0.1
       version: 2.0.1
@@ -360,6 +363,9 @@ catalogs:
     unplugin-vue-components:
       specifier: ^30.0.0
       version: 30.0.0
+    vee-validate:
+      specifier: ^4.15.1
+      version: 4.15.1
     vite-plugin-dts:
       specifier: ^4.5.4
       version: 4.5.4
@@ -497,6 +503,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: 'catalog:'
         version: 2.27.2
+      '@vee-validate/zod':
+        specifier: 'catalog:'
+        version: 4.15.1(vue@3.5.13(typescript@5.9.3))(zod@3.25.76)
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.2.0(vue@3.5.13(typescript@5.9.3))
@@ -587,6 +596,9 @@ importers:
       typegpu:
         specifier: 'catalog:'
         version: 0.8.2
+      vee-validate:
+        specifier: 'catalog:'
+        version: 4.15.1(vue@3.5.13(typescript@5.9.3))
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.9.3)
@@ -4723,6 +4735,11 @@ packages:
     resolution: {integrity: sha512-GE7DmSr1C2UCWPiV0upRH6mv0cCPsqYGs819fb6srCS1tWhyXrkGGe+zxUiwzn/L1BOfADH4sNjY/YHCuP8phQ==}
     peerDependencies:
       valibot: ^1.2.0
+
+  '@vee-validate/zod@4.15.1':
+    resolution: {integrity: sha512-329Z4TDBE5Vx0FdbA8S4eR9iGCFFUNGbxjpQ20ff5b5wGueScjocUIx9JHPa79LTG06RnlUR4XogQsjN4tecKA==}
+    peerDependencies:
+      zod: ^3.24.0
 
   '@vercel/analytics@2.0.1':
     resolution: {integrity: sha512-MTQG6V9qQrt1tsDeF+2Uoo5aPjqbVPys1xvnIftXSJYG2SrwXRHnqEvVoYID7BTruDz4lCd2Z7rM1BdkUehk2g==}
@@ -9596,6 +9613,11 @@ packages:
       typescript:
         optional: true
 
+  vee-validate@4.15.1:
+    resolution: {integrity: sha512-DkFsiTwEKau8VIxyZBGdO6tOudD+QoUBPuHj3e6QFqmbfCRj1ArmYWue9lEp6jLSWBIw4XPlDLjFIZNLdRAMSg==}
+    peerDependencies:
+      vue: ^3.4.26
+
   vfile-location@5.0.3:
     resolution: {integrity: sha512-5yXvWDEgqeiYiBe1lbxYF7UMAIm/IcopxMHrMQDq3nvKcjPKIhZklUKL+AE7J7uApI4kwe2snsK+eI6UTj9EHg==}
 
@@ -14041,6 +14063,14 @@ snapshots:
     dependencies:
       valibot: 1.2.0(typescript@5.9.3)
 
+  '@vee-validate/zod@4.15.1(vue@3.5.13(typescript@5.9.3))(zod@3.25.76)':
+    dependencies:
+      type-fest: 4.41.0
+      vee-validate: 4.15.1(vue@3.5.13(typescript@5.9.3))
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - vue
+
   '@vercel/analytics@2.0.1(react@19.2.4)(vue-router@4.4.3(vue@3.5.13(typescript@5.9.3)))(vue@3.5.13(typescript@5.9.3))':
     optionalDependencies:
       react: 19.2.4
@@ -14159,7 +14189,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -20053,6 +20083,12 @@ snapshots:
   valibot@1.2.0(typescript@5.9.3):
     optionalDependencies:
       typescript: 5.9.3
+
+  vee-validate@4.15.1(vue@3.5.13(typescript@5.9.3)):
+    dependencies:
+      '@vue/devtools-api': 7.7.9
+      type-fest: 4.41.0
+      vue: 3.5.13(typescript@5.9.3)
 
   vfile-location@5.0.3:
     dependencies:
