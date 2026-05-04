@@ -2,11 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 
-import {
-  CONFIG,
-  GET_CONFIG,
-  getExtraOptionsForWidget
-} from '@/services/litegraphService'
+import { getExtraOptionsForWidget } from '@/services/litegraphService'
 
 const mockPrompt = vi.fn()
 const mockCanvas = vi.hoisted(() => ({
@@ -268,14 +264,6 @@ describe('litegraphService', () => {
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.visible_area = [0, 0, 800, 600]
     mockCanvas.graph.nodes = []
-  })
-
-  describe('Symbol exports', () => {
-    it('exports CONFIG and GET_CONFIG as unique symbols', () => {
-      expect(typeof CONFIG).toBe('symbol')
-      expect(typeof GET_CONFIG).toBe('symbol')
-      expect(CONFIG).not.toBe(GET_CONFIG)
-    })
   })
 
   describe('getExtraOptionsForWidget', () => {
