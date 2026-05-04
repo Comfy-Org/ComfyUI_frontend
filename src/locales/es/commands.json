@@ -72,7 +72,7 @@
     "label": "Pegar"
   },
   "Comfy_Canvas_PasteFromClipboardWithConnect": {
-    "label": "Pegar y conectar"
+    "label": "Pegar con conectar"
   },
   "Comfy_Canvas_ResetView": {
     "label": "Restablecer vista"
@@ -192,10 +192,10 @@
     "label": "Administrador de nodos personalizados"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Nodos personalizados (heredados)"
+    "label": "Nodos personalizados (heredado)"
   },
   "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Menú del administrador (heredados)"
+    "label": "Menú del administrador (heredado)"
   },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "Instalar nodos personalizados faltantes"
@@ -285,7 +285,7 @@
     "label": "Establecer alias de búsqueda del subgrafo"
   },
   "Comfy_ToggleAssetAPI": {
-    "label": "Experimental: Habilitar AssetAPI"
+    "label": "Experimental: habilitar AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Rendimiento del lienzo"
@@ -297,10 +297,10 @@
     "label": "Alternar modo de aplicación"
   },
   "Comfy_ToggleQPOV2": {
-    "label": "Alternar Panel de cola V2"
+    "label": "Alternar panel de cola V2"
   },
   "Comfy_ToggleTheme": {
-    "label": "Cambiar tema (Oscuro/Claro)"
+    "label": "Cambiar tema (Oscuro/claro)"
   },
   "Comfy_Undo": {
     "label": "Deshacer"
@@ -312,7 +312,7 @@
     "label": "Cerrar sesión"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "Experimental: Habilitar Nodos 2.0"
+    "label": "Experimental: habilitar nodos 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "Cerrar flujo de trabajo actual"
@@ -356,15 +356,15 @@
     "tooltip": "Recursos"
   },
   "Workspace_ToggleSidebarTab_model-library": {
-    "label": "Alternar barra lateral de Biblioteca de modelos",
+    "label": "Alternar barra lateral de biblioteca de modelos",
     "tooltip": "Biblioteca de modelos"
   },
   "Workspace_ToggleSidebarTab_node-library": {
-    "label": "Alternar barra lateral de Biblioteca de nodos",
+    "label": "Alternar barra lateral de biblioteca de nodos",
     "tooltip": "Biblioteca de nodos"
   },
   "Workspace_ToggleSidebarTab_workflows": {
-    "label": "Alternar barra lateral de Flujos de trabajo",
+    "label": "Alternar barra lateral de flujos de trabajo",
     "tooltip": "Flujos de trabajo"
   }
 }
