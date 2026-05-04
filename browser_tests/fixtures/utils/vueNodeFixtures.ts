@@ -1,9 +1,15 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+interface BoxOrigin {
+  readonly x: number
+  readonly y: number
+}
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
@@ -66,6 +72,23 @@ export class VueNodeFixture {
       throw new Error('Node bounding box not found after select')
     }
     return box
+  }
+
+  /**
+   * Assert this node's top-left origin stays within `precision` decimal
+   * places of `expected`. Wraps the polled bounding-box pattern that drift
+   * tests repeat for both axes.
+   */
+  async expectAnchoredAt(
+    expected: BoxOrigin,
+    { precision = 1 }: { precision?: number } = {}
+  ): Promise<void> {
+    await expect
+      .poll(async () => (await this.boundingBox())?.x)
+      .toBeCloseTo(expected.x, precision)
+    await expect
+      .poll(async () => (await this.boundingBox())?.y)
+      .toBeCloseTo(expected.y, precision)
   }
 
   /** Locator for the resize handle at the given corner, scoped to this node. */
