@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "إنشاء فيديو من صورة الإطار الأول باستخدام نموذج HappyHorse.",
+    "display_name": "HappyHorse تحويل صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول. يتم اشتقاق نسبة العرض إلى الارتفاع من هذه الصورة."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "إنشاء فيديو يعرض شخصًا أو كائنًا من مواد مرجعية باستخدام نموذج HappyHorse. يدعم أداء شخصية واحدة وتفاعل عدة شخصيات.",
+    "display_name": "HappyHorse تحويل مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "إنشاء فيديو بناءً على موجه نصي باستخدام نموذج HappyHorse.",
+    "display_name": "HappyHorse تحويل نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "تحرير فيديو باستخدام تعليمات نصية أو صور مرجعية مع نموذج HappyHorse. مدة الإخراج من ٣ إلى ١٥ ثانية وتطابق الفيديو المدخل؛ يتم اقتطاع المدخلات التي تتجاوز ١٥ ثانية.",
+    "display_name": "HappyHorse تحرير فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_prompt": {
+        "name": "الموجه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المراد تحريره."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "تكبير الصور منخفضة الدقة إلى دقة فائقة، إزالة الشوائب والضوضاء. الحد الأقصى للإخراج: ٣٢ ميغابيكسل.",
     "display_name": "تحسين الصورة العام من HitPaw",
@@ -11684,6 +11834,14 @@
       },
       "control_after_generate": {
         "name": "التحكم بعد الإنشاء"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "يُستخدم فقط عندما تكون القيمة 'مخصص'. يجب أن يكون من مضاعفات ١٦ (GPT Image 2 فقط)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "يُستخدم فقط عندما تكون القيمة 'مخصص'. يجب أن يكون من مضاعفات ١٦ (GPT Image 2 فقط)."
       },
       "image": {
         "name": "الصورة",

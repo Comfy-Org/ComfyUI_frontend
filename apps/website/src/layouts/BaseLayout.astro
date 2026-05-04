@@ -133,8 +133,14 @@ const websiteJsonLd = {
     <script>
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
       import { ScrollTrigger } from '../scripts/gsapSetup'
+      import { initPostHog, capturePageview } from '../scripts/posthog'
 
       initSmoothScroll()
+
+      if (import.meta.env.PROD) {
+        initPostHog()
+        document.addEventListener('astro:page-load', capturePageview)
+      }
 
       document.addEventListener('astro:page-load', () => {
         ScrollTrigger.refresh()

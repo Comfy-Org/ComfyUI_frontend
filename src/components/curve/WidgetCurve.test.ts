@@ -1,5 +1,3 @@
-/* eslint-disable vue/no-reserved-component-names */
-/* eslint-disable vue/no-unused-emit-declarations */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
