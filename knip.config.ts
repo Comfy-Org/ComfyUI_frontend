@@ -17,6 +17,9 @@ const config: KnipConfig = {
       entry: ['src/i18n.ts'],
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/design-system': {
+      project: ['src/**/*.{css,js,ts}']
+    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -52,7 +55,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Devtools extensions, included dynamically
+    'tools/devtools/web/**'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

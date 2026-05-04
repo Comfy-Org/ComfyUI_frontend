@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { id } = defineProps<{ id: string }>()
 

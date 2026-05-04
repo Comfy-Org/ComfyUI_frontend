@@ -27,6 +27,23 @@
   --color-smoke-700: #a0a0a0;
   --color-smoke-800: #8a8a8a;
 
+  /* Plum */
+  --color-plum-300: #afa3db;
+  --color-plum-400: #8d7fc5;
+  --color-plum-500: #6b5ca8;
+  --color-plum-600: #49378b;
+
+  /* Ink */
+  --color-ink-100: #5c5362;
+  --color-ink-200: #4f4754;
+  --color-ink-300: #413b45;
+  --color-ink-400: #353139;
+  --color-ink-500: #312c34;
+  --color-ink-600: #29252c;
+  --color-ink-700: #232025;
+  --color-ink-800: #19161a;
+  --color-ink-900: #151317;
+
   --color-white: #ffffff;
   --color-black: #000000;
 

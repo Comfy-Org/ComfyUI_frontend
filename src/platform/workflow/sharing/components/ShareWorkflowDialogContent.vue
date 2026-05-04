@@ -207,7 +207,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
   onClose: () => void
