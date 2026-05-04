@@ -919,7 +919,15 @@ export class LGraphNode
         for (const widget of this.widgets ?? []) {
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+          const incoming = info.widgets_values[i++]
+          const isNumeric = ['number', 'slider', 'knob'].includes(widget.type)
+          const isInvalid =
+            incoming === null ||
+            incoming === undefined ||
+            (typeof incoming === 'number' && !Number.isFinite(incoming))
+          if (!(isNumeric && isInvalid)) {
+            widget.value = incoming
+          }
         }
       }
     }
