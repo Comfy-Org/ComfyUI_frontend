@@ -1,7 +1,15 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
+
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+interface BoxOrigin {
+  readonly x: number
+  readonly y: number
+}
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
@@ -45,5 +53,101 @@ export class VueNodeFixture {
 
   boundingBox(): ReturnType<Locator['boundingBox']> {
     return this.locator.boundingBox()
+  }
+
+  /**
+   * Click the node header to select it, then return its bounding box.
+   * Throws if the node is not laid out (no bounding box) — resize and other
+   * geometry-sensitive tests cannot proceed without coordinates.
+   */
+  async selectAndGetBox(): Promise<{
+    x: number
+    y: number
+    width: number
+    height: number
+  }> {
+    await this.header.click()
+    const box = await this.boundingBox()
+    if (!box) {
+      throw new Error('Node bounding box not found after select')
+    }
+    return box
+  }
+
+  /**
+   * Assert this node's top-left origin stays within `precision` decimal
+   * places of `expected`. Wraps the polled bounding-box pattern that drift
+   * tests repeat for both axes.
+   */
+  async expectAnchoredAt(
+    expected: BoxOrigin,
+    { precision = 1 }: { precision?: number } = {}
+  ): Promise<void> {
+    await expect.poll(this.pollLeftEdge).toBeCloseTo(expected.x, precision)
+    await expect.poll(this.pollTopEdge).toBeCloseTo(expected.y, precision)
+  }
+
+  /** Poll the node's left/x edge for use with `expect.poll`. */
+  pollLeftEdge = async (): Promise<number | null> =>
+    (await this.boundingBox())?.x ?? null
+
+  /** Poll the node's top/y edge for use with `expect.poll`. */
+  pollTopEdge = async (): Promise<number | null> =>
+    (await this.boundingBox())?.y ?? null
+
+  /** Poll the node's right edge (x + width) for use with `expect.poll`. */
+  pollRightEdge = async (): Promise<number | null> => {
+    const b = await this.boundingBox()
+    return b ? b.x + b.width : null
+  }
+
+  /** Poll the node's bottom edge (y + height) for use with `expect.poll`. */
+  pollBottomEdge = async (): Promise<number | null> => {
+    const b = await this.boundingBox()
+    return b ? b.y + b.height : null
+  }
+
+  /** Poll the node's width for use with `expect.poll`. */
+  pollWidth = async (): Promise<number | null> =>
+    (await this.boundingBox())?.width ?? null
+
+  /** Poll the node's height for use with `expect.poll`. */
+  pollHeight = async (): Promise<number | null> =>
+    (await this.boundingBox())?.height ?? null
+
+  /** Locator for the resize handle at the given corner, scoped to this node. */
+  getResizeHandle(corner: CompassCorners): Locator {
+    return this.root.locator(`[data-corner="${corner}"]`)
+  }
+
+  /**
+   * Drag the resize handle at `corner` by (deltaX, deltaY) viewport pixels.
+   * Uses `hover()` to land the pointer on the handle with Playwright's
+   * actionability checks before starting the mouse sequence, which protects
+   * against occluding overlays and subpixel hit-test misses.
+   */
+  async resizeFromCorner(
+    corner: CompassCorners,
+    deltaX: number,
+    deltaY: number
+  ): Promise<void> {
+    const handle = this.getResizeHandle(corner)
+    await handle.hover()
+    const box = await handle.boundingBox()
+    if (!box) {
+      throw new Error(
+        `Resize handle for corner "${corner}" has no bounding box`
+      )
+    }
+
+    const page = this.locator.page()
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height / 2
+    await page.mouse.move(startX, startY)
+    await page.mouse.down()
+    await page.mouse.move(startX + deltaX, startY + deltaY, {
+      steps: 5
+    })
+    await page.mouse.up()
   }
 }
