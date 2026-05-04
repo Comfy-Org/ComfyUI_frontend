@@ -8,15 +8,13 @@ test.describe(
   { tag: ['@vue-nodes', '@screenshot'] },
   () => {
     test('does not gain an extra focus outline when Shift is held on a selected node', async ({
-      comfyPage,
-      browserName
+      comfyPage
     }) => {
       test.info().annotations.push({
         type: 'regression',
         description:
-          'Chromium paints a UA :focus-visible outline on a focused element after a bare Shift keypress; the LGraphNode root has tabindex="0", so a selected Vue node gains a second outline. The baseline below captures the desired (no-shift) appearance — when the underlying CSS bug is fixed the Shift state will match this baseline and the test.fail annotation can be removed.'
+          'Chromium paints a UA :focus-visible outline on a focused element after a bare Shift keypress; the LGraphNode root has tabindex="0", so a selected Vue node would otherwise gain a second outline. The selected-state class adds focus-visible:outline-none on the node root to suppress the UA outline, while leaving the focus ring intact for unselected (Tab-focused) nodes for keyboard a11y.'
       })
-      test.fail(browserName === 'chromium')
 
       await comfyPage.workflow.loadWorkflow('nodes/single_note')
 
