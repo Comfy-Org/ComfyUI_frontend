@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { onMounted, ref } from 'vue'
 
-import { externalLinks, getRoutes, resolveAppOrigin } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import SectionLabel from '../common/SectionLabel.vue'
+
+// Display-only thank-you / failure pages: payment state is verified
+// server-side via Stripe webhooks (see comfy-api). These pages exist
+// solely as the redirect target for Stripe Checkout.
 
 type Status = 'success' | 'failed'
 
@@ -17,15 +20,15 @@ const { status, locale = 'en' } = defineProps<{
 
 const routes = getRoutes(locale)
 
-const appOrigin = ref(externalLinks.app)
-onMounted(() => {
-  if (status === 'success' && typeof document !== 'undefined') {
-    appOrigin.value = resolveAppOrigin(document.referrer)
-  }
-})
-
 function handleCloseTab() {
-  if (typeof window !== 'undefined') window.close()
+  if (typeof window === 'undefined') return
+  window.close()
+  // window.close() only succeeds on tabs that were script-opened. After a
+  // Stripe Checkout redirect the opener relationship is unreliable, so fall
+  // back to navigating home if the tab is still open shortly after.
+  setTimeout(() => {
+    if (!window.closed) window.location.href = routes.home
+  }, 100)
 }
 
 const iconRingClass =
@@ -93,7 +96,7 @@ const iconRingClass =
         class="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center"
       >
         <template v-if="status === 'success'">
-          <BrandButton :href="appOrigin" variant="solid" size="nav">
+          <BrandButton :href="externalLinks.app" variant="solid" size="nav">
             {{ t('payment.success.primaryCta', locale) }}
           </BrandButton>
           <BrandButton

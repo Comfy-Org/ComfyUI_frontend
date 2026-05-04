@@ -1,11 +1,12 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { externalLinks } from '../src/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 
-const APP_URL = 'https://app.comfy.org'
-const PLATFORM_URL = 'https://platform.comfy.org'
-const BILLING_DOCS_URL = 'https://docs.comfy.org/api-reference/cloud'
+const APP_URL = externalLinks.app
+const PLATFORM_URL = externalLinks.platform
+const BILLING_DOCS_URL = externalLinks.docsApi
 
 async function expectNoIndex(page: Page) {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -115,17 +116,5 @@ test.describe('Payment pages zh-CN @smoke', () => {
       page.getByRole('link', { name: '查看计费文档' })
     ).toHaveAttribute('href', BILLING_DOCS_URL)
     await expect(page.getByRole('button', { name: '关闭页面' })).toBeVisible()
-  })
-})
-
-test.describe('Payment success origin-aware referrer @interaction', () => {
-  test('falls back to default app URL for non-allowlisted referrer', async ({
-    page
-  }) => {
-    await page.goto('/payment/success', {
-      referer: 'https://evil.example.com/'
-    })
-    const cta = page.getByRole('link', { name: /CONTINUE IN COMFYUI/i })
-    await expect(cta).toHaveAttribute('href', APP_URL)
   })
 })

@@ -3,12 +3,13 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 
-const SITEMAP_EXCLUDED_PATHNAMES = new Set([
-  '/payment/success',
-  '/payment/failed',
-  '/zh-CN/payment/success',
-  '/zh-CN/payment/failed'
-])
+const PAYMENT_STATUSES = ['success', 'failed'] as const
+const LOCALE_PREFIXES = ['', '/zh-CN'] as const
+const SITEMAP_EXCLUDED_PATHNAMES = new Set(
+  LOCALE_PREFIXES.flatMap((prefix) =>
+    PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
+  )
+)
 
 function isExcludedFromSitemap(page: string): boolean {
   const pathname = new URL(page).pathname.replace(/\/$/, '')

@@ -40,18 +40,3 @@ export const externalLinks = {
   workflows: 'https://comfy.org/workflows',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
-
-const APP_REFERRER_ALLOWLIST: ReadonlySet<string> = new Set([
-  'https://app.comfy.org',
-  'https://stagingapp.comfy.org'
-])
-
-export function resolveAppOrigin(referrer: string | undefined): string {
-  if (!referrer) return externalLinks.app
-  try {
-    const origin = new URL(referrer).origin
-    return APP_REFERRER_ALLOWLIST.has(origin) ? origin : externalLinks.app
-  } catch {
-    return externalLinks.app
-  }
-}
