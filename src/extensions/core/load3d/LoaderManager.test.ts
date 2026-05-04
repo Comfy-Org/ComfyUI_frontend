@@ -141,10 +141,9 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()).toBeNull()
     })
 
-    it('stays null when the adapter rejects', async () => {
+    it('stays null when the adapter rejects (does not publish stale adapter)', async () => {
       const { lm } = makeLoaderManager()
-      // Seed with a previously-successful mesh load so we can prove a later
-      // failed splat load does not leave the splat adapter published.
+
       meshLoad.mockResolvedValueOnce(new THREE.Object3D())
       await lm.loadModel('api/view?filename=cube.glb')
       expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
@@ -196,10 +195,13 @@ describe('LoaderManager', () => {
       }
 
       let adapterDuringClear: ModelAdapter | null | undefined
-      const lm = new LoaderManager(modelManager, eventManager, [oldAdapter])
-      // Prime the loader with an active adapter, then trigger a new load.
-      ;(lm as unknown as { _currentAdapter: ModelAdapter })._currentAdapter =
-        oldAdapter
+      const adapterRef = { current: oldAdapter as ModelAdapter | null }
+      const lm = new LoaderManager(
+        modelManager,
+        eventManager,
+        [oldAdapter],
+        adapterRef
+      )
       ;(modelManager.clearModel as ReturnType<typeof vi.fn>).mockImplementation(
         () => {
           adapterDuringClear = lm.getCurrentAdapter()
@@ -212,6 +214,29 @@ describe('LoaderManager', () => {
       )
 
       expect(adapterDuringClear).toBe(oldAdapter)
+    })
+
+    it('does not let a slow stale load clobber adapterRef after a newer load took over', async () => {
+      const { lm } = makeLoaderManager()
+
+      let resolveSplatLoad!: (model: THREE.Object3D) => void
+      const slowSplatLoad = new Promise<THREE.Object3D>((resolve) => {
+        resolveSplatLoad = resolve
+      })
+      splatLoad.mockReturnValueOnce(slowSplatLoad)
+      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+
+      const aPromise = lm.loadModel('api/view?filename=a.splat')
+
+      await Promise.resolve()
+
+      await lm.loadModel('api/view?filename=b.glb')
+      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
+
+      resolveSplatLoad(new THREE.Object3D())
+      await aPromise
+
+      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
     })
   })
 
@@ -409,6 +434,55 @@ describe('LoaderManager', () => {
       )
       expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
       expect(consoleError).toHaveBeenCalled()
+    })
+
+    it('suppresses the alert on a 404 when silentOnNotFound is set', async () => {
+      const { lm } = makeLoaderManager()
+      const notFound = new Error(
+        'fetch for "..." responded with 404: Not Found'
+      )
+      meshLoad.mockRejectedValueOnce(notFound)
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silentOnNotFound: true
+      })
+
+      expect(consoleError).toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
+    })
+
+    it('detects a 404 from the response status field on three.js HttpError', async () => {
+      const { lm } = makeLoaderManager()
+      const httpError = Object.assign(new Error('not found'), {
+        response: { status: 404 }
+      })
+      meshLoad.mockRejectedValueOnce(httpError)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silentOnNotFound: true
+      })
+
+      expect(addAlert).not.toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
+    })
+
+    it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
+      const { lm } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silentOnNotFound: true
+      })
+
+      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {

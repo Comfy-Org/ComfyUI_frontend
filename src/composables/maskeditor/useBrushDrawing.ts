@@ -1,14 +1,12 @@
 /// <reference types="@webgpu/types" />
 import { ref, watch, nextTick, onUnmounted } from 'vue'
-import { debounce } from 'es-toolkit/compat'
 import { parseToRgb } from '@/utils/colorUtil'
-import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import {
   Tools,
   BrushShape,
   CompositionOperation
 } from '@/extensions/core/maskeditor/types'
-import type { Brush, Point } from '@/extensions/core/maskeditor/types'
+import type { Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import { resampleSegment } from './splineUtils'
@@ -16,6 +14,7 @@ import { tgpu } from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
+import { useBrushAdjustment } from './useBrushAdjustment'
 import {
   resetDirtyRect,
   updateDirtyRect,
@@ -24,45 +23,16 @@ import {
   drawMaskShape
 } from './brushDrawingUtils'
 import type { DirtyRect } from './brushDrawingUtils'
-
-/**
- * Saves the brush settings to local storage with a debounce.
- * @param key - The storage key.
- * @param brush - The brush settings object.
- */
-const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
-  try {
-    const brushString = JSON.stringify(brush)
-    setStorageValue(key, brushString)
-  } catch (error) {
-    console.error('Failed to save brush to cache:', error)
-  }
-}, 300)
-
-/**
- * Loads brush settings from local storage.
- * @param key - The storage key.
- * @returns The brush settings object or null if not found.
- */
-function loadBrushFromCache(key: string): Brush | null {
-  try {
-    const brushString = getStorageValue(key)
-    if (brushString) {
-      return JSON.parse(brushString) as Brush
-    } else {
-      return null
-    }
-  } catch (error) {
-    console.error('Failed to load brush from cache:', error)
-    return null
-  }
-}
+import { useBrushPersistence } from './useBrushPersistence'
 
 export function useBrushDrawing(initialSettings?: {
   useDominantAxis?: boolean
   brushAdjustmentSpeed?: number
 }) {
   const store = useMaskEditorStore()
+  const persistence = useBrushPersistence()
+  const { startBrushAdjustment, handleBrushAdjustment } =
+    useBrushAdjustment(initialSettings)
 
   const coordinateTransform = useCoordinateTransform()
 
@@ -96,18 +66,7 @@ export function useBrushDrawing(initialSettings?: {
   // Stroke processor instance
   let strokeProcessor: StrokeProcessor | null = null
 
-  const initialPoint = ref<Point | null>(null)
-  const useDominantAxis = ref(initialSettings?.useDominantAxis ?? false)
-  const brushAdjustmentSpeed = ref(initialSettings?.brushAdjustmentSpeed ?? 1.0)
-
-  const cachedBrushSettings = loadBrushFromCache('maskeditor_brush_settings')
-  if (cachedBrushSettings) {
-    store.setBrushSize(cachedBrushSettings.size)
-    store.setBrushOpacity(cachedBrushSettings.opacity)
-    store.setBrushHardness(cachedBrushSettings.hardness)
-    store.brushSettings.type = cachedBrushSettings.type
-    store.setBrushStepSize(cachedBrushSettings.stepSize ?? 5)
-  }
+  persistence.loadAndApply()
 
   // Handle external clear events
   watch(
@@ -794,85 +753,6 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   /**
-   * Starts the brush adjustment interaction.
-   * @param event - The pointer event.
-   */
-  async function startBrushAdjustment(event: PointerEvent): Promise<void> {
-    event.preventDefault()
-
-    const coords = { x: event.offsetX, y: event.offsetY }
-    const coords_canvas = coordinateTransform.screenToCanvas(coords)
-
-    store.brushPreviewGradientVisible = true
-    initialPoint.value = coords_canvas
-  }
-
-  /**
-   * Handles the brush adjustment movement.
-   * @param event - The pointer event.
-   */
-  async function handleBrushAdjustment(event: PointerEvent): Promise<void> {
-    if (!initialPoint.value) {
-      return
-    }
-
-    const coords = { x: event.offsetX, y: event.offsetY }
-    const brushDeadZone = 5
-    const coords_canvas = coordinateTransform.screenToCanvas(coords)
-
-    const delta_x = coords_canvas.x - initialPoint.value.x
-    const delta_y = coords_canvas.y - initialPoint.value.y
-
-    const effectiveDeltaX = Math.abs(delta_x) < brushDeadZone ? 0 : delta_x
-    const effectiveDeltaY = Math.abs(delta_y) < brushDeadZone ? 0 : delta_y
-
-    let finalDeltaX = effectiveDeltaX
-    let finalDeltaY = effectiveDeltaY
-
-    if (useDominantAxis.value) {
-      const ratio = Math.abs(effectiveDeltaX) / Math.abs(effectiveDeltaY)
-      const threshold = 2.0
-
-      if (ratio > threshold) {
-        finalDeltaY = 0
-      } else if (ratio < 1 / threshold) {
-        finalDeltaX = 0
-      }
-    }
-
-    const cappedDeltaX = Math.max(-100, Math.min(100, finalDeltaX))
-    const cappedDeltaY = Math.max(-100, Math.min(100, finalDeltaY))
-
-    const newSize = Math.max(
-      1,
-      Math.min(
-        500,
-        store.brushSettings.size +
-          (cappedDeltaX / 35) * brushAdjustmentSpeed.value
-      )
-    )
-
-    const newHardness = Math.max(
-      0,
-      Math.min(
-        1,
-        store.brushSettings.hardness -
-          (cappedDeltaY / 4000) * brushAdjustmentSpeed.value
-      )
-    )
-
-    store.setBrushSize(newSize)
-    store.setBrushHardness(newHardness)
-  }
-
-  /**
-   * Saves the current brush settings to cache.
-   */
-  function saveBrushSettings(): void {
-    saveBrushToCache('maskeditor_brush_settings', store.brushSettings)
-  }
-
-  /**
    * Reads back the GPU textures to CPU ImageDatas.
    * @returns Object containing mask and rgb ImageDatas.
    */
@@ -1272,7 +1152,7 @@ export function useBrushDrawing(initialSettings?: {
     drawEnd,
     startBrushAdjustment,
     handleBrushAdjustment,
-    saveBrushSettings,
+    saveBrushSettings: persistence.save,
     destroy,
     initGPUResources,
     initPreviewCanvas,

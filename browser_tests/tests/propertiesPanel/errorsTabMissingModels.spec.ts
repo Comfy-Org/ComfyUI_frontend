@@ -5,11 +5,11 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import {
   interceptClipboardWrite,
   getClipboardText
-} from '@e2e/helpers/clipboardSpy'
+} from '@e2e/fixtures/utils/clipboardSpy'
 import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
-} from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

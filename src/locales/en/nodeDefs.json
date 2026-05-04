@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "display_name": "HappyHorse Image to Video",
+    "description": "Generate a video from a first-frame image using the HappyHorse model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image. The output aspect ratio is derived from this image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "display_name": "HappyHorse Reference to Video",
+    "description": "Generate a video featuring a person or object from reference materials with the HappyHorse model. Supports single-character performances and multi-character interactions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "display_name": "HappyHorse Text to Video",
+    "description": "Generates a video based on a text prompt using the HappyHorse model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "display_name": "HappyHorse Video Edit",
+    "description": "Edit a video using text instructions or reference images with the HappyHorse model. Output duration is 3-15s and matches the input video; inputs longer than 15s are truncated.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The video to edit."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "display_name": "HitPaw General Image Enhance",
     "description": "Upscale low-resolution images to super-resolution, eliminate artifacts and noise. Maximum output: 32 megapixels.",
@@ -11696,7 +11846,7 @@
       },
       "size": {
         "name": "size",
-        "tooltip": "Image size"
+        "tooltip": "Image size. Select 'Custom' to use the custom width and height (GPT Image 2 only)."
       },
       "n": {
         "name": "n",
@@ -11712,6 +11862,14 @@
       },
       "model": {
         "name": "model"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
       },
       "control_after_generate": {
         "name": "control after generate"

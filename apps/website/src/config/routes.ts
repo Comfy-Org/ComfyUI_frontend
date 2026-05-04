@@ -35,6 +35,7 @@ export const externalLinks = {
   docsApi: 'https://docs.comfy.org/api-reference/cloud',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   platform: 'https://platform.comfy.org',
+  support: 'https://support.comfy.org/hc/en-us',
   workflows: 'https://comfy.org/workflows',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const

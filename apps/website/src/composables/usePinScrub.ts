@@ -20,6 +20,9 @@ interface PinScrubOptions {
 /** Viewport-height percentage each category occupies in the scroll distance. */
 export const VH_PER_ITEM = 20
 
+/** Pin/scrub is mobile-only — desktop uses hover-based category switching. */
+const PIN_SCRUB_MEDIA_QUERY = '(max-width: 1023px)'
+
 function interpolateY(
   index: number,
   buttonCenters: number[],
@@ -66,7 +69,8 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
       !refs.section.value ||
       !refs.content.value ||
       !refs.nav.value ||
-      prefersReducedMotion()
+      prefersReducedMotion() ||
+      !window.matchMedia(PIN_SCRUB_MEDIA_QUERY).matches
     )
       return
     const section: HTMLElement = refs.section.value

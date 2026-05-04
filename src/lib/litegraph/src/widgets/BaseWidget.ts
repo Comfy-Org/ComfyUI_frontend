@@ -435,7 +435,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.callback?.(this.value, canvas, node, pos, e)
 
     node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
-    if (node.graph) node.graph._version++
+    if (node.graph) node.graph.incrementVersion()
   }
 
   /**
