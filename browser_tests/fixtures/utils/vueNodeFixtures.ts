@@ -79,6 +79,25 @@ export class VueNodeFixture {
     return filteredLocator.getByTestId('slot-dot').locator('..')
   }
 
+  /**
+   * Click the node header to select it, then return its bounding box.
+   * Throws if the node is not laid out because geometry-sensitive tests
+   * cannot proceed without coordinates.
+   */
+  async selectAndGetBox(): Promise<{
+    x: number
+    y: number
+    width: number
+    height: number
+  }> {
+    await this.header.click()
+    const box = await this.boundingBox()
+    if (!box) {
+      throw new Error('Node bounding box not found after select')
+    }
+    return box
+  }
+
   /** Locator for the resize handle at the given corner, scoped to this node. */
   getResizeHandle(corner: CompassCorners): Locator {
     return this.root.locator(`[data-corner="${corner}"]`)
@@ -105,11 +124,11 @@ export class VueNodeFixture {
     }
 
     const page = this.locator.page()
-    const centerX = box.x + box.width / 2
-    const centerY = box.y + box.height / 2
-
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height / 2
+    await page.mouse.move(startX, startY)
     await page.mouse.down()
-    await page.mouse.move(centerX + deltaX, centerY + deltaY, {
+    await page.mouse.move(startX + deltaX, startY + deltaY, {
       steps: 5
     })
     await page.mouse.up()
