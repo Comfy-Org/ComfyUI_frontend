@@ -18,11 +18,11 @@ test.describe(
       })
       test.fail(browserName === 'chromium')
 
-      const checkpointNode = comfyPage.vueNodes
-        .getNodeByTitle('Load Checkpoint')
-        .first()
-      await checkpointNode.locator('.lg-node-header').click()
-      await expect(checkpointNode).toHaveClass(/outline-node-component-outline/)
+      await comfyPage.workflow.loadWorkflow('nodes/single_note')
+
+      const note = comfyPage.vueNodes.getNodeByTitle('Note').first()
+      await note.locator('.lg-node-header').click()
+      await expect(note).toHaveClass(/outline-node-component-outline/)
 
       await comfyPage.page.keyboard.down('Shift')
       await comfyPage.expectScreenshot(
