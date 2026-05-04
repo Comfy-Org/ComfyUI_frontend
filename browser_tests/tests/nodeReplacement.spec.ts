@@ -49,33 +49,29 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         }) => {
           const swapGroup = getSwapNodesGroup(comfyPage.page)
           await swapGroup.getByRole('button', { name: /replace node/i }).click()
-
-          // Swap group should disappear after replacement
           await expect(swapGroup).toBeHidden()
 
-          // Verify the replacement was applied correctly via the exported workflow
           const workflow = await comfyPage.workflow.getExportedWorkflow()
-
-          // Node count stays the same (in-place replacement)
           expect(
             workflow.nodes,
             'Node count should be unchanged after in-place replacement'
           ).toHaveLength(2)
 
-          // The old type should be gone and replaced by KSampler
           const nodeTypes = workflow.nodes.map((n) => n.type)
           expect(nodeTypes).not.toContain('E2E_OldSampler')
           expect(nodeTypes).toContain('KSampler')
 
-          // The replaced node should keep the same id
           const ksampler = workflow.nodes.find((n) => n.type === 'KSampler')
-          expect(ksampler?.id).toBe(1)
-
-          // Output connection from old node → VAEDecode should be preserved
-          // Link tuple format: [link_id, source_node, source_slot, target_node, target_slot, type]
-          const link = workflow.links?.find((l) => l[1] === 1 && l[3] === 2)
           expect(
-            link,
+            ksampler?.id,
+            'Replaced node should keep the original id'
+          ).toBe(1)
+
+          const linkFromReplacedToDecode = workflow.links?.find(
+            (l) => l[1] === 1 && l[3] === 2
+          )
+          expect(
+            linkFromReplacedToDecode,
             'Output link from replaced node to VAEDecode should be preserved'
           ).toBeDefined()
         })
@@ -126,20 +122,14 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         }) => {
           const swapGroup = getSwapNodesGroup(comfyPage.page)
           await expect(swapGroup).toBeVisible()
-
-          // Both types should appear
           await expect(swapGroup).toContainText('E2E_OldSampler')
           await expect(swapGroup).toContainText('E2E_OldUpscaler')
 
-          // Click "Replace All"
           await swapGroup
             .getByRole('button', { name: 'Replace All', exact: true })
             .click()
-
-          // Swap group should disappear
           await expect(swapGroup).toBeHidden()
 
-          // Verify both old types are gone
           const workflow = await comfyPage.workflow.getExportedWorkflow()
           const nodeTypes = workflow.nodes.map((n) => n.type)
           expect(nodeTypes).not.toContain('E2E_OldSampler')
@@ -156,15 +146,11 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             .click()
 
           const workflow = await comfyPage.workflow.getExportedWorkflow()
-
-          // E2E_OldUpscaler (id=2) had an output link to SaveImage (id=3).
-          // After replacement to ImageScaleBy, that link should be preserved.
-          // Link tuple format: [link_id, source_node, source_slot, target_node, target_slot, type]
-          const linkToSave = workflow.links?.find(
+          const linkFromUpscalerToSave = workflow.links?.find(
             (l) => l[1] === 2 && l[3] === 3
           )
           expect(
-            linkToSave,
+            linkFromUpscalerToSave,
             'Output link from replaced upscaler to SaveImage should be preserved'
           ).toBeDefined()
         })
