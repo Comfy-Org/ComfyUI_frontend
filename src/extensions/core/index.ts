@@ -43,11 +43,6 @@ if (isCloud) {
   }
 }
 
-// Feedback button for cloud and nightly builds
-if (isCloud || isNightly) {
-  await import('./cloudFeedbackTopbarButton')
-}
-
 // Nightly-only extensions
 if (isNightly && !isCloud) {
   await import('./nightlyBadges')
