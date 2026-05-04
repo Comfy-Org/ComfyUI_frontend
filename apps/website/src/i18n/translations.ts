@@ -3498,18 +3498,6 @@ const translations = {
     en: 'Dale Carman | Co-founder @ Groove Jones',
     'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
   },
-  'customers.detail.groove-jones.topic-10.block.2.label': {
-    en: 'GROOVE JONES CONTRIBUTORS',
-    'zh-CN': 'GROOVE JONES 贡献者'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.name': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.role': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
 
   // Contact – FormSection
   'contact.form.badge': {
