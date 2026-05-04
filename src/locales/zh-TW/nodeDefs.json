@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey 圖像轉影片節點",
-    "display_name": "Moonvalley Marey 圖像轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "圖像",
-        "tooltip": "用於生成影片的參考圖像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向提示詞文字"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "prompt_adherence": {
-        "name": "提示詞遵循度",
-        "tooltip": "生成控制的引導尺度"
-      },
-      "resolution": {
-        "name": "解析度",
-        "tooltip": "輸出影片的解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "隨機種子值"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "去噪步數"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey 文字轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向提示詞文字"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "prompt_adherence": {
-        "name": "提示詞遵循度",
-        "tooltip": "生成控制的引導尺度"
-      },
-      "resolution": {
-        "name": "解析度",
-        "tooltip": "輸出影片的解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "隨機種子值"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "推理步數"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 影片轉影片",
-    "inputs": {
-      "control_type": {
-        "name": "控制類型"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "僅在 control_type 為 'Motion Transfer' 時使用"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向提示詞文字"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "描述要生成的影片"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "隨機種子值"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "推理步數"
-      },
-      "video": {
-        "name": "影片",
-        "tooltip": "用於生成輸出影片的參考影片。必須至少5秒長。超過5秒的影片將自動修剪。僅支援MP4格式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -12534,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "整數",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "生成後控制"
       },
       "value": {
@@ -16624,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "若模型有內建系統提示/模板則使用。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
       }
     },
     "outputs": {
@@ -16679,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "若模型有內建系統提示/模板則使用。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
       }
     },
     "outputs": {
@@ -16893,6 +16793,45 @@
         "name": "升頻模型"
       },
       "upscaler_resolution": {
+        "name": "升頻解析度"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "以強大的升頻與修復技術為影片注入新生命。",
+    "display_name": "Topaz 影片增強",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "動態壓縮等級",
+        "tooltip": "CQP 等級。"
+      },
+      "interpolation_model": {
+        "name": "插值模型"
+      },
+      "upscaler_model": {
+        "name": "升頻模型"
+      },
+      "upscaler_model_creativity": {
+        "name": "創意"
+      },
+      "upscaler_model_prompt": {
+        "name": "提示詞"
+      },
+      "upscaler_model_realism": {
+        "name": "寫實度"
+      },
+      "upscaler_model_sharp": {
+        "name": "銳利度"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "升頻解析度"
       },
       "video": {

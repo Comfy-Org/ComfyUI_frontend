@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Nœud Moonvalley Marey Image vers Vidéo",
-    "display_name": "Moonvalley Marey Image vers Vidéo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "L'image de référence utilisée pour générer la vidéo"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texte de prompt négatif"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Échelle de guidage pour le contrôle de la génération"
-      },
-      "resolution": {
-        "name": "résolution",
-        "tooltip": "Résolution de la vidéo de sortie"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valeur de seed aléatoire"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Nombre d'étapes de débruitage"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Texte vers Vidéo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texte de prompt négatif"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Échelle de guidage pour le contrôle de la génération"
-      },
-      "resolution": {
-        "name": "résolution",
-        "tooltip": "Résolution de la vidéo de sortie"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valeur de seed aléatoire"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Étapes d'inférence"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Vidéo vers Vidéo",
-    "inputs": {
-      "control_type": {
-        "name": "type_contrôle"
-      },
-      "motion_intensity": {
-        "name": "intensité_mouvement",
-        "tooltip": "Utilisé uniquement si le type de contrôle est 'Transfert de mouvement'"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texte de prompt négatif"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Décrit la vidéo à générer"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valeur de seed aléatoire"
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Nombre d'étapes d'inférence"
-      },
-      "video": {
-        "name": "vidéo",
-        "tooltip": "La vidéo de référence utilisée pour générer la vidéo de sortie. Doit durer au moins 5 secondes. Les vidéos plus longues que 5s seront automatiquement tronquées. Seul le format MP4 est pris en charge."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphologie",
     "inputs": {
@@ -12534,8 +12420,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
-        "name": "contrôler après génération"
+      "fixed": {
+        "name": "contrôle après génération"
       },
       "value": {
         "name": "valeur"
@@ -16624,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "audio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16556,10 @@
       "use_default_template": {
         "name": "utiliser le modèle par défaut",
         "tooltip": "Utiliser l'invite/le modèle système intégré si le modèle en possède un."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Images extraites de la vidéo en lot. Supposé à 24 FPS ; sous-échantillonné à 1 FPS en interne."
       }
     },
     "outputs": {
@@ -16679,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "audio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16618,10 @@
       "use_default_template": {
         "name": "utiliser le modèle par défaut",
         "tooltip": "Utiliser l'invite/le modèle système intégré si le modèle en possède un."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Images extraites de la vidéo en lot. Supposé à 24 FPS ; sous-échantillonné à 1 FPS en interne."
       }
     },
     "outputs": {
@@ -16894,6 +16794,45 @@
       },
       "upscaler_resolution": {
         "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Redonnez vie à vos vidéos grâce à une technologie puissante d’agrandissement et de restauration.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "niveau de compression dynamique",
+        "tooltip": "Niveau CQP."
+      },
+      "interpolation_model": {
+        "name": "modèle d’interpolation"
+      },
+      "upscaler_model": {
+        "name": "modèle d’agrandissement"
+      },
+      "upscaler_model_creativity": {
+        "name": "créativité"
+      },
+      "upscaler_model_prompt": {
+        "name": "invite"
+      },
+      "upscaler_model_realism": {
+        "name": "réalisme"
+      },
+      "upscaler_model_sharp": {
+        "name": "netteté"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "résolution d’agrandissement"
       },
       "video": {
         "name": "vidéo"
