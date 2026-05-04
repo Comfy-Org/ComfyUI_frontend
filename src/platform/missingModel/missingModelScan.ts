@@ -479,21 +479,21 @@ export async function verifyAssetSupportedCandidates(
     candidate.isMissing = false
   }
 
-  const pendingNodeTypes = new Set(
+  const nodeTypesNeedingAssetRefresh = new Set(
     [...verification.missing, ...verification.fallback].map(
       (candidate) => candidate.nodeType
     )
   )
 
   if (signal?.aborted) return
-  if (pendingNodeTypes.size === 0) return
+  if (nodeTypesNeedingAssetRefresh.size === 0) return
 
   const store =
     assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
 
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
-    [...pendingNodeTypes].map(async (nodeType) => {
+    [...nodeTypesNeedingAssetRefresh].map(async (nodeType) => {
       if (signal?.aborted) return
       try {
         await store.updateModelsForNodeType(nodeType)

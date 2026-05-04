@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AssetHashStatus } from '@/platform/assets/services/assetService'
+
 import { verifyCandidatesByAssetHash } from './assetHashVerification'
 
 interface Candidate {
@@ -7,8 +9,25 @@ interface Candidate {
   hash: string | null
 }
 
+interface Deferred<T> {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (reason?: unknown) => void
+}
+
 function candidate(id: string, hash: string | null): Candidate {
   return { id, hash }
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+
+  return { promise, resolve, reject }
 }
 
 describe(verifyCandidatesByAssetHash, () => {
@@ -118,23 +137,75 @@ describe(verifyCandidatesByAssetHash, () => {
   it('caps concurrent hash checks', async () => {
     let activeChecks = 0
     let maxActiveChecks = 0
+    let completedChecks = 0
+    const inFlight: Array<Deferred<AssetHashStatus>> = []
     const candidates = Array.from({ length: 6 }, (_, index) =>
       candidate(String(index), `blake3:${index}`)
     )
 
-    await verifyCandidatesByAssetHash({
+    const verificationPromise = verifyCandidatesByAssetHash({
       candidates,
       getAssetHash: (candidate) => candidate.hash,
       maxConcurrent: 2,
       checkAssetHash: async () => {
         activeChecks++
         maxActiveChecks = Math.max(maxActiveChecks, activeChecks)
-        await new Promise((resolve) => setTimeout(resolve, 1))
-        activeChecks--
-        return 'missing'
+        const deferred = createDeferred<AssetHashStatus>()
+        inFlight.push(deferred)
+
+        try {
+          return await deferred.promise
+        } finally {
+          activeChecks--
+          completedChecks++
+        }
       }
     })
 
+    while (completedChecks < candidates.length) {
+      const currentChecks = inFlight.splice(0)
+      expect(currentChecks.length).toBeLessThanOrEqual(2)
+      for (const check of currentChecks) {
+        check.resolve('missing')
+      }
+      await Promise.resolve()
+    }
+
+    await verificationPromise
     expect(maxActiveChecks).toBeLessThanOrEqual(2)
+  })
+
+  it('does not report fallback failures after another worker aborts', async () => {
+    const abortHash = 'blake3:abort'
+    const errorHash = 'blake3:error'
+    const requests = new Map<string, Deferred<AssetHashStatus>>()
+    const onError = vi.fn()
+
+    const verificationPromise = verifyCandidatesByAssetHash({
+      candidates: [candidate('a', abortHash), candidate('b', errorHash)],
+      getAssetHash: (candidate) => candidate.hash,
+      maxConcurrent: 2,
+      checkAssetHash: (hash) => {
+        const deferred = createDeferred<AssetHashStatus>()
+        requests.set(hash, deferred)
+        return deferred.promise
+      },
+      onError
+    })
+
+    expect(requests.size).toBe(2)
+    requests.get(abortHash)?.reject(new DOMException('aborted', 'AbortError'))
+    await Promise.resolve()
+    requests.get(errorHash)?.reject(new Error('network failed'))
+
+    const result = await verificationPromise
+
+    expect(result).toEqual({
+      existing: [],
+      missing: [],
+      fallback: [],
+      aborted: true
+    })
+    expect(onError).not.toHaveBeenCalled()
   })
 })
