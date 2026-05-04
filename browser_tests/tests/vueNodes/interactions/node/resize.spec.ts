@@ -15,9 +15,7 @@ import {
 async function setupResizableNode(comfyPage: ComfyPage, title: string) {
   await expect(comfyPage.vueNodes.getNodeByTitle(title)).toHaveCount(1)
   const node = await comfyPage.vueNodes.getFixtureByTitle(title)
-  await node.header.click()
-  const box = await node.boundingBox()
-  if (!box) throw new Error(`Node "${title}" bounding box not found`)
+  const box = await node.selectAndGetBox()
   return { node, box }
 }
 

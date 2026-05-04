@@ -49,6 +49,25 @@ export class VueNodeFixture {
     return this.locator.boundingBox()
   }
 
+  /**
+   * Click the node header to select it, then return its bounding box.
+   * Throws if the node is not laid out (no bounding box) — resize and other
+   * geometry-sensitive tests cannot proceed without coordinates.
+   */
+  async selectAndGetBox(): Promise<{
+    x: number
+    y: number
+    width: number
+    height: number
+  }> {
+    await this.header.click()
+    const box = await this.boundingBox()
+    if (!box) {
+      throw new Error('Node bounding box not found after select')
+    }
+    return box
+  }
+
   /** Locator for the resize handle at the given corner, scoped to this node. */
   getResizeHandle(corner: CompassCorners): Locator {
     return this.root.locator(`[data-corner="${corner}"]`)
