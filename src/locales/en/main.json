@@ -2188,7 +2188,8 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead"
+      "backToSocialLogin": "Sign up with Google or Github instead",
+      "backToGithubLogin": "Sign up with Github instead"
     },
     "signup": {
       "title": "Create an account",
