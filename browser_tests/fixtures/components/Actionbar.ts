@@ -36,13 +36,31 @@ class ComfyQueueButton {
   }
 
   public async toggleOptions() {
+    return await this.openOptions()
+  }
+
+  public async openOptions() {
     await this.dropdownButton.click()
     return new ComfyQueueButtonOptions(this.actionbar.page)
   }
 }
 
 class ComfyQueueButtonOptions {
-  constructor(public readonly page: Page) {}
+  public readonly menu: Locator
+  public readonly modeItems: Locator
+
+  constructor(public readonly page: Page) {
+    this.menu = page.getByRole('menu')
+    this.modeItems = this.menu.getByRole('menuitem')
+  }
+
+  public modeItem(name: string) {
+    return this.menu.getByRole('menuitem', { name, exact: true })
+  }
+
+  public async selectMode(name: string) {
+    await this.modeItem(name).click()
+  }
 
   public async setMode(mode: AutoQueueMode) {
     await this.page.evaluate((mode) => {
