@@ -3612,8 +3612,8 @@ const translations = {
     'zh-CN': '前往 COMFY CLOUD'
   },
   'payment.success.secondaryCta': {
-    en: 'VIEW USAGE',
-    'zh-CN': '查看用量'
+    en: 'VIEW USAGE & PAYMENTS',
+    'zh-CN': '查看用量与支付'
   },
   'payment.failed.label': {
     en: 'PAYMENT',

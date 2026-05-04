@@ -39,8 +39,10 @@ test.describe('Payment success page @smoke', () => {
     await expect(cta).toHaveAttribute('href', CLOUD_URL)
   })
 
-  test('secondary CTA links to platform usage page', async ({ page }) => {
-    const cta = page.getByRole('link', { name: /VIEW USAGE/i })
+  test('secondary CTA links to platform usage & payments page', async ({
+    page
+  }) => {
+    const cta = page.getByRole('link', { name: /VIEW USAGE & PAYMENTS/i })
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', PLATFORM_USAGE_URL)
   })
@@ -90,10 +92,9 @@ test.describe('Payment pages zh-CN @smoke', () => {
     await expect(
       page.getByRole('link', { name: '前往 COMFY CLOUD' })
     ).toHaveAttribute('href', CLOUD_URL)
-    await expect(page.getByRole('link', { name: '查看用量' })).toHaveAttribute(
-      'href',
-      PLATFORM_USAGE_URL
-    )
+    await expect(
+      page.getByRole('link', { name: '查看用量与支付' })
+    ).toHaveAttribute('href', PLATFORM_USAGE_URL)
   })
 
   test('zh-CN failed page renders and links correctly', async ({ page }) => {
