@@ -14,7 +14,8 @@ const baseRoutes = {
   demos: '/demos',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
-  contact: '/contact'
+  contact: '/contact',
+  models: '/p/supported-models'
 } as const
 
 type Routes = typeof baseRoutes
@@ -25,6 +26,10 @@ export function getRoutes(locale: Locale = 'en'): Routes {
   return Object.fromEntries(
     Object.entries(baseRoutes).map(([k, v]) => [k, `${prefix}${v}`])
   ) as unknown as Routes
+}
+
+export function modelDetail(slug: string): string {
+  return `/p/supported-models/${slug}`
 }
 
 export const externalLinks = {

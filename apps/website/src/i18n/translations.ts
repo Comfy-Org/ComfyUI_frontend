@@ -3710,6 +3710,866 @@ const translations = {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
   }
+
+  // Models – UI keys
+  'models.hero.eyebrow': {
+    en: 'AI Model',
+    'zh-CN': 'AI 模型'
+  },
+  'models.hero.primaryCta': {
+    en: 'TRY IN COMFY',
+    'zh-CN': '在 Comfy 中试用'
+  },
+  'models.hero.secondaryCta': {
+    en: 'DOWNLOAD MODEL',
+    'zh-CN': '下载模型'
+  },
+  'models.hero.workflowCount': {
+    en: '{count} workflows use this model',
+    'zh-CN': '{count} 个工作流使用此模型'
+  },
+  'models.index.title': {
+    en: 'Supported Models',
+    'zh-CN': '支持的模型'
+  },
+  'models.index.subtitle': {
+    en: "Run the world's leading AI models in ComfyUI",
+    'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
+  },
+  'models.breadcrumb.home': {
+    en: 'Home',
+    'zh-CN': '首页'
+  },
+  'models.breadcrumb.models': {
+    en: 'Supported Models',
+    'zh-CN': '支持的模型'
+  },
+
+  // Models – per-model display names and descriptions
+  'models.umt5-xxl-fp8-e4m3fn-scaled.displayName': {
+    en: 'UMT5-XXL FP8',
+    'zh-CN': 'UMT5-XXL FP8'
+  },
+  'models.umt5-xxl-fp8-e4m3fn-scaled.description': {
+    en: 'UMT5-XXL FP8 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'UMT5-XXL FP8 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.wan-2-1-vae.displayName': {
+    en: 'Wan 2.1 VAE',
+    'zh-CN': 'Wan 2.1 VAE'
+  },
+  'models.wan-2-1-vae.description': {
+    en: 'Wan 2.1 VAE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Wan 2.1 VAE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.ae.displayName': {
+    en: 'AE VAE',
+    'zh-CN': 'AE VAE'
+  },
+  'models.ae.description': {
+    en: 'AE VAE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'AE VAE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.qwen-2-5-vl-7b-fp8-scaled.displayName': {
+    en: 'Qwen 2 5 VL 7b Fp8 Scaled',
+    'zh-CN': 'Qwen 2 5 VL 7b Fp8 Scaled'
+  },
+  'models.qwen-2-5-vl-7b-fp8-scaled.description': {
+    en: 'Qwen 2 5 VL 7b Fp8 Scaled — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen 2 5 VL 7b Fp8 Scaled — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.qwen-image-vae.displayName': {
+    en: 'Qwen Image VAE',
+    'zh-CN': 'Qwen Image VAE'
+  },
+  'models.qwen-image-vae.description': {
+    en: 'Qwen Image VAE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image VAE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.clip-l.displayName': {
+    en: 'CLIP-L',
+    'zh-CN': 'CLIP-L'
+  },
+  'models.clip-l.description': {
+    en: 'CLIP-L — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'CLIP-L — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.t5xxl-fp16.displayName': {
+    en: 'T5-XXL FP16',
+    'zh-CN': 'T5-XXL FP16'
+  },
+  'models.t5xxl-fp16.description': {
+    en: 'T5-XXL FP16 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'T5-XXL FP16 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.clip-vision-h.displayName': {
+    en: 'CLIP Vision H',
+    'zh-CN': 'CLIP Vision H'
+  },
+  'models.clip-vision-h.description': {
+    en: 'CLIP Vision H — a CLIP Vision model for use in ComfyUI workflows.',
+    'zh-CN': 'CLIP Vision H — 用于 ComfyUI 工作流的CLIP Vision model。'
+  },
+  'models.flux2-vae.displayName': {
+    en: 'FLUX.2 VAE',
+    'zh-CN': 'FLUX.2 VAE'
+  },
+  'models.flux2-vae.description': {
+    en: 'FLUX.2 VAE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.2 VAE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.t5xxl-fp8-e4m3fn-scaled.displayName': {
+    en: 'T5-XXL FP8',
+    'zh-CN': 'T5-XXL FP8'
+  },
+  'models.t5xxl-fp8-e4m3fn-scaled.description': {
+    en: 'T5-XXL FP8 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'T5-XXL FP8 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.qwen-3-4b.displayName': {
+    en: 'Qwen 3 4b',
+    'zh-CN': 'Qwen 3 4b'
+  },
+  'models.qwen-3-4b.description': {
+    en: 'Qwen 3 4b — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen 3 4b — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.qwen-image-edit-2509-fp8-e4m3fn.displayName': {
+    en: 'Qwen Image Edit 2509 Fp8 E4m3fn',
+    'zh-CN': 'Qwen Image Edit 2509 Fp8 E4m3fn'
+  },
+  'models.qwen-image-edit-2509-fp8-e4m3fn.description': {
+    en: 'Qwen Image Edit 2509 Fp8 E4m3fn — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit 2509 Fp8 E4m3fn — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.gemma-3-12b-it-fp4-mixed.displayName': {
+    en: 'Gemma 3 12b IT Fp4 Mixed',
+    'zh-CN': 'Gemma 3 12b IT Fp4 Mixed'
+  },
+  'models.gemma-3-12b-it-fp4-mixed.description': {
+    en: 'Gemma 3 12b IT Fp4 Mixed — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Gemma 3 12b IT Fp4 Mixed — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.ltx-2-spatial-upscaler-x2-1-0.displayName': {
+    en: 'LTX 2 Spatial Upscaler X2 1 0',
+    'zh-CN': 'LTX 2 Spatial Upscaler X2 1 0'
+  },
+  'models.ltx-2-spatial-upscaler-x2-1-0.description': {
+    en: 'LTX 2 Spatial Upscaler X2 1 0 — a latent upscale model for use in ComfyUI workflows.',
+    'zh-CN': 'LTX 2 Spatial Upscaler X2 1 0 — 用于 ComfyUI 工作流的latent upscale model。'
+  },
+  'models.wan2-2-i2v-lightx2v-4steps-lora-v1-high-noise.displayName': {
+    en: 'Wan2 2 I2v Lightx2v 4steps Lora V1 High Noise',
+    'zh-CN': 'Wan2 2 I2v Lightx2v 4steps Lora V1 High Noise'
+  },
+  'models.wan2-2-i2v-lightx2v-4steps-lora-v1-high-noise.description': {
+    en: 'Wan2 2 I2v Lightx2v 4steps Lora V1 High Noise — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 I2v Lightx2v 4steps Lora V1 High Noise — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.wan2-2-i2v-lightx2v-4steps-lora-v1-low-noise.displayName': {
+    en: 'Wan2 2 I2v Lightx2v 4steps Lora V1 LOW Noise',
+    'zh-CN': 'Wan2 2 I2v Lightx2v 4steps Lora V1 LOW Noise'
+  },
+  'models.wan2-2-i2v-lightx2v-4steps-lora-v1-low-noise.description': {
+    en: 'Wan2 2 I2v Lightx2v 4steps Lora V1 LOW Noise — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 I2v Lightx2v 4steps Lora V1 LOW Noise — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.wan2-1-vace-1-3b-fp16.displayName': {
+    en: 'Wan2 1 Vace 1 3b Fp16',
+    'zh-CN': 'Wan2 1 Vace 1 3b Fp16'
+  },
+  'models.wan2-1-vace-1-3b-fp16.description': {
+    en: 'Wan2 1 Vace 1 3b Fp16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 1 Vace 1 3b Fp16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.wan21-causvid-bidirect2-t2v-1-3b-lora-rank32.displayName': {
+    en: 'Wan21 Causvid Bidirect2 T2v 1 3b Lora Rank32',
+    'zh-CN': 'Wan21 Causvid Bidirect2 T2v 1 3b Lora Rank32'
+  },
+  'models.wan21-causvid-bidirect2-t2v-1-3b-lora-rank32.description': {
+    en: 'Wan21 Causvid Bidirect2 T2v 1 3b Lora Rank32 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wan21 Causvid Bidirect2 T2v 1 3b Lora Rank32 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.umt5-xxl-fp16.displayName': {
+    en: 'UMT5-XXL FP16',
+    'zh-CN': 'UMT5-XXL FP16'
+  },
+  'models.umt5-xxl-fp16.description': {
+    en: 'UMT5-XXL FP16 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'UMT5-XXL FP16 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.wan2-1-vace-14b-fp16.displayName': {
+    en: 'Wan2 1 Vace 14b Fp16',
+    'zh-CN': 'Wan2 1 Vace 14b Fp16'
+  },
+  'models.wan2-1-vace-14b-fp16.description': {
+    en: 'Wan2 1 Vace 14b Fp16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 1 Vace 14b Fp16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.wan21-causvid-14b-t2v-lora-rank32.displayName': {
+    en: 'Wan21 Causvid 14b T2v Lora Rank32',
+    'zh-CN': 'Wan21 Causvid 14b T2v Lora Rank32'
+  },
+  'models.wan21-causvid-14b-t2v-lora-rank32.description': {
+    en: 'Wan21 Causvid 14b T2v Lora Rank32 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wan21 Causvid 14b T2v Lora Rank32 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.qwen-image-edit-2509-lightning-4steps-v1-0-bf16.displayName': {
+    en: 'Qwen Image Edit 2509 Lightning 4steps V1 0 Bf16',
+    'zh-CN': 'Qwen Image Edit 2509 Lightning 4steps V1 0 Bf16'
+  },
+  'models.qwen-image-edit-2509-lightning-4steps-v1-0-bf16.description': {
+    en: 'Qwen Image Edit 2509 Lightning 4steps V1 0 Bf16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit 2509 Lightning 4steps V1 0 Bf16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.vae-ft-mse-840000-ema-pruned.displayName': {
+    en: 'VAE FT MSE',
+    'zh-CN': 'VAE FT MSE'
+  },
+  'models.vae-ft-mse-840000-ema-pruned.description': {
+    en: 'VAE FT MSE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'VAE FT MSE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.lotus-depth-d-v1-1.displayName': {
+    en: 'Lotus Depth D V1 1',
+    'zh-CN': 'Lotus Depth D V1 1'
+  },
+  'models.lotus-depth-d-v1-1.description': {
+    en: 'Lotus Depth D V1 1 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Lotus Depth D V1 1 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.ltx-2-19b-dev-fp8.displayName': {
+    en: 'LTX 2 19b DEV Fp8',
+    'zh-CN': 'LTX 2 19b DEV Fp8'
+  },
+  'models.ltx-2-19b-dev-fp8.description': {
+    en: 'LTX 2 19b DEV Fp8 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'LTX 2 19b DEV Fp8 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.ltx-2-19b-distilled-lora-384.displayName': {
+    en: 'LTX 2 19b Distilled Lora 384',
+    'zh-CN': 'LTX 2 19b Distilled Lora 384'
+  },
+  'models.ltx-2-19b-distilled-lora-384.description': {
+    en: 'LTX 2 19b Distilled Lora 384 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'LTX 2 19b Distilled Lora 384 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.qwen-image-fp8-e4m3fn.displayName': {
+    en: 'Qwen Image Fp8 E4m3fn',
+    'zh-CN': 'Qwen Image Fp8 E4m3fn'
+  },
+  'models.qwen-image-fp8-e4m3fn.description': {
+    en: 'Qwen Image Fp8 E4m3fn — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Fp8 E4m3fn — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-lightning-4steps-v1-0.displayName': {
+    en: 'Qwen Image Lightning 4steps V1 0',
+    'zh-CN': 'Qwen Image Lightning 4steps V1 0'
+  },
+  'models.qwen-image-lightning-4steps-v1-0.description': {
+    en: 'Qwen Image Lightning 4steps V1 0 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Lightning 4steps V1 0 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.ltx-2-19b-distilled.displayName': {
+    en: 'LTX 2 19b Distilled',
+    'zh-CN': 'LTX 2 19b Distilled'
+  },
+  'models.ltx-2-19b-distilled.description': {
+    en: 'LTX 2 19b Distilled — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'LTX 2 19b Distilled — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.clip-l-hidream.displayName': {
+    en: 'CLIP-L HiDream',
+    'zh-CN': 'CLIP-L HiDream'
+  },
+  'models.clip-l-hidream.description': {
+    en: 'CLIP-L HiDream — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'CLIP-L HiDream — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.clip-g-hidream.displayName': {
+    en: 'CLIP-G HiDream',
+    'zh-CN': 'CLIP-G HiDream'
+  },
+  'models.clip-g-hidream.description': {
+    en: 'CLIP-G HiDream — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'CLIP-G HiDream — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.llama-3-1-8b-instruct-fp8-scaled.displayName': {
+    en: 'Llama 3 1 8b Instruct Fp8 Scaled',
+    'zh-CN': 'Llama 3 1 8b Instruct Fp8 Scaled'
+  },
+  'models.llama-3-1-8b-instruct-fp8-scaled.description': {
+    en: 'Llama 3 1 8b Instruct Fp8 Scaled — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Llama 3 1 8b Instruct Fp8 Scaled — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.lightx2v-i2v-14b-480p-cfg-step-distill-rank64-bf16.displayName': {
+    en: 'Lightx2v I2v 14b 480p CFG Step Distill Rank64 Bf16',
+    'zh-CN': 'Lightx2v I2v 14b 480p CFG Step Distill Rank64 Bf16'
+  },
+  'models.lightx2v-i2v-14b-480p-cfg-step-distill-rank64-bf16.description': {
+    en: 'Lightx2v I2v 14b 480p CFG Step Distill Rank64 Bf16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Lightx2v I2v 14b 480p CFG Step Distill Rank64 Bf16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.wan2-2-i2v-high-noise-14b-fp8-scaled.displayName': {
+    en: 'Wan2 2 I2v High Noise 14b Fp8 Scaled',
+    'zh-CN': 'Wan2 2 I2v High Noise 14b Fp8 Scaled'
+  },
+  'models.wan2-2-i2v-high-noise-14b-fp8-scaled.description': {
+    en: 'Wan2 2 I2v High Noise 14b Fp8 Scaled — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 I2v High Noise 14b Fp8 Scaled — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.wan2-2-i2v-low-noise-14b-fp8-scaled.displayName': {
+    en: 'Wan2 2 I2v LOW Noise 14b Fp8 Scaled',
+    'zh-CN': 'Wan2 2 I2v LOW Noise 14b Fp8 Scaled'
+  },
+  'models.wan2-2-i2v-low-noise-14b-fp8-scaled.description': {
+    en: 'Wan2 2 I2v LOW Noise 14b Fp8 Scaled — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 I2v LOW Noise 14b Fp8 Scaled — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.ltx-2-19b-lora-camera-control-dolly-left.displayName': {
+    en: 'LTX 2 19b Lora Camera Control Dolly Left',
+    'zh-CN': 'LTX 2 19b Lora Camera Control Dolly Left'
+  },
+  'models.ltx-2-19b-lora-camera-control-dolly-left.description': {
+    en: 'LTX 2 19b Lora Camera Control Dolly Left — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'LTX 2 19b Lora Camera Control Dolly Left — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.ace-step-v1-3-5b.displayName': {
+    en: 'ACE Step V1 3 5b',
+    'zh-CN': 'ACE Step V1 3 5b'
+  },
+  'models.ace-step-v1-3-5b.description': {
+    en: 'ACE Step V1 3 5b — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'ACE Step V1 3 5b — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.z-image-turbo-bf16.displayName': {
+    en: 'Z Image Turbo Bf16',
+    'zh-CN': 'Z Image Turbo Bf16'
+  },
+  'models.z-image-turbo-bf16.description': {
+    en: 'Z Image Turbo Bf16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Z Image Turbo Bf16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.sd-xl-base-1-0.displayName': {
+    en: 'SDXL Base 1.0',
+    'zh-CN': 'SDXL Base 1.0'
+  },
+  'models.sd-xl-base-1-0.description': {
+    en: 'SDXL Base 1.0 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'SDXL Base 1.0 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.sd3-5-large-fp8-scaled.displayName': {
+    en: 'SD3.5 Large FP8',
+    'zh-CN': 'SD3.5 Large FP8'
+  },
+  'models.sd3-5-large-fp8-scaled.description': {
+    en: 'SD3.5 Large FP8 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'SD3.5 Large FP8 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.wan2-2-vae.displayName': {
+    en: 'Wan 2.2 VAE',
+    'zh-CN': 'Wan 2.2 VAE'
+  },
+  'models.wan2-2-vae.description': {
+    en: 'Wan 2.2 VAE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Wan 2.2 VAE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.flux1-dev.displayName': {
+    en: 'FLUX.1 Dev',
+    'zh-CN': 'FLUX.1 Dev'
+  },
+  'models.flux1-dev.description': {
+    en: 'FLUX.1 Dev — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.1 Dev — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.hunyuan-video-vae-bf16.displayName': {
+    en: 'Hunyuan Video VAE Bf16',
+    'zh-CN': 'Hunyuan Video VAE Bf16'
+  },
+  'models.hunyuan-video-vae-bf16.description': {
+    en: 'Hunyuan Video VAE Bf16 — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Hunyuan Video VAE Bf16 — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.sigclip-vision-patch14-384.displayName': {
+    en: 'Sigclip Vision Patch14 384',
+    'zh-CN': 'Sigclip Vision Patch14 384'
+  },
+  'models.sigclip-vision-patch14-384.description': {
+    en: 'Sigclip Vision Patch14 384 — a CLIP Vision model for use in ComfyUI workflows.',
+    'zh-CN': 'Sigclip Vision Patch14 384 — 用于 ComfyUI 工作流的CLIP Vision model。'
+  },
+  'models.qwen-image-edit-2511-bf16.displayName': {
+    en: 'Qwen Image Edit 2511 Bf16',
+    'zh-CN': 'Qwen Image Edit 2511 Bf16'
+  },
+  'models.qwen-image-edit-2511-bf16.description': {
+    en: 'Qwen Image Edit 2511 Bf16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit 2511 Bf16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.flux2-dev-fp8mixed.displayName': {
+    en: 'FLUX.2 Dev FP8 Mixed',
+    'zh-CN': 'FLUX.2 Dev FP8 Mixed'
+  },
+  'models.flux2-dev-fp8mixed.description': {
+    en: 'FLUX.2 Dev FP8 Mixed — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.2 Dev FP8 Mixed — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-3-8b-fp8mixed.displayName': {
+    en: 'Qwen 3 8b Fp8mixed',
+    'zh-CN': 'Qwen 3 8b Fp8mixed'
+  },
+  'models.qwen-3-8b-fp8mixed.description': {
+    en: 'Qwen 3 8b Fp8mixed — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen 3 8b Fp8mixed — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.flux1-dev-fp8.displayName': {
+    en: 'FLUX.1 Dev FP8',
+    'zh-CN': 'FLUX.1 Dev FP8'
+  },
+  'models.flux1-dev-fp8.description': {
+    en: 'FLUX.1 Dev FP8 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.1 Dev FP8 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.hunyuan-3d-v2-1.displayName': {
+    en: 'Hunyuan 3d V2 1',
+    'zh-CN': 'Hunyuan 3d V2 1'
+  },
+  'models.hunyuan-3d-v2-1.description': {
+    en: 'Hunyuan 3d V2 1 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'Hunyuan 3d V2 1 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.wan21-wanmove-fp8-scaled-e4m3fn-kj.displayName': {
+    en: 'Wan21 Wanmove Fp8 Scaled E4m3fn KJ',
+    'zh-CN': 'Wan21 Wanmove Fp8 Scaled E4m3fn KJ'
+  },
+  'models.wan21-wanmove-fp8-scaled-e4m3fn-kj.description': {
+    en: 'Wan21 Wanmove Fp8 Scaled E4m3fn KJ — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan21 Wanmove Fp8 Scaled E4m3fn KJ — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.sd-xl-refiner-1-0.displayName': {
+    en: 'SDXL Refiner 1.0',
+    'zh-CN': 'SDXL Refiner 1.0'
+  },
+  'models.sd-xl-refiner-1-0.description': {
+    en: 'SDXL Refiner 1.0 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'SDXL Refiner 1.0 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.qwen-image-2512-fp8-e4m3fn.displayName': {
+    en: 'Qwen Image 2512 Fp8 E4m3fn',
+    'zh-CN': 'Qwen Image 2512 Fp8 E4m3fn'
+  },
+  'models.qwen-image-2512-fp8-e4m3fn.description': {
+    en: 'Qwen Image 2512 Fp8 E4m3fn — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image 2512 Fp8 E4m3fn — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-edit-2509-multiple-angles.displayName': {
+    en: 'Qwen Edit 2509 Multiple Angles',
+    'zh-CN': 'Qwen Edit 2509 Multiple Angles'
+  },
+  'models.qwen-edit-2509-multiple-angles.description': {
+    en: 'Qwen Edit 2509 Multiple Angles — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Edit 2509 Multiple Angles — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.mistral-3-small-flux2-bf16.displayName': {
+    en: 'Mistral 3 Small Flux2 Bf16',
+    'zh-CN': 'Mistral 3 Small Flux2 Bf16'
+  },
+  'models.mistral-3-small-flux2-bf16.description': {
+    en: 'Mistral 3 Small Flux2 Bf16 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Mistral 3 Small Flux2 Bf16 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.flux-2-klein-9b-fp8.displayName': {
+    en: 'FLUX.2 Klein 9B FP8',
+    'zh-CN': 'FLUX.2 Klein 9B FP8'
+  },
+  'models.flux-2-klein-9b-fp8.description': {
+    en: 'FLUX.2 Klein 9B FP8 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.2 Klein 9B FP8 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-2-5-vl-fp16.displayName': {
+    en: 'Qwen 2 5 VL Fp16',
+    'zh-CN': 'Qwen 2 5 VL Fp16'
+  },
+  'models.qwen-2-5-vl-fp16.description': {
+    en: 'Qwen 2 5 VL Fp16 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen 2 5 VL Fp16 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.omnigen2-fp16.displayName': {
+    en: 'Omnigen2 Fp16',
+    'zh-CN': 'Omnigen2 Fp16'
+  },
+  'models.omnigen2-fp16.description': {
+    en: 'Omnigen2 Fp16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Omnigen2 Fp16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-layered-vae.displayName': {
+    en: 'Qwen Image Layered VAE',
+    'zh-CN': 'Qwen Image Layered VAE'
+  },
+  'models.qwen-image-layered-vae.description': {
+    en: 'Qwen Image Layered VAE — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Layered VAE — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.flux-2-klein-base-9b-fp8.displayName': {
+    en: 'FLUX.2 Klein Base 9B FP8',
+    'zh-CN': 'FLUX.2 Klein Base 9B FP8'
+  },
+  'models.flux-2-klein-base-9b-fp8.description': {
+    en: 'FLUX.2 Klein Base 9B FP8 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.2 Klein Base 9B FP8 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-edit-2509-lightning-8steps-v1-0-bf16.displayName': {
+    en: 'Qwen Image Edit 2509 Lightning 8steps V1 0 Bf16',
+    'zh-CN': 'Qwen Image Edit 2509 Lightning 8steps V1 0 Bf16'
+  },
+  'models.qwen-image-edit-2509-lightning-8steps-v1-0-bf16.description': {
+    en: 'Qwen Image Edit 2509 Lightning 8steps V1 0 Bf16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit 2509 Lightning 8steps V1 0 Bf16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.qwen-image-edit-2511-lightning-4steps-v1-0-bf16.displayName': {
+    en: 'Qwen Image Edit 2511 Lightning 4steps V1 0 Bf16',
+    'zh-CN': 'Qwen Image Edit 2511 Lightning 4steps V1 0 Bf16'
+  },
+  'models.qwen-image-edit-2511-lightning-4steps-v1-0-bf16.description': {
+    en: 'Qwen Image Edit 2511 Lightning 4steps V1 0 Bf16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit 2511 Lightning 4steps V1 0 Bf16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.wan2-1-vae-bf16.displayName': {
+    en: 'Wan 2.1 VAE BF16',
+    'zh-CN': 'Wan 2.1 VAE BF16'
+  },
+  'models.wan2-1-vae-bf16.description': {
+    en: 'Wan 2.1 VAE BF16 — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Wan 2.1 VAE BF16 — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.wan2-1-i2v-ati-14b-fp8-e4m3fn.displayName': {
+    en: 'Wan2 1 I2v ATI 14b Fp8 E4m3fn',
+    'zh-CN': 'Wan2 1 I2v ATI 14b Fp8 E4m3fn'
+  },
+  'models.wan2-1-i2v-ati-14b-fp8-e4m3fn.description': {
+    en: 'Wan2 1 I2v ATI 14b Fp8 E4m3fn — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 1 I2v ATI 14b Fp8 E4m3fn — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.byt5-small-glyphxl-fp16.displayName': {
+    en: 'Byt5 Small Glyphxl Fp16',
+    'zh-CN': 'Byt5 Small Glyphxl Fp16'
+  },
+  'models.byt5-small-glyphxl-fp16.description': {
+    en: 'Byt5 Small Glyphxl Fp16 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Byt5 Small Glyphxl Fp16 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.hunyuanvideo1-5-1080p-sr-distilled-fp16.displayName': {
+    en: 'Hunyuanvideo1 5 1080p SR Distilled Fp16',
+    'zh-CN': 'Hunyuanvideo1 5 1080p SR Distilled Fp16'
+  },
+  'models.hunyuanvideo1-5-1080p-sr-distilled-fp16.description': {
+    en: 'Hunyuanvideo1 5 1080p SR Distilled Fp16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Hunyuanvideo1 5 1080p SR Distilled Fp16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.hunyuanvideo15-vae-fp16.displayName': {
+    en: 'Hunyuanvideo15 VAE Fp16',
+    'zh-CN': 'Hunyuanvideo15 VAE Fp16'
+  },
+  'models.hunyuanvideo15-vae-fp16.description': {
+    en: 'Hunyuanvideo15 VAE Fp16 — a VAE for use in ComfyUI workflows.',
+    'zh-CN': 'Hunyuanvideo15 VAE Fp16 — 用于 ComfyUI 工作流的VAE。'
+  },
+  'models.hunyuanvideo15-latent-upsampler-1080p.displayName': {
+    en: 'Hunyuanvideo15 Latent Upsampler 1080p',
+    'zh-CN': 'Hunyuanvideo15 Latent Upsampler 1080p'
+  },
+  'models.hunyuanvideo15-latent-upsampler-1080p.description': {
+    en: 'Hunyuanvideo15 Latent Upsampler 1080p — a latent upscale model for use in ComfyUI workflows.',
+    'zh-CN': 'Hunyuanvideo15 Latent Upsampler 1080p — 用于 ComfyUI 工作流的latent upscale model。'
+  },
+  'models.wan2-2-t2v-lightx2v-4steps-lora-v1-1-high-noise.displayName': {
+    en: 'Wan2 2 T2v Lightx2v 4steps Lora V1 1 High Noise',
+    'zh-CN': 'Wan2 2 T2v Lightx2v 4steps Lora V1 1 High Noise'
+  },
+  'models.wan2-2-t2v-lightx2v-4steps-lora-v1-1-high-noise.description': {
+    en: 'Wan2 2 T2v Lightx2v 4steps Lora V1 1 High Noise — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 T2v Lightx2v 4steps Lora V1 1 High Noise — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.flux1-fill-dev.displayName': {
+    en: 'FLUX.1 Fill Dev',
+    'zh-CN': 'FLUX.1 Fill Dev'
+  },
+  'models.flux1-fill-dev.description': {
+    en: 'FLUX.1 Fill Dev — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.1 Fill Dev — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-edit-fp8-e4m3fn.displayName': {
+    en: 'Qwen Image Edit Fp8 E4m3fn',
+    'zh-CN': 'Qwen Image Edit Fp8 E4m3fn'
+  },
+  'models.qwen-image-edit-fp8-e4m3fn.description': {
+    en: 'Qwen Image Edit Fp8 E4m3fn — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit Fp8 E4m3fn — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-edit-lightning-4steps-v1-0-bf16.displayName': {
+    en: 'Qwen Image Edit Lightning 4steps V1 0 Bf16',
+    'zh-CN': 'Qwen Image Edit Lightning 4steps V1 0 Bf16'
+  },
+  'models.qwen-image-edit-lightning-4steps-v1-0-bf16.description': {
+    en: 'Qwen Image Edit Lightning 4steps V1 0 Bf16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit Lightning 4steps V1 0 Bf16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.chroma-radiance-x0.displayName': {
+    en: 'Chroma Radiance X0',
+    'zh-CN': 'Chroma Radiance X0'
+  },
+  'models.chroma-radiance-x0.description': {
+    en: 'Chroma Radiance X0 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Chroma Radiance X0 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.flux1-depth-dev-lora.displayName': {
+    en: 'FLUX.1 Depth Dev LoRA',
+    'zh-CN': 'FLUX.1 Depth Dev LoRA'
+  },
+  'models.flux1-depth-dev-lora.description': {
+    en: 'FLUX.1 Depth Dev LoRA — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.1 Depth Dev LoRA — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.wan2-2-fun-control-5b-bf16.displayName': {
+    en: 'Wan2 2 FUN Control 5b Bf16',
+    'zh-CN': 'Wan2 2 FUN Control 5b Bf16'
+  },
+  'models.wan2-2-fun-control-5b-bf16.description': {
+    en: 'Wan2 2 FUN Control 5b Bf16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 FUN Control 5b Bf16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-canny-diffsynth-controlnet.displayName': {
+    en: 'Qwen Image Canny Diffsynth Controlnet',
+    'zh-CN': 'Qwen Image Canny Diffsynth Controlnet'
+  },
+  'models.qwen-image-canny-diffsynth-controlnet.description': {
+    en: 'Qwen Image Canny Diffsynth Controlnet — a model patch for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Canny Diffsynth Controlnet — 用于 ComfyUI 工作流的model patch。'
+  },
+  'models.wan2-2-fun-inpaint-high-noise-14b-fp8-scaled.displayName': {
+    en: 'Wan2 2 FUN Inpaint High Noise 14b Fp8 Scaled',
+    'zh-CN': 'Wan2 2 FUN Inpaint High Noise 14b Fp8 Scaled'
+  },
+  'models.wan2-2-fun-inpaint-high-noise-14b-fp8-scaled.description': {
+    en: 'Wan2 2 FUN Inpaint High Noise 14b Fp8 Scaled — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 FUN Inpaint High Noise 14b Fp8 Scaled — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.wan2-2-fun-inpaint-low-noise-14b-fp8-scaled.displayName': {
+    en: 'Wan2 2 FUN Inpaint LOW Noise 14b Fp8 Scaled',
+    'zh-CN': 'Wan2 2 FUN Inpaint LOW Noise 14b Fp8 Scaled'
+  },
+  'models.wan2-2-fun-inpaint-low-noise-14b-fp8-scaled.description': {
+    en: 'Wan2 2 FUN Inpaint LOW Noise 14b Fp8 Scaled — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 FUN Inpaint LOW Noise 14b Fp8 Scaled — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.netayumev35-pretrained-all-in-one.displayName': {
+    en: 'Netayumev35 Pretrained ALL IN ONE',
+    'zh-CN': 'Netayumev35 Pretrained ALL IN ONE'
+  },
+  'models.netayumev35-pretrained-all-in-one.description': {
+    en: 'Netayumev35 Pretrained ALL IN ONE — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'Netayumev35 Pretrained ALL IN ONE — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.ltx-2-19b-ic-lora-depth-control.displayName': {
+    en: 'LTX 2 19b IC Lora Depth Control',
+    'zh-CN': 'LTX 2 19b IC Lora Depth Control'
+  },
+  'models.ltx-2-19b-ic-lora-depth-control.description': {
+    en: 'LTX 2 19b IC Lora Depth Control — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'LTX 2 19b IC Lora Depth Control — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.hidream-i1-dev-fp8.displayName': {
+    en: 'Hidream I1 DEV Fp8',
+    'zh-CN': 'Hidream I1 DEV Fp8'
+  },
+  'models.hidream-i1-dev-fp8.description': {
+    en: 'Hidream I1 DEV Fp8 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Hidream I1 DEV Fp8 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.humo-17b-fp8-e4m3fn.displayName': {
+    en: 'Humo 17b Fp8 E4m3fn',
+    'zh-CN': 'Humo 17b Fp8 E4m3fn'
+  },
+  'models.humo-17b-fp8-e4m3fn.description': {
+    en: 'Humo 17b Fp8 E4m3fn — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Humo 17b Fp8 E4m3fn — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.whisper-large-v3-fp16.displayName': {
+    en: 'Whisper Large V3 Fp16',
+    'zh-CN': 'Whisper Large V3 Fp16'
+  },
+  'models.whisper-large-v3-fp16.description': {
+    en: 'Whisper Large V3 Fp16 — a audio encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Whisper Large V3 Fp16 — 用于 ComfyUI 工作流的audio encoder。'
+  },
+  'models.ltx-video-2b-v0-9-5.displayName': {
+    en: 'LTX Video 2b V0 9 5',
+    'zh-CN': 'LTX Video 2b V0 9 5'
+  },
+  'models.ltx-video-2b-v0-9-5.description': {
+    en: 'LTX Video 2b V0 9 5 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'LTX Video 2b V0 9 5 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.z-image-turbo-fun-controlnet-union.displayName': {
+    en: 'Z Image Turbo FUN Controlnet Union',
+    'zh-CN': 'Z Image Turbo FUN Controlnet Union'
+  },
+  'models.z-image-turbo-fun-controlnet-union.description': {
+    en: 'Z Image Turbo FUN Controlnet Union — a model patch for use in ComfyUI workflows.',
+    'zh-CN': 'Z Image Turbo FUN Controlnet Union — 用于 ComfyUI 工作流的model patch。'
+  },
+  'models.clip-vision-g.displayName': {
+    en: 'CLIP Vision G',
+    'zh-CN': 'CLIP Vision G'
+  },
+  'models.clip-vision-g.description': {
+    en: 'CLIP Vision G — a CLIP Vision model for use in ComfyUI workflows.',
+    'zh-CN': 'CLIP Vision G — 用于 ComfyUI 工作流的CLIP Vision model。'
+  },
+  'models.wananimate-relight-lora-fp16.displayName': {
+    en: 'Wananimate Relight Lora Fp16',
+    'zh-CN': 'Wananimate Relight Lora Fp16'
+  },
+  'models.wananimate-relight-lora-fp16.description': {
+    en: 'Wananimate Relight Lora Fp16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wananimate Relight Lora Fp16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.wan2-2-animate-14b-fp8-e4m3fn-scaled-kj.displayName': {
+    en: 'Wan2 2 Animate 14b Fp8 E4m3fn Scaled KJ',
+    'zh-CN': 'Wan2 2 Animate 14b Fp8 E4m3fn Scaled KJ'
+  },
+  'models.wan2-2-animate-14b-fp8-e4m3fn-scaled-kj.description': {
+    en: 'Wan2 2 Animate 14b Fp8 E4m3fn Scaled KJ — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 2 Animate 14b Fp8 E4m3fn Scaled KJ — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.qwen-image-instantx-controlnet-union.displayName': {
+    en: 'Qwen Image Instantx Controlnet Union',
+    'zh-CN': 'Qwen Image Instantx Controlnet Union'
+  },
+  'models.qwen-image-instantx-controlnet-union.description': {
+    en: 'Qwen Image Instantx Controlnet Union — a ControlNet for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Instantx Controlnet Union — 用于 ComfyUI 工作流的ControlNet。'
+  },
+  'models.kandinsky5lite-t2v-sft-5s.displayName': {
+    en: 'Kandinsky5lite T2v SFT 5s',
+    'zh-CN': 'Kandinsky5lite T2v SFT 5s'
+  },
+  'models.kandinsky5lite-t2v-sft-5s.description': {
+    en: 'Kandinsky5lite T2v SFT 5s — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Kandinsky5lite T2v SFT 5s — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.flux1-krea-dev-fp8-scaled.displayName': {
+    en: 'FLUX.1 KREA Dev FP8',
+    'zh-CN': 'FLUX.1 KREA Dev FP8'
+  },
+  'models.flux1-krea-dev-fp8-scaled.description': {
+    en: 'FLUX.1 KREA Dev FP8 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.1 KREA Dev FP8 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.wuli-qwen-image-2512-turbo-lora-2steps-v1-0-bf16.displayName': {
+    en: 'Wuli Qwen Image 2512 Turbo Lora 2steps V1 0 Bf16',
+    'zh-CN': 'Wuli Qwen Image 2512 Turbo Lora 2steps V1 0 Bf16'
+  },
+  'models.wuli-qwen-image-2512-turbo-lora-2steps-v1-0-bf16.description': {
+    en: 'Wuli Qwen Image 2512 Turbo Lora 2steps V1 0 Bf16 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Wuli Qwen Image 2512 Turbo Lora 2steps V1 0 Bf16 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.uso-flux1-projector-v1.displayName': {
+    en: 'USO Flux1 Projector V1',
+    'zh-CN': 'USO Flux1 Projector V1'
+  },
+  'models.uso-flux1-projector-v1.description': {
+    en: 'USO Flux1 Projector V1 — a model patch for use in ComfyUI workflows.',
+    'zh-CN': 'USO Flux1 Projector V1 — 用于 ComfyUI 工作流的model patch。'
+  },
+  'models.uso-flux1-dit-lora-v1.displayName': {
+    en: 'USO Flux1 DIT Lora V1',
+    'zh-CN': 'USO Flux1 DIT Lora V1'
+  },
+  'models.uso-flux1-dit-lora-v1.description': {
+    en: 'USO Flux1 DIT Lora V1 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'USO Flux1 DIT Lora V1 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.ovis-image-bf16.displayName': {
+    en: 'Ovis Image Bf16',
+    'zh-CN': 'Ovis Image Bf16'
+  },
+  'models.ovis-image-bf16.description': {
+    en: 'Ovis Image Bf16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Ovis Image Bf16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.ovis-2-5.displayName': {
+    en: 'Ovis 2 5',
+    'zh-CN': 'Ovis 2 5'
+  },
+  'models.ovis-2-5.description': {
+    en: 'Ovis 2 5 — a text encoder for use in ComfyUI workflows.',
+    'zh-CN': 'Ovis 2 5 — 用于 ComfyUI 工作流的text encoder。'
+  },
+  'models.flux1-dev-kontext-fp8-scaled.displayName': {
+    en: 'FLUX.1 Dev Kontext FP8',
+    'zh-CN': 'FLUX.1 Dev Kontext FP8'
+  },
+  'models.flux1-dev-kontext-fp8-scaled.description': {
+    en: 'FLUX.1 Dev Kontext FP8 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'FLUX.1 Dev Kontext FP8 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.wan2-1-flf2v-720p-14b-fp16.displayName': {
+    en: 'Wan2 1 Flf2v 720p 14b Fp16',
+    'zh-CN': 'Wan2 1 Flf2v 720p 14b Fp16'
+  },
+  'models.wan2-1-flf2v-720p-14b-fp16.description': {
+    en: 'Wan2 1 Flf2v 720p 14b Fp16 — a diffusion model for use in ComfyUI workflows.',
+    'zh-CN': 'Wan2 1 Flf2v 720p 14b Fp16 — 用于 ComfyUI 工作流的diffusion model。'
+  },
+  'models.sd-xl-turbo-1-0-fp16.displayName': {
+    en: 'SDXL Turbo 1.0 FP16',
+    'zh-CN': 'SDXL Turbo 1.0 FP16'
+  },
+  'models.sd-xl-turbo-1-0-fp16.description': {
+    en: 'SDXL Turbo 1.0 FP16 — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'SDXL Turbo 1.0 FP16 — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.qwen-image-edit-2511-systms-infl8.displayName': {
+    en: 'Qwen Image Edit 2511 Systms Infl8',
+    'zh-CN': 'Qwen Image Edit 2511 Systms Infl8'
+  },
+  'models.qwen-image-edit-2511-systms-infl8.description': {
+    en: 'Qwen Image Edit 2511 Systms Infl8 — a LoRA for use in ComfyUI workflows.',
+    'zh-CN': 'Qwen Image Edit 2511 Systms Infl8 — 用于 ComfyUI 工作流的LoRA。'
+  },
+  'models.svd-xt.displayName': {
+    en: 'SVD XT',
+    'zh-CN': 'SVD XT'
+  },
+  'models.svd-xt.description': {
+    en: 'SVD XT — a checkpoint for use in ComfyUI workflows.',
+    'zh-CN': 'SVD XT — 用于 ComfyUI 工作流的checkpoint。'
+  },
+  'models.nano-banana.displayName': {
+    en: 'Nano Banana',
+    'zh-CN': 'Nano Banana'
+  },
+  'models.nano-banana.description': {
+    en: 'Nano Banana Pro by Google — a fast, powerful image generation API model available as a ComfyUI partner node.',
+    'zh-CN': 'Google 的 Nano Banana Pro — 快速、强大的图像生成 API 模型，作为 ComfyUI 合作伙伴节点提供。'
+  },
+  'models.kling-ai.displayName': {
+    en: 'Kling AI',
+    'zh-CN': 'Kling AI'
+  },
+  'models.kling-ai.description': {
+    en: 'Kling AI — a state-of-the-art video generation model from Kuaishou, available as a ComfyUI partner node for high-quality text-to-video and image-to-video workflows.',
+    'zh-CN': 'Kling AI — 快手出品的顶尖视频生成模型，作为 ComfyUI 合作伙伴节点提供，支持高质量文生视频和图生视频工作流。'
+  },
+  'models.meshy-ai.displayName': {
+    en: 'Meshy AI',
+    'zh-CN': 'Meshy AI'
+  },
+  'models.meshy-ai.description': {
+    en: 'Meshy AI — a leading 3D model generation API that converts text and images into high-quality 3D assets, available as a ComfyUI partner node.',
+    'zh-CN': 'Meshy AI — 领先的 3D 模型生成 API，将文本和图像转换为高质量 3D 资产，作为 ComfyUI 合作伙伴节点提供。'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
