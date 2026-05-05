@@ -23,8 +23,15 @@ import type {
  */
 function isNotFoundError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
-  const withResponse = error as Error & { response?: { status?: number } }
-  if (withResponse.response?.status === 404) return true
+  if (
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'status' in error.response &&
+    error.response.status === 404
+  ) {
+    return true
+  }
   return /\b404\b/.test(error.message)
 }
 

@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration, {
+  parseAnnotatedFilename
+} from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   GizmoConfig,
@@ -246,6 +248,50 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     await flush()
     expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
       silentOnNotFound: false
+    })
+  })
+})
+
+describe('parseAnnotatedFilename', () => {
+  it('strips a [output] suffix and switches to the output folder', () => {
+    expect(parseAnnotatedFilename('foo.glb [output]', 'input')).toEqual({
+      filename: 'foo.glb',
+      folder: 'output'
+    })
+  })
+
+  it('strips a [input] suffix and switches to the input folder', () => {
+    expect(parseAnnotatedFilename('sub/foo.glb [input]', 'output')).toEqual({
+      filename: 'sub/foo.glb',
+      folder: 'input'
+    })
+  })
+
+  it('strips a [temp] suffix and switches to the temp folder', () => {
+    expect(parseAnnotatedFilename('foo.glb [temp]', 'input')).toEqual({
+      filename: 'foo.glb',
+      folder: 'temp'
+    })
+  })
+
+  it('returns the value unchanged with the fallback folder when unannotated', () => {
+    expect(parseAnnotatedFilename('foo.glb', 'input')).toEqual({
+      filename: 'foo.glb',
+      folder: 'input'
+    })
+  })
+
+  it('does not strip a non-folder annotation', () => {
+    expect(parseAnnotatedFilename('foo.glb [draft]', 'input')).toEqual({
+      filename: 'foo.glb [draft]',
+      folder: 'input'
+    })
+  })
+
+  it('only matches a trailing annotation, not one in the middle', () => {
+    expect(parseAnnotatedFilename('foo [output] bar.glb', 'input')).toEqual({
+      filename: 'foo [output] bar.glb',
+      folder: 'input'
     })
   })
 })

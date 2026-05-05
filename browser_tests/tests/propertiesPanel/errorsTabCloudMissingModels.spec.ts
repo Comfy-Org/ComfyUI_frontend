@@ -1,8 +1,10 @@
 import { expect } from '@playwright/test'
-import type { Route } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { Asset } from '@comfyorg/ingest-types'
+import {
+  countAssetRequestsByTag,
+  createCloudAssetsFixture
+} from '@e2e/fixtures/assetApiFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
@@ -26,45 +28,7 @@ const LOTUS_DIFFUSION_MODEL: Asset = {
   }
 }
 
-function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
-  return { assets, total: assets.length, has_more: false }
-}
-
-function isDiffusionModelAssetRequest(url: string): boolean {
-  const includeTags = new URL(url).searchParams.get('include_tags') ?? ''
-  return includeTags.split(',').includes('diffusion_models')
-}
-
-function countDiffusionModelAssetRequests(requests: string[]): number {
-  return requests.filter(isDiffusionModelAssetRequest).length
-}
-
-const test = comfyPageFixture.extend<{
-  cloudAssetRequests: string[]
-  stubCloudAssets: void
-}>({
-  cloudAssetRequests: async ({ page: _page }, use) => {
-    await use([])
-  },
-  stubCloudAssets: [
-    async ({ cloudAssetRequests, page }, use) => {
-      const pattern = /\/api\/assets(?:\?.*)?$/
-      const assetsRouteHandler = (route: Route) => {
-        cloudAssetRequests.push(route.request().url())
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse([LOTUS_DIFFUSION_MODEL]))
-        })
-      }
-
-      await page.route(pattern, assetsRouteHandler)
-      await use()
-      await page.unroute(pattern, assetsRouteHandler)
-    },
-    { auto: true }
-  ]
-})
+const test = createCloudAssetsFixture([LOTUS_DIFFUSION_MODEL])
 
 test.describe(
   'Errors tab - Cloud missing models',
@@ -75,11 +39,6 @@ test.describe(
         'Comfy.RightSidePanel.ShowErrorsTab',
         true
       )
-      await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.nodeOps.clearGraph()
     })
 
     test('keeps installed models resolved after returning from a nested subgraph', async ({
@@ -88,38 +47,41 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
+      const panel = new PropertiesPanelHelper(comfyPage.page)
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
       )
-      const errorsTab = comfyPage.page.getByTestId(
+      const errorsTab = panel.root.getByTestId(
         TestIds.propertiesPanel.errorsTab
       )
-      const panel = new PropertiesPanelHelper(comfyPage.page)
 
       await expect
-        .poll(() => countDiffusionModelAssetRequests(cloudAssetRequests))
+        .poll(
+          () => countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models'),
+          { timeout: 10_000 }
+        )
         .toBeGreaterThan(0)
       await expect(errorOverlay).toBeHidden()
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(errorsTab).toBeHidden()
       await panel.close()
 
-      await comfyPage.vueNodes.waitForNodes()
       await comfyPage.vueNodes.enterSubgraph(OUTER_SUBGRAPH_NODE_ID)
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       await expect(errorOverlay).toBeHidden()
 
-      const requestCountBeforeRootReturn =
-        countDiffusionModelAssetRequests(cloudAssetRequests)
+      const requestCountBeforeRootReturn = countAssetRequestsByTag(
+        cloudAssetRequests,
+        'diffusion_models'
+      )
 
-      await comfyPage.page.getByTestId(TestIds.breadcrumb.item('root')).click()
-      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await comfyPage.subgraph.exitViaBreadcrumb()
       await panel.open(comfyPage.actionbar.propertiesButton)
 
       await expect
         .poll(
           () =>
-            countDiffusionModelAssetRequests(cloudAssetRequests) >
+            countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models') >
             requestCountBeforeRootReturn,
           { timeout: 10_000 }
         )

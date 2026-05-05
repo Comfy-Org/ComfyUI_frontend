@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "گره تبدیل تصویر به ویدیو Moonvalley Marey",
-    "display_name": "Moonvalley Marey Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویر مرجع برای تولید ویدیو استفاده می‌شود"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "prompt_adherence": {
-        "name": "پایبندی به پرامپت",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "مقدار بذر تصادفی"
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد گام‌های حذف نویز"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل متن به ویدیو",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "گام‌های استنتاج"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل ویدیو به ویدیو",
-    "inputs": {
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "فقط در صورتی استفاده می‌شود که control_type برابر با 'Motion Transfer' باشد"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "توضیح ویدیوی مورد نظر برای تولید"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "تعداد گام‌های استنتاج"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "ویدیوی مرجع برای تولید ویدیوی خروجی. باید حداقل ۵ ثانیه باشد. ویدیوهای طولانی‌تر از ۵ ثانیه به‌صورت خودکار کوتاه می‌شوند. فقط فرمت MP4 پشتیبانی می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -12534,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -16624,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "تولید متن",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16679,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "تولید متن LTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16893,6 +16793,45 @@
         "name": "مدل بزرگ‌نمایی"
       },
       "upscaler_resolution": {
+        "name": "وضوح بزرگ‌نمایی"
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "با فناوری قدرتمند بزرگ‌نمایی و بازیابی، به ویدیو جان تازه ببخشید.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "سطح فشرده‌سازی پویا",
+        "tooltip": "سطح CQP."
+      },
+      "interpolation_model": {
+        "name": "مدل درون‌یابی"
+      },
+      "upscaler_model": {
+        "name": "مدل بزرگ‌نمایی"
+      },
+      "upscaler_model_creativity": {
+        "name": "خلاقیت"
+      },
+      "upscaler_model_prompt": {
+        "name": "پرامپت"
+      },
+      "upscaler_model_realism": {
+        "name": "واقع‌گرایی"
+      },
+      "upscaler_model_sharp": {
+        "name": "وضوح"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "وضوح بزرگ‌نمایی"
       },
       "video": {

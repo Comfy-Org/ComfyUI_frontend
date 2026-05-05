@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey Görüntüden Videoya Düğümü",
-    "display_name": "Moonvalley Marey Görüntüden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Videoyu oluşturmak için kullanılan referans görüntü"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negatif prompt metni"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Üretim kontrolü için rehberlik ölçeği"
-      },
-      "resolution": {
-        "name": "çözünürlük",
-        "tooltip": "Çıktı videosunun çözünürlüğü"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Rastgele seed değeri"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Gürültü giderme adımlarının sayısı"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Metinden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "üretim sonrası kontrol"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negatif prompt metni"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "komut uyumu",
-        "tooltip": "Üretim kontrolü için rehberlik ölçeği"
-      },
-      "resolution": {
-        "name": "çözünürlük",
-        "tooltip": "Çıktı videosunun çözünürlüğü"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Rastgele tohum değeri"
-      },
-      "steps": {
-        "name": "adımlar",
-        "tooltip": "Çıkarım adımları"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video'dan Video'ya",
-    "inputs": {
-      "control_type": {
-        "name": "kontrol_tipi"
-      },
-      "motion_intensity": {
-        "name": "hareket_yoğunluğu",
-        "tooltip": "Sadece kontrol_tipi 'Hareket Transferi' ise kullanılır"
-      },
-      "negative_prompt": {
-        "name": "negatif_komut",
-        "tooltip": "Negatif komut metni"
-      },
-      "prompt": {
-        "name": "komut",
-        "tooltip": "Oluşturulacak videoyu tanımlar"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Rastgele tohum değeri"
-      },
-      "steps": {
-        "name": "adımlar",
-        "tooltip": "Çıkarım adım sayısı"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "Çıktı videosunu oluşturmak için kullanılan referans video. En az 5 saniye uzunluğunda olmalıdır. 5 saniyeden uzun videolar otomatik olarak kırpılacaktır. Sadece MP4 formatı desteklenir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "GörüntüMorfolojisi",
     "inputs": {
@@ -12534,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "oluşturduktan sonra kontrol et"
       },
       "value": {
@@ -16624,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "ses"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video kareleri, bir görüntü grubu olarak. 24 FPS varsayılır; dahili olarak 1 FPS'ye örneklenir."
       }
     },
     "outputs": {
@@ -16679,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "ses"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video kareleri, bir görüntü grubu olarak. 24 FPS varsayılır; dahili olarak 1 FPS'ye örneklenir."
       }
     },
     "outputs": {
@@ -16894,6 +16794,45 @@
       },
       "upscaler_resolution": {
         "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Güçlü yükseltme ve iyileştirme teknolojisiyle videolarınıza yeni bir soluk kazandırın.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "dinamik_sıkıştırma_seviyesi",
+        "tooltip": "CQP seviyesi."
+      },
+      "interpolation_model": {
+        "name": "enterpolasyon_modeli"
+      },
+      "upscaler_model": {
+        "name": "yükseltici_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "yaratıcılık"
+      },
+      "upscaler_model_prompt": {
+        "name": "istem"
+      },
+      "upscaler_model_realism": {
+        "name": "gerçekçilik"
+      },
+      "upscaler_model_sharp": {
+        "name": "keskin"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "yükseltici_çözünürlüğü"
       },
       "video": {
         "name": "video"

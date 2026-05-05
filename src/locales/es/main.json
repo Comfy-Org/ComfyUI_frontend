@@ -461,6 +461,12 @@
       "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Por favor, elige una opción.",
+        "describeAnswer": "Por favor, describe tu respuesta.",
+        "selectAtLeastOne": "Por favor, selecciona al menos una opción."
+      },
+      "intro": "Ayúdanos a personalizar tu experiencia con ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Usuario avanzado (flujos de trabajo personalizados)",
@@ -469,45 +475,43 @@
           "new": "Nuevo en ComfyUI (nunca lo he usado antes)",
           "starting": "Recién comenzando (siguiendo tutoriales)"
         },
-        "industry": {
-          "architecture": "Arquitectura",
-          "education": "Educación",
-          "film_tv_animation": "Cine, TV y animación",
-          "fine_art": "Bellas artes e ilustración",
-          "gaming": "Juegos",
-          "marketing": "Marketing y publicidad",
-          "other": "Otro",
-          "otherPlaceholder": "Por favor, especifica",
-          "product_design": "Diseño de productos y gráfico",
-          "software": "Software y tecnología"
-        },
-        "making": {
-          "3d": "Recursos 3D",
+        "intent": {
+          "3d_game": "Recursos 3D / recursos para juegos",
+          "api": "Endpoints de API para ejecutar flujos de trabajo",
+          "apps": "Apps simplificadas a partir de flujos de trabajo",
           "audio": "Audio / música",
-          "custom_nodes": "Nodos y flujos de trabajo personalizados",
+          "custom_nodes": "Nodos personalizados",
           "images": "Imágenes",
-          "video": "Video y animación"
+          "not_sure": "No estoy seguro",
+          "videos": "Videos",
+          "workflows": "Flujos de trabajo o pipelines personalizados"
         },
-        "purpose": {
-          "client": "Trabajo para clientes (freelance)",
-          "community": "Contribuciones a la comunidad (nodos, flujos de trabajo, etc.)",
-          "inhouse": "Mi propio lugar de trabajo (interno)",
-          "personal": "Proyectos personales / hobby",
-          "research": "Investigación académica"
+        "source": {
+          "conference": "Conferencia o evento",
+          "discord": "Discord / comunidad",
+          "friend": "Amigo o colega",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter o blog",
+          "other": "Otro",
+          "reddit": "Reddit",
+          "search": "Google / búsqueda",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Educación (estudiante o docente)",
+          "personal": "Uso personal",
+          "work": "Trabajo"
         }
       },
       "placeholder": "Marcador de posición para preguntas de la encuesta",
-      "questions": {
-        "familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-        "industry": "¿Cuál es tu industria principal?",
-        "making": "¿Qué planeas crear?",
-        "purpose": "¿Para qué usarás principalmente ComfyUI?"
-      },
       "steps": {
         "familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-        "industry": "¿Cuál es tu industria principal?",
-        "making": "¿Qué planeas crear?",
-        "purpose": "¿Para qué usarás principalmente ComfyUI?"
+        "intent": "¿Qué quieres crear con ComfyUI?",
+        "source": "¿Dónde escuchaste sobre ComfyUI?",
+        "usage": "¿Cómo planeas usar ComfyUI?"
       },
       "title": "Encuesta en la Nube"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "comienza a crear en segundos",
   "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
   "cloudSurvey_steps_familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-  "cloudSurvey_steps_industry": "¿Cuál es tu industria principal?",
-  "cloudSurvey_steps_making": "¿Qué planeas crear?",
-  "cloudSurvey_steps_purpose": "¿Para qué usarás principalmente ComfyUI?",
+  "cloudSurvey_steps_intent": "¿Qué quieres crear con ComfyUI?",
+  "cloudSurvey_steps_source": "¿Dónde escuchaste sobre ComfyUI?",
+  "cloudSurvey_steps_usage": "¿Cómo planeas usar ComfyUI?",
   "cloudWaitlist_contactLink": "aquí",
   "cloudWaitlist_questionsText": "¿Preguntas? Contáctanos",
   "color": {
@@ -2259,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
