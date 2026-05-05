@@ -940,12 +940,12 @@ describe('useWidgetSelectItems', () => {
       expect(names).toContain('kept.png [output]')
     })
 
-    it('drops output items even when candidate name has a subfolder prefix', async () => {
+    it('does not cross-match basenames across input and output sources', async () => {
       mockMediaAssets = createMockMediaAssets()
       mockMediaAssets.media.value = [
         {
           id: 'a1',
-          name: 'gone.png',
+          name: 'photo_abc.jpg',
           size: 0,
           tags: [],
           created_at: '2025-01-01T00:00:00Z'
@@ -957,25 +957,23 @@ describe('useWidgetSelectItems', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
-          nodeId: '7',
+          nodeId: '1',
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
-          name: 'sub/gone.png [output]',
+          name: 'photo_abc.jpg',
           isMissing: true
         }
       ])
 
       const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          values: () => [],
-          outputMediaAssets: mockMediaAssets
-        })
+        createDefaultOptions({ outputMediaAssets: mockMediaAssets })
       )
       await nextTick()
 
       const names = dropdownItems.value.map((i) => i.name)
-      expect(names).not.toContain('gone.png [output]')
+      expect(names).not.toContain('photo_abc.jpg')
+      expect(names).toContain('photo_abc.jpg [output]')
     })
 
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {

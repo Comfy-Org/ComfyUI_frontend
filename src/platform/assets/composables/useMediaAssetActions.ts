@@ -19,7 +19,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
-import { clearNodePreviewCacheForFilenames } from '../utils/clearNodePreviewCacheForFilenames'
+import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForFilenames'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { getAssetOutputCount } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -33,6 +33,35 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+/**
+ * Canonical widget-value strings that may reference this asset, scoped by the
+ * asset's source type so basenames cannot cross-match across input/output.
+ *
+ * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
+ * present in metadata). Input/temp assets emit the bare name plus the explicit
+ * annotation. `asset_hash` is included whenever present, since cloud-stored
+ * assets can be referenced by hash.
+ */
+function widgetValueVariantsForAsset(asset: AssetItem): string[] {
+  const variants: string[] = []
+  const type = getAssetType(asset, 'input')
+  const name = asset.name
+  if (name) {
+    if (type === 'output') {
+      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      const path = subfolder ? `${subfolder}/${name}` : name
+      variants.push(`${path} [output]`)
+    } else if (type === 'temp') {
+      variants.push(`${name} [temp]`)
+    } else {
+      variants.push(name)
+      variants.push(`${name} [input]`)
+    }
+  }
+  if (asset.asset_hash) variants.push(asset.asset_hash)
+  return variants
+}
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -643,22 +672,23 @@ export function useMediaAssetActions() {
                 await assetsStore.updateInputs()
               }
 
-              const graph = app.graph
-              if (graph) {
-                const deletedFilenames = new Set<string>()
+              const rootGraph = app.rootGraph
+              if (rootGraph) {
+                const deletedValues = new Set<string>()
                 assetArray.forEach((asset, index) => {
                   if (results[index].status !== 'fulfilled') return
-                  if (asset.name) deletedFilenames.add(asset.name)
-                  if (asset.asset_hash) deletedFilenames.add(asset.asset_hash)
+                  for (const value of widgetValueVariantsForAsset(asset)) {
+                    deletedValues.add(value)
+                  }
                 })
-                if (deletedFilenames.size > 0) {
+                if (deletedValues.size > 0) {
                   const nodeOutputStore = useNodeOutputStore()
-                  clearNodePreviewCacheForFilenames(
-                    graph,
-                    deletedFilenames,
+                  clearNodePreviewCacheForValues(
+                    rootGraph,
+                    deletedValues,
                     (node) => nodeOutputStore.removeNodeOutputs(node.id)
                   )
-                  markDeletedAssetsAsMissingMedia(graph, deletedFilenames)
+                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
                 }
               }
 

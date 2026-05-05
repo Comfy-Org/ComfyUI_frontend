@@ -172,6 +172,9 @@ vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
       return mockAppGraph.value
+    },
+    get rootGraph() {
+      return mockAppGraph.value
     }
   }
 }))
@@ -185,9 +188,9 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 
 const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
 vi.mock('../utils/clearNodePreviewCacheForFilenames', () => ({
-  clearNodePreviewCacheForFilenames: mockClearNodePreviewCache,
+  clearNodePreviewCacheForValues: mockClearNodePreviewCache,
   extractFilenameFromWidgetValue: vi.fn(),
-  findNodesReferencingFilenames: vi.fn(() => [])
+  findNodesReferencingValues: vi.fn(() => [])
 }))
 
 const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
@@ -839,13 +842,14 @@ describe('useMediaAssetActions', () => {
       mockAppGraph.value = { _nodes: [] }
     })
 
-    it('invokes clearNodePreviewCacheForFilenames with successfully deleted filenames and hashes', async () => {
+    it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
       mockDeleteAsset.mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-match',
         name: 'foo.png',
-        asset_hash: 'abc123.png'
+        asset_hash: 'abc123.png',
+        tags: ['input']
       })
 
       await actions.deleteAssets(asset)
@@ -853,10 +857,12 @@ describe('useMediaAssetActions', () => {
       await vi.waitFor(() => {
         expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
       })
-      const [graphArg, filenamesArg, removeArg] =
+      const [graphArg, valuesArg, removeArg] =
         mockClearNodePreviewCache.mock.calls[0]
       expect(graphArg).toBe(mockAppGraph.value)
-      expect(filenamesArg).toEqual(new Set(['foo.png', 'abc123.png']))
+      expect(valuesArg).toEqual(
+        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+      )
       expect(typeof removeArg).toBe('function')
 
       removeArg({ id: 42 })
@@ -864,8 +870,32 @@ describe('useMediaAssetActions', () => {
 
       expect(mockMarkMissingMedia).toHaveBeenCalledWith(
         mockAppGraph.value,
-        new Set(['foo.png', 'abc123.png'])
+        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
       )
+    })
+
+    it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({
+        subfolder: 'outputs/2025'
+      })
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-output',
+        name: 'gen.png',
+        tags: ['output']
+      })
+
+      await actions.deleteAssets(asset)
+
+      await vi.waitFor(() => {
+        expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
+      })
+      const [, valuesArg] = mockClearNodePreviewCache.mock.calls[0]
+      expect(valuesArg).toEqual(new Set(['outputs/2025/gen.png [output]']))
+      expect(valuesArg.has('gen.png')).toBe(false)
+      expect(valuesArg.has('gen.png [input]')).toBe(false)
     })
 
     it('omits filenames of failed deletions and skips the helper when nothing was deleted', async () => {
