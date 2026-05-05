@@ -27,11 +27,7 @@ async function getPromotedHostWidgetValues(
 
     return ids.map((id) => {
       const node = graph.getNodeById(id)
-      if (
-        !node ||
-        typeof node.isSubgraphNode !== 'function' ||
-        !node.isSubgraphNode()
-      ) {
+      if (!node?.isSubgraphNode()) {
         return { id, values: [] as unknown[] }
       }
 
