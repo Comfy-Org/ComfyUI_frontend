@@ -99,6 +99,7 @@
     "findInLibrary": "Trouvez-le dans la section {type} de la bibliothèque de modèles.",
     "finish": "Terminer",
     "genericLinkPlaceholder": "Collez le lien ici",
+    "gridView": "Vue en grille",
     "importAnother": "Importer un autre",
     "imported": "Importé",
     "invalidAsset": "Ressource invalide",
@@ -106,6 +107,7 @@
     "invalidFilename": "Nom de fichier invalide",
     "invalidFilenameDetail": "Le nom de fichier de la ressource n’a pas pu être déterminé. Veuillez réessayer.",
     "jobId": "ID de tâche",
+    "listView": "Vue en liste",
     "loadingModels": "Chargement de {type}...",
     "maxFileSize": "Taille maximale du fichier : {size}",
     "maxFileSizeValue": "1 Go",
@@ -168,6 +170,7 @@
     "sortDefault": "Par défaut",
     "sortPopular": "Populaire",
     "sortRecent": "Récent",
+    "sortUnsorted": "Non trié",
     "sortZA": "Z-A",
     "sortingType": "Type de tri",
     "tags": "Tags",
@@ -332,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Application",
+    "blueprint": "Plan",
     "clearWorkflow": "Effacer le workflow",
     "deleteBlueprint": "Supprimer le plan",
     "deleteWorkflow": "Supprimer le workflow",
@@ -457,6 +461,12 @@
       "wantToRun": "Vous préférez exécuter ComfyUI localement ?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Veuillez choisir une option.",
+        "describeAnswer": "Veuillez décrire votre réponse.",
+        "selectAtLeastOne": "Veuillez sélectionner au moins une option."
+      },
+      "intro": "Aidez-nous à personnaliser votre expérience ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Utilisateur avancé (workflows personnalisés)",
@@ -465,45 +475,43 @@
           "new": "Nouveau sur ComfyUI (jamais utilisé auparavant)",
           "starting": "Je débute (je suis des tutoriels)"
         },
-        "industry": {
-          "architecture": "Architecture",
-          "education": "Éducation",
-          "film_tv_animation": "Cinéma, télévision et animation",
-          "fine_art": "Art et illustration",
-          "gaming": "Jeux vidéo",
-          "marketing": "Marketing et publicité",
-          "other": "Autre",
-          "otherPlaceholder": "Veuillez préciser",
-          "product_design": "Design de produits et graphisme",
-          "software": "Logiciels et technologie"
-        },
-        "making": {
-          "3d": "Assets 3D",
+        "intent": {
+          "3d_game": "Assets 3D / assets de jeu",
+          "api": "Points de terminaison API pour exécuter des workflows",
+          "apps": "Applications simplifiées à partir de workflows",
           "audio": "Audio / musique",
-          "custom_nodes": "Nœuds et workflows personnalisés",
+          "custom_nodes": "Nœuds personnalisés",
           "images": "Images",
-          "video": "Vidéo et animation"
+          "not_sure": "Pas sûr",
+          "videos": "Vidéos",
+          "workflows": "Workflows ou pipelines personnalisés"
         },
-        "purpose": {
-          "client": "Travail pour clients (freelance)",
-          "community": "Contributions communautaires (nœuds, workflows, etc.)",
-          "inhouse": "Mon propre lieu de travail (interne)",
-          "personal": "Projets personnels / loisir",
-          "research": "Recherche académique"
+        "source": {
+          "conference": "Conférence ou événement",
+          "discord": "Discord / communauté",
+          "friend": "Ami ou collègue",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter ou blog",
+          "other": "Autre",
+          "reddit": "Reddit",
+          "search": "Google / recherche",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Éducation (étudiant ou enseignant)",
+          "personal": "Usage personnel",
+          "work": "Travail"
         }
       },
       "placeholder": "Texte indicatif des questions de l'enquête",
-      "questions": {
-        "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-        "industry": "Quel est votre secteur d'activité principal ?",
-        "making": "Que prévoyez-vous de créer ?",
-        "purpose": "À quoi utiliserez-vous principalement ComfyUI ?"
-      },
       "steps": {
         "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-        "industry": "Quel est votre secteur d'activité principal ?",
-        "making": "Que prévoyez-vous de créer ?",
-        "purpose": "À quoi utiliserez-vous principalement ComfyUI ?"
+        "intent": "Que souhaitez-vous créer avec ComfyUI ?",
+        "source": "Où avez-vous entendu parler de ComfyUI ?",
+        "usage": "Comment prévoyez-vous d'utiliser ComfyUI ?"
       },
       "title": "Enquête Cloud"
     }
@@ -518,9 +526,9 @@
   "cloudStart_title": "créez en quelques secondes",
   "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
   "cloudSurvey_steps_familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-  "cloudSurvey_steps_industry": "Quel est votre secteur d'activité principal ?",
-  "cloudSurvey_steps_making": "Que prévoyez-vous de créer ?",
-  "cloudSurvey_steps_purpose": "À quoi utiliserez-vous principalement ComfyUI ?",
+  "cloudSurvey_steps_intent": "Que souhaitez-vous créer avec ComfyUI ?",
+  "cloudSurvey_steps_source": "Où avez-vous entendu parler de ComfyUI ?",
+  "cloudSurvey_steps_usage": "Comment prévoyez-vous d'utiliser ComfyUI ?",
   "cloudWaitlist_contactLink": "ici",
   "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
   "color": {
@@ -584,6 +592,8 @@
     "publishButton": "Publier sur ComfyHub",
     "publishFailedDescription": "Une erreur s’est produite lors de la publication de votre workflow. Veuillez réessayer.",
     "publishFailedTitle": "Échec de la publication",
+    "publishSuccessDescription": "Votre workflow est maintenant en ligne sur ComfyHub.",
+    "publishSuccessTitle": "Publication réussie",
     "removeExampleImage": "Supprimer l’image d’exemple",
     "selectAThumbnail": "Sélectionner une miniature",
     "shareAs": "Partager en tant que",
@@ -805,6 +815,7 @@
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "COMPARAISON_IMAGE",
     "INT": "ENTIER",
+    "INTERP_MODEL": "MODÈLE_INTERP",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERATION_LATENTE",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -832,6 +843,7 @@
     "RECRAFT_V3_STYLE": "Style Recraft V3",
     "RETARGET_TASK_ID": "ID_TÂCHE_RETARGET",
     "RIG_TASK_ID": "ID_TÂCHE_RIG",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÉCHANTILLONNEUR",
     "SIGMAS": "SIGMAS",
     "STRING": "CHAÎNE",
@@ -910,6 +922,10 @@
     "showMissingNodes": "Afficher les nœuds manquants",
     "showSwapNodes": "Afficher les nœuds de remplacement",
     "swapNodes": "Certains nœuds peuvent être remplacés par des alternatives"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Donner votre avis",
+    "ctaText": "Que pensez-vous du nouveau panneau d’erreurs ?"
   },
   "essentials": {
     "batchImage": "Traitement par lot d'images",
@@ -996,13 +1012,16 @@
     "back": "Retour",
     "batchRename": "Renommer en lot",
     "beta": "BÊTA",
+    "blueprints": "Plans",
     "bookmark": "Enregistrer dans la bibliothèque",
+    "bookmarked": "Mis en favori",
     "browserReservedKeybinding": "Ce raccourci est réservé par certains navigateurs et peut entraîner des résultats inattendus.",
     "browserReservedKeybindingTooltip": "Ce raccourci est en conflit avec des raccourcis réservés du navigateur",
     "calculatingDimensions": "Calcul des dimensions",
     "cancel": "Annuler",
     "cancelled": "Annulé",
     "capture": "capture",
+    "categories": "Catégories",
     "category": "Catégorie",
     "changeKeybinding": "Modifier le raccourci clavier",
     "chart": "Graphique",
@@ -1214,13 +1233,16 @@
     "nothingToDelete": "Rien à supprimer",
     "nothingToDuplicate": "Rien à dupliquer",
     "nothingToRename": "Rien à renommer",
+    "off": "Désactivé",
     "ok": "OK",
+    "on": "Activé",
     "openManager": "Ouvrir le gestionnaire",
     "openNewIssue": "Ouvrir un nouveau problème",
     "or": "ou",
     "output": "Sortie",
     "overwrite": "Écraser",
     "partner": "Partenaire",
+    "partnerNodes": "Nœuds partenaires",
     "pause": "Pause",
     "play": "Lecture",
     "playPause": "Lecture/Pause",
@@ -1641,7 +1663,16 @@
     "exportModel": "Exportation du modèle",
     "exportRecording": "Exporter l'enregistrement",
     "exportingModel": "Exportation du modèle en cours...",
+    "fitToViewer": "Ajuster à la visionneuse",
     "fov": "FOV",
+    "gizmo": {
+      "label": "Gizmo",
+      "reset": "Réinitialiser la transformation",
+      "rotate": "Pivoter",
+      "scale": "Échelle",
+      "toggle": "Gizmo",
+      "translate": "Déplacer"
+    },
     "hdri": {
       "changeFile": "Changer l'HDRI",
       "intensity": "Intensité",
@@ -1808,6 +1839,10 @@
     "gettingInfo": "Obtention des informations...",
     "importFailedGenericError": "Échec de l'importation du package. Vérifiez la console pour plus de détails.",
     "inWorkflow": "Dans le flux de travail",
+    "incompatibleVersion": {
+      "message": "Veuillez mettre à niveau ComfyUI-Manager vers la version 4.2.1 ou supérieure.\n• Bureau : Mettez à jour l'application ComfyUI Desktop\n• Autonome : Exécutez pip install -U comfyui-manager et redémarrez\nEn savoir plus : https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Mise à niveau de ComfyUI-Manager requise"
+    },
     "infoPanelEmpty": "Cliquez sur un élément pour voir les informations",
     "installAllMissingNodes": "Installer tous les nœuds manquants",
     "installError": "Erreur d'installation",
@@ -2228,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2236,6 +2270,7 @@
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
+    "Sonilo": "Sonilo",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
     "Tencent": "Tencent",
@@ -2309,6 +2344,7 @@
     "stable_cascade": "stable_cascade",
     "string": "chaîne",
     "style_model": "modèle_de_style",
+    "supir": "supir",
     "text": "texte",
     "textgen": "textgen",
     "training": "entraînement",
@@ -2495,6 +2531,8 @@
     "advancedInputs": "ENTRÉES AVANCÉES",
     "bypass": "Contourner",
     "color": "Couleur du nœud",
+    "editSubgraph": "Modifier le sous-graphe",
+    "editTitle": "Modifier le titre",
     "enterSubgraph": "Entrer dans le sous-graphe",
     "errorHelp": "Pour plus d'aide, {github} ou {support}",
     "errorHelpGithub": "soumettre un ticket GitHub",
@@ -2576,6 +2614,9 @@
       "metadataFetchFailed": "Échec de la récupération des métadonnées. Veuillez vérifier le lien et réessayer.",
       "missingModelsTitle": "Modèles manquants",
       "or": "OU",
+      "refresh": "Rafraîchir",
+      "refreshFailed": "Échec du rafraîchissement des modèles manquants. Veuillez réessayer.",
+      "refreshing": "Rafraîchissement des modèles manquants.",
       "typeMismatch": "Ce modèle semble être un(e) « {detectedType} ». Êtes-vous sûr ?",
       "unknownCategory": "Inconnu",
       "unsupportedUrl": "Seules les URL Civitai et Hugging Face sont prises en charge.",
@@ -3445,7 +3486,9 @@
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "failedToQueue": "Échec de la mise en file d'attente",
     "failedToSaveDraft": "Échec de l’enregistrement du brouillon du flux de travail",
+    "failedToSetGizmoMode": "Échec du changement de mode du gizmo",
     "failedToToggleCamera": "Échec de l’activation/désactivation de la caméra",
+    "failedToToggleGizmo": "Échec de l’activation du gizmo",
     "failedToToggleGrid": "Échec de l’activation/désactivation de la grille",
     "failedToUpdateBackgroundColor": "Échec de la mise à jour de la couleur d’arrière-plan",
     "failedToUpdateBackgroundImage": "Échec de la mise à jour de l’image d’arrière-plan",
@@ -3467,6 +3510,7 @@
     "no3dScene": "Aucune scène 3D pour appliquer la texture",
     "no3dSceneToExport": "Aucune scène 3D à exporter",
     "noTemplatesToExport": "Aucun modèle à exporter",
+    "nodeDefinitionsUpdateFailed": "Échec de la mise à jour des définitions de nœud",
     "nodeDefinitionsUpdated": "Définitions de nœuds mises à jour",
     "nothingSelected": "Aucune sélection",
     "nothingToGroup": "Rien à regrouper",

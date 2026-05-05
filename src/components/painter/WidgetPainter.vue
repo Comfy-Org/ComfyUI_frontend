@@ -8,7 +8,11 @@
     <div
       class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node-component-surface"
     >
-      <div class="relative max-h-full w-full" :style="canvasContainerStyle">
+      <div
+        class="relative max-h-full w-full"
+        :style="canvasContainerStyle"
+        data-testid="painter-canvas-container"
+      >
         <img
           v-if="inputImageUrl"
           :src="inputImageUrl"
@@ -31,6 +35,7 @@
           ref="cursorEl"
           class="pointer-events-none absolute top-0 left-0 rounded-full border border-black/60 shadow-[0_0_0_1px_rgba(255,255,255,0.8)] will-change-transform"
           :style="cursorSizeStyle"
+          data-testid="painter-cursor"
         />
       </div>
     </div>
@@ -184,7 +189,9 @@
               (v) => v?.length && (brushHardnessPercent = v[0])
             "
           />
-          <span class="text-node-text-muted w-8 text-center text-xs"
+          <span
+            class="text-node-text-muted w-8 text-center text-xs"
+            data-testid="painter-hardness-value"
             >{{ brushHardnessPercent }}%</span
           >
         </div>
@@ -245,6 +252,7 @@
         </div>
         <div
           class="flex h-8 w-full items-center gap-2 rounded-lg bg-component-node-widget-background px-4"
+          data-testid="painter-bg-color-row"
         >
           <input
             type="color"
@@ -288,7 +296,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
 import { toHexFromFormat } from '@/utils/colorUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{
   nodeId: string

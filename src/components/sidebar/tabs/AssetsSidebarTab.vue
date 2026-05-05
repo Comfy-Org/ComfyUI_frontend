@@ -256,7 +256,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -327,7 +327,7 @@ const {
 } = useAssetSelection()
 
 const {
-  downloadMultipleAssets,
+  downloadAssets,
   deleteAssets,
   addMultipleToWorkflow,
   openMultipleWorkflows,
@@ -533,7 +533,7 @@ function handleContextMenuHide() {
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
-  downloadMultipleAssets(assets)
+  downloadAssets(assets)
   clearSelection()
 }
 
@@ -559,7 +559,7 @@ const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
 }
 
 const handleDownloadSelected = () => {
-  downloadMultipleAssets(selectedAssets.value)
+  downloadAssets(selectedAssets.value)
   clearSelection()
 }
 

@@ -27,6 +27,7 @@ import {
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
+import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
@@ -101,11 +102,17 @@ export type {
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
+/**
+ * Unique identifier for a subgraph definition. Structurally a {@link UUID};
+ * provided as a domain-specific alias for clarity at adoption sites.
+ */
+export type SubgraphId = UUID
+
 export interface LGraphState {
-  lastGroupId: number
+  lastGroupId: GroupId
   lastNodeId: number
-  lastLinkId: number
-  lastRerouteId: number
+  lastLinkId: LinkId
+  lastRerouteId: RerouteId
 }
 
 type ParamsArray<T, K extends MethodNames<T>> = Parameters<
@@ -154,7 +161,7 @@ export interface GroupNodeWorkflowData {
 
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
-  linkExtensions?: { id: number; parentId: number | undefined }[]
+  linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
   groupNodes?: Record<string, GroupNodeWorkflowData>
@@ -235,7 +242,7 @@ export class LGraph
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
-  readonly _subgraphs: Map<UUID, Subgraph> = new Map()
+  readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
 
   _nodes: (LGraphNode | SubgraphNode)[] = []
   _nodes_by_id: Record<NodeId, LGraphNode> = {}
@@ -445,7 +452,7 @@ export class LGraph
     this.canvasAction((c) => c.clear())
   }
 
-  get subgraphs(): Map<UUID, Subgraph> {
+  get subgraphs(): Map<SubgraphId, Subgraph> {
     return this.rootGraph._subgraphs
   }
 
@@ -845,6 +852,15 @@ export class LGraph
   }
 
   /**
+   * Increments the internal version counter.
+   * Currently only read for debug display in {@link LGraphCanvas.renderInfo}.
+   * Centralized so a future VersionSystem can intercept, batch, or replace it.
+   */
+  incrementVersion(): void {
+    this._version++
+  }
+
+  /**
    * @deprecated Will be removed in 0.9
    * Sends an event to all the nodes, useful to trigger stuff
    * @param eventname the name of the event (function to be called)
@@ -957,7 +973,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      this._version++
+      this.incrementVersion()
       return
     }
 
@@ -990,7 +1006,7 @@ export class LGraph
     }
 
     node.graph = this
-    this._version++
+    this.incrementVersion()
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1043,7 +1059,7 @@ export class LGraph
         this._groups.splice(index, 1)
       }
       node.graph = undefined
-      this._version++
+      this.incrementVersion()
       this.setDirtyCanvas(true, true)
       this.change()
       return
@@ -1110,7 +1126,7 @@ export class LGraph
     node.onRemoved?.()
 
     node.graph = null
-    this._version++
+    this.incrementVersion()
 
     // remove from canvas render
     const { list_of_graphcanvas } = this
@@ -2720,7 +2736,7 @@ export class LGraph
       this.updateExecutionOrder()
 
       this.onConfigure?.(data)
-      this._version++
+      this.incrementVersion()
 
       // Ensure the primary canvas is set to the correct graph
       const { primaryCanvas } = this

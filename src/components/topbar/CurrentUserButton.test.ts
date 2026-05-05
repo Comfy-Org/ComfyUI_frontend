@@ -90,7 +90,6 @@ vi.mock('@/platform/workspace/components/WorkspaceProfilePic.vue', () => ({
 
 // Mock the CurrentUserPopoverLegacy component
 vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
-  // eslint-disable-next-line vue/one-component-per-file
   default: defineComponent({
     name: 'CurrentUserPopoverLegacyMock',
     emits: ['close'],
@@ -133,7 +132,6 @@ describe('CurrentUserButton', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          // eslint-disable-next-line vue/one-component-per-file
           Popover: defineComponent({
             setup(_, { slots, expose }) {
               const shown = ref(false)

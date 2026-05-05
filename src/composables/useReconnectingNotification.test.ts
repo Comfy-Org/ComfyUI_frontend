@@ -1,6 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 
@@ -14,11 +17,29 @@ vi.mock('primevue/usetoast', () => ({
   })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
+function setupComposable(): ReturnType<typeof useReconnectingNotification> {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        g: {
+          reconnecting: 'Reconnecting',
+          reconnected: 'Reconnected'
+        }
+      }
+    }
   })
-}))
+  let result!: ReturnType<typeof useReconnectingNotification>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useReconnectingNotification()
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
 
 const settingMocks = vi.hoisted(() => ({
   disableToast: false
@@ -47,7 +68,7 @@ describe('useReconnectingNotification', () => {
   })
 
   it('does not show toast immediately on reconnecting', () => {
-    const { onReconnecting } = useReconnectingNotification()
+    const { onReconnecting } = setupComposable()
 
     onReconnecting()
 
@@ -55,7 +76,7 @@ describe('useReconnectingNotification', () => {
   })
 
   it('shows error toast after delay', () => {
-    const { onReconnecting } = useReconnectingNotification()
+    const { onReconnecting } = setupComposable()
 
     onReconnecting()
     vi.advanceTimersByTime(1500)
@@ -63,13 +84,13 @@ describe('useReconnectingNotification', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        summary: 'g.reconnecting'
+        summary: 'Reconnecting'
       })
     )
   })
 
   it('suppresses toast when reconnected before delay expires', () => {
-    const { onReconnecting, onReconnected } = useReconnectingNotification()
+    const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()
     vi.advanceTimersByTime(500)
@@ -81,7 +102,7 @@ describe('useReconnectingNotification', () => {
   })
 
   it('removes toast and shows success when reconnected after delay', () => {
-    const { onReconnecting, onReconnected } = useReconnectingNotification()
+    const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()
     vi.advanceTimersByTime(1500)
@@ -92,13 +113,13 @@ describe('useReconnectingNotification', () => {
     expect(mockToastRemove).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        summary: 'g.reconnecting'
+        summary: 'Reconnecting'
       })
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'success',
-        summary: 'g.reconnected',
+        summary: 'Reconnected',
         life: 2000
       })
     )
@@ -106,7 +127,7 @@ describe('useReconnectingNotification', () => {
 
   it('does nothing when toast is disabled via setting', () => {
     settingMocks.disableToast = true
-    const { onReconnecting, onReconnected } = useReconnectingNotification()
+    const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()
     vi.advanceTimersByTime(1500)
@@ -117,7 +138,7 @@ describe('useReconnectingNotification', () => {
   })
 
   it('does nothing when onReconnected is called without prior onReconnecting', () => {
-    const { onReconnected } = useReconnectingNotification()
+    const { onReconnected } = setupComposable()
 
     onReconnected()
 
@@ -126,7 +147,7 @@ describe('useReconnectingNotification', () => {
   })
 
   it('handles multiple reconnecting events without duplicating toasts', () => {
-    const { onReconnecting } = useReconnectingNotification()
+    const { onReconnecting } = setupComposable()
 
     onReconnecting()
     vi.advanceTimersByTime(1500) // first toast fires
