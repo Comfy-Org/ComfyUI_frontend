@@ -2346,10 +2346,6 @@ const translations = {
     en: 'Effective Date',
     'zh-CN': '生效日期'
   },
-  'affiliate-terms.page.lastUpdatedLabel': {
-    en: 'Last updated',
-    'zh-CN': '最后更新'
-  },
 
   // Customers page
   'customers.hero.label': {

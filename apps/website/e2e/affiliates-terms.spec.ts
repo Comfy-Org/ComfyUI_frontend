@@ -55,7 +55,6 @@ test.describe('Affiliate Terms — desktop @smoke', () => {
 
   test('renders an effective date footer', async ({ page }) => {
     await expect(page.getByText(/Effective Date:/)).toBeVisible()
-    await expect(page.getByText(/Last updated:/)).toBeVisible()
   })
 
   test('skips internal-only sections (competitive analysis, open questions)', async ({

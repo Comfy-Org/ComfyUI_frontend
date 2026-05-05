@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import HeroSection from '../../../components/legal/HeroSection.vue'
+import LegalContentSection from '../../../components/legal/LegalContentSection.vue'
+import { t } from '../../../i18n/translations'
+---
+
+<BaseLayout
+  title={t('affiliate-terms.page.title', 'zh-CN')}
+  description={t('affiliate-terms.page.description', 'zh-CN')}
+  noindex
+>
+  <HeroSection title={t('affiliate-terms.page.heading', 'zh-CN')} />
+  <LegalContentSection
+    prefix="affiliate-terms"
+    locale="zh-CN"
+    effectiveDateKey="affiliate-terms.effective-date"
+    effectiveDateLabelKey="affiliate-terms.page.effectiveDateLabel"
+    tocLabelKey="affiliate-terms.page.tocLabel"
+    client:load
+  />
+</BaseLayout>

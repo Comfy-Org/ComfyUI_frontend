@@ -55,7 +55,6 @@ describe('affiliate terms i18n', () => {
     expect(hasKey('affiliate-terms.page.heading')).toBe(true)
     expect(hasKey('affiliate-terms.page.tocLabel')).toBe(true)
     expect(hasKey('affiliate-terms.page.effectiveDateLabel')).toBe(true)
-    expect(hasKey('affiliate-terms.page.lastUpdatedLabel')).toBe(true)
   })
 
   it('does not include any internal-only "Competitive analysis" or "Open questions" keys', () => {

@@ -13,14 +13,12 @@ const {
   locale = 'en',
   effectiveDateKey,
   effectiveDateLabelKey,
-  lastUpdatedLabelKey,
   tocLabelKey
 } = defineProps<{
   prefix: string
   locale?: Locale
   effectiveDateKey: TranslationKey
   effectiveDateLabelKey: TranslationKey
-  lastUpdatedLabelKey: TranslationKey
   tocLabelKey: TranslationKey
 }>()
 
@@ -244,12 +242,6 @@ function listItems(key: TranslationKey): string[] {
           <p>
             <span class="font-semibold"
               >{{ t(effectiveDateLabelKey, locale) }}:</span
-            >
-            {{ t(effectiveDateKey, locale) }}
-          </p>
-          <p class="mt-1">
-            <span class="font-semibold"
-              >{{ t(lastUpdatedLabelKey, locale) }}:</span
             >
             {{ t(effectiveDateKey, locale) }}
           </p>
