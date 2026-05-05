@@ -652,7 +652,7 @@
     "Add Group": "添加组",
     "Add Group For Selected Nodes": "为选定节点添加组",
     "Add Node": "添加节点",
-    "Add Subgraph to Library": "添加子工作流到节点库",
+    "Add Subgraph to Library": "添加子图到节点库",
     "Adjust Size": "调整尺寸",
     "Align Selected To": "对齐选中项到",
     "Bottom": "底部",
@@ -662,14 +662,14 @@
     "Color": "颜色",
     "Colors": "颜色",
     "Convert to Group Node": "转换为组节点",
-    "Convert to Subgraph": "转换为子工作流",
+    "Convert to Subgraph": "转换为子图",
     "Copy": "复制",
     "Copy (Clipspace)": "复制 (Clipspace)",
     "Copy Image": "复制图像",
     "Delete": "删除",
     "Distribute Nodes": "分布节点",
     "Duplicate": "复制",
-    "Edit Subgraph Widgets": "编辑子工作流组件",
+    "Edit Subgraph Widgets": "编辑子图组件",
     "Expand": "展开",
     "Expand Node": "展开节点",
     "Extensions": "扩展",
@@ -706,7 +706,7 @@
     "Title": "标题",
     "Top": "顶部",
     "UnfavoriteWidget": "取消收藏组件",
-    "Unpack Subgraph": "解包子工作流",
+    "Unpack Subgraph": "解包子图",
     "Unpin": "取消固定",
     "Vertical": "竖直",
     "deprecated": "弃用",
@@ -1088,7 +1088,7 @@
     "edit": "编辑",
     "editImage": "编辑图片",
     "editOrMaskImage": "编辑或遮罩图片",
-    "emDash": "-",
+    "emDash": "—",
     "empty": "空",
     "enableAll": "启用全部",
     "enableOrDisablePack": "启用或禁用包",
@@ -1470,7 +1470,12 @@
       "nvidiaDescription": "使用NVIDIA GPU和CUDA加速以获得最佳性能。",
       "nvidiaSubtitle": "NVIDIA CUDA",
       "recommended": "推荐",
-      "title": "选择您的硬件配置"
+      "title": "选择您的硬件配置",
+      "appleMetal": "Apple Metal",
+      "nvidia": "NVIDIA",
+      "amd": "AMD",
+      "cpu": "CPU",
+      "manualInstall": "手动安装"
     },
     "gpuSelection": {
       "cpuMode": "CPU 模式",
@@ -2087,7 +2092,7 @@
     "ComfyUI Forum": "ComfyUI 论坛",
     "ComfyUI Issues": "ComfyUI 问题",
     "Contact Support": "联系支持",
-    "Convert Selection to Subgraph": "将选中内容转换为子工作流",
+    "Convert Selection to Subgraph": "将选中内容转换为子图",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Copy": "复制",
     "Custom Nodes (Legacy)": "自定义节点（旧版）",
@@ -2097,8 +2102,8 @@
     "Desktop User Guide": "桌面端用户手册",
     "Duplicate Current Workflow": "复制当前工作流",
     "Edit": "编辑",
-    "Edit Subgraph Widgets": "编辑子工作流组件",
-    "Exit Subgraph": "退出子工作流",
+    "Edit Subgraph Widgets": "编辑子图组件",
+    "Exit Subgraph": "退出子图",
     "Experimental: Browse Model Assets": "实验性：浏览模型资产",
     "Experimental: Enable AssetAPI": "实验性：启用 AssetAPI",
     "Experimental: Enable Nodes 2_0": "实验性：启用 Nodes 2.0",
@@ -2186,7 +2191,7 @@
     "Unload Models": "卸载模型",
     "Unload Models and Execution Cache": "卸载模型和执行缓存",
     "Unlock Canvas": "解除锁定画布",
-    "Unpack the selected Subgraph": "解包选中子工作流",
+    "Unpack the selected Subgraph": "解包选中子图",
     "View": "视图",
     "Workflows": "工作流",
     "Zoom In": "放大画面",
@@ -2489,7 +2494,7 @@
       "queuePosition": "队列位置",
       "queuePositionValue": "在您前方有 ~{count} 个任务 | 在您前方有 ~{count} 个任务",
       "queuedAt": "执行于",
-      "report": "反馈",
+      "report": "报告",
       "timeElapsed": "耗时",
       "totalGenerationTime": "总生成时间",
       "workflow": "工作流"
@@ -2747,16 +2752,33 @@
       "name": "在 CPU 上运行 VAE"
     },
     "cross-attention-method": {
-      "name": "交叉注意力方法"
+      "name": "交叉注意力方法",
+      "options": {
+        "auto": "自动",
+        "split": "拆分",
+        "quad": "四重",
+        "pytorch": "PyTorch"
+      }
     },
     "cuda-device": {
       "name": "要使用的 CUDA 设备索引"
     },
     "cuda-malloc": {
-      "name": "使用 CUDA malloc 进行内存分配"
+      "name": "使用 CUDA malloc 进行内存分配",
+      "options": {
+        "auto": "自动",
+        "enable": "启用",
+        "disable": "禁用"
+      }
     },
     "default-hashing-function": {
-      "name": "模型文件的默认哈希函数"
+      "name": "模型文件的默认哈希函数",
+      "options": {
+        "md5": "MD5",
+        "sha1": "SHA-1",
+        "sha256": "SHA-256",
+        "sha512": "SHA-512"
+      }
     },
     "deterministic": {
       "name": "使 pytorch 在可以时使用较慢的确定性算法。",
@@ -2805,7 +2827,12 @@
     },
     "global-precision": {
       "name": "全局浮点精度",
-      "tooltip": "全局浮点精度"
+      "tooltip": "全局浮点精度",
+      "options": {
+        "auto": "自动",
+        "fp32": "FP32",
+        "fp16": "FP16"
+      }
     },
     "input-directory": {
       "name": "输入目录"
@@ -2814,7 +2841,14 @@
       "name": "主机：要监听的IP地址"
     },
     "log-level": {
-      "name": "日志详细级别"
+      "name": "日志详细级别",
+      "options": {
+        "DEBUG": "DEBUG (调试)",
+        "INFO": "INFO (信息)",
+        "WARNING": "WARNING (警告)",
+        "ERROR": "ERROR (错误)",
+        "CRITICAL": "CRITICAL (严重)"
+      }
     },
     "max-upload-size": {
       "name": "最大上传大小 (MB)"
@@ -2826,7 +2860,13 @@
       "name": "端口：要监听的端口"
     },
     "preview-method": {
-      "name": "用于潜空间预览的方法"
+      "name": "用于潜空间预览的方法",
+      "options": {
+        "none": "无预览",
+        "auto": "自动",
+        "latent2rgb": "潜空间转RGB",
+        "taesd": "TAESD (微型自编码器)"
+      }
     },
     "preview-size": {
       "name": "预览图像的大小"
@@ -2837,7 +2877,14 @@
     },
     "text-encoder-precision": {
       "name": "文本编码器精度",
-      "tooltip": "文本编码器精度"
+      "tooltip": "文本编码器精度",
+      "options": {
+        "auto": "自动",
+        "fp8_e4m3fn": "FP8 (E4M3)",
+        "fp8_e5m2": "FP8 (E5M2)",
+        "fp16": "FP16",
+        "fp32": "FP32"
+      }
     },
     "tls-certfile": {
       "name": "TLS 证书文件：HTTPS 的 TLS 证书文件路径"
@@ -2847,14 +2894,38 @@
     },
     "unet-precision": {
       "name": "UNET 精度",
-      "tooltip": "UNET 精度"
+      "tooltip": "UNET 精度",
+      "options": {
+        "auto": "自动",
+        "fp64": "FP64",
+        "fp32": "FP32",
+        "fp16": "FP16",
+        "bf16": "BF16",
+        "fp8_e4m3fn": "FP8 (E4M3)",
+        "fp8_e5m2": "FP8 (E5M2)"
+      }
     },
     "vae-precision": {
       "name": "VAE 精度",
-      "tooltip": "VAE 精度"
+      "tooltip": "VAE 精度",
+      "options": {
+        "auto": "自动",
+        "fp16": "FP16",
+        "fp32": "FP32",
+        "bf16": "BF16"
+      }
     },
     "vram-management": {
-      "name": "VRAM 管理模式"
+      "name": "VRAM 管理模式",
+      "options": {
+        "auto": "自动",
+        "gpu-only": "仅 GPU",
+        "highvram": "高显存",
+        "normalvram": "标准显存",
+        "lowvram": "低显存",
+        "novram": "无显存",
+        "cpu": "仅 CPU"
+      }
     }
   },
   "serverStart": {
@@ -3173,26 +3244,26 @@
     "workflows": "工作流"
   },
   "subgraphStore": {
-    "blueprintName": "子工作流名称",
+    "blueprintName": "子图名称",
     "blueprintNamePrompt": "子图名称：",
     "cannotDeleteGlobal": "无法删除已安装的蓝图",
-    "confirmDelete": "此操作将永久从您的库中移除该子工作流",
-    "confirmDeleteTitle": "删除子工作流？",
+    "confirmDelete": "此操作将永久从您的库中移除该子图",
+    "confirmDeleteTitle": "删除子图？",
     "disconnected": "已断开连接",
     "enterDescription": "输入描述",
     "enterSearchAliases": "输入搜索别名（用逗号分隔）",
     "hidden": "隐藏/嵌套参数",
     "hideAll": "全部隐藏",
     "linked": "（已关联）",
-    "loadFailure": "加载子工作流蓝图失败",
-    "overwriteBlueprint": "保存将用您的更改覆盖当前子工作流",
-    "overwriteBlueprintTitle": "覆盖现有子工作流？",
-    "promoteOutsideSubgraph": "不在子工作流中时无法提升小部件",
+    "loadFailure": "加载子图蓝图失败",
+    "overwriteBlueprint": "保存将用您的更改覆盖当前子图",
+    "overwriteBlueprintTitle": "覆盖现有子图？",
+    "promoteOutsideSubgraph": "不在子图中时无法提升小部件",
     "promoteWidget": "提升组件：{name}",
-    "publish": "发布子工作流",
+    "publish": "发布子图",
     "publishSuccess": "已保存到节点库",
-    "publishSuccessMessage": "您可以在节点库的“子工作流蓝图”下找到您的子工作流蓝图",
-    "saveBlueprint": "保存子工作流到节点库",
+    "publishSuccessMessage": "您可以在节点库的\"子图蓝图\"下找到您的子图蓝图",
+    "saveBlueprint": "保存子图到节点库",
     "searchAliases": "搜索别名",
     "showAll": "全部显示",
     "showRecommended": "显示推荐控件",
@@ -3470,7 +3541,7 @@
     "logoProviderSeparator": " 与 "
   },
   "toastMessages": {
-    "cannotCreateSubgraph": "无法创建子工作流",
+    "cannotCreateSubgraph": "无法创建子图",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
     "emptyCanvas": "画布为空",
@@ -3482,7 +3553,7 @@
     "failedExecutionPathResolution": "无法解析所选节点的路径",
     "failedToAccessBillingPortal": "访问账单门户失败：{error}",
     "failedToApplyTexture": "应用纹理失败",
-    "failedToConvertToSubgraph": "无法将项目转换为子工作流",
+    "failedToConvertToSubgraph": "无法将项目转换为子图",
     "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToDownloadFile": "文件下载失败",
     "failedToExportModel": "无法将模型导出为 {format}",
