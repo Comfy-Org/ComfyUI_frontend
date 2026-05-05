@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/legal/HeroSection.vue'
+import LegalContentSection from '../../components/legal/LegalContentSection.vue'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+const rawLocale = Astro.currentLocale ?? 'en'
+const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+---
+
+<BaseLayout
+  title={t('affiliate-terms.page.title', locale)}
+  description={t('affiliate-terms.page.description', locale)}
+  noindex
+>
+  <HeroSection title={t('affiliate-terms.page.heading', locale)} />
+  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+    {t('affiliate-terms.page.effectiveDateLabel', locale)}: {
+      t('affiliate-terms.effective-date', locale)
+    }
+  </p>
+  <LegalContentSection
+    prefix="affiliate-terms"
+    locale={locale}
+    tocLabelKey="affiliate-terms.page.tocLabel"
+    client:load
+  />
+</BaseLayout>
