@@ -86,6 +86,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
   let currentModelUrl: string | null = null
+  let mouseOnViewer = false
 
   const initialState = ref<Load3dViewerState>({
     backgroundColor: '#282828',
@@ -304,6 +305,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         isViewerMode: hasTargetDimensions
       })
 
+      if (mouseOnViewer) {
+        load3d.updateStatusMouseOnViewer(true)
+      }
+
       await useLoad3dService().copyLoad3dState(source, load3d)
 
       const sourceCameraState = source.getCameraState()
@@ -416,6 +421,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         isViewerMode: true
       })
 
+      if (mouseOnViewer) {
+        load3d.updateStatusMouseOnViewer(true)
+      }
+
       await load3d.loadModel(modelUrl)
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
@@ -522,6 +531,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Notifies the viewer that the mouse has entered the viewer area.
    */
   const handleMouseEnter = () => {
+    mouseOnViewer = true
     load3d?.updateStatusMouseOnViewer(true)
   }
 
@@ -529,6 +539,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Notifies the viewer that the mouse has left the viewer area.
    */
   const handleMouseLeave = () => {
+    mouseOnViewer = false
     load3d?.updateStatusMouseOnViewer(false)
   }
 
@@ -727,6 +738,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (isStandaloneMode.value) {
       saveStandaloneConfig()
     }
+    mouseOnViewer = false
     load3d?.remove()
     load3d = null
     sourceLoad3d = null

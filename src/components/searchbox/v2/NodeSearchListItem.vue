@@ -109,8 +109,10 @@ const settingStore = useSettingStore()
 const showCategory = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
 )
-const showIdName = computed(() =>
-  settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
+const showIdName = computed(
+  () =>
+    settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName') &&
+    nodeDef.nodeSource.type !== NodeSourceType.Blueprint
 )
 const showNodeFrequency = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowNodeFrequency')

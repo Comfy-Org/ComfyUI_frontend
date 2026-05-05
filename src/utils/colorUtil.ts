@@ -82,6 +82,11 @@ export function hexToRgb(hex: string): RGB {
   return { r, g, b }
 }
 
+export function hexToInt(hex: string): number {
+  const { r, g, b } = hexToRgb(hex)
+  return (r << 16) | (g << 8) | b
+}
+
 export function rgbToHex({ r, g, b }: RGB): string {
   const toHex = (n: number) =>
     Math.max(0, Math.min(255, Math.round(n)))

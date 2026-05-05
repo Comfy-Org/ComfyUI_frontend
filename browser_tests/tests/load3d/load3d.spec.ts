@@ -95,3 +95,33 @@ test.describe('Load3D', () => {
     }
   )
 })
+
+test.describe('Load3D initialization failure', () => {
+  test('Surfaces a toast when the THREE.WebGLRenderer cannot be created', async ({
+    comfyPage
+  }) => {
+    // Force `new THREE.WebGLRenderer(...)` inside Load3d to throw by making
+    // WebGL getContext() calls return null.
+    await comfyPage.page.evaluate(() => {
+      const proto = HTMLCanvasElement.prototype as {
+        getContext: (
+          this: HTMLCanvasElement,
+          type: string,
+          options?: unknown
+        ) => unknown
+      }
+      const original = proto.getContext
+      proto.getContext = function (type, options) {
+        if (type === 'webgl' || type === 'webgl2') return null
+        return original.call(this, type, options)
+      }
+    })
+    await comfyPage.workflow.loadWorkflow('3d/load3d_node')
+
+    await expect(
+      comfyPage.toast.visibleToasts.filter({
+        hasText: 'Failed to initialize 3D Viewer'
+      })
+    ).not.toHaveCount(0)
+  })
+})

@@ -17,14 +17,13 @@ test.describe('Workflow sidebar - search', () => {
       'alpha-workflow.json': 'default.json',
       'beta-workflow.json': 'default.json'
     })
+    await comfyPage.menu.workflowsTab.open()
   })
 
   test('Search filters saved workflows by name', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    await tab.open()
 
-    const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
-    await searchInput.fill('alpha')
+    await tab.searchInput.fill('alpha')
 
     await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
     await expect(
@@ -34,15 +33,11 @@ test.describe('Workflow sidebar - search', () => {
 
   test('Clearing search restores all workflows', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    await tab.open()
 
-    const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
-    await searchInput.fill('alpha')
-    await expect(
-      findWorkflow(comfyPage.page, 'beta-workflow')
-    ).not.toBeVisible()
+    await tab.searchInput.fill('alpha')
+    await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeHidden()
 
-    await searchInput.fill('')
+    await tab.searchInput.fill('')
 
     await expect(tab.getPersistedItem('alpha-workflow')).toBeVisible()
     await expect(tab.getPersistedItem('beta-workflow')).toBeVisible()
@@ -50,10 +45,8 @@ test.describe('Workflow sidebar - search', () => {
 
   test('Search with no matches shows empty results', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    await tab.open()
 
-    const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
-    await searchInput.fill('nonexistent_xyz')
+    await tab.searchInput.fill('nonexistent_xyz')
 
     await expect(
       findWorkflow(comfyPage.page, 'alpha-workflow')
@@ -61,5 +54,73 @@ test.describe('Workflow sidebar - search', () => {
     await expect(
       findWorkflow(comfyPage.page, 'beta-workflow')
     ).not.toBeVisible()
+  })
+
+  test.describe('deletion', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'alpha-workflow.json': 'default.json',
+        'beta-workflow.json': 'default.json',
+        'gamma-workflow.json': 'default.json'
+      })
+      await comfyPage.settings.setSetting('Comfy.Workflow.ConfirmDelete', false)
+      await comfyPage.menu.workflowsTab.open()
+    })
+
+    test('Deleting a workflow while search is active removes it from results', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.workflowsTab
+
+      await tab.searchInput.fill('alpha')
+      await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
+
+      await findWorkflow(comfyPage.page, 'alpha-workflow').click({
+        button: 'right'
+      })
+      await comfyPage.contextMenu.clickMenuItem('Delete')
+
+      await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeHidden()
+    })
+
+    test('Deleting during search does not affect other matched results', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.workflowsTab
+
+      await tab.searchInput.fill('workflow')
+
+      await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
+      await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeVisible()
+      await expect(findWorkflow(comfyPage.page, 'gamma-workflow')).toBeVisible()
+
+      await findWorkflow(comfyPage.page, 'alpha-workflow').click({
+        button: 'right'
+      })
+      await comfyPage.contextMenu.clickMenuItem('Delete')
+
+      await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeHidden()
+      await expect(findWorkflow(comfyPage.page, 'beta-workflow')).toBeVisible()
+      await expect(findWorkflow(comfyPage.page, 'gamma-workflow')).toBeVisible()
+    })
+
+    test('Clearing search after deleting during search shows correct workflows', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.workflowsTab
+
+      await tab.searchInput.fill('alpha')
+      await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
+
+      await findWorkflow(comfyPage.page, 'alpha-workflow').click({
+        button: 'right'
+      })
+      await comfyPage.contextMenu.clickMenuItem('Delete')
+
+      await tab.searchInput.fill('')
+      await expect(tab.getPersistedItem('beta-workflow')).toBeVisible()
+      await expect(tab.getPersistedItem('gamma-workflow')).toBeVisible()
+      await expect(tab.getPersistedItem('alpha-workflow')).toBeHidden()
+    })
   })
 })
