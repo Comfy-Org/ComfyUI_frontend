@@ -129,7 +129,7 @@ const translateItem = (item: ServerConfig<ServerConfigValue>): FormItemType => {
   const options = item.options?.map((opt) => {
     const key = `serverConfigItems.${item.id}.options.${opt}`
     const translated = t(key)
-    return translated !== key ? translated : opt
+    return { text: translated !== key ? translated : opt, value: opt }
   })
   return {
     ...item,
