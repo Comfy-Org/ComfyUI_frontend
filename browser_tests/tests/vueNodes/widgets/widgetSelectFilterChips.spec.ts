@@ -6,9 +6,9 @@ import {
 // Regression guard for the filter-chip surface affected by FE-226.
 // The unit test at src/renderer/extensions/vueNodes/widgets/composables/
 // useWidgetSelectItems.test.ts asserts the chronological sort order —
-// this spec only ensures the "All / Inputs / Outputs" chips still render
-// and the default filter is "All". A deeper e2e that drives cloud asset
-// timestamps requires the @cloud build and is deferred.
+// this spec only ensures the "All / Imported / Generated" chips still
+// render and the default filter is "All". A deeper e2e that drives cloud
+// asset timestamps requires the @cloud build and is deferred.
 test.describe(
   'FE-226 input-image dropdown filter chips',
   { tag: ['@vue-nodes', '@regression'] },
@@ -19,7 +19,7 @@ test.describe(
       await comfyPage.vueNodes.waitForNodes()
     })
 
-    test('renders All, Inputs, and Outputs chips with All selected by default', async ({
+    test('renders All, Imported, and Generated chips with All selected by default', async ({
       comfyPage
     }) => {
       const loadImageNode = comfyPage.vueNodes.getNodeByTitle('Load Image')
@@ -32,18 +32,18 @@ test.describe(
         name: 'All',
         exact: true
       })
-      const inputsChip = comfyPage.page.getByRole('button', {
-        name: 'Inputs',
+      const importedChip = comfyPage.page.getByRole('button', {
+        name: 'Imported',
         exact: true
       })
-      const outputsChip = comfyPage.page.getByRole('button', {
-        name: 'Outputs',
+      const generatedChip = comfyPage.page.getByRole('button', {
+        name: 'Generated',
         exact: true
       })
 
       await expect(allChip).toBeVisible()
-      await expect(inputsChip).toBeVisible()
-      await expect(outputsChip).toBeVisible()
+      await expect(importedChip).toBeVisible()
+      await expect(generatedChip).toBeVisible()
 
       await expect(allChip).toHaveClass(
         /bg-interface-menu-component-surface-selected/
