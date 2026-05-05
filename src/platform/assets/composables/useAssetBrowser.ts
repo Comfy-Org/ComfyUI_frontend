@@ -44,7 +44,6 @@ export interface AssetDisplayItem extends AssetItem {
   }
 }
 
-// WeakMap so GC can reclaim entries when assets are released. (FE-229)
 const displayItemCache = new WeakMap<AssetItem, AssetDisplayItem>()
 
 function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
