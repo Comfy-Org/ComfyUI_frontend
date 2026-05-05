@@ -4,7 +4,7 @@ import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import { storeToRefs } from 'pinia'
 
-import { d, t } from '@/i18n'
+import { t } from '@/i18n'
 import type {
   AssetFilterState,
   OwnershipOption
@@ -38,7 +38,6 @@ export interface AssetDisplayItem extends AssetItem {
   secondaryText: string
   badges: AssetBadge[]
   stats: {
-    formattedDate?: string
     downloadCount?: string
     stars?: string
   }
@@ -67,9 +66,6 @@ function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
     secondaryText: getAssetFilename(asset),
     badges,
     stats: {
-      formattedDate: asset.created_at
-        ? d(new Date(asset.created_at), { dateStyle: 'short' })
-        : undefined,
       downloadCount: undefined,
       stars: undefined
     }
