@@ -55,6 +55,7 @@ import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { makeCompositeKey } from '@/utils/compositeKey'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -1361,6 +1362,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this._pendingWidgetsValuesReplay = undefined
     this._replayPromotedWidgetValues(pending)
+  }
+
+  /**
+   * Re-projects per-instance promoted-widget override values onto interior
+   * widgets. Runs after lazy-creation interiors (e.g. PrimitiveNode) have
+   * materialized their widgets and re-applied their `widgets_values`.
+   */
+  override onAfterGraphConfigured(): void {
+    if (this.id === -1) return
+
+    const widgetStore = useWidgetValueStore()
+    for (const view of this.widgets ?? []) {
+      if (!isPromotedWidgetView(view)) continue
+      const widgetState = widgetStore.getWidget(
+        this.rootGraph.id,
+        this.id,
+        view.storeName
+      )
+      if (!widgetState) continue
+      view.value = widgetState.value as IBaseWidget['value']
+    }
   }
 
   /**

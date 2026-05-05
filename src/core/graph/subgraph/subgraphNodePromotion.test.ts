@@ -103,7 +103,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
     expect(subgraphNode.widgets[1].name).toBe('widgetA')
   })
-  test('Promoted view falls back to interior; promoted writes do not mutate interior', () => {
+  test('Promoted view falls back to interior; promoted writes mutate interior (write-through)', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -114,15 +114,15 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets.length).toBe(1)
     expect(subgraphNode.widgets[0].value).toBe('value')
 
-    // Direct interior edits remain visible through the view (no override)
+    // Sparse override: interior writes are visible until the view
+    // acquires its own override.
     innerNodes[0].widgets![0].value = 'test'
     expect(subgraphNode.widgets[0].value).toBe('test')
 
-    // Promoted-view writes route to the per-instance cell only —
-    // the interior widget is NOT mutated.
+    // Promoted writes record an override AND write through to the interior.
     subgraphNode.widgets[0].value = 'test2'
     expect(subgraphNode.widgets[0].value).toBe('test2')
-    expect(innerNodes[0].widgets![0].value).toBe('test')
+    expect(innerNodes[0].widgets![0].value).toBe('test2')
   })
   test('Will not modify position or sizing of existing widgets', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
@@ -397,11 +397,11 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNodeA.widgets[0].type).toBe('number')
     expect(subgraphNodeA.widgets[0].value).toBe(42)
 
-    // Value set at outermost level lives in the per-instance cell.
-    // Read returns the override; concrete interior widget stays unchanged.
+    // Outermost write records an override AND writes through every nested
+    // promoted view down to the concrete interior widget.
     subgraphNodeA.widgets[0].value = 99
     expect(subgraphNodeA.widgets[0].value).toBe(99)
-    expect(concreteNode.widgets![0].value).toBe(42)
+    expect(concreteNode.widgets![0].value).toBe(99)
   })
 
   test('removeWidget cleans up promotion and input, then re-promote works', () => {

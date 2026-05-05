@@ -461,7 +461,7 @@ describe('per-instance value lookup for promoted widgets', () => {
     })
   }
 
-  it('reads per-instance values from cellNodeId/cellName cells when multiple instances share a definition', () => {
+  it('reads per-instance values from per-instance WidgetState entries when multiple instances share a definition', () => {
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(GRAPH_ID, {
       nodeId: '100',
@@ -495,7 +495,7 @@ describe('per-instance value lookup for promoted widgets', () => {
     expect(identityA.dedupeIdentity).not.toBe(identityB.dedupeIdentity)
   })
 
-  it('falls back to interior cell value when per-instance cell is absent for a promoted widget', () => {
+  it('falls back to interior WidgetState value when per-instance override is absent for a promoted widget', () => {
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(GRAPH_ID, {
       nodeId: INTERIOR_NODE_ID,

@@ -205,18 +205,19 @@ export function computeProcessedWidgets({
     const perInstanceWidgetState = graphId
       ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
-    // For freshly-created promoted widget views the per-instance host cell
-    // may not be registered yet. Fall back to the interior source cell for
-    // reads only — the write path keeps using the per-instance cell.
-    const widgetState =
-      perInstanceWidgetState ??
-      (graphId && widget.source
+    // For freshly-created promoted widget views the per-instance host
+    // override may not be registered yet. Fall back to the interior source
+    // WidgetState entry for reads only — the write path keeps using the
+    // per-instance override.
+    const fallbackWidgetState =
+      graphId && widget.source && !perInstanceWidgetState
         ? widgetValueStore.getWidget(
             graphId,
             widget.source.sourceNodeId,
             widget.source.sourceWidgetName
           )
-        : undefined)
+        : undefined
+    const widgetState = perInstanceWidgetState ?? fallbackWidgetState
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})

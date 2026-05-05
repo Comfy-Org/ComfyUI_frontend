@@ -172,7 +172,9 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(restoredWidget?.serializeValue?.(restoredInstance, 0)).toBe(33)
   })
 
-  it('keeps fresh sibling instances isolated before save or reload', () => {
+  it('fresh sibling instances follow shared interior until they acquire explicit per-instance overrides', () => {
+    // Sparse override: untouched siblings share the live interior; once
+    // an instance is explicitly set or restored, it diverges.
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
@@ -194,10 +196,17 @@ describe('SubgraphNode multi-instance widget isolation', () => {
 
     widget1!.value = 10
 
+    // Instance 2 has no override yet, so it reads through to the now-
+    // mutated shared interior.
     expect(widget1?.value).toBe(10)
-    expect(widget2?.value).toBe(7)
+    expect(widget2?.value).toBe(10)
     expect(widget1?.serializeValue?.(instance1, 0)).toBe(10)
-    expect(widget2?.serializeValue?.(instance2, 0)).toBe(7)
+    expect(widget2?.serializeValue?.(instance2, 0)).toBe(10)
+
+    // Setting widget2 gives it its own override, allowing divergence.
+    widget2!.value = 33
+    expect(widget1?.value).toBe(10)
+    expect(widget2?.value).toBe(33)
   })
 
   it('keeps per-instance override sticky when the inner source widget changes directly', () => {

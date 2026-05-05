@@ -261,7 +261,7 @@ describe(createPromotedWidgetView, () => {
     expect(view.linkedWidgets?.[0].name).toBe('control_after_generate')
   })
 
-  test('value reads from per-instance store cell, leaving interior unchanged', () => {
+  test('value writes propagate to the interior widget (write-through)', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'myWidget', 'initial', () => {})
@@ -274,13 +274,26 @@ describe(createPromotedWidgetView, () => {
     // Value should read from interior default initially
     expect(view.value).toBe('initial')
 
-    // Setting value through the view writes to the per-instance cell
     view.value = 'updated'
-    expect(view.value).toBe('updated')
 
-    // Interior widget is NOT mutated by promoted-view writes —
-    // each instance has its own override; the interior remains the default.
-    expect(innerNode.widgets![0].value).toBe('initial')
+    expect(view.value).toBe('updated')
+    // Write-through projects the new value onto the interior widget so
+    // direct interior consumers (prompt-build, etc.) stay consistent.
+    expect(innerNode.widgets![0].value).toBe('updated')
+
+    const perInstanceCell = useWidgetValueStore().getWidget(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      view.storeName
+    )
+    expect(perInstanceCell?.value).toBe('updated')
+
+    const interiorCell = useWidgetValueStore().getWidget(
+      subgraphNode.rootGraph.id,
+      innerNode.id,
+      'myWidget'
+    )
+    expect(interiorCell?.value).toBe('updated')
   })
 
   test('value falls back to interior widget when no store entry exists', () => {
@@ -304,11 +317,11 @@ describe(createPromotedWidgetView, () => {
       'myWidget'
     )
 
-    // Read falls back to the interior widget when no store cell exists
+    // Read falls back to the interior widget when no store entry exists
     expect(view.value).toBe('initial')
   })
 
-  test('value setter writes to per-instance store cell without mutating the interior', () => {
+  test('value setter writes to both per-instance override and interior widget', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'string_a', type: '*' }]
     })
@@ -327,10 +340,10 @@ describe(createPromotedWidgetView, () => {
 
     linkedView.value = 'updated'
 
-    // Per-instance read returns the override
     expect(linkedView.value).toBe('updated')
-    // Interior widget stays at its original default
-    expect(linkedNode.widgets?.[0].value).toBe('initial')
+    // Write-through projects onto the interior so direct interior
+    // consumers (prompt-build, legacy serialization) stay consistent.
+    expect(linkedNode.widgets?.[0].value).toBe('updated')
   })
 
   test('label falls back to displayName then widgetName', () => {
@@ -586,10 +599,9 @@ describe(createPromotedWidgetView, () => {
 
     const objValue = { key: 'data' }
     view.value = objValue
-    // Per-instance cell holds the new object value
     expect(view.value).toEqual(objValue)
-    // Interior widget unchanged by promoted-view write
-    expect(innerNode.widgets![0].value).toBe('old')
+    // Write-through projects the object onto the interior widget.
+    expect(innerNode.widgets![0].value).toEqual(objValue)
   })
 
   test('onPointerDown returns true when interior widget onPointerDown handles it', () => {
@@ -931,11 +943,10 @@ describe('SubgraphNode.widgets getter', () => {
 
     linkedView.value = 'shared-value'
 
-    // Per-instance promoted-view writes do NOT mutate any interior
-    // widget — interior cells remain the immutable defaults, and the
-    // promoted view reads its per-instance store cell.
+    // Write-through hits only the representative interior (first link).
+    // Sibling interiors and unrelated promoted peers stay independent.
     expect(linkedView.value).toBe('shared-value')
-    expect(linkedNodeA.widgets?.[0]?.value).toBe('a')
+    expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
     expect(linkedNodeB.widgets?.[0]?.value).toBe('b')
     expect(promotedNode.widgets?.[0]?.value).toBe('independent')
 
@@ -943,9 +954,9 @@ describe('SubgraphNode.widgets getter', () => {
 
     expect(promotedView.value).toBe('independent-updated')
     expect(linkedView.value).toBe('shared-value')
-    expect(linkedNodeA.widgets?.[0]?.value).toBe('a')
+    expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
     expect(linkedNodeB.widgets?.[0]?.value).toBe('b')
-    expect(promotedNode.widgets?.[0]?.value).toBe('independent')
+    expect(promotedNode.widgets?.[0]?.value).toBe('independent-updated')
   })
 
   test('duplicate-name promoted views map slot linkage by view identity', () => {
@@ -1282,19 +1293,19 @@ describe('SubgraphNode.widgets getter', () => {
     firstView.value = 'first-updated'
     secondView.value = 'second-updated'
 
-    // Per-instance views carry distinct overrides
+    // Distinct subgraph slots map to distinct interior nodes, so
+    // write-through stays scoped to each view's own representative.
     expect(firstView.value).toBe('first-updated')
     expect(secondView.value).toBe('second-updated')
-    // Interior widgets remain at their originally-registered defaults
-    expect(firstNode.widgets?.[0].value).toBe('first-initial')
-    expect(secondNode.widgets?.[0].value).toBe('second-initial')
+    expect(firstNode.widgets?.[0].value).toBe('first-updated')
+    expect(secondNode.widgets?.[0].value).toBe('second-updated')
 
     subgraphNode.serialize()
 
     expect(firstView.value).toBe('first-updated')
     expect(secondView.value).toBe('second-updated')
-    expect(firstNode.widgets?.[0].value).toBe('first-initial')
-    expect(secondNode.widgets?.[0].value).toBe('second-initial')
+    expect(firstNode.widgets?.[0].value).toBe('first-updated')
+    expect(secondNode.widgets?.[0].value).toBe('second-updated')
   })
 
   test('renaming an input updates linked promoted view display names', () => {
@@ -1614,19 +1625,19 @@ describe('SubgraphNode.widgets getter', () => {
     linkedView.value = 'shared-linked'
 
     // Per-instance views carry their own values; both linked and
-    // independent promoted views read from their per-instance store cells
+    // independent promoted views read from their per-instance store entries
     // and do not contaminate each other.
     expect(linkedView.value).toBe('shared-linked')
     expect(independentView.value).toBe('independent-value')
 
-    // Per-instance cells are owned by the SubgraphNode itself at
+    // Per-instance overrides are owned by the SubgraphNode itself at
     // `(graphId, hostNode.id, *)`. Each PromotedWidgetView is a first-class
     // widget on the SubgraphNode, so writes land in the natural
-    // (graphId, nodeId, *) namespace and are isolated from interior cells.
-    const cellValues = useWidgetValueStore()
+    // (graphId, nodeId, *) namespace and are isolated from interior entries.
+    const overrideValues = useWidgetValueStore()
       .getNodeWidgets(graph.id, hostNode.id)
-      .map((cell) => cell.value)
-    expect(cellValues).toEqual(
+      .map((entry) => entry.value)
+    expect(overrideValues).toEqual(
       expect.arrayContaining(['shared-linked', 'independent-value'])
     )
   })
@@ -2102,10 +2113,9 @@ describe('three-level nested value propagation', () => {
     expect(subgraphNodeA.widgets[0].value).toBe(100)
 
     subgraphNodeA.widgets[0].value = 200
-    // Per-instance read returns the override
     expect(subgraphNodeA.widgets[0].value).toBe(200)
-    // Concrete interior widget remains the unmutated default
-    expect(concreteNode.widgets![0].value).toBe(100)
+    // Write-through chains through every nested view down to the concrete.
+    expect(concreteNode.widgets![0].value).toBe(200)
   })
 
   test('type resolves correctly through all three layers', () => {
@@ -2184,10 +2194,10 @@ describe('three-level nested value propagation', () => {
 
     widgets[1].value = 'updated-second'
 
-    // Interior widgets are not mutated by promoted-view writes
+    // Write-through follows the disambig chain — only secondTextNode's
+    // interior is mutated; firstTextNode stays untouched.
     expect(firstTextNode.widgets?.[0]?.value).toBe('11111111111')
-    expect(secondTextNode.widgets?.[0]?.value).toBe('22222222222')
-    // Per-instance disambiguated views read correctly from their own cells
+    expect(secondTextNode.widgets?.[0]?.value).toBe('updated-second')
     expect(widgets[0].value).toBe('11111111111')
     expect(widgets[1].value).toBe('updated-second')
   })
@@ -2234,10 +2244,10 @@ describe('multi-link representative determinism for input-based promotion', () =
     // Read returns the first link's value
     expect(widgets[0].value).toBe('first-val')
 
-    // Write goes to the per-instance store cell only — interior
-    // widgets stay at their original construction defaults.
+    // Write-through hits only the representative interior (first link).
+    // Sibling interiors connected via the same input stay at their defaults.
     widgets[0].value = 'updated'
-    expect(firstNode.widgets![0].value).toBe('first-val')
+    expect(firstNode.widgets![0].value).toBe('updated')
     expect(secondNode.widgets![0].value).toBe('second-val')
     expect(thirdNode.widgets![0].value).toBe('third-val')
 
@@ -2356,17 +2366,16 @@ describe('promoted combo rendering', () => {
     expect(renderedText).toContain('a')
   })
 
-  test('value updates are visible at the outer layer without mutating the interior', () => {
+  test('value updates at the outer layer write through to the interior combo widget', () => {
     const { comboWidget, subgraphNodeB } = createTwoLevelNestedSubgraph()
     comboWidget.computedDisabled = true
     const promotedWidget = subgraphNodeB.widgets[0]
 
     expect(promotedWidget.value).toBe('a')
     promotedWidget.value = 'b'
-    // Per-instance read returns the override
     expect(promotedWidget.value).toBe('b')
-    // The deepest interior combo widget remains at its default
-    expect(comboWidget.value).toBe('a')
+    // Write-through chains down to the concrete combo widget.
+    expect(comboWidget.value).toBe('b')
 
     const fillText = vi.fn()
     const ctx = createInspectableCanvasContext(fillText)
@@ -2807,12 +2816,12 @@ describe('DOM widget promotion', () => {
 
     view.value = 'should-not-persist'
 
-    // No cell registered at id -1
-    const cells = useWidgetValueStore().getNodeWidgets(
+    // No WidgetState entry registered at id -1
+    const entries = useWidgetValueStore().getNodeWidgets(
       subgraphNode.rootGraph.id,
       -1
     )
-    expect(cells).toHaveLength(0)
+    expect(entries).toHaveLength(0)
     // Read still falls back to the interior default
     expect(view.value).toBe('initial')
   })
@@ -2832,14 +2841,14 @@ describe('DOM widget promotion', () => {
 
     view.label = 'My Label'
 
-    const cells = useWidgetValueStore().getNodeWidgets(
+    const entries = useWidgetValueStore().getNodeWidgets(
       subgraphNode.rootGraph.id,
       -1
     )
-    expect(cells).toHaveLength(0)
+    expect(entries).toHaveLength(0)
   })
 
-  test('label setter materializes a per-instance cell when no slot is bound', () => {
+  test('label setter materializes a per-instance override when no slot is bound', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'labelOnly', 'initial', () => {})
@@ -2852,20 +2861,20 @@ describe('DOM widget promotion', () => {
 
     view.label = 'My Label'
 
-    // Without a bound subgraph slot the per-instance cell is the only
+    // Without a bound subgraph slot the per-instance override is the only
     // place the new label can live; the setter must materialize it so
     // the rename actually takes effect (the getter falls back to
     // state?.label when no slot is found).
-    const cells = useWidgetValueStore().getNodeWidgets(
+    const entries = useWidgetValueStore().getNodeWidgets(
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
-    expect(cells).toHaveLength(1)
-    expect(cells[0].label).toBe('My Label')
+    expect(entries).toHaveLength(1)
+    expect(entries[0].label).toBe('My Label')
     expect(view.label).toBe('My Label')
   })
 
-  test('label setter updates an existing per-instance cell when a value override is present', () => {
+  test('label setter updates an existing per-instance override when a value override is present', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'valueAndLabel', 'initial', () => {})
@@ -2876,17 +2885,17 @@ describe('DOM widget promotion', () => {
       'valueAndLabel'
     )
 
-    // Triggering a value write materialises the cell (legitimate ownership).
+    // Triggering a value write materialises the override (legitimate ownership).
     view.value = 'override'
 
-    // Now setting a label should update the existing cell, not create a new one.
+    // Now setting a label should update the existing override, not create a new one.
     view.label = 'My Label'
 
-    const cells = useWidgetValueStore().getNodeWidgets(
+    const entries = useWidgetValueStore().getNodeWidgets(
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
-    expect(cells).toHaveLength(1)
-    expect(cells[0].label).toBe('My Label')
+    expect(entries).toHaveLength(1)
+    expect(entries[0].label).toBe('My Label')
   })
 })

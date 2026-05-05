@@ -1,3 +1,4 @@
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -7,13 +8,94 @@ import {
   ExecutableNodeDTO,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
+
+/**
+ * Looks up the effective value for a flattened interior widget by walking the
+ * ancestor SubgraphNode chain (outermost → innermost) and returning the first
+ * per-instance promoted-widget override that targets this exact widget object.
+ *
+ * Mirrors the read semantics used by the Vue / canvas render paths so that
+ * prompt-build does not desync from the on-screen value.
+ */
+function resolvePromotedWidgetOverride(
+  node: ExecutableLGraphNode,
+  widget: IBaseWidget
+): { hit: true; value: unknown } | { hit: false } {
+  if (!(node instanceof ExecutableNodeDTO)) return { hit: false }
+  if (node.subgraphNodePath.length === 0) return { hit: false }
+
+  const rootGraph = node.graph.rootGraph
+  const hosts = rootGraph.resolveSubgraphIdPath(node.subgraphNodePath)
+  const promotionStore = usePromotionStore()
+  const widgetStore = useWidgetValueStore()
+
+  for (const host of hosts) {
+    const entries = promotionStore.getPromotionsRef(rootGraph.id, host.id)
+    for (const entry of entries) {
+      const resolved = resolveConcretePromotedWidget(
+        host,
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId
+      )
+      if (resolved.status !== 'resolved') continue
+      if (resolved.resolved.widget !== widget) continue
+
+      const storeName = makeCompositeKey([
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.disambiguatingSourceNodeId ?? ''
+      ])
+      const state = widgetStore.getWidget(rootGraph.id, host.id, storeName)
+      if (state) return { hit: true, value: state.value }
+    }
+  }
+
+  return { hit: false }
+}
+
+/**
+ * Computes the value used for prompt serialization for a single widget.
+ * Falls back to the standard `widget.serializeValue` / `widget.value` path,
+ * but routes through the per-instance promoted override when one applies. When a
+ * custom `serializeValue` is defined, it is invoked on a proxy widget whose
+ * `.value` returns the override, preserving widget-specific serialization.
+ */
+async function getExecutableWidgetValue(
+  node: ExecutableLGraphNode,
+  widget: IBaseWidget,
+  index: number
+): Promise<unknown> {
+  const override = resolvePromotedWidgetOverride(node, widget)
+
+  if (!override.hit) {
+    return widget.serializeValue
+      ? await widget.serializeValue(node, index)
+      : widget.value
+  }
+
+  if (!widget.serializeValue) return override.value
+
+  const widgetProxy = Object.create(widget) as IBaseWidget
+  Object.defineProperty(widgetProxy, 'value', {
+    get: () => override.value,
+    set: () => {},
+    enumerable: true,
+    configurable: true
+  })
+  return await widget.serializeValue.call(widgetProxy, node, index)
+}
 
 /**
  * Converts the current graph workflow for sending to the API.
@@ -99,9 +181,7 @@ export const graphToPrompt = async (
       for (const [i, widget] of widgets.entries()) {
         if (!widget.name || widget.options?.serialize === false) continue
 
-        const widgetValue = widget.serializeValue
-          ? await widget.serializeValue(node, i)
-          : widget.value
+        const widgetValue = await getExecutableWidgetValue(node, widget, i)
         // By default, Array values are reserved to represent node connections.
         // We need to wrap the array as an object to avoid the misinterpretation
         // of the array as a node connection.

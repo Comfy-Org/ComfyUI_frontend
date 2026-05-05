@@ -153,6 +153,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    // Sparse override: a WidgetState entry exists only when explicitly set;
+    // otherwise read through to the live interior widget.
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
@@ -167,9 +169,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
     // Pre-attach sentinel: skip writes before LGraph.add() assigns the real id.
     if (this.subgraphNode.id === -1) return
 
-    // Per-instance cell isolation: writes go only to this view's cell;
-    // reads fall back to the interior widget when no cell exists.
+    // The per-instance override keeps Vue render and canvas draw fast paths correct.
     this.ensureInstanceState().value = value
+
+    // Write-through to the interior widget: prompt-build, legacy
+    // serialization, and nested promoted views all read the interior widget
+    // directly. Without this projection they would observe the stale
+    // workflow-restored default rather than the user-edited value.
+    const interior = this.resolveAtHost()?.widget
+    if (interior && interior.value !== value) {
+      interior.value = value
+    }
   }
 
   get label(): string | undefined {
@@ -179,12 +189,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return state?.label ?? this.displayName
   }
 
-  /** Slot-bound: only update existing cell. Unbound: materialize. */
+  /** Slot-bound: only update an existing override. Unbound: materialize one. */
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
     if (slot) slot.label = value || undefined
 
-    // Pre-attach sentinel guard: skip per-instance cell write before LGraph.add().
+    // Pre-attach sentinel guard: skip per-instance override write before LGraph.add().
     if (this.subgraphNode.id === -1) return
 
     if (slot) {
