@@ -11711,8 +11711,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 1 de OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 2 de OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11746,7 +11746,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Texto de entrada para GPT Image 1"
+        "tooltip": "Texto de entrada para GPT Image 2"
       },
       "quality": {
         "name": "quality",
