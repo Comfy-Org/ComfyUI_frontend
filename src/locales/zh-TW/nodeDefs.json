@@ -672,7 +672,7 @@
       },
       "camera_fixed": {
         "name": "固定攝影機",
-        "tooltip": "指定是否固定攝影機。平台會將固定攝影機的指令附加到您的提示詞中，但不保證實際效果。"
+        "tooltip": "指定是否固定攝影機。平臺會將固定攝影機的指令附加到您的提示詞中，但不保證實際效果。"
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -819,7 +819,7 @@
       },
       "camera_fixed": {
         "name": "camera_fixed",
-        "tooltip": "指定是否固定相機。平台會將固定相機的指令附加到您的提示詞中，但不保證實際效果。"
+        "tooltip": "指定是否固定相機。平臺會將固定相機的指令附加到您的提示詞中，但不保證實際效果。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -929,7 +929,7 @@
       },
       "camera_fixed": {
         "name": "固定攝影機",
-        "tooltip": "指定是否固定攝影機。平台會將固定攝影機的指令附加到您的提示詞中，但不保證實際效果。"
+        "tooltip": "指定是否固定攝影機。平臺會將固定攝影機的指令附加到您的提示詞中，但不保證實際效果。"
       },
       "control_after_generate": {
         "name": "生成後控制"

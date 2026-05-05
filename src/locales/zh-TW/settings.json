@@ -262,7 +262,7 @@
   },
   "Comfy_NodeReplacement_Enabled": {
     "name": "啟用自動節點替換",
-    "tooltip": "啟用後，若有替換對應關係，遺失的節點可自動以其較新的對應節點替換。"
+    "tooltip": "啟用後，在缺少節點對話框中，具有已知替代方案的遺失節點將顯示為可替代，讓您可以審閱並套用替代方案。"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "節點搜尋框實作",
@@ -282,15 +282,15 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
     "name": "在搜尋結果中顯示節點分類",
-    "tooltip": "僅適用於預設實作"
+    "tooltip": "僅適用於 v1（舊版）"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "在搜尋結果中顯示節點 ID 名稱",
-    "tooltip": "僅適用於預設實作"
+    "tooltip": "不適用於 litegraph（舊版）"
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
     "name": "在搜尋結果中顯示節點頻率",
-    "tooltip": "僅適用於預設實作"
+    "tooltip": "僅適用於 v1（舊版）"
   },
   "Comfy_NodeSuggestions_number": {
     "name": "節點建議數量",
@@ -414,7 +414,7 @@
       "Default": "預設",
       "Legacy": "傳統"
     },
-    "tooltip": "控制分頁列的佈局。「整合」會將說明和使用者控制項移至分頁列區域。"
+    "tooltip": "控制整合分頁列中所包含的元素。"
   },
   "Comfy_UseNewMenu": {
     "name": "使用新選單",
@@ -422,7 +422,7 @@
       "Disabled": "停用",
       "Top": "上方"
     },
-    "tooltip": "選單列位置。在行動裝置上，選單永遠顯示在頂部。"
+    "tooltip": "啟用重新設計的頂部選單列。"
   },
   "Comfy_Validation_Workflows": {
     "name": "驗證工作流程"
