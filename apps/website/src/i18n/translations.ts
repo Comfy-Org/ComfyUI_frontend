@@ -3607,6 +3607,10 @@ const translations = {
     en: 'DOWNLOAD MODEL',
     'zh-CN': '下载模型'
   },
+  'models.hero.cloudCta': {
+    en: 'RUN ON CLOUD',
+    'zh-CN': '云端运行'
+  },
   'models.hero.tutorialCta': {
     en: 'VIEW TUTORIAL',
     'zh-CN': '查看教程'

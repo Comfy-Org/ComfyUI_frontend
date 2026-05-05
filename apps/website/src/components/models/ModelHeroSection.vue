@@ -23,7 +23,7 @@ const {
 
 const workflowsUrl = hubSlug
   ? `https://www.comfy.org/workflows/model/${hubSlug}`
-  : 'https://www.comfy.org/workflows'
+  : null
 
 const dirDisplayMap: Record<string, string> = {
   diffusion_models: 'Diffusion Model',
@@ -76,6 +76,7 @@ const isPartnerNode = directory === 'partner_nodes'
 
       <div class="flex flex-col gap-3 sm:flex-row">
         <BrandButton
+          v-if="workflowsUrl"
           :href="workflowsUrl"
           variant="solid"
           size="lg"
@@ -85,15 +86,27 @@ const isPartnerNode = directory === 'partner_nodes'
         </BrandButton>
 
         <BrandButton
-          v-if="!isPartnerNode"
+          v-if="!isPartnerNode && huggingFaceUrl"
           :href="huggingFaceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          variant="outline"
+          :variant="workflowsUrl ? 'outline' : 'solid'"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
           {{ t('models.hero.secondaryCta') }}
+        </BrandButton>
+
+        <BrandButton
+          v-if="!workflowsUrl"
+          href="https://www.comfy.org/cloud"
+          target="_blank"
+          rel="noopener noreferrer"
+          :variant="huggingFaceUrl && !isPartnerNode ? 'outline' : 'solid'"
+          size="lg"
+          class="w-full uppercase sm:w-auto sm:min-w-48"
+        >
+          {{ t('models.hero.cloudCta') }}
         </BrandButton>
 
         <BrandButton
