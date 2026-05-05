@@ -570,7 +570,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         intensity: initialState.value.lightIntensity
       }
 
+      const existingModelConfig = nodeValue.properties['Model Config'] as
+        | ModelConfig
+        | undefined
       nodeValue.properties['Model Config'] = {
+        ...existingModelConfig,
         upDirection: initialState.value.upDirection,
         materialMode: initialState.value.materialMode
       }
@@ -614,7 +618,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         intensity: lightIntensity.value
       }
 
+      const existingModelConfig = nodeValue.properties['Model Config'] as
+        | ModelConfig
+        | undefined
       nodeValue.properties['Model Config'] = {
+        ...existingModelConfig,
         upDirection: upDirection.value,
         materialMode: materialMode.value
       }

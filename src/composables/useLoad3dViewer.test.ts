@@ -478,6 +478,23 @@ describe('useLoad3dViewer', () => {
           .intensity
       ).toBe(1)
     })
+
+    it('should preserve unknown fields on Model Config when restoring', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      viewer.restoreInitialState()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
+    })
   })
 
   describe('applyChanges', () => {
@@ -530,6 +547,23 @@ describe('useLoad3dViewer', () => {
       const result = await viewer.applyChanges()
 
       expect(result).toBe(false)
+    })
+
+    it('should preserve unknown fields on Model Config when applying', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      await viewer.applyChanges()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
     })
   })
 
