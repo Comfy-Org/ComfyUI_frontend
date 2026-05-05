@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test'
 
-import { demos } from '../src/config/demos'
+import { demos, getNextDemo } from '../src/config/demos'
 import { t } from '../src/i18n/translations'
 
 test.describe('Demo pages @smoke', () => {
   for (const demo of demos) {
+    const nextDemo = getNextDemo(demo.slug)
+
     test(`/demos/${demo.slug} renders hero, embed, transcript, and next-demo nav`, async ({
       page
     }) => {
@@ -13,6 +15,12 @@ test.describe('Demo pages @smoke', () => {
       const heading = page.getByRole('heading', { level: 1 })
       await expect(heading).toBeVisible()
       await expect(heading).toContainText(t(demo.title, 'en'))
+
+      const ogImage = page.locator('head meta[property="og:image"]')
+      await expect(ogImage).toHaveAttribute(
+        'content',
+        new RegExp(`${demo.slug}-og\\.png`)
+      )
 
       const iframe = page.locator('iframe[title*="Interactive demo"]')
       await expect(iframe).toBeAttached()
@@ -25,24 +33,27 @@ test.describe('Demo pages @smoke', () => {
         page.getByRole('button', { name: /demo transcript/i })
       ).toBeVisible()
 
-      await expect(page.getByText(/what's next/i)).toBeVisible()
+      const nextCard = page.locator(`a[href$="/demos/${nextDemo.slug}"]`)
+      await expect(nextCard.first()).toBeVisible()
+      await expect(nextCard.locator('img').first()).toHaveAttribute(
+        'src',
+        nextDemo.thumbnail
+      )
     })
 
     test(`/zh-CN/demos/${demo.slug} renders localized content`, async ({
       page
     }) => {
       await page.goto(`/zh-CN/demos/${demo.slug}`)
-      await expect(page.getByRole('heading', { level: 1 })).toContainText(
-        t(demo.title, 'zh-CN')
-      )
-      await expect(
-        page.getByText(t('demos.nav.nextDemo', 'zh-CN'))
-      ).toBeVisible()
-      await expect(
-        page
-          .getByRole('link', { name: t('demos.nav.viewDemo', 'zh-CN') })
-          .first()
-      ).toBeVisible()
+
+      await expect(page).toHaveURL(/\/zh-CN\/demos\//)
+
+      const heading = page.getByRole('heading', { level: 1 })
+      await expect(heading).toContainText(t(demo.title, 'zh-CN'))
+      await expect(heading).toContainText(/[\u4E00-\u9FFF]/)
+
+      const nextCard = page.locator(`a[href$="/zh-CN/demos/${nextDemo.slug}"]`)
+      await expect(nextCard.first()).toBeVisible()
     })
   }
 
