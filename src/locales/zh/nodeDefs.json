@@ -11186,8 +11186,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "通过 OpenAI 的 GPT Image 1 端点同步生成图像。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "通过 OpenAI 的 GPT Image 2 端点同步生成图像。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11213,7 +11213,7 @@
       },
       "prompt": {
         "name": "提示词",
-        "tooltip": "用于 GPT Image 1 的文本提示"
+        "tooltip": "用于 GPT Image 2 的文本提示"
       },
       "quality": {
         "name": "质量",
