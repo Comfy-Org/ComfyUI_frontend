@@ -110,10 +110,6 @@ export class ResultItemImpl {
     return api.apiURL('/view?' + params)
   }
 
-  get urlWithTimestamp(): string {
-    return `${this.url}&t=${+new Date()}`
-  }
-
   get isVhsFormat(): boolean {
     return !!this.format && !!this.frame_rate
   }
