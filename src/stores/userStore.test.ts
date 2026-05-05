@@ -39,5 +39,23 @@ describe('userStore', () => {
 
       expect(getUserConfig).not.toHaveBeenCalled()
     })
+
+    it('deduplicates concurrent calls before the first fetch resolves', async () => {
+      let resolveConfig: (value: unknown) => void = () => {}
+      getUserConfig.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveConfig = resolve
+          })
+      )
+      const store = useUserStore()
+
+      const a = store.initialize()
+      const b = store.initialize()
+      resolveConfig({})
+      await Promise.all([a, b])
+
+      expect(getUserConfig).toHaveBeenCalledTimes(1)
+    })
   })
 })

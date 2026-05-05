@@ -36,13 +36,17 @@ export const useUserStore = defineStore('user', () => {
   )
   const initialized = computed(() => userConfig.value !== null)
 
+  let initializePromise: Promise<void> | null = null
+
   /**
-   * Initialize the user store. No-op if already initialized.
+   * Initialize the user store.
    */
   async function initialize() {
-    if (initialized.value) return
-    userConfig.value = await api.getUserConfig()
-    currentUserId.value = localStorage['Comfy.userId']
+    initializePromise ??= (async () => {
+      userConfig.value = await api.getUserConfig()
+      currentUserId.value = localStorage['Comfy.userId']
+    })()
+    return initializePromise
   }
 
   /**
