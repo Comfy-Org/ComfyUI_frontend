@@ -43,8 +43,13 @@ export const useUserStore = defineStore('user', () => {
    */
   async function initialize() {
     initializePromise ??= (async () => {
-      userConfig.value = await api.getUserConfig()
-      currentUserId.value = localStorage['Comfy.userId']
+      try {
+        userConfig.value = await api.getUserConfig()
+        currentUserId.value = localStorage['Comfy.userId']
+      } catch (err) {
+        initializePromise = null
+        throw err
+      }
     })()
     return initializePromise
   }

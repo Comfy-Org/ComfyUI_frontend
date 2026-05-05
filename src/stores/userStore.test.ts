@@ -40,6 +40,18 @@ describe('userStore', () => {
       expect(getUserConfig).not.toHaveBeenCalled()
     })
 
+    it('retries on a subsequent call when the first fetch failed', async () => {
+      getUserConfig.mockRejectedValueOnce(new Error('network down'))
+      getUserConfig.mockResolvedValueOnce({})
+      const store = useUserStore()
+
+      await expect(store.initialize()).rejects.toThrow('network down')
+      await expect(store.initialize()).resolves.toBeUndefined()
+
+      expect(getUserConfig).toHaveBeenCalledTimes(2)
+      expect(store.initialized).toBe(true)
+    })
+
     it('deduplicates concurrent calls before the first fetch resolves', async () => {
       let resolveConfig: (value: unknown) => void = () => {}
       getUserConfig.mockImplementation(
