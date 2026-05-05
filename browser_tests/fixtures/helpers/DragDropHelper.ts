@@ -45,7 +45,16 @@ export class DragDropHelper {
     if (fileName || filePath) {
       const resolvedPath = filePath ?? assetPath(fileName!)
       const displayName = fileName ?? basename(resolvedPath)
-      const buffer = readFileSync(resolvedPath)
+      let buffer: Buffer
+      try {
+        buffer = readFileSync(resolvedPath)
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(
+          `Failed to read drag-and-drop fixture at "${resolvedPath}": ${reason}`,
+          { cause: error }
+        )
+      }
 
       evaluateParams.fileName = displayName
       evaluateParams.fileType = getMimeType(displayName)
