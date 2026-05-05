@@ -25,7 +25,9 @@ test.describe('Demo pages @smoke', () => {
         new RegExp(`${escapeRegExp(demo.slug)}-og\\.png`)
       )
 
-      const iframe = page.locator('iframe[title*="Interactive demo"]')
+      const iframe = page.locator(
+        `iframe[title*="${t('demos.embed.label', 'en')}"]`
+      )
       await expect(iframe).toBeAttached()
       await expect(iframe).toHaveAttribute(
         'src',
@@ -39,9 +41,13 @@ test.describe('Demo pages @smoke', () => {
       await expect(
         page.getByText(t(nextDemo.title, 'en')).first()
       ).toBeVisible()
-      await expect(
-        page.locator(`img[src="${nextDemo.thumbnail}"]`).first()
-      ).toBeVisible()
+      const nextThumb = page.locator(`img[src="${nextDemo.thumbnail}"]`).first()
+      await expect(nextThumb).toBeAttached()
+      await expect(nextThumb).toBeVisible()
+      const naturalWidth = await nextThumb.evaluate(
+        (img) => (img as HTMLImageElement).naturalWidth
+      )
+      expect(naturalWidth).toBeGreaterThan(1)
     })
 
     test(`/zh-CN/demos/${demo.slug} renders localized content`, async ({
