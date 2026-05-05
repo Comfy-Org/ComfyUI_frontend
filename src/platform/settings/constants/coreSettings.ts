@@ -1,5 +1,5 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -67,6 +67,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Only applies to the default implementation',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.NodeSearchBoxImpl.FollowCursor',
+    category: ['Comfy', 'Node Search Box', 'FollowCursor'],
+    name: 'Added nodes follow the cursor',
+    tooltip:
+      'When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.44.4'
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
@@ -1245,7 +1255,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: false,
+    defaultValue: isNightly,
     experimental: true
   },
   {
@@ -1272,9 +1282,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
-    defaultValue: false,
-    experimental: true,
-    versionAdded: '1.40.0'
+    defaultValue: true,
+    experimental: false,
+    versionAdded: '1.40.0',
+    versionModified: '1.44.5'
   },
   {
     id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',

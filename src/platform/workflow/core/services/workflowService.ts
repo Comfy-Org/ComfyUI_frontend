@@ -6,6 +6,10 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  normalizePendingWarnings,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import {
   ComfyWorkflow,
@@ -140,8 +144,9 @@ export const useWorkflowService = () => {
     }
 
     if (isSelfOverwrite) {
-      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
-      await saveWorkflow(workflow)
+      workflow.changeTracker?.prepareForSave()
+      // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
+      await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
@@ -157,8 +162,7 @@ export const useWorkflowService = () => {
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
-      if (workflowStore.isActive(target)) target.changeTracker?.checkState()
-
+      target.changeTracker?.prepareForSave()
       await workflowStore.saveWorkflow(target)
     }
 
@@ -174,8 +178,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
-
+      workflow.changeTracker?.prepareForSave()
       const isApp = workflow.initialMode === 'app'
       const expectedPath =
         workflow.directory +
@@ -370,7 +373,7 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker.store()
+      activeWorkflow.changeTracker?.deactivate()
       if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
         const activeState = activeWorkflow.activeState
         if (activeState) {
@@ -397,22 +400,11 @@ export const useWorkflowService = () => {
       const modelCandidates = useMissingModelStore().missingModelCandidates
       const mediaCandidates = useMissingMediaStore().missingMediaCandidates
       const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
-      activeWorkflow.pendingWarnings = {
+      updatePendingWarnings(activeWorkflow, {
         missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
-        missingModelCandidates: modelCandidates?.length
-          ? modelCandidates
-          : undefined,
-        missingMediaCandidates: mediaCandidates?.length
-          ? mediaCandidates
-          : undefined
-      }
-      if (
-        !activeWorkflow.pendingWarnings.missingNodeTypes &&
-        !activeWorkflow.pendingWarnings.missingModelCandidates &&
-        !activeWorkflow.pendingWarnings.missingMediaCandidates
-      ) {
-        activeWorkflow.pendingWarnings = null
-      }
+        missingModelCandidates: modelCandidates ?? undefined,
+        missingMediaCandidates: mediaCandidates ?? undefined
+      })
 
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
@@ -605,11 +597,11 @@ export const useWorkflowService = () => {
       missingModelCandidates?.length ||
       missingMediaCandidates?.length
     ) {
-      wf.pendingWarnings = {
+      wf.pendingWarnings = normalizePendingWarnings({
         missingNodeTypes,
         missingModelCandidates,
         missingMediaCandidates
-      }
+      })
     } else {
       wf.pendingWarnings = null
     }

@@ -9,6 +9,7 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
@@ -143,6 +144,12 @@ export const useSubgraphNavigationStore = defineStore(
         if (getActiveGraphId() !== graphId) return
         if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
+        // fitView changes scale/offset, so re-sync slot positions for
+        // collapsed nodes whose DOM-relative measurement is now stale.
+        requestAnimationFrame(() => {
+          if (getActiveGraphId() !== graphId) return
+          requestSlotLayoutSyncForAllNodes()
+        })
       })
     }
 

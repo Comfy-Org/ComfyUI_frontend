@@ -24,7 +24,7 @@ const i18n = createI18n({
 })
 
 // Mock components with minimal functionality for business logic testing
-vi.mock('@/components/input/MultiSelect.vue', () => ({
+vi.mock('@/components/ui/multi-select/MultiSelect.vue', () => ({
   default: {
     name: 'MultiSelect',
     props: {
@@ -46,7 +46,7 @@ vi.mock('@/components/input/MultiSelect.vue', () => ({
   }
 }))
 
-vi.mock('@/components/input/SingleSelect.vue', () => ({
+vi.mock('@/components/ui/single-select/SingleSelect.vue', () => ({
   default: {
     name: 'SingleSelect',
     props: {

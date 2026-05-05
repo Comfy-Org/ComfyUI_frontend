@@ -7,7 +7,7 @@ export const mockSystemStats: SystemStatsResponse = {
     embedded_python: false,
     comfyui_version: '0.3.10',
     pytorch_version: '2.4.0+cu124',
-    argv: ['main.py', '--listen', '0.0.0.0'],
+    argv: ['main.py'],
     ram_total: 67108864000,
     ram_free: 52428800000
   },

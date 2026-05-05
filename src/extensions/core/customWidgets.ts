@@ -1,51 +1,16 @@
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
+
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
-  if (!this.outputs[0].links?.length || !this.graph) return
-
-  const links = [
-    ...this.outputs[0].links.map((l) => this.graph!.links[l]),
-    ...extraLinks
-  ]
-  let v = this.widgets?.[0].value
-  // For each output link copy our value over the original widget value
-  for (const linkInfo of links) {
-    const node = this.graph?.getNodeById(linkInfo.target_id)
-    const input = node?.inputs[linkInfo.target_slot]
-    if (!input) {
-      console.warn('Unable to resolve node or input for link', linkInfo)
-      continue
-    }
-
-    const widgetName = input.widget?.name
-    if (!widgetName) {
-      console.warn('Invalid widget or widget name', input.widget)
-      continue
-    }
-
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (!widget) {
-      console.warn(`Unable to find widget "${widgetName}" on node [${node.id}]`)
-      continue
-    }
-
-    widget.value = v
-    widget.callback?.(
-      widget.value,
-      app.canvas,
-      node,
-      app.canvas.graph_mouse,
-      {} as CanvasPointerEvent
-    )
-  }
+  applyFirstWidgetValueToGraph(this, extraLinks)
 }
 
 function onCustomComboCreated(this: LGraphNode) {

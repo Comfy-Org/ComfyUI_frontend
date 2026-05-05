@@ -42,8 +42,8 @@
 }
 
 @font-face {
-  font-family: 'PP Formula Condensed';
-  src: url('/fonts/PPFormula-CondensedSemibold.woff2') format('woff2');
+  font-family: 'PP Formula Narrow';
+  src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -58,23 +58,42 @@
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
   --color-primary-comfy-plum: #49378b;
+  --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
+  --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
-  --font-formula-condensed: 'PP Formula Condensed', sans-serif;
+  --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+  --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
   --radius-4xl: 2rem;
+  --radius-4\.5xl: 2.25rem;
   --radius-5xl: 2.5rem;
+  --container-8xl: 88rem;
+  --container-9xl: 96rem;
+  --container-10xl: 100rem;
+  --aspect-ratio-gallery-card: 47/31;
 }
 
-@keyframes border-spin {
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes border-angle-spin {
   to {
-    transform: rotate(360deg);
+    --border-angle: 360deg;
   }
 }
 
 @utility animate-border-spin {
-  animation: border-spin 2s linear infinite;
+  animation: border-angle-spin 2s linear infinite;
+  background: conic-gradient(
+    from var(--border-angle),
+    color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent) 0%,
+    var(--color-primary-comfy-yellow) 100%
+  );
 }
 
 @keyframes marquee {
@@ -103,6 +122,40 @@
   animation: marquee-reverse 30s linear infinite;
 }
 
+@keyframes ripple-effect {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+
+@utility animate-ripple {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: ripple-effect 4s linear infinite;
+}
+
+@utility animate-delay-* {
+  animation-delay: --value([*]);
+}
+
+.crossfade-enter-active,
+.crossfade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.crossfade-enter-from,
+.crossfade-leave-to {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -112,4 +165,42 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility icon-mask {
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+/* PP Formula has asymmetric vertical metrics
+   Shifting visually with `top` corrects the appearance without changing the
+   inline-block's bounding box, so button/badge sizes are unaffected. */
+@utility ppformula-text-center {
+  display: inline-block;
+  position: relative;
+  top: 0.19em;
+}
+
+/* Hide native play-button overlay iOS Safari shows when autoplay is blocked
+   (e.g. Low Power Mode). These are decorative background videos. */
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
+}
+
+:root {
+  --site-bg: var(--color-primary-comfy-ink);
+  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-border-subtle: rgb(255 255 255 / 0.1);
 }
