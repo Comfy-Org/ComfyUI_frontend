@@ -1538,26 +1538,58 @@
       "name": "CUDA device index to use"
     },
     "cuda-malloc": {
-      "name": "Use CUDA malloc for memory allocation"
+      "name": "Use CUDA malloc for memory allocation",
+      "options": {
+        "auto": "Auto",
+        "enable": "Enable",
+        "disable": "Disable"
+      }
     },
     "global-precision": {
       "name": "Global floating point precision",
-      "tooltip": "Global floating point precision"
+      "tooltip": "Global floating point precision",
+      "options": {
+        "auto": "Auto",
+        "fp32": "FP32",
+        "fp16": "FP16"
+      }
     },
     "unet-precision": {
       "name": "UNET precision",
-      "tooltip": "UNET precision"
+      "tooltip": "UNET precision",
+      "options": {
+        "auto": "Auto",
+        "fp64": "FP64",
+        "fp32": "FP32",
+        "fp16": "FP16",
+        "bf16": "BF16",
+        "fp8_e4m3fn": "FP8 (E4M3)",
+        "fp8_e5m2": "FP8 (E5M2)"
+      }
     },
     "vae-precision": {
       "name": "VAE precision",
-      "tooltip": "VAE precision"
+      "tooltip": "VAE precision",
+      "options": {
+        "auto": "Auto",
+        "fp16": "FP16",
+        "fp32": "FP32",
+        "bf16": "BF16"
+      }
     },
     "cpu-vae": {
       "name": "Run VAE on CPU"
     },
     "text-encoder-precision": {
       "name": "Text Encoder precision",
-      "tooltip": "Text Encoder precision"
+      "tooltip": "Text Encoder precision",
+      "options": {
+        "auto": "Auto",
+        "fp8_e4m3fn": "FP8 (E4M3)",
+        "fp8_e5m2": "FP8 (E5M2)",
+        "fp16": "FP16",
+        "fp32": "FP32"
+      }
     },
     "force-channels-last": {
       "name": "Force channels-last memory format"
@@ -1569,7 +1601,13 @@
       "name": "Disable IPEX optimization"
     },
     "preview-method": {
-      "name": "Method used for latent previews"
+      "name": "Method used for latent previews",
+      "options": {
+        "none": "No Previews",
+        "auto": "Auto",
+        "latent2rgb": "Latent to RGB",
+        "taesd": "TAESD (Tiny AutoEncoder)"
+      }
     },
     "preview-size": {
       "name": "Size of preview images"
@@ -1582,7 +1620,13 @@
       "tooltip": "May use more RAM/VRAM."
     },
     "cross-attention-method": {
-      "name": "Cross attention method"
+      "name": "Cross attention method",
+      "options": {
+        "auto": "Auto",
+        "split": "Split",
+        "quad": "Quad",
+        "pytorch": "PyTorch"
+      }
     },
     "disable-xformers": {
       "name": "Disable xFormers optimization"
@@ -1594,14 +1638,29 @@
       "name": "Prevent attention upcast"
     },
     "vram-management": {
-      "name": "VRAM management mode"
+      "name": "VRAM management mode",
+      "options": {
+        "auto": "Auto",
+        "gpu-only": "GPU Only",
+        "highvram": "High VRAM",
+        "normalvram": "Normal VRAM",
+        "lowvram": "Low VRAM",
+        "novram": "No VRAM",
+        "cpu": "CPU Only"
+      }
     },
     "reserve-vram": {
       "name": "Reserved VRAM (GB)",
       "tooltip": "Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reserved depending on your OS."
     },
     "default-hashing-function": {
-      "name": "Default hashing function for model files"
+      "name": "Default hashing function for model files",
+      "options": {
+        "md5": "MD5",
+        "sha1": "SHA-1",
+        "sha256": "SHA-256",
+        "sha512": "SHA-512"
+      }
     },
     "disable-smart-memory": {
       "name": "Disable smart memory management",
@@ -1628,7 +1687,14 @@
       "name": "Disable loading all custom nodes."
     },
     "log-level": {
-      "name": "Logging verbosity level"
+      "name": "Logging verbosity level",
+      "options": {
+        "DEBUG": "DEBUG (Debug)",
+        "INFO": "INFO (Info)",
+        "WARNING": "WARNING (Warning)",
+        "ERROR": "ERROR (Error)",
+        "CRITICAL": "CRITICAL (Critical)"
+      }
     },
     "input-directory": {
       "name": "Input directory"
