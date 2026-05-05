@@ -35,8 +35,14 @@ test.describe('Demo pages @smoke', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText(
         t(demo.title, 'zh-CN')
       )
-      const nextDemoLink = page.locator('a[href*="/zh-CN/demos/"]').first()
-      await expect(nextDemoLink).toBeAttached()
+      await expect(
+        page.getByText(t('demos.nav.nextDemo', 'zh-CN'))
+      ).toBeVisible()
+      await expect(
+        page
+          .getByRole('link', { name: t('demos.nav.viewDemo', 'zh-CN') })
+          .first()
+      ).toBeVisible()
     })
   }
 
