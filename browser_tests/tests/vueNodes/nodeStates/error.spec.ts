@@ -13,6 +13,8 @@ import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -20,6 +22,7 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const ERROR_CLASS = /ring-destructive-background/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
+const KSAMPLER_MODEL_INPUT_INDEX = 0
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
@@ -70,6 +73,44 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
       ).toHaveClass(ERROR_CLASS)
     })
+
+    test(
+      'highlights the missing required input slot',
+      { tag: ['@screenshot', '@node'] },
+      async ({ comfyPage }) => {
+        const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+        const ksamplerNode = comfyPage.vueNodes.getNodeLocator(ksamplerId)
+        const modelInputSlot = comfyPage.page.locator(
+          `[data-slot-key="${getSlotKey(
+            ksamplerId,
+            KSAMPLER_MODEL_INPUT_INDEX,
+            true
+          )}"]`
+        )
+        const exec = new ExecutionHelper(comfyPage)
+        await exec.mockValidationFailure({
+          [ksamplerId]: buildKSamplerError(
+            'required_input_missing',
+            'model',
+            'Required input is missing: model'
+          )
+        })
+
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
+        await fitToViewInstant(comfyPage)
+
+        await expect(modelInputSlot).toBeVisible()
+        await expect(modelInputSlot).toBeInViewport()
+        await expect(
+          comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
+        ).toHaveClass(ERROR_CLASS)
+        await comfyPage.expectScreenshot(
+          ksamplerNode,
+          'vue-node-required-input-missing-slot-error.png'
+        )
+      }
+    )
 
     test('clears error ring when user edits an out-of-range number widget back into range', async ({
       comfyPage
