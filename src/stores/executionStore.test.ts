@@ -789,6 +789,127 @@ describe('useExecutionStore - active workflow gating', () => {
 
     expect(store._executingNodeProgress).not.toBeNull()
   })
+
+  it('execution_cached from a non-active workflow does not mark active job nodes', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
+      })
+    )
+
+    const cachedHandler = apiEventHandlers.get('execution_cached')
+    if (!cachedHandler) throw new Error('execution_cached handler not bound')
+    cachedHandler(
+      new CustomEvent('execution_cached', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other',
+          nodes: ['n1', 'n2']
+        }
+      })
+    )
+
+    expect(store.activeJob?.nodes).toEqual({})
+  })
+
+  it('executed from a non-active workflow does not mark active job nodes', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
+      })
+    )
+
+    const executedHandler = apiEventHandlers.get('executed')
+    if (!executedHandler) throw new Error('executed handler not bound')
+    executedHandler(
+      new CustomEvent('executed', {
+        detail: {
+          prompt_id: 'job-other',
+          node: 'n1',
+          display_node: 'n1',
+          workflow_id: 'wf-other',
+          output: {}
+        }
+      })
+    )
+
+    expect(store.activeJob?.nodes['n1']).toBeUndefined()
+  })
+
+  it('execution_error from a non-active workflow does not clear active job state', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
+      })
+    )
+
+    const errorHandler = apiEventHandlers.get('execution_error')
+    if (!errorHandler) throw new Error('execution_error handler not bound')
+    errorHandler(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other',
+          node_id: 'n1',
+          node_type: 'X',
+          executed: [],
+          exception_message: 'oops',
+          exception_type: 'RuntimeError',
+          traceback: [],
+          current_inputs: {},
+          current_outputs: {}
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('revokes preview when node transitions pending -> running', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const pendingNodes: Record<string, NodeProgressState> = {
+      n1: {
+        value: 0,
+        max: 10,
+        state: 'pending',
+        node_id: 'n1',
+        prompt_id: 'job-1',
+        display_node_id: 'n1'
+      }
+    }
+    fireProgressState('job-1', pendingNodes, 'wf-active')
+    mockRevokePreviewsByExecutionId.mockClear()
+
+    const runningNodes: Record<string, NodeProgressState> = {
+      n1: { ...pendingNodes.n1, state: 'running', value: 1 }
+    }
+    fireProgressState('job-1', runningNodes, 'wf-active')
+
+    expect(mockRevokePreviewsByExecutionId).toHaveBeenCalledWith('n1')
+  })
 })
 
 describe('useExecutionStore - progress_text startup guard', () => {
