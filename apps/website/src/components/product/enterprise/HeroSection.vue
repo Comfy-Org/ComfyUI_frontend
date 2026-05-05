@@ -35,11 +35,11 @@ onMounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(8vw,10rem)]"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden pt-16 lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pt-[min(8vw,10rem)] lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (overlaps text slightly; stacks above on mobile, right on lg) -->
     <div
-      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:translate-y-[40px] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
