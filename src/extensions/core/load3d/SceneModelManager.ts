@@ -517,15 +517,16 @@ export class SceneModelManager implements ModelManagerInterface {
     model.position.set(-center.x, -box.min.y, -center.z)
 
     this.scene.add(model)
+    const pendingMaterialMode = this.materialMode
+    this.setupModelMaterials(model)
 
-    if (this.materialMode !== 'original') {
-      this.setMaterialMode(this.materialMode)
+    if (pendingMaterialMode !== 'original') {
+      this.setMaterialMode(pendingMaterialMode)
     }
 
     if (this.currentUpDirection !== 'original') {
       this.setUpDirection(this.currentUpDirection)
     }
-    this.setupModelMaterials(model)
 
     this.setupCamera(size)
   }
