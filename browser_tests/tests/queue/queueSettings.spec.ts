@@ -7,12 +7,17 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
-import { createMockJobs } from '@e2e/fixtures/helpers/AssetsHelper'
+import { assetScenarioFixture } from '@e2e/fixtures/assetScenarioFixture'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { createMockJobs } from '@e2e/fixtures/utils/jobFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+const test = mergeTests(
+  comfyPageFixture,
+  webSocketFixture,
+  assetScenarioFixture
+)
 
 const TOTAL_MOCK_JOBS = 20
 const MAX_HISTORY_ITEMS_SETTING = 'Comfy.Queue.MaxHistoryItems'
@@ -44,14 +49,10 @@ function getJobListResults(page: Page): Locator {
 test.describe('Queue settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Queue.MaxHistoryItems', () => {
     test.describe('limit query parameter', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.assets.mockOutputHistory(
+      test.beforeEach(async ({ assetScenario }) => {
+        await assetScenario.mockGeneratedHistory(
           createMockJobs(TOTAL_MOCK_JOBS)
         )
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.assets.clearMocks()
       })
 
       test('limit query parameter on /api/jobs reflects the setting', async ({
