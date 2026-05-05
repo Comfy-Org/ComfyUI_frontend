@@ -90,6 +90,17 @@ test.describe('Affiliate Terms — desktop interactions', () => {
     const target = page.locator('[id="5-prohibited-activities"]')
     await expect(target).toBeInViewport()
   })
+
+  test('clicking a TOC link updates the URL hash so the section is shareable', async ({
+    page
+  }) => {
+    const desktopToc = page.getByRole('navigation', { name: 'On this page' })
+    await desktopToc.getByRole('link', { name: /7\. Termination/ }).click()
+
+    await expect
+      .poll(() => page.evaluate(() => window.location.hash))
+      .toBe('#7-termination')
+  })
 })
 
 test.describe('Affiliate Terms — mobile @mobile', () => {

@@ -99,6 +99,10 @@ function scrollToSection(id: string) {
   activeSection.value = id
   isScrolling = true
   mobileTocOpen.value = false
+  const nextHash = `#${id}`
+  if (window.location.hash !== nextHash) {
+    history.replaceState(null, '', nextHash)
+  }
   const el = document.getElementById(id)
   if (el) {
     scrollTo(el, {
