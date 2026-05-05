@@ -6,7 +6,7 @@ import { jobsApiMockFixture } from '@e2e/fixtures/jobsApiMockFixture'
 import {
   createMockJob,
   createMockJobRecords
-} from '@e2e/fixtures/helpers/jobFixtures'
+} from '@e2e/fixtures/utils/jobFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = mergeTests(comfyPageFixture, jobsApiMockFixture)
