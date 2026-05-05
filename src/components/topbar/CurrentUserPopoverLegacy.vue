@@ -39,9 +39,12 @@
         height="1.25rem"
         class="w-full"
       />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
-        formattedBalance
-      }}</span>
+      <span
+        v-else
+        data-testid="popover-credit-balance"
+        class="text-base font-semibold text-base-foreground"
+        >{{ formattedBalance }}</span
+      >
       <i
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
