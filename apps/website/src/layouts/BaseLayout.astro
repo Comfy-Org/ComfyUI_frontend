@@ -5,7 +5,7 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import SiteNav from '../components/common/SiteNav.vue'
-import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { fetchGitHubStarsForBuild, formatStarCount } from '../utils/github'
 
 interface Props {
   title: string
@@ -26,7 +26,7 @@ const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
 const rawLocale = Astro.currentLocale ?? 'en'
 const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
-const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const rawStars = await fetchGitHubStarsForBuild()
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
 const gtmId = 'GTM-NP9JM6K7'

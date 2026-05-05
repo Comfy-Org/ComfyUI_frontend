@@ -1,17 +1,31 @@
+const GITHUB_REPO_API_URL = 'https://api.github.com/repos/Comfy-Org/ComfyUI'
+
+let inflight: Promise<number | null> | undefined
+
+export function resetGitHubStarsFetcherForTests(): void {
+  inflight = undefined
+}
+
+export function fetchGitHubStarsForBuild(
+  fetchImpl: typeof fetch = fetch
+): Promise<number | null> {
+  inflight ??= fetchGitHubStars(fetchImpl)
+  return inflight
+}
+
 export async function fetchGitHubStars(
-  owner: string,
-  repo: string
+  fetchImpl: typeof fetch = fetch
 ): Promise<number | null> {
   const override = readGitHubStarsOverride()
   if (override !== undefined) return override
 
   try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    const res = await fetchImpl(GITHUB_REPO_API_URL, {
       headers: { Accept: 'application/vnd.github.v3+json' }
     })
     if (!res.ok) return null
-    const data = await res.json()
-    return data.stargazers_count ?? null
+    const data: unknown = await res.json()
+    return readStargazerCount(data)
   } catch {
     return null
   }
@@ -41,4 +55,10 @@ function readGitHubStarsOverride(): number | undefined {
   }
 
   return count
+}
+
+function readStargazerCount(data: unknown): number | null {
+  if (data === null || typeof data !== 'object') return null
+  const count = (data as { stargazers_count?: unknown }).stargazers_count
+  return typeof count === 'number' ? count : null
 }
