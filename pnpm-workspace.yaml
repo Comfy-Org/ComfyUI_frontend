@@ -113,6 +113,7 @@ catalog:
   storybook: ^10.2.10
   stylelint: ^16.26.1
   tailwindcss: ^4.2.0
+  three: ^0.170.0
   tailwindcss-primeui: ^0.6.1
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
