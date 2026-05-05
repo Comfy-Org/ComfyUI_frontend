@@ -11,7 +11,7 @@ interface RequiredInputMissingNodeErrorOptions {
   message?: string
 }
 
-export function createRequiredInputMissingNodeError(
+function createRequiredInputMissingNodeError(
   inputName: string,
   {
     classType = 'TestNode',
