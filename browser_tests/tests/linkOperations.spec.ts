@@ -3,6 +3,33 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+type NodeId = number | string
+
+/**
+ * Reads the link tuple referenced by a node's first input slot. Returns null
+ * when the node, slot, or backing link cannot be found.
+ */
+function getInput0LinkTuple(page: Page, nodeId: NodeId) {
+  return page.evaluate(
+    ([id]) => {
+      const graph = window.app!.graph!
+      const node = graph.getNodeById(id)
+      if (!node) return null
+      const linkId = node.inputs[0]?.link
+      if (linkId == null) return null
+      const link = graph.links.get(linkId)
+      if (!link) return null
+      return {
+        originId: link.origin_id,
+        originSlot: link.origin_slot,
+        targetId: link.target_id,
+        targetSlot: link.target_slot
+      }
+    },
+    [nodeId] as const
+  )
+}
+
 /**
  * Queries graph link map size, per-node slot references, and validates that
  * every link ID referenced by a node slot exists in the link map.
@@ -78,13 +105,23 @@ test.describe(
         const clipNodes =
           await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
         expect(clipNodes.length).toBeGreaterThanOrEqual(1)
+
+        const clipId = String(clipNodes[0].id)
+        const clipData = before.nodeData[clipId]
+        const expectedRemovedLinks =
+          (clipData?.inputLinks.filter((linkId) => linkId != null).length ??
+            0) +
+          (clipData?.outputLinkCounts.reduce((sum, count) => sum + count, 0) ??
+            0)
+        expect(expectedRemovedLinks).toBeGreaterThan(0)
+
         await clipNodes[0].delete()
 
         await expect
           .poll(
             async () => (await evaluateGraphLinks(comfyPage.page)).totalLinks
           )
-          .toBeLessThan(before.totalLinks)
+          .toBe(before.totalLinks - expectedRemovedLinks)
 
         await expect
           .poll(() => evaluateGraphLinks(comfyPage.page))
@@ -204,33 +241,19 @@ test.describe(
         const clipNode = clipNodes[0]
         const clipInput = await clipNode.getInput(0)
 
-        const originalLink = await comfyPage.page.evaluate(
-          ([nodeId]) => {
-            const graph = window.app!.graph!
-            const node = graph.getNodeById(nodeId)
-            if (!node) return null
-            const linkId = node.inputs[0]?.link
-            if (linkId == null) return null
-            const link = graph.links.get(linkId)
-            if (!link) return null
-            return {
-              originId: link.origin_id,
-              originSlot: link.origin_slot,
-              targetId: link.target_id,
-              targetSlot: link.target_slot
-            }
-          },
-          [clipNode.id] as const
+        const originalLink = await getInput0LinkTuple(
+          comfyPage.page,
+          clipNode.id
         )
         expect(originalLink).not.toBeNull()
 
         await clipInput.removeLinks()
         await expect.poll(() => clipInput.getLinkCount()).toBe(0)
 
-        const checkpointNodes = await comfyPage.nodeOps.getNodeRefsByType(
-          'CheckpointLoaderSimple'
+        const originNode = await comfyPage.nodeOps.getNodeRefById(
+          originalLink!.originId
         )
-        await checkpointNodes[0].connectOutput(
+        await originNode.connectOutput(
           originalLink!.originSlot,
           clipNode,
           originalLink!.targetSlot
@@ -238,26 +261,7 @@ test.describe(
         await expect.poll(() => clipInput.getLinkCount()).toBe(1)
 
         await expect
-          .poll(async () => {
-            return comfyPage.page.evaluate(
-              ([nodeId]) => {
-                const graph = window.app!.graph!
-                const node = graph.getNodeById(nodeId)
-                if (!node) return null
-                const linkId = node.inputs[0]?.link
-                if (linkId == null) return null
-                const link = graph.links.get(linkId)
-                if (!link) return null
-                return {
-                  originId: link.origin_id,
-                  originSlot: link.origin_slot,
-                  targetId: link.target_id,
-                  targetSlot: link.target_slot
-                }
-              },
-              [clipNode.id] as const
-            )
-          })
+          .poll(() => getInput0LinkTuple(comfyPage.page, clipNode.id))
           .toMatchObject(originalLink!)
 
         await expect
