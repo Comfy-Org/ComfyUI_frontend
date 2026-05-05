@@ -36,7 +36,7 @@ Scope is intentionally large because we have explicitly accepted (a) breaking th
 
 ### 3.1 Layer placement
 
-```
+```text
 base/                       — pure functions, no Vue, no stores, no I/O
   remote/itemSchema.ts     — getByPath, resolveLabel, mapToDropdownItem,
                               extractItems, buildSearchText
@@ -78,7 +78,7 @@ App teardown on auth state change (verified §8) means the QueryClient instance 
 
 ### 3.3 Data flow
 
-```
+```text
 inputSpec (RemoteComboConfig | RemoteOptions)
      ↓
 useRemoteCombo({ widget }) | useRemoteWidget({ widget, node })
@@ -291,7 +291,7 @@ These three sections are being filled in by separate fresh-context investigation
 
 #### a) Current state diagram
 
-```
+```text
 Python Backend (comfy_api/latest/_io.py)
   ↓
   RemoteItemSchema (class)
@@ -678,7 +678,7 @@ const adapterProps = computed(() => {
 - **Modify:** `/workspace/comfyui_frontend/src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts` (use adapter for Litegraph)
 - **Modify:** `/workspace/comfyui_frontend/src/renderer/extensions/vueNodes/widgets/utils/itemSchemaUtils.ts` (generalize mapToDropdownItem if needed)
 
-**Phase placement:** This fits into **Phase 2 (Atomization + Adapter Unification)** of the master plan. It should be completed before the PR is merged, as it affects the WidgetSelect dispatch logic.
+**Phase placement:** This fits into **Phase 4 (Component family)** of the master plan, alongside the atomization work — the adapter is what feeds props into the new atom family, so the two land together. It must be completed before the PR is merged, as it affects the `WidgetSelect` dispatch logic.
 
 #### e) Implementation shopping list
 
@@ -1125,7 +1125,7 @@ Each atom (Root, Trigger, Content, Search, List, Item, Empty, Loading, Error, Re
    - **Target:** 100% line coverage (pure functions, no I/O)
 
 2. **`src/base/remote/retry.ts`** (pure helpers)
-   - `getBackoff(retryCount)`: exponential backoff formula (1s, 2s, 4s, 8s, 16s, capped at 512ms)
+   - `getBackoff(retryCount)`: exponential backoff `Math.min(1000 * 2^retryCount, 16000)` — sequence 2s, 4s, 8s, 16s, 16s, … (1-indexed; first retry is 2s) capped at 16s
    - `isRetriableError(error)`: network errors (ECONNREFUSED, ETIMEDOUT), 5xx status codes, non-retryable (4xx, AbortError)
    - **Target:** 100% line coverage
 
@@ -1397,6 +1397,96 @@ afterAll(() => server.close())
 
 **Summary:** The test plan balances coverage (100% for pure helpers, 85%+ for composables/components) with pragmatism (MSW for HTTP, effectScope for composables, E2E for end-to-end flows). Total added runtime is ~21–27 seconds; CI gates remain at ~150 seconds. No new infrastructure (MSW, TanStack Query test wrapper) is required beyond what's already in the codebase.
 
+## 12. Naming proposal — RemoteOptions / RemoteComboOptions / RichComboWidget rename
+
+**Status: PROPOSED for both PRs (#11310 frontend + #13432 backend).** Apply in lockstep; do not land asymmetrically.
+
+### 12.1 Why the current names confuse
+
+The current pair is `RemoteOptions` (legacy flat string array) vs `RemoteComboOptions` (new rich-object array, with `RemoteItemSchema`). On the frontend the corresponding pair is `useRemoteWidget` (legacy Litegraph) vs `RichComboWidget.vue` (new Vue) plus the kwargs `remote=` vs `remote_combo=`. Reviewer feedback called these names confusing because:
+
+1. **Both already live under `Combo.Input`.** "Combo" in the name is not discriminating — adding "Combo" only to the new one suggests the legacy one is _not_ a combo, which is false.
+2. **"Rich" describes the rendering, not the data.** The actual axis of difference is the _shape of items_ (flat strings vs structured objects with a schema). Using "Rich" hides that.
+3. **`remote=` is too generic.** Both kwargs fetch from a remote endpoint; the kwarg name doesn't tell custom-node authors which one they're picking.
+4. **Frontend symbol pair is mixed metaphor.** `useRemoteWidget` (data source) vs `RichComboWidget` (item shape) vs `RemoteComboConfig` (compound) — three different framings for one feature pair.
+5. **Industry survey** (12 libraries: shadcn-vue, Reka UI, Headless UI, MUI, Mantine, PrimeVue, Ant Design Vue, Element Plus, Naive UI, plus JSON Schema / Django / Stripe SDK conventions) found that **no major library splits naming by item shape**. They use one component with field-mapping props (`optionLabel`, `getOptionLabel`, `fieldNames`, `itemToString`). Where they do name an item type, it's a generic `SelectItem` / `ComboboxItem` / `SelectOption`. Nobody calls one path "Rich" and the other plain.
+
+### 12.2 The actual axis of distinction
+
+The two configurations differ on **item shape**, not on any other axis:
+
+| Concept                    | Items shape                                                             | Rendering                                   |
+| -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
+| Legacy (`RemoteOptions`)   | `string[]` (flat scalar)                                                | Plain dropdown                              |
+| New (`RemoteComboOptions`) | `Array<{ ...fields }>` (structured, requires `RemoteItemSchema` to map) | Rich rows: previews, search, virtual scroll |
+
+Naming should expose this single axis explicitly.
+
+### 12.3 Two viable rename options
+
+Both are improvements over the status quo. The team picks one and applies it everywhere — backend, frontend, schema, component, kwargs.
+
+#### Option N1 — `Scalar` vs `Object` (RECOMMENDED)
+
+Names the data shape directly. Maximally explicit. Matches the JSON Schema / OpenAPI convention (primitive `enum` of strings vs `oneOf` of objects).
+
+| Layer                         | Current                                     | N1                                                                                                                                                                |
+| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend class (legacy)        | `RemoteOptions`                             | `RemoteScalarOptions`                                                                                                                                             |
+| Backend class (new)           | `RemoteComboOptions`                        | `RemoteObjectOptions`                                                                                                                                             |
+| Backend item-schema           | `RemoteItemSchema`                          | `RemoteObjectFields` _(or keep `RemoteItemSchema` — see §12.5)_                                                                                                   |
+| Backend kwarg (legacy)        | `remote=`                                   | `remote_scalar=`                                                                                                                                                  |
+| Backend kwarg (new)           | `remote_combo=`                             | `remote_object=`                                                                                                                                                  |
+| Frontend Zod schemas          | `zRemoteWidgetConfig`, `zRemoteComboConfig` | `zRemoteScalarConfig`, `zRemoteObjectConfig`                                                                                                                      |
+| Frontend types                | `RemoteWidgetConfig`, `RemoteComboConfig`   | `RemoteScalarConfig`, `RemoteObjectConfig`                                                                                                                        |
+| Frontend Vue component        | `RichComboWidget.vue`                       | `RemoteObjectComboWidget.vue` _(deleted in this PR per §3.5; replaced by `RemoteCombo/` atom family — naming applies to the schema/config, not the widget shell)_ |
+| Frontend Litegraph composable | `useRemoteWidget`                           | `useRemoteScalarCombo`                                                                                                                                            |
+| Frontend Vue composable       | `useRemoteCombo`                            | `useRemoteObjectCombo`                                                                                                                                            |
+
+**Pros:** Self-explanatory. Matches existing Python/JSON conventions. Survives ecosystem churn (the _axis_ won't change even if the rendering does).
+**Cons:** "Object" is broad — but the docstring + `item_schema` requirement makes the meaning unambiguous. Slightly verbose kwargs.
+
+#### Option N2 — keep `RemoteOptions` for the legacy, rename the new one to `RemoteRecordOptions`
+
+If the team prefers minimal backend churn (just one new class to name, leave `RemoteOptions` alone), use "Record" — a TypeScript/database-flavored term for a structured object with a known schema.
+
+| Layer                  | Current              | N2                            |
+| ---------------------- | -------------------- | ----------------------------- |
+| Backend class (legacy) | `RemoteOptions`      | `RemoteOptions` _(unchanged)_ |
+| Backend class (new)    | `RemoteComboOptions` | `RemoteRecordOptions`         |
+| Backend item-schema    | `RemoteItemSchema`   | `RemoteRecordSchema`          |
+| Backend kwarg (legacy) | `remote=`            | `remote=` _(unchanged)_       |
+| Backend kwarg (new)    | `remote_combo=`      | `remote_record=`              |
+| Frontend types         | `RemoteComboConfig`  | `RemoteRecordConfig`          |
+| Frontend composable    | `useRemoteCombo`     | `useRemoteRecord`             |
+
+**Pros:** Smallest blast radius (legacy is preserved verbatim). "Record" maps to a familiar TS concept (`Record<K, V>`) and is shorter than "Object".
+**Cons:** Asymmetric — the name only signals "this is the new one" by being different from `RemoteOptions`. Still requires a docstring to explain that `RemoteOptions` returns scalars and `RemoteRecordOptions` returns records.
+
+### 12.4 Recommendation: Option N1 (`Scalar`/`Object`)
+
+The user explicitly asked for clearer names. Symmetric naming on both sides of the axis is more honest than asymmetric naming. The blast radius is small (audit §9 found 1 external repo using `RemoteOptions` legacy, and they'd already be migrating per §1 #6/#8). Renaming both classes simultaneously means custom-node authors learn the axis once.
+
+### 12.5 What stays
+
+- **`RemoteItemSchema`** can stay as-is. "ItemSchema" is generic enough to describe the mapping for any structured-item dropdown; it's not coupled to the "combo" framing. _Alternative_: rename to `RemoteObjectFields` under N1 to keep the family consistent (the schema describes how to extract `value_field`/`label_field`/etc. from each _object_). Open decision — flagged below.
+- **`Combo.Input`** stays. The kwargs `remote=` / `remote_combo=` change to `remote_scalar=` / `remote_object=` (N1) but the parent stays `Combo.Input` because that's the input _type_, not the data source.
+- **The `RemoteCombo/` atom family** (Phase 4) is unaffected by the rename. The atoms (`Root`, `Trigger`, `Content`, `Item`, etc.) are presentation-layer; they consume the renamed config but don't need to mirror its name.
+
+### 12.6 Application checklist (both PRs in lockstep)
+
+- [ ] **Backend (`pr-13432`)**: rename class `RemoteOptions → RemoteScalarOptions` and `RemoteComboOptions → RemoteObjectOptions` in `comfy_api/latest/_io.py`; rename kwargs on `Combo.Input` from `remote=` / `remote_combo=` to `remote_scalar=` / `remote_object=`; update `__all__`; update XOR validation messages; update test file from `tests-unit/comfy_api_test/remote_combo_options_test.py` → `remote_object_options_test.py` and rename test scenarios accordingly.
+- [ ] **Frontend (`pr-11310`)**: rename Zod schemas `zRemoteWidgetConfig → zRemoteScalarConfig` and `zRemoteComboConfig → zRemoteObjectConfig` in `src/schemas/nodeDefSchema.ts`; update derived TS types; rename `inputSpec.remote` field → `remote_scalar` and `remote_combo` → `remote_object` in `zComboInputOptions`; update `WidgetSelect.vue` `hasRemoteCombo` → `hasRemoteObject`; rename utilities `richComboHelpers.ts` → `remoteObjectHelpers.ts` (per §3.1 the file moves to `base/remote/` anyway); rename composable `useRemoteCombo` → `useRemoteObjectCombo`; rename rewritten Litegraph composable `useRemoteWidget` → `useRemoteScalarCombo`; update wire-format snapshot tests.
+- [ ] **Cross-PR consistency**: land both renames in the same release. The frontend Zod expects field names matching the backend's `as_dict()` output, so the wire-format change has to be atomic.
+- [ ] **Migration table** (§9): update the `control_after_refresh → auto_select` row to use the new kwarg names so the SLA-style migration message stays accurate.
+- [ ] **No deprecation** (per decision #9 in §7): the rename ships silently; the one affected external repo (`jtydhr88/comfyui-custom-node-skills`) does a 2-line edit (`RemoteOptions` → `RemoteScalarOptions`, `control_after_refresh` → `auto_select`).
+
+### 12.7 Open sub-decisions
+
+- **Q-N1**: Rename `RemoteItemSchema` to `RemoteObjectFields`, or leave as-is? _Default: leave as-is for minimal churn; only rename if the team votes for full symmetry._
+- **Q-N2**: For the rewritten Litegraph composable, is `useRemoteScalarCombo` clearer than `useRemoteScalar`? Both work; the longer form mirrors the Vue-side composable's name. _Default: `useRemoteScalarCombo` for symmetry._
+- **Q-N3**: Do we want a discriminator field on the wire (e.g. `remote.kind: 'scalar' | 'object'`) instead of two separate top-level fields? Worth it for future spec types but expands scope. _Default: no — keep two fields, XOR-enforced, matches today's serializer behavior._
+
 ---
 
 > **Edit history:**
@@ -1405,3 +1495,4 @@ afterAll(() => server.close())
 > - v2 — Q1–Q6 resolved; auth-teardown CONFIRMED (§8 mechanism); custom-node audit added (§9); authenticatedFetch removed; legacy convert via Option 1 locked
 > - v3 — deprecation/outreach removed (§9 retained as rationale only); §11 placeholders for next iterations; minor wording cleanup
 > - v4 — §11.1 / §11.2 / §11.3 filled in by three parallel fresh-context investigations; doc grew from ~315 → ~1341 lines
+> - v5 — addressed CodeRabbit findings (markdownlint MD040 on §3.1/§3.3/§11.1.a fenced blocks; §11.1.d phase placement aligned to Phase 4; §11.3.d backoff sequence corrected to 2s/4s/8s/16s capped at 16s matching `BACKOFF_BASE_MS=1000`/`BACKOFF_CAP_MS=16000` in `richComboHelpers.ts`); added §12 naming proposal (`Scalar`/`Object` rename for both PRs in lockstep)
