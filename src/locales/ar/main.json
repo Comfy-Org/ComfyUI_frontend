@@ -461,6 +461,12 @@
       "wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "يرجى اختيار خيار.",
+        "describeAnswer": "يرجى وصف إجابتك.",
+        "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل."
+      },
+      "intro": "ساعدنا في تخصيص تجربتك مع ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "مستخدم متقدم (سير عمل مخصصة)",
@@ -469,45 +475,43 @@
           "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
           "starting": "في البداية فقط (أتابع الدروس التعليمية)"
         },
-        "industry": {
-          "architecture": "الهندسة المعمارية",
-          "education": "التعليم",
-          "film_tv_animation": "الأفلام والتلفزيون والرسوم المتحركة",
-          "fine_art": "الفنون الجميلة والرسوم التوضيحية",
-          "gaming": "الألعاب",
-          "marketing": "التسويق والإعلان",
+        "intent": {
+          "3d_game": "أصول ثلاثية الأبعاد / أصول ألعاب",
+          "api": "نقاط نهاية API لتشغيل مسارات العمل",
+          "apps": "تطبيقات مبسطة من مسارات العمل",
+          "audio": "صوت / موسيقى",
+          "custom_nodes": "عُقد مخصصة",
+          "images": "صور",
+          "not_sure": "لست متأكداً",
+          "videos": "فيديوهات",
+          "workflows": "مسارات عمل أو خطوط معالجة مخصصة"
+        },
+        "source": {
+          "conference": "مؤتمر أو فعالية",
+          "discord": "ديسكورد / مجتمع",
+          "friend": "صديق أو زميل",
+          "github": "GitHub",
+          "instagram": "إنستغرام",
+          "linkedin": "لينكدإن",
+          "newsletter": "النشرة البريدية أو مدونة",
           "other": "أخرى",
-          "otherPlaceholder": "يرجى التحديد",
-          "product_design": "تصميم المنتجات والرسوم",
-          "software": "البرمجيات والتكنولوجيا"
+          "reddit": "ريديت",
+          "search": "جوجل / بحث",
+          "twitter": "تويتر / X",
+          "youtube": "يوتيوب"
         },
-        "making": {
-          "3d": "الأصول ثلاثية الأبعاد",
-          "audio": "الصوت / الموسيقى",
-          "custom_nodes": "العُقد وسير العمل المخصصة",
-          "images": "الصور",
-          "video": "الفيديو والرسوم المتحركة"
-        },
-        "purpose": {
-          "client": "العمل للعملاء (العمل الحر)",
-          "community": "مساهمات مجتمعية (عُقد، سير عمل، إلخ)",
-          "inhouse": "مكان عملي الخاص (داخلي)",
-          "personal": "مشاريع شخصية / هواية",
-          "research": "البحث الأكاديمي"
+        "usage": {
+          "education": "تعليمي (طالب أو معلم)",
+          "personal": "استخدام شخصي",
+          "work": "عمل"
         }
       },
       "placeholder": "نص بديل لأسئلة الاستبيان",
-      "questions": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "industry": "ما هي صناعتك الأساسية؟",
-        "making": "ماذا تخطط لصنعه؟",
-        "purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟"
-      },
       "steps": {
         "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "industry": "ما هي صناعتك الأساسية؟",
-        "making": "ماذا تخطط لصنعه؟",
-        "purpose": "ما الاستخدام الأساسي الذي ستستخدم ComfyUI من أجله؟"
+        "intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
+        "source": "من أين سمعت عن ComfyUI؟",
+        "usage": "كيف تخطط لاستخدام ComfyUI؟"
       },
       "title": "استبيان السحابة"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
   "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
   "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-  "cloudSurvey_steps_industry": "ما مجال عملك الأساسي؟",
-  "cloudSurvey_steps_making": "ماذا تخطط لصنعه؟",
-  "cloudSurvey_steps_purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟",
+  "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
+  "cloudSurvey_steps_source": "من أين سمعت عن ComfyUI؟",
+  "cloudSurvey_steps_usage": "كيف تخطط لاستخدام ComfyUI؟",
   "cloudWaitlist_contactLink": "هنا",
   "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
@@ -1008,13 +1012,16 @@
     "back": "رجوع",
     "batchRename": "إعادة تسمية جماعية",
     "beta": "نسخة تجريبية",
+    "blueprints": "المخططات",
     "bookmark": "حفظ في المكتبة",
+    "bookmarked": "تمت الإضافة إلى العلامات",
     "browserReservedKeybinding": "هذا الاختصار محجوز من قبل بعض المتصفحات وقد يؤدي إلى نتائج غير متوقعة.",
     "browserReservedKeybindingTooltip": "هذا الاختصار يتعارض مع اختصارات المتصفح المحجوزة",
     "calculatingDimensions": "جارٍ حساب الأبعاد",
     "cancel": "إلغاء",
     "cancelled": "أُلغي",
     "capture": "التقاط",
+    "categories": "الفئات",
     "category": "الفئة",
     "changeKeybinding": "تغيير اختصار المفتاح",
     "chart": "مخطط",
@@ -1235,6 +1242,7 @@
     "output": "إخراج",
     "overwrite": "الكتابة فوق",
     "partner": "شريك",
+    "partnerNodes": "العُقد الشريكة",
     "pause": "إيقاف مؤقت",
     "play": "تشغيل",
     "playPause": "تشغيل/إيقاف مؤقت",
@@ -2255,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "مون فالي ماري",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2607,6 +2614,9 @@
       "metadataFetchFailed": "فشل في جلب البيانات الوصفية. يرجى التحقق من الرابط والمحاولة مرة أخرى.",
       "missingModelsTitle": "النماذج المفقودة",
       "or": "أو",
+      "refresh": "تحديث",
+      "refreshFailed": "فشل في تحديث النماذج المفقودة. يرجى المحاولة مرة أخرى.",
+      "refreshing": "يتم تحديث النماذج المفقودة.",
       "typeMismatch": "يبدو أن هذا النموذج هو \"{detectedType}\". هل أنت متأكد؟",
       "unknownCategory": "غير معروف",
       "unsupportedUrl": "يتم دعم روابط Civitai و Hugging Face فقط.",
@@ -3500,6 +3510,7 @@
     "no3dScene": "لا يوجد مشهد ثلاثي الأبعاد لتطبيق الخامة",
     "no3dSceneToExport": "لا يوجد مشهد ثلاثي الأبعاد للتصدير",
     "noTemplatesToExport": "لا توجد قوالب للتصدير",
+    "nodeDefinitionsUpdateFailed": "فشل في تحديث تعريفات العقد",
     "nodeDefinitionsUpdated": "تم تحديث تعريفات العقد",
     "nothingSelected": "لم يتم تحديد شيء",
     "nothingToGroup": "لا يوجد شيء لتجميعه",

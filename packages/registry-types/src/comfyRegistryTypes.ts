@@ -2524,6 +2524,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/luma_2/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a Luma Agents generation
+         * @description Submit an image generation or edit job. Returns immediately with an opaque job ID to poll via GET /proxy/luma_2/generations/{id}.
+         */
+        post: operations["lumaAgentsCreateGeneration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/luma_2/generations/{generation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a Luma Agents generation
+         * @description Poll for generation status and output. On completion, the response includes presigned URLs to download the generated images.
+         */
+        get: operations["lumaAgentsGetGeneration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/pixverse/video/text/generate": {
         parameters: {
             query?: never;
@@ -4014,6 +4054,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/seedance/visual-validate/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's completed visual-validation groups
+         * @description Returns the caller's completed visual-validation groups (real-person H5 verification). Used to power the group selector in client UIs. Excludes virtual-library (AIGC) groups, which are not part of the public API surface.
+         */
+        get: operations["seedanceListVisualValidationGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/seedance/visual-validate/sessions/{session_id}": {
         parameters: {
             query?: never;
@@ -4037,7 +4097,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the caller's assets across all owned groups
+         * @description Fans out to BytePlus ListAssets across the caller's completed verification groups, denormalizes the group label into each row, and returns a single flat list. Result is post-filtered by asset_type. Optional group_id narrows to one group. Hard caps: 5 pages × 100 assets per group, 1000 total assets.
+         */
+        get: operations["seedanceListUserAssets"];
         put?: never;
         post: operations["seedanceCreateAsset"];
         delete?: never;
@@ -4056,6 +4120,22 @@ export interface paths {
         get: operations["seedanceGetAsset"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/seedance/virtual-library/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seedanceVirtualLibraryCreateAsset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10341,6 +10421,88 @@ export interface components {
             /** @description The request of the generation */
             request?: components["schemas"]["LumaGenerationRequest"] | components["schemas"]["LumaImageGenerationRequest"] | components["schemas"]["LumaUpscaleVideoGenerationRequest"] | components["schemas"]["LumaAudioGenerationRequest"];
         };
+        /**
+         * @description Output aspect ratio
+         * @enum {string}
+         */
+        LumaAgentsAspectRatio: "3:1" | "2:1" | "16:9" | "3:2" | "1:1" | "2:3" | "9:16" | "1:2" | "1:3";
+        /**
+         * @description Style preset
+         * @enum {string}
+         */
+        LumaAgentsStyle: "auto" | "manga";
+        /**
+         * @description Output image format
+         * @enum {string}
+         */
+        LumaAgentsOutputFormat: "png" | "jpeg";
+        /**
+         * @description The kind of generation to perform
+         * @enum {string}
+         */
+        LumaAgentsGenerationType: "image" | "image_edit";
+        /**
+         * @description Current state of the generation
+         * @enum {string}
+         */
+        LumaAgentsState: "queued" | "processing" | "completed" | "failed";
+        /**
+         * @description Machine-readable failure code for programmatic handling
+         * @enum {string}
+         */
+        LumaAgentsFailureCode: "content_moderated" | "generation_failed" | "budget_exhausted" | "output_not_found";
+        /** @description Reference image for style/content guidance or guided generation */
+        LumaAgentsImageRef: {
+            /** @description Base64-encoded image data */
+            data?: string;
+            /** @description MIME type (e.g. image/jpeg). Required with data. */
+            media_type?: string;
+            /** @description Publicly accessible image URL */
+            url?: string;
+        };
+        /** @description The Luma Agents generation request object */
+        LumaAgentsGenerationRequest: {
+            /** @description Text prompt */
+            prompt: string;
+            aspect_ratio?: components["schemas"]["LumaAgentsAspectRatio"];
+            /** @description Reference images for style/content guidance. Up to 9 for type 'image', up to 8 for type 'image_edit'. */
+            image_ref?: components["schemas"]["LumaAgentsImageRef"][];
+            /** @description Model to use */
+            model?: string;
+            output_format?: components["schemas"]["LumaAgentsOutputFormat"];
+            source?: components["schemas"]["LumaAgentsImageRef"];
+            style?: components["schemas"]["LumaAgentsStyle"];
+            type?: components["schemas"]["LumaAgentsGenerationType"];
+            /** @description Enable web search grounding */
+            web_search?: boolean;
+        };
+        /** @description A generated output entry */
+        LumaAgentsGenerationOutput: {
+            /** @description Media type (e.g. image) */
+            type?: string;
+            /** @description Presigned URL (1hr expiry) */
+            url?: string;
+        };
+        /** @description Generation status and output */
+        LumaAgentsGeneration: {
+            /** @description Generation identifier */
+            id?: string;
+            /** @description Creation timestamp */
+            created_at?: string;
+            /** @description Model used */
+            model?: string;
+            state?: components["schemas"]["LumaAgentsState"];
+            type?: components["schemas"]["LumaAgentsGenerationType"];
+            failure_code?: components["schemas"]["LumaAgentsFailureCode"];
+            /** @description Human-readable failure description */
+            failure_reason?: string;
+            output?: components["schemas"]["LumaAgentsGenerationOutput"][];
+        };
+        /** @description The error object */
+        LumaAgentsError: {
+            /** @description The error message */
+            detail?: string;
+        };
         PixverseTextVideoRequest: {
             /** @enum {string} */
             aspect_ratio: "16:9" | "4:3" | "1:1" | "3:4" | "9:16";
@@ -13553,7 +13715,7 @@ export interface components {
             stream: boolean | null;
         };
         /** @enum {string} */
-        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "chatgpt-4o-latest";
+        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "chatgpt-4o-latest";
         MoonvalleyTextToVideoInferenceParams: {
             /**
              * @description Height of the generated video in pixels
@@ -14426,6 +14588,10 @@ export interface components {
                 total_tokens?: number;
             };
         };
+        SeedanceCreateVisualValidateSessionRequest: {
+            /** @description Optional human-readable label for the asset group that will be created by this verification. Stored locally and returned by seedanceListVisualValidationGroups so users can identify their groups in selectors. */
+            name?: string;
+        };
         SeedanceCreateVisualValidateSessionResponse: {
             /**
              * Format: uuid
@@ -14435,6 +14601,37 @@ export interface components {
             /** @description BytePlus-issued H5 liveness link. Open in a browser with camera access. Valid for ~120 seconds. */
             h5_link: string;
         };
+        SeedanceListVisualValidationGroupsResponse: {
+            groups: components["schemas"]["SeedanceVisualValidationGroup"][];
+        };
+        SeedanceListUserAssetsResponse: {
+            assets: components["schemas"]["SeedanceUserAsset"][];
+            /** @description True if the global per-request asset cap was hit and older results were dropped. */
+            truncated: boolean;
+        };
+        SeedanceUserAsset: {
+            asset_id: string;
+            name?: string | null;
+            /** @description BytePlus access URL (~12h validity). Refreshed on each list call. */
+            url?: string | null;
+            group_id: string;
+            /** @description Display label of the source group, denormalized for client-side search. */
+            group_name: string;
+            /** @enum {string} */
+            asset_type: "Image" | "Video" | "Audio";
+            /** @enum {string} */
+            status: "Active" | "Processing" | "Failed";
+            /** Format: date-time */
+            create_time: string;
+        };
+        SeedanceVisualValidationGroup: {
+            /** @description BytePlus-issued asset group id. */
+            group_id: string;
+            /** @description Display label. Caller-supplied at creation time when available; otherwise a server-generated fallback derived from the creation date. */
+            name: string;
+            /** Format: date-time */
+            created_at: string;
+        };
         SeedanceGetVisualValidateSessionResponse: {
             /** Format: uuid */
             session_id: string;
@@ -14442,6 +14639,8 @@ export interface components {
             status: "pending" | "completed" | "failed";
             /** @description Populated only when status == completed. This is the BytePlus Asset Group ID the user will upload assets into. */
             group_id?: string | null;
+            /** @description Optional human-readable label provided when the session was created. */
+            name?: string | null;
             error_code?: string | null;
             error_message?: string | null;
         };
@@ -14490,12 +14689,22 @@ export interface components {
             code: string;
             message: string;
         };
+        SeedanceVirtualLibraryCreateAssetRequest: {
+            /** @description Publicly accessible URL of the image asset to upload to the caller's virtual portrait library. */
+            url: string;
+            /** @description Client-supplied content hash used as the per-customer dedup key. Re-submitting the same hash returns the existing asset id without re-uploading to BytePlus. */
+            hash: string;
+        };
+        SeedanceVirtualLibraryCreateAssetResponse: {
+            /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
+            asset_id: string;
+        };
         WanVideoGenerationRequest: {
             /**
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /**
@@ -26096,6 +26305,72 @@ export interface operations {
             };
         };
     };
+    lumaAgentsCreateGeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The generation request object */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LumaAgentsGenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Generation accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsGeneration"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsError"];
+                };
+            };
+        };
+    };
+    lumaAgentsGetGeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the generation */
+                generation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generation found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsGeneration"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsError"];
+                };
+            };
+        };
+    };
     PixverseGenerateTextVideo: {
         parameters: {
             query?: never;
@@ -30249,7 +30524,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SeedanceCreateVisualValidateSessionRequest"];
+            };
+        };
         responses: {
             /** @description Verification session created */
             201: {
@@ -30258,6 +30537,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceCreateVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceListVisualValidationGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visual-validation groups owned by the caller */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceListVisualValidationGroupsResponse"];
                 };
             };
             /** @description Error 4xx/5xx */
@@ -30290,6 +30598,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceGetVisualValidateSessionResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceListUserAssets: {
+        parameters: {
+            query: {
+                /** @description Asset type to return. */
+                asset_type: "Image" | "Video";
+                /** @description Narrow the listing to one group. Caller must own it. */
+                group_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assets owned by the caller */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceListUserAssetsResponse"];
                 };
             };
             /** @description Error 4xx/5xx */
@@ -30338,10 +30680,7 @@ export interface operations {
     };
     seedanceGetAsset: {
         parameters: {
-            query?: {
-                /** @description BytePlus project name. Defaults to "default" if omitted. Must match the ProjectName used at create time. */
-                project_name?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description BytePlus-issued asset id returned by seedanceCreateAsset */
@@ -30358,6 +30697,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedanceGetAssetResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    seedanceVirtualLibraryCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset creation accepted (asynchronous — poll seedanceGetAsset) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedanceVirtualLibraryCreateAssetResponse"];
                 };
             };
             /** @description Error 4xx/5xx */

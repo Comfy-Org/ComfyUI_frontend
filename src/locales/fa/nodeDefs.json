@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "تولید ویدیو از یک تصویر فریم اول با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "فریم اول",
+        "tooltip": "تصویر فریم اول. نسبت ابعاد خروجی از این تصویر استخراج می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "تولید ویدیو با حضور یک شخص یا شیء از مواد مرجع با مدل HappyHorse. پشتیبانی از اجراهای تک‌نفره و تعامل چندنفره.",
+    "display_name": "HappyHorse تبدیل مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "تولید ویدیو بر اساس پرامپت متنی با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "ویرایش ویدیو با دستور متنی یا تصاویر مرجع با مدل HappyHorse. مدت زمان خروجی بین ۳ تا ۱۵ ثانیه و مطابق با ویدیوی ورودی است؛ ورودی‌های بیش از ۱۵ ثانیه کوتاه می‌شوند.",
+    "display_name": "HappyHorse ویرایش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی که باید ویرایش شود."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "ارتقاء تصاویر با وضوح پایین به وضوح بسیار بالا، حذف نویز و آرتیفکت‌ها. حداکثر خروجی: ۳۲ مگاپیکسل.",
     "display_name": "افزایش کیفیت تصویر عمومی HitPaw",
@@ -11339,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "گره تبدیل تصویر به ویدیو Moonvalley Marey",
-    "display_name": "Moonvalley Marey Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویر مرجع برای تولید ویدیو استفاده می‌شود"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "prompt_adherence": {
-        "name": "پایبندی به پرامپت",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "مقدار بذر تصادفی"
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد گام‌های حذف نویز"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل متن به ویدیو",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "گام‌های استنتاج"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل ویدیو به ویدیو",
-    "inputs": {
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "فقط در صورتی استفاده می‌شود که control_type برابر با 'Motion Transfer' باشد"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "توضیح ویدیوی مورد نظر برای تولید"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "تعداد گام‌های استنتاج"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "ویدیوی مرجع برای تولید ویدیوی خروجی. باید حداقل ۵ ثانیه باشد. ویدیوهای طولانی‌تر از ۵ ثانیه به‌صورت خودکار کوتاه می‌شوند. فقط فرمت MP4 پشتیبانی می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11684,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -12376,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -16466,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "تولید متن",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16509,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16521,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "تولید متن LTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16564,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16735,6 +16793,45 @@
         "name": "مدل بزرگ‌نمایی"
       },
       "upscaler_resolution": {
+        "name": "وضوح بزرگ‌نمایی"
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "با فناوری قدرتمند بزرگ‌نمایی و بازیابی، به ویدیو جان تازه ببخشید.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "سطح فشرده‌سازی پویا",
+        "tooltip": "سطح CQP."
+      },
+      "interpolation_model": {
+        "name": "مدل درون‌یابی"
+      },
+      "upscaler_model": {
+        "name": "مدل بزرگ‌نمایی"
+      },
+      "upscaler_model_creativity": {
+        "name": "خلاقیت"
+      },
+      "upscaler_model_prompt": {
+        "name": "پرامپت"
+      },
+      "upscaler_model_realism": {
+        "name": "واقع‌گرایی"
+      },
+      "upscaler_model_sharp": {
+        "name": "وضوح"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "وضوح بزرگ‌نمایی"
       },
       "video": {

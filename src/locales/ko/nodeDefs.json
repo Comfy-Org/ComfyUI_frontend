@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "HappyHorse 모델을 사용하여 첫 프레임 이미지를 기반으로 비디오를 생성합니다.",
+    "display_name": "HappyHorse 이미지 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "첫 프레임 이미지입니다. 출력 비율은 이 이미지에서 파생됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "HappyHorse 모델을 사용하여 참조 자료에서 인물 또는 객체가 등장하는 비디오를 생성합니다. 단일 캐릭터 연기와 다중 캐릭터 상호작용을 지원합니다.",
+    "display_name": "HappyHorse 참조 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "HappyHorse 모델을 사용하여 텍스트 프롬프트를 기반으로 비디오를 생성합니다.",
+    "display_name": "HappyHorse 텍스트 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "HappyHorse 모델을 사용하여 텍스트 지시문 또는 참조 이미지를 통해 비디오를 편집합니다. 출력 지속 시간은 3~15초이며 입력 비디오와 일치합니다. 15초를 초과하는 입력은 잘립니다.",
+    "display_name": "HappyHorse 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "편집할 비디오입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI 생성 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "저해상도 이미지를 초고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 최대 출력: 32 메가픽셀.",
     "display_name": "HitPaw 일반 이미지 향상",
@@ -11339,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "문밸리 마레이 이미지 투 비디오 노드",
-    "display_name": "문밸리 마레이 이미지 투 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오 생성에 사용되는 참조 이미지"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "네거티브 프롬프트 텍스트"
-      },
-      "prompt": {
-        "name": "프롬프트"
-      },
-      "prompt_adherence": {
-        "name": "프롬프트 준수도",
-        "tooltip": "생성 제어를 위한 가이던스 스케일"
-      },
-      "resolution": {
-        "name": "해상도",
-        "tooltip": "출력 비디오의 해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "랜덤 시드 값"
-      },
-      "steps": {
-        "name": "스텝",
-        "tooltip": "노이즈 제거 스텝 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "문밸리 마레이 텍스트 투 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "네거티브 프롬프트 텍스트"
-      },
-      "prompt": {
-        "name": "프롬프트"
-      },
-      "prompt_adherence": {
-        "name": "프롬프트 준수도",
-        "tooltip": "생성 제어를 위한 가이던스 스케일"
-      },
-      "resolution": {
-        "name": "해상도",
-        "tooltip": "출력 비디오의 해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "랜덤 시드 값"
-      },
-      "steps": {
-        "name": "스텝",
-        "tooltip": "추론 단계"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 비디오 투 비디오",
-    "inputs": {
-      "control_type": {
-        "name": "제어 유형"
-      },
-      "motion_intensity": {
-        "name": "모션 강도",
-        "tooltip": "'모션 전송' 제어 유형일 때만 사용됩니다"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "네거티브 프롬프트 텍스트"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "생성할 비디오를 설명합니다"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "랜덤 시드 값"
-      },
-      "steps": {
-        "name": "단계",
-        "tooltip": "추론 단계 수"
-      },
-      "video": {
-        "name": "비디오",
-        "tooltip": "출력 비디오를 생성하는 데 사용되는 참조 비디오. 최소 5초 이상이어야 합니다. 5초보다 긴 비디오는 자동으로 잘립니다. MP4 형식만 지원됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "이미지 형태 변환",
     "inputs": {
@@ -11684,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "생성 후 제어"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "`size`가 'Custom'일 때만 사용됩니다. 16의 배수여야 합니다(GPT Image 2 전용)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "`size`가 'Custom'일 때만 사용됩니다. 16의 배수여야 합니다(GPT Image 2 전용)."
       },
       "image": {
         "name": "참조 이미지",
@@ -12376,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "정수",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "생성 후 제어"
       },
       "value": {
@@ -16466,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "텍스트 생성",
     "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16509,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "모델에 내장된 시스템 프롬프트/템플릿이 있으면 사용합니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "비디오 프레임을 이미지 배치로 처리합니다. 24 FPS로 가정하며, 내부적으로 1 FPS로 샘플링됩니다."
       }
     },
     "outputs": {
@@ -16521,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16564,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "모델에 내장된 시스템 프롬프트/템플릿이 있으면 사용합니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "비디오 프레임을 이미지 배치로 처리합니다. 24 FPS로 가정하며, 내부적으로 1 FPS로 샘플링됩니다."
       }
     },
     "outputs": {
@@ -16739,6 +16797,45 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "강력한 업스케일링 및 복원 기술로 비디오에 새 생명을 불어넣으세요.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "동적 압축 레벨",
+        "tooltip": "CQP 레벨."
+      },
+      "interpolation_model": {
+        "name": "보간 모델"
+      },
+      "upscaler_model": {
+        "name": "업스케일러 모델"
+      },
+      "upscaler_model_creativity": {
+        "name": "창의성"
+      },
+      "upscaler_model_prompt": {
+        "name": "프롬프트"
+      },
+      "upscaler_model_realism": {
+        "name": "사실감"
+      },
+      "upscaler_model_sharp": {
+        "name": "선명도"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "업스케일러 해상도"
+      },
+      "video": {
+        "name": "비디오"
       }
     },
     "outputs": {

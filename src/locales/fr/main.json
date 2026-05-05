@@ -461,6 +461,12 @@
       "wantToRun": "Vous préférez exécuter ComfyUI localement ?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Veuillez choisir une option.",
+        "describeAnswer": "Veuillez décrire votre réponse.",
+        "selectAtLeastOne": "Veuillez sélectionner au moins une option."
+      },
+      "intro": "Aidez-nous à personnaliser votre expérience ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Utilisateur avancé (workflows personnalisés)",
@@ -469,45 +475,43 @@
           "new": "Nouveau sur ComfyUI (jamais utilisé auparavant)",
           "starting": "Je débute (je suis des tutoriels)"
         },
-        "industry": {
-          "architecture": "Architecture",
-          "education": "Éducation",
-          "film_tv_animation": "Cinéma, télévision et animation",
-          "fine_art": "Art et illustration",
-          "gaming": "Jeux vidéo",
-          "marketing": "Marketing et publicité",
-          "other": "Autre",
-          "otherPlaceholder": "Veuillez préciser",
-          "product_design": "Design de produits et graphisme",
-          "software": "Logiciels et technologie"
-        },
-        "making": {
-          "3d": "Assets 3D",
+        "intent": {
+          "3d_game": "Assets 3D / assets de jeu",
+          "api": "Points de terminaison API pour exécuter des workflows",
+          "apps": "Applications simplifiées à partir de workflows",
           "audio": "Audio / musique",
-          "custom_nodes": "Nœuds et workflows personnalisés",
+          "custom_nodes": "Nœuds personnalisés",
           "images": "Images",
-          "video": "Vidéo et animation"
+          "not_sure": "Pas sûr",
+          "videos": "Vidéos",
+          "workflows": "Workflows ou pipelines personnalisés"
         },
-        "purpose": {
-          "client": "Travail pour clients (freelance)",
-          "community": "Contributions communautaires (nœuds, workflows, etc.)",
-          "inhouse": "Mon propre lieu de travail (interne)",
-          "personal": "Projets personnels / loisir",
-          "research": "Recherche académique"
+        "source": {
+          "conference": "Conférence ou événement",
+          "discord": "Discord / communauté",
+          "friend": "Ami ou collègue",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter ou blog",
+          "other": "Autre",
+          "reddit": "Reddit",
+          "search": "Google / recherche",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Éducation (étudiant ou enseignant)",
+          "personal": "Usage personnel",
+          "work": "Travail"
         }
       },
       "placeholder": "Texte indicatif des questions de l'enquête",
-      "questions": {
-        "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-        "industry": "Quel est votre secteur d'activité principal ?",
-        "making": "Que prévoyez-vous de créer ?",
-        "purpose": "À quoi utiliserez-vous principalement ComfyUI ?"
-      },
       "steps": {
         "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-        "industry": "Quel est votre secteur d'activité principal ?",
-        "making": "Que prévoyez-vous de créer ?",
-        "purpose": "À quoi utiliserez-vous principalement ComfyUI ?"
+        "intent": "Que souhaitez-vous créer avec ComfyUI ?",
+        "source": "Où avez-vous entendu parler de ComfyUI ?",
+        "usage": "Comment prévoyez-vous d'utiliser ComfyUI ?"
       },
       "title": "Enquête Cloud"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "créez en quelques secondes",
   "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
   "cloudSurvey_steps_familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-  "cloudSurvey_steps_industry": "Quel est votre secteur d'activité principal ?",
-  "cloudSurvey_steps_making": "Que prévoyez-vous de créer ?",
-  "cloudSurvey_steps_purpose": "À quoi utiliserez-vous principalement ComfyUI ?",
+  "cloudSurvey_steps_intent": "Que souhaitez-vous créer avec ComfyUI ?",
+  "cloudSurvey_steps_source": "Où avez-vous entendu parler de ComfyUI ?",
+  "cloudSurvey_steps_usage": "Comment prévoyez-vous d'utiliser ComfyUI ?",
   "cloudWaitlist_contactLink": "ici",
   "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
   "color": {
@@ -1008,13 +1012,16 @@
     "back": "Retour",
     "batchRename": "Renommer en lot",
     "beta": "BÊTA",
+    "blueprints": "Plans",
     "bookmark": "Enregistrer dans la bibliothèque",
+    "bookmarked": "Mis en favori",
     "browserReservedKeybinding": "Ce raccourci est réservé par certains navigateurs et peut entraîner des résultats inattendus.",
     "browserReservedKeybindingTooltip": "Ce raccourci est en conflit avec des raccourcis réservés du navigateur",
     "calculatingDimensions": "Calcul des dimensions",
     "cancel": "Annuler",
     "cancelled": "Annulé",
     "capture": "capture",
+    "categories": "Catégories",
     "category": "Catégorie",
     "changeKeybinding": "Modifier le raccourci clavier",
     "chart": "Graphique",
@@ -1235,6 +1242,7 @@
     "output": "Sortie",
     "overwrite": "Écraser",
     "partner": "Partenaire",
+    "partnerNodes": "Nœuds partenaires",
     "pause": "Pause",
     "play": "Lecture",
     "playPause": "Lecture/Pause",
@@ -2255,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2607,6 +2614,9 @@
       "metadataFetchFailed": "Échec de la récupération des métadonnées. Veuillez vérifier le lien et réessayer.",
       "missingModelsTitle": "Modèles manquants",
       "or": "OU",
+      "refresh": "Rafraîchir",
+      "refreshFailed": "Échec du rafraîchissement des modèles manquants. Veuillez réessayer.",
+      "refreshing": "Rafraîchissement des modèles manquants.",
       "typeMismatch": "Ce modèle semble être un(e) « {detectedType} ». Êtes-vous sûr ?",
       "unknownCategory": "Inconnu",
       "unsupportedUrl": "Seules les URL Civitai et Hugging Face sont prises en charge.",
@@ -3500,6 +3510,7 @@
     "no3dScene": "Aucune scène 3D pour appliquer la texture",
     "no3dSceneToExport": "Aucune scène 3D à exporter",
     "noTemplatesToExport": "Aucun modèle à exporter",
+    "nodeDefinitionsUpdateFailed": "Échec de la mise à jour des définitions de nœud",
     "nodeDefinitionsUpdated": "Définitions de nœuds mises à jour",
     "nothingSelected": "Aucune sélection",
     "nothingToGroup": "Rien à regrouper",

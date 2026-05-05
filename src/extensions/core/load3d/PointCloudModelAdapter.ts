@@ -10,6 +10,7 @@ import type {
   ModelAdapterCapabilities,
   ModelLoadContext
 } from './ModelAdapter'
+import type { MaterialMode } from './interfaces'
 import { FastPLYLoader } from './loader/FastPLYLoader'
 
 export function getPLYEngine(): string {
@@ -20,7 +21,7 @@ export class PointCloudModelAdapter implements ModelAdapter {
   readonly kind = 'pointCloud' as const
   readonly extensions = ['ply'] as const
   readonly capabilities: ModelAdapterCapabilities = {
-    fitToViewer: false,
+    fitToViewer: true,
     requiresMaterialRebuild: true,
     gizmoTransform: false,
     lighting: true,
@@ -43,7 +44,7 @@ export class PointCloudModelAdapter implements ModelAdapter {
     const plyGeometry =
       isASCII && getPLYEngine() === 'fastply'
         ? this.fastPlyLoader.parse(arrayBuffer)
-        : this.plyLoader.parse(arrayBuffer)
+        : (this.plyLoader.setPath(path), this.plyLoader.parse(arrayBuffer))
 
     ctx.setOriginalModel(plyGeometry)
     plyGeometry.computeVertexNormals()
@@ -116,5 +117,45 @@ function buildMeshGroup(
 
   const group = new THREE.Group()
   group.add(mesh)
+  return group
+}
+
+export function buildPointCloudForMaterialMode(
+  originalGeometry: THREE.BufferGeometry,
+  mode: MaterialMode,
+  standardMaterial: THREE.MeshStandardMaterial,
+  originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
+): THREE.Group {
+  const geometry = originalGeometry.clone()
+  const hasVertexColors = geometry.attributes.color !== undefined
+
+  const ctx: ModelLoadContext = {
+    setOriginalModel: () => {},
+    registerOriginalMaterial: (mesh, material) =>
+      originalMaterials.set(mesh, material),
+    standardMaterial,
+    materialMode: mode
+  }
+
+  if (mode === 'pointCloud') {
+    return buildPointsGroup(ctx, geometry, hasVertexColors)
+  }
+
+  const group = buildMeshGroup(ctx, geometry, hasVertexColors)
+
+  if (mode === 'normal' || mode === 'wireframe') {
+    const mesh = group.children[0] as THREE.Mesh
+    mesh.material =
+      mode === 'normal'
+        ? new THREE.MeshNormalMaterial({
+            flatShading: false,
+            side: THREE.DoubleSide
+          })
+        : new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            wireframe: true
+          })
+  }
+
   return group
 }

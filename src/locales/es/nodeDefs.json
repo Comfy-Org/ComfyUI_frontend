@@ -4534,6 +4534,156 @@
       }
     }
   },
+  "HappyHorseImageToVideoApi": {
+    "description": "Genera un video a partir de una imagen del primer fotograma usando el modelo HappyHorse.",
+    "display_name": "HappyHorse Imagen a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "first_frame": {
+        "name": "primer fotograma",
+        "tooltip": "Imagen del primer fotograma. La relación de aspecto de salida se deriva de esta imagen."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Genera un video con una persona u objeto a partir de materiales de referencia usando el modelo HappyHorse. Soporta actuaciones de un solo personaje e interacciones entre varios personajes.",
+    "display_name": "HappyHorse Referencia a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Genera un video basado en un prompt de texto usando el modelo HappyHorse.",
+    "display_name": "HappyHorse Texto a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Edita un video usando instrucciones de texto o imágenes de referencia con el modelo HappyHorse. La duración de salida es de 3 a 15 segundos y coincide con el video de entrada; las entradas de más de 15 segundos se recortan.",
+    "display_name": "HappyHorse Edición de Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para usar en la generación."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "El video a editar."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua generada por IA al resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Aumenta la resolución de imágenes de baja calidad a superresolución, elimina artefactos y ruido. Salida máxima: 32 megapíxeles.",
     "display_name": "HitPaw General Image Enhance",
@@ -11339,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Nodo Moonvalley Marey Imagen a Video",
-    "display_name": "Moonvalley Marey Imagen a Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control después de generar"
-      },
-      "image": {
-        "name": "imagen",
-        "tooltip": "La imagen de referencia utilizada para generar el video"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto del prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "adherencia_al_prompt",
-        "tooltip": "Escala de guía para control de generación"
-      },
-      "resolution": {
-        "name": "resolución",
-        "tooltip": "Resolución del video de salida"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Valor de semilla aleatoria"
-      },
-      "steps": {
-        "name": "pasos",
-        "tooltip": "Número de pasos de eliminación de ruido"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Texto a Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control después de generar"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto del prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "adherencia_al_prompt",
-        "tooltip": "Escala de guía para control de generación"
-      },
-      "resolution": {
-        "name": "resolución",
-        "tooltip": "Resolución del video de salida"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Valor de semilla aleatoria"
-      },
-      "steps": {
-        "name": "pasos",
-        "tooltip": "Pasos de inferencia"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video a Video",
-    "inputs": {
-      "control_type": {
-        "name": "tipo_control"
-      },
-      "motion_intensity": {
-        "name": "intensidad_movimiento",
-        "tooltip": "Solo se usa si el tipo_control es 'Transferencia de Movimiento'"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto del prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Describe el video a generar"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Valor de semilla aleatoria"
-      },
-      "steps": {
-        "name": "pasos",
-        "tooltip": "Número de pasos de inferencia"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "El video de referencia utilizado para generar el video de salida. Debe tener al menos 5 segundos de duración. Los videos más largos de 5s se recortarán automáticamente. Solo se admite formato MP4."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "MorfologiaDeImagen",
     "inputs": {
@@ -11684,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Se utiliza solo cuando el valor de `size` es 'Custom'. Debe ser un múltiplo de 16 (solo para GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Se utiliza solo cuando el valor de `size` es 'Custom'. Debe ser un múltiplo de 16 (solo para GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -12376,8 +12420,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
-        "name": "controlar después de generar"
+      "fixed": {
+        "name": "control after generate"
       },
       "value": {
         "name": "valor"
@@ -16466,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "audio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16509,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Usar la plantilla/sistema incorporado si el modelo dispone de uno."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fotogramas de video como lote de imágenes. Se asume a 24 FPS; se reduce internamente a 1 FPS."
       }
     },
     "outputs": {
@@ -16521,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "audio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16564,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Usar la plantilla/sistema incorporado si el modelo dispone de uno."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fotogramas de video como lote de imágenes. Se asume a 24 FPS; se reduce internamente a 1 FPS."
       }
     },
     "outputs": {
@@ -16735,6 +16793,45 @@
         "name": "upscaler_model"
       },
       "upscaler_resolution": {
+        "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Da nueva vida a tus videos con tecnología avanzada de escalado y recuperación.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "dynamic_compression_level",
+        "tooltip": "Nivel CQP."
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "creativity"
+      },
+      "upscaler_model_prompt": {
+        "name": "prompt"
+      },
+      "upscaler_model_realism": {
+        "name": "realism"
+      },
+      "upscaler_model_sharp": {
+        "name": "sharp"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "upscaler_resolution"
       },
       "video": {

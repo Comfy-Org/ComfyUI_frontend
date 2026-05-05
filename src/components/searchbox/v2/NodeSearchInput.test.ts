@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import {
   setupTestPinia,
@@ -19,7 +18,11 @@ vi.mock('@/utils/litegraphUtil', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(),
+    get: vi.fn((key: string) => {
+      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
+      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
+      return undefined
+    }),
     set: vi.fn()
   }))
 }))
@@ -40,20 +43,6 @@ function createFilter(
   }
 }
 
-function createActiveFilter(label: string): FilterChip {
-  return {
-    key: label.toLowerCase(),
-    label,
-    filter: {
-      id: label.toLowerCase(),
-      matches: vi.fn(() => true)
-    } as Partial<FuseFilter<ComfyNodeDefImpl, string>> as FuseFilter<
-      ComfyNodeDefImpl,
-      string
-    >
-  }
-}
-
 describe('NodeSearchInput', () => {
   beforeEach(() => {
     setupTestPinia()
@@ -63,27 +52,19 @@ describe('NodeSearchInput', () => {
   function createRender(
     props: Partial<{
       filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
-      activeFilter: FilterChip | null
       searchQuery: string
-      filterQuery: string
     }> = {}
   ) {
     const user = userEvent.setup()
     const onUpdateSearchQuery = vi.fn()
-    const onUpdateFilterQuery = vi.fn()
-    const onCancelFilter = vi.fn()
     const onSelectCurrent = vi.fn()
     const onNavigateDown = vi.fn()
     const onNavigateUp = vi.fn()
     render(NodeSearchInput, {
       props: {
         filters: [],
-        activeFilter: null,
         searchQuery: '',
-        filterQuery: '',
         'onUpdate:searchQuery': onUpdateSearchQuery,
-        'onUpdate:filterQuery': onUpdateFilterQuery,
-        onCancelFilter,
         onSelectCurrent,
         onNavigateDown,
         onNavigateUp,
@@ -94,43 +75,20 @@ describe('NodeSearchInput', () => {
     return {
       user,
       onUpdateSearchQuery,
-      onUpdateFilterQuery,
-      onCancelFilter,
       onSelectCurrent,
       onNavigateDown,
       onNavigateUp
     }
   }
 
-  it('should route input to searchQuery when no active filter', async () => {
+  it('should route input to searchQuery', async () => {
     const { user, onUpdateSearchQuery } = createRender()
     await user.type(screen.getByRole('combobox'), 'test search')
 
     expect(onUpdateSearchQuery).toHaveBeenLastCalledWith('test search')
   })
 
-  it('should route input to filterQuery when active filter is set', async () => {
-    const { user, onUpdateFilterQuery, onUpdateSearchQuery } = createRender({
-      activeFilter: createActiveFilter('Input')
-    })
-    await user.type(screen.getByRole('combobox'), 'IMAGE')
-
-    expect(onUpdateFilterQuery).toHaveBeenLastCalledWith('IMAGE')
-    expect(onUpdateSearchQuery).not.toHaveBeenCalled()
-  })
-
-  it('should show filter label placeholder when active filter is set', () => {
-    createRender({
-      activeFilter: createActiveFilter('Input')
-    })
-
-    expect(screen.getByRole('combobox')).toHaveAttribute(
-      'placeholder',
-      expect.stringContaining('input')
-    )
-  })
-
-  it('should show add node placeholder when no active filter', () => {
+  it('should show add node placeholder', () => {
     createRender()
 
     expect(screen.getByRole('combobox')).toHaveAttribute(
@@ -139,31 +97,12 @@ describe('NodeSearchInput', () => {
     )
   })
 
-  it('should hide filter chips when active filter is set', () => {
-    createRender({
-      filters: [createFilter('input', 'IMAGE')],
-      activeFilter: createActiveFilter('Input')
-    })
-
-    expect(screen.queryAllByTestId('filter-chip')).toHaveLength(0)
-  })
-
-  it('should show filter chips when no active filter', () => {
+  it('should show filter chips when filters are present', () => {
     createRender({
       filters: [createFilter('input', 'IMAGE')]
     })
 
     expect(screen.getAllByTestId('filter-chip')).toHaveLength(1)
-  })
-
-  it('should emit cancelFilter when cancel button is clicked', async () => {
-    const { user, onCancelFilter } = createRender({
-      activeFilter: createActiveFilter('Input')
-    })
-
-    await user.click(screen.getByTestId('cancel-filter'))
-
-    expect(onCancelFilter).toHaveBeenCalledOnce()
   })
 
   it('should emit selectCurrent on Enter', async () => {

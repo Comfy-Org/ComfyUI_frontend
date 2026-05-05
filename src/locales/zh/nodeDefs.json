@@ -3,7 +3,7 @@
     "display_name": "自适应投影引导",
     "inputs": {
       "eta": {
-        "name": "预计到达时间",
+        "name": "eta",
         "tooltip": "控制平行引导向量的缩放比例。默认 CFG 行为设置为 1。"
       },
       "model": {
@@ -371,7 +371,7 @@
   },
   "BriaImageEditNode": {
     "description": "使用 Bria 最新模型编辑图像",
-    "display_name": "Bria 图像编辑",
+    "display_name": "Bria FIBO 图像编辑",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -864,7 +864,7 @@
   },
   "ByteDanceSeedreamNode": {
     "description": "统一文本到图像生成，支持高达4K分辨率的精确单句编辑。",
-    "display_name": "字节跳动Seedream 4",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -1047,7 +1047,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nStable Diffusion：clip-l\nStable Cascade：clip-g\nSD3：t5 / clip-g / clip-l\nStable Audio：t5\nMochi：t5\ncosmos：old t5 xxl",
+    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 旧 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推荐）或 t5\nomnigen2: qwen vl 2.5 3B",
     "display_name": "加载CLIP",
     "inputs": {
       "clip_name": {
@@ -4526,6 +4526,156 @@
       },
       "tapered_corners": {
         "name": "倒角"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "使用 HappyHorse 模型根据首帧图像生成视频。",
+    "display_name": "HappyHorse 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首帧图像。输出视频的宽高比将根据该图像确定。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "使用 HappyHorse 模型根据参考素材生成包含人物或物体的视频。支持单角色表演和多角色互动。",
+    "display_name": "HappyHorse 参考转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "使用 HappyHorse 模型根据文本提示生成视频。",
+    "display_name": "HappyHorse 文本转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "使用 HappyHorse 模型通过文本指令或参考图像编辑视频。输出时长为 3-15 秒，并与输入视频一致；超过 15 秒的输入将被截断。",
+    "display_name": "HappyHorse 视频编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要编辑的视频。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
       }
     },
     "outputs": {
@@ -11339,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey 图像转视频节点",
-    "display_name": "Moonvalley Marey 图像转视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "用于生成视频的参考图像"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "负面提示词文本"
-      },
-      "prompt": {
-        "name": "提示词"
-      },
-      "prompt_adherence": {
-        "name": "提示词遵循度",
-        "tooltip": "用于生成控制的引导尺度"
-      },
-      "resolution": {
-        "name": "分辨率",
-        "tooltip": "输出视频的分辨率"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "随机种子值"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "去噪步数"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey 文本转视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "负面提示词文本"
-      },
-      "prompt": {
-        "name": "提示词"
-      },
-      "prompt_adherence": {
-        "name": "提示词遵循度",
-        "tooltip": "用于生成控制的引导尺度"
-      },
-      "resolution": {
-        "name": "分辨率",
-        "tooltip": "输出视频的分辨率"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "随机种子值"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "推理步数"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 视频转视频",
-    "inputs": {
-      "control_type": {
-        "name": "控制类型"
-      },
-      "motion_intensity": {
-        "name": "运动强度",
-        "tooltip": "仅在控制类型为'运动转移'时使用"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "负面提示词文本"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "描述要生成的视频"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "随机种子值"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "推理步数"
-      },
-      "video": {
-        "name": "视频",
-        "tooltip": "用于生成输出视频的参考视频。必须至少5秒长。超过5秒的视频将被自动裁剪。仅支持MP4格式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "图像形态学",
     "inputs": {
@@ -11684,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "生成后控制"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "仅当 `size` 为“自定义”时使用。（仅限 GPT Image 2）必须为 16 的倍数。"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "仅当 `size` 为“自定义”时使用。（仅限 GPT Image 2）必须为 16 的倍数。"
       },
       "image": {
         "name": "参考图像",
@@ -12376,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "生成后控制"
       },
       "value": {
@@ -16466,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "音频"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16509,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "如果模型自带系统提示/模板，则使用内置模板。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "视频帧作为图像批处理。假定为24帧/秒；内部降采样为1帧/秒。"
       }
     },
     "outputs": {
@@ -16521,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "音频"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16564,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "如果模型自带系统提示/模板，则使用内置模板。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "视频帧作为图像批处理。假定为24帧/秒；内部降采样为1帧/秒。"
       }
     },
     "outputs": {
@@ -16735,6 +16793,45 @@
         "name": "放大模型"
       },
       "upscaler_resolution": {
+        "name": "放大分辨率"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "通过强大的放大和修复技术为视频注入新活力。",
+    "display_name": "Topaz 视频增强",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "动态压缩等级",
+        "tooltip": "CQP 等级。"
+      },
+      "interpolation_model": {
+        "name": "插值模型"
+      },
+      "upscaler_model": {
+        "name": "放大模型"
+      },
+      "upscaler_model_creativity": {
+        "name": "创造力"
+      },
+      "upscaler_model_prompt": {
+        "name": "提示词"
+      },
+      "upscaler_model_realism": {
+        "name": "真实感"
+      },
+      "upscaler_model_sharp": {
+        "name": "锐度"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "放大分辨率"
       },
       "video": {
