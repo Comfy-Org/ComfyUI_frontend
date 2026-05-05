@@ -1,49 +1,30 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 type ExecutionErrorStore = ReturnType<typeof useExecutionErrorStore>
 
-interface RequiredInputMissingNodeErrorOptions {
-  classType?: string
-  details?: string
-  dependentOutputs?: NodeError['dependent_outputs']
-  message?: string
-}
-
-function createRequiredInputMissingNodeError(
-  inputName: string,
-  {
-    classType = 'TestNode',
-    details = '',
-    dependentOutputs = [],
-    message = 'Missing'
-  }: RequiredInputMissingNodeErrorOptions = {}
-): NodeError {
+function createRequiredInputMissingNodeError(inputName: string): NodeError {
   return {
     errors: [
       {
         type: 'required_input_missing',
-        message,
-        details,
+        message: 'Missing',
+        details: '',
         extra_info: { input_name: inputName }
       }
     ],
-    dependent_outputs: dependentOutputs,
-    class_type: classType
+    dependent_outputs: [],
+    class_type: 'TestNode'
   }
 }
 
 export function seedRequiredInputMissingNodeError(
   store: ExecutionErrorStore,
-  executionId: NodeId,
-  inputName: string,
-  options?: RequiredInputMissingNodeErrorOptions
+  executionId: NodeExecutionId,
+  inputName: string
 ): void {
   store.lastNodeErrors = {
-    [String(executionId)]: createRequiredInputMissingNodeError(
-      inputName,
-      options
-    )
+    [executionId]: createRequiredInputMissingNodeError(inputName)
   }
 }

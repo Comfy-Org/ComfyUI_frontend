@@ -113,7 +113,8 @@ export const TestIds = {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
-    mainImage: 'main-image'
+    mainImage: 'main-image',
+    slotConnectionDot: 'slot-connection-dot'
   },
   selectionToolbox: {
     root: 'selection-toolbox',

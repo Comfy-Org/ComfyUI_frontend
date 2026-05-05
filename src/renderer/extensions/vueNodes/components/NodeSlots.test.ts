@@ -271,8 +271,7 @@ describe('NodeSlots.vue', () => {
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       nodeData.id,
-      'model',
-      { classType: 'KSampler' }
+      'model'
     )
     await nextTick()
 
@@ -302,8 +301,7 @@ describe('NodeSlots.vue', () => {
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       '65:70',
-      'model',
-      { classType: 'KSampler' }
+      'model'
     )
     await nextTick()
 
@@ -340,8 +338,7 @@ describe('NodeSlots.vue', () => {
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       '65:70:63',
-      'mask',
-      { classType: 'InnerNode' }
+      'mask'
     )
     await nextTick()
 

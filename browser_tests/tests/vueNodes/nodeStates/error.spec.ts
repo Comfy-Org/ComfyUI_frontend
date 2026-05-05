@@ -14,7 +14,6 @@ import {
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -92,10 +91,15 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
           },
           { nodeId: ksamplerId, inputName: KSAMPLER_MODEL_INPUT_NAME }
         )
-        const modelInputSlot = comfyPage.page.locator(
-          `[data-slot-key="${getSlotKey(ksamplerId, modelInputIndex, true)}"]`
+        const modelInputSlotRow = comfyPage.vueNodes.getInputSlotRow(
+          ksamplerId,
+          modelInputIndex
         )
-        const modelInputSlotHighlight = modelInputSlot.locator('xpath=..')
+        const modelInputSlotHighlight =
+          comfyPage.vueNodes.getInputSlotConnectionDot(
+            ksamplerId,
+            modelInputIndex
+          )
         const exec = new ExecutionHelper(comfyPage)
         await exec.mockValidationFailure({
           [ksamplerId]: buildKSamplerError(
@@ -109,8 +113,8 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         await dismissErrorOverlay(comfyPage)
         await fitToViewInstant(comfyPage)
 
-        await expect(modelInputSlot).toBeVisible()
-        await expect(modelInputSlot).toBeInViewport()
+        await expect(modelInputSlotRow).toBeVisible()
+        await expect(modelInputSlotRow).toBeInViewport()
         await expect(modelInputSlotHighlight).toHaveClass(/before:ring-error/)
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
