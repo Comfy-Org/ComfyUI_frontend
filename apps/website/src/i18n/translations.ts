@@ -3694,8 +3694,8 @@ const translations = {
     'zh-CN': '支付'
   },
   'payment.failed.title': {
-    en: 'Payment was not completed',
-    'zh-CN': '支付未完成'
+    en: 'Unable to complete payment',
+    'zh-CN': '无法完成支付'
   },
   'payment.failed.subtitle': {
     en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",

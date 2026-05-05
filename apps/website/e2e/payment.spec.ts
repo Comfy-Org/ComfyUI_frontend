@@ -61,7 +61,7 @@ test.describe('Payment failed page @smoke', () => {
   test('shows failure heading and subtitle', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
-        name: /Payment was not completed/i,
+        name: /Unable to complete payment/i,
         level: 1
       })
     ).toBeVisible()
