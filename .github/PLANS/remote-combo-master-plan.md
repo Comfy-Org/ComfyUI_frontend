@@ -615,13 +615,14 @@ export interface SpecAdapter<T extends InputSpec> {
   component: Component
 }
 
+// Pure spec-derived data only. Side-effectful values (asset-service lookups,
+// store state) live in WidgetSelect.vue and merge with these in the
+// `combinedProps` computed below.
 export interface SpecAdapterProps {
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
   uploadSubfolder?: string
-  isAssetMode?: boolean
-  defaultLayoutMode?: LayoutMode
   // ... extensible for future spec fields
 }
 
@@ -647,9 +648,7 @@ export const comboAdapter: SpecAdapter<ComboInputSpec> = {
         spec.audio_upload === true ||
         spec.mesh_upload === true,
       uploadFolder: spec.mesh_upload ? 'input' : spec.image_folder,
-      uploadSubfolder: spec.upload_subfolder,
-      isAssetMode: assetService.shouldUseAssetBrowser(nodeType, widgetName),
-      defaultLayoutMode: isAssetMode ? 'list' : 'grid'
+      uploadSubfolder: spec.upload_subfolder
     }
   },
   component: WidgetSelect
@@ -668,6 +667,22 @@ const adapterProps = computed(() => {
   if (!adapter.value || !props.widget.spec) return {}
   return adapter.value.extractProps(props.widget.spec as any)
 })
+
+// Side-effectful, runtime-only props live in the component, NOT the adapter.
+// `assetService.shouldUseAssetBrowser` reads store state and reactive feature
+// flags — keeping it here preserves the adapter's purity (Risk 2 below).
+const isAssetMode = computed(() =>
+  assetService.shouldUseAssetBrowser(props.nodeType, props.widget.name)
+)
+const defaultLayoutMode = computed<LayoutMode>(() =>
+  isAssetMode.value ? 'list' : 'grid'
+)
+
+const combinedProps = computed(() => ({
+  ...adapterProps.value,
+  isAssetMode: isAssetMode.value,
+  defaultLayoutMode: defaultLayoutMode.value
+}))
 ```
 
 **File paths to create/modify:**
@@ -730,7 +745,7 @@ The audit (§9) identified one external repo (`jtydhr88/comfyui-custom-node-skil
 
 ---
 
-**Summary:** Option B (Adapter pattern) is a low-risk, high-value improvement that formalizes the existing codebase structure and makes future spec-field additions a single-file edit. It should be included in the PR as part of Phase 2.
+**Summary:** Option B (Adapter pattern) is a low-risk, high-value improvement that formalizes the existing codebase structure and makes future spec-field additions a single-file edit. It should be included in the PR as part of **Phase 4 (Component family)** — see §11.1.d for the rationale on phase placement.
 
 ## 11.2 Figma / design-system alignment audit
 
