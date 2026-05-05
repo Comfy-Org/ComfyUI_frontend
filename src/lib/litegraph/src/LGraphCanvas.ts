@@ -3929,15 +3929,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
-      // Trackpads and mice work on significantly different scales
-      const factor = isTrackpad ? 0.18 : 0.008_333
-
-      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
-        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
-      } else {
-        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
-      }
+      // Trackpad two-finger pan: outer condition guarantees isTrackpad here
+      const factor = 0.18
+      this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+      this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
     }
 
     this.graph.change()
