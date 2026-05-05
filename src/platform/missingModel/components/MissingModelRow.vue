@@ -185,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -239,6 +239,7 @@ const comboOptions = computed(() => getComboOptions(model.representative))
 const canConfirm = computed(() => isSelectionConfirmable(modelKey.value))
 const expanded = computed(() => isModelExpanded(modelKey.value))
 const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
+const hasSeenElectronDownloadStatus = ref(false)
 const isDownloadActive = computed(
   () =>
     downloadStatus.value?.status === 'running' ||
@@ -328,6 +329,27 @@ const {
   getTypeMismatch,
   getDownloadStatus
 } = useMissingModelInteractions()
+
+watch(
+  () => ({
+    downloadRef: store.downloadRefs[modelKey.value],
+    downloadStatus: downloadStatus.value
+  }),
+  ({ downloadRef, downloadStatus }) => {
+    if (downloadRef?.kind !== 'electron-download') {
+      hasSeenElectronDownloadStatus.value = false
+      return
+    }
+    if (downloadStatus) {
+      hasSeenElectronDownloadStatus.value = true
+      return
+    }
+    if (downloadRef.downloadId || hasSeenElectronDownloadStatus.value) {
+      cancelLibrarySelect(modelKey.value)
+    }
+  },
+  { immediate: true }
+)
 
 function handleLibrarySelect() {
   confirmLibrarySelect(

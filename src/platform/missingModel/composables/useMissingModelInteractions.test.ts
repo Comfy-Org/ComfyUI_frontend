@@ -376,6 +376,25 @@ describe('useMissingModelInteractions', () => {
       const { isSelectionConfirmable } = useMissingModelInteractions()
       expect(isSelectionConfirmable('key1')).toBe(false)
     })
+
+    it('does not use URL fallback to confirm an Electron ref with a missing download id', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadById.mockReturnValue(null)
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 1,
+        status: 'completed'
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(false)
+      expect(mockFindElectronDownloadByUrl).not.toHaveBeenCalled()
+    })
   })
 
   describe('getDownloadStatus', () => {
@@ -444,6 +463,24 @@ describe('useMissingModelInteractions', () => {
       expect(mockFindElectronDownloadById).toHaveBeenCalledWith(
         '/models/checkpoints/model.safetensors'
       )
+    })
+
+    it('returns null instead of falling back to URL when a download id is present but missing', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadById.mockReturnValue(null)
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 1,
+        status: 'completed'
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toBeNull()
+      expect(mockFindElectronDownloadByUrl).not.toHaveBeenCalled()
     })
 
     it('returns null when no tracked download ref exists', () => {

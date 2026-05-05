@@ -292,11 +292,9 @@ export function useMissingModelInteractions() {
         : null
     }
 
-    const electronDownload = downloadRef.downloadId
+    const download = downloadRef.downloadId
       ? electronDownloadStore.findByDownloadId(downloadRef.downloadId)
-      : null
-    const download =
-      electronDownload ?? electronDownloadStore.findByUrl(downloadRef.url)
+      : electronDownloadStore.findByUrl(downloadRef.url)
     return download
       ? {
           progress: download.progress,

@@ -1,16 +1,22 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { MissingModelViewModel } from '@/platform/missingModel/types'
+import type {
+  MissingModelDownloadStatus,
+  MissingModelViewModel
+} from '@/platform/missingModel/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockDownloadModel = vi.hoisted(() => vi.fn())
 const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsDesktop = vi.hoisted(() => ({ value: false }))
+const mockDownloadStatuses = vi.hoisted(
+  () => new Map<string, MissingModelDownloadStatus | null>()
+)
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false,
@@ -97,13 +103,21 @@ vi.mock(
           }
         },
         isSelectionConfirmable: () => false,
-        cancelLibrarySelect: vi.fn(),
+        cancelLibrarySelect: (key: string) => {
+          delete store.selectedLibraryModel[key]
+          delete store.importCategoryMismatch[key]
+          delete store.downloadRefs[key]
+        },
         confirmLibrarySelect: vi.fn(),
         getTypeMismatch: () => null,
-        getDownloadStatus: (key: string) =>
-          store.downloadRefs[key]?.kind === 'electron-download'
+        getDownloadStatus: (key: string) => {
+          if (mockDownloadStatuses.has(key)) {
+            return mockDownloadStatuses.get(key) ?? null
+          }
+          return store.downloadRefs[key]?.kind === 'electron-download'
             ? { progress: 0, status: 'created' as const }
             : null
+        }
       }
     }
   })
@@ -187,6 +201,7 @@ describe('MissingModelRow', () => {
     })
     mockCopyToClipboard.mockReset()
     mockIsDesktop.value = false
+    mockDownloadStatuses.clear()
 
     const store = useMissingModelStore()
     store.folderPaths = {
@@ -272,5 +287,27 @@ describe('MissingModelRow', () => {
     expect(store.selectedLibraryModel[modelKey]).toBe(
       'library-model.safetensors'
     )
+  })
+
+  it('returns to download controls when a tracked Electron download disappears', async () => {
+    const store = useMissingModelStore()
+    store.selectedLibraryModel[modelKey] = model.representative.name
+    store.downloadRefs[modelKey] = {
+      kind: 'electron-download',
+      downloadId: '/models/checkpoints/z_image_turbo_bf16.safetensors',
+      url: model.representative.url!
+    }
+    mockDownloadStatuses.set(modelKey, null)
+
+    renderComponent()
+
+    await waitFor(() => {
+      expect(store.selectedLibraryModel[modelKey]).toBeUndefined()
+    })
+    expect(store.downloadRefs[modelKey]).toBeUndefined()
+    expect(screen.getByTestId('missing-model-download')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('missing-model-status-card')
+    ).not.toBeInTheDocument()
   })
 })
