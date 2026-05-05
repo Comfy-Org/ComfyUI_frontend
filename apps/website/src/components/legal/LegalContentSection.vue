@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -154,11 +155,13 @@ function listItems(key: TranslationKey): string[] {
               <a
                 :href="`#${item.id}`"
                 :aria-current="activeSection === item.id ? 'true' : undefined"
-                class="text-primary-comfy-canvas hover:bg-transparency-white-t4 block rounded-lg px-3 py-2 text-sm transition-colors"
                 :class="
-                  activeSection === item.id
-                    ? 'text-primary-comfy-yellow font-semibold'
-                    : 'text-primary-warm-gray'
+                  cn(
+                    'hover:bg-transparency-white-t4 block rounded-lg px-3 py-2 text-sm transition-colors',
+                    activeSection === item.id
+                      ? 'text-primary-comfy-yellow font-semibold'
+                      : 'text-primary-warm-gray'
+                  )
                 "
                 @click.prevent="scrollToSection(item.id)"
               >
