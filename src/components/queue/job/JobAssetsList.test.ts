@@ -72,6 +72,7 @@ vi.mock('vue-i18n', () => {
 
 type TestPreviewOutput = {
   url: string
+  previewUrl: string
   isImage: boolean
   isVideo: boolean
 }
@@ -96,6 +97,7 @@ const createPreviewOutput = (
   const url = `/api/view/${filename}`
   return {
     url,
+    previewUrl: mediaType === 'images' ? `${url}?res=512` : url,
     isImage: mediaType === 'images',
     isVideo: mediaType === 'video'
   }
@@ -238,6 +240,18 @@ describe('JobAssetsList', () => {
     await user.click(screen.getByTestId('preview-trigger'))
 
     expect(onViewItem).toHaveBeenCalledWith(job)
+  })
+
+  it('uses thumbnail preview URLs for completed image rows', () => {
+    const preview = createPreviewOutput('job-1.png')
+    const job = buildJob({
+      taskRef: createTaskRef(preview)
+    })
+    const { container } = renderJobAssetsList({ jobs: [job] })
+
+    const stubRoot = container.querySelector('.assets-list-item-stub')!
+    expect(stubRoot.getAttribute('data-preview-url')).toBe(preview.previewUrl)
+    expect(stubRoot.getAttribute('data-preview-url')).not.toBe(preview.url)
   })
 
   it('emits viewItem on double-click for completed jobs with preview', async () => {

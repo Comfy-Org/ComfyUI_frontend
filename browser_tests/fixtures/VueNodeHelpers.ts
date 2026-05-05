@@ -5,6 +5,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 export class VueNodeHelpers {
   constructor(private page: Page) {}
@@ -28,6 +29,22 @@ export class VueNodeHelpers {
    */
   get selectedNodes(): Locator {
     return this.page.locator('[data-node-id].outline-node-component-outline')
+  }
+
+  getInputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--input')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+        )
+      })
+  }
+
+  getInputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getInputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
   }
 
   /**
