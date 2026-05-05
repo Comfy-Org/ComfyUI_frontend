@@ -31,37 +31,46 @@ Disallow: /_website/
 Disallow: /_vercel/
 Disallow: /payment/
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: GPTBot
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: ChatGPT-User
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: ClaudeBot
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: Claude-User
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: Claude-SearchBot
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: PerplexityBot
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 User-agent: Google-Extended
 Allow: /
 Disallow: /affiliates/terms
+Disallow: /zh-CN/affiliates/terms
 
 Sitemap: https://comfy.org/sitemap-index.xml

@@ -38,19 +38,25 @@ test.describe('Affiliate Terms — desktop @smoke', () => {
     for (const id of SECTION_IDS) {
       await expect(page.locator(`[id="${id}"]`)).toBeAttached()
     }
-  })
 
-  test('clicking a desktop TOC link scrolls to the matching section', async ({
-    page
-  }) => {
-    const desktopToc = page.getByRole('navigation', { name: 'On this page' })
-    await expect(desktopToc).toBeVisible()
-
-    const link = desktopToc.getByRole('link', { name: /5\. Prohibited/ })
-    await link.click()
-
-    const target = page.locator('[id="5-prohibited-activities"]')
-    await expect(target).toBeInViewport()
+    const orderedIds = await page.evaluate(
+      (ids) => {
+        const elements = ids
+          .map((id) => document.getElementById(id))
+          .filter((el): el is HTMLElement => el !== null)
+        return elements
+          .slice()
+          .sort((a, b) => {
+            const relation = a.compareDocumentPosition(b)
+            if (relation & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+            if (relation & Node.DOCUMENT_POSITION_PRECEDING) return 1
+            return 0
+          })
+          .map((el) => el.id)
+      },
+      [...SECTION_IDS]
+    )
+    expect(orderedIds).toEqual([...SECTION_IDS])
   })
 
   test('renders an effective date footer', async ({ page }) => {
@@ -64,6 +70,25 @@ test.describe('Affiliate Terms — desktop @smoke', () => {
     await expect(
       page.getByText(/Open questions for legal review/i)
     ).toHaveCount(0)
+  })
+})
+
+test.describe('Affiliate Terms — desktop interactions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('clicking a desktop TOC link scrolls to the matching section', async ({
+    page
+  }) => {
+    const desktopToc = page.getByRole('navigation', { name: 'On this page' })
+    await expect(desktopToc).toBeVisible()
+
+    const link = desktopToc.getByRole('link', { name: /5\. Prohibited/ })
+    await link.click()
+
+    const target = page.locator('[id="5-prohibited-activities"]')
+    await expect(target).toBeInViewport()
   })
 })
 
