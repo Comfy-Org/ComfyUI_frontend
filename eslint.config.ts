@@ -36,6 +36,7 @@ const settings = {
       alwaysTryTypes: true,
       project: [
         './tsconfig.json',
+        './browser_tests/tsconfig.json',
         './apps/*/tsconfig.json',
         './packages/*/tsconfig.json'
       ],

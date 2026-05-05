@@ -3498,18 +3498,6 @@ const translations = {
     en: 'Dale Carman | Co-founder @ Groove Jones',
     'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
   },
-  'customers.detail.groove-jones.topic-10.block.2.label': {
-    en: 'GROOVE JONES CONTRIBUTORS',
-    'zh-CN': 'GROOVE JONES 贡献者'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.name': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.role': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
 
   // Contact – FormSection
   'contact.form.badge': {
@@ -3694,8 +3682,8 @@ const translations = {
     'zh-CN': '支付'
   },
   'payment.failed.title': {
-    en: 'Payment was not completed',
-    'zh-CN': '支付未完成'
+    en: 'Unable to complete payment',
+    'zh-CN': '无法完成支付'
   },
   'payment.failed.subtitle': {
     en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",

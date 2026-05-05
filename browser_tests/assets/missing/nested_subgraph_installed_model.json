@@ -1,0 +1,232 @@
+{
+  "id": "14af6003-d4ee-4dee-8e3d-cbff2e5519b3",
+  "revision": 0,
+  "last_node_id": 205,
+  "last_link_id": 383,
+  "nodes": [
+    {
+      "id": 205,
+      "type": "821645cc-a5d2-468f-990c-17d9de2e0d1b",
+      "pos": [4720, 5820],
+      "size": [400, 470],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "lotus_model",
+          "name": "unet_name_1",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name_1"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "proxyWidgets": [["76", "unet_name"]]
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "821645cc-a5d2-468f-990c-17d9de2e0d1b",
+        "version": 1,
+        "state": {
+          "lastGroupId": 8,
+          "lastNodeId": 205,
+          "lastLinkId": 383,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Depth to Image (Z-Image-Turbo)",
+        "inputNode": {
+          "id": -10,
+          "bounding": [28, 4936, 128, 68]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [1599, 4936, 128, 68]
+        },
+        "inputs": [
+          {
+            "id": "80e6915f-5d59-4d6b-a197-d8c565ad2922",
+            "name": "unet_name_1",
+            "type": "COMBO",
+            "linkIds": [258],
+            "pos": [132, 4960]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "47f9a22d-6619-4917-9447-a7d5d08dceb5",
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "linkIds": [],
+            "pos": [1623, 4960]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 76,
+            "type": "a1134394-29e4-48dc-9b1e-e601a14d6fb8",
+            "pos": [250, 4910],
+            "size": [400, 210],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "unet_name",
+                "type": "COMBO",
+                "widget": {
+                  "name": "unet_name"
+                },
+                "link": 258
+              }
+            ],
+            "outputs": [
+              {
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": []
+              }
+            ],
+            "properties": {
+              "proxyWidgets": [["203", "unet_name"]]
+            },
+            "widgets_values": []
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 258,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 76,
+            "target_slot": 0,
+            "type": "COMBO"
+          }
+        ],
+        "extra": {
+          "workflowRendererVersion": "LG",
+          "ds": {
+            "scale": 1,
+            "offset": [-30, -4760]
+          }
+        }
+      },
+      {
+        "id": "a1134394-29e4-48dc-9b1e-e601a14d6fb8",
+        "version": 1,
+        "state": {
+          "lastGroupId": 8,
+          "lastNodeId": 205,
+          "lastLinkId": 383,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Image to Depth Map (Lotus)",
+        "inputNode": {
+          "id": -10,
+          "bounding": [-60, -173, 128, 68]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [1650, -173, 128, 68]
+        },
+        "inputs": [
+          {
+            "id": "d721b249-fd2a-441b-9a78-2805f04e2644",
+            "name": "unet_name",
+            "type": "COMBO",
+            "linkIds": [256],
+            "pos": [44, -149]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "2ec278bd-0b66-4b30-9c5b-994d5f638214",
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "linkIds": [],
+            "pos": [1674, -149]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 203,
+            "type": "UNETLoader",
+            "pos": [180, -200],
+            "size": [400, 200],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "unet_name",
+                "type": "COMBO",
+                "widget": {
+                  "name": "unet_name"
+                },
+                "link": 256
+              }
+            ],
+            "outputs": [
+              {
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": ["lotus-depth-d-v1-1.safetensors", "default"]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 256,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 203,
+            "target_slot": 0,
+            "type": "COMBO"
+          }
+        ],
+        "extra": {
+          "workflowRendererVersion": "LG",
+          "ds": {
+            "scale": 1,
+            "offset": [40, 350]
+          }
+        }
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "workflowRendererVersion": "LG",
+    "ds": {
+      "scale": 1,
+      "offset": [-4500, -5670]
+    }
+  },
+  "version": 0.4
+}
