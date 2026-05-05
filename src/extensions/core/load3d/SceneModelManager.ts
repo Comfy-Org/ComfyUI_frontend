@@ -492,6 +492,13 @@ export class SceneModelManager implements ModelManagerInterface {
 
     model.position.set(-center.x, -scaledBox.min.y, -center.z)
 
+    // fitToViewer resets rotation to (0,0,0), so originalRotation must be cleared
+    // before reapplying currentUpDirection to avoid compounding rotations.
+    this.originalRotation = null
+    if (this.currentUpDirection !== 'original') {
+      this.setUpDirection(this.currentUpDirection)
+    }
+
     const newBox = this.computeWorldBounds(model)
     const newSize = newBox.getSize(new THREE.Vector3())
     const newCenter = newBox.getCenter(new THREE.Vector3())
