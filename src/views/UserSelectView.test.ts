@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,9 +12,7 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
-
-const mockRouterPush = vi.fn()
+const mockRouterPush = vi.hoisted(() => vi.fn())
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mockRouterPush })
 }))
@@ -36,15 +34,12 @@ vi.mock('@/views/templates/BaseViewTemplate.vue', () => ({
   }
 }))
 
-const mountView = async () => {
-  const result = render(UserSelectView, {
+const mountView = () =>
+  render(UserSelectView, {
     global: {
       plugins: [i18n, PrimeVue]
     }
   })
-  await flushPromises()
-  return result
-}
 
 describe('UserSelectView', () => {
   beforeEach(() => {
@@ -53,13 +48,15 @@ describe('UserSelectView', () => {
   })
 
   it('initializes the user store on mount', async () => {
-    await mountView()
+    mountView()
 
-    expect(userStoreMock.initialize).toHaveBeenCalledTimes(1)
+    await waitFor(() =>
+      expect(userStoreMock.initialize).toHaveBeenCalledTimes(1)
+    )
   })
 
   it('shows an error when login is attempted without a selection', async () => {
-    await mountView()
+    mountView()
 
     await userEvent.click(
       screen.getByRole('button', { name: 'userSelect.next' })
@@ -73,7 +70,7 @@ describe('UserSelectView', () => {
   it('creates a new user, logs in, and navigates home', async () => {
     const newUser = { userId: 'u1', username: 'bob' }
     userStoreMock.createUser.mockResolvedValueOnce(newUser)
-    await mountView()
+    mountView()
 
     await userEvent.type(
       screen.getByPlaceholderText('userSelect.enterUsername'),
@@ -90,7 +87,7 @@ describe('UserSelectView', () => {
 
   it('shows an error when the entered username already exists', async () => {
     userStoreMock.users = [{ userId: 'u1', username: 'bob' }]
-    await mountView()
+    mountView()
 
     await userEvent.type(
       screen.getByPlaceholderText('userSelect.enterUsername'),
@@ -104,7 +101,7 @@ describe('UserSelectView', () => {
 
   it('surfaces createUser failures as a login error', async () => {
     userStoreMock.createUser.mockRejectedValueOnce(new Error('boom'))
-    await mountView()
+    mountView()
 
     await userEvent.type(
       screen.getByPlaceholderText('userSelect.enterUsername'),
