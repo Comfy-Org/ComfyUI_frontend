@@ -60,7 +60,7 @@ jobs:
         id: perf
         continue-on-error: true
         env:
-          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '1' }}
+          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
         run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
 
       - name: Upload perf metrics
