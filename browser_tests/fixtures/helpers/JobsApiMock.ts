@@ -8,16 +8,11 @@ import type {
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const jobDetailRoutePattern = /\/api\/jobs\/[^/?#]+(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history(?:\?.*)?$/
+const defaultJobsListLimit = 100
 
 export type MockJobRecord = {
   listItem: JobEntry
   detail: JobDetailResponse
-}
-
-type JobsListMockResponse = Omit<JobsListResponse, 'pagination'> & {
-  pagination: Omit<JobsListResponse['pagination'], 'limit'> & {
-    limit: number | null
-  }
 }
 
 function parsePositiveIntegerParam(url: URL, name: string): number | undefined {
@@ -91,22 +86,20 @@ export class JobsApiMock {
         }
 
         const offset = parsePositiveIntegerParam(url, 'offset') ?? 0
-        const limit = parsePositiveIntegerParam(url, 'limit')
+        const limit =
+          parsePositiveIntegerParam(url, 'limit') ?? defaultJobsListLimit
         const total = filteredJobs.length
-        const visibleJobs =
-          limit === undefined
-            ? filteredJobs.slice(offset)
-            : filteredJobs.slice(offset, offset + limit)
+        const visibleJobs = filteredJobs.slice(offset, offset + limit)
 
         const response = {
           jobs: visibleJobs,
           pagination: {
             offset,
-            limit: limit ?? null,
+            limit,
             total,
             has_more: offset + visibleJobs.length < total
           }
-        } satisfies JobsListMockResponse
+        } satisfies JobsListResponse
 
         await route.fulfill({
           status: 200,
