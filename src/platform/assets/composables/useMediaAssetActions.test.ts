@@ -176,18 +176,23 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-const mockNodeToNodeLocatorId = vi.hoisted(() =>
-  vi.fn((node: { id: number | string }) => String(node.id))
-)
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeToNodeLocatorId: mockNodeToNodeLocatorId
+const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: () => ({
+    removeNodeOutputs: mockRemoveNodeOutputs
   })
 }))
 
 const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
 vi.mock('../utils/clearNodePreviewCacheForFilenames', () => ({
-  clearNodePreviewCacheForFilenames: mockClearNodePreviewCache
+  clearNodePreviewCacheForFilenames: mockClearNodePreviewCache,
+  extractFilenameFromWidgetValue: vi.fn(),
+  findNodesReferencingFilenames: vi.fn(() => [])
+}))
+
+const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
+vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
+  markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -848,11 +853,19 @@ describe('useMediaAssetActions', () => {
       await vi.waitFor(() => {
         expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
       })
-      const [graphArg, filenamesArg, locatorArg] =
+      const [graphArg, filenamesArg, removeArg] =
         mockClearNodePreviewCache.mock.calls[0]
       expect(graphArg).toBe(mockAppGraph.value)
       expect(filenamesArg).toEqual(new Set(['foo.png', 'abc123.png']))
-      expect(locatorArg).toBe(mockNodeToNodeLocatorId)
+      expect(typeof removeArg).toBe('function')
+
+      removeArg({ id: 42 })
+      expect(mockRemoveNodeOutputs).toHaveBeenCalledWith(42)
+
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['foo.png', 'abc123.png'])
+      )
     })
 
     it('omits filenames of failed deletions and skips the helper when nothing was deleted', async () => {
@@ -870,6 +883,7 @@ describe('useMediaAssetActions', () => {
         expect(mockDeleteAsset).toHaveBeenCalled()
       })
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
     })
   })
 })

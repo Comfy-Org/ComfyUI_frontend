@@ -7,7 +7,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -16,10 +15,12 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearNodePreviewCacheForFilenames } from '../utils/clearNodePreviewCacheForFilenames'
+import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { getAssetOutputCount } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -651,12 +652,13 @@ export function useMediaAssetActions() {
                   if (asset.asset_hash) deletedFilenames.add(asset.asset_hash)
                 })
                 if (deletedFilenames.size > 0) {
-                  const { nodeToNodeLocatorId } = useWorkflowStore()
+                  const nodeOutputStore = useNodeOutputStore()
                   clearNodePreviewCacheForFilenames(
                     graph,
                     deletedFilenames,
-                    nodeToNodeLocatorId
+                    (node) => nodeOutputStore.removeNodeOutputs(node.id)
                   )
+                  markDeletedAssetsAsMissingMedia(graph, deletedFilenames)
                 }
               }
 

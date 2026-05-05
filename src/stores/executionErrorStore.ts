@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useMissingMediaPreviewSync } from '@/composables/graph/useMissingMediaPreviewSync'
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -352,6 +353,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   useNodeErrorFlagSync(lastNodeErrors, missingModelStore, missingMediaStore)
+  useMissingMediaPreviewSync(missingMediaStore)
 
   return {
     // Raw state
