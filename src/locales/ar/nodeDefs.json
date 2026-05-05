@@ -11406,8 +11406,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية GPT Image 1 من OpenAI.",
-    "display_name": "OpenAI GPT صورة 1",
+    "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية GPT Image 2 من OpenAI.",
+    "display_name": "OpenAI GPT صورة 2",
     "inputs": {
       "background": {
         "name": "الخلفية",
@@ -11433,7 +11433,7 @@
       },
       "prompt": {
         "name": "النص الوصفي",
-        "tooltip": "النص الوصفي لـ GPT Image 1"
+        "tooltip": "النص الوصفي لـ GPT Image 2"
       },
       "quality": {
         "name": "الجودة",
