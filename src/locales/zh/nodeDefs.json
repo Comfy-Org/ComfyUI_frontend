@@ -11840,7 +11840,7 @@
     }
   },
   "Painter": {
-    "display_name": "Painter",
+    "display_name": "绘画",
     "inputs": {
       "bg_color": {
         "name": "背景颜色"
@@ -13480,7 +13480,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
-    "display_name": "Resize Images by Shorter Edge",
+    "display_name": "按短边调整图像大小",
     "inputs": {
       "images": {
         "name": "图像",
@@ -16508,7 +16508,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "文本生成",
     "inputs": {
       "audio": {
         "name": "音频"
@@ -16570,7 +16570,7 @@
     }
   },
   "TextGenerateLTX2Prompt": {
-    "display_name": "TextGenerateLTX2Prompt",
+    "display_name": "LTX2Prompt 文本生成",
     "inputs": {
       "audio": {
         "name": "音频"
