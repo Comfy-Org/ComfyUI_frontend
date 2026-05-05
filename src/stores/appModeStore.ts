@@ -49,14 +49,13 @@ export const useAppModeStore = defineStore('appMode', () => {
   function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
+    if (!app.rootGraph || ChangeTracker.isLoadingGraph) {
+      return { inputs: rawInputs, outputs: rawOutputs }
+    }
 
     return {
-      inputs: app.rootGraph
-        ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
-        : rawInputs,
-      outputs: app.rootGraph
-        ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
-        : rawOutputs
+      inputs: rawInputs.filter(([nodeId]) => resolveNode(nodeId)),
+      outputs: rawOutputs.filter((nodeId) => resolveNode(nodeId))
     }
   }
 
@@ -70,7 +69,10 @@ export const useAppModeStore = defineStore('appMode', () => {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
 
-    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
+    const source =
+      activeWorkflow.changeTracker?.activeState?.extra?.linearData ??
+      activeWorkflow.initialState?.extra?.linearData
+    loadSelections(source)
   }
 
   useEventListener(
