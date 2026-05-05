@@ -5,25 +5,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-const ANNOTATION_PATTERN = / \[(input|output|temp)\]$/i
-
-export const extractFilenameFromWidgetValue = (
-  value: unknown
-): string | null => {
-  if (typeof value === 'string') {
-    const withoutAnnotation = value.replace(ANNOTATION_PATTERN, '')
-    const slashIndex = withoutAnnotation.lastIndexOf('/')
-    return slashIndex === -1
-      ? withoutAnnotation
-      : withoutAnnotation.slice(slashIndex + 1)
-  }
-  if (value && typeof value === 'object' && 'filename' in value) {
-    const filename = (value as { filename: unknown }).filename
-    return typeof filename === 'string' ? filename : null
-  }
-  return null
-}
-
 /**
  * Clear cached Load Image / Load Video preview state on any node whose widget
  * value matches one of the given values. Covers:
