@@ -447,15 +447,16 @@ export class SceneModelManager implements ModelManagerInterface {
     }
 
     this.scene.add(model)
+    const pendingMaterialMode = this.materialMode
+    this.setupModelMaterials(model)
 
-    if (this.materialMode !== 'original') {
-      this.setMaterialMode(this.materialMode)
+    if (pendingMaterialMode !== 'original') {
+      this.setMaterialMode(pendingMaterialMode)
     }
 
     if (this.currentUpDirection !== 'original') {
       this.setUpDirection(this.currentUpDirection)
     }
-    this.setupModelMaterials(model)
 
     const box = this.computeWorldBounds(model)
     const size = box.getSize(new THREE.Vector3())

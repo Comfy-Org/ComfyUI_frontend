@@ -211,20 +211,40 @@ describe('SceneModelManager', () => {
       expect(setupCamera).toHaveBeenCalled()
     })
 
-    it('does not skip materialMode when it differs from original', async () => {
+    it('reapplies non-original materialMode after snapshotting', async () => {
       const { manager } = createManager()
       const model = createMeshModel()
 
-      // setupModel checks materialMode !== 'original' and calls
-      // setMaterialMode, but the guard `mode === this.materialMode`
-      // causes it to no-op. Then setupModelMaterials resets to 'original'.
+      // setupModel calls setupModelMaterials first (which internally calls
+      // setMaterialMode('original') to reset), then reapplies the stored mode.
       manager.materialMode = 'wireframe'
       const spy = vi.spyOn(manager, 'setMaterialMode')
       await manager.setupModel(model)
 
-      // setMaterialMode is called with the stored mode and then 'original'
-      expect(spy).toHaveBeenCalledWith('wireframe')
       expect(spy).toHaveBeenCalledWith('original')
+      expect(spy).toHaveBeenCalledWith('wireframe')
+      // The final material mode visible on the mesh should be wireframe.
+      const mesh = model.children[0] as THREE.Mesh
+      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+    })
+
+    it('snapshots original materials before applying materialMode so restore is correct', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      const mesh = model.children[0] as THREE.Mesh
+      const originalMat = mesh.material
+
+      // Set a non-original mode before loading — this was the bug:
+      // originalMaterials would capture the wireframe material instead of the real one.
+      manager.materialMode = 'wireframe'
+      await manager.setupModel(model)
+
+      // The snapshot must hold the *pre-mutation* material.
+      expect(manager.originalMaterials.get(mesh)).toBe(originalMat)
+
+      // Restoring to 'original' must give back the true original, not wireframe.
+      manager.setMaterialMode('original')
+      expect(mesh.material).toBe(originalMat)
     })
 
     it('applies current up direction if not original', async () => {
