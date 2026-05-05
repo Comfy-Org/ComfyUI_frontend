@@ -37,9 +37,10 @@ export const useUserStore = defineStore('user', () => {
   const initialized = computed(() => userConfig.value !== null)
 
   /**
-   * Initialize the user store.
+   * Initialize the user store. No-op if already initialized.
    */
   async function initialize() {
+    if (initialized.value) return
     userConfig.value = await api.getUserConfig()
     currentUserId.value = localStorage['Comfy.userId']
   }
