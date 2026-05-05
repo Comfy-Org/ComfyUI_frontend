@@ -546,16 +546,26 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
-      // Only reconcile when the queue fetch returned data. api.getQueue()
-      // returns empty Running/Pending on transient errors, which would
-      // incorrectly clear all initializing prompts.
+      const activeJobIds = new Set([
+        ...queue.Running.map((j) => j.id),
+        ...queue.Pending.map((j) => j.id)
+      ])
+
+      // Only reconcile initializing jobs when the queue fetch returned data.
+      // api.getQueue() returns empty Running/Pending on transient errors,
+      // which would incorrectly clear all initializing prompts.
       const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
       if (queueHasData) {
-        const activeJobIds = new Set([
-          ...queue.Running.map((j) => j.id),
-          ...queue.Pending.map((j) => j.id)
-        ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+      }
+
+      // Reconcile terminal jobs whenever history is non-empty. The last
+      // active job finishing legitimately produces empty Running/Pending,
+      // and terminal eviction is the only path that clears stuck node
+      // progress when WebSocket terminal messages are dropped.
+      if (history.length > 0) {
+        const terminalJobIds = new Set(history.map((j) => j.id))
+        executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
       }
 
       // Sort by create_time descending and limit to maxItems
