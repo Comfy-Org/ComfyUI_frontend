@@ -371,7 +371,7 @@
   },
   "BriaImageEditNode": {
     "description": "使用 Bria 最新模型編輯圖像",
-    "display_name": "Bria 圖像編輯",
+    "display_name": "Bria FIBO 圖像編輯",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -864,7 +864,7 @@
   },
   "ByteDanceSeedreamNode": {
     "description": "統一文字生成圖片和精確單句編輯，最高支援 4K 解析度。",
-    "display_name": "字節跳動 Seedream 4",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1047,7 +1047,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推薦）或 t5",
+    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推薦）或 t5\nomnigen2: qwen vl 2.5 3B",
     "display_name": "載入 CLIP",
     "inputs": {
       "clip_name": {
