@@ -10,7 +10,7 @@ import BrandButton from '../common/BrandButton.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const logoContainer = ref<HTMLElement>()
-useHeroLogo(logoContainer)
+const { loaded: logoLoaded } = useHeroLogo(logoContainer)
 </script>
 
 <template>
@@ -22,6 +22,7 @@ useHeroLogo(logoContainer)
       class="relative flex aspect-square w-full flex-1 items-center justify-center"
     >
       <img
+        v-show="!logoLoaded"
         src="https://media.comfy.org/website/homepage/hero-logo-seq/Logo00.webp"
         alt="Comfy logo"
         class="w-3/5"

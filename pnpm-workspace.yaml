@@ -54,7 +54,7 @@ catalog:
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
-  '@types/three': ^0.169.0
+  '@types/three': ^0.170.0
   '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.0

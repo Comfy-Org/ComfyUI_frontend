@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import * as THREE from 'three'
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
@@ -14,8 +14,7 @@ const SVG_MARKUP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 404
 interface HeroLogoConfig {
   speed: number
   tiltX: number
-  tiltY: number
-  bgColor: string
+  tiltZ: number
   zoom: number
   fov: number
   logoColor: string
@@ -28,8 +27,7 @@ interface HeroLogoConfig {
 const DEFAULTS: HeroLogoConfig = {
   speed: 1,
   tiltX: -0.1,
-  tiltY: -0.1,
-  bgColor: '#211927',
+  tiltZ: -0.1,
   zoom: 7,
   fov: 50,
   logoColor: '#F2FF59',
@@ -81,239 +79,250 @@ export function useHeroLogo(
   config: Partial<HeroLogoConfig> = {}
 ) {
   const cfg = { ...DEFAULTS, ...config }
+  const loaded = ref(false)
   let cleanup: (() => void) | undefined
 
   onMounted(async () => {
-    const container = containerRef.value
-    if (!container || prefersReducedMotion()) return
+    try {
+      const container = containerRef.value
+      if (!container || prefersReducedMotion()) return
 
-    const { width, height } = container.getBoundingClientRect()
+      const { width, height } = container.getBoundingClientRect()
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      stencil: true,
-      alpha: true
-    })
-    renderer.setSize(width, height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-    renderer.setClearColor(cfg.bgColor, 0)
-    renderer.sortObjects = true
-    renderer.domElement.style.position = 'absolute'
-    renderer.domElement.style.inset = '0'
-    renderer.domElement.style.width = '100%'
-    renderer.domElement.style.height = '100%'
-    renderer.domElement.style.opacity = '0'
-    container.appendChild(renderer.domElement)
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        stencil: true,
+        alpha: true
+      })
+      renderer.setSize(width, height)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      renderer.outputColorSpace = THREE.SRGBColorSpace
+      renderer.domElement.style.position = 'absolute'
+      renderer.domElement.style.inset = '0'
+      renderer.domElement.style.width = '100%'
+      renderer.domElement.style.height = '100%'
+      renderer.domElement.style.opacity = '0'
+      renderer.domElement.setAttribute('aria-hidden', 'true')
+      container.appendChild(renderer.domElement)
 
-    let disposed = false
-    cleanup = () => {
-      disposed = true
-      renderer.dispose()
-      renderer.domElement.remove()
-    }
+      let disposed = false
+      const teardowns: Array<() => void> = []
+      cleanup = () => {
+        disposed = true
+        teardowns.forEach((fn) => fn())
+      }
+      teardowns.push(() => {
+        renderer.dispose()
+        renderer.domElement.remove()
+      })
 
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(
-      cfg.fov,
-      width / height,
-      0.1,
-      1000
-    )
-    camera.position.z = cfg.zoom
+      const scene = new THREE.Scene()
+      const camera = new THREE.PerspectiveCamera(
+        cfg.fov,
+        width / height,
+        0.1,
+        1000
+      )
+      camera.position.z = cfg.zoom
 
-    // SVG shape
-    const shapes = parseShapes()
-    const tempGeo = new THREE.ShapeGeometry(shapes)
-    tempGeo.computeBoundingBox()
-    const bb = tempGeo.boundingBox!
-    const cx = (bb.max.x + bb.min.x) / 2
-    const cy = (bb.max.y + bb.min.y) / 2
-    const scaleFactor = 3 / (bb.max.y - bb.min.y)
-    tempGeo.dispose()
+      // SVG shape
+      const shapes = parseShapes()
+      const tempGeo = new THREE.ShapeGeometry(shapes)
+      tempGeo.computeBoundingBox()
+      const bb = tempGeo.boundingBox!
+      const cx = (bb.max.x + bb.min.x) / 2
+      const cy = (bb.max.y + bb.min.y) / 2
+      const scaleFactor = 3 / (bb.max.y - bb.min.y)
+      tempGeo.dispose()
 
-    // Image sequence textures
-    const textures = await loadTextures(buildImageUrls())
-    if (disposed) return
-
-    renderer.domElement.style.opacity = '1'
-    Array.from(container.children).forEach((child) => {
-      if (child !== renderer.domElement && child instanceof HTMLElement)
-        child.style.display = 'none'
-    })
-
-    // Background plane (stencil read)
-    const bgPlaneGeo = new THREE.PlaneGeometry(14, 14)
-    const bgPlaneMat = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 1,
-      map: textures[0] ?? null,
-      depthTest: false,
-      depthWrite: false,
-      stencilWrite: true,
-      stencilFunc: THREE.EqualStencilFunc,
-      stencilRef: 1,
-      stencilFail: THREE.KeepStencilOp,
-      stencilZFail: THREE.KeepStencilOp,
-      stencilZPass: THREE.KeepStencilOp
-    })
-    const bgPlane = new THREE.Mesh(bgPlaneGeo, bgPlaneMat)
-    bgPlane.renderOrder = 1
-    bgPlane.scale.set(cfg.bgScale, cfg.bgScale, 1)
-    scene.add(bgPlane)
-
-    // Logo group
-    const group = new THREE.Group()
-    scene.add(group)
-
-    const s = scaleFactor
-    const depth = cfg.extrudeDepth
-
-    // Front face
-    const shapeGeo = new THREE.ShapeGeometry(shapes)
-    shapeGeo.translate(-cx, -cy, 0)
-    shapeGeo.scale(s, -s, s)
-    const shapeMat = new THREE.MeshBasicMaterial({
-      color: cfg.logoColor,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-      transparent: true
-    })
-    const logoMesh = new THREE.Mesh(shapeGeo, shapeMat)
-    logoMesh.renderOrder = 2
-    group.add(logoMesh)
-
-    // Extrusion stencil mask
-    const extrudeGeo = new THREE.ExtrudeGeometry(shapes, {
-      depth,
-      bevelEnabled: false
-    })
-    extrudeGeo.translate(-cx, -cy, -depth)
-    extrudeGeo.scale(s, -s, s)
-    const extrudeMat = new THREE.MeshBasicMaterial({
-      colorWrite: false,
-      depthWrite: true,
-      depthTest: true,
-      stencilWrite: true,
-      stencilRef: 1,
-      stencilFunc: THREE.AlwaysStencilFunc,
-      stencilZPass: THREE.ReplaceStencilOp,
-      stencilFail: THREE.KeepStencilOp,
-      stencilZFail: THREE.KeepStencilOp,
-      side: THREE.DoubleSide
-    })
-    const extrudeMesh = new THREE.Mesh(extrudeGeo, extrudeMat)
-    extrudeMesh.renderOrder = 0
-    group.add(extrudeMesh)
-
-    // Interaction
-    let isDragging = false
-    let previousX = 0
-    let dragVelocity = 0
-    let currentTiltX = 0
-    let currentTiltY = 0
-    let pointerX = 0
-    let pointerY = 0
-    let rotationT = 0
-    let currentSlide = 0
-    let slideTimer = 0
-    let animationId = 0
-
-    function onMouseMove(e: MouseEvent) {
-      pointerX = (e.clientX / window.innerWidth) * 2 - 1
-      pointerY = (e.clientY / window.innerHeight) * 2 - 1
-    }
-
-    function onPointerDown(e: PointerEvent) {
-      isDragging = true
-      dragVelocity = 0
-      previousX = e.clientX
-    }
-
-    function onPointerMove(e: PointerEvent) {
-      if (!isDragging) return
-      dragVelocity = (e.clientX - previousX) * 0.005
-      rotationT += dragVelocity
-      previousX = e.clientX
-    }
-
-    function onPointerUp() {
-      isDragging = false
-    }
-
-    function onResize() {
-      const rect = container!.getBoundingClientRect()
-      camera.aspect = rect.width / rect.height
-      camera.updateProjectionMatrix()
-      renderer.setSize(rect.width, rect.height)
-    }
-
-    window.addEventListener('mousemove', onMouseMove)
-    renderer.domElement.addEventListener('pointerdown', onPointerDown)
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp)
-    window.addEventListener('resize', onResize)
-
-    const clock = new THREE.Clock()
-
-    function animate() {
+      // Image sequence textures — load first frame eagerly, rest lazily
+      const urls = buildImageUrls()
+      const textures = await loadTextures(urls.slice(0, 1))
       if (disposed) return
-      animationId = requestAnimationFrame(animate)
-      const dt = clock.getDelta()
 
-      if (!isDragging && Math.abs(dragVelocity) > 0.0001) {
-        dragVelocity *= 0.95
-        rotationT += dragVelocity
-      } else if (!isDragging) {
+      renderer.domElement.style.opacity = '1'
+      loaded.value = true
+
+      loadTextures(urls.slice(1)).then((rest) => {
+        if (!disposed) textures.push(...rest)
+      })
+
+      // Background plane (stencil read)
+      const bgPlaneGeo = new THREE.PlaneGeometry(14, 14)
+      const bgPlaneMat = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 1,
+        map: textures[0] ?? null,
+        depthTest: false,
+        depthWrite: false,
+        stencilWrite: true,
+        stencilFunc: THREE.EqualStencilFunc,
+        stencilRef: 1,
+        stencilFail: THREE.KeepStencilOp,
+        stencilZFail: THREE.KeepStencilOp,
+        stencilZPass: THREE.KeepStencilOp
+      })
+      const bgPlane = new THREE.Mesh(bgPlaneGeo, bgPlaneMat)
+      bgPlane.renderOrder = 1
+      bgPlane.scale.set(cfg.bgScale, cfg.bgScale, 1)
+      scene.add(bgPlane)
+
+      // Logo group
+      const group = new THREE.Group()
+      scene.add(group)
+
+      const s = scaleFactor
+      const depth = cfg.extrudeDepth
+
+      // Front face
+      const shapeGeo = new THREE.ShapeGeometry(shapes)
+      shapeGeo.translate(-cx, -cy, 0)
+      shapeGeo.scale(s, -s, s)
+      const shapeMat = new THREE.MeshBasicMaterial({
+        color: cfg.logoColor,
+        side: THREE.DoubleSide,
+        depthTest: false,
+        depthWrite: false,
+        transparent: true
+      })
+      const logoMesh = new THREE.Mesh(shapeGeo, shapeMat)
+      logoMesh.renderOrder = 2
+      group.add(logoMesh)
+
+      // Extrusion stencil mask
+      const extrudeGeo = new THREE.ExtrudeGeometry(shapes, {
+        depth,
+        bevelEnabled: false
+      })
+      extrudeGeo.translate(-cx, -cy, -depth)
+      extrudeGeo.scale(s, -s, s)
+      const extrudeMat = new THREE.MeshBasicMaterial({
+        colorWrite: false,
+        depthWrite: true,
+        depthTest: true,
+        stencilWrite: true,
+        stencilRef: 1,
+        stencilFunc: THREE.AlwaysStencilFunc,
+        stencilZPass: THREE.ReplaceStencilOp,
+        stencilFail: THREE.KeepStencilOp,
+        stencilZFail: THREE.KeepStencilOp,
+        side: THREE.DoubleSide
+      })
+      const extrudeMesh = new THREE.Mesh(extrudeGeo, extrudeMat)
+      extrudeMesh.renderOrder = 0
+      group.add(extrudeMesh)
+
+      // Interaction
+      let isDragging = false
+      let previousX = 0
+      let dragVelocity = 0
+      let currentTiltX = 0
+      let currentTiltY = 0
+      let pointerX = 0
+      let pointerY = 0
+      let rotationT = 0
+      let currentSlide = 0
+      let slideTimer = 0
+      let animationId = 0
+
+      function onMouseMove(e: MouseEvent) {
+        pointerX = (e.clientX / window.innerWidth) * 2 - 1
+        pointerY = (e.clientY / window.innerHeight) * 2 - 1
+      }
+
+      function onPointerDown(e: PointerEvent) {
+        isDragging = true
         dragVelocity = 0
+        previousX = e.clientX
       }
 
-      rotationT += cfg.speed * dt
+      function onPointerMove(e: PointerEvent) {
+        if (!isDragging) return
+        dragVelocity = (e.clientX - previousX) * 0.005
+        rotationT += dragVelocity
+        previousX = e.clientX
+      }
 
-      currentTiltX += (pointerY - currentTiltX) * 0.08
-      currentTiltY += (pointerX - currentTiltY) * 0.08
+      function onPointerUp() {
+        isDragging = false
+      }
 
-      group.rotation.y = rotationT % (Math.PI * 2)
-      group.rotation.x = cfg.tiltX - currentTiltX * cfg.cursorTiltStrength
-      group.rotation.z = cfg.tiltY
+      function onResize() {
+        const rect = container!.getBoundingClientRect()
+        camera.aspect = rect.width / rect.height
+        camera.updateProjectionMatrix()
+        renderer.setSize(rect.width, rect.height)
+      }
 
-      if (textures.length > 1) {
-        slideTimer += dt
-        if (slideTimer >= cfg.slideDuration) {
-          slideTimer = 0
-          currentSlide = (currentSlide + 1) % textures.length
-          bgPlaneMat.map = textures[currentSlide]
-          bgPlaneMat.needsUpdate = true
+      window.addEventListener('mousemove', onMouseMove)
+      renderer.domElement.addEventListener('pointerdown', onPointerDown)
+      window.addEventListener('pointermove', onPointerMove)
+      window.addEventListener('pointerup', onPointerUp)
+      window.addEventListener('resize', onResize)
+
+      const clock = new THREE.Clock()
+
+      function animate() {
+        if (disposed) return
+        animationId = requestAnimationFrame(animate)
+        const dt = clock.getDelta()
+
+        if (!isDragging && Math.abs(dragVelocity) > 0.0001) {
+          dragVelocity *= 0.95
+          rotationT += dragVelocity
+        } else if (!isDragging) {
+          dragVelocity = 0
         }
+
+        rotationT += cfg.speed * dt
+
+        currentTiltX += (pointerY - currentTiltX) * 0.08
+        currentTiltY += (pointerX - currentTiltY) * 0.08
+
+        group.rotation.y = rotationT % (Math.PI * 2)
+        group.rotation.x = cfg.tiltX - currentTiltX * cfg.cursorTiltStrength
+        group.rotation.z = cfg.tiltZ
+
+        if (textures.length > 1) {
+          slideTimer += dt
+          if (slideTimer >= cfg.slideDuration) {
+            slideTimer = 0
+            currentSlide = (currentSlide + 1) % textures.length
+            bgPlaneMat.map = textures[currentSlide]
+            bgPlaneMat.needsUpdate = true
+          }
+        }
+
+        renderer.render(scene, camera)
       }
 
-      renderer.render(scene, camera)
-    }
+      animate()
 
-    animate()
-
-    cleanup = () => {
-      disposed = true
-      cancelAnimationFrame(animationId)
-      window.removeEventListener('mousemove', onMouseMove)
-      renderer.domElement.removeEventListener('pointerdown', onPointerDown)
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
-      window.removeEventListener('resize', onResize)
-      bgPlaneGeo.dispose()
-      bgPlaneMat.dispose()
-      shapeGeo.dispose()
-      shapeMat.dispose()
-      extrudeGeo.dispose()
-      extrudeMat.dispose()
-      textures.forEach((tex) => tex.dispose())
-      renderer.dispose()
-      renderer.domElement.remove()
+      teardowns.push(
+        () => cancelAnimationFrame(animationId),
+        () => window.removeEventListener('mousemove', onMouseMove),
+        () =>
+          renderer.domElement.removeEventListener('pointerdown', onPointerDown),
+        () => window.removeEventListener('pointermove', onPointerMove),
+        () => window.removeEventListener('pointerup', onPointerUp),
+        () => window.removeEventListener('resize', onResize),
+        () => bgPlaneGeo.dispose(),
+        () => bgPlaneMat.dispose(),
+        () => shapeGeo.dispose(),
+        () => shapeMat.dispose(),
+        () => extrudeGeo.dispose(),
+        () => extrudeMat.dispose(),
+        () => textures.forEach((tex) => tex.dispose())
+      )
+    } catch (err) {
+      console.error('[useHeroLogo] initialization failed:', err)
+      cleanup?.()
     }
   })
 
   onUnmounted(() => {
     cleanup?.()
   })
+
+  return { loaded }
 }
