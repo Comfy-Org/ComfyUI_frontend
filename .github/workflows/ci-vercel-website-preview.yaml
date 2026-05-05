@@ -4,6 +4,9 @@ name: 'CI: Vercel Website Preview'
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches-ignore:
+      - 'core/*'
+      - 'cloud/*'
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
