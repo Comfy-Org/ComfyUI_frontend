@@ -44,6 +44,15 @@ export interface SubgraphEventMap extends LGraphEventMap {
     newName: string
   }
 
+  'input-reordered': {
+    fromIndex: number
+    toIndex: number
+  }
+  'output-reordered': {
+    fromIndex: number
+    toIndex: number
+  }
+
   'widget-promoted': {
     widget: IBaseWidget
     subgraphNode: SubgraphNode
