@@ -12,22 +12,22 @@
       <HardwareOption
         v-if="platform === 'darwin'"
         image-path="./assets/images/apple-mps-logo.png"
-        placeholder-text="Apple Metal"
-        subtitle="Apple Metal"
+        :placeholder-text="$t('install.gpuPicker.appleMetal')"
+        :subtitle="$t('install.gpuPicker.appleMetal')"
         :selected="selected === 'mps'"
         @click="pickGpu('mps')"
       />
       <template v-else>
         <HardwareOption
           image-path="./assets/images/nvidia-logo-square.jpg"
-          placeholder-text="NVIDIA"
+          :placeholder-text="$t('install.gpuPicker.nvidia')"
           :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
           :selected="selected === 'nvidia'"
           @click="pickGpu('nvidia')"
         />
         <HardwareOption
           image-path="./assets/images/amd-rocm-logo.png"
-          placeholder-text="AMD"
+          :placeholder-text="$t('install.gpuPicker.amd')"
           :subtitle="$t('install.gpuPicker.amdSubtitle')"
           :selected="selected === 'amd'"
           @click="pickGpu('amd')"
@@ -35,14 +35,14 @@
       </template>
       <!-- CPU -->
       <HardwareOption
-        placeholder-text="CPU"
+        :placeholder-text="$t('install.gpuPicker.cpu')"
         :subtitle="$t('install.gpuPicker.cpuSubtitle')"
         :selected="selected === 'cpu'"
         @click="pickGpu('cpu')"
       />
       <!-- Manual Install -->
       <HardwareOption
-        placeholder-text="Manual Install"
+        :placeholder-text="$t('install.gpuPicker.manualInstall')"
         :subtitle="$t('install.gpuPicker.manualSubtitle')"
         :selected="selected === 'unsupported'"
         @click="pickGpu('unsupported')"
