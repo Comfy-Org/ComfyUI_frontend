@@ -1261,7 +1261,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('execution_start from a non-active workflow does not steal activeJobId', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1281,7 +1281,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('execution_start from active workflow adopts activeJobId', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1301,7 +1301,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('execution_success from a non-active workflow does not clear activeJobId', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1333,7 +1333,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('execution_interrupted from a non-active workflow does not clear activeJobId', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1368,7 +1368,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('executing from a non-active workflow does not clear _executingNodeProgress', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1392,7 +1392,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('execution_cached from a non-active workflow does not mark active job nodes', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1421,7 +1421,7 @@ describe('useExecutionStore - active workflow gating', () => {
   })
 
   it('executed from a non-active workflow does not mark active job nodes', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1450,8 +1450,8 @@ describe('useExecutionStore - active workflow gating', () => {
     expect(store.activeJob?.nodes['n1']).toBeUndefined()
   })
 
-  it('execution_error from a non-active workflow does not clear active job state', () => {
-    mockActiveWorkflow.current = {
+  it('execution_error from a non-active workflow does not clear active job state but still clears the errored job initializing flag', () => {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -1462,6 +1462,8 @@ describe('useExecutionStore - active workflow gating', () => {
         detail: { prompt_id: 'job-1', timestamp: 0, workflow_id: 'wf-active' }
       })
     )
+
+    store.initializingJobIds = new Set(['job-other'])
 
     const errorHandler = apiEventHandlers.get('execution_error')
     if (!errorHandler) throw new Error('execution_error handler not bound')
@@ -1484,10 +1486,12 @@ describe('useExecutionStore - active workflow gating', () => {
     )
 
     expect(store.activeJobId).toBe('job-1')
+    expect(store.initializingJobIds.has('job-other')).toBe(false)
+    expect(useExecutionErrorStore().lastExecutionError).toBeNull()
   })
 
   it('revokes preview when node transitions pending -> running', () => {
-    mockActiveWorkflow.current = {
+    mockActiveWorkflow.value = {
       activeState: { id: 'wf-active' },
       path: '/wf-active.json'
     }
@@ -2530,6 +2534,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
+    mockActiveWorkflow.value = null
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -2791,7 +2797,35 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   })
 
   describe('executing', () => {
-    it('clears _executingNodeProgress when message belongs to active workflow', () => {
+    it('clears _executingNodeProgress when workflow_id matches the active workflow', () => {
+      mockActiveWorkflow.value = {
+        activeState: { id: 'wf-active' },
+        path: '/wf-active.json'
+      }
+      fire('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: 0,
+        workflow_id: 'wf-active'
+      })
+      store._executingNodeProgress = {
+        value: 1,
+        max: 2,
+        prompt_id: 'job-1',
+        node: '1'
+      }
+
+      fire('executing', {
+        prompt_id: 'job-1',
+        node: '1',
+        display_node: '1',
+        workflow_id: 'wf-active'
+      })
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('clears _executingNodeProgress when ownership is unresolvable (legacy fallback)', () => {
+      mockActiveWorkflow.value = null
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       store._executingNodeProgress = {
         value: 1,
