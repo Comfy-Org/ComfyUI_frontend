@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test'
 import { demos, getNextDemo } from '../src/config/demos'
 import { t } from '../src/i18n/translations'
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 test.describe('Demo pages @smoke', () => {
   for (const demo of demos) {
     const nextDemo = getNextDemo(demo.slug)
@@ -19,14 +22,14 @@ test.describe('Demo pages @smoke', () => {
       const ogImage = page.locator('head meta[property="og:image"]')
       await expect(ogImage).toHaveAttribute(
         'content',
-        new RegExp(`${demo.slug}-og\\.png`)
+        new RegExp(`${escapeRegExp(demo.slug)}-og\\.png`)
       )
 
       const iframe = page.locator('iframe[title*="Interactive demo"]')
       await expect(iframe).toBeAttached()
       await expect(iframe).toHaveAttribute(
         'src',
-        new RegExp(`${demo.arcadeId}`)
+        new RegExp(escapeRegExp(demo.arcadeId))
       )
 
       await expect(
