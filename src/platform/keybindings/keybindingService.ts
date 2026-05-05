@@ -124,13 +124,25 @@ export function useKeybindingService() {
   }
 
   async function persistUserKeybindings() {
+    const toPlain = (b: KeybindingImpl) => ({
+      commandId: b.commandId,
+      combo: {
+        key: b.combo.key,
+        ctrl: b.combo.ctrl,
+        alt: b.combo.alt,
+        shift: b.combo.shift
+      },
+      ...(b.targetElementId !== undefined && {
+        targetElementId: b.targetElementId
+      })
+    })
     await settingStore.setMany({
       'Comfy.Keybinding.NewBindings': Object.values(
         keybindingStore.getUserKeybindings()
-      ),
+      ).map(toPlain),
       'Comfy.Keybinding.UnsetBindings': Object.values(
         keybindingStore.getUserUnsetKeybindings()
-      )
+      ).map(toPlain)
     })
   }
 
