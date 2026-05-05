@@ -903,8 +903,8 @@
     "resume": "繼續下載"
   },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的帳戶無權使用此功能。",
+    "accessRestrictedTitle": "存取受限",
     "defaultTitle": "發生錯誤",
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",

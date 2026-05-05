@@ -64,6 +64,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-refresh',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
+    swapNodesGroup: 'error-group-swap-nodes',
     missingMediaRow: 'missing-media-row',
     missingMediaUploadDropzone: 'missing-media-upload-dropzone',
     missingMediaLibrarySelect: 'missing-media-library-select',
@@ -90,6 +91,8 @@ export const TestIds = {
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    workflowTabs: 'topbar-workflow-tabs',
+    integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
@@ -113,7 +116,8 @@ export const TestIds = {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
-    mainImage: 'main-image'
+    mainImage: 'main-image',
+    slotConnectionDot: 'slot-connection-dot'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
@@ -210,6 +214,7 @@ export const TestIds = {
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
+    jobDetailsPopover: 'queue-job-details-popover',
     clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'

@@ -482,6 +482,30 @@ describe('useImageCrop', () => {
     expect(vm.modelValue.x).toBe(50)
   })
 
+  it('resizes from the top edge, moving y and shrinking height', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 500, 500)
+    vm.modelValue = { x: 50, y: 100, width: 120, height: 200 }
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 100, 100), 'top')
+    resizeMove(makePointerEvent('pointermove', captureEl, 100, 150))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 100, 150))
+
+    expect(vm.modelValue.y).toBeGreaterThan(100)
+    expect(vm.modelValue.height).toBeLessThan(200)
+  })
+
   it('applies a preset aspect ratio and clamps height to the image', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 800, 500)

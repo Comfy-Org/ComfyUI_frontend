@@ -3,7 +3,7 @@
     "display_name": "自适应投影引导",
     "inputs": {
       "eta": {
-        "name": "预计到达时间",
+        "name": "eta",
         "tooltip": "控制平行引导向量的缩放比例。默认 CFG 行为设置为 1。"
       },
       "model": {
@@ -371,7 +371,7 @@
   },
   "BriaImageEditNode": {
     "description": "使用 Bria 最新模型编辑图像",
-    "display_name": "Bria 图像编辑",
+    "display_name": "Bria FIBO 图像编辑",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -864,7 +864,7 @@
   },
   "ByteDanceSeedreamNode": {
     "description": "统一文本到图像生成，支持高达4K分辨率的精确单句编辑。",
-    "display_name": "字节跳动Seedream 4",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -1047,7 +1047,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nStable Diffusion：clip-l\nStable Cascade：clip-g\nSD3：t5 / clip-g / clip-l\nStable Audio：t5\nMochi：t5\ncosmos：old t5 xxl",
+    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 旧 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推荐）或 t5\nomnigen2: qwen vl 2.5 3B",
     "display_name": "加载CLIP",
     "inputs": {
       "clip_name": {
@@ -11711,8 +11711,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "通过 OpenAI 的 GPT Image 1 端点同步生成图像。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "通过 OpenAI 的 GPT Image 2 端点同步生成图像。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11746,7 +11746,7 @@
       },
       "prompt": {
         "name": "提示词",
-        "tooltip": "用于 GPT Image 1 的文本提示"
+        "tooltip": "用于 GPT Image 2 的文本提示"
       },
       "quality": {
         "name": "质量",

@@ -2524,6 +2524,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/luma_2/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a Luma Agents generation
+         * @description Submit an image generation or edit job. Returns immediately with an opaque job ID to poll via GET /proxy/luma_2/generations/{id}.
+         */
+        post: operations["lumaAgentsCreateGeneration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/luma_2/generations/{generation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a Luma Agents generation
+         * @description Poll for generation status and output. On completion, the response includes presigned URLs to download the generated images.
+         */
+        get: operations["lumaAgentsGetGeneration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/pixverse/video/text/generate": {
         parameters: {
             query?: never;
@@ -10380,6 +10420,88 @@ export interface components {
             model?: string;
             /** @description The request of the generation */
             request?: components["schemas"]["LumaGenerationRequest"] | components["schemas"]["LumaImageGenerationRequest"] | components["schemas"]["LumaUpscaleVideoGenerationRequest"] | components["schemas"]["LumaAudioGenerationRequest"];
+        };
+        /**
+         * @description Output aspect ratio
+         * @enum {string}
+         */
+        LumaAgentsAspectRatio: "3:1" | "2:1" | "16:9" | "3:2" | "1:1" | "2:3" | "9:16" | "1:2" | "1:3";
+        /**
+         * @description Style preset
+         * @enum {string}
+         */
+        LumaAgentsStyle: "auto" | "manga";
+        /**
+         * @description Output image format
+         * @enum {string}
+         */
+        LumaAgentsOutputFormat: "png" | "jpeg";
+        /**
+         * @description The kind of generation to perform
+         * @enum {string}
+         */
+        LumaAgentsGenerationType: "image" | "image_edit";
+        /**
+         * @description Current state of the generation
+         * @enum {string}
+         */
+        LumaAgentsState: "queued" | "processing" | "completed" | "failed";
+        /**
+         * @description Machine-readable failure code for programmatic handling
+         * @enum {string}
+         */
+        LumaAgentsFailureCode: "content_moderated" | "generation_failed" | "budget_exhausted" | "output_not_found";
+        /** @description Reference image for style/content guidance or guided generation */
+        LumaAgentsImageRef: {
+            /** @description Base64-encoded image data */
+            data?: string;
+            /** @description MIME type (e.g. image/jpeg). Required with data. */
+            media_type?: string;
+            /** @description Publicly accessible image URL */
+            url?: string;
+        };
+        /** @description The Luma Agents generation request object */
+        LumaAgentsGenerationRequest: {
+            /** @description Text prompt */
+            prompt: string;
+            aspect_ratio?: components["schemas"]["LumaAgentsAspectRatio"];
+            /** @description Reference images for style/content guidance. Up to 9 for type 'image', up to 8 for type 'image_edit'. */
+            image_ref?: components["schemas"]["LumaAgentsImageRef"][];
+            /** @description Model to use */
+            model?: string;
+            output_format?: components["schemas"]["LumaAgentsOutputFormat"];
+            source?: components["schemas"]["LumaAgentsImageRef"];
+            style?: components["schemas"]["LumaAgentsStyle"];
+            type?: components["schemas"]["LumaAgentsGenerationType"];
+            /** @description Enable web search grounding */
+            web_search?: boolean;
+        };
+        /** @description A generated output entry */
+        LumaAgentsGenerationOutput: {
+            /** @description Media type (e.g. image) */
+            type?: string;
+            /** @description Presigned URL (1hr expiry) */
+            url?: string;
+        };
+        /** @description Generation status and output */
+        LumaAgentsGeneration: {
+            /** @description Generation identifier */
+            id?: string;
+            /** @description Creation timestamp */
+            created_at?: string;
+            /** @description Model used */
+            model?: string;
+            state?: components["schemas"]["LumaAgentsState"];
+            type?: components["schemas"]["LumaAgentsGenerationType"];
+            failure_code?: components["schemas"]["LumaAgentsFailureCode"];
+            /** @description Human-readable failure description */
+            failure_reason?: string;
+            output?: components["schemas"]["LumaAgentsGenerationOutput"][];
+        };
+        /** @description The error object */
+        LumaAgentsError: {
+            /** @description The error message */
+            detail?: string;
         };
         PixverseTextVideoRequest: {
             /** @enum {string} */
@@ -26179,6 +26301,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LumaError"];
+                };
+            };
+        };
+    };
+    lumaAgentsCreateGeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The generation request object */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LumaAgentsGenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Generation accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsGeneration"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsError"];
+                };
+            };
+        };
+    };
+    lumaAgentsGetGeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the generation */
+                generation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generation found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsGeneration"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LumaAgentsError"];
                 };
             };
         };
