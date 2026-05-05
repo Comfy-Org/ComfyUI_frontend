@@ -658,6 +658,137 @@ describe('useExecutionStore - active workflow gating', () => {
       workflow_id: 'wf-active'
     })
   })
+
+  it('execution_start from a non-active workflow does not steal activeJobId', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBeNull()
+  })
+
+  it('execution_start from active workflow adopts activeJobId', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-1',
+          timestamp: 0,
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('execution_success from a non-active workflow does not clear activeJobId', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-1',
+          timestamp: 0,
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    const successHandler = apiEventHandlers.get('execution_success')
+    if (!successHandler) throw new Error('execution_success handler not bound')
+    successHandler(
+      new CustomEvent('execution_success', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('execution_interrupted from a non-active workflow does not clear activeJobId', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: {
+          prompt_id: 'job-1',
+          timestamp: 0,
+          workflow_id: 'wf-active'
+        }
+      })
+    )
+
+    const intHandler = apiEventHandlers.get('execution_interrupted')
+    if (!intHandler) throw new Error('execution_interrupted handler not bound')
+    intHandler(
+      new CustomEvent('execution_interrupted', {
+        detail: {
+          prompt_id: 'job-other',
+          timestamp: 0,
+          node_id: '1',
+          node_type: 'X',
+          executed: [],
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store.activeJobId).toBe('job-1')
+  })
+
+  it('executing from a non-active workflow does not clear _executingNodeProgress', () => {
+    mockActiveWorkflow.current = {
+      activeState: { id: 'wf-active' },
+      path: '/wf-active.json'
+    }
+    fireProgress('job-1', '1', 'wf-active', 5, 10)
+    expect(store._executingNodeProgress).not.toBeNull()
+
+    const handler = apiEventHandlers.get('executing')
+    if (!handler) throw new Error('executing handler not bound')
+    handler(
+      new CustomEvent('executing', {
+        detail: {
+          prompt_id: 'job-other',
+          node: '2',
+          display_node: '2',
+          workflow_id: 'wf-other'
+        }
+      })
+    )
+
+    expect(store._executingNodeProgress).not.toBeNull()
+  })
 })
 
 describe('useExecutionStore - progress_text startup guard', () => {
@@ -1144,7 +1275,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   })
 
   describe('executing', () => {
-    it('clears _executingNodeProgress and activeJobId when detail is null', () => {
+    it('clears _executingNodeProgress when message belongs to active workflow', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       store._executingNodeProgress = {
         value: 1,
@@ -1153,10 +1284,13 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         node: '1'
       }
 
-      fire('executing', null)
+      fire('executing', {
+        prompt_id: 'job-1',
+        node: '1',
+        display_node: '1'
+      })
 
       expect(store._executingNodeProgress).toBeNull()
-      expect(store.activeJobId).toBeNull()
     })
   })
 
