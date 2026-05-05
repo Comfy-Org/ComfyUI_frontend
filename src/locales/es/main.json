@@ -99,6 +99,7 @@
     "findInLibrary": "Encuéntralo en la sección {type} de la biblioteca de modelos.",
     "finish": "Finalizar",
     "genericLinkPlaceholder": "Pega el enlace aquí",
+    "gridView": "Vista de cuadrícula",
     "importAnother": "Importar otro",
     "imported": "Importado",
     "invalidAsset": "Recurso no válido",
@@ -106,6 +107,7 @@
     "invalidFilename": "Nombre de archivo no válido",
     "invalidFilenameDetail": "No se pudo determinar el nombre de archivo del recurso. Por favor, inténtalo de nuevo.",
     "jobId": "ID de tarea",
+    "listView": "Vista de lista",
     "loadingModels": "Cargando {type}...",
     "maxFileSize": "Tamaño máximo de archivo: {size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "Predeterminado",
     "sortPopular": "Popular",
     "sortRecent": "Reciente",
+    "sortUnsorted": "Sin ordenar",
     "sortZA": "Z-A",
     "sortingType": "Tipo de ordenación",
     "tags": "Etiquetas",
@@ -332,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Aplicación",
+    "blueprint": "Plano",
     "clearWorkflow": "Limpiar flujo de trabajo",
     "deleteBlueprint": "Eliminar Plano",
     "deleteWorkflow": "Eliminar flujo de trabajo",
@@ -457,6 +461,12 @@
       "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Por favor, elige una opción.",
+        "describeAnswer": "Por favor, describe tu respuesta.",
+        "selectAtLeastOne": "Por favor, selecciona al menos una opción."
+      },
+      "intro": "Ayúdanos a personalizar tu experiencia con ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Usuario avanzado (flujos de trabajo personalizados)",
@@ -465,45 +475,43 @@
           "new": "Nuevo en ComfyUI (nunca lo he usado antes)",
           "starting": "Recién comenzando (siguiendo tutoriales)"
         },
-        "industry": {
-          "architecture": "Arquitectura",
-          "education": "Educación",
-          "film_tv_animation": "Cine, TV y animación",
-          "fine_art": "Bellas artes e ilustración",
-          "gaming": "Juegos",
-          "marketing": "Marketing y publicidad",
-          "other": "Otro",
-          "otherPlaceholder": "Por favor, especifica",
-          "product_design": "Diseño de productos y gráfico",
-          "software": "Software y tecnología"
-        },
-        "making": {
-          "3d": "Recursos 3D",
+        "intent": {
+          "3d_game": "Recursos 3D / recursos para juegos",
+          "api": "Endpoints de API para ejecutar flujos de trabajo",
+          "apps": "Apps simplificadas a partir de flujos de trabajo",
           "audio": "Audio / música",
-          "custom_nodes": "Nodos y flujos de trabajo personalizados",
+          "custom_nodes": "Nodos personalizados",
           "images": "Imágenes",
-          "video": "Video y animación"
+          "not_sure": "No estoy seguro",
+          "videos": "Videos",
+          "workflows": "Flujos de trabajo o pipelines personalizados"
         },
-        "purpose": {
-          "client": "Trabajo para clientes (freelance)",
-          "community": "Contribuciones a la comunidad (nodos, flujos de trabajo, etc.)",
-          "inhouse": "Mi propio lugar de trabajo (interno)",
-          "personal": "Proyectos personales / hobby",
-          "research": "Investigación académica"
+        "source": {
+          "conference": "Conferencia o evento",
+          "discord": "Discord / comunidad",
+          "friend": "Amigo o colega",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter o blog",
+          "other": "Otro",
+          "reddit": "Reddit",
+          "search": "Google / búsqueda",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Educación (estudiante o docente)",
+          "personal": "Uso personal",
+          "work": "Trabajo"
         }
       },
       "placeholder": "Marcador de posición para preguntas de la encuesta",
-      "questions": {
-        "familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-        "industry": "¿Cuál es tu industria principal?",
-        "making": "¿Qué planeas crear?",
-        "purpose": "¿Para qué usarás principalmente ComfyUI?"
-      },
       "steps": {
         "familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-        "industry": "¿Cuál es tu industria principal?",
-        "making": "¿Qué planeas crear?",
-        "purpose": "¿Para qué usarás principalmente ComfyUI?"
+        "intent": "¿Qué quieres crear con ComfyUI?",
+        "source": "¿Dónde escuchaste sobre ComfyUI?",
+        "usage": "¿Cómo planeas usar ComfyUI?"
       },
       "title": "Encuesta en la Nube"
     }
@@ -518,9 +526,9 @@
   "cloudStart_title": "comienza a crear en segundos",
   "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
   "cloudSurvey_steps_familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-  "cloudSurvey_steps_industry": "¿Cuál es tu industria principal?",
-  "cloudSurvey_steps_making": "¿Qué planeas crear?",
-  "cloudSurvey_steps_purpose": "¿Para qué usarás principalmente ComfyUI?",
+  "cloudSurvey_steps_intent": "¿Qué quieres crear con ComfyUI?",
+  "cloudSurvey_steps_source": "¿Dónde escuchaste sobre ComfyUI?",
+  "cloudSurvey_steps_usage": "¿Cómo planeas usar ComfyUI?",
   "cloudWaitlist_contactLink": "aquí",
   "cloudWaitlist_questionsText": "¿Preguntas? Contáctanos",
   "color": {
@@ -807,6 +815,7 @@
     "IMAGE": "IMAGEN",
     "IMAGECOMPARE": "COMPARARIMÁGENES",
     "INT": "ENTERO",
+    "INTERP_MODEL": "MODELO_INTERP",
     "LATENT": "LATENTE",
     "LATENT_OPERATION": "OPERACIÓN_LATENTE",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -834,6 +843,7 @@
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
     "RETARGET_TASK_ID": "ID_TAREA_REDESTINACIÓN",
     "RIG_TASK_ID": "ID_TAREA_ARMADURA",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "MUESTREADOR",
     "SIGMAS": "SIGMAS",
     "STRING": "CADENA",
@@ -912,6 +922,10 @@
     "showMissingNodes": "Mostrar nodos faltantes",
     "showSwapNodes": "Mostrar nodos intercambiables",
     "swapNodes": "Algunos nodos pueden ser reemplazados por alternativas"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Dar opinión",
+    "ctaText": "¿Qué te parece el nuevo panel de errores?"
   },
   "essentials": {
     "batchImage": "Procesar imágenes por lotes",
@@ -998,13 +1012,16 @@
     "back": "Atrás",
     "batchRename": "Renombrar en lote",
     "beta": "BETA",
+    "blueprints": "Planos",
     "bookmark": "Guardar en Biblioteca",
+    "bookmarked": "Marcado como favorito",
     "browserReservedKeybinding": "Este atajo está reservado por algunos navegadores y puede tener resultados inesperados.",
     "browserReservedKeybindingTooltip": "Este atajo entra en conflicto con los atajos reservados del navegador",
     "calculatingDimensions": "Calculando dimensiones",
     "cancel": "Cancelar",
     "cancelled": "Cancelado",
     "capture": "captura",
+    "categories": "Categorías",
     "category": "Categoría",
     "changeKeybinding": "Cambiar combinación de teclas",
     "chart": "Gráfico",
@@ -1225,6 +1242,7 @@
     "output": "Salida",
     "overwrite": "Sobrescribir",
     "partner": "Socio",
+    "partnerNodes": "Nodos asociados",
     "pause": "Pausar",
     "play": "Reproducir",
     "playPause": "Reproducir/Pausar",
@@ -1821,6 +1839,10 @@
     "gettingInfo": "Obteniendo información...",
     "importFailedGenericError": "Falló la importación del paquete. Revisa la consola para más detalles.",
     "inWorkflow": "En Flujo de Trabajo",
+    "incompatibleVersion": {
+      "message": "Por favor, actualiza ComfyUI-Manager a la versión 4.2.1 o superior.\n• Escritorio: Actualiza la aplicación de escritorio de ComfyUI\n• Independiente: Ejecuta pip install -U comfyui-manager y reinicia\nMás información: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Actualización de ComfyUI-Manager requerida"
+    },
     "infoPanelEmpty": "Haz clic en un elemento para ver la información",
     "installAllMissingNodes": "Instalar todos los nodos faltantes",
     "installError": "Error de Instalación",
@@ -2241,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2593,6 +2614,9 @@
       "metadataFetchFailed": "No se pudo obtener los metadatos. Por favor, revisa el enlace e inténtalo de nuevo.",
       "missingModelsTitle": "Modelos faltantes",
       "or": "O",
+      "refresh": "Actualizar",
+      "refreshFailed": "No se pudo actualizar los modelos faltantes. Por favor, inténtalo de nuevo.",
+      "refreshing": "Actualizando modelos faltantes.",
       "typeMismatch": "Este modelo parece ser un \"{detectedType}\". ¿Estás seguro?",
       "unknownCategory": "Desconocido",
       "unsupportedUrl": "Solo se admiten URLs de Civitai y Hugging Face.",
@@ -3486,6 +3510,7 @@
     "no3dScene": "No hay escena 3D para aplicar textura",
     "no3dSceneToExport": "No hay escena 3D para exportar",
     "noTemplatesToExport": "No hay plantillas para exportar",
+    "nodeDefinitionsUpdateFailed": "No se pudo actualizar las definiciones de nodos",
     "nodeDefinitionsUpdated": "Definiciones de nodos actualizadas",
     "nothingSelected": "Nada seleccionado",
     "nothingToGroup": "Nada para agrupar",

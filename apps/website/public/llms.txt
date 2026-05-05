@@ -1,0 +1,58 @@
+# Comfy
+
+> Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output. Built around ComfyUI — the open-source node-graph runtime with 60,000+ community nodes and thousands of shared workflows — Comfy ships as a free local app, a managed cloud, an API, and an enterprise platform.
+
+The Comfy ecosystem spans four surfaces:
+
+- **ComfyUI (local)** — the open-source node-graph runtime that runs models on your own hardware.
+- **Comfy Cloud** — managed ComfyUI in the browser, with hosted models and storage.
+- **Comfy API** — a REST API for triggering workflows from your own apps and pipelines.
+- **Comfy Enterprise** — single-tenant deployments, BYO keys, data ownership, and orchestration for teams.
+
+Studios building with Comfy include Series Entertainment, Moment Factory, Open Story Movement, and Ubisoft (La Forge). Use cases concentrate in VFX & animation, advertising & creative studios, gaming, and eCommerce/fashion.
+
+## Product
+
+- [Homepage](https://comfy.org/): Overview of Comfy and the four product surfaces (Local, Cloud, API, Enterprise).
+- [Download Comfy (Local)](https://comfy.org/download/): Free desktop app for macOS, Windows, and Linux — runs ComfyUI on your own GPU.
+- [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with hosted models and storage; no local install required.
+- [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans and per-credit pricing for individuals and teams using Comfy Cloud.
+- [Comfy API](https://comfy.org/api/): REST API for triggering ComfyUI workflows programmatically from external apps.
+- [Comfy Enterprise](https://comfy.org/cloud/enterprise/): Single-tenant ComfyUI deployments with BYO keys, orchestration, and data-ownership guarantees.
+
+## Workflows and Gallery
+
+- [Workflow Gallery](https://comfy.org/gallery/): Curated showcase of ComfyUI outputs — images, video, and 3D — produced by the community.
+- [Community Workflows](https://www.comfy.org/workflows/): Browseable library of community-shared ComfyUI workflows you can load and remix.
+
+## Customers and Case Studies
+
+- [Customer Stories](https://comfy.org/customers/): Index of named customers and how they use ComfyUI in production.
+- [Series Entertainment](https://comfy.org/customers/series-entertainment/): How Series Entertainment rebuilt game and video production around ComfyUI.
+- [Moment Factory](https://comfy.org/customers/moment-factory/): Architectural-scale 3D projection mapping reimagined with ComfyUI at Moment Factory.
+- [Ubisoft — Chord](https://comfy.org/customers/ubisoft-chord/): Ubisoft La Forge open-sourcing the Chord model and its ComfyUI integration.
+- [Open Story Movement](https://comfy.org/customers/open-story-movement/): How an open-source movement around AI storytelling builds on ComfyUI.
+
+## Developers and Documentation
+
+- [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI.
+- [ComfyUI on GitHub](https://github.com/comfyanonymous/ComfyUI): Source repository for the open-source ComfyUI runtime.
+- [Comfy-Org on GitHub](https://github.com/Comfy-Org): Organization-wide repositories — frontend, registry, manager, docs, and tooling.
+- [Comfy Registry](https://registry.comfy.org/): Public registry of ComfyUI custom nodes and extensions, with versioning and search.
+
+## Company
+
+- [About Comfy](https://comfy.org/about/): Company background, mission, and the team behind ComfyUI.
+- [Careers](https://comfy.org/careers/): Open roles across engineering, design, product, and go-to-market.
+- [Contact](https://comfy.org/contact/): Sales, partnership, and general contact form.
+- [Blog](https://blog.comfy.org/): Product announcements, technical deep-dives, and customer stories.
+- [Privacy Policy](https://comfy.org/privacy-policy/): How Comfy collects, uses, and protects personal information.
+- [Terms of Service](https://comfy.org/terms-of-service/): Terms governing use of ComfyUI and related Comfy services.
+
+## Optional
+
+- [简体中文 / Chinese homepage](https://comfy.org/zh-CN/): Simplified Chinese localization of the main site.
+- [Series Entertainment — long-form case study](https://comfy.org/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui): Extended write-up of the Series Entertainment deployment.
+- [Moment Factory — long-form case study](https://comfy.org/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping): Extended write-up of Moment Factory's projection-mapping pipeline.
+- [Ubisoft Chord announcement (blog)](https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model): Original blog post announcing Ubisoft's open-source Chord model.
+- [Open-source storytelling (blog)](https://blog.comfy.org/p/how-open-source-is-fueling-the-open): Blog post on how open source is fueling the Open Story Movement.

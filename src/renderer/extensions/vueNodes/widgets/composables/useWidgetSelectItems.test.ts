@@ -241,6 +241,59 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('mesh preview URL handling', () => {
+    it('leaves input preview_url empty for mesh kind', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['3d/model.glb', 'other.fbx'],
+          modelValue: ref('3d/model.glb'),
+          assetKind: () => 'mesh'
+        })
+      )
+      expect(dropdownItems.value).toHaveLength(2)
+      expect(dropdownItems.value[0].preview_url).toBe('')
+      expect(dropdownItems.value[1].preview_url).toBe('')
+    })
+
+    it('leaves output preview_url empty for mesh kind even when asset has one', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-1',
+          name: 'scene.glb',
+          preview_url: '/api/view?filename=scene.glb&type=output',
+          tags: ['output']
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh'
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].preview_url).toBe('')
+    })
+
+    it('still uses getMediaUrl for image kind inputs', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['img_001.png'],
+          modelValue: ref('img_001.png'),
+          assetKind: () => 'image'
+        })
+      )
+      expect(dropdownItems.value[0].preview_url).toContain(
+        'filename=img_001.png'
+      )
+      expect(dropdownItems.value[0].preview_url).toContain('type=input')
+    })
+  })
+
   describe('cloud asset mode', () => {
     const createTestAsset = (
       id: string,
@@ -716,6 +769,159 @@ describe('useWidgetSelectItems', () => {
         'older_output.png [output]',
         'legacy_input.png'
       ])
+    })
+  })
+
+  describe('output asset subfolder', () => {
+    it('prefixes the subfolder onto the annotated path so the load URL targets the right folder', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-1',
+          name: 'ComfyUI_00105_.glb',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-mesh',
+            nodeId: '7',
+            subfolder: '3d'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('3d/ComfyUI_00105_.glb [output]')
+    })
+
+    it('omits the subfolder prefix when the asset has none', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-2',
+          name: 'plain.glb',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-plain',
+            nodeId: '8',
+            subfolder: ''
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
+    })
+
+    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-image-1',
+          name: 'photo.png',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-image',
+            nodeId: '9',
+            subfolder: 'sub'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'image' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+    })
+  })
+
+  describe('FE-228: output dropdown label uses human-readable filename', () => {
+    it('renders metadata.filename in label when asset.name is a hash', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-hash-1',
+          name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
+          asset_hash:
+            'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
+          preview_url: '/preview.png',
+          tags: ['output'],
+          metadata: {
+            filename: 'sunset_photo.png'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].label).toBe('sunset_photo.png [output]')
+    })
+
+    it('renders asset.display_name in label when queue-mapped asset lacks metadata.filename', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'job-1',
+          name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
+          display_name: 'ComfyUI-90_right_00001_.png',
+          preview_url: '/preview.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-1',
+            nodeId: '5',
+            subfolder: ''
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].label).toBe(
+        'ComfyUI-90_right_00001_.png [output]'
+      )
+      expect(dropdownItems.value[0].name).toMatch(
+        /^a1ef7d29.*\.png \[output\]$/
+      )
     })
   })
 

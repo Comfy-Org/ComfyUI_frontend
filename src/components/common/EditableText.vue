@@ -1,24 +1,18 @@
 <template>
-  <div class="editable-text">
+  <div class="editable-text inline">
     <component :is="labelType" v-if="!isEditing" :class="labelClass">
       {{ modelValue }}
     </component>
-    <!-- Avoid double triggering finishEditing event when keydown.enter is triggered -->
-    <InputText
+    <Input
       v-else
       ref="inputRef"
-      v-model:model-value="inputValue"
+      v-model="inputValue"
       v-focus
       type="text"
-      size="small"
-      fluid
-      :pt="{
-        root: {
-          onBlur: finishEditing,
-          ...inputAttrs
-        }
-      }"
-      @keydown.enter.capture.stop="blurInputElement"
+      class="h-full rounded-none p-0 focus-visible:ring-0"
+      v-bind="inputAttrs"
+      @blur="finishEditing"
+      @keydown.enter.capture.stop="inputRef?.blur()"
       @keydown.escape.capture.stop="cancelEditing"
       @click.stop
       @contextmenu.stop
@@ -29,8 +23,9 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { nextTick, ref, watch } from 'vue'
+
+import Input from '@/components/ui/input/Input.vue'
 
 const {
   modelValue,
@@ -48,30 +43,23 @@ const {
 
 const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
-const inputRef = ref<InstanceType<typeof InputText> | undefined>()
+const inputRef = ref<InstanceType<typeof Input>>()
 const isCanceling = ref(false)
 
-const blurInputElement = () => {
-  // @ts-expect-error - $el is an internal property of the InputText component
-  inputRef.value?.$el.blur()
-}
-const finishEditing = () => {
-  // Don't save if we're canceling
+function finishEditing() {
   if (!isCanceling.value) {
     emit('edit', inputValue.value)
   }
   isCanceling.value = false
 }
-const cancelEditing = () => {
-  // Set canceling flag to prevent blur from saving
+
+function cancelEditing() {
   isCanceling.value = true
-  // Reset to original value
   inputValue.value = modelValue
-  // Emit cancel event
   emit('cancel')
-  // Blur the input to exit edit mode
-  blurInputElement()
+  inputRef.value?.blur()
 }
+
 watch(
   () => isEditing,
   async (newVal) => {
@@ -82,27 +70,14 @@ watch(
         const fileName = inputValue.value.includes('.')
           ? inputValue.value.split('.').slice(0, -1).join('.')
           : inputValue.value
-        const start = 0
-        const end = fileName.length
-        // @ts-expect-error - $el is an internal property of the InputText component
-        const inputElement = inputRef.value.$el
-        inputElement.setSelectionRange?.(start, end)
+        inputRef.value.setSelectionRange(0, fileName.length)
       })
     }
   },
   { immediate: true }
 )
+
 const vFocus = {
   mounted: (el: HTMLElement) => el.focus()
 }
 </script>
-
-<style scoped>
-.editable-text {
-  display: inline;
-}
-.editable-text input {
-  width: 100%;
-  box-sizing: border-box;
-}
-</style>

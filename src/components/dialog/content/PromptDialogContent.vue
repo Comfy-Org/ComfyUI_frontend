@@ -1,49 +1,43 @@
 <template>
   <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
-    <FloatLabel>
-      <InputText
+    <label class="flex flex-col gap-1 text-sm text-muted-foreground">
+      {{ message }}
+      <Input
         ref="inputRef"
         v-model="inputValue"
+        type="text"
         :placeholder
         autofocus
-        @keyup.enter="onConfirm"
-        @focus="selectAllText"
+        @keyup.enter="handleConfirm"
+        @focus="inputRef?.selectAll()"
       />
-      <label>{{ message }}</label>
-    </FloatLabel>
-    <Button @click="onConfirm">
+    </label>
+    <Button @click="handleConfirm">
       {{ $t('g.confirm') }}
     </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import FloatLabel from 'primevue/floatlabel'
-import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const props = defineProps<{
+const { message, defaultValue, onConfirm, placeholder } = defineProps<{
   message: string
   defaultValue: string
   onConfirm: (value: string) => void
   placeholder?: string
 }>()
 
-const inputValue = ref<string>(props.defaultValue)
+const inputValue = ref<string>(defaultValue)
 
-const onConfirm = () => {
-  props.onConfirm(inputValue.value)
+function handleConfirm() {
+  onConfirm(inputValue.value)
   useDialogStore().closeDialog()
 }
 
-const inputRef = ref<InstanceType<typeof InputText> | undefined>()
-const selectAllText = () => {
-  if (!inputRef.value) return
-  // @ts-expect-error - $el is an internal property of the InputText component
-  const inputElement = inputRef.value.$el
-  inputElement.setSelectionRange(0, inputElement.value.length)
-}
+const inputRef = ref<InstanceType<typeof Input>>()
 </script>
