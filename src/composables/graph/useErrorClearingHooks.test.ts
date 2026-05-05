@@ -831,6 +831,58 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     expect(useMissingModelStore().missingModelCandidates).toBeNull()
   })
+
+  it('skips nested subgraph containers during parent subgraph replay scan', async () => {
+    const rootGraph = new LGraph()
+    const outerSubgraph = createTestSubgraph({ rootGraph })
+    const innerSubgraph = createTestSubgraph({ rootGraph })
+    const leafNode = new LGraphNode('UNETLoader')
+    innerSubgraph.add(leafNode)
+
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      parentGraph: outerSubgraph,
+      id: 76
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+      parentGraph: rootGraph,
+      id: 205
+    })
+    rootGraph.add(outerSubgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    const modelScanSpy = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockReturnValue([])
+    const mediaScanSpy = vi
+      .spyOn(missingMediaScan, 'scanNodeMediaCandidates')
+      .mockReturnValue([])
+
+    installErrorClearingHooks(rootGraph)
+
+    rootGraph.onNodeAdded?.(outerSubgraphNode)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(modelScanSpy).toHaveBeenCalledWith(
+      rootGraph,
+      leafNode,
+      expect.any(Function),
+      expect.any(Function)
+    )
+    expect(modelScanSpy).not.toHaveBeenCalledWith(
+      rootGraph,
+      innerSubgraphNode,
+      expect.any(Function),
+      expect.any(Function)
+    )
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode, false)
+    expect(mediaScanSpy).not.toHaveBeenCalledWith(
+      rootGraph,
+      innerSubgraphNode,
+      false
+    )
+  })
 })
 
 describe('clearWidgetRelatedErrors parameter routing', () => {
