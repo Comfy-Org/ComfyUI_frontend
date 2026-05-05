@@ -52,6 +52,58 @@ describe('fetchGitHubStars', () => {
     expect(b).toBe(110000)
     expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
+
+  it('logs GitHub response details when the API request fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: 'API rate limit exceeded' }), {
+          status: 403,
+          statusText: 'Forbidden',
+          headers: {
+            'x-github-request-id': 'ABC:123',
+            'x-ratelimit-limit': '60',
+            'x-ratelimit-remaining': '0',
+            'x-ratelimit-reset': '1777937662',
+            'x-ratelimit-resource': 'core'
+          }
+        })
+    )
+
+    await expect(
+      fetchGitHubStars(fetchImpl as unknown as typeof fetch)
+    ).resolves.toBeNull()
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Failed to fetch GitHub stars for Comfy-Org/ComfyUI: 403 Forbidden: API rate limit exceeded'
+      )
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('resource=core'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('limit=60'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('remaining=0'))
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `reset=${new Date(1777937662 * 1000).toISOString()}`
+      )
+    )
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('requestId=ABC:123')
+    )
+  })
+
+  it('logs thrown request failures', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchImpl = vi.fn(async () => {
+      throw new Error('network down')
+    })
+
+    await expect(
+      fetchGitHubStars(fetchImpl as unknown as typeof fetch)
+    ).resolves.toBeNull()
+    expect(warn).toHaveBeenCalledWith(
+      'Failed to fetch GitHub stars for Comfy-Org/ComfyUI: network down'
+    )
+  })
 })
 
 describe('formatStarCount', () => {
