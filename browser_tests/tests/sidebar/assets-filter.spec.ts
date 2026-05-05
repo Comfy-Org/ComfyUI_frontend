@@ -6,7 +6,7 @@ import type {
   ListAssetsResponse
 } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
+import { createMixedMediaJobs } from '@e2e/fixtures/utils/jobFixtures'
 
 // The assets sidebar's media-type filter menu only renders in cloud mode
 // (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
@@ -22,7 +22,7 @@ const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
 // getFilenameDetails(...).filename, so card-text matching uses the basename.
 function expectCardText(index: number): string {
   const filename = MIXED_JOBS[index]?.preview_output?.filename
-  if (!filename) {
+  if (typeof filename !== 'string') {
     throw new Error(
       `MIXED_JOBS[${index}].preview_output.filename is missing — ` +
         'createMixedMediaJobs contract changed.'

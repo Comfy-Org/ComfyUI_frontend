@@ -6,7 +6,7 @@ import type {
   ListAssetsResponse
 } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { createJobsWithExecutionTimes } from '@e2e/fixtures/helpers/AssetsHelper'
+import { createJobsWithExecutionTimes } from '@e2e/fixtures/utils/jobFixtures'
 
 // The assets sidebar's sort options live inside the settings popover and are
 // only rendered in cloud mode (`MediaAssetFilterBar.vue`:

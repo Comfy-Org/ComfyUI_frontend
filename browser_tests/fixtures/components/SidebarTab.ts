@@ -210,6 +210,43 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 }
 
+export class JobHistorySidebarTab extends SidebarTab {
+  public readonly root: Locator
+  public readonly searchInput: Locator
+  public readonly allTab: Locator
+  public readonly completedTab: Locator
+  public readonly failedTab: Locator
+  public readonly moreOptionsButton: Locator
+  public readonly clearQueuedButton: Locator
+  public readonly jobRows: Locator
+
+  constructor(public override readonly page: Page) {
+    super(page, 'job-history')
+    this.root = page.locator('.sidebar-content-container')
+    this.searchInput = this.root.getByPlaceholder('Search...')
+    this.allTab = this.root.getByRole('tab', { name: 'All', exact: true })
+    this.completedTab = this.root.getByRole('tab', {
+      name: 'Completed',
+      exact: true
+    })
+    this.failedTab = this.root.getByRole('tab', { name: 'Failed', exact: true })
+    this.moreOptionsButton = this.root.getByLabel('More options')
+    this.clearQueuedButton = this.root.getByRole('button', {
+      name: 'Clear queue'
+    })
+    this.jobRows = this.root.locator('[data-job-id]')
+  }
+
+  jobRow(jobId: string) {
+    return this.root.locator(`[data-job-id="${jobId}"]`)
+  }
+
+  override async open() {
+    await super.open()
+    await this.searchInput.waitFor({ state: 'visible' })
+  }
+}
+
 export class ModelLibrarySidebarTab extends SidebarTab {
   public readonly searchInput: Locator
   public readonly modelTree: Locator
