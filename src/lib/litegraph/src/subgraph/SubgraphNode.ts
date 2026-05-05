@@ -451,6 +451,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
       const sourceNode = this.subgraph.getNodeById(entry.sourceNodeId)
       if (!sourceNode) return linkedWidgetNames.has(entry.sourceWidgetName)
+      if (sourceNode.type === 'PrimitiveNode') return true
 
       const hasSourceWidget =
         sourceNode.widgets?.some(
