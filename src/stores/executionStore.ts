@@ -272,6 +272,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
     if (!activeJob.value) return
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
     }
@@ -288,6 +290,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activeJob.value) return
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
     activeJob.value.nodes[e.detail.node] = true
   }
 
@@ -348,7 +352,10 @@ export const useExecutionStore = defineStore('execution', () => {
       const { revokePreviewsByExecutionId } = useNodeOutputStore()
       for (const nodeId in nodes) {
         const nodeState = nodes[nodeId]
-        if (nodeState.state === 'running' && !previousForJob[nodeId]) {
+        if (
+          nodeState.state === 'running' &&
+          previousForJob[nodeId]?.state !== 'running'
+        ) {
           revokePreviewsByExecutionId(nodeId)
         }
       }
@@ -441,17 +448,16 @@ export const useExecutionStore = defineStore('execution', () => {
         error: e.detail.exception_message
       })
 
-      // Cloud wraps validation errors (400) in exception_message as embedded JSON.
       if (handleCloudValidationError(e.detail)) return
     }
 
-    // Service-level errors (e.g. "Job has stagnated") have no associated node.
-    // Route them as job errors
     if (handleServiceLevelError(e.detail)) return
 
-    // OSS path / Cloud fallback (real runtime errors)
-    executionErrorStore.lastExecutionError = e.detail
     clearInitializationByJobId(e.detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
+
+    executionErrorStore.lastExecutionError = e.detail
     resetExecutionState(e.detail.prompt_id)
   }
 
@@ -461,6 +467,9 @@ export const useExecutionStore = defineStore('execution', () => {
       return false
 
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+      return true
+
     resetExecutionState(detail.prompt_id)
     executionErrorStore.lastPromptError = {
       type: detail.exception_type ?? 'error',
@@ -479,6 +488,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+      return true
+
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {

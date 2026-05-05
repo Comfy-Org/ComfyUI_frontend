@@ -1464,7 +1464,7 @@ export class GroupNodeHandler {
 
     const executing = handleEvent(
       'executing',
-      (d) => (typeof d === 'object' ? (d?.display_node ?? d?.node) : undefined),
+      (d) => (typeof d === 'string' ? d : (d?.display_node ?? d?.node)),
       (d, id) =>
         typeof d === 'object'
           ? { ...d, node: id, display_node: id }
