@@ -77,6 +77,11 @@ export interface Load3DOptions {
   // Use this for reactive dimensions that change over time
   getDimensions?: () => { width: number; height: number } | null
 
+  // Returns the current canvas zoom scale (e.g. ds.scale from LiteGraph).
+  // Used to scale the renderer pixel ratio so the 3D scene renders at the
+  // correct resolution when the graph is zoomed in or out.
+  getZoomScale?: () => number
+
   // Viewer mode flag (affects aspect ratio behavior)
   isViewerMode?: boolean
 
