@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
   assetService,
@@ -53,6 +56,11 @@ const validBlake3Hash =
   '1111111111111111111111111111111111111111111111111111111111111111'
 const validBlake3AssetHash = `blake3:${validBlake3Hash}`
 
+type AssetListResponseOptions = {
+  hasMore?: AssetResponse['has_more']
+  total?: AssetResponse['total']
+}
+
 function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
@@ -66,10 +74,7 @@ function buildResponse(
 
 function buildAssetListResponse(
   assets: AssetItem[],
-  {
-    hasMore = false,
-    total = assets.length
-  }: { hasMore?: boolean; total?: number } = {}
+  { hasMore = false, total = assets.length }: AssetListResponseOptions = {}
 ): Response {
   return buildResponse({ assets, total, has_more: hasMore })
 }
@@ -431,13 +436,12 @@ describe(assetService.getAssetModelFolders, () => {
     vi.clearAllMocks()
   })
 
-  it('filters out missing-tagged assets and blacklisted directories, returning alphabetical unique folders without include_public', async () => {
+  it('requests missing-tag exclusion and returns alphabetical unique folders without include_public', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({ id: 'a', tags: ['models', 'loras'] }),
         validAsset({ id: 'b', tags: ['models', 'checkpoints'] }),
         validAsset({ id: 'c', tags: ['models', 'configs'] }),
-        validAsset({ id: 'd', tags: ['models', 'missing', 'controlnet'] }),
         validAsset({ id: 'e', tags: ['models', 'loras'] })
       ])
     )
@@ -452,6 +456,7 @@ describe(assetService.getAssetModelFolders, () => {
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.has('include_public')).toBe(false)
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
 })
 
@@ -498,12 +503,9 @@ describe(assetService.getAssetsByTag, () => {
     vi.clearAllMocks()
   })
 
-  it('forwards include_public=true by default and excludes missing-tagged assets', async () => {
+  it('forwards include_public=true by default and requests missing-tag exclusion', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildAssetListResponse([
-        validAsset({ id: 'visible', tags: ['input'] }),
-        validAsset({ id: 'hidden', tags: ['input', 'missing'] })
-      ])
+      buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
     )
 
     const assets = await assetService.getAssetsByTag('input')
@@ -513,6 +515,7 @@ describe(assetService.getAssetsByTag, () => {
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_public')).toBe('true')
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
 })
 
@@ -545,45 +548,15 @@ describe(assetService.getAllAssetsByTag, () => {
     const firstUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const firstParams = new URL(firstUrl, 'http://localhost').searchParams
     expect(firstParams.get('include_public')).toBe('true')
+    expect(firstParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(firstParams.get('limit')).toBe('2')
     expect(firstParams.has('offset')).toBe(false)
 
     const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('include_public')).toBe('true')
+    expect(secondParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(secondParams.get('limit')).toBe('2')
-    expect(secondParams.get('offset')).toBe('2')
-  })
-
-  it('paginates from raw response size before filtering missing-tagged assets', async () => {
-    fetchApiMock
-      .mockResolvedValueOnce(
-        buildAssetListResponse(
-          [
-            validAsset({ id: 'visible', tags: ['input'] }),
-            validAsset({ id: 'hidden', tags: ['input', MISSING_TAG] })
-          ],
-          { hasMore: true }
-        )
-      )
-      .mockResolvedValueOnce(
-        buildAssetListResponse([
-          validAsset({ id: 'later-public', tags: ['input'] })
-        ])
-      )
-
-    const assets = await assetService.getAllAssetsByTag('input', true, {
-      limit: 2
-    })
-
-    expect(assets.map((a) => a.id)).toEqual(['visible', 'later-public'])
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
-
-    const secondUrl = fetchApiMock.mock.calls[1]?.[0]
-    if (typeof secondUrl !== 'string') {
-      throw new Error('Expected a second asset request URL')
-    }
-    const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('offset')).toBe('2')
   })
 

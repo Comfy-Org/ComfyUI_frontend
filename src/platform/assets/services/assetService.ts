@@ -36,6 +36,7 @@ interface AssetPaginationOptions extends PaginationOptions {
 
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
+  excludeTags?: string[]
   includePublic?: boolean
   signal?: AbortSignal
 }
@@ -181,6 +182,7 @@ const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 export const MODELS_TAG = 'models'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
+const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
 
 /** Result of a HEAD lookup against an exact asset hash. */
 export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
@@ -290,6 +292,7 @@ function createAssetService() {
   ): Promise<AssetResponse> {
     const {
       includeTags,
+      excludeTags = DEFAULT_EXCLUDED_ASSET_TAGS,
       limit = DEFAULT_LIMIT,
       offset,
       includePublic,
@@ -299,6 +302,9 @@ function createAssetService() {
       include_tags: includeTags.join(','),
       limit: limit.toString()
     })
+    if (excludeTags.length > 0) {
+      queryParams.set('exclude_tags', excludeTags.join(','))
+    }
     if (offset !== undefined && offset > 0) {
       queryParams.set('offset', offset.toString())
     }
@@ -337,10 +343,7 @@ function createAssetService() {
     // Blacklist directories we don't want to show
     const blacklistedDirectories = new Set(['configs'])
 
-    const existingAssets = data.assets.filter(
-      (asset) => !asset.tags.includes(MISSING_TAG)
-    )
-    const folderTags = existingAssets
+    const folderTags = data.assets
       .flatMap((asset) => asset.tags)
       .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
     const discoveredFolders = new Set<string>(folderTags)
@@ -361,12 +364,7 @@ function createAssetService() {
       `models for ${folder}`
     )
 
-    const modelsInFolder = data.assets.filter(
-      (asset) =>
-        !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
-    )
-
-    return modelsInFolder.map((asset) => ({
+    return data.assets.map((asset) => ({
       name: asset.name,
       pathIndex: 0
     }))
@@ -445,10 +443,7 @@ function createAssetService() {
     )
 
     // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return data.assets.filter(
-      (asset) =>
-        !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
-    )
+    return data.assets
   }
 
   /**
@@ -499,7 +494,7 @@ function createAssetService() {
       `assets for tag ${tag}`
     )
 
-    return data.assets.filter((asset) => !asset.tags.includes(MISSING_TAG))
+    return data.assets
   }
 
   /**
@@ -536,9 +531,13 @@ function createAssetService() {
         `assets for tag ${tag}`
       )
       const batch = data.assets
-      assets.push(...batch.filter((asset) => !asset.tags.includes(MISSING_TAG)))
+      if (batch.length === 0) {
+        return assets
+      }
 
-      if (batch.length === 0 || !data.has_more) {
+      assets.push(...batch)
+
+      if (!data.has_more) {
         return assets
       }
 
