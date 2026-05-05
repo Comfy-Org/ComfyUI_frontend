@@ -483,9 +483,17 @@
         "name": "primeiro_frame",
         "tooltip": "Imagem do primeiro frame para o vídeo."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "asset_id do Seedance a ser usado como o primeiro quadro. Mutuamente exclusivo com a entrada de imagem first_frame."
+      },
       "last_frame": {
         "name": "último_frame",
         "tooltip": "Imagem do último frame para o vídeo."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "asset_id do Seedance a ser usado como o último quadro. Mutuamente exclusivo com a entrada de imagem last_frame."
       },
       "model": {
         "name": "modelo",
@@ -531,6 +539,9 @@
       "model": {
         "name": "modelo",
         "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_duration": {
         "name": "duração"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Crie um ativo de imagem pessoal Seedance 2.0. Faz upload da imagem de entrada e a registra no grupo de ativos informado. Se o group_id estiver vazio, executa um fluxo de autenticação H5 de pessoa real para criar um novo grupo antes de adicionar o ativo.",
+    "display_name": "ByteDance Criar Ativo de Imagem",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutilize um ID de grupo de ativos Seedance existente para evitar repetidas verificações humanas para a mesma pessoa. Deixe em branco para executar a autenticação de pessoa real no navegador e criar um novo grupo."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Imagem para registrar como ativo pessoal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Crie um ativo de vídeo pessoal Seedance 2.0. Faz upload do vídeo de entrada e o registra no grupo de ativos informado. Se o group_id estiver vazio, executa um fluxo de autenticação H5 de pessoa real para criar um novo grupo antes de adicionar o ativo.",
+    "display_name": "ByteDance Criar Ativo de Vídeo",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutilize um ID de grupo de ativos Seedance existente para evitar repetidas verificações humanas para a mesma pessoa. Deixe em branco para executar a autenticação de pessoa real no navegador e criar um novo grupo."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vídeo para registrar como ativo pessoal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -3691,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "Interpolação de Quadros",
+    "inputs": {
+      "images": {
+        "name": "imagens"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "multiplicador"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Carregar Modelo de Interpolação de Quadros",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Selecione um modelo de interpolação de quadros para carregar. Os modelos devem ser colocados na pasta 'frame_interpolation'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "Aplica escalonamento dependente de frequência à orientação",
     "display_name": "FreSca",
@@ -4434,6 +4526,156 @@
       },
       "tapered_corners": {
         "name": "cantos arredondados"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "Gere um vídeo a partir de uma imagem do primeiro quadro usando o modelo HappyHorse.",
+    "display_name": "HappyHorse Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagem do primeiro quadro. A proporção de aspecto de saída é derivada desta imagem."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Gere um vídeo apresentando uma pessoa ou objeto a partir de materiais de referência com o modelo HappyHorse. Suporta performances de personagem único e interações entre múltiplos personagens.",
+    "display_name": "HappyHorse Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Gera um vídeo com base em um prompt de texto usando o modelo HappyHorse.",
+    "display_name": "HappyHorse Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Edite um vídeo usando instruções de texto ou imagens de referência com o modelo HappyHorse. A duração de saída é de 3 a 15s e corresponde ao vídeo de entrada; entradas com mais de 15s são cortadas.",
+    "display_name": "HappyHorse Edição de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "O vídeo a ser editado."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
       }
     },
     "outputs": {
@@ -11247,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Nó de Imagem para Vídeo Moonvalley Marey",
-    "display_name": "Moonvalley Marey Imagem para Vídeo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle_após_gerar"
-      },
-      "image": {
-        "name": "imagem",
-        "tooltip": "A imagem de referência usada para gerar o vídeo"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto do prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "aderência_ao_prompt",
-        "tooltip": "Escala de orientação para controle da geração"
-      },
-      "resolution": {
-        "name": "resolução",
-        "tooltip": "Resolução do vídeo de saída"
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "Valor da semente aleatória"
-      },
-      "steps": {
-        "name": "passos",
-        "tooltip": "Número de passos de remoção de ruído"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Texto para Vídeo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texto de prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Escala de orientação para controle da geração"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Resolução do vídeo de saída"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valor da semente aleatória"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Etapas de inferência"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Vídeo para Vídeo",
-    "inputs": {
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "Usado apenas se o control_type for 'Motion Transfer'"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texto de prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descreve o vídeo a ser gerado"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valor da semente aleatória"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Número de etapas de inferência"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "O vídeo de referência usado para gerar o vídeo de saída. Deve ter pelo menos 5 segundos de duração. Vídeos com mais de 5s serão automaticamente cortados. Apenas o formato MP4 é suportado."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11592,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "controle após gerar"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Usado apenas quando `size` é 'Custom'. Deve ser um múltiplo de 16 (apenas para GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Usado apenas quando `size` é 'Custom'. Deve ser um múltiplo de 16 (apenas para GPT Image 2)."
       },
       "image": {
         "name": "imagem",
@@ -12284,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "Inteiro",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "controle após gerar"
       },
       "value": {
@@ -13791,6 +13927,127 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Detect",
+    "inputs": {
+      "bboxes": {
+        "name": "caixas_delimitadoras",
+        "tooltip": "Caixas delimitadoras para segmentar dentro"
+      },
+      "conditioning": {
+        "name": "condicionamento",
+        "tooltip": "Condicionamento de texto do CLIPTextEncode"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "individual_masks": {
+        "name": "máscaras_individuais",
+        "tooltip": "Gerar máscaras por objeto em vez de união"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "coordenadas_negativas",
+        "tooltip": "Pontos negativos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de pixels)"
+      },
+      "positive_coords": {
+        "name": "coordenadas_positivas",
+        "tooltip": "Pontos positivos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de pixels)"
+      },
+      "refine_iterations": {
+        "name": "iterações_de_refino",
+        "tooltip": "Passagens de refinamento do decodificador SAM (0=usar máscaras brutas do detector)"
+      },
+      "threshold": {
+        "name": "limiar"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      },
+      "1": {
+        "name": "caixas_delimitadoras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 Track Preview",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "opacity": {
+        "name": "opacidade"
+      },
+      "track_data": {
+        "name": "dados_de_rastreamento"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Track to Mask",
+    "inputs": {
+      "object_indices": {
+        "name": "índices_de_objetos",
+        "tooltip": "Índices de objetos separados por vírgula para incluir (ex: '0,2,3'). Vazio = todos os objetos."
+      },
+      "track_data": {
+        "name": "dados_de_rastreamento"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video Track",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamento",
+        "tooltip": "Condicionamento de texto para detectar novos objetos durante o rastreamento"
+      },
+      "detect_interval": {
+        "name": "intervalo_de_deteccao",
+        "tooltip": "Executar detecção a cada N quadros (1=todo quadro). Valores maiores economizam processamento."
+      },
+      "detection_threshold": {
+        "name": "limiar_de_deteccao",
+        "tooltip": "Limiar de pontuação para detecção por texto"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Quadros de vídeo como imagens em lote"
+      },
+      "initial_mask": {
+        "name": "máscara_inicial",
+        "tooltip": "Máscara(s) para o primeiro quadro a ser rastreado (uma por objeto)"
+      },
+      "max_objects": {
+        "name": "máximo_de_objetos",
+        "tooltip": "Máximo de objetos rastreados (0=ilimitado). Máscaras iniciais contam para este limite."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "dados_de_rastreamento",
         "tooltip": null
       }
     }
@@ -16253,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16296,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Use o prompt/modelo de sistema padrão se o modelo possuir um."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Quadros de vídeo como lote de imagens. Considera-se 24 FPS; amostrado internamente para 1 FPS."
       }
     },
     "outputs": {
@@ -16308,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16351,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Use o prompt/modelo de sistema padrão se o modelo possuir um."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Quadros de vídeo como lote de imagens. Considera-se 24 FPS; amostrado internamente para 1 FPS."
       }
     },
     "outputs": {
@@ -16523,6 +16794,45 @@
       },
       "upscaler_resolution": {
         "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Dê nova vida aos vídeos com tecnologia poderosa de upscaling e recuperação.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "nível de compressão dinâmica",
+        "tooltip": "Nível CQP."
+      },
+      "interpolation_model": {
+        "name": "modelo de interpolação"
+      },
+      "upscaler_model": {
+        "name": "modelo de upscaling"
+      },
+      "upscaler_model_creativity": {
+        "name": "criatividade"
+      },
+      "upscaler_model_prompt": {
+        "name": "prompt"
+      },
+      "upscaler_model_realism": {
+        "name": "realismo"
+      },
+      "upscaler_model_sharp": {
+        "name": "nitidez"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "resolução do upscaler"
       },
       "video": {
         "name": "vídeo"
@@ -17506,6 +17816,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do vídeo"
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução do vídeo de saída. 4K não está disponível para os modelos veo-3.1-lite e veo-3.0."
       },
       "seed": {
         "name": "seed",

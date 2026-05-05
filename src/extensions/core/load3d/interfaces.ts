@@ -3,11 +3,7 @@
 import type * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
-import type { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import type { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import type { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import type { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
-import type { OBJLoader2Parallel } from 'wwobjloader2'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
 export type MaterialMode =
   | 'original'
@@ -80,6 +76,11 @@ export interface Load3DOptions {
   // Dynamic dimension provider (called on every render)
   // Use this for reactive dimensions that change over time
   getDimensions?: () => { width: number; height: number } | null
+
+  // Returns the current canvas zoom scale (e.g. ds.scale from LiteGraph).
+  // Used to scale the renderer pixel ratio so the 3D scene renders at the
+  // correct resolution when the graph is zoomed in or out.
+  getZoomScale?: () => number
 
   // Viewer mode flag (affects aspect ratio behavior)
   isViewerMode?: boolean
@@ -202,14 +203,23 @@ export interface ModelManagerInterface {
   setupModelMaterials(model: THREE.Object3D): void
 }
 
-export interface LoaderManagerInterface {
-  gltfLoader: GLTFLoader
-  objLoader: OBJLoader2Parallel
-  mtlLoader: MTLLoader
-  fbxLoader: FBXLoader
-  stlLoader: STLLoader
+export interface LoadModelOptions {
+  /**
+   * When true, suppress the user-facing toast for file-not-found
+   * (HTTP 404) errors. Other errors (parse failures, network drops)
+   * still surface a toast. Use for "preview" surfaces whose model
+   * file is server-produced and may legitimately be absent locally
+   * (e.g. shared workflows on a fresh machine).
+   */
+  silentOnNotFound?: boolean
+}
 
+export interface LoaderManagerInterface {
   init(): void
   dispose(): void
-  loadModel(url: string, originalFileName?: string): Promise<void>
+  loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<void>
 }

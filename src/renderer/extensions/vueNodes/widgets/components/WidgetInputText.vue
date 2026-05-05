@@ -32,7 +32,7 @@ import { computed } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
