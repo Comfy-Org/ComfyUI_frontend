@@ -9,13 +9,15 @@ const SINGLE_BINDING_COMMAND = 'Comfy.SaveWorkflow'
 const NO_BINDING_COMMAND = 'TestCommand.KeybindingPanelE2E.NoBinding'
 
 async function searchKeybindings(page: Page, query: string) {
-  const searchInput = page.locator('.keybinding-panel').getByRole('searchbox')
-  await searchInput.fill(query)
+  await getKeybindingSearchInput(page).fill(query)
 }
 
 async function clearSearch(page: Page) {
-  const searchInput = page.locator('.keybinding-panel').getByRole('searchbox')
-  await searchInput.clear()
+  await getKeybindingSearchInput(page).clear()
+}
+
+function getKeybindingSearchInput(page: Page): Locator {
+  return page.getByPlaceholder('Search Keybindings...')
 }
 
 function getCommandRow(page: Page, commandId: string): Locator {
@@ -41,7 +43,19 @@ async function openContextMenu(page: Page, commandId: string) {
 }
 
 function getKeybindingInput(page: Page): Locator {
-  return page.getByRole('dialog').locator('input[autofocus]')
+  return getEditKeybindingDialog(page).locator('input[autofocus]')
+}
+
+function getEditKeybindingDialog(page: Page): Locator {
+  return page.getByRole('dialog', { name: /Modify keybinding/i })
+}
+
+function getRemoveAllKeybindingsDialog(page: Page): Locator {
+  return page.getByRole('dialog', { name: /Remove all keybindings/i })
+}
+
+function getResetAllKeybindingsDialog(page: Page): Locator {
+  return page.getByRole('dialog', { name: /Reset all keybindings/i })
 }
 
 async function pressComboOnInput(page: Page, combo: string) {
@@ -51,13 +65,13 @@ async function pressComboOnInput(page: Page, combo: string) {
 }
 
 async function saveAndCloseKeybindingDialog(page: Page) {
-  const dialog = page.getByRole('dialog')
+  const dialog = getEditKeybindingDialog(page)
   await dialog.getByRole('button', { name: /Save/i }).click()
   await expect(dialog).toBeHidden()
 }
 
 async function cancelAndCloseDialog(page: Page) {
-  const dialog = page.getByRole('dialog')
+  const dialog = getEditKeybindingDialog(page)
   await dialog.getByRole('button', { name: /Cancel/i }).click()
   await expect(dialog).toBeHidden()
 }
@@ -260,7 +274,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await openContextMenu(page, SINGLE_BINDING_COMMAND)
       await page.getByRole('menuitem', { name: /Remove keybinding/i }).click()
 
-      const confirmDialog = page.getByRole('dialog')
+      const confirmDialog = getRemoveAllKeybindingsDialog(page)
       await expect(confirmDialog).toBeVisible()
       await confirmDialog.getByRole('button', { name: /Remove all/i }).click()
 
@@ -406,7 +420,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const deleteButton = row.getByRole('button', { name: /Delete/i })
       await deleteButton.click()
 
-      const confirmDialog = page.getByRole('dialog')
+      const confirmDialog = getRemoveAllKeybindingsDialog(page)
       await expect(confirmDialog).toBeVisible()
 
       await confirmDialog.getByRole('button', { name: /Cancel/i }).click()
@@ -492,7 +506,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
         .getByRole('button', { name: /Reset All/i })
       await resetAllButton.click()
 
-      const confirmDialog = page.getByRole('dialog')
+      const confirmDialog = getResetAllKeybindingsDialog(page)
       await expect(confirmDialog).toBeVisible()
       await expect(confirmDialog).toContainText(/Reset all keybindings/i)
 
@@ -515,7 +529,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
         .getByRole('button', { name: /Reset All/i })
       await resetAllButton.click()
 
-      const confirmDialog = page.getByRole('dialog')
+      const confirmDialog = getResetAllKeybindingsDialog(page)
       await expect(confirmDialog).toBeVisible()
       await confirmDialog.getByRole('button', { name: /Cancel/i }).click()
 
