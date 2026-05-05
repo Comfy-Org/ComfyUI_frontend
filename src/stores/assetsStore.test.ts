@@ -542,6 +542,88 @@ describe('assetsStore - Refactored (Option A)', () => {
     })
   })
 
+  describe('setAssetPreview', () => {
+    it('patches preview_id and preview_url on the matching history asset by name', async () => {
+      const mockHistory = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const target = store.historyAssets[1]
+      const targetName = target.name
+
+      store.setAssetPreview(
+        targetName,
+        'preview-xyz',
+        '/assets/preview-xyz/content'
+      )
+
+      const updated = store.historyAssets.find((a) => a.name === targetName)
+      expect(updated?.preview_id).toBe('preview-xyz')
+      expect(updated?.preview_url).toBe('/assets/preview-xyz/content')
+    })
+
+    it('matches by name even when ids differ between APIs', async () => {
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const historyAssetId = store.historyAssets[0].id
+      const targetName = store.historyAssets[0].name
+
+      // Simulate the cloud-api side using a different id space
+      store.setAssetPreview(targetName, 'p1', '/assets/p1/content')
+
+      expect(store.historyAssets[0].id).toBe(historyAssetId)
+      expect(store.historyAssets[0].preview_id).toBe('p1')
+      expect(store.historyAssets[0].preview_url).toBe('/assets/p1/content')
+    })
+
+    it('does nothing when no asset with that name is loaded', async () => {
+      const mockHistory = Array.from({ length: 2 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const before = store.historyAssets.map((a) => ({ ...a }))
+      store.setAssetPreview('does-not-exist.glb', 'p', '/p')
+
+      expect(store.historyAssets).toEqual(before)
+    })
+
+    it('only patches the asset whose name matches exactly', async () => {
+      const mockHistory = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      // Patch using a non-matching prefix; the other assets must stay untouched
+      store.setAssetPreview('output_1', 'p', '/p')
+
+      for (const asset of store.historyAssets) {
+        expect(asset.preview_id).toBeUndefined()
+      }
+    })
+
+    it('replaces the asset object so reactivity fires for v-for keyed by id', async () => {
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const before = store.historyAssets[0]
+      const targetName = before.name
+
+      store.setAssetPreview(targetName, 'p', '/p')
+
+      // setAssetPreview replaces the item with a new object via list[idx] = {...}
+      // (rather than mutating in place) so Vue triggers dependent watchers.
+      expect(store.historyAssets[0]).not.toBe(before)
+    })
+  })
+
   describe('jobDetailView Support', () => {
     it('should include outputCount and allOutputs in user_metadata', async () => {
       const mockHistory = Array.from({ length: 5 }, (_, i) =>
