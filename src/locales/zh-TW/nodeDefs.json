@@ -371,7 +371,7 @@
   },
   "BriaImageEditNode": {
     "description": "使用 Bria 最新模型編輯圖像",
-    "display_name": "Bria 圖像編輯",
+    "display_name": "Bria FIBO 圖像編輯",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -483,9 +483,17 @@
         "name": "首幀圖像",
         "tooltip": "影片的首幀圖像。"
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "作為第一幀使用的 Seedance asset_id。與 first_frame 圖像輸入互斥。"
+      },
       "last_frame": {
         "name": "末幀圖像",
         "tooltip": "影片的末幀圖像。"
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "作為最後一幀使用的 Seedance asset_id。與 last_frame 圖像輸入互斥。"
       },
       "model": {
         "name": "模型",
@@ -531,6 +539,9 @@
       "model": {
         "name": "模型",
         "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+      },
+      "model_auto_downscale": {
+        "name": "自動縮小"
       },
       "model_duration": {
         "name": "時長"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "建立一個 Seedance 2.0 個人圖像資產。上傳輸入圖像並將其註冊到指定的資產群組。如果 group_id 為空，將執行真人 H5 認證流程以建立新群組後再新增資產。",
+    "display_name": "ByteDance 建立圖像資產",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "重複使用現有的 Seedance 資產群組 ID，可跳過同一人的重複人臉驗證。留空則會在瀏覽器中執行真人認證並建立新群組。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要註冊為個人資產的圖像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "建立一個 Seedance 2.0 個人影片資產。上傳輸入影片並將其註冊到指定的資產群組。如果 group_id 為空，將執行真人 H5 認證流程以建立新群組後再新增資產。",
+    "display_name": "ByteDance 建立影片資產",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "重複使用現有的 Seedance 資產群組 ID，可跳過同一人的重複人臉驗證。留空則會在瀏覽器中執行真人認證並建立新群組。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要註冊為個人資產的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -805,7 +864,7 @@
   },
   "ByteDanceSeedreamNode": {
     "description": "統一文字生成圖片和精確單句編輯，最高支援 4K 解析度。",
-    "display_name": "字節跳動 Seedream 4",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -988,7 +1047,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推薦）或 t5",
+    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推薦）或 t5\nomnigen2: qwen vl 2.5 3B",
     "display_name": "載入 CLIP",
     "inputs": {
       "clip_name": {
@@ -3691,6 +3750,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "影格插值",
+    "inputs": {
+      "images": {
+        "name": "影像"
+      },
+      "interp_model": {
+        "name": "插值模型"
+      },
+      "multiplier": {
+        "name": "倍數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "載入影格插值模型",
+    "inputs": {
+      "model_name": {
+        "name": "模型名稱",
+        "tooltip": "選擇要載入的影格插值模型。模型必須放在「frame_interpolation」資料夾中。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "對引導應用頻率相關的縮放",
     "display_name": "FreSca",
@@ -4434,6 +4526,156 @@
       },
       "tapered_corners": {
         "name": "圓角"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "使用 HappyHorse 模型，從首幀圖像生成影片。",
+    "display_name": "HappyHorse 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首幀圖像。輸出長寬比將依據此圖像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "使用 HappyHorse 模型，根據參考素材生成包含人物或物件的影片。支援單角色表演與多角色互動。",
+    "display_name": "HappyHorse 參考素材轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "使用 HappyHorse 模型，根據文字提示生成影片。",
+    "display_name": "HappyHorse 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "使用 HappyHorse 模型，根據文字指令或參考圖像編輯影片。輸出時長為 3-15 秒，並與輸入影片一致；超過 15 秒的輸入將被截斷。",
+    "display_name": "HappyHorse 影片編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要編輯的影片。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
       }
     },
     "outputs": {
@@ -11247,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey 圖像轉影片節點",
-    "display_name": "Moonvalley Marey 圖像轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "圖像",
-        "tooltip": "用於生成影片的參考圖像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向提示詞文字"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "prompt_adherence": {
-        "name": "提示詞遵循度",
-        "tooltip": "生成控制的引導尺度"
-      },
-      "resolution": {
-        "name": "解析度",
-        "tooltip": "輸出影片的解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "隨機種子值"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "去噪步數"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey 文字轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向提示詞文字"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "prompt_adherence": {
-        "name": "提示詞遵循度",
-        "tooltip": "生成控制的引導尺度"
-      },
-      "resolution": {
-        "name": "解析度",
-        "tooltip": "輸出影片的解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "隨機種子值"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "推理步數"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 影片轉影片",
-    "inputs": {
-      "control_type": {
-        "name": "控制類型"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "僅在 control_type 為 'Motion Transfer' 時使用"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向提示詞文字"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "描述要生成的影片"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "隨機種子值"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "推理步數"
-      },
-      "video": {
-        "name": "影片",
-        "tooltip": "用於生成輸出影片的參考影片。必須至少5秒長。超過5秒的影片將自動修剪。僅支援MP4格式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11583,8 +11711,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "透過 OpenAI 的 GPT Image 1 端點同步產生影像。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "透過 OpenAI 的 GPT Image 2 端點同步產生影像。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11592,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "生成後控制"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "僅當「size」為「Custom」時使用。必須為 16 的倍數（僅限 GPT Image 2）。"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "僅當「size」為「Custom」時使用。必須為 16 的倍數（僅限 GPT Image 2）。"
       },
       "image": {
         "name": "參考影像",
@@ -11610,7 +11746,7 @@
       },
       "prompt": {
         "name": "提示詞",
-        "tooltip": "用於 GPT Image 1 的文字提示"
+        "tooltip": "用於 GPT Image 2 的文字提示"
       },
       "quality": {
         "name": "品質",
@@ -12284,7 +12420,7 @@
   "PrimitiveInt": {
     "display_name": "整數",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "生成後控制"
       },
       "value": {
@@ -13791,6 +13927,127 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_Detect": {
+    "display_name": "SAM3 偵測",
+    "inputs": {
+      "bboxes": {
+        "name": "邊界框",
+        "tooltip": "要分割的區域邊界框"
+      },
+      "conditioning": {
+        "name": "條件",
+        "tooltip": "來自 CLIPTextEncode 的文字條件"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "individual_masks": {
+        "name": "個別 mask",
+        "tooltip": "輸出每個物件的 mask，而非合併"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "負向座標",
+        "tooltip": "負向點提示，格式為 JSON [{\"x\": int, \"y\": int}, ...]（像素座標）"
+      },
+      "positive_coords": {
+        "name": "正向座標",
+        "tooltip": "正向點提示，格式為 JSON [{\"x\": int, \"y\": int}, ...]（像素座標）"
+      },
+      "refine_iterations": {
+        "name": "細化次數",
+        "tooltip": "SAM 解碼器細化次數（0=使用原始偵測器 mask）"
+      },
+      "threshold": {
+        "name": "閾值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "邊界框",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 追蹤預覽",
+    "inputs": {
+      "fps": {
+        "name": "每秒影格數"
+      },
+      "images": {
+        "name": "影像"
+      },
+      "opacity": {
+        "name": "不透明度"
+      },
+      "track_data": {
+        "name": "追蹤資料"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 追蹤轉 mask",
+    "inputs": {
+      "object_indices": {
+        "name": "物件索引",
+        "tooltip": "要包含的物件索引（以逗號分隔，例如 '0,2,3'）。空白=所有物件。"
+      },
+      "track_data": {
+        "name": "追蹤資料"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 影片追蹤",
+    "inputs": {
+      "conditioning": {
+        "name": "條件",
+        "tooltip": "追蹤期間偵測新物件的文字條件"
+      },
+      "detect_interval": {
+        "name": "偵測間隔",
+        "tooltip": "每 N 個影格執行一次偵測（1=每個影格）。數值越高越省運算資源。"
+      },
+      "detection_threshold": {
+        "name": "偵測閾值",
+        "tooltip": "文字提示偵測的分數閾值"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "影片影格（批次影像）"
+      },
+      "initial_mask": {
+        "name": "初始 mask",
+        "tooltip": "第一個影格要追蹤的 mask（每個物件一個）"
+      },
+      "max_objects": {
+        "name": "最大物件數",
+        "tooltip": "最多追蹤物件數（0=無限制）。初始 mask 也計入此限制。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "追蹤資料",
         "tooltip": null
       }
     }
@@ -16253,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16296,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "若模型有內建系統提示/模板則使用。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
       }
     },
     "outputs": {
@@ -16308,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16351,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "若模型有內建系統提示/模板則使用。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
       }
     },
     "outputs": {
@@ -16522,6 +16793,45 @@
         "name": "升頻模型"
       },
       "upscaler_resolution": {
+        "name": "升頻解析度"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "以強大的升頻與修復技術為影片注入新生命。",
+    "display_name": "Topaz 影片增強",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "動態壓縮等級",
+        "tooltip": "CQP 等級。"
+      },
+      "interpolation_model": {
+        "name": "插值模型"
+      },
+      "upscaler_model": {
+        "name": "升頻模型"
+      },
+      "upscaler_model_creativity": {
+        "name": "創意"
+      },
+      "upscaler_model_prompt": {
+        "name": "提示詞"
+      },
+      "upscaler_model_realism": {
+        "name": "寫實度"
+      },
+      "upscaler_model_sharp": {
+        "name": "銳利度"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "升頻解析度"
       },
       "video": {
@@ -17506,6 +17816,10 @@
       "prompt": {
         "name": "提示詞",
         "tooltip": "影片的文字描述"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出影片解析度。veo-3.1-lite 與 veo-3.0 模型不支援 4K。"
       },
       "seed": {
         "name": "種子值",

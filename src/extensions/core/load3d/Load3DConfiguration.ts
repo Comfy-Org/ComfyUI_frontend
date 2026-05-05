@@ -21,6 +21,21 @@ type Load3DConfigurationSettings = {
   width?: IBaseWidget
   height?: IBaseWidget
   bgImagePath?: string
+  silentOnNotFound?: boolean
+}
+
+const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
+
+export function parseAnnotatedFilename(
+  rawValue: string,
+  fallbackFolder: string
+): { filename: string; folder: string } {
+  const match = ANNOTATED_FILENAME_PATTERN.exec(rawValue)
+  if (!match) return { filename: rawValue, folder: fallbackFolder }
+  return {
+    filename: rawValue.slice(0, match.index),
+    folder: match[1]
+  }
 }
 
 class Load3DConfiguration {
@@ -29,8 +44,16 @@ class Load3DConfiguration {
     private properties?: Dictionary<NodeProperty | undefined>
   ) {}
 
-  configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
-    this.setupModelHandlingForSaveMesh(filePath, loadFolder)
+  configureForSaveMesh(
+    loadFolder: 'input' | 'output',
+    filePath: string,
+    options?: { silentOnNotFound?: boolean }
+  ) {
+    this.setupModelHandlingForSaveMesh(
+      filePath,
+      loadFolder,
+      options?.silentOnNotFound ?? false
+    )
     this.setupDefaultProperties()
   }
 
@@ -38,7 +61,8 @@ class Load3DConfiguration {
     this.setupModelHandling(
       setting.modelWidget,
       setting.loadFolder,
-      setting.cameraState
+      setting.cameraState,
+      setting.silentOnNotFound ?? false
     )
     this.setupTargetSize(setting.width, setting.height)
     this.setupDefaultProperties(setting.bgImagePath)
@@ -58,8 +82,16 @@ class Load3DConfiguration {
     }
   }
 
-  private setupModelHandlingForSaveMesh(filePath: string, loadFolder: string) {
-    const onModelWidgetUpdate = this.createModelUpdateHandler(loadFolder)
+  private setupModelHandlingForSaveMesh(
+    filePath: string,
+    loadFolder: string,
+    silentOnNotFound: boolean
+  ) {
+    const onModelWidgetUpdate = this.createModelUpdateHandler(
+      loadFolder,
+      undefined,
+      silentOnNotFound
+    )
 
     if (filePath) {
       onModelWidgetUpdate(filePath)
@@ -69,11 +101,13 @@ class Load3DConfiguration {
   private setupModelHandling(
     modelWidget: IBaseWidget,
     loadFolder: string,
-    cameraState?: CameraState
+    cameraState?: CameraState,
+    silentOnNotFound: boolean = false
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
-      cameraState
+      cameraState,
+      silentOnNotFound
     )
     if (modelWidget.value) {
       onModelWidgetUpdate(modelWidget.value)
@@ -241,24 +275,28 @@ class Load3DConfiguration {
 
   private createModelUpdateHandler(
     loadFolder: string,
-    cameraState?: CameraState
+    cameraState?: CameraState,
+    silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
     return async (value: string | number | boolean | object) => {
       if (!value) return
 
-      const filename = value as string
+      const { filename, folder } = parseAnnotatedFilename(
+        value as string,
+        loadFolder
+      )
 
       this.setResourceFolder(filename)
 
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
-          loadFolder
+          folder
         )
       )
 
-      await this.load3d.loadModel(modelUrl, filename)
+      await this.load3d.loadModel(modelUrl, filename, { silentOnNotFound })
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)

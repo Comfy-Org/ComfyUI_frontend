@@ -1,12 +1,13 @@
 import type { MaybeRef } from 'vue'
 
-import { toRef } from '@vueuse/core'
+import { toRef, useDebounceFn } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -30,6 +31,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
@@ -42,6 +44,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let isFirstModelLoad = true
+
+  const debouncedHandleResize = useDebounceFn(() => {
+    load3d?.handleResize()
+  }, 150)
+
+  watch(
+    () => (getActivePinia() ? useCanvasStore().appScalePercentage : 0),
+    debouncedHandleResize
+  )
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
@@ -96,6 +107,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const canFitToViewer = ref(true)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'normal',
+    'wireframe'
+  ])
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -111,7 +131,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         isPreview.value = true
       }
 
-      load3d = new Load3d(containerRef, {
+      load3d = createLoad3d(containerRef, {
         width: widthWidget?.value as number | undefined,
         height: heightWidget?.value as number | undefined,
         // Provide dynamic dimension getter for reactive updates
@@ -122,6 +142,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
+        getZoomScale: () => app.canvas?.ds?.scale ?? 1,
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
@@ -177,7 +198,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       handleEvents('add')
     } catch (error) {
       console.error('Error initializing Load3d:', error)
-      useToastStore().addAlert(t('toastMessages.failedToInitializeLoad3d'))
+      useToastStore().addAlert(
+        t('toastMessages.failedToInitializeLoad3dViewer')
+      )
     }
   }
 
@@ -782,6 +805,16 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      const caps = load3d?.getCurrentModelCapabilities()
+      canFitToViewer.value = caps?.fitToViewer ?? true
+      canUseGizmo.value = caps?.gizmoTransform ?? true
+      canUseLighting.value = caps?.lighting ?? true
+      canExport.value = caps?.exportable ?? true
+      materialModes.value = caps?.materialModes ?? [
+        'original',
+        'normal',
+        'wireframe'
+      ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       applyGizmoConfigToLoad3d()
       isFirstModelLoad = false
@@ -922,6 +955,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    canFitToViewer,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
     hasSkeleton,
     hasRecording,
     recordingDuration,

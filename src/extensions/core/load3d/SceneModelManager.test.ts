@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { EventManagerInterface } from './interfaces'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
+import type { EventManagerInterface } from './interfaces'
 
 function createMockRenderer(): THREE.WebGLRenderer {
   return {
@@ -23,6 +25,7 @@ function createManager(
   overrides: {
     scene?: THREE.Scene
     eventManager?: EventManagerInterface
+    capabilities?: Partial<ModelAdapterCapabilities>
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
@@ -32,6 +35,10 @@ function createManager(
   const getActiveCamera = () => camera
   const setupCamera = vi.fn()
   const setupGizmo = vi.fn()
+  const capabilities: ModelAdapterCapabilities = {
+    ...DEFAULT_MODEL_CAPABILITIES,
+    ...overrides.capabilities
+  }
 
   const manager = new SceneModelManager(
     scene,
@@ -39,7 +46,8 @@ function createManager(
     eventManager,
     getActiveCamera,
     setupCamera,
-    setupGizmo
+    setupGizmo,
+    () => capabilities
   )
 
   return {
@@ -53,6 +61,37 @@ function createManager(
   }
 }
 
+function createManagerWithPose(opts: {
+  capabilities?: Partial<ModelAdapterCapabilities>
+  pose: { size: THREE.Vector3; center: THREE.Vector3 } | null
+}) {
+  const scene = new THREE.Scene()
+  const renderer = createMockRenderer()
+  const eventManager = createMockEventManager()
+  const camera = new THREE.PerspectiveCamera()
+  const setupCamera = vi.fn()
+  const setupGizmo = vi.fn()
+  const capabilities: ModelAdapterCapabilities = {
+    ...DEFAULT_MODEL_CAPABILITIES,
+    ...opts.capabilities
+  }
+
+  const manager = new SceneModelManager(
+    scene,
+    renderer,
+    eventManager,
+    () => camera,
+    setupCamera,
+    setupGizmo,
+    () => capabilities,
+    () => null,
+    () => {},
+    () => opts.pose
+  )
+
+  return { manager, scene, setupCamera, setupGizmo }
+}
+
 function createMeshModel(name = 'TestModel'): THREE.Group {
   const geometry = new THREE.BoxGeometry(1, 1, 1)
   const material = new THREE.MeshStandardMaterial({ color: 0xff0000 })
@@ -60,6 +99,16 @@ function createMeshModel(name = 'TestModel'): THREE.Group {
   const group = new THREE.Group()
   group.name = name
   group.add(mesh)
+  return group
+}
+
+function createPointsModel(name = 'TestModel'): THREE.Group {
+  const geometry = new THREE.BufferGeometry()
+  const material = new THREE.PointsMaterial({ color: 0xff0000 })
+  const points = new THREE.Points(geometry, material)
+  const group = new THREE.Group()
+  group.name = name
+  group.add(points)
   return group
 }
 
@@ -162,20 +211,40 @@ describe('SceneModelManager', () => {
       expect(setupCamera).toHaveBeenCalled()
     })
 
-    it('does not skip materialMode when it differs from original', async () => {
+    it('reapplies non-original materialMode after snapshotting', async () => {
       const { manager } = createManager()
       const model = createMeshModel()
 
-      // setupModel checks materialMode !== 'original' and calls
-      // setMaterialMode, but the guard `mode === this.materialMode`
-      // causes it to no-op. Then setupModelMaterials resets to 'original'.
+      // setupModel calls setupModelMaterials first (which internally calls
+      // setMaterialMode('original') to reset), then reapplies the stored mode.
       manager.materialMode = 'wireframe'
       const spy = vi.spyOn(manager, 'setMaterialMode')
       await manager.setupModel(model)
 
-      // setMaterialMode is called with the stored mode and then 'original'
-      expect(spy).toHaveBeenCalledWith('wireframe')
       expect(spy).toHaveBeenCalledWith('original')
+      expect(spy).toHaveBeenCalledWith('wireframe')
+      // The final material mode visible on the mesh should be wireframe.
+      const mesh = model.children[0] as THREE.Mesh
+      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+    })
+
+    it('snapshots original materials before applying materialMode so restore is correct', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      const mesh = model.children[0] as THREE.Mesh
+      const originalMat = mesh.material
+
+      // Set a non-original mode before loading — this was the bug:
+      // originalMaterials would capture the wireframe material instead of the real one.
+      manager.materialMode = 'wireframe'
+      await manager.setupModel(model)
+
+      // The snapshot must hold the *pre-mutation* material.
+      expect(manager.originalMaterials.get(mesh)).toBe(originalMat)
+
+      // Restoring to 'original' must give back the true original, not wireframe.
+      manager.setMaterialMode('original')
+      expect(mesh.material).toBe(originalMat)
     })
 
     it('applies current up direction if not original', async () => {
@@ -189,6 +258,47 @@ describe('SceneModelManager', () => {
         'upDirectionChange',
         '+z'
       )
+    })
+
+    it('uses the adapter default pose when fitToViewer is disabled and a pose is provided', async () => {
+      const pose = {
+        size: new THREE.Vector3(5, 5, 5),
+        center: new THREE.Vector3(0, 2.5, 0)
+      }
+      const { manager, scene, setupCamera, setupGizmo } = createManagerWithPose(
+        {
+          capabilities: { fitToViewer: false },
+          pose
+        }
+      )
+      const model = createMeshModel()
+
+      await manager.setupModel(model)
+
+      expect(scene.children).toContain(model)
+      expect(setupCamera).toHaveBeenCalledWith(pose.size, pose.center)
+
+      expect(setupGizmo).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the full setup path when fitToViewer is disabled but no default pose is provided', async () => {
+      const { manager, scene, setupCamera, setupGizmo } = createManagerWithPose(
+        {
+          capabilities: { fitToViewer: false },
+          pose: null
+        }
+      )
+      const model = createMeshModel()
+
+      await manager.setupModel(model)
+
+      expect(scene.children).toContain(model)
+
+      expect(setupCamera).toHaveBeenCalled()
+      const callArgs = setupCamera.mock.calls[0]
+      expect(callArgs[0]).toBeInstanceOf(THREE.Vector3)
+      expect(callArgs[1]).toBeInstanceOf(THREE.Vector3)
+      expect(setupGizmo).toHaveBeenCalledWith(model)
     })
   })
 
@@ -224,6 +334,20 @@ describe('SceneModelManager', () => {
       const mesh = model.children[0] as THREE.Mesh
       const geoDispose = vi.spyOn(mesh.geometry, 'dispose')
       const matDispose = vi.spyOn(mesh.material as THREE.Material, 'dispose')
+
+      await manager.setupModel(model)
+      manager.clearModel()
+
+      expect(geoDispose).toHaveBeenCalled()
+      expect(matDispose).toHaveBeenCalled()
+    })
+
+    it('disposes points geometry and materials', async () => {
+      const { manager } = createManager()
+      const model = createPointsModel()
+      const points = model.children[0] as THREE.Points
+      const geoDispose = vi.spyOn(points.geometry, 'dispose')
+      const matDispose = vi.spyOn(points.material as THREE.Material, 'dispose')
 
       await manager.setupModel(model)
       manager.clearModel()
@@ -575,29 +699,85 @@ describe('SceneModelManager', () => {
     })
   })
 
-  describe('containsSplatMesh', () => {
-    it('returns false when no model', () => {
-      const { manager } = createManager()
-      expect(manager.containsSplatMesh()).toBe(false)
+  describe('fitToViewer', () => {
+    it('does nothing when no current model', () => {
+      const { manager, setupCamera, setupGizmo } = createManager()
+
+      manager.fitToViewer()
+
+      expect(setupCamera).not.toHaveBeenCalled()
+      expect(setupGizmo).not.toHaveBeenCalled()
     })
 
-    it('returns false for regular model', async () => {
+    it('reapplies currentUpDirection after fitting', async () => {
+      const { manager, eventManager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.setUpDirection('+z')
+      vi.mocked(eventManager.emitEvent).mockClear()
+
+      manager.fitToViewer()
+
+      // rotation.x should reflect +z direction (-PI/2) applied to the post-fit base (0,0,0)
+      expect(model.rotation.x).toBeCloseTo(-Math.PI / 2)
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'upDirectionChange',
+        '+z'
+      )
+    })
+
+    it('does not compound rotations when fitToViewer is called multiple times', async () => {
       const { manager } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
 
-      expect(manager.containsSplatMesh()).toBe(false)
+      manager.setUpDirection('-x')
+
+      manager.fitToViewer()
+      const rotationAfterFirst = model.rotation.z
+
+      manager.fitToViewer()
+      expect(model.rotation.z).toBeCloseTo(rotationAfterFirst)
     })
 
-    it('returns false for explicit null argument', () => {
+    it('leaves rotation at zero when currentUpDirection is original', async () => {
       const { manager } = createManager()
-      expect(manager.containsSplatMesh(null)).toBe(false)
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      manager.fitToViewer()
+
+      expect(model.rotation.x).toBeCloseTo(0)
+      expect(model.rotation.y).toBeCloseTo(0)
+      expect(model.rotation.z).toBeCloseTo(0)
+    })
+
+    it('does not compound rotation when fitToViewer is called after manual rotation override', async () => {
+      const { manager } = createManager()
+      const model = createMeshModel()
+      await manager.setupModel(model)
+
+      // Set an up direction, then manually override originalRotation to simulate
+      // a prior state where the base rotation was non-zero before fit
+      manager.setUpDirection('+x')
+      // Simulate that originalRotation was captured at a non-zero rotation
+      manager.originalRotation = new THREE.Euler(0.5, 0.3, 0.1)
+
+      manager.fitToViewer()
+
+      // After fit, the rotation should be correct for +x direction applied to (0,0,0) base
+      // Not compounded with the stale originalRotation
+      expect(model.rotation.x).toBeCloseTo(0)
+      expect(model.rotation.z).toBeCloseTo(-Math.PI / 2)
     })
   })
 
   describe('PLY mode switching', () => {
     function createPLYManager() {
-      const ctx = createManager()
+      const ctx = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
@@ -655,7 +835,9 @@ describe('SceneModelManager', () => {
     })
 
     it('uses vertex colors when available', () => {
-      const { manager, scene } = createManager()
+      const { manager, scene } = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute(
         'position',
