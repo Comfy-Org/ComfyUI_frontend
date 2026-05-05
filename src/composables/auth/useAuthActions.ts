@@ -65,10 +65,17 @@ export const useAuthActions = () => {
       })
       if (confirmed === null) return
 
-      if (confirmed) {
+      if (confirmed === true) {
         const workflowService = useWorkflowService()
         for (const workflow of modifiedWorkflows) {
-          await workflowService.saveWorkflow(workflow)
+          try {
+            const saved = await workflowService.saveWorkflow(workflow)
+            if (!saved) return
+          } catch {
+            throw new Error(
+              t('auth.signOut.saveFailed', { workflow: workflow.path })
+            )
+          }
         }
       }
     }

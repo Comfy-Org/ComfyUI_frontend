@@ -42,6 +42,31 @@ export type ConfirmationDialogType =
   | 'reinstall'
   | 'info'
 
+interface BaseConfirmOptions {
+  /** Dialog heading */
+  title: string
+  /** The main message body */
+  message: string
+  /** Displayed as an unordered list immediately below the message body */
+  itemList?: string[]
+  hint?: string
+}
+
+type ConfirmOptions = BaseConfirmOptions &
+  (
+    | {
+        /** Pre-configured dialog type */
+        type: 'dirtyClose'
+        /** Override the deny button label. Defaults to `g.no`. */
+        denyLabel?: string
+      }
+    | {
+        /** Pre-configured dialog type */
+        type?: Exclude<ConfirmationDialogType, 'dirtyClose'>
+        denyLabel?: never
+      }
+  )
+
 /**
  * Minimal interface for execution error dialogs.
  * Satisfied by both ExecutionErrorWsMessage (WebSocket) and ExecutionError (Jobs API).
@@ -246,19 +271,7 @@ export const useDialogService = () => {
     itemList = [],
     hint,
     denyLabel
-  }: {
-    /** Dialog heading */
-    title: string
-    /** The main message body */
-    message: string
-    /** Pre-configured dialog type */
-    type?: ConfirmationDialogType
-    /** Displayed as an unordered list immediately below the message body */
-    itemList?: string[]
-    hint?: string
-    /** Override the deny button label (currently only honored by `dirtyClose`) */
-    denyLabel?: string
-  }): Promise<boolean | null> {
+  }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
         key: 'global-prompt',

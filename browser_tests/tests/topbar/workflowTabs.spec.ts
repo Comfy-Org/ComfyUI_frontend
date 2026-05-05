@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -149,12 +149,15 @@ test.describe('Workflow tabs', () => {
   })
 
   test.describe('Closing a modified workflow tab (FE-419)', () => {
-    async function modifyActiveWorkflow(page: Page) {
+    async function modifyActiveWorkflow(page: Page, activeTab: Locator) {
       await page.evaluate(() => {
         const graph = window.app?.graph
         const node = window.LiteGraph?.createNode('Note')
         if (graph && node) graph.add(node)
       })
+      await expect(
+        activeTab.getByTestId('workflow-dirty-indicator')
+      ).toHaveCount(1)
     }
 
     test('shows "Close anyway" label and no Cancel button on dirtyClose dialog', async ({
@@ -165,7 +168,7 @@ test.describe('Workflow tabs', () => {
       await topbar.newWorkflowButton.click()
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
-      await modifyActiveWorkflow(comfyPage.page)
+      await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
       await topbar.closeWorkflowTab('Unsaved Workflow (2)')
 
       const dialog = comfyPage.page.getByRole('dialog')
@@ -187,7 +190,7 @@ test.describe('Workflow tabs', () => {
       await topbar.newWorkflowButton.click()
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
-      await modifyActiveWorkflow(comfyPage.page)
+      await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
       await topbar.closeWorkflowTab('Unsaved Workflow (2)')
 
       await comfyPage.page
@@ -209,7 +212,7 @@ test.describe('Workflow tabs', () => {
       await topbar.newWorkflowButton.click()
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
-      await modifyActiveWorkflow(comfyPage.page)
+      await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
       await topbar.closeWorkflowTab('Unsaved Workflow (2)')
 
       await expect(comfyPage.page.getByRole('dialog')).toBeVisible()

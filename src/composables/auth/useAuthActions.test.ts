@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
+type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
+
 const mockAuthStore = vi.hoisted(() => ({
   logout: vi.fn().mockResolvedValue(undefined)
 }))
@@ -13,11 +15,11 @@ const mockToastStore = vi.hoisted(() => ({
 }))
 
 const mockWorkflowStore = vi.hoisted(() => ({
-  modifiedWorkflows: [] as ComfyWorkflow[]
+  modifiedWorkflows: [] as ModifiedWorkflow[]
 }))
 
 const mockWorkflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn().mockResolvedValue(undefined)
+  saveWorkflow: vi.fn().mockResolvedValue(true)
 }))
 
 const mockDialogService = vi.hoisted(() => ({
@@ -25,7 +27,8 @@ const mockDialogService = vi.hoisted(() => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  t: (key: string) => key
+  t: (key: string, values?: { workflow?: string }) =>
+    values?.workflow ? `${key}:${values.workflow}` : key
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -73,8 +76,8 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-function makeWorkflow(path: string): ComfyWorkflow {
-  return { path, isModified: true } as unknown as ComfyWorkflow
+function makeWorkflow(path: string): ModifiedWorkflow {
+  return { path, isModified: true } satisfies ModifiedWorkflow
 }
 
 describe('useAuthActions.logout', () => {
@@ -113,8 +116,38 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
+    expect(mockDialogService.confirm).toHaveBeenCalledTimes(1)
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels sign-out when saving a workflow is cancelled', async () => {
+    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
+    mockDialogService.confirm.mockResolvedValueOnce(true)
+    mockWorkflowService.saveWorkflow.mockResolvedValueOnce(false)
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
+  })
+
+  it('does not log out if a workflow save fails', async () => {
+    mockWorkflowStore.modifiedWorkflows = [
+      makeWorkflow('a.json'),
+      makeWorkflow('b.json')
+    ]
+    mockDialogService.confirm.mockResolvedValueOnce(true)
+    mockWorkflowService.saveWorkflow.mockRejectedValueOnce(
+      new Error('disk full')
+    )
+    const { logout } = useAuthActions()
+
+    await expect(logout()).rejects.toThrow('auth.signOut.saveFailed:a.json')
+
+    expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
   })
 
   it('saves every modified workflow before signing out when user picks Save (true)', async () => {
@@ -138,6 +171,9 @@ describe('useAuthActions.logout', () => {
     expect(
       mockWorkflowService.saveWorkflow.mock.invocationCallOrder[1]
     ).toBeLessThan(mockAuthStore.logout.mock.invocationCallOrder[0])
+    expect(
+      mockWorkflowService.saveWorkflow.mock.invocationCallOrder[0]
+    ).toBeLessThan(mockWorkflowService.saveWorkflow.mock.invocationCallOrder[1])
   })
 
   it('passes denyLabel "Sign out anyway" to the dialog', async () => {
@@ -150,6 +186,8 @@ describe('useAuthActions.logout', () => {
     expect(mockDialogService.confirm).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'dirtyClose',
+        title: 'auth.signOut.unsavedChangesTitle',
+        message: 'auth.signOut.unsavedChangesMessage',
         denyLabel: 'auth.signOut.signOutAnyway'
       })
     )
