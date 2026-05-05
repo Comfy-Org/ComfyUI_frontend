@@ -289,6 +289,14 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     await flush()
     expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
   })
+
+  it('configureForSaveMesh also emits modelReady once the load resolves', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    config.configureForSaveMesh('output', 'model.glb')
+    await flush()
+    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('parseAnnotatedFilename', () => {

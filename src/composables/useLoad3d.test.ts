@@ -74,6 +74,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn()
 }))
 
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  isAssetPreviewSupported: vi.fn(() => false),
+  persistThumbnail: vi.fn().mockResolvedValue(undefined)
+}))
+
 describe('useLoad3d', () => {
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
@@ -181,6 +186,12 @@ describe('useLoad3d', () => {
       resetGizmoTransform: vi.fn(),
       applyGizmoTransform: vi.fn(),
       fitToViewer: vi.fn(),
+      getGizmoTransform: vi.fn().mockReturnValue({
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      }),
+      captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
       renderer: {
         domElement: mockCanvas
@@ -1381,6 +1392,171 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.setGizmoEnabled).not.toHaveBeenCalled()
       expect(mockLoad3d.setGizmoMode).not.toHaveBeenCalled()
       expect(mockLoad3d.resetGizmoTransform).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handleFitToViewer', () => {
+    it('persists post-fit position and scale into modelConfig.gizmo so reload reapplies the transform via applyGizmoConfigToLoad3d', async () => {
+      const fitTransform = {
+        position: { x: 0, y: -1.25, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 0.42, y: 0.42, z: 0.42 }
+      }
+      vi.mocked(mockLoad3d.getGizmoTransform!).mockReturnValue(fitTransform)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.handleFitToViewer()
+
+      expect(mockLoad3d.fitToViewer).toHaveBeenCalledOnce()
+      expect(composable.modelConfig.value.gizmo!.position).toEqual(
+        fitTransform.position
+      )
+      expect(composable.modelConfig.value.gizmo!.scale).toEqual(
+        fitTransform.scale
+      )
+      // Rotation is owned by upDirection — fit must not overwrite it.
+      expect(composable.modelConfig.value.gizmo!.rotation).toEqual({
+        x: 0,
+        y: 0,
+        z: 0
+      })
+    })
+
+    it('is a no-op when load3d is not initialized', () => {
+      const composable = useLoad3d(mockNode)
+      // No initializeLoad3d() call.
+      composable.handleFitToViewer()
+      expect(mockLoad3d.fitToViewer).not.toHaveBeenCalled()
+    })
+
+    it('does not throw when modelConfig.gizmo is missing', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      composable.modelConfig.value.gizmo = undefined
+
+      expect(() => composable.handleFitToViewer()).not.toThrow()
+      expect(mockLoad3d.fitToViewer).toHaveBeenCalledOnce()
+      // Without a gizmo slot we silently skip persistence — getGizmoTransform
+      // is not called because the early-return saves the read.
+      expect(mockLoad3d.getGizmoTransform).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('modelReady event handler (thumbnail capture)', () => {
+    let originalFetch: typeof globalThis.fetch
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
+      } as unknown as Response)
+    })
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch
+    })
+
+    async function getModelReadyHandler() {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      const call = vi
+        .mocked(mockLoad3d.addEventListener!)
+        .mock.calls.find(([event]) => event === 'modelReady')
+      return { composable, handler: call![1] as () => void }
+    }
+
+    it('registers a modelReady listener separate from modelLoadingEnd', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      const events = vi
+        .mocked(mockLoad3d.addEventListener!)
+        .mock.calls.map(([event]) => event)
+      expect(events).toContain('modelReady')
+      expect(events).toContain('modelLoadingEnd')
+      expect(composable).toBeDefined()
+    })
+
+    it('does not call captureThumbnail when asset preview is unsupported', async () => {
+      const { isAssetPreviewSupported } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await Promise.resolve()
+
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+    })
+
+    it('captures thumbnail and persists it when asset preview is supported and a model_file widget has a value', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '',
+        'cube.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+
+      const modelWidget = {
+        name: 'model_file',
+        value: 'cube.glb [output]'
+      } as unknown as IWidget
+      mockNode.widgets = [modelWidget]
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      // Two awaits: one for captureThumbnail, one for fetch().blob() chain.
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'cube.glb',
+        expect.any(Blob)
+      )
+    })
+
+    it('skips persistence when the model widget has no value', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      mockNode.widgets = [
+        { name: 'model_file', value: '' } as unknown as IWidget
+      ]
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+      expect(persistThumbnail).not.toHaveBeenCalled()
+    })
+
+    it('swallows captureThumbnail rejections silently', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '',
+        'broken.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      vi.mocked(mockLoad3d.captureThumbnail!).mockRejectedValue(
+        new Error('webgl context lost')
+      )
+      mockNode.widgets = [
+        { name: 'model_file', value: 'broken.glb' } as unknown as IWidget
+      ]
+
+      const { handler } = await getModelReadyHandler()
+      expect(() => handler()).not.toThrow()
+      await new Promise((r) => setTimeout(r, 0))
+      expect(persistThumbnail).not.toHaveBeenCalled()
     })
   })
 })
