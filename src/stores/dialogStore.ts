@@ -7,6 +7,7 @@ import { markRaw, ref } from 'vue'
 import type { Component } from 'vue'
 
 import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 type DialogPosition =
@@ -27,8 +28,6 @@ type DialogPosition =
  * tracked in `temp/plans/adr-0009-dialog-reka-migration-DRAFT.md`.
  */
 type DialogRenderer = 'primevue' | 'reka'
-
-type DialogContentSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 
 interface CustomDialogComponentProps {
   maximizable?: boolean

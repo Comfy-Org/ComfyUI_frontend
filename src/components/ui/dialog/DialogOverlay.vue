@@ -15,7 +15,7 @@ const { class: customClass = '', ...delegated } = defineProps<
     v-bind="delegated"
     :class="
       cn(
-        'data-[state=open]:animate-overlayShow fixed inset-0 z-1700 bg-black/70',
+        'fixed inset-0 z-1700 bg-black/70 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
         customClass
       )
     "

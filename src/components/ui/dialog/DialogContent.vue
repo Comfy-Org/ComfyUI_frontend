@@ -1,30 +1,31 @@
 <script setup lang="ts">
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
-import { DialogContent } from 'reka-ui'
+import { DialogContent, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DialogContentVariants } from './dialog.variants'
+import type { DialogContentSize } from './dialog.variants'
 import { dialogContentVariants } from './dialog.variants'
 
 const {
   size,
   class: customClass = '',
-  ...delegated
+  ...restProps
 } = defineProps<
   DialogContentProps & {
-    size?: DialogContentVariants['size']
+    size?: DialogContentSize
     class?: HTMLAttributes['class']
   }
 >()
 
-defineEmits<DialogContentEmits>()
+const emits = defineEmits<DialogContentEmits>()
+const forwarded = useForwardPropsEmits(restProps, emits)
 </script>
 
 <template>
   <DialogContent
-    v-bind="delegated"
+    v-bind="forwarded"
     :class="cn(dialogContentVariants({ size }), customClass)"
   >
     <slot />
