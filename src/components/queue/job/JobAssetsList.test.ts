@@ -35,18 +35,17 @@ vi.mock('reka-ui', async (importOriginal) => {
 
   return {
     ...actual,
-    PopoverAnchor: {
-      name: 'PopoverAnchor',
-      template: '<slot />'
-    },
     PopoverContent: defineComponent({
       name: 'PopoverContent',
       props: {
         align: { type: String, default: undefined },
+        avoidCollisions: { type: Boolean, default: undefined },
         collisionPadding: { type: Number, default: undefined },
+        hideWhenDetached: { type: Boolean, default: undefined },
         positionStrategy: { type: String, default: undefined },
         reference: { type: null, default: undefined },
         side: { type: String, default: undefined },
+        sideFlip: { type: Boolean, default: undefined },
         sideOffset: { type: Number, default: undefined },
         sticky: { type: String, default: undefined }
       },
@@ -63,10 +62,13 @@ vi.mock('reka-ui', async (importOriginal) => {
                 {
                   class: attrs.class,
                   'data-align': props.align,
+                  'data-avoid-collisions': props.avoidCollisions,
                   'data-collision-padding': props.collisionPadding,
+                  'data-hide-when-detached': props.hideWhenDetached,
                   'data-position-strategy': props.positionStrategy,
                   'data-reference-bound': props.reference ? 'true' : 'false',
                   'data-side': props.side,
+                  'data-side-flip': props.sideFlip,
                   'data-side-offset': props.sideOffset,
                   'data-sticky': props.sticky,
                   onMouseenter: () => emit('mouseenter'),
@@ -444,10 +446,12 @@ describe('JobAssetsList', () => {
     await nextTick()
 
     const popover = container.querySelector('.job-details-popover')!
+    expect(popover.getAttribute('data-avoid-collisions')).toBe('true')
+    expect(popover.getAttribute('data-hide-when-detached')).toBe('true')
     expect(popover.getAttribute('data-reference-bound')).toBe('true')
     expect(popover.getAttribute('data-side')).toBe('right')
+    expect(popover.getAttribute('data-side-flip')).toBe('true')
     expect(popover.getAttribute('data-position-strategy')).toBe('fixed')
-    expect(popover.getAttribute('style') ?? '').not.toContain('left:')
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {

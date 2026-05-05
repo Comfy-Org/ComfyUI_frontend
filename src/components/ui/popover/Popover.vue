@@ -2,7 +2,7 @@
 import type { PopoverRootEmits, PopoverRootProps } from 'reka-ui'
 import { PopoverRoot, useForwardPropsEmits } from 'reka-ui'
 
-// eslint-disable-next-line vue/no-unused-properties
+// eslint-disable-next-line vue/no-unused-properties -- forwarded to Reka via useForwardPropsEmits
 const props = defineProps<PopoverRootProps>()
 const emits = defineEmits<PopoverRootEmits>()
 

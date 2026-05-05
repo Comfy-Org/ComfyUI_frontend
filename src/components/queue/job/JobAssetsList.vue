@@ -97,6 +97,7 @@
     :reference-element="activeRowElement"
     @content-enter="onPopoverEnter"
     @content-leave="onPopoverLeave"
+    @update:open="onPopoverOpenChange"
   />
 </template>
 
@@ -247,10 +248,10 @@ function hasDisplayedJob(jobId: string) {
   )
 }
 
-function scheduleDetailsShow(
-  nextActive: { jobId: string; workflowId?: string },
-  onShow?: () => void
-) {
+function scheduleDetailsShow(nextActive: {
+  jobId: string
+  workflowId?: string
+}) {
   clearShowTimer()
   showTimer.value = window.setTimeout(() => {
     showTimer.value = null
@@ -258,20 +259,15 @@ function scheduleDetailsShow(
 
     activeDetails.value = nextActive
     isDetailsOpen.value = true
-    onShow?.()
   }, DETAILS_SHOW_DELAY_MS)
 }
 
-function showDetailsNow(
-  nextActive: { jobId: string; workflowId?: string },
-  onShow?: () => void
-) {
+function showDetailsNow(nextActive: { jobId: string; workflowId?: string }) {
   clearHoverTimers()
   if (!hasDisplayedJob(nextActive.jobId)) return
 
   activeDetails.value = nextActive
   isDetailsOpen.value = true
-  onShow?.()
 }
 
 function scheduleDetailsHide(jobId?: string) {
@@ -323,9 +319,7 @@ function onJobEnter(job: JobListItem, event: MouseEvent) {
     ? showDetailsNow
     : scheduleDetailsShow
 
-  showDetails(nextActive, () => {
-    activeRowElement.value = rowElement
-  })
+  showDetails(nextActive)
 }
 
 function isCancelable(job: JobListItem) {
@@ -384,6 +378,12 @@ function onPopoverEnter() {
 
 function onPopoverLeave() {
   scheduleDetailsHide(activeDetails.value?.jobId)
+}
+
+function onPopoverOpenChange(open: boolean) {
+  if (!open) {
+    resetActiveDetails()
+  }
 }
 
 function getJobIconClass(job: JobListItem): string | undefined {

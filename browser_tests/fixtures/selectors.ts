@@ -211,6 +211,7 @@ export const TestIds = {
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
+    jobDetailsPopover: 'queue-job-details-popover',
     clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'

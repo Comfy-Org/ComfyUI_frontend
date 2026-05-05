@@ -160,7 +160,7 @@ test.describe('Queue overlay', () => {
       { steps: 5 }
     )
 
-    const popover = comfyPage.page.locator('.job-details-popover')
+    const popover = comfyPage.page.getByTestId(TestIds.queue.jobDetailsPopover)
     await expect(popover).toBeVisible()
 
     await expect

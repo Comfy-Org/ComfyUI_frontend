@@ -1,12 +1,9 @@
 <template>
-  <Popover :open="isOpen">
-    <PopoverAnchor v-if="$slots.anchor" as-child>
-      <slot name="anchor" />
-    </PopoverAnchor>
-
+  <Popover :open="isOpen" @update:open="onOpenChange">
     <PopoverContent
       v-if="hasReference"
       :reference="referenceElement ?? undefined"
+      data-testid="queue-job-details-popover"
       side="right"
       align="start"
       :side-offset="8"
@@ -22,7 +19,11 @@
       @open-auto-focus.prevent
       @close-auto-focus.prevent
     >
-      <JobDetailsPopover :job-id="jobId ?? ''" :workflow-id="workflowId" />
+      <JobDetailsPopover
+        v-if="jobId"
+        :job-id="jobId"
+        :workflow-id="workflowId"
+      />
     </PopoverContent>
   </Popover>
 </template>
@@ -31,7 +32,6 @@
 import { computed } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
-import PopoverAnchor from '@/components/ui/popover/PopoverAnchor.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 
@@ -47,11 +47,16 @@ const {
   referenceElement?: HTMLElement | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'content-enter'): void
   (e: 'content-leave'): void
+  (e: 'update:open', open: boolean): void
 }>()
 
 const isOpen = computed(() => open && !!jobId)
 const hasReference = computed(() => !!jobId && !!referenceElement)
+
+function onOpenChange(nextOpen: boolean) {
+  emit('update:open', nextOpen)
+}
 </script>
