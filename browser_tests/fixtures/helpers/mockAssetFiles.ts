@@ -6,7 +6,7 @@ import type {
   GeneratedOutputFixture,
   ImportedAssetFixture
 } from '@e2e/fixtures/helpers/assetScenarioTypes'
-import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
+import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 
 const helperDir = path.dirname(fileURLToPath(import.meta.url))
 

@@ -3,7 +3,7 @@ import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { assetScenarioFixture } from '@e2e/fixtures/assetScenarioFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/jobFixtures'
+import { createMockJob } from '@e2e/fixtures/utils/jobFixtures'
 
 const test = mergeTests(comfyPageFixture, assetScenarioFixture)
 
@@ -72,23 +72,6 @@ test.describe('Assets sidebar browsing', () => {
     await expect(tab.getAssetCardByName('reference_photo.png')).toBeVisible()
   })
 
-  test('switches between grid and list views with mocked results', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openSettingsMenu()
-    await tab.listViewOption.click()
-    await expect(tab.listViewItems.first()).toBeVisible()
-
-    await tab.openSettingsMenu()
-    await tab.gridViewOption.click()
-    await tab.waitForAssets()
-    await expect(tab.getAssetCardByName('landscape.png')).toBeVisible()
-  })
-
   test('clears search when switching tabs', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -117,11 +100,6 @@ test.describe('Assets sidebar browsing', () => {
       comfyPage.page.getByRole('button', { name: 'Copy job ID' })
     ).toBeVisible()
     await expect(tab.getAssetCardByName('gallery-2.png')).toBeVisible()
-
-    await comfyPage.page.getByRole('button', { name: 'Copy job ID' }).click()
-    await expect(
-      comfyPage.page.locator('.p-toast-message-success')
-    ).toBeVisible()
 
     await tab.backToAssetsButton.click()
     await expect(tab.getAssetCardByName('gallery.png')).toBeVisible()

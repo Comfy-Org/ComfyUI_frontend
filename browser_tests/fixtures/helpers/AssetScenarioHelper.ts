@@ -10,7 +10,7 @@ import type {
   ImportedAssetFixture
 } from '@e2e/fixtures/helpers/assetScenarioTypes'
 import { JobsApiMock } from '@e2e/fixtures/helpers/JobsApiMock'
-import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
+import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import {
   buildFileRequestKey,
   buildMockAssetFiles,

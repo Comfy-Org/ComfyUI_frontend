@@ -4,6 +4,10 @@ import { expect } from '@playwright/test'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
@@ -377,7 +381,11 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   getAssetCardByName(name: string) {
-    return this.assetCards.filter({ hasText: name })
+    return this.assetCards.and(
+      this.page.getByRole('button', {
+        name: new RegExp(`^${escapeRegExp(name)}\\b`)
+      })
+    )
   }
 
   contextMenuItem(label: string) {
