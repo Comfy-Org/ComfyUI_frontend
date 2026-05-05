@@ -472,7 +472,9 @@ function createAssetService() {
     const result = assetItemSchema.safeParse(data)
     if (result.success) return result.data
 
-    const error = fromZodError(result.error)
+    const error = result.error
+      ? fromZodError(result.error)
+      : 'Unknown validation error'
     throw new Error(
       `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
     )
