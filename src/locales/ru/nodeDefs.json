@@ -11406,8 +11406,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Генерирует изображения синхронно через конечную точку OpenAI GPT Image 1.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Генерирует изображения синхронно через конечную точку OpenAI GPT Image 2.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11433,7 +11433,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Текстовый запрос для GPT Image 1"
+        "tooltip": "Текстовый запрос для GPT Image 2"
       },
       "quality": {
         "name": "quality",
