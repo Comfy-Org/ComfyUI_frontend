@@ -1,13 +1,19 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+import type { JobEntry } from '@comfyorg/ingest-types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { jobsApiMockFixture } from '@e2e/fixtures/jobsApiMockFixture'
+import {
+  createMockJob,
+  createMockJobRecords
+} from '@e2e/fixtures/utils/jobFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+
+const test = mergeTests(comfyPageFixture, jobsApiMockFixture)
 
 const now = Date.now()
 
-const MOCK_JOBS: RawJobListItem[] = [
+const MOCK_JOBS: JobEntry[] = [
   createMockJob({
     id: 'job-completed-1',
     status: 'completed',
@@ -43,15 +49,11 @@ const MOCK_JOBS: RawJobListItem[] = [
 ]
 
 test.describe('Queue overlay', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(MOCK_JOBS)
+  test.beforeEach(async ({ comfyPage, jobsApi }) => {
+    await jobsApi.mockJobs(createMockJobRecords(MOCK_JOBS))
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
     await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
   })
 
   test('Toggle button opens expanded queue overlay', async ({ comfyPage }) => {
