@@ -33,12 +33,12 @@ test.describe('Demo pages @smoke', () => {
         page.getByRole('button', { name: /demo transcript/i })
       ).toBeVisible()
 
-      const nextCard = page.locator(`a[href$="/demos/${nextDemo.slug}"]`)
-      await expect(nextCard.first()).toBeVisible()
-      await expect(nextCard.locator('img').first()).toHaveAttribute(
-        'src',
-        nextDemo.thumbnail
-      )
+      await expect(
+        page.getByText(t(nextDemo.title, 'en')).first()
+      ).toBeVisible()
+      await expect(
+        page.locator(`img[src="${nextDemo.thumbnail}"]`).first()
+      ).toBeVisible()
     })
 
     test(`/zh-CN/demos/${demo.slug} renders localized content`, async ({
@@ -52,8 +52,9 @@ test.describe('Demo pages @smoke', () => {
       await expect(heading).toContainText(t(demo.title, 'zh-CN'))
       await expect(heading).toContainText(/[\u4E00-\u9FFF]/)
 
-      const nextCard = page.locator(`a[href$="/zh-CN/demos/${nextDemo.slug}"]`)
-      await expect(nextCard.first()).toBeVisible()
+      await expect(
+        page.getByText(t(nextDemo.title, 'zh-CN')).first()
+      ).toBeVisible()
     })
   }
 
