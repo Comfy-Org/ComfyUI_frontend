@@ -123,16 +123,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  /** First registration wins; later `state` seeds are discarded. */
-  function getOrRegister(
-    graphId: UUID,
-    state: WidgetRegistration
-  ): WidgetState {
-    const existing = getWidget(graphId, state.nodeId, state.name)
-    if (existing) return existing
-    return registerWidget(graphId, state)
-  }
-
   function getWidget(
     graphId: UUID,
     nodeId: NodeId,
@@ -195,7 +185,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   return {
     registerWidget,
-    getOrRegister,
     getWidget,
     getNodeWidgets,
     getNodeWidgetsByName,

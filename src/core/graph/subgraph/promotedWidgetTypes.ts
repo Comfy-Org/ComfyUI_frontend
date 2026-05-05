@@ -24,11 +24,6 @@ export interface PromotedWidgetView extends IBaseWidget {
    * origin.
    */
   readonly disambiguatingSourceNodeId?: string
-  /**
-   * Opaque widget-store key paired with the host SubgraphNode. Built via
-   * `makeCompositeKey` over `(sourceNodeId, sourceWidgetName,
-   * disambiguatingSourceNodeId ?? '')`. Treat as opaque: do not parse.
-   */
   readonly storeName: string
 }
 

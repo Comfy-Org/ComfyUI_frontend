@@ -11,14 +11,8 @@ export type SerializedProxyWidgetTuple = z.infer<
   typeof serializedProxyWidgetTupleSchema
 >
 
-const legacyProxyWidgetTupleSchema = z.tuple([
-  z.string(),
-  z.string(),
-  z.string()
-])
-
-export const proxyWidgetTupleSchema = z.union([
-  legacyProxyWidgetTupleSchema,
+const proxyWidgetTupleSchema = z.union([
+  z.tuple([z.string(), z.string(), z.string()]),
   serializedProxyWidgetTupleSchema
 ])
 export type ProxyWidgetTuple = z.infer<typeof proxyWidgetTupleSchema>

@@ -7,7 +7,6 @@ import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { makeCompositeKey } from '@/utils/compositeKey'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -76,7 +75,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Generate a unique string key for a favorited widget ID.
    */
   function getFavoriteKey(id: FavoritedWidgetId): string {
-    return makeCompositeKey([id.nodeLocatorId, id.widgetName])
+    return JSON.stringify([id.nodeLocatorId, id.widgetName])
   }
 
   /**

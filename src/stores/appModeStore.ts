@@ -4,7 +4,7 @@ import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   InputWidgetConfig,
   LinearData,
@@ -16,12 +16,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import {
-  getSelectedWidgetIdentity,
-  resolveNode,
-  resolveNodeWidget
-} from '@/utils/litegraphUtil'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
@@ -49,37 +46,14 @@ export const useAppModeStore = defineStore('appMode', () => {
   // Prune entries referencing nodes deleted in workflow mode.
   // Only check node existence, not widgets — dynamic widgets can
   // hide/show other widgets so a missing widget does not mean stale data.
-  function normalizeSelectedInput(input: LinearInput): LinearInput {
-    const [nodeId, widgetName, config] = input
-    if (!app.rootGraph) return input
-
-    const resolved = resolveNodeWidget(nodeId, widgetName, app.rootGraph)
-    if (resolved.length < 2) return input
-
-    const node = resolved[0]
-    const widget = resolved[1]
-    if (!node || !widget) return input
-
-    const [canonicalNodeId, canonicalWidgetName] = getSelectedWidgetIdentity(
-      node,
-      widget
-    )
-    return config === undefined
-      ? [canonicalNodeId, canonicalWidgetName]
-      : [canonicalNodeId, canonicalWidgetName, config]
-  }
-
   function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-    const normalizedInputs = app.rootGraph
-      ? rawInputs.map(normalizeSelectedInput)
-      : rawInputs
 
     return {
       inputs: app.rootGraph
-        ? normalizedInputs.filter(([nodeId]) => resolveNode(nodeId))
-        : normalizedInputs,
+        ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
+        : rawInputs,
       outputs: app.rootGraph
         ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
         : rawOutputs
@@ -179,8 +153,11 @@ export const useAppModeStore = defineStore('appMode', () => {
     setMode('graph')
   }
 
-  function removeSelectedInput(widget: IBaseWidget, node: LGraphNode) {
-    const [storeId, storeName] = getSelectedWidgetIdentity(node, widget)
+  function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
+    const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+    const storeName = isPromotedWidgetView(widget)
+      ? widget.sourceWidgetName
+      : widget.name
     const index = selectedInputs.value.findIndex(
       ([id, name]) => storeId == id && storeName === name
     )

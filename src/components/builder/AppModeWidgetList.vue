@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, provide, ref, shallowRef } from 'vue'
+import { computed, provide, shallowRef } from 'vue'
 
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { useI18n } from 'vue-i18n'
@@ -64,20 +64,8 @@ useEventListener(
   () => (graphNodes.value = app.rootGraph.nodes)
 )
 
-// Widget renames mutate `widget.label` on the live LiteGraph object and fire
-// `node:slot-label:changed` on `graph.events`. That object is non-reactive,
-// so the rendered label (line ~203) goes stale. Bump a version counter on the
-// event and read it inside `mappedSelections` to force re-evaluation.
-const labelVersion = ref(0)
-useEventListener(
-  app.rootGraph.events,
-  'node:slot-label:changed',
-  () => labelVersion.value++
-)
-
 const mappedSelections = computed((): WidgetEntry[] => {
   void graphNodes.value
-  void labelVersion.value
   const nodeDataByNode = new Map<
     LGraphNode,
     ReturnType<typeof nodeToNodeData>
@@ -97,14 +85,17 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
       if (!node.isSubgraphNode()) return vueWidget.name === widget.name
 
+      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
       return (
         isPromotedWidgetView(widget) &&
-        vueWidget.instanceWidgetName === widget.storeName
+        widget.sourceNodeId == storeNodeId &&
+        widget.sourceWidgetName === vueWidget.storeName
       )
     })
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
+    matchingWidget.nodeId = String(node.id)
 
     return [
       {
