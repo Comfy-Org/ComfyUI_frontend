@@ -5,6 +5,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { useInputDeviceDetection } from '@/platform/settings/composables/useInputDeviceDetection'
 import { useSettingStore } from '@/platform/settings/settingStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -142,16 +143,6 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode') as
-      | 'standard'
-      | 'legacy'
-      | 'custom'
-
-    LiteGraph.canvasNavigationMode = navigationMode
-    LiteGraph.macTrackpadGestures = navigationMode === 'standard'
-  })
-
-  watchEffect(() => {
     const leftMouseBehavior = settingStore.get(
       'Comfy.Canvas.LeftMouseClickBehavior'
     ) as 'panning' | 'select'
@@ -159,10 +150,23 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const mouseWheelScroll = settingStore.get(
-      'Comfy.Canvas.MouseWheelScroll'
-    ) as 'panning' | 'zoom'
-    LiteGraph.mouseWheelScroll = mouseWheelScroll
+    LiteGraph.wheelInputMode = settingStore.get(
+      'Comfy.Graph.WheelInputMode'
+    ) as 'auto' | 'mouse' | 'trackpad'
+  })
+
+  /**
+   * Mirror the canvas pointer's auto-detected device onto a reactive ref so
+   * settings UI can show the current detection inside the "Auto" option.
+   */
+  watchEffect(() => {
+    const { canvas } = canvasStore
+    if (!canvas) return
+    const { detectedInputDevice } = useInputDeviceDetection()
+    detectedInputDevice.value = canvas.pointer.detectedDevice
+    canvas.pointer.onDetectedDeviceChange = (device) => {
+      detectedInputDevice.value = device
+    }
   })
 
   watchEffect(() => {

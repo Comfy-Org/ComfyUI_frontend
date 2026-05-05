@@ -57,7 +57,9 @@ export interface FormItem {
   type: SettingInputType | SettingCustomRenderer
   tooltip?: string
   attrs?: Record<string, unknown>
-  options?: Array<string | SettingOption>
+  options?:
+    | Array<string | SettingOption>
+    | ((value?: unknown) => Array<string | SettingOption>)
 }
 
 export interface ISettingGroup {

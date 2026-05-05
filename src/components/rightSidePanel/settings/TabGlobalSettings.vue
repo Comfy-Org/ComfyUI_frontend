@@ -9,6 +9,7 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import { useInputDeviceDetection } from '@/platform/settings/composables/useInputDeviceDetection'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -40,6 +41,33 @@ const nodes2Enabled = computed({
 })
 
 // CANVAS settings
+const inputDevice = computed({
+  get: () => settingStore.get('Comfy.Graph.WheelInputMode'),
+  set: (value) => settingStore.set('Comfy.Graph.WheelInputMode', value)
+})
+
+const { detectedInputDevice } = useInputDeviceDetection()
+
+const inputDeviceOptions = computed(() => [
+  {
+    value: 'auto',
+    label:
+      detectedInputDevice.value === 'trackpad'
+        ? t(
+            'settings.Comfy_Graph_WheelInputMode.options.Auto-detect (Trackpad)'
+          )
+        : t('settings.Comfy_Graph_WheelInputMode.options.Auto-detect (Mouse)')
+  },
+  {
+    value: 'mouse',
+    label: t('settings.Comfy_Graph_WheelInputMode.options.Mouse')
+  },
+  {
+    value: 'trackpad',
+    label: t('settings.Comfy_Graph_WheelInputMode.options.Trackpad')
+  }
+])
+
 const gridSpacing = computed({
   get: () => settingStore.get('Comfy.SnapToGrid.GridSize'),
   set: (value) => settingStore.set('Comfy.SnapToGrid.GridSize', value)
@@ -128,6 +156,24 @@ function openFullSettings() {
         {{ t('rightSidePanel.globalSettings.canvas') }}
       </template>
       <div class="space-y-4 px-4 py-3">
+        <LayoutField :label="t('rightSidePanel.globalSettings.inputDevice')">
+          <Select
+            v-model="inputDevice"
+            :options="inputDeviceOptions"
+            :aria-label="t('rightSidePanel.globalSettings.inputDevice')"
+            :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+            size="small"
+            :pt="{
+              option: 'text-xs',
+              dropdown: 'w-8',
+              label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
+              overlay: 'w-fit min-w-full'
+            }"
+            data-capture-wheel="true"
+            option-label="label"
+            option-value="value"
+          />
+        </LayoutField>
         <LayoutField :label="t('rightSidePanel.globalSettings.gridSpacing')">
           <div
             :class="

@@ -40,12 +40,16 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
+const settingValue = computed(() => settingStore.get(props.setting.id))
 
-function translateOptions(options: (SettingOption | string)[]) {
+function translateOptions(
+  options:
+    | (SettingOption | string)[]
+    | ((value?: unknown) => (SettingOption | string)[])
+): { text: string; value: string | number | undefined }[] {
   if (typeof options === 'function') {
-    // @ts-expect-error: Audit and deprecate usage of legacy options type:
-    // (value) => [string | {text: string, value: string}]
-    return translateOptions(options(props.setting.value ?? ''))
+    return translateOptions(options(settingValue.value))
   }
 
   return options.map((option) => {
@@ -75,9 +79,6 @@ const formItem = computed(() => {
       : undefined
   }
 })
-
-const settingStore = useSettingStore()
-const settingValue = computed(() => settingStore.get(props.setting.id))
 const updateSettingValue = async <K extends keyof Settings>(
   newValue: Settings[K]
 ) => {

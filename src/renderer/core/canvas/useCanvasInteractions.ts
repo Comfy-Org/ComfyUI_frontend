@@ -15,7 +15,7 @@ export function useCanvasInteractions() {
   const { getCanvas } = canvasStore
 
   const isStandardNavMode = computed(
-    () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
+    () => settingStore.get('Comfy.Graph.WheelInputMode') === 'trackpad'
   )
 
   /**

@@ -3895,13 +3895,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let { scale } = this.ds
 
-    // Detect if this is a trackpad gesture or mouse wheel
-    const isTrackpad = this.pointer.isTrackpadGesture(e)
+    /**
+     * Resolve trackpad vs mouse mode. Honor the user's manual override when
+     * set; otherwise fall back to the heuristic-based auto-detection.
+     */
+    const isTrackpad =
+      LiteGraph.wheelInputMode === 'mouse'
+        ? false
+        : LiteGraph.wheelInputMode === 'trackpad'
+          ? true
+          : this.pointer.isTrackpadGesture(e)
     const isCtrlOrMacMeta =
       e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
     const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.mouseWheelScroll === 'zoom') {
+    /**
+     * Wheel-to-zoom is the default for mouse, wheel-to-pan for trackpad.
+     * The Ctrl/Meta modifier always forces zoom regardless of device.
+     */
+    if (isZoomModifier || !isTrackpad) {
       // Zoom mode or modifier key pressed - use wheel for zoom
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling

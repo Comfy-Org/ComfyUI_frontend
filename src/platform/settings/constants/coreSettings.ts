@@ -1,6 +1,6 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { useInputDeviceDetection } from '@/platform/settings/composables/useInputDeviceDetection'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -160,100 +160,72 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Graph.WheelInputMode',
+    category: ['LiteGraph', 'Canvas Navigation', 'InputDevice'],
+    name: 'Input device',
+    tooltip:
+      'Forces the zoom formula for a specific input device. Use this if auto-detection misclassifies your device when switching between mouse and trackpad.',
+    type: 'combo',
+    defaultValue: 'auto',
+    sortOrder: 200,
+    /**
+     * Reactively label the auto option with the currently detected device.
+     * The function is called inside SettingItem's `formItem` computed, so any
+     * read of `detectedInputDevice.value` is tracked and refreshes the dropdown.
+     */
+    options: () => {
+      const { detectedInputDevice } = useInputDeviceDetection()
+      const autoLabel =
+        detectedInputDevice.value === 'trackpad'
+          ? 'Auto-detect (Trackpad)'
+          : 'Auto-detect (Mouse)'
+      return [
+        { value: 'auto', text: autoLabel },
+        { value: 'mouse', text: 'Mouse' },
+        { value: 'trackpad', text: 'Trackpad' }
+      ]
+    },
+    versionAdded: '1.45.0'
+  },
+  {
     id: 'Comfy.Canvas.NavigationMode',
     category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
     name: 'Navigation Mode',
     defaultValue: 'legacy',
-    type: 'combo',
-    sortOrder: 100,
+    type: 'hidden',
+    deprecated: true,
     options: [
       { value: 'standard', text: 'Standard (New)' },
       { value: 'legacy', text: 'Drag Navigation' },
       { value: 'custom', text: 'Custom' }
     ],
-    versionAdded: '1.25.0',
-    defaultsByInstallVersion: {
-      '1.25.0': 'legacy'
-    },
-    onChange: async (val: unknown, old?: unknown) => {
-      const newValue = val as string
-      const oldValue = old as string | undefined
-      if (!oldValue) return
-      const settingStore = useSettingStore()
-
-      if (newValue === 'standard') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
-          'Comfy.Canvas.MouseWheelScroll': 'panning'
-        })
-      } else if (newValue === 'legacy') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
-          'Comfy.Canvas.MouseWheelScroll': 'zoom'
-        })
-      }
-    }
+    versionAdded: '1.25.0'
   },
   {
     id: 'Comfy.Canvas.LeftMouseClickBehavior',
     category: ['LiteGraph', 'Canvas Navigation', 'LeftMouseClickBehavior'],
     name: 'Left Mouse Click Behavior',
-    defaultValue: 'panning',
+    defaultValue: 'select',
     type: 'radio',
-    sortOrder: 50,
+    sortOrder: 100,
     options: [
       { value: 'panning', text: 'Panning' },
       { value: 'select', text: 'Select' }
     ],
-    versionAdded: '1.27.4',
-    onChange: async (val: unknown) => {
-      const newValue = val as string
-      const settingStore = useSettingStore()
-
-      const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
-
-      if (navigationMode !== 'custom') {
-        if (
-          (newValue === 'select' && navigationMode === 'standard') ||
-          (newValue === 'panning' && navigationMode === 'legacy')
-        ) {
-          return
-        }
-
-        // only set to custom if it doesn't match the preset modes
-        await settingStore.set('Comfy.Canvas.NavigationMode', 'custom')
-      }
-    }
+    versionAdded: '1.27.4'
   },
   {
     id: 'Comfy.Canvas.MouseWheelScroll',
     category: ['LiteGraph', 'Canvas Navigation', 'MouseWheelScroll'],
     name: 'Mouse Wheel Scroll',
     defaultValue: 'zoom',
-    type: 'radio',
+    type: 'hidden',
+    deprecated: true,
     options: [
       { value: 'panning', text: 'Panning' },
       { value: 'zoom', text: 'Zoom in/out' }
     ],
-    versionAdded: '1.27.4',
-    onChange: async (val: unknown) => {
-      const newValue = val as string
-      const settingStore = useSettingStore()
-
-      const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
-
-      if (navigationMode !== 'custom') {
-        if (
-          (newValue === 'panning' && navigationMode === 'standard') ||
-          (newValue === 'zoom' && navigationMode === 'legacy')
-        ) {
-          return
-        }
-
-        // only set to custom if it doesn't match the preset modes
-        await settingStore.set('Comfy.Canvas.NavigationMode', 'custom')
-      }
-    }
+    versionAdded: '1.27.4'
   },
   {
     id: 'Comfy.Graph.CanvasInfo',

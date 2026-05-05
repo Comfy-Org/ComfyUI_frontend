@@ -319,6 +319,7 @@ const zSettings = z.object({
   'Comfy.Graph.DeduplicateSubgraphNodeIds': z.boolean(),
   'Comfy.Graph.LiveSelection': z.boolean(),
   'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
+  'Comfy.Graph.WheelInputMode': z.enum(['auto', 'mouse', 'trackpad']),
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),

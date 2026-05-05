@@ -119,7 +119,7 @@ describe('useCanvasInteractions', () => {
   describe('handleWheel', () => {
     it('should forward ctrl+wheel events to canvas in standard nav mode', () => {
       const { get } = useSettingStore()
-      vi.mocked(get).mockReturnValue('standard')
+      vi.mocked(get).mockReturnValue('trackpad')
 
       const { handleWheel } = useCanvasInteractions()
 
@@ -134,7 +134,7 @@ describe('useCanvasInteractions', () => {
 
     it('should forward all wheel events to canvas in legacy nav mode', () => {
       const { get } = useSettingStore()
-      vi.mocked(get).mockReturnValue('legacy')
+      vi.mocked(get).mockReturnValue('mouse')
       const { handleWheel } = useCanvasInteractions()
 
       const mockEvent = createMockWheelEvent()
@@ -146,7 +146,7 @@ describe('useCanvasInteractions', () => {
 
     it('should not prevent default for regular wheel events in standard nav mode', () => {
       const { get } = useSettingStore()
-      vi.mocked(get).mockReturnValue('standard')
+      vi.mocked(get).mockReturnValue('trackpad')
       const { handleWheel } = useCanvasInteractions()
 
       const mockEvent = createMockWheelEvent()
@@ -157,7 +157,7 @@ describe('useCanvasInteractions', () => {
     })
     it('should forward wheel events to canvas when capture element is NOT focused', () => {
       const { get } = useSettingStore()
-      vi.mocked(get).mockReturnValue('legacy')
+      vi.mocked(get).mockReturnValue('mouse')
 
       const captureElement = document.createElement('div')
       captureElement.setAttribute('data-capture-wheel', 'true')
@@ -179,7 +179,7 @@ describe('useCanvasInteractions', () => {
 
     it('should NOT forward wheel events when capture element IS focused', () => {
       const { get } = useSettingStore()
-      vi.mocked(get).mockReturnValue('legacy')
+      vi.mocked(get).mockReturnValue('mouse')
 
       const captureElement = document.createElement('div')
       captureElement.setAttribute('data-capture-wheel', 'true')
@@ -202,7 +202,7 @@ describe('useCanvasInteractions', () => {
 
     it('should forward ctrl+wheel to canvas when capture element IS focused in standard mode', () => {
       const { get } = useSettingStore()
-      vi.mocked(get).mockReturnValue('standard')
+      vi.mocked(get).mockReturnValue('trackpad')
 
       const captureElement = document.createElement('div')
       captureElement.setAttribute('data-capture-wheel', 'true')
