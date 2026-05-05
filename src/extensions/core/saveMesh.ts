@@ -81,6 +81,32 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
+    useLoad3d(node).waitForLoad3d((load3d) => {
+      if (!load3d) return
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'image')
+      if (!modelWidget) return
+
+      const lastTimeModelFile = node.properties['Last Time Model File'] as
+        | string
+        | undefined
+      const lastTimeModelFolder =
+        (node.properties['Last Time Model Folder'] as
+          | 'input'
+          | 'output'
+          | undefined) ?? 'output'
+
+      if (lastTimeModelFile) {
+        modelWidget.value = lastTimeModelFile
+
+        const config = new Load3DConfiguration(load3d, node.properties)
+
+        config.configureForSaveMesh(lastTimeModelFolder, lastTimeModelFile, {
+          silentOnNotFound: true
+        })
+      }
+    })
+
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (output: SaveMeshOutput) {
@@ -102,6 +128,9 @@ useExtensionService().registerExtension({
           const config = new Load3DConfiguration(load3d, node.properties)
 
           const loadFolder = fileInfo.type as 'input' | 'output'
+
+          node.properties['Last Time Model File'] = filePath
+          node.properties['Last Time Model Folder'] = loadFolder
 
           config.configureForSaveMesh(loadFolder, filePath, {
             silentOnNotFound: true
