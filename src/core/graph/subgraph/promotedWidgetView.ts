@@ -160,10 +160,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.resolveAtHost()?.widget.value
   }
 
-  serializeValue(_node: LGraphNode, _index: number): IBaseWidget['value'] {
-    return this.value
-  }
-
   set value(value: IBaseWidget['value']) {
     if (!isWidgetValue(value)) return
     // Pre-attach sentinel: skip writes before LGraph.add() assigns the real id.
@@ -203,6 +199,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
     } else {
       this.ensureInstanceState().label = value
     }
+  }
+
+  serializeValue(_node: LGraphNode, _index: number): IBaseWidget['value'] {
+    return this.value
   }
 
   /**
