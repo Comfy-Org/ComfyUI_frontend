@@ -211,6 +211,13 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator',
     currentUserPopover: 'current-user-popover'
   },
+  credits: {
+    popoverCreditBalance: 'popover-credit-balance',
+    addCreditsButton: 'add-credits-button',
+    upgradeToAddCreditsButton: 'upgrade-to-add-credits-button',
+    topUpPayAmount: 'top-up-pay-amount',
+    topUpGetAmount: 'top-up-get-amount'
+  },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
     clearHistoryAction: 'clear-history-action',

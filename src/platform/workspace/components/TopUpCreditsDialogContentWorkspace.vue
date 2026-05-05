@@ -74,7 +74,7 @@
       </div>
 
       <!-- You Get -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-get-amount">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>

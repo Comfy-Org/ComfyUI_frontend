@@ -4,6 +4,7 @@ import {
   CREDITS_PER_USD,
   COMFY_CREDIT_RATE_CENTS,
   centsToCredits,
+  clampUsd,
   creditsToCents,
   creditsToUsd,
   formatCredits,
@@ -42,5 +43,37 @@ describe('comfyCredits helpers', () => {
     expect(formatCreditsFromCents({ cents: 100, locale })).toBe('211.00')
     expect(formatCreditsFromUsd({ usd: 1, locale })).toBe('211.00')
     expect(formatUsd({ value: 4.2, locale })).toBe('4.20')
+  })
+
+  test('clamps minimumFractionDigits when caller lowers maximumFractionDigits below the default minimum', () => {
+    expect(
+      formatCredits({
+        value: 1.5,
+        locale: 'en-US',
+        numberOptions: { maximumFractionDigits: 0 }
+      })
+    ).toBe('2')
+  })
+
+  describe('clampUsd', () => {
+    test('returns 0 for NaN', () => {
+      expect(clampUsd(Number.NaN)).toBe(0)
+    })
+
+    test('clamps values below the minimum up to 1', () => {
+      expect(clampUsd(0)).toBe(1)
+      expect(clampUsd(-50)).toBe(1)
+    })
+
+    test('clamps values above the maximum down to 1000', () => {
+      expect(clampUsd(1000.01)).toBe(1000)
+      expect(clampUsd(99999)).toBe(1000)
+    })
+
+    test('passes values within the allowed range through unchanged', () => {
+      expect(clampUsd(1)).toBe(1)
+      expect(clampUsd(50)).toBe(50)
+      expect(clampUsd(1000)).toBe(1000)
+    })
   })
 })
