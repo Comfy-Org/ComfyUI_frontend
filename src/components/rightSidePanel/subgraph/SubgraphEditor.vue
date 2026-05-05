@@ -259,7 +259,11 @@ onMounted(() => {
             {{ $t('subgraphStore.hideAll') }}</a
           >
         </div>
-        <DraggableList v-slot="{ dragClass }" v-model="activeWidgets">
+        <DraggableList
+          v-slot="{ dragClass }"
+          v-model="activeWidgets"
+          drag-axis="y"
+        >
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
