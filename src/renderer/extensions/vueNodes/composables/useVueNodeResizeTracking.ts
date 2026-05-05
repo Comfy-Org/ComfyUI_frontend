@@ -74,6 +74,7 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 const deferredElements = new Set<HTMLElement>()
 const elementsNeedingFreshMeasurement = new WeakSet<HTMLElement>()
 const cachedNodeMeasurements = new WeakMap<HTMLElement, CachedNodeMeasurement>()
+const recentlyResizedElements = new Set<HTMLElement>()
 const visibility = useDocumentVisibility()
 
 function markElementForFreshMeasurement(element: HTMLElement) {
@@ -120,6 +121,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
+    if (recentlyResizedElements.has(element)) continue
 
     // Find which type this element belongs to
     let elementType: string | undefined
@@ -148,6 +150,7 @@ const resizeObserver = new ResizeObserver((entries) => {
         }
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
+    if (width === 0 || height === 0) continue
 
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
@@ -223,6 +226,8 @@ const resizeObserver = new ResizeObserver((entries) => {
       updatesByType.set(elementType, updates)
     }
     updates.push({ id: elementId, bounds })
+    recentlyResizedElements.add(element)
+    setTimeout(() => recentlyResizedElements.delete(element), 200)
 
     // If this entry is a node, mark it for slot layout resync
     if (nodeId) {
