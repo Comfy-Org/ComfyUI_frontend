@@ -832,6 +832,7 @@ describe('useLoad3d', () => {
         'backgroundImageLoadingEnd',
         'modelLoadingStart',
         'modelLoadingEnd',
+        'modelReady',
         'skeletonVisibilityChange',
         'exportLoadingStart',
         'exportLoadingEnd',
