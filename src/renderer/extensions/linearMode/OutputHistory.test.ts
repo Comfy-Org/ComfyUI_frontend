@@ -1,5 +1,6 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { shallowMount } from '@vue/test-utils'
+import type { RenderResult } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -27,12 +28,14 @@ const hasOutputsRef = ref(false)
 const runningTasksRef = ref<Array<{ jobId: string }>>([])
 const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
-const selectFirstHistoryFn = vi.fn()
+const selectFirstHistoryFn = vi.fn(() => {
+  const first = mediaRef.value[0]
+  selectedIdRef.value = first ? `history:${first.id}:0` : null
+})
 const mayBeActiveWorkflowPendingRef = ref(false)
 
 const allOutputsFn = vi.fn((): ResultItemImpl[] => [])
 
-// Stateful select mocks that update selectedIdRef
 const selectFn = vi.fn((id: string | null) => {
   selectedIdRef.value = id
 })
@@ -115,7 +118,10 @@ vi.mock('@/stores/queueStore', () => ({
 vi.mock(
   '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue',
   () => ({
-    default: { name: 'OutputHistoryActiveQueueItem', template: '<div />' }
+    default: {
+      name: 'OutputHistoryActiveQueueItem',
+      template: '<div data-testid="output-active-queue-item" />'
+    }
   })
 )
 
@@ -123,7 +129,8 @@ vi.mock('@/renderer/extensions/linearMode/OutputHistoryItem.vue', () => ({
   default: {
     name: 'OutputHistoryItem',
     props: ['output'],
-    template: '<div class="history-item" />'
+    template:
+      '<div data-testid="output-history-item">{{ output?.filename }}</div>'
   }
 }))
 
@@ -131,7 +138,7 @@ vi.mock('@/renderer/extensions/linearMode/OutputPreviewItem.vue', () => ({
   default: {
     name: 'OutputPreviewItem',
     props: ['latentPreview'],
-    template: '<div class="preview-item" />'
+    template: '<div data-testid="output-preview-item">{{ latentPreview }}</div>'
   }
 }))
 
@@ -158,19 +165,28 @@ function makeInProgressItem(
   return { id, jobId: `job-${id}`, state, ...opts }
 }
 
-// Track mounted wrappers for cleanup
-let activeWrapper: VueWrapper | null = null
+let activeResult: RenderResult | null = null
 
 function mountComponent() {
-  const wrapper = shallowMount(OutputHistory)
-  activeWrapper = wrapper
-  return wrapper
+  const result = render(OutputHistory)
+  activeResult = result
+  return result
 }
 
-function lastEmission(wrapper: VueWrapper): OutputSelection {
-  const emitted = wrapper.emitted('updateSelection')
+function lastEmission(result: RenderResult): OutputSelection {
+  const emitted = result.emitted('updateSelection') as
+    | Array<[OutputSelection]>
+    | undefined
   expect(emitted).toBeDefined()
   return emitted![emitted!.length - 1][0] as OutputSelection
+}
+
+function historySelectableItems(): HTMLElement[] {
+  return screen.getAllByTestId('linear-history-item')
+}
+
+function historyItems(): HTMLElement[] {
+  return screen.queryAllByTestId('output-history-item')
 }
 
 describe('OutputHistory', () => {
@@ -189,8 +205,8 @@ describe('OutputHistory', () => {
   })
 
   afterEach(() => {
-    activeWrapper?.unmount()
-    activeWrapper = null
+    activeResult?.unmount()
+    activeResult = null
   })
 
   describe('rendering', () => {
@@ -203,14 +219,26 @@ describe('OutputHistory', () => {
         return []
       })
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      // Only a1 has outputs, so only 1 history item rendered
-      const historyItems = wrapper.findAllComponents({
-        name: 'OutputHistoryItem'
-      })
-      expect(historyItems).toHaveLength(1)
+      expect(historyItems()).toHaveLength(1)
+      expect(historyItems()[0]).toHaveTextContent('a1.png')
+    })
+
+    it('renders a history item for each output in an asset', async () => {
+      const asset = makeAsset('a1')
+      const firstOutput = makeResult('first.png')
+      const secondOutput = makeResult('second.png')
+      mediaRef.value = [asset]
+      allOutputsFn.mockReturnValue([firstOutput, secondOutput])
+
+      mountComponent()
+      await nextTick()
+
+      expect(historyItems()).toHaveLength(2)
+      expect(historyItems()[0]).toHaveTextContent('first.png')
+      expect(historyItems()[1]).toHaveTextContent('second.png')
     })
 
     it('renders queue badge when queueCount > 1 and has active content', async () => {
@@ -220,19 +248,17 @@ describe('OutputHistory', () => {
         makeInProgressItem('ip1', 'skeleton')
       ]
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      expect(
-        wrapper.findComponent({ name: 'OutputHistoryActiveQueueItem' }).exists()
-      ).toBe(true)
+      expect(screen.getByTestId('output-active-queue-item')).toBeInTheDocument()
     })
 
     it('does not render queue badge when queue is empty', () => {
-      const wrapper = mountComponent()
+      mountComponent()
       expect(
-        wrapper.findComponent({ name: 'OutputHistoryActiveQueueItem' }).exists()
-      ).toBe(false)
+        screen.queryByTestId('output-active-queue-item')
+      ).not.toBeInTheDocument()
     })
 
     it('renders preview item for skeleton in-progress items', async () => {
@@ -240,12 +266,10 @@ describe('OutputHistory', () => {
         makeInProgressItem('ip1', 'skeleton')
       ]
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      expect(
-        wrapper.findComponent({ name: 'OutputPreviewItem' }).exists()
-      ).toBe(true)
+      expect(screen.getByTestId('output-preview-item')).toBeInTheDocument()
     })
 
     it('renders history item for image in-progress items with output prop', async () => {
@@ -254,14 +278,12 @@ describe('OutputHistory', () => {
         makeInProgressItem('ip1', 'image', { output })
       ]
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      const historyItem = wrapper.findComponent({
-        name: 'OutputHistoryItem'
-      })
-      expect(historyItem.exists()).toBe(true)
-      expect(historyItem.props('output')).toEqual(output)
+      expect(screen.getByTestId('output-history-item')).toHaveTextContent(
+        output.filename
+      )
     })
 
     it('renders both active and history content when both exist', async () => {
@@ -271,15 +293,11 @@ describe('OutputHistory', () => {
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('a1.png')])
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      expect(
-        wrapper.findComponent({ name: 'OutputPreviewItem' }).exists()
-      ).toBe(true)
-      expect(
-        wrapper.findComponent({ name: 'OutputHistoryItem' }).exists()
-      ).toBe(true)
+      expect(screen.getByTestId('output-preview-item')).toBeInTheDocument()
+      expect(screen.getByTestId('output-history-item')).toBeInTheDocument()
     })
   })
 
@@ -289,18 +307,25 @@ describe('OutputHistory', () => {
       mediaRef.value = [asset]
       allOutputsFn.mockReturnValue([makeResult('a1.png')])
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
 
-      const items = wrapper.findAll('[data-state]')
+      const items = historySelectableItems()
       expect(items).toHaveLength(1)
 
-      await items[0].trigger('click')
+      await userEvent.click(items[0])
       await nextTick()
 
       expect(selectedIdRef.value).toBe('history:a1:0')
-      expect(items[0].attributes('data-state')).toBe('checked')
-      expect(items[0].attributes('tabindex')).toBe('0')
+      expect(selectFn).toHaveBeenCalledWith('history:a1:0')
+      expect(selectAsLatestFn).not.toHaveBeenCalledWith('history:a1:0')
+      expect(lastEmission(result)).toMatchObject({
+        asset,
+        output: expect.objectContaining({ filename: 'a1.png' }),
+        canShowPreview: true
+      })
+      expect(items[0]).toHaveAttribute('data-state', 'checked')
+      expect(items[0]).toHaveAttribute('tabindex', '0')
     })
 
     it('selects in-progress item on click', async () => {
@@ -308,14 +333,17 @@ describe('OutputHistory', () => {
         makeInProgressItem('ip1', 'skeleton')
       ]
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      const slots = wrapper.findAll('[data-state]')
+      const slots = screen.getAllByTestId('linear-in-progress-item')
       expect(slots.length).toBeGreaterThanOrEqual(1)
 
-      await slots[0].trigger('click')
+      vi.clearAllMocks()
+      await userEvent.click(slots[0])
       expect(selectedIdRef.value).toBe('slot:ip1')
+      expect(selectFn).toHaveBeenCalledWith('slot:ip1')
+      expect(selectAsLatestFn).not.toHaveBeenCalledWith('slot:ip1')
     })
 
     it('marks unselected items with tabindex=-1', async () => {
@@ -325,12 +353,14 @@ describe('OutputHistory', () => {
       allOutputsFn.mockReturnValue([makeResult('out.png')])
       selectedIdRef.value = 'history:a1:0'
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      const unchecked = wrapper.findAll('[data-state="unchecked"]')
+      const unchecked = screen
+        .getAllByTestId('linear-history-item')
+        .filter((item) => item.dataset.state === 'unchecked')
       for (const item of unchecked) {
-        expect(item.attributes('tabindex')).toBe('-1')
+        expect(item).toHaveAttribute('tabindex', '-1')
       }
     })
 
@@ -338,13 +368,12 @@ describe('OutputHistory', () => {
       mayBeActiveWorkflowPendingRef.value = true
       runningTasksRef.value = [{ jobId: 'j1' }]
 
-      const wrapper = mountComponent()
+      mountComponent()
       await nextTick()
 
-      const slots = wrapper.findAll('[data-state]')
-      expect(slots.length).toBeGreaterThanOrEqual(1)
+      const pendingPreview = screen.getByTestId('output-preview-item')
 
-      await slots[0].trigger('click')
+      await userEvent.click(pendingPreview)
       expect(selectedIdRef.value).toBe('slot:pending')
     })
   })
@@ -353,10 +382,10 @@ describe('OutputHistory', () => {
     it('emits canShowPreview:true when no selection', async () => {
       selectedIdRef.value = null
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
 
-      expect(lastEmission(wrapper)).toEqual({ canShowPreview: true })
+      expect(lastEmission(result)).toEqual({ canShowPreview: true })
     })
 
     it('emits showSkeleton for in-progress skeleton item', async () => {
@@ -365,11 +394,11 @@ describe('OutputHistory', () => {
       ]
       selectedIdRef.value = 'slot:ip1'
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(wrapper)).toMatchObject({
+      expect(lastEmission(result)).toMatchObject({
         canShowPreview: true,
         showSkeleton: true
       })
@@ -383,11 +412,11 @@ describe('OutputHistory', () => {
       ]
       selectedIdRef.value = 'slot:ip1'
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(wrapper)).toMatchObject({
+      expect(lastEmission(result)).toMatchObject({
         canShowPreview: true,
         latentPreviewUrl: 'blob:preview'
       })
@@ -400,11 +429,11 @@ describe('OutputHistory', () => {
       ]
       selectedIdRef.value = 'slot:ip1'
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(wrapper)).toMatchObject({
+      expect(lastEmission(result)).toMatchObject({
         output,
         canShowPreview: true
       })
@@ -412,22 +441,43 @@ describe('OutputHistory', () => {
 
     it('emits asset and output for history selection', async () => {
       const asset = makeAsset('a1')
-      const result = makeResult('a1.png')
+      const output = makeResult('a1.png')
       mediaRef.value = [asset]
-      allOutputsFn.mockReturnValue([result])
+      allOutputsFn.mockReturnValue([output])
       hasOutputsRef.value = true
 
-      const wrapper = mountComponent()
+      const rendered = mountComponent()
       await nextTick()
 
-      // Set selection after mount
       selectedIdRef.value = 'history:a1:0'
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(wrapper)).toMatchObject({
+      expect(lastEmission(rendered)).toMatchObject({
         asset,
-        output: result,
+        output,
+        canShowPreview: true
+      })
+    })
+
+    it('emits the selected output for multi-output history assets', async () => {
+      const asset = makeAsset('a1')
+      const firstOutput = makeResult('first.png')
+      const secondOutput = makeResult('second.png')
+      mediaRef.value = [asset]
+      allOutputsFn.mockReturnValue([firstOutput, secondOutput])
+      hasOutputsRef.value = true
+
+      const result = mountComponent()
+      await nextTick()
+
+      selectedIdRef.value = 'history:a1:1'
+      await nextTick()
+      await nextTick()
+
+      expect(lastEmission(result)).toMatchObject({
+        asset,
+        output: secondOutput,
         canShowPreview: true
       })
     })
@@ -439,28 +489,28 @@ describe('OutputHistory', () => {
       allOutputsFn.mockReturnValue([makeResult('out.png')])
       hasOutputsRef.value = true
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
 
       selectedIdRef.value = 'history:a2:0'
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(wrapper).canShowPreview).toBe(false)
+      expect(lastEmission(result).canShowPreview).toBe(false)
     })
 
     it('emits skeleton for pending slot selection', async () => {
       mayBeActiveWorkflowPendingRef.value = true
       runningTasksRef.value = [{ jobId: 'j1' }]
 
-      const wrapper = mountComponent()
+      const result = mountComponent()
       await nextTick()
 
       selectedIdRef.value = 'slot:pending'
       await nextTick()
       await nextTick()
 
-      expect(lastEmission(wrapper)).toMatchObject({
+      expect(lastEmission(result)).toMatchObject({
         canShowPreview: true,
         showSkeleton: true
       })
@@ -480,12 +530,15 @@ describe('OutputHistory', () => {
     })
 
     it('selects first history when no in-progress but outputs exist', async () => {
+      mediaRef.value = [makeAsset('a1')]
+      allOutputsFn.mockReturnValue([makeResult('a1.png')])
       hasOutputsRef.value = true
 
       mountComponent()
       await nextTick()
 
       expect(selectFirstHistoryFn).toHaveBeenCalled()
+      expect(selectedIdRef.value).toBe('history:a1:0')
     })
 
     it('clears selection when no outputs and no in-progress', async () => {
@@ -496,6 +549,8 @@ describe('OutputHistory', () => {
     })
 
     it('reselects when workflow path changes after mount', async () => {
+      mediaRef.value = [makeAsset('a1')]
+      allOutputsFn.mockReturnValue([makeResult('a1.png')])
       hasOutputsRef.value = true
 
       mountComponent()
@@ -508,6 +563,7 @@ describe('OutputHistory', () => {
       await nextTick()
 
       expect(selectFirstHistoryFn).toHaveBeenCalled()
+      expect(selectedIdRef.value).toBe('history:a1:0')
     })
 
     it('does not reselect when path becomes falsy', async () => {
@@ -565,6 +621,47 @@ describe('OutputHistory', () => {
 
       expect(selectFirstHistoryFn).toHaveBeenCalled()
     })
+
+    it('reselects latest history when a new asset is prepended while following latest', async () => {
+      const oldFirst = makeAsset('old-first')
+      mediaRef.value = [oldFirst]
+      allOutputsFn.mockReturnValue([makeResult('out.png')])
+      hasOutputsRef.value = true
+
+      mountComponent()
+      await nextTick()
+      selectedIdRef.value = 'history:old-first:0'
+      await nextTick()
+
+      vi.clearAllMocks()
+
+      mediaRef.value = [makeAsset('new-first'), oldFirst]
+      await nextTick()
+
+      expect(selectFirstHistoryFn).toHaveBeenCalled()
+      expect(selectedIdRef.value).toBe('history:new-first:0')
+    })
+
+    it('keeps older history selection stable when new assets arrive', async () => {
+      const currentFirst = makeAsset('current-first')
+      const selectedOlder = makeAsset('selected-older')
+      mediaRef.value = [currentFirst, selectedOlder]
+      allOutputsFn.mockReturnValue([makeResult('out.png')])
+      hasOutputsRef.value = true
+
+      mountComponent()
+      await nextTick()
+      selectedIdRef.value = 'history:selected-older:0'
+      await nextTick()
+
+      vi.clearAllMocks()
+
+      mediaRef.value = [makeAsset('new-first'), currentFirst, selectedOlder]
+      await nextTick()
+
+      expect(selectFirstHistoryFn).not.toHaveBeenCalled()
+      expect(selectedIdRef.value).toBe('history:selected-older:0')
+    })
   })
 
   describe('keyboard navigation', () => {
@@ -591,10 +688,14 @@ describe('OutputHistory', () => {
       pressKey('ArrowRight')
       await nextTick()
       expect(selectedIdRef.value).toBe('history:a2:0')
+      expect(selectFn).toHaveBeenLastCalledWith('history:a2:0')
+      expect(selectAsLatestFn).not.toHaveBeenCalledWith('history:a2:0')
 
       pressKey('ArrowLeft')
       await nextTick()
       expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(selectFn).toHaveBeenLastCalledWith('history:a1:0')
+      expect(selectAsLatestFn).not.toHaveBeenCalledWith('history:a1:0')
 
       pressKey('ArrowDown')
       await nextTick()
