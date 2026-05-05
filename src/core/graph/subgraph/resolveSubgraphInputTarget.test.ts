@@ -158,4 +158,93 @@ describe('resolveSubgraphInputTarget', () => {
 
     expect(result).toBeUndefined()
   })
+
+  test('resolves widget and non-widget inputs on the same nested SubgraphNode independently', () => {
+    const { outerSubgraph, outerSubgraphNode } = createOuterSubgraphSetup([
+      'width',
+      'audio'
+    ])
+
+    const innerSubgraph = createTestSubgraph({
+      inputs: [
+        { name: 'width', type: '*' },
+        { name: 'audio', type: '*' }
+      ]
+    })
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 820
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const widthInput = innerSubgraphNode.addInput('width', '*')
+    innerSubgraphNode.addWidget('number', 'width', 0, () => undefined)
+    widthInput.widget = { name: 'width' }
+
+    const audioInput = innerSubgraphNode.addInput('audio', '*')
+
+    const widthSlot = outerSubgraph.inputNode.slots.find(
+      (slot) => slot.name === 'width'
+    )!
+    const audioSlot = outerSubgraph.inputNode.slots.find(
+      (slot) => slot.name === 'audio'
+    )!
+    widthSlot.connect(widthInput, innerSubgraphNode)
+    audioSlot.connect(audioInput, innerSubgraphNode)
+
+    expect(
+      resolveSubgraphInputTarget(outerSubgraphNode, 'width')
+    ).toMatchObject({
+      nodeId: '820',
+      widgetName: 'width'
+    })
+    expect(
+      resolveSubgraphInputTarget(outerSubgraphNode, 'audio')
+    ).toBeUndefined()
+  })
+
+  test('three-level nesting returns immediate child target, not deepest', () => {
+    // outer → middle → inner (concrete)
+    const innerSubgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: '*' }]
+    })
+    const concreteNode = new LGraphNode('ConcreteNode')
+    concreteNode.id = 900
+    const concreteInput = concreteNode.addInput('seed_input', '*')
+    concreteNode.addWidget('number', 'seed', 0, () => undefined)
+    concreteInput.widget = { name: 'seed' }
+    innerSubgraph.add(concreteNode)
+    innerSubgraph.inputNode.slots[0].connect(concreteInput, concreteNode)
+
+    const middleSubgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: '*' }]
+    })
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 901
+    })
+    middleSubgraph.add(innerSubgraphNode)
+    const middleInput = innerSubgraphNode.addInput('seed', '*')
+    innerSubgraphNode.addWidget('number', 'seed', 0, () => undefined)
+    middleInput.widget = { name: 'seed' }
+    middleSubgraph.inputNode.slots[0].connect(middleInput, innerSubgraphNode)
+
+    const { outerSubgraph, outerSubgraphNode } = createOuterSubgraphSetup([
+      'seed'
+    ])
+    const middleSubgraphNode = createTestSubgraphNode(middleSubgraph, {
+      id: 902
+    })
+    outerSubgraph.add(middleSubgraphNode)
+    const outerInput = middleSubgraphNode.addInput('seed', '*')
+    middleSubgraphNode.addWidget('number', 'seed', 0, () => undefined)
+    outerInput.widget = { name: 'seed' }
+    outerSubgraph.inputNode.slots[0].connect(outerInput, middleSubgraphNode)
+
+    const result = resolveSubgraphInputTarget(outerSubgraphNode, 'seed')
+
+    // Should return the immediate child (middle), not the deepest (concrete)
+    expect(result).toMatchObject({
+      nodeId: '902',
+      widgetName: 'seed'
+    })
+  })
 })

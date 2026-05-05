@@ -44,15 +44,18 @@ await expect(node).toHaveClass(BYPASS_CLASS)
 
 These are frequent causes of flaky tests - check them first, but investigate if they don't apply:
 
-| Symptom                            | Common Cause              | Typical Fix                                                                            |
-| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
-| Test passes locally, fails in CI   | Missing nextFrame()       | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
-| Keyboard shortcuts don't work      | Missing focus             | Add `await comfyPage.canvas.click()` first                                             |
-| Double-click doesn't trigger       | Timing too fast           | Add `{ delay: 5 }` option                                                              |
-| Elements end up in wrong position  | Drag animation incomplete | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
-| Widget value wrong after drag-drop | Upload incomplete         | Add `{ waitForUpload: true }`                                                          |
-| Test fails when run with others    | Test pollution            | Add `afterEach` with `resetView()`                                                     |
-| Local screenshots don't match CI   | Platform differences      | Screenshots are Linux-only, use PR label                                               |
+| Symptom                             | Common Cause              | Typical Fix                                                                            |
+| ----------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| Test passes locally, fails in CI    | Missing nextFrame()       | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
+| Keyboard shortcuts don't work       | Missing focus             | Add `await comfyPage.canvas.click()` first                                             |
+| Double-click doesn't trigger        | Timing too fast           | Add `{ delay: 5 }` option                                                              |
+| Elements end up in wrong position   | Drag animation incomplete | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
+| Widget value wrong after drag-drop  | Upload incomplete         | Add `{ waitForUpload: true }`                                                          |
+| Test fails when run with others     | Test pollution            | Add `afterEach` with `resetView()`                                                     |
+| Local screenshots don't match CI    | Platform differences      | Screenshots are Linux-only, use PR label                                               |
+| `subtree intercepts pointer events` | Canvas overlay (z-999)    | Use `dispatchEvent` on the DOM element to bypass overlay                               |
+| Context menu empty / wrong items    | Node not selected         | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                 |
+| `navigateIntoSubgraph` timeout      | Node too small in asset   | Use node size `[400, 200]` minimum in test asset JSON                                  |
 
 ## Test Tags
 
@@ -111,7 +114,7 @@ await expect(async () => {
 ## CI Debugging
 
 1. Download artifacts from failed CI run
-2. Extract and view trace: `npx playwright show-trace trace.zip`
+2. Extract and view trace: `pnpm dlx playwright show-trace trace.zip`
 3. CI deploys HTML report to Cloudflare Pages (link in PR comment)
 4. Reproduce CI: `CI=true pnpm test:browser`
 5. Local runs: `pnpm test:browser:local`

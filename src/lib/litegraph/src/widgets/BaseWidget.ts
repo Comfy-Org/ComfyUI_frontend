@@ -211,11 +211,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (
       graphId &&
       !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(
-        graphId,
-        String(this.node.id),
-        this.name
-      )
+      usePromotionStore().isPromotedByAny(graphId, {
+        sourceNodeId: String(this.node.id),
+        sourceWidgetName: this.name
+      })
     )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
@@ -437,7 +436,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.callback?.(this.value, canvas, node, pos, e)
 
     node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
-    if (node.graph) node.graph._version++
+    if (node.graph) node.graph.incrementVersion()
   }
 
   /**

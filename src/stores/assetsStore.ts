@@ -123,7 +123,7 @@ export const useAssetsStore = defineStore('assets', () => {
     state: inputAssets,
     isLoading: inputLoading,
     error: inputError,
-    execute: updateInputs
+    execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
     immediate: false,
     resetOnExecute: false,
@@ -131,6 +131,12 @@ export const useAssetsStore = defineStore('assets', () => {
       console.error('Error fetching input assets:', err)
     }
   })
+
+  const updateInputs = async () => {
+    const result = await executeUpdateInputs()
+    assetService.invalidateInputAssetsIncludingPublic()
+    return result
+  }
 
   /**
    * Fetch history assets with pagination support

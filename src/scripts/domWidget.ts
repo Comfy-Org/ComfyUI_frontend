@@ -190,11 +190,10 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       const graphId = this.node.graph?.rootGraph.id
       const isPromoted =
         graphId &&
-        this.promotionStore.isPromotedByAny(
-          graphId,
-          String(this.node.id),
-          this.name
-        )
+        this.promotionStore.isPromotedByAny(graphId, {
+          sourceNodeId: String(this.node.id),
+          sourceWidgetName: this.name
+        })
       if (!isPromoted) {
         this.options.onDraw?.(this)
         return

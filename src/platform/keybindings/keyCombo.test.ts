@@ -3,6 +3,68 @@ import { describe, expect, it } from 'vitest'
 import { KeyComboImpl } from './keyCombo'
 
 describe('KeyComboImpl', () => {
+  function mockKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
+    return {
+      key: '',
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false,
+      ...overrides
+    } as KeyboardEvent
+  }
+
+  describe('getKeySequences', () => {
+    it.each([
+      {
+        event: { key: 'Shift', shiftKey: true },
+        expected: ['Shift'],
+        label: 'Shift'
+      },
+      {
+        event: { key: 'Control', ctrlKey: true },
+        expected: ['Ctrl'],
+        label: 'Control'
+      },
+      {
+        event: { key: 'Alt', altKey: true },
+        expected: ['Alt'],
+        label: 'Alt'
+      },
+      {
+        event: { key: 'Meta', metaKey: true },
+        expected: ['Ctrl'],
+        label: 'Meta'
+      }
+    ])(
+      'does not duplicate a single $label modifier press',
+      ({ event, expected }) => {
+        const combo = KeyComboImpl.fromEvent(mockKeyEvent(event))
+
+        expect(combo.getKeySequences()).toEqual(expected)
+        expect(combo.toString()).toBe(expected.join(' + '))
+      }
+    )
+
+    it('lists held modifiers once when the pressed key is also a modifier', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: 'Shift', ctrlKey: true, shiftKey: true })
+      )
+
+      expect(combo.getKeySequences()).toEqual(['Ctrl', 'Shift'])
+      expect(combo.toString()).toBe('Ctrl + Shift')
+    })
+
+    it('keeps the primary key for non-modifier shortcuts', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: 'k', ctrlKey: true, shiftKey: true })
+      )
+
+      expect(combo.getKeySequences()).toEqual(['Ctrl', 'Shift', 'k'])
+      expect(combo.toString()).toBe('Ctrl + Shift + k')
+    })
+  })
+
   describe('isBrowserReserved', () => {
     it.each([
       { key: 't', ctrl: true, label: 'Ctrl + t' },

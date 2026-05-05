@@ -85,7 +85,7 @@ const modelDef = props.modelDef
   display: inline-block;
   text-align: center;
   margin: 5px;
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 .model_preview_prefix {
   font-weight: 700;

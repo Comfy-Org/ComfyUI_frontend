@@ -4,6 +4,7 @@
     <div
       v-if="isHelpCenterVisible"
       class="help-center-popup"
+      data-testid="help-center-popup"
       :class="{
         'sidebar-left': sidebarLocation === 'left',
         'sidebar-right': sidebarLocation === 'right',
@@ -17,11 +18,7 @@
   <!-- Release Notification Toast positioned within canvas area -->
   <Teleport to="#graph-canvas-container">
     <ReleaseNotificationToast
-      :class="{
-        'sidebar-left': sidebarLocation === 'left',
-        'sidebar-right': sidebarLocation === 'right',
-        'small-sidebar': isSmall
-      }"
+      :position="sidebarLocation === 'right' ? 'bottom-right' : 'bottom-left'"
     />
   </Teleport>
 
@@ -42,6 +39,7 @@
     <div
       v-if="isHelpCenterVisible"
       class="help-center-backdrop"
+      data-testid="help-center-backdrop"
       @click="closeHelpCenter"
     />
   </Teleport>

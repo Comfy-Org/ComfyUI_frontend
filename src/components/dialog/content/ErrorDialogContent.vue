@@ -1,5 +1,8 @@
 <template>
-  <div class="comfy-error-report flex flex-col gap-4">
+  <div
+    data-testid="error-dialog"
+    class="comfy-error-report flex flex-col gap-4"
+  >
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
@@ -14,11 +17,17 @@
     </template>
 
     <div class="flex justify-center gap-2">
-      <Button v-show="!reportOpen" variant="textonly" @click="showReport">
+      <Button
+        v-show="!reportOpen"
+        data-testid="error-dialog-show-report"
+        variant="textonly"
+        @click="showReport"
+      >
         {{ $t('g.showReport') }}
       </Button>
       <Button
         v-show="!reportOpen"
+        data-testid="error-dialog-contact-support"
         variant="textonly"
         @click="showContactSupport"
       >
@@ -40,7 +49,11 @@
         :repo-owner="repoOwner"
         :repo-name="repoName"
       />
-      <Button v-if="reportOpen" @click="copyReportToClipboard">
+      <Button
+        v-if="reportOpen"
+        data-testid="error-dialog-copy-report"
+        @click="copyReportToClipboard"
+      >
         <i class="pi pi-copy" />
         {{ $t('g.copyToClipboard') }}
       </Button>

@@ -11,8 +11,32 @@
       />
     </div>
 
-    <!-- Scrollable content -->
-    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
+    <!-- Runtime error: full-height panel outside accordion -->
+    <div
+      v-if="singleRuntimeErrorCard"
+      data-testid="runtime-error-panel"
+      aria-live="polite"
+      class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
+    >
+      <div
+        class="shrink-0 pb-2 text-sm font-semibold text-destructive-background-hover"
+      >
+        {{ singleRuntimeErrorGroup?.title }}
+      </div>
+      <ErrorNodeCard
+        :key="singleRuntimeErrorCard.id"
+        :card="singleRuntimeErrorCard"
+        :show-node-id-badge="showNodeIdBadge"
+        full-height
+        class="min-h-0 flex-1"
+        @locate-node="handleLocateNode"
+        @enter-subgraph="handleEnterSubgraph"
+        @copy-to-clipboard="copyToClipboard"
+      />
+    </div>
+
+    <!-- Scrollable content (non-runtime or mixed errors) -->
+    <div v-else class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
@@ -30,6 +54,7 @@
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
+          :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="getGroupSize(group)"
@@ -91,6 +116,47 @@
               >
                 {{ t('nodeReplacement.replaceAll', 'Replace All') }}
               </Button>
+              <Button
+                v-else-if="
+                  group.type === 'missing_model' &&
+                  showMissingModelHeaderRefresh
+                "
+                data-testid="missing-model-header-refresh"
+                variant="secondary"
+                size="sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
+                :aria-busy="missingModelStore.isRefreshingMissingModels"
+                :aria-disabled="missingModelStore.isRefreshingMissingModels"
+                @click.stop="handleMissingModelRefresh"
+              >
+                <DotSpinner
+                  v-if="missingModelStore.isRefreshingMissingModels"
+                  aria-hidden="true"
+                  duration="1s"
+                  :size="12"
+                />
+                <i
+                  v-else
+                  aria-hidden="true"
+                  class="icon-[lucide--refresh-cw] size-4 shrink-0"
+                />
+                {{ t('rightSidePanel.missingModels.refresh') }}
+              </Button>
+              <span
+                v-if="
+                  group.type === 'missing_model' &&
+                  showMissingModelHeaderRefresh
+                "
+                role="status"
+                aria-live="polite"
+                class="sr-only"
+              >
+                {{
+                  missingModelStore.isRefreshingMissingModels
+                    ? t('rightSidePanel.missingModels.refreshing')
+                    : ''
+                }}
+              </span>
             </div>
           </template>
 
@@ -132,11 +198,21 @@
             v-else-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
             :show-node-id-badge="showNodeIdBadge"
-            @locate-model="handleLocateModel"
+            @locate-model="handleLocateAssetNode"
+          />
+
+          <!-- Missing Media -->
+          <MissingMediaCard
+            v-else-if="group.type === 'missing_media'"
+            :missing-media-groups="missingMediaGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>
       </TransitionGroup>
     </div>
+
+    <ErrorPanelSurveyCta v-if="ErrorPanelSurveyCta" />
 
     <!-- Fixed Footer: Help Links -->
     <div class="min-w-0 shrink-0 border-t border-interface-stroke p-4">
@@ -171,15 +247,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCommandStore } from '@/stores/commandStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -192,21 +265,34 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
+import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useErrorActions } from './useErrorActions'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
+const ErrorPanelSurveyCta =
+  isNightly && !isCloud && !isDesktop
+    ? defineAsyncComponent(
+        () => import('@/platform/surveys/ErrorPanelSurveyCta.vue')
+      )
+    : undefined
+
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
-const { staticUrls } = useExternalLink()
+const { openGitHubIssues, contactSupport } = useErrorActions()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const missingModelStore = useMissingModelStore()
 const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
   useManagerState()
 const { missingNodePacks } = useMissingNodes()
@@ -220,7 +306,8 @@ const isSearching = computed(() => searchQuery.value.trim() !== '')
 const fullSizeGroupTypes = new Set([
   'missing_node',
   'swap_nodes',
-  'missing_model'
+  'missing_model',
+  'missing_media'
 ])
 function getGroupSize(group: ErrorGroup) {
   return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
@@ -241,9 +328,41 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
-  missingModelGroups,
+  filteredMissingModelGroups: missingModelGroups,
+  filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
+
+const missingModelDownloadableModels = computed(() => {
+  if (isCloud) return []
+
+  return getDownloadableModels(missingModelGroups.value)
+})
+
+const showMissingModelHeaderRefresh = computed(
+  () =>
+    !isCloud &&
+    missingModelGroups.value.length > 0 &&
+    missingModelDownloadableModels.value.length === 0
+)
+
+function handleMissingModelRefresh() {
+  void missingModelStore.refreshMissingModels()
+}
+
+const singleRuntimeErrorGroup = computed(() => {
+  if (filteredGroups.value.length !== 1) return null
+  const group = filteredGroups.value[0]
+  const isSoleRuntimeError =
+    group.type === 'execution' &&
+    group.cards.length === 1 &&
+    group.cards[0].errors.every((e) => e.isRuntimeError)
+  return isSoleRuntimeError ? group : null
+})
+
+const singleRuntimeErrorCard = computed(
+  () => singleRuntimeErrorGroup.value?.cards[0] ?? null
+)
 
 const isAllCollapsed = computed({
   get() {
@@ -277,13 +396,13 @@ watch(
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
     for (const group of allErrorGroups.value) {
-      const hasMatch =
-        group.type === 'execution' &&
-        group.cards.some(
-          (card) =>
-            card.graphNodeId === graphNodeId ||
-            (card.nodeId?.startsWith(prefix) ?? false)
-        )
+      if (group.type !== 'execution') continue
+
+      const hasMatch = group.cards.some(
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
+      )
       setSectionCollapsed(group.title, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
@@ -299,7 +418,7 @@ function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
 }
 
-function handleLocateModel(nodeId: string) {
+function handleLocateAssetNode(nodeId: string) {
   focusNode(nodeId)
 }
 
@@ -322,21 +441,5 @@ function handleReplaceAll() {
 
 function handleEnterSubgraph(nodeId: string) {
   enterSubgraph(nodeId, errorNodeCache.value)
-}
-
-function openGitHubIssues() {
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_tab_github_issues_clicked'
-  })
-  window.open(staticUrls.githubIssues, '_blank', 'noopener,noreferrer')
-}
-
-async function contactSupport() {
-  useTelemetry()?.trackHelpResourceClicked({
-    resource_type: 'help_feedback',
-    is_external: true,
-    source: 'error_dialog'
-  })
-  useCommandStore().execute('Comfy.ContactSupport')
 }
 </script>

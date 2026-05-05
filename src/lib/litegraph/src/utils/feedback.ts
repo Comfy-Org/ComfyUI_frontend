@@ -25,3 +25,34 @@ export function warnDeprecated(message: string, source?: object): void {
     callback(message, source)
   }
 }
+
+/**
+ * Defines a deprecated property alias that proxies to a current property,
+ * logging a deprecation warning on first access.
+ *
+ * Warning is deduplicated by {@link warnDeprecated} (once per unique message per session).
+ *
+ * @param target The object to define the deprecated property on.
+ * @param deprecatedKey The old property name to deprecate.
+ * @param currentKey The new property name to proxy to.
+ * @param message The deprecation warning message.
+ */
+export function defineDeprecatedProperty<T>(
+  target: T,
+  deprecatedKey: string,
+  currentKey: keyof T & string,
+  message: string
+): void {
+  Object.defineProperty(target, deprecatedKey, {
+    get() {
+      warnDeprecated(message)
+      return this[currentKey]
+    },
+    set(value: unknown) {
+      warnDeprecated(message)
+      this[currentKey] = value
+    },
+    configurable: true,
+    enumerable: false
+  })
+}

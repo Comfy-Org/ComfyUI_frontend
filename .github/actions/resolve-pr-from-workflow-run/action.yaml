@@ -1,0 +1,88 @@
+name: Resolve PR from workflow_run
+description: >
+  Resolves the PR number from a workflow_run event using pull_requests[0]
+  with a listPullRequestsAssociatedWithCommit fallback.
+  Skips closed/merged PRs and stale runs (head SHA mismatch).
+
+inputs:
+  token:
+    description: GitHub token for API calls
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  skip:
+    description: "'true' when no open PR was found or the run is stale"
+    value: ${{ steps.resolve.outputs.skip }}
+  number:
+    description: The PR number (empty when skip is true)
+    value: ${{ steps.resolve.outputs.number }}
+  base:
+    description: The PR base branch (empty when skip is true)
+    value: ${{ steps.resolve.outputs.base }}
+  head-sha:
+    description: The PR head SHA (empty when skip is true)
+    value: ${{ steps.resolve.outputs.head-sha }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve PR
+      id: resolve
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          let pr = context.payload.workflow_run.pull_requests?.[0];
+          if (!pr) {
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.payload.workflow_run.head_sha,
+            });
+            pr = prs.find(p => p.state === 'open');
+          }
+
+          // Fork PRs: pull_requests is empty and commit SHA may not be in
+          // the base repo graph. Fall back to pulls.list with head filter.
+          if (!pr && context.payload.workflow_run.head_repository?.owner?.login) {
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.payload.workflow_run.head_repository.owner.login}:${context.payload.workflow_run.head_branch}`,
+              per_page: 1,
+            });
+            pr = prs.find(p => p.head.sha === context.payload.workflow_run.head_sha);
+          }
+
+          if (!pr) {
+            core.info('No open PR found for this workflow run — skipping.');
+            core.setOutput('skip', 'true');
+            return;
+          }
+
+          const { data: livePr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pr.number,
+          });
+
+          if (livePr.state !== 'open') {
+            core.info(`PR #${pr.number} is ${livePr.state} — skipping.`);
+            core.setOutput('skip', 'true');
+            return;
+          }
+
+          if (livePr.head.sha !== context.payload.workflow_run.head_sha) {
+            core.info(
+              `Stale run: workflow SHA ${context.payload.workflow_run.head_sha} != PR head ${livePr.head.sha}`
+            );
+            core.setOutput('skip', 'true');
+            return;
+          }
+
+          core.setOutput('base', livePr.base.ref);
+          core.setOutput('head-sha', livePr.head.sha);
+          core.setOutput('skip', 'false');
+          core.setOutput('number', String(pr.number));

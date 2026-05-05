@@ -13,11 +13,16 @@ const containerRef = useTemplateRef('containerRef')
 
 const viewer = ref(useLoad3dViewer())
 
-watch([containerRef, () => modelUrl], async () => {
-  if (!containerRef.value || !modelUrl) return
+watch(
+  [containerRef, () => modelUrl],
+  async () => {
+    if (!containerRef.value || !modelUrl) return
 
-  await viewer.value.initializeStandaloneViewer(containerRef.value, modelUrl)
-})
+    viewer.value.cleanup()
+    await viewer.value.initializeStandaloneViewer(containerRef.value, modelUrl)
+  },
+  { flush: 'post' }
+)
 
 onUnmounted(() => {
   viewer.value.cleanup()
@@ -39,8 +44,10 @@ onUnmounted(() => {
         v-model:model-config="viewer"
         v-model:camera-config="viewer"
         v-model:light-config="viewer"
-        :is-splat-model="viewer.isSplatModel"
-        :is-ply-model="viewer.isPlyModel"
+        :can-use-gizmo="viewer.canUseGizmo"
+        :can-use-lighting="viewer.canUseLighting"
+        :can-export="viewer.canExport"
+        :material-modes="viewer.materialModes"
         :has-skeleton="viewer.hasSkeleton"
         @update-background-image="viewer.handleBackgroundImageUpdate"
         @export-model="viewer.exportModel"

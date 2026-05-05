@@ -3,15 +3,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
-const mockNodeExecutionIdToNodeLocatorId = vi.fn()
-const mockNodeIdToNodeLocatorId = vi.fn()
-const mockNodeLocatorIdToNodeExecutionId = vi.fn()
+const {
+  mockNodeExecutionIdToNodeLocatorId,
+  mockNodeIdToNodeLocatorId,
+  mockNodeLocatorIdToNodeExecutionId,
+  mockShowTextPreview
+} = vi.hoisted(() => ({
+  mockNodeExecutionIdToNodeLocatorId: vi.fn(),
+  mockNodeIdToNodeLocatorId: vi.fn(),
+  mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+  mockShowTextPreview: vi.fn()
+}))
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -37,7 +47,7 @@ declare global {
 
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
-    showTextPreview: vi.fn()
+    showTextPreview: mockShowTextPreview
   })
 }))
 
@@ -430,6 +440,56 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   })
 })
 
+describe('useExecutionStore - progress_text startup guard', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function fireProgressText(detail: {
+    nodeId: string
+    text: string
+    prompt_id?: string
+  }) {
+    const handler = apiEventHandlers.get('progress_text')
+    if (!handler) throw new Error('progress_text handler not bound')
+    handler(new CustomEvent('progress_text', { detail }))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('should ignore progress_text before the canvas is initialized', async () => {
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = null
+
+    expect(() =>
+      fireProgressText({
+        nodeId: '1',
+        text: 'warming up'
+      })
+    ).not.toThrow()
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('should call showTextPreview when canvas is available', async () => {
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({ nodeId: '1', text: 'warming up' })
+
+    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
+  })
+})
+
 describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
@@ -598,13 +658,13 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   })
 })
 
-describe('useExecutionErrorStore - setMissingNodeTypes', () => {
-  let store: ReturnType<typeof useExecutionErrorStore>
+describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
+  let store: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useExecutionErrorStore()
+    store = useMissingNodesErrorStore()
   })
 
   it('clears missingNodesError when called with an empty array', () => {
@@ -692,5 +752,303 @@ describe('useExecutionErrorStore - setMissingNodeTypes', () => {
     const input = [{ type: 'NodeA' }, { type: 'NodeB' }]
     store.setMissingNodeTypes(input)
     expect(store.missingNodesError?.nodeTypes).toEqual(input)
+  })
+})
+
+describe('useExecutionStore - WebSocket event handlers', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function fire<T>(event: string, detail: T) {
+    const handler = apiEventHandlers.get(event)
+    if (!handler) throw new Error(`${event} handler not bound`)
+    handler(new CustomEvent(event, { detail }))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  describe('execution_start', () => {
+    it('sets activeJobId and seeds an empty queued job entry', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.activeJobId).toBe('job-1')
+      expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
+    })
+
+    it('clears initializing state for the starting job', () => {
+      store.initializingJobIds = new Set([
+        'job-1',
+        'job-2'
+      ]) as unknown as Set<string>
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.initializingJobIds.has('job-1')).toBe(false)
+      expect(store.initializingJobIds.has('job-2')).toBe(true)
+    })
+  })
+
+  describe('execution_cached', () => {
+    it('marks the listed nodes as cached on the active job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_cached', {
+        prompt_id: 'job-1',
+        nodes: ['nodeA', 'nodeB'],
+        timestamp: 0
+      })
+
+      expect(store.activeJob?.nodes).toEqual({ nodeA: true, nodeB: true })
+    })
+
+    it('is a no-op when no active job exists', () => {
+      fire('execution_cached', {
+        prompt_id: 'job-1',
+        nodes: ['nodeA'],
+        timestamp: 0
+      })
+
+      expect(store.activeJob).toBeUndefined()
+    })
+  })
+
+  describe('execution_interrupted', () => {
+    it('clears active job state on interrupt', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      expect(store.activeJobId).toBe('job-1')
+
+      fire('execution_interrupted', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 't',
+        executed: [],
+        timestamp: 0
+      })
+
+      expect(store.activeJobId).toBeNull()
+      expect(store.queuedJobs['job-1']).toBeUndefined()
+    })
+  })
+
+  describe('executed', () => {
+    it('marks the executed node as done on the active job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('execution_cached', {
+        prompt_id: 'job-1',
+        nodes: ['n1'],
+        timestamp: 0
+      })
+
+      fire('executed', {
+        node: 'n1',
+        display_node: 'n1',
+        prompt_id: 'job-1',
+        output: {}
+      })
+
+      expect(store.activeJob?.nodes['n1']).toBe(true)
+    })
+
+    it('is a no-op when no active job exists', () => {
+      expect(() =>
+        fire('executed', {
+          node: 'n1',
+          display_node: 'n1',
+          prompt_id: 'orphan',
+          output: {}
+        })
+      ).not.toThrow()
+      expect(store.activeJob).toBeUndefined()
+    })
+  })
+
+  describe('execution_success', () => {
+    it('clears active job and progress state', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.activeJobId).toBeNull()
+      expect(store.queuedJobs['job-1']).toBeUndefined()
+    })
+  })
+
+  describe('executing', () => {
+    it('clears _executingNodeProgress and activeJobId when detail is null', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      store._executingNodeProgress = {
+        value: 1,
+        max: 2,
+        prompt_id: 'job-1',
+        node: '1'
+      }
+
+      fire('executing', null)
+
+      expect(store._executingNodeProgress).toBeNull()
+      expect(store.activeJobId).toBeNull()
+    })
+  })
+
+  describe('progress', () => {
+    it('sets _executingNodeProgress from the event payload', () => {
+      const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
+
+      fire('progress', payload)
+
+      expect(store._executingNodeProgress).toEqual(payload)
+    })
+  })
+
+  describe('status', () => {
+    it('reads clientId from api once and stops listening', async () => {
+      const apiModule = await import('@/scripts/api')
+      const removeSpy = vi.mocked(apiModule.api.removeEventListener)
+
+      fire('status', { exec_info: { queue_remaining: 0 } })
+
+      expect(store.clientId).toBe('test-client')
+      expect(removeSpy).toHaveBeenCalledWith('status', expect.any(Function))
+    })
+  })
+
+  describe('execution_error', () => {
+    it('routes a service-level error (no node_id) to the prompt error store', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        exception_type: 'StagnationError',
+        exception_message: 'Job has stagnated',
+        traceback: ['line 1', 'line 2']
+      })
+
+      expect(errorStore.lastPromptError).toMatchObject({
+        type: 'StagnationError',
+        message: 'StagnationError: Job has stagnated',
+        details: 'line 1\nline 2'
+      })
+    })
+
+    it('routes a runtime error (with node_id) to lastExecutionError', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'KSampler',
+        exception_type: 'RuntimeError',
+        exception_message: 'CUDA OOM',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toMatchObject({
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        exception_message: 'CUDA OOM'
+      })
+    })
+  })
+
+  describe('notification', () => {
+    it('marks a job as initializing when text indicates waiting for a machine', () => {
+      fire('notification', {
+        id: 'job-9',
+        value: 'Waiting for a machine to become available'
+      })
+
+      expect(store.initializingJobIds.has('job-9')).toBe(true)
+    })
+
+    it('ignores notifications without an id', () => {
+      fire('notification', {
+        id: '',
+        value: 'Waiting for a machine'
+      })
+
+      expect(store.initializingJobIds.size).toBe(0)
+    })
+
+    it('ignores notifications without the waiting-for-machine sentinel', () => {
+      fire('notification', { id: 'job-9', value: 'Hello' })
+
+      expect(store.initializingJobIds.has('job-9')).toBe(false)
+    })
+  })
+
+  describe('unbindExecutionEvents', () => {
+    it('removes every listener registered by bindExecutionEvents', async () => {
+      const apiModule = await import('@/scripts/api')
+      const removeSpy = vi.mocked(apiModule.api.removeEventListener)
+      const events = [
+        'notification',
+        'execution_start',
+        'execution_cached',
+        'execution_interrupted',
+        'execution_success',
+        'executed',
+        'executing',
+        'progress',
+        'progress_state',
+        'execution_error',
+        'progress_text'
+      ]
+
+      store.unbindExecutionEvents()
+
+      for (const event of events) {
+        expect(removeSpy).toHaveBeenCalledWith(event, expect.any(Function))
+      }
+    })
+  })
+})
+
+describe('useExecutionStore - storeJob and workflow path tracking', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('storeJob populates queuedJobs and tracks the workflow path', () => {
+    const workflow = {
+      activeState: { id: 'wf-1' },
+      initialState: { id: 'wf-1' },
+      path: '/workflows/foo.json'
+    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
+
+    store.storeJob({ nodes: ['a', 'b'], id: 'job-1', workflow })
+
+    expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false, b: false })
+    expect(store.queuedJobs['job-1']?.workflow).toStrictEqual(workflow)
+    expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
+    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+      '/workflows/foo.json'
+    )
+  })
+
+  it('registerJobWorkflowIdMapping ignores empty inputs', () => {
+    store.registerJobWorkflowIdMapping('job-1', 'wf-1')
+    store.registerJobWorkflowIdMapping('', 'wf-2')
+    store.registerJobWorkflowIdMapping('job-2', '')
+
+    expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
+    expect(store.jobIdToWorkflowId.size).toBe(1)
+  })
+
+  it('ensureSessionWorkflowPath is idempotent and updates on change', () => {
+    store.ensureSessionWorkflowPath('job-1', '/a.json')
+    store.ensureSessionWorkflowPath('job-1', '/a.json')
+    store.ensureSessionWorkflowPath('job-1', '/b.json')
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe('/b.json')
   })
 })

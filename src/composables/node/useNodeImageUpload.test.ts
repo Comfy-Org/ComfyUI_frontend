@@ -1,6 +1,8 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),
@@ -44,12 +46,12 @@ vi.mock('@/stores/assetsStore', () => ({
 }))
 
 function createMockNode(): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     isUploading: false,
     imgs: [new Image()],
     graph: { setDirtyCanvas: vi.fn() },
     size: [300, 400]
-  } as unknown as LGraphNode
+  })
 }
 
 function createFile(name = 'test.png'): File {
@@ -72,7 +74,7 @@ function failResponse(status = 500) {
 
 describe('useNodeImageUpload', () => {
   let node: LGraphNode
-  let onUploadComplete: (paths: string[]) => void
+  let onUploadComplete: (paths: (string | ResultItem)[]) => void
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 

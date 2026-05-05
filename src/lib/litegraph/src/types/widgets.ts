@@ -1,5 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
-import type { CurvePoint } from '@/components/curve/types'
+import type { CurveData } from '@/components/curve/types'
 
 import type {
   CanvasColour,
@@ -139,6 +139,7 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | IRangeWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -331,14 +332,38 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
-export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
+export interface ICurveWidget extends IBaseWidget<CurveData, 'curve'> {
   type: 'curve'
-  value: CurvePoint[]
+  value: CurveData
 }
 
 export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   type: 'painter'
   value: string
+}
+
+export interface RangeValue {
+  min: number
+  max: number
+  midpoint?: number
+}
+
+export interface IWidgetRangeOptions extends IWidgetOptions {
+  display?: 'plain' | 'gradient' | 'histogram'
+  gradient_stops?: ColorStop[]
+  show_midpoint?: boolean
+  midpoint_scale?: 'linear' | 'gamma'
+  value_min?: number
+  value_max?: number
+}
+
+export interface IRangeWidget extends IBaseWidget<
+  RangeValue,
+  'range',
+  IWidgetRangeOptions
+> {
+  type: 'range'
+  value: RangeValue
 }
 
 /**

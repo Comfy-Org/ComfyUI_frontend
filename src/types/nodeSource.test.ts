@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import {
+  NodeSourceType,
+  getNodeSource,
+  isCustomNode,
+  isEssentialNode
+} from '@/types/nodeSource'
+import type { NodeSource } from '@/types/nodeSource'
 
 describe('getNodeSource', () => {
   it('should return UNKNOWN_NODE_SOURCE when python_module is undefined', () => {
@@ -106,5 +112,46 @@ describe('getNodeSource', () => {
         badgeText: 'bp'
       })
     })
+  })
+})
+
+function makeNode(type: NodeSourceType): { nodeSource: NodeSource } {
+  return {
+    nodeSource: {
+      type,
+      className: '',
+      displayText: '',
+      badgeText: ''
+    }
+  }
+}
+
+describe('isEssentialNode', () => {
+  it('returns true for Essentials nodes', () => {
+    expect(isEssentialNode(makeNode(NodeSourceType.Essentials))).toBe(true)
+  })
+
+  it.for([
+    NodeSourceType.Core,
+    NodeSourceType.CustomNodes,
+    NodeSourceType.Blueprint,
+    NodeSourceType.Unknown
+  ])('returns false for %s nodes', (type) => {
+    expect(isEssentialNode(makeNode(type))).toBe(false)
+  })
+})
+
+describe('isCustomNode', () => {
+  it('returns true for CustomNodes', () => {
+    expect(isCustomNode(makeNode(NodeSourceType.CustomNodes))).toBe(true)
+  })
+
+  it.for([
+    NodeSourceType.Core,
+    NodeSourceType.Essentials,
+    NodeSourceType.Unknown,
+    NodeSourceType.Blueprint
+  ])('returns false for %s nodes', (type) => {
+    expect(isCustomNode(makeNode(type))).toBe(false)
   })
 })

@@ -1,10 +1,9 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackUrl } from '@/platform/support/config'
 import { useExtensionService } from '@/services/extensionService'
 import type { ActionBarButton } from '@/types/comfy'
 
-const feedbackUrl = buildFeedbackUrl()
+const TYPEFORM_SURVEY_URL = 'https://form.typeform.com/to/q7azbWPi'
 
 const buttons: ActionBarButton[] = [
   {
@@ -12,7 +11,7 @@ const buttons: ActionBarButton[] = [
     label: t('actionbar.feedback'),
     tooltip: t('actionbar.feedbackTooltip'),
     onClick: () => {
-      window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+      window.open(TYPEFORM_SURVEY_URL, '_blank', 'noopener,noreferrer')
     }
   }
 ]

@@ -384,7 +384,7 @@ import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefi
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
@@ -470,7 +470,8 @@ function handleSubscribeWorkspace() {
 }
 
 function handleUpgrade() {
-  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+  if (isFreeTierPlan.value) showPricingTable()
+  else showSubscriptionDialog()
 }
 
 function handleUpgradeToAddCredits() {

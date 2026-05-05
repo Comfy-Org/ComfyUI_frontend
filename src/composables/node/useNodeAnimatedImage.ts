@@ -1,3 +1,4 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
@@ -30,7 +31,8 @@ export function useNodeAnimatedImage() {
       const element = document.createElement('div')
       element.appendChild(node.imgs[0])
       const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', element, {
-        hideOnZoom: false
+        hideOnZoom: false,
+        canvasOnly: true
       })
       node.overIndex = 0
 
@@ -38,17 +40,20 @@ export function useNodeAnimatedImage() {
       const { handleWheel, handlePointer, forwardEventToCanvas } =
         useCanvasInteractions()
       node.imgs[0].style.pointerEvents = 'none'
-      element.addEventListener('wheel', handleWheel)
-      element.addEventListener('pointermove', handlePointer)
-      element.addEventListener('pointerup', handlePointer)
+      const controller = new AbortController()
+      const { signal } = controller
+      element.addEventListener('wheel', handleWheel, { signal })
+      element.addEventListener('pointermove', handlePointer, { signal })
+      element.addEventListener('pointerup', handlePointer, { signal })
       element.addEventListener(
         'pointerdown',
-        (e) => {
-          return e.button !== 2 ? handlePointer(e) : forwardEventToCanvas(e)
-        },
-        true
+        (e) => (e.button !== 2 ? handlePointer(e) : forwardEventToCanvas(e)),
+        { capture: true, signal }
       )
 
+      widget.onRemove = useChainCallback(widget.onRemove, () => {
+        controller.abort()
+      })
       widget.serialize = false
       widget.serializeValue = () => undefined
     }

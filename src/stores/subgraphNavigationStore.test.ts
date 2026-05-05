@@ -1,15 +1,27 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
+
+function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
+  const mockSubgraph = {
+    id,
+    rootGraph,
+    _nodes: [],
+    nodes: []
+  } satisfies MockSubgraph
+
+  return fromPartial<Subgraph>(mockSubgraph)
+}
 
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
@@ -25,14 +37,17 @@ vi.mock('@/scripts/app', () => {
     setDirty: vi.fn()
   }
 
+  const mockGraph = {
+    _nodes: [],
+    nodes: [],
+    subgraphs: new Map(),
+    getNodeById: vi.fn()
+  }
+
   return {
     app: {
-      graph: {
-        _nodes: [],
-        nodes: [],
-        subgraphs: new Map(),
-        getNodeById: vi.fn()
-      },
+      graph: mockGraph,
+      rootGraph: mockGraph,
       canvas: mockCanvas
     }
   }
@@ -47,10 +62,19 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 vi.mock('@/utils/graphTraversalUtil', () => ({
   findSubgraphPathById: vi.fn()
 }))
+vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.resetAllMocks()
+    app.rootGraph.subgraphs.clear()
+    app.canvas.subgraph = undefined
+    app.canvas.ds.scale = 1
+    app.canvas.ds.offset = [0, 0]
+    app.canvas.ds.state.scale = 1
+    app.canvas.ds.state.offset = [0, 0]
+    app.graph.getNodeById = vi.fn()
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
@@ -58,11 +82,11 @@ describe('useSubgraphNavigationStore', () => {
     const workflowStore = useWorkflowStore()
 
     // Mock a workflow
-    const mockWorkflow = {
+    const mockWorkflow = fromPartial<ComfyWorkflow>({
       path: 'test-workflow.json',
       filename: 'test-workflow.json',
       changeTracker: null
-    } as ComfyWorkflow
+    })
 
     // Set the active workflow (cast to bypass TypeScript check in test)
     workflowStore.activeWorkflow =
@@ -87,60 +111,135 @@ describe('useSubgraphNavigationStore', () => {
   it('should preserve navigation stack per workflow', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
-    // Mock first workflow
-    const workflow1 = {
+    const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
-      filename: 'workflow1.json',
-      changeTracker: createMockChangeTracker({
-        restore: vi.fn(),
-        store: vi.fn()
-      })
-    } as Partial<ComfyWorkflow> as ComfyWorkflow
+      filename: 'workflow1.json'
+    })
 
-    // Set the active workflow
+    const workflow2 = fromPartial<ComfyWorkflow>({
+      path: 'workflow2.json',
+      filename: 'workflow2.json'
+    })
+
+    const sub1 = createMockSubgraph('sub-1')
+    const sub2 = createMockSubgraph('sub-2')
+
+    app.rootGraph.subgraphs.set(sub1.id, sub1)
+    app.rootGraph.subgraphs.set(sub2.id, sub2)
+
+    vi.mocked(findSubgraphPathById).mockImplementation((_rootGraph, id) => {
+      if (id === sub1.id) return [sub1.id]
+      if (id === sub2.id) return [sub1.id, sub2.id]
+      return null
+    })
+
+    // Workflow1 is in a nested subgraph (sub-1 -> sub-2)
+    app.canvas.subgraph = sub2
     workflowStore.activeWorkflow =
       workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    // Simulate the restore process that happens when loading a workflow
-    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
-    navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
+    expect(navigationStore.exportState()).toEqual([sub1.id, sub2.id])
 
-    // Verify navigation was set
-    expect(navigationStore.exportState()).toHaveLength(2)
-    expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
+    // Switch to workflow2 at root level
+    app.canvas.subgraph = undefined
+    workflowStore.activeWorkflow =
+      workflow2 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    // Switch to a different workflow with no subgraph state (root level)
-    const workflow2 = {
+    expect(navigationStore.exportState()).toEqual([])
+
+    // Switch back to workflow1 in its subgraph
+    app.canvas.subgraph = sub2
+    workflowStore.activeWorkflow =
+      workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([sub1.id, sub2.id])
+  })
+
+  it('should reset navigation on workflow switch and restore on switch back', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+
+    const workflow1 = fromPartial<ComfyWorkflow>({
+      path: 'workflow1.json',
+      filename: 'workflow1.json'
+    })
+
+    const workflow1Subgraph = createMockSubgraph('sub-1')
+
+    app.rootGraph.subgraphs.set(workflow1Subgraph.id, workflow1Subgraph)
+    vi.mocked(findSubgraphPathById).mockImplementation((_rootGraph, id) =>
+      id === workflow1Subgraph.id ? [workflow1Subgraph.id] : null
+    )
+
+    app.canvas.subgraph = workflow1Subgraph
+
+    workflowStore.activeWorkflow =
+      workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([workflow1Subgraph.id])
+
+    const workflow2 = fromPartial<ComfyWorkflow>({
       path: 'workflow2.json',
-      filename: 'workflow2.json',
-      changeTracker: createMockChangeTracker({
-        restore: vi.fn(),
-        store: vi.fn()
-      })
-    } as Partial<ComfyWorkflow> as ComfyWorkflow
+      filename: 'workflow2.json'
+    })
+
+    app.canvas.subgraph = undefined
 
     workflowStore.activeWorkflow =
       workflow2 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    // Simulate the restore process for workflow2
-    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
-    navigationStore.restoreState([])
+    expect(navigationStore.exportState()).toEqual([])
 
-    // The navigation stack should be empty for workflow2 (at root level)
-    expect(navigationStore.exportState()).toHaveLength(0)
+    app.canvas.subgraph = workflow1Subgraph
 
-    // Switch back to workflow1
     workflowStore.activeWorkflow =
       workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    // Simulate the restore process for workflow1 again
-    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
-    navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
+    expect(navigationStore.exportState()).toEqual([workflow1Subgraph.id])
+  })
 
-    // The navigation stack should be restored for workflow1
-    expect(navigationStore.exportState()).toHaveLength(2)
-    expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
+  it('should handle restoreState with unreachable subgraph IDs', () => {
+    const navigationStore = useSubgraphNavigationStore()
+
+    navigationStore.restoreState(['nonexistent-sub'])
+
+    expect(navigationStore.exportState()).toEqual(['nonexistent-sub'])
+    expect(navigationStore.navigationStack).toEqual([])
+  })
+
+  it('should fall back to the active subgraph id when path lookup fails during navigation updates', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+
+    const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
+
+    app.graph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
+    vi.mocked(findSubgraphPathById).mockReturnValue(null)
+
+    const mockWorkflow = fromPartial<ComfyWorkflow>({
+      path: 'test-workflow.json',
+      filename: 'test-workflow.json'
+    })
+
+    workflowStore.activeWorkflow =
+      mockWorkflow as typeof workflowStore.activeWorkflow
+
+    app.canvas.subgraph = unreachableSubgraph
+    workflowStore.updateActiveGraph()
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([unreachableSubgraph.id])
+    expect(navigationStore.navigationStack).toEqual([unreachableSubgraph])
   })
 
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
@@ -149,21 +248,16 @@ describe('useSubgraphNavigationStore', () => {
     const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
-    const mockSubgraph = {
-      id: 'subgraph-1',
-      rootGraph: app.graph,
-      _nodes: [],
-      nodes: []
-    } as Partial<Subgraph> as Subgraph
+    const mockSubgraph = createMockSubgraph('subgraph-1', app.graph)
 
     // Add the subgraph to the graph's subgraphs map
     app.graph.subgraphs.set('subgraph-1', mockSubgraph)
 
     // First set an active workflow
-    const mockWorkflow = {
+    const mockWorkflow = fromPartial<ComfyWorkflow>({
       path: 'test-workflow.json',
       filename: 'test-workflow.json'
-    } as ComfyWorkflow
+    })
 
     workflowStore.activeWorkflow =
       mockWorkflow as typeof workflowStore.activeWorkflow

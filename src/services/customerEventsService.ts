@@ -4,7 +4,7 @@ import { ref, watch } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d } from '@/i18n'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -123,12 +123,13 @@ export const useCustomerEventsService = () => {
 
   function formatJsonValue(value: unknown) {
     if (typeof value === 'number') {
-      // Format numbers with commas and decimals if needed
       return value.toLocaleString()
     }
-    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
-      // Format dates nicely
-      return new Date(value).toLocaleString()
+    if (typeof value === 'string') {
+      const date = new Date(value)
+      if (!Number.isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+        return d(date, { dateStyle: 'medium', timeStyle: 'short' })
+      }
     }
     return value
   }
@@ -179,7 +180,7 @@ export const useCustomerEventsService = () => {
     }
 
     // Get auth headers
-    const authHeaders = await useFirebaseAuthStore().getAuthHeader()
+    const authHeaders = await useAuthStore().getAuthHeader()
     if (!authHeaders) {
       error.value = 'Authentication header is missing'
       return null

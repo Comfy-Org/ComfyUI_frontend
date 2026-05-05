@@ -6,5 +6,5 @@ import type { ImportSource } from '@/platform/assets/types/importSource'
 export const civitaiImportSource: ImportSource = {
   type: 'civitai',
   name: 'Civitai',
-  hostnames: ['civitai.com']
+  hostnames: ['civitai.com', 'civitai.red']
 }

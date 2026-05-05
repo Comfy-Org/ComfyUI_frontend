@@ -1,5 +1,5 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -67,6 +67,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Only applies to the default implementation',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.NodeSearchBoxImpl.FollowCursor',
+    category: ['Comfy', 'Node Search Box', 'FollowCursor'],
+    name: 'Added nodes follow the cursor',
+    tooltip:
+      'When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.44.4'
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
@@ -281,12 +291,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
-    name: 'Show missing nodes warning',
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
     type: isCloud ? 'hidden' : 'boolean',
@@ -300,6 +304,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Desktop.CloudNotificationShown',
+    name: 'Cloud notification shown',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
@@ -309,6 +319,20 @@ export const CORE_SETTINGS: SettingParams[] = [
       min: 1.01,
       max: 2.5,
       step: 0.01
+    }
+  },
+  {
+    id: 'Comfy.Graph.AutoPanSpeed',
+    category: ['LiteGraph', 'Canvas', 'AutoPanSpeed'],
+    name: 'Auto-pan speed',
+    tooltip:
+      'Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning.',
+    type: 'slider',
+    defaultValue: 15,
+    attrs: {
+      min: 0,
+      max: 30,
+      step: 1
     }
   },
   // Bookmarks are stored in the settings store.
@@ -577,6 +601,19 @@ export const CORE_SETTINGS: SettingParams[] = [
       value === 'Integrated' ? 'Default' : value
   },
   {
+    id: 'Comfy.Appearance.DisableAnimations',
+    category: ['Appearance', 'General'],
+    name: 'Disable animations',
+    type: 'boolean',
+    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    tooltip:
+      'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
+    onChange: (value: unknown) => {
+      document.body.classList.toggle('disable-animations', !!value)
+    },
+    versionAdded: '1.43.0'
+  },
+  {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
     defaultValue: 'Top',
@@ -648,6 +685,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7'
+  },
+  {
+    id: 'Comfy.Keybinding.CurrentPreset',
+    name: 'Current keybinding preset name',
+    type: 'hidden',
+    defaultValue: 'default',
+    versionAdded: '1.8.8'
   },
   {
     id: 'Comfy.Extension.Disabled',
@@ -1159,10 +1203,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
-    defaultsByInstallVersion: { '1.41.0': isCloud },
+    defaultsByInstallVersion: { '1.41.0': isCloud || isDesktop },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
+    name: 'App Builder Vue Node switch dismissed',
+    type: 'hidden',
+    defaultValue: false
   },
   {
     id: 'Comfy.VueNodes.AutoScaleLayout',
@@ -1205,7 +1255,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: false,
+    defaultValue: isNightly,
     experimental: true
   },
   {
@@ -1232,9 +1282,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
-    defaultValue: false,
-    experimental: true,
-    versionAdded: '1.40.0'
+    defaultValue: true,
+    experimental: false,
+    versionAdded: '1.40.0',
+    versionModified: '1.44.5'
   },
   {
     id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',

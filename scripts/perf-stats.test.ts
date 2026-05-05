@@ -5,6 +5,9 @@ import {
   computeStats,
   formatSignificance,
   isNoteworthy,
+  sparkline,
+  trendArrow,
+  trendDirection,
   zScore
 } from './perf-stats'
 
@@ -96,6 +99,21 @@ describe('classifyChange', () => {
     expect(classifyChange(2, 10)).toBe('neutral')
     expect(classifyChange(-2, 10)).toBe('neutral')
   })
+
+  it('returns neutral when absDelta below minAbsDelta despite high z', () => {
+    // z=7.2 but only 1 unit change with minAbsDelta=5
+    expect(classifyChange(7.2, 10, 1, 5)).toBe('neutral')
+    expect(classifyChange(-7.2, 10, -1, 5)).toBe('neutral')
+  })
+
+  it('returns regression when absDelta meets minAbsDelta', () => {
+    expect(classifyChange(3, 10, 10, 5)).toBe('regression')
+  })
+
+  it('ignores effect size gate when minAbsDelta not provided', () => {
+    expect(classifyChange(3, 10)).toBe('regression')
+    expect(classifyChange(3, 10, 1)).toBe('regression')
+  })
 })
 
 describe('formatSignificance', () => {
@@ -129,5 +147,70 @@ describe('isNoteworthy', () => {
     expect(isNoteworthy('improvement')).toBe(false)
     expect(isNoteworthy('neutral')).toBe(false)
     expect(isNoteworthy('noisy')).toBe(false)
+  })
+})
+
+describe('sparkline', () => {
+  it('returns empty string for no values', () => {
+    expect(sparkline([])).toBe('')
+  })
+
+  it('returns mid-height for single value', () => {
+    expect(sparkline([50])).toBe('▄')
+  })
+
+  it('renders ascending values low to high', () => {
+    const result = sparkline([0, 25, 50, 75, 100])
+    expect(result).toBe('▁▃▅▆█')
+  })
+
+  it('renders identical values as flat line', () => {
+    const result = sparkline([10, 10, 10])
+    expect(result).toBe('▄▄▄')
+  })
+
+  it('renders descending values high to low', () => {
+    const result = sparkline([100, 50, 0])
+    expect(result).toBe('█▅▁')
+  })
+})
+
+describe('trendDirection', () => {
+  it('returns stable for fewer than 3 values', () => {
+    expect(trendDirection([])).toBe('stable')
+    expect(trendDirection([1])).toBe('stable')
+    expect(trendDirection([1, 2])).toBe('stable')
+  })
+
+  it('detects rising trend', () => {
+    expect(trendDirection([10, 10, 10, 20, 20, 20])).toBe('rising')
+  })
+
+  it('detects falling trend', () => {
+    expect(trendDirection([20, 20, 20, 10, 10, 10])).toBe('falling')
+  })
+
+  it('returns stable for flat data', () => {
+    expect(trendDirection([100, 100, 100, 100])).toBe('stable')
+  })
+
+  it('returns stable for small fluctuations within 10%', () => {
+    expect(trendDirection([100, 100, 100, 105, 105, 105])).toBe('stable')
+  })
+
+  it('detects rising when baseline is zero but current is non-zero', () => {
+    expect(trendDirection([0, 0, 0, 5, 5, 5])).toBe('rising')
+  })
+
+  it('returns stable when both halves are zero', () => {
+    expect(trendDirection([0, 0, 0, 0, 0, 0])).toBe('stable')
+  })
+})
+
+describe('trendArrow', () => {
+  it('returns correct emoji for each direction', () => {
+    expect(trendArrow('rising')).toBe('📈')
+    expect(trendArrow('falling')).toBe('📉')
+    expect(trendArrow('stable')).toBe('➡️')
   })
 })

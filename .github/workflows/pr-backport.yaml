@@ -348,6 +348,8 @@ jobs:
               PR_NUM=$(echo "${PR_URL}" | grep -o '[0-9]*$')
 
               if [ -n "${PR_NUM}" ]; then
+                gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
+                  || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
                 gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
               fi
             else

@@ -14,7 +14,8 @@ export function resolvePromotedWidgetSource(
   const result = resolveConcretePromotedWidget(
     hostNode,
     widget.sourceNodeId,
-    widget.sourceWidgetName
+    widget.sourceWidgetName,
+    widget.disambiguatingSourceNodeId
   )
   if (result.status === 'resolved') return result.resolved
 

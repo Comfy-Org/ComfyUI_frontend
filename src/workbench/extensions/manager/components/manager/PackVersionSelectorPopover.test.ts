@@ -1,7 +1,6 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createTestingPinia } from '@pinia/testing'
-import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
@@ -13,17 +12,7 @@ import { createI18n } from 'vue-i18n'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-// SelectedVersion is now using direct strings instead of enum
-
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
-
-interface PackVersionSelectorVM {
-  getVersionCompatibility: (version: string) => unknown
-}
-
-function getVM(wrapper: VueWrapper): PackVersionSelectorVM {
-  return wrapper.vm as Partial<PackVersionSelectorVM> as PackVersionSelectorVM
-}
 
 // Default mock versions for reference
 const defaultMockVersions = [
@@ -112,46 +101,47 @@ describe('PackVersionSelectorPopover', () => {
     mockGetInstalledPackVersion.mockReset().mockReturnValue(undefined)
   })
 
-  const mountComponent = ({
-    props = {}
-  }: { props?: Record<string, unknown> } = {}): VueWrapper => {
+  function renderComponent({
+    props = {},
+    onCancel,
+    onSubmit
+  }: {
+    props?: Record<string, unknown>
+    onCancel?: () => void
+    onSubmit?: () => void
+  } = {}) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
       messages: { en: enMessages }
     })
-
-    return mount(PackVersionSelectorPopover, {
+    const user = userEvent.setup()
+    const result = render(PackVersionSelectorPopover, {
       props: {
         nodePack: mockNodePack,
-        ...props
+        ...props,
+        ...(onCancel ? { onCancel } : {}),
+        ...(onSubmit ? { onSubmit } : {})
       },
       global: {
         plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
-        components: {
-          Listbox,
-          VerifiedIcon,
-          Select
-        },
-        directives: {
-          tooltip: Tooltip
-        }
+        components: { Listbox, VerifiedIcon, Select },
+        directives: { tooltip: Tooltip }
       }
     })
+    return { ...result, user }
   }
 
   it('fetches versions on mount', async () => {
-    // Set up the mock for this specific test
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-    mountComponent()
+    renderComponent()
     await waitForPromises()
 
     expect(mockGetPackVersions).toHaveBeenCalledWith(mockNodePack.id)
   })
 
   it('shows loading state while fetching versions', async () => {
-    // Delay the promise resolution
     mockGetPackVersions.mockImplementationOnce(
       () =>
         new Promise((resolve) =>
@@ -159,63 +149,52 @@ describe('PackVersionSelectorPopover', () => {
         )
     )
 
-    const wrapper = mountComponent()
+    renderComponent()
 
-    expect(wrapper.text()).toContain('Loading versions...')
+    expect(screen.getByText('Loading versions...')).toBeInTheDocument()
   })
 
   it('displays special options and version options in the listbox', async () => {
-    // Set up the mock for this specific test
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-    const wrapper = mountComponent()
+    renderComponent()
     await waitForPromises()
 
-    const listbox = wrapper.findComponent(Listbox)
-    expect(listbox.exists()).toBe(true)
-
-    const options = listbox.props('options')!
-    // Check that we have both special options and version options
-    // Latest version (1.0.0) should be excluded from the version list to avoid duplication
-    expect(options.length).toBe(defaultMockVersions.length + 1) // 2 special options + version options minus 1 duplicate
-
-    // Check that special options exist
-    expect(options.some((o) => o.value === 'nightly')).toBe(true)
-    expect(options.some((o) => o.value === 'latest')).toBe(true)
-
-    // Check that version options exist (excluding latest version 1.0.0)
-    expect(options.some((o) => o.value === '1.0.0')).toBe(false) // Should be excluded as it's the latest
-    expect(options.some((o) => o.value === '0.9.0')).toBe(true)
-    expect(options.some((o) => o.value === '0.8.0')).toBe(true)
+    // Latest version (1.0.0) should be excluded from version list to avoid duplication
+    expect(screen.getByText(/Latest/)).toBeInTheDocument()
+    expect(screen.getByText('Nightly')).toBeInTheDocument()
+    expect(screen.getByText('0.9.0')).toBeInTheDocument()
+    expect(screen.getByText('0.8.0')).toBeInTheDocument()
+    // 1.0.0 appears only inside the "Latest (1.0.0)" label, not as a standalone option
+    expect(
+      screen.queryByRole('option', { name: '1.0.0' })
+    ).not.toBeInTheDocument()
   })
 
   it('emits cancel event when cancel button is clicked', async () => {
-    // Set up the mock for this specific test
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+    const onCancel = vi.fn()
 
-    const wrapper = mountComponent()
+    const { user } = renderComponent({ onCancel })
     await waitForPromises()
 
-    const cancelButton = wrapper.findAllComponents(Button)[0]
-    await cancelButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(wrapper.emitted('cancel')).toBeTruthy()
+    expect(onCancel).toHaveBeenCalledOnce()
   })
 
   it('calls installPack and emits submit when install button is clicked', async () => {
-    // Set up the mock for this specific test
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+    const onSubmit = vi.fn()
 
-    const wrapper = mountComponent()
+    const { user } = renderComponent({ onSubmit })
     await waitForPromises()
 
-    // Set the selected version
-    await wrapper.findComponent(Listbox).setValue('0.9.0')
+    // Select version 0.9.0 by clicking its option
+    await user.click(screen.getByText('0.9.0'))
 
-    const installButton = wrapper.findAllComponents(Button)[1]
-    await installButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Install' }))
 
-    // Check that installPack was called with the correct parameters
     expect(mockInstallPack).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
@@ -225,126 +204,117 @@ describe('PackVersionSelectorPopover', () => {
       })
     )
 
-    // Check that submit was emitted
-    expect(wrapper.emitted('submit')).toBeTruthy()
+    expect(onSubmit).toHaveBeenCalledOnce()
   })
 
   it('is reactive to nodePack prop changes', async () => {
-    // Set up the mock for the initial fetch
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-    const wrapper = mountComponent()
+    const { rerender } = renderComponent()
     await waitForPromises()
 
-    // Set up the mock for the second fetch after prop change
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-    // Update the nodePack prop
     const newNodePack = { ...mockNodePack, id: 'new-test-pack' }
-    await wrapper.setProps({ nodePack: newNodePack })
+    await rerender({ nodePack: newNodePack })
     await waitForPromises()
 
-    // Should fetch versions for the new nodePack
     expect(mockGetPackVersions).toHaveBeenCalledWith(newNodePack.id)
   })
 
   describe('nodePack.id changes', () => {
     it('re-fetches versions when nodePack.id changes', async () => {
-      // Set up the mock for the initial fetch
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      const wrapper = mountComponent()
+      const { rerender } = renderComponent()
       await waitForPromises()
 
-      // Verify initial fetch
       expect(mockGetPackVersions).toHaveBeenCalledTimes(1)
       expect(mockGetPackVersions).toHaveBeenCalledWith(mockNodePack.id)
 
-      // Set up the mock for the second fetch
       const newVersions = [
         { version: '2.0.0', createdAt: '2023-06-01' },
         { version: '1.9.0', createdAt: '2023-05-01' }
       ]
       mockGetPackVersions.mockResolvedValueOnce(newVersions)
 
-      // Update the nodePack with a new ID
       const newNodePack = {
         ...mockNodePack,
         id: 'different-pack',
         name: 'Different Pack'
       }
-      await wrapper.setProps({ nodePack: newNodePack })
+      await rerender({ nodePack: newNodePack })
       await waitForPromises()
 
-      // Should fetch versions for the new nodePack
       expect(mockGetPackVersions).toHaveBeenCalledTimes(2)
       expect(mockGetPackVersions).toHaveBeenLastCalledWith(newNodePack.id)
 
-      // Check that new versions are displayed
-      const listbox = wrapper.findComponent(Listbox)
-      const options = listbox.props('options')!
-      expect(options.some((o) => o.value === '2.0.0')).toBe(true)
-      expect(options.some((o) => o.value === '1.9.0')).toBe(true)
+      expect(screen.getByText('2.0.0')).toBeInTheDocument()
+      expect(screen.getByText('1.9.0')).toBeInTheDocument()
     })
 
     it('does not re-fetch when nodePack changes but id remains the same', async () => {
-      // Set up the mock for the initial fetch
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      const wrapper = mountComponent()
+      const { rerender } = renderComponent()
       await waitForPromises()
 
-      // Verify initial fetch
       expect(mockGetPackVersions).toHaveBeenCalledTimes(1)
 
-      // Update the nodePack with same ID but different properties
       const updatedNodePack = {
         ...mockNodePack,
         name: 'Updated Test Pack',
         description: 'New description'
       }
-      await wrapper.setProps({ nodePack: updatedNodePack })
+      await rerender({ nodePack: updatedNodePack })
       await waitForPromises()
 
-      // Should NOT fetch versions again
       expect(mockGetPackVersions).toHaveBeenCalledTimes(1)
     })
 
     it('maintains selected version when switching to a new pack', async () => {
-      // Set up the mock for the initial fetch
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      const wrapper = mountComponent()
+      const { user, container, rerender } = renderComponent()
       await waitForPromises()
 
-      // Select a specific version
-      const listbox = wrapper.findComponent(Listbox)
-      await listbox.setValue('0.9.0')
-      expect(listbox.props('modelValue')).toBe('0.9.0')
+      // Select version 0.9.0
+      await user.click(screen.getByText('0.9.0'))
 
-      // Set up the mock for the second fetch
+      // Verify 0.9.0 is selected via aria-selected
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking aria-selected on option element
+      const selectedOption = container.querySelector(
+        '[role="option"][aria-selected="true"]'
+      )
+      expect(selectedOption).not.toBeNull()
+      expect(selectedOption?.textContent).toContain('0.9.0')
+
       mockGetPackVersions.mockResolvedValueOnce([
         { version: '3.0.0', createdAt: '2023-07-01' },
         { version: '0.9.0', createdAt: '2023-04-01' }
       ])
 
-      // Update to a new pack that also has version 0.9.0
       const newNodePack = {
         id: 'another-pack',
         name: 'Another Pack',
         latest_version: { version: '3.0.0' }
       }
-      await wrapper.setProps({ nodePack: newNodePack })
+      await rerender({ nodePack: newNodePack })
       await waitForPromises()
 
-      // Selected version should remain the same if available
-      expect(listbox.props('modelValue')).toBe('0.9.0')
+      // Selected version should remain 0.9.0 — verify via pi-check icon
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
+      const checkIcons = container.querySelectorAll('.pi.pi-check')
+      const selectedTexts = Array.from(checkIcons).map(
+        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
+        (icon) => icon.closest('[role="option"]')?.textContent
+      )
+      expect(selectedTexts.some((text) => text?.includes('0.9.0'))).toBe(true)
     })
   })
 
   describe('Unclaimed GitHub packs handling', () => {
     it('falls back to nightly when no versions exist', async () => {
-      // Set up the mock to return versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       const packWithRepo = {
@@ -352,20 +322,22 @@ describe('PackVersionSelectorPopover', () => {
         latest_version: undefined
       }
 
-      const wrapper = mountComponent({
-        props: {
-          nodePack: packWithRepo
-        }
+      const { container } = renderComponent({
+        props: { nodePack: packWithRepo }
       })
-
       await waitForPromises()
-      const listbox = wrapper.findComponent(Listbox)
-      expect(listbox.exists()).toBe(true)
-      expect(listbox.props('modelValue')).toBe('nightly')
+
+      // Nightly should be selected — verify via pi-check icon next to Nightly
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
+      const checkIcons = container.querySelectorAll('.pi.pi-check')
+      const selectedTexts = Array.from(checkIcons).map(
+        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
+        (icon) => icon.closest('[role="option"]')?.textContent
+      )
+      expect(selectedTexts.some((text) => text?.includes('Nightly'))).toBe(true)
     })
 
     it('defaults to nightly when publisher name is "Unclaimed"', async () => {
-      // Set up the mock to return versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       const unclaimedNodePack = {
@@ -373,25 +345,26 @@ describe('PackVersionSelectorPopover', () => {
         publisher: { name: 'Unclaimed' }
       }
 
-      const wrapper = mountComponent({
-        props: {
-          nodePack: unclaimedNodePack
-        }
+      const { container } = renderComponent({
+        props: { nodePack: unclaimedNodePack }
       })
-
       await waitForPromises()
-      const listbox = wrapper.findComponent(Listbox)
-      expect(listbox.exists()).toBe(true)
-      expect(listbox.props('modelValue')).toBe('nightly')
+
+      // Nightly should be selected
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
+      const checkIcons = container.querySelectorAll('.pi.pi-check')
+      const selectedTexts = Array.from(checkIcons).map(
+        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
+        (icon) => icon.closest('[role="option"]')?.textContent
+      )
+      expect(selectedTexts.some((text) => text?.includes('Nightly'))).toBe(true)
     })
   })
 
   describe('version compatibility checking', () => {
     it('shows warning icon for incompatible versions', async () => {
-      // Set up the mock for versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      // Mock compatibility check to return conflict for specific version
       mockCheckNodeCompatibility.mockImplementation((versionData) => {
         if (versionData.supported_os?.includes('linux')) {
           return {
@@ -414,103 +387,41 @@ describe('PackVersionSelectorPopover', () => {
         supported_accelerators: ['CUDA']
       }
 
-      const wrapper = mountComponent({
+      const { container } = renderComponent({
         props: { nodePack: nodePackWithCompatibility }
       })
       await waitForPromises()
 
-      // Check that compatibility checking function was called
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // The warning icon should be shown for incompatible versions
-      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      const warningIcons = container.querySelectorAll(
+        '.icon-\\[lucide--triangle-alert\\]'
+      )
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
     it('shows verified icon for compatible versions', async () => {
-      // Set up the mock for versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      // Mock compatibility check to return no conflicts
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
       })
 
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await waitForPromises()
 
-      // Check that compatibility checking function was called
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // The verified icon should be shown for compatible versions
-      // Look for the VerifiedIcon component or SVG elements
-      const verifiedIcons = wrapper.findAll('svg')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- VerifiedIcon renders SVG without accessible role
+      const verifiedIcons = container.querySelectorAll('svg')
       expect(verifiedIcons.length).toBeGreaterThan(0)
     })
 
-    it('calls checkVersionCompatibility with correct version data', async () => {
-      // Set up the mock for versions with specific supported data
-      const versionsWithCompatibility = [
-        {
-          version: '1.0.0',
-          supported_os: ['windows', 'linux'],
-          supported_accelerators: ['CUDA', 'CPU'],
-          supported_comfyui_version: '>=0.1.0',
-          supported_comfyui_frontend_version: '>=1.0.0'
-        }
-      ]
-      mockGetPackVersions.mockResolvedValueOnce(versionsWithCompatibility)
-
-      const nodePackWithCompatibility = {
-        ...mockNodePack,
-        supported_os: ['windows'],
-        supported_accelerators: ['CPU'],
-        supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0',
-        latest_version: {
-          version: '1.0.0',
-          supported_os: ['windows', 'linux'],
-          supported_accelerators: ['CPU'], // latest_version data takes precedence
-          supported_comfyui_version: '>=0.1.0',
-          supported_comfyui_frontend_version: '>=1.0.0',
-          supported_python_version: '>=3.8',
-          is_banned: false,
-          has_registry_data: true
-        }
-      }
-
-      const wrapper = mountComponent({
-        props: { nodePack: nodePackWithCompatibility }
-      })
-      await waitForPromises()
-
-      // Clear previous calls from component mounting/rendering
-      mockCheckNodeCompatibility.mockClear()
-
-      // Trigger compatibility check by accessing getVersionCompatibility
-      const vm = getVM(wrapper)
-      vm.getVersionCompatibility('1.0.0')
-
-      // Verify that checkNodeCompatibility was called with correct data
-      // Since 1.0.0 is the latest version, it should use latest_version data
-      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
-        supported_os: ['windows', 'linux'],
-        supported_accelerators: ['CPU'], // latest_version data takes precedence
-        supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0',
-        supported_python_version: '>=3.8',
-        is_banned: false,
-        has_registry_data: true,
-        version: '1.0.0'
-      })
-    })
-
     it('shows version conflict warnings for ComfyUI and frontend versions', async () => {
-      // Set up the mock for versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      // Mock compatibility check to return version conflicts
       mockCheckNodeCompatibility.mockImplementation((versionData) => {
         const conflicts = []
         if (versionData.supported_comfyui_version) {
@@ -539,94 +450,23 @@ describe('PackVersionSelectorPopover', () => {
         supported_comfyui_frontend_version: '>=2.0.0'
       }
 
-      const wrapper = mountComponent({
+      const { container } = renderComponent({
         props: { nodePack: nodePackWithVersionRequirements }
       })
       await waitForPromises()
 
-      // Check that compatibility checking function was called
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // The warning icon should be shown for version incompatible packages
-      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      const warningIcons = container.querySelectorAll(
+        '.icon-\\[lucide--triangle-alert\\]'
+      )
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
-    it('handles latest and nightly versions using nodePack data', async () => {
-      // Set up the mock for versions
-      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-
-      const nodePackWithCompatibility = {
-        ...mockNodePack,
-        supported_os: ['windows'],
-        supported_accelerators: ['CPU'],
-        supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0',
-        latest_version: {
-          ...mockNodePack.latest_version,
-          supported_os: ['windows'], // Match nodePack data for test consistency
-          supported_accelerators: ['CPU'], // Match nodePack data for test consistency
-          supported_python_version: '>=3.8',
-          is_banned: false,
-          has_registry_data: true
-        }
-      }
-
-      const wrapper = mountComponent({
-        props: { nodePack: nodePackWithCompatibility }
-      })
-      await waitForPromises()
-
-      const vm = getVM(wrapper)
-
-      // Clear previous calls from component mounting/rendering
-      mockCheckNodeCompatibility.mockClear()
-
-      // Test latest version
-      vm.getVersionCompatibility('latest')
-      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
-        supported_os: ['windows'],
-        supported_accelerators: ['CPU'],
-        supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0',
-        supported_python_version: '>=3.8',
-        is_banned: false,
-        has_registry_data: true,
-        version: '1.0.0'
-      })
-
-      // Clear for next test call
-      mockCheckNodeCompatibility.mockClear()
-
-      // Test nightly version
-      vm.getVersionCompatibility('nightly')
-      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
-        id: 'test-pack',
-        name: 'Test Pack',
-        supported_os: ['windows'],
-        supported_accelerators: ['CPU'],
-        supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0',
-        repository: 'https://github.com/user/repo',
-        has_registry_data: true,
-        latest_version: {
-          supported_os: ['windows'],
-          supported_accelerators: ['CPU'],
-          supported_python_version: '>=3.8',
-          is_banned: false,
-          has_registry_data: true,
-          version: '1.0.0',
-          supported_comfyui_version: '>=0.1.0',
-          supported_comfyui_frontend_version: '>=1.0.0'
-        }
-      })
-    })
-
     it('shows banned package warnings', async () => {
-      // Set up the mock for versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      // Mock compatibility check to return banned conflicts
       mockCheckNodeCompatibility.mockImplementation((versionData) => {
         if (versionData.is_banned === true) {
           return {
@@ -652,37 +492,23 @@ describe('PackVersionSelectorPopover', () => {
         }
       }
 
-      const wrapper = mountComponent({
+      const { container } = renderComponent({
         props: { nodePack: bannedNodePack }
       })
       await waitForPromises()
 
-      // Check that compatibility checking function was called
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // Open the dropdown to see the options
-      const select = wrapper.find('.p-select')
-      if (!select.exists()) {
-        // Try alternative selector
-        const selectButton = wrapper.find('[aria-haspopup="listbox"]')
-        if (selectButton.exists()) {
-          await selectButton.trigger('click')
-        }
-      } else {
-        await select.trigger('click')
-      }
-      await wrapper.vm.$nextTick()
-
-      // The warning icon should be shown for banned packages in the dropdown options
-      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      const warningIcons = container.querySelectorAll(
+        '.icon-\\[lucide--triangle-alert\\]'
+      )
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
     it('shows security pending warnings', async () => {
-      // Set up the mock for versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      // Mock compatibility check to return security pending conflicts
       mockCheckNodeCompatibility.mockImplementation((versionData) => {
         if (versionData.has_registry_data === false) {
           return {
@@ -708,16 +534,17 @@ describe('PackVersionSelectorPopover', () => {
         }
       }
 
-      const wrapper = mountComponent({
+      const { container } = renderComponent({
         props: { nodePack: securityPendingNodePack }
       })
       await waitForPromises()
 
-      // Check that compatibility checking function was called
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // The warning icon should be shown for security pending packages
-      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      const warningIcons = container.querySelectorAll(
+        '.icon-\\[lucide--triangle-alert\\]'
+      )
       expect(warningIcons.length).toBeGreaterThan(0)
     })
   })

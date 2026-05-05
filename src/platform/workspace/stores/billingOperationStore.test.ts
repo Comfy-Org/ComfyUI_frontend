@@ -47,6 +47,14 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
+const mockTrackMonthlySubscriptionSucceeded = vi.fn()
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+  })
+}))
+
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingOperationStore } from './billingOperationStore'
@@ -157,6 +165,37 @@ describe('billingOperationStore', () => {
         summary: 'billingOperation.subscriptionSuccess',
         life: 5000
       })
+    })
+
+    it('fires purchase telemetry on subscription success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+    })
+
+    it('does not fire purchase telemetry on topup success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
     })
 
     it('shows topup success message for topup operations', async () => {

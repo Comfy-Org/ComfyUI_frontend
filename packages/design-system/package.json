@@ -12,7 +12,9 @@
   "dependencies": {
     "@iconify-json/lucide": "catalog:",
     "@iconify/tailwind4": "catalog:",
-    "@iconify/utils": "catalog:"
+    "@iconify/utils": "catalog:",
+    "tailwindcss-primeui": "catalog:",
+    "tw-animate-css": "catalog:"
   },
   "devDependencies": {
     "tailwindcss": "catalog:",

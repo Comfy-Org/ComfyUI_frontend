@@ -135,6 +135,7 @@ whenever(() => !isExpanded.value, resetUserScrolling)
 
 function closeToast() {
   comfyManagerStore.resetTaskState()
+  isRestartCompleted.value = false
   isExpanded.value = false
 }
 

@@ -26,6 +26,7 @@
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
   <ManagerProgressToast />
+  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
 </template>
@@ -33,8 +34,7 @@
 <script setup lang="ts">
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
+
 import {
   computed,
   nextTick,
@@ -44,7 +44,6 @@ import {
   watch,
   watchEffect
 } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -57,12 +56,14 @@ import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -78,7 +79,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -101,8 +102,6 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 
-const { t } = useI18n()
-const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
@@ -120,7 +119,7 @@ watch(linearMode, (isLinear) => {
 })
 
 const telemetry = useTelemetry()
-const firebaseAuthStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 let hasTrackedLogin = false
 
 watch(
@@ -248,28 +247,7 @@ const onExecutionSuccess = async () => {
   }
 }
 
-const reconnectingMessage: ToastMessageOptions = {
-  severity: 'error',
-  summary: t('g.reconnecting')
-}
-
-const onReconnecting = () => {
-  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
-    toast.remove(reconnectingMessage)
-    toast.add(reconnectingMessage)
-  }
-}
-
-const onReconnected = () => {
-  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
-    toast.remove(reconnectingMessage)
-    toast.add({
-      severity: 'success',
-      summary: t('g.reconnected'),
-      life: 2000
-    })
-  }
-}
+const { onReconnecting, onReconnected } = useReconnectingNotification()
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
@@ -308,7 +286,7 @@ void nextTick(() => {
 const onGraphReady = () => {
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
-    if (isCloud && firebaseAuthStore.isAuthenticated && !hasTrackedLogin) {
+    if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
       telemetry?.trackUserLoggedIn()
       hasTrackedLogin = true
     }

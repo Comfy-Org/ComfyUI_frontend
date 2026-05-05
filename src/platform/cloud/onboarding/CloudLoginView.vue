@@ -39,7 +39,12 @@
       <template v-if="!showEmailForm">
         <!-- OAuth Buttons (primary) -->
         <div class="flex flex-col gap-4">
-          <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
+          <Button
+            v-if="!googleSsoBlockedReason"
+            type="button"
+            class="h-10 w-full"
+            @click="signInWithGoogle"
+          >
             <i class="pi pi-google mr-2"></i>
             {{ t('auth.login.loginWithGoogle') }}
           </Button>
@@ -110,22 +115,24 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
 const showEmailForm = ref(false)
 const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 
 function switchToEmailForm() {
   showEmailForm.value = true

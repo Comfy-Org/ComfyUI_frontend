@@ -6,6 +6,36 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
+function canPasteImage(node?: LGraphNode): boolean {
+  return typeof node?.pasteFiles === 'function'
+}
+
+async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
+  if (!navigator.clipboard?.read) {
+    console.warn('Clipboard API not available')
+    return
+  }
+
+  try {
+    const clipboardItems = await navigator.clipboard.read()
+    for (const item of clipboardItems) {
+      const imageType = item.types.find((type) => type.startsWith('image/'))
+      if (!imageType) continue
+
+      const blob = await item.getType(imageType)
+      const ext = imageType.split('/')[1] ?? 'png'
+      const file = new File([blob], `pasted-image.${ext}`, {
+        type: imageType
+      })
+      node.pasteFile?.(file)
+      node.pasteFiles?.([file])
+      return
+    }
+  } catch (error) {
+    console.error('Failed to paste image from clipboard:', error)
+  }
+}
+
 /**
  * Composable for image-related menu operations
  */
@@ -78,29 +108,48 @@ export function useImageMenuOptions() {
   }
 
   const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
-    if (!node?.imgs?.length) return []
+    const hasImages = !!node?.imgs?.length
+    const canPaste = canPasteImage(node)
+    if (!hasImages && !canPaste) return []
 
-    return [
-      {
-        label: t('contextMenu.Open in Mask Editor'),
-        action: () => openMaskEditor()
-      },
-      {
-        label: t('contextMenu.Open Image'),
-        icon: 'icon-[lucide--external-link]',
-        action: () => openImage(node)
-      },
-      {
-        label: t('contextMenu.Copy Image'),
-        icon: 'icon-[lucide--copy]',
-        action: () => copyImage(node)
-      },
-      {
+    const options: MenuOption[] = []
+
+    if (hasImages) {
+      options.push(
+        {
+          label: t('contextMenu.Open in Mask Editor'),
+          action: () => openMaskEditor()
+        },
+        {
+          label: t('contextMenu.Open Image'),
+          icon: 'icon-[lucide--external-link]',
+          action: () => openImage(node)
+        },
+        {
+          label: t('contextMenu.Copy Image'),
+          icon: 'icon-[lucide--copy]',
+          action: () => copyImage(node)
+        }
+      )
+    }
+
+    if (canPaste) {
+      options.push({
+        label: t('contextMenu.Paste Image'),
+        icon: 'icon-[lucide--clipboard-paste]',
+        action: () => pasteClipboardImageToNode(node)
+      })
+    }
+
+    if (hasImages) {
+      options.push({
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
-      }
-    ]
+      })
+    }
+
+    return options
   }
 
   return {

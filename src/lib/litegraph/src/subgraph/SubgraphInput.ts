@@ -95,6 +95,8 @@ export class SubgraphInput extends SubgraphSlot {
         widget: inputWidget,
         node
       })
+    } else {
+      this.events.dispatch('input-connected', { input: slot })
     }
 
     const link = new LLink(
@@ -132,7 +134,7 @@ export class SubgraphInput extends SubgraphSlot {
         }
       }
     }
-    subgraph._version++
+    subgraph.incrementVersion()
 
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
 

@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -13,15 +13,25 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
+import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 
+import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
+
+interface SubgraphSlotRef {
+  name: string
+  label?: string
+  displayName?: string
+}
 
 function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (value === undefined) return true
@@ -45,9 +55,18 @@ export function createPromotedWidgetView(
   subgraphNode: SubgraphNode,
   nodeId: string,
   widgetName: string,
-  displayName?: string
+  displayName?: string,
+  disambiguatingSourceNodeId?: string,
+  identityName?: string
 ): IPromotedWidgetView {
-  return new PromotedWidgetView(subgraphNode, nodeId, widgetName, displayName)
+  return new PromotedWidgetView(
+    subgraphNode,
+    nodeId,
+    widgetName,
+    displayName,
+    disambiguatingSourceNodeId,
+    identityName
+  )
 }
 
 class PromotedWidgetView implements IPromotedWidgetView {
@@ -72,11 +91,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
+  /** Cached reference to the bound subgraph slot, set at construction. */
+  private _boundSlot?: SubgraphSlotRef
+  private _boundSlotVersion = -1
+
   constructor(
     private readonly subgraphNode: SubgraphNode,
     nodeId: string,
     widgetName: string,
-    private readonly displayName?: string
+    private readonly displayName?: string,
+    readonly disambiguatingSourceNodeId?: string,
+    private readonly identityName?: string
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
@@ -88,7 +113,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get name(): string {
-    return this.displayName ?? this.sourceWidgetName
+    return this.identityName ?? this.sourceWidgetName
   }
 
   get y(): number {
@@ -131,6 +156,38 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   set value(value: IBaseWidget['value']) {
+    const linkedWidgets = this.getLinkedInputWidgets()
+    if (linkedWidgets.length > 0) {
+      const widgetStore = useWidgetValueStore()
+      let didUpdateState = false
+      for (const linkedWidget of linkedWidgets) {
+        const state = widgetStore.getWidget(
+          this.graphId,
+          linkedWidget.nodeId,
+          linkedWidget.widgetName
+        )
+        if (state) {
+          state.value = value
+          didUpdateState = true
+        }
+      }
+
+      const resolved = this.resolveDeepest()
+      if (resolved) {
+        const resolvedState = widgetStore.getWidget(
+          this.graphId,
+          stripGraphPrefix(String(resolved.node.id)),
+          resolved.widget.name
+        )
+        if (resolvedState) {
+          resolvedState.value = value
+          didUpdateState = true
+        }
+      }
+
+      if (didUpdateState) return
+    }
+
     const state = this.getWidgetState()
     if (state) {
       state.value = value
@@ -144,13 +201,56 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get label(): string | undefined {
+    const slot = this.getBoundSubgraphSlot()
+    if (slot) return slot.label ?? slot.displayName ?? slot.name
+    // Fall back to persisted widget state (survives save/reload before
+    // the slot binding is established) then to construction displayName.
     const state = this.getWidgetState()
-    return state?.label ?? this.displayName ?? this.sourceWidgetName
+    return state?.label ?? this.displayName
   }
 
   set label(value: string | undefined) {
+    const slot = this.getBoundSubgraphSlot()
+    if (slot) slot.label = value || undefined
+    // Also persist to widget state store for save/reload resilience
     const state = this.getWidgetState()
     if (state) state.label = value
+  }
+
+  /**
+   * Returns the cached bound subgraph slot reference, refreshing only when
+   * the subgraph node's input list has changed (length mismatch).
+   *
+   * Note: Using length as the cache key works because the returned reference
+   * is the same mutable slot object. When slot properties (label, name) change,
+   * the caller reads fresh values from that reference.  The cache only needs
+   * to invalidate when slots are added or removed, which changes length.
+   */
+  private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    const version = this.subgraphNode.inputs?.length ?? 0
+    if (this._boundSlotVersion === version) return this._boundSlot
+
+    this._boundSlot = this.findBoundSubgraphSlot()
+    this._boundSlotVersion = version
+    return this._boundSlot
+  }
+
+  private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    for (const input of this.subgraphNode.inputs ?? []) {
+      const slot = input._subgraphSlot as SubgraphSlotRef | undefined
+      if (!slot) continue
+
+      const w = input._widget
+      if (
+        w &&
+        isPromotedWidgetView(w) &&
+        w.sourceNodeId === this.sourceNodeId &&
+        w.sourceWidgetName === this.sourceWidgetName
+      ) {
+        return slot
+      }
+    }
+    return undefined
   }
 
   get hidden(): boolean {
@@ -194,21 +294,27 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const originalComputedHeight = projected.computedHeight
     const originalComputedDisabled = projected.computedDisabled
 
+    const originalLabel = projected.label
+
     projected.y = this.y
     projected.computedHeight = this.computedHeight
     projected.computedDisabled = this.computedDisabled
     projected.value = this.value
+    projected.label = this.label
 
-    projected.drawWidget(ctx, {
-      width: widgetWidth,
-      showText: !lowQuality,
-      suppressPromotedOutline: true,
-      previewImages: resolved.node.imgs
-    })
-
-    projected.y = originalY
-    projected.computedHeight = originalComputedHeight
-    projected.computedDisabled = originalComputedDisabled
+    try {
+      projected.drawWidget(ctx, {
+        width: widgetWidth,
+        showText: !lowQuality,
+        suppressPromotedOutline: true,
+        previewImages: resolved.node.imgs
+      })
+    } finally {
+      projected.y = originalY
+      projected.computedHeight = originalComputedHeight
+      projected.computedDisabled = originalComputedDisabled
+      projected.label = originalLabel
+    }
   }
 
   onPointerDown(
@@ -251,7 +357,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return resolvePromotedWidgetAtHost(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName
+      this.sourceWidgetName,
+      this.disambiguatingSourceNodeId
     )
   }
 
@@ -265,7 +372,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName
+      this.sourceWidgetName,
+      this.disambiguatingSourceNodeId
     )
     const resolved = result.status === 'resolved' ? result.resolved : undefined
 
@@ -278,6 +386,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getWidgetState() {
+    const linkedState = this.getLinkedInputWidgetStates()[0]
+    if (linkedState) return linkedState
+
     const resolved = this.resolveDeepest()
     if (!resolved) return undefined
     return useWidgetValueStore().getWidget(
@@ -285,6 +396,59 @@ class PromotedWidgetView implements IPromotedWidgetView {
       stripGraphPrefix(String(resolved.node.id)),
       resolved.widget.name
     )
+  }
+
+  private getLinkedInputWidgets(): Array<{
+    nodeId: NodeId
+    widgetName: string
+    widget: IBaseWidget
+  }> {
+    const linkedInputSlot = this.subgraphNode.inputs.find((input) => {
+      if (!input._subgraphSlot) return false
+      if (matchPromotedInput([input], this) !== input) return false
+
+      const boundWidget = input._widget
+      if (boundWidget === this) return true
+
+      if (boundWidget && isPromotedWidgetView(boundWidget)) {
+        return (
+          boundWidget.sourceNodeId === this.sourceNodeId &&
+          boundWidget.sourceWidgetName === this.sourceWidgetName &&
+          boundWidget.disambiguatingSourceNodeId ===
+            this.disambiguatingSourceNodeId
+        )
+      }
+
+      return input._subgraphSlot
+        .getConnectedWidgets()
+        .filter(hasWidgetNode)
+        .some(
+          (widget) =>
+            String(widget.node.id) === this.sourceNodeId &&
+            widget.name === this.sourceWidgetName
+        )
+    })
+    const linkedInput = linkedInputSlot?._subgraphSlot
+    if (!linkedInput) return []
+
+    return linkedInput
+      .getConnectedWidgets()
+      .filter(hasWidgetNode)
+      .map((widget) => ({
+        nodeId: stripGraphPrefix(String(widget.node.id)),
+        widgetName: widget.name,
+        widget
+      }))
+  }
+
+  private getLinkedInputWidgetStates(): WidgetState[] {
+    const widgetStore = useWidgetValueStore()
+
+    return this.getLinkedInputWidgets()
+      .map(({ nodeId, widgetName }) =>
+        widgetStore.getWidget(this.graphId, nodeId, widgetName)
+      )
+      .filter((state): state is WidgetState => state !== undefined)
   }
 
   private getProjectedWidget(resolved: {
@@ -396,7 +560,7 @@ function drawDisconnectedPlaceholder(
     '#333'
   )
   const textColor = readDesignToken('--color-text-secondary', '#999')
-  const fontSize = readDesignToken('--text-xxs', '11px')
+  const fontSize = readDesignToken('--text-2xs', '11px')
   const fontFamily = readDesignToken('--font-inter', 'sans-serif')
 
   ctx.save()
