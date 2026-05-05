@@ -87,11 +87,6 @@ test.describe(
         )
         .toBe(true)
 
-      test.fail(
-        true,
-        'Root return currently replays nested subgraph container model widgets as missing in Cloud. Remove this annotation when the replay scan skips nested subgraph containers.'
-      )
-
       await expect(errorsTab).toBeHidden()
     })
   }
