@@ -6,6 +6,12 @@ import { createI18n } from 'vue-i18n'
 
 import UserSelectView from './UserSelectView.vue'
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 const mockRouterPush = vi.fn()
@@ -30,27 +36,10 @@ vi.mock('@/views/templates/BaseViewTemplate.vue', () => ({
   }
 }))
 
-const createI18nInstance = () =>
-  createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: {
-      en: {
-        userSelect: {
-          newUser: 'New user',
-          enterUsername: 'Enter a username',
-          existingUser: 'Existing user',
-          selectUser: 'Select a user',
-          next: 'Next'
-        }
-      }
-    }
-  })
-
 const mountView = async () => {
   const result = render(UserSelectView, {
     global: {
-      plugins: [createI18nInstance(), PrimeVue]
+      plugins: [i18n, PrimeVue]
     }
   })
   await flushPromises()
@@ -72,7 +61,9 @@ describe('UserSelectView', () => {
   it('shows an error when login is attempted without a selection', async () => {
     await mountView()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'userSelect.next' })
+    )
 
     expect(await screen.findByText('No user selected')).toBeInTheDocument()
     expect(userStoreMock.login).not.toHaveBeenCalled()
@@ -84,8 +75,13 @@ describe('UserSelectView', () => {
     userStoreMock.createUser.mockResolvedValueOnce(newUser)
     await mountView()
 
-    await userEvent.type(screen.getByPlaceholderText('Enter a username'), 'bob')
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await userEvent.type(
+      screen.getByPlaceholderText('userSelect.enterUsername'),
+      'bob'
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'userSelect.next' })
+    )
 
     expect(userStoreMock.createUser).toHaveBeenCalledWith('bob')
     expect(userStoreMock.login).toHaveBeenCalledWith(newUser)
@@ -96,7 +92,10 @@ describe('UserSelectView', () => {
     userStoreMock.users = [{ userId: 'u1', username: 'bob' }]
     await mountView()
 
-    await userEvent.type(screen.getByPlaceholderText('Enter a username'), 'bob')
+    await userEvent.type(
+      screen.getByPlaceholderText('userSelect.enterUsername'),
+      'bob'
+    )
 
     expect(
       await screen.findByText('User "bob" already exists')
@@ -107,8 +106,13 @@ describe('UserSelectView', () => {
     userStoreMock.createUser.mockRejectedValueOnce(new Error('boom'))
     await mountView()
 
-    await userEvent.type(screen.getByPlaceholderText('Enter a username'), 'bob')
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await userEvent.type(
+      screen.getByPlaceholderText('userSelect.enterUsername'),
+      'bob'
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'userSelect.next' })
+    )
 
     expect(await screen.findByText('boom')).toBeInTheDocument()
     expect(userStoreMock.login).not.toHaveBeenCalled()
