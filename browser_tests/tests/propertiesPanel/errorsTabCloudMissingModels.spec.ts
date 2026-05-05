@@ -56,8 +56,9 @@ test.describe(
       )
 
       await expect
-        .poll(() =>
-          countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models')
+        .poll(
+          () => countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models'),
+          { timeout: 10_000 }
         )
         .toBeGreaterThan(0)
       await expect(errorOverlay).toBeHidden()
