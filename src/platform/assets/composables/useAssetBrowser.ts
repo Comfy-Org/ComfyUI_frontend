@@ -61,6 +61,9 @@ function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
     badges.push({ label: model, type: 'base' })
   }
 
+  // Intentionally no formatted date here — the WeakMap caches by AssetItem
+  // reference, so a pre-formatted string would pin the locale active at first
+  // transform. AssetCard formats `created_at` at render via `d()` instead.
   return {
     ...asset,
     secondaryText: getAssetFilename(asset),
