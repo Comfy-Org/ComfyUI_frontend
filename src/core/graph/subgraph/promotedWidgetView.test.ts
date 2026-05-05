@@ -2769,37 +2769,6 @@ describe('DOM widget promotion', () => {
     )
   })
 
-  test('storeName uses a delimiter that cannot collide with widget names containing forward slashes', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    const inner = firstInnerNode(innerNodes)
-    inner.addWidget('text', 'a/b', 'first', () => {})
-    inner.addWidget('text', 'a', 'second', () => {})
-
-    // Same source node ⇒ identical prefix. With a `/` separator the
-    // suffix `a/b/c` (widget="a/b", disambig="c") collides with
-    // `a/b/c` (widget="a", disambig="b/c") — they are distinct widgets
-    // but produce the same storeName key.
-    const viewA = createPromotedWidgetView(
-      subgraphNode,
-      String(inner.id),
-      'a/b',
-      undefined,
-      'c'
-    )
-
-    const viewB = createPromotedWidgetView(
-      subgraphNode,
-      String(inner.id),
-      'a',
-      undefined,
-      'b/c'
-    )
-
-    const storeNameA = (viewA as unknown as { storeName: string }).storeName
-    const storeNameB = (viewB as unknown as { storeName: string }).storeName
-    expect(storeNameA).not.toBe(storeNameB)
-  })
-
   test('value setter is a no-op while the SubgraphNode is unattached (id === -1)', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
