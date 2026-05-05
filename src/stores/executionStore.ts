@@ -15,6 +15,7 @@ import type {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
+  ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionInterruptedWsMessage,
@@ -247,18 +248,26 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
-    executionIdToLocatorCache.clear()
-    executionErrorStore.clearAllErrors()
-    activeJobId.value = e.detail.prompt_id
-    queuedJobs.value[activeJobId.value] ??= { nodes: {} }
-    clearInitializationByJobId(activeJobId.value)
+    const jobId = e.detail.prompt_id
+    queuedJobs.value[jobId] ??= { nodes: {} }
+    clearInitializationByJobId(jobId)
 
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
-    if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
-      const path = queuedJobs.value[activeJobId.value]?.workflow?.path
-      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+    if (!jobIdToSessionWorkflowPath.value.has(jobId)) {
+      const path = queuedJobs.value[jobId]?.workflow?.path
+      if (path) ensureSessionWorkflowPath(jobId, path)
     }
+
+    // Only adopt as the global active job and clear shared UI state when the
+    // starting job belongs to the active workflow. Otherwise a job started
+    // from another tab would steal activeJobId and clobber the active tab's
+    // execution UI.
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+
+    executionIdToLocatorCache.clear()
+    executionErrorStore.clearAllErrors()
+    activeJobId.value = jobId
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -272,7 +281,8 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    clearInitializationByJobId(jobId)
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     resetExecutionState(jobId)
   }
 
@@ -288,22 +298,14 @@ export const useExecutionStore = defineStore('execution', () => {
       })
     }
     const jobId = e.detail.prompt_id
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
-    // Clear the current node progress when a new node starts executing
+  function handleExecuting(e: CustomEvent<ExecutingWsMessage>): void {
+    const { prompt_id: jobId, workflow_id: messageWorkflowId } = e.detail
+    if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
     _executingNodeProgress.value = null
-
-    if (!activeJob.value) return
-
-    // Update the executing nodes list
-    if (typeof e.detail !== 'string') {
-      if (activeJobId.value) {
-        delete queuedJobs.value[activeJobId.value]
-      }
-      activeJobId.value = null
-    }
   }
 
   /**
