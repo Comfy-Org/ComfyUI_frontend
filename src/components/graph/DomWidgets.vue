@@ -25,6 +25,7 @@ const overrideTransitionGrace = new Set<string>()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
+/** Syncs DOM widget position, size, and visibility each frame. */
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
@@ -56,10 +57,14 @@ const updateWidgets = () => {
 
     // Early exit for non-visible widgets.
     // When a position override is active (widget promoted to SubgraphNode),
-    // the interior widget's `active` flag is false (its node is in the
-    // subgraph, not the current graph) — bypass that check.
+    // bypass isVisible() (which checks the inner node's collapsed state)
+    // but still respect explicit hidden flags.
+    const explicitlyHidden =
+      widget.hidden === true || widget.options?.hidden === true
+    const failsVisibility = useOverride ? explicitlyHidden : !widget.isVisible()
+
     if (
-      !widget.isVisible() ||
+      failsVisibility ||
       (!widgetState.active && !useOverride && !useTransitionGrace)
     ) {
       widgetState.visible = false
