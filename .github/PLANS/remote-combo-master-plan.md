@@ -6,9 +6,9 @@
 
 ## 0. Goal
 
-Land a single PR that delivers the rich remote-populated combo widget, **converts the legacy `useRemoteWidget` to the same foundation**, and aligns both with codebase principles: TanStack Query for fetch state, atomized component family, existing API clients for auth, design-system-aligned UI, clear domain-layer placement. No fast-followups.
+Land a single PR that delivers the rich remote-populated combo widget, **converts the legacy `useRemoteWidget` to the same foundation**, and aligns both with codebase principles: TanStack Query for fetch state, atomized component family, existing API clients for auth, design-system-aligned UI with Figma + Storybook coverage, full HCI/a11y audit, clear domain-layer placement. No fast-followups.
 
-Scope is intentionally large because we have explicitly accepted (a) breaking the existing `remote=` API contract for custom-node authors silently (audit shows the blast radius is one external repo, see §9), (b) shipping it all in one PR, (c) prioritizing alignment with codebase principles over PR size.
+Scope is intentionally large because we have explicitly accepted (a) breaking the existing `remote=` API contract for custom-node authors silently (audit shows the blast radius is one external repo, see §9), (b) shipping it all in one PR — including the design-system alignment, Storybook stories, and HCI audit — (c) prioritizing alignment with codebase principles over PR size. The only items that fall outside the PR are a small set of TODOs in §5 that genuinely require a server change, a designer pass, or a separate codebase migration.
 
 ## 1. Locked-in decisions
 
@@ -23,14 +23,14 @@ Scope is intentionally large because we have explicitly accepted (a) breaking th
 
 ## 2. Open questions — RESOLVED
 
-| #   | Question                           | Resolution                                                                                                                                                                                                       |
-| --- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Cache eviction on auth change      | **Not needed.** App teardown is automatic (§8).                                                                                                                                                                  |
-| Q2  | Server-side `Cache-Control`/`ETag` | **Don't depend on it.** Upstream-proxy cache policy is unpredictable. TanStack Query in-memory is the floor. Non-blocking ask to bigcat for clarification on which routes (if any) commit to consistent headers. |
-| Q3  | Legacy migration path              | **Convert** `useRemoteWidget` to use the shared TanStack Query hook in this PR.                                                                                                                                  |
-| Q4  | Breaking changes for custom nodes  | **Acceptable, no outreach** per §9.                                                                                                                                                                              |
-| Q5  | `authenticatedFetch` abstraction   | **Reject.** Use existing per-service API clients.                                                                                                                                                                |
-| Q6  | Component atomization scope        | **Full atomization in this PR.**                                                                                                                                                                                 |
+| #   | Question                           | Resolution                                                                                                                                                   |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Q1  | Cache eviction on auth change      | **Not needed.** App teardown is automatic (§8).                                                                                                              |
+| Q2  | Server-side `Cache-Control`/`ETag` | **Don't depend on it.** Upstream-proxy cache policy is unpredictable. TanStack Query in-memory is the floor. Tracked as a TODO in §5 — not blocking this PR. |
+| Q3  | Legacy migration path              | **Convert** `useRemoteWidget` to use the shared TanStack Query hook in this PR.                                                                              |
+| Q4  | Breaking changes for custom nodes  | **Acceptable, no outreach** per §9.                                                                                                                          |
+| Q5  | `authenticatedFetch` abstraction   | **Reject.** Use existing per-service API clients.                                                                                                            |
+| Q6  | Component atomization scope        | **Full atomization in this PR.**                                                                                                                             |
 
 ## 3. Architecture
 
@@ -188,16 +188,34 @@ Current monolith (`RichComboWidget.vue`, 345 lines) mixes fetch + cache + retry 
 - [ ] Component tests per atom (mount in isolation, slot rendering, variant application)
 - [ ] Integration test: schema XOR enforcement, end-to-end selection flow
 
-> Detailed test strategy (E2E / integration / unit / property) deferred to next planning iteration — see §11.3.
+> Detailed test strategy (E2E / integration / unit / property) is itself part of this PR — see §11.3 for the test pyramid that maps onto Phase 7.
 
-## 5. Out of scope (captured for later)
+### Phase 8 — HCI & accessibility audit
 
-- **Design system / Figma alignment** — full audit beyond using existing tokens & atoms (next planning iteration, see §11.2)
-- **HCI principles audit** — keyboard nav, ARIA depth (we'll get reka-ui defaults; deeper review later)
-- **Wider auth abstraction migration** — the other ~30 direct auth-store accessors stay until follow-up PRs
-- **Spec → widget → UI feature reusability** — the registry/discriminated-union story for input specs (next planning iteration, see §11.1)
-- **Server-side `Cache-Control` / `ETag`** rollout in comfy-api (depends on bigcat input on which routes commit)
-- **API-nodes-on-Cloud / SSR direction** — explicitly deferred per the contributor
+- [ ] Apply the a11y minimums from §11.2.e to every atom (`aria-label`, `aria-live`, `sr-only`, `aria-disabled`, error/loading announcements)
+- [ ] Verify reka-ui Combobox keyboard nav defaults are wired through the atom family (Arrow Up/Down, Enter, Escape, Tab) — write Playwright keyboard-only test
+- [ ] Audit interaction patterns against the [Comfy Design Standards Figma](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) for combobox/dropdown — fetch live via Figma MCP
+- [ ] Hover/focus/active state coverage — make sure every interactive element has all three visual states defined
+- [ ] Confirm reka-ui ComboboxVirtualizer + screen-reader interaction (virtualized rows have correct `aria-setsize`/`aria-posinset`)
+
+### Phase 9 — Figma / design-system alignment + Storybook
+
+- [ ] Implement the §11.2.b token alignment table verbatim — every visual surface uses the listed semantic token, no primitive-tier or hardcoded values
+- [ ] Implement CVA variant axes per §11.2.c (size / variant / border / layout) on the atom family
+- [ ] Add motion conventions per §11.2.g (fade+zoom on Content, animate-spin on Loading, transition-colors on Item)
+- [ ] Lucide iconography per §11.2.f
+- [ ] Sync atom designs against the Figma combobox/dropdown reference; if no Figma source-of-truth exists yet for these atoms, file a designer task with concrete specs derived from §11.2.b
+- [ ] Land the eight Storybook stories listed in §11.2.i (Default / Loading / Error / Empty / Multi-select / Custom item slot / Layout switcher / A11y keyboard demo)
+- [ ] Address the design-system gaps from §11.2.h that block atom rendering (motion tokens, density scale, error-foreground tokens, focus-ring uniformity) — open a sibling PR against `@comfyorg/design-system` if the gaps are material
+
+## 5. Tracked TODOs
+
+These are real tasks but they don't fit a frontend-only PR — they need a server change, a designer pass, or a separate codebase migration. Tracked here so they're not lost.
+
+- **Spec → widget → UI feature reusability (broader registry story)** — §11.1 lands Option B (adapter pattern, Phase 4) for the combo case in this PR. The wider follow-up is the all-input-types `z.discriminatedUnion` + registry-based dispatch across every widget type (Int / Float / Boolean / String / Color / etc.), not just Combo. That's a separate PR's worth of schema-layer churn against ~8–12 files (§11.1.c, Option A blast radius). Re-evaluate once a second adapter (e.g., asset picker, model browser, LoRA selector) materializes — at that point the discriminated-union investment pays for itself. Until then, the adapter pattern from this PR is enough.
+- **Server-side `Cache-Control` / `ETag` on comfy-api** — needs bigcat input. Until then, TanStack Query's in-memory cache is the floor (§3.4). Non-blocking.
+- **Wider auth-abstraction migration** — the ~30 other direct auth-store accessors across `src/` (§10) keep working as-is via existing API clients. Not a regression; not blocking.
+- **Server-side pagination on remote-options endpoints** — explicitly removed from this widget per the contributor's trim of #11310. If a caller eventually returns more than O(thousands) of items, revisit cursor pagination on the comfy-api side, not the widget.
 
 ## 6. Risks & open concerns
 
@@ -209,23 +227,25 @@ Current monolith (`RichComboWidget.vue`, 345 lines) mixes fetch + cache + retry 
 
 ## 7. Decision log
 
-| #   | Decision                                          | Status                |
-| --- | ------------------------------------------------- | --------------------- |
-| 1   | Use TanStack Query                                | LOCKED                |
-| 2   | No disk cache (Cache API removed)                 | LOCKED                |
-| 3   | No new auth abstraction; use existing API clients | LOCKED                |
-| 4   | App teardown on auth = free eviction              | LOCKED (§8)           |
-| 5   | Atomize component family in this PR               | LOCKED                |
-| 6   | Single PR, no follow-ups                          | LOCKED                |
-| 7   | Convert legacy `useRemoteWidget` (Option 1)       | LOCKED                |
-| 8   | Breaking custom-node deprecations acceptable      | LOCKED (§9)           |
-| 9   | No deprecation warning / no outreach              | LOCKED (§9 rationale) |
-| 10  | Pure helpers in `base/`                           | LOCKED                |
-| 11  | Query layer in `platform/remote/composables/`     | LOCKED                |
-| 12  | View composable + atoms in `renderer/`            | LOCKED                |
-| 13  | Schema XOR in frontend Zod                        | LOCKED                |
-| 14  | Server `Cache-Control` strategy                   | DEFERRED — ask bigcat |
-| 15  | v-if dispatch → registry in `WidgetSelect.vue`    | OPEN — Phase 6        |
+| #   | Decision                                                          | Status                |
+| --- | ----------------------------------------------------------------- | --------------------- |
+| 1   | Use TanStack Query                                                | LOCKED                |
+| 2   | No disk cache (Cache API removed)                                 | LOCKED                |
+| 3   | No new auth abstraction; use existing API clients                 | LOCKED                |
+| 4   | App teardown on auth = free eviction                              | LOCKED (§8)           |
+| 5   | Atomize component family in this PR                               | LOCKED                |
+| 6   | Single PR, no follow-ups                                          | LOCKED                |
+| 7   | Convert legacy `useRemoteWidget` (Option 1)                       | LOCKED                |
+| 8   | Breaking custom-node deprecations acceptable                      | LOCKED (§9)           |
+| 9   | No deprecation warning / no outreach                              | LOCKED (§9 rationale) |
+| 10  | Pure helpers in `base/`                                           | LOCKED                |
+| 11  | Query layer in `platform/remote/composables/`                     | LOCKED                |
+| 12  | View composable + atoms in `renderer/`                            | LOCKED                |
+| 13  | Schema XOR in frontend Zod                                        | LOCKED                |
+| 14  | HCI / a11y audit in this PR (Phase 8)                             | LOCKED                |
+| 15  | Figma alignment + Storybook stories in this PR (Phase 9)          | LOCKED                |
+| 16  | Server-side cache headers / pagination tracked as TODOs only (§5) | LOCKED                |
+| 17  | v-if dispatch → registry in `WidgetSelect.vue`                    | OPEN — Phase 6        |
 
 ## 8. Auth-teardown invariant — CONFIRMED
 
@@ -278,12 +298,12 @@ If we ever discover a HIGH-risk consumer post-merge, the migration table here is
 - **Design tokens exist** at `@comfyorg/design-system/css/_palette.css` (CSS custom properties). ✅
 - **Widget registry exists** at `src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts`. Sub-dispatch in `WidgetSelect.vue` is currently v-if (Phase 6 decision pending). ⚠️
 - **Auth state change DOES tear down the authenticated app subtree** via router-driven unmount of `LayoutDefault` + `WorkspaceAuthGate`. QueryClient is bound to the same lifecycle. (§8) ✅
-- **31 direct auth-store accessors** across `src/`. Out of scope for this PR; tracked for future migration. ⚠️
+- **31 direct auth-store accessors** across `src/`. Tracked as a §5 TODO for a separate migration PR. ⚠️
 - **Reka-ui Combobox + ComboboxVirtualizer are stable** primitives.
 
-## 11. Next planning iterations (in progress — fresh sessions)
+## 11. Investigation appendix
 
-These three sections are being filled in by separate fresh-context investigation sessions running in parallel. Each will update this section in place (v3 → v4 → v5 → v6) with concrete findings.
+The three sub-sections below are complete deep-dives that map onto specific phases in §4: §11.1 → Phase 4 (adapter pattern), §11.2 → Phase 9 (Figma + Storybook), §11.3 → Phase 7 (tests). They're kept inline as the long-form rationale, file-by-file findings, and design tradeoffs that the §4 phase checklists assume.
 
 ### 11.1 Spec → widget prop → UI feature reusability
 
@@ -1511,3 +1531,5 @@ The user explicitly asked for clearer names. Symmetric naming on both sides of t
 > - v3 — deprecation/outreach removed (§9 retained as rationale only); §11 placeholders for next iterations; minor wording cleanup
 > - v4 — §11.1 / §11.2 / §11.3 filled in by three parallel fresh-context investigations; doc grew from ~315 → ~1341 lines
 > - v5 — addressed CodeRabbit findings (markdownlint MD040 on §3.1/§3.3/§11.1.a fenced blocks; §11.1.d phase placement aligned to Phase 4; §11.3.d backoff sequence corrected to 2s/4s/8s/16s capped at 16s matching `BACKOFF_BASE_MS=1000`/`BACKOFF_CAP_MS=16000` in `richComboHelpers.ts`); added §12 naming proposal (`Scalar`/`Object` rename for both PRs in lockstep)
+> - v6 — second-pass CodeRabbit fixes: §11.1.d adapter sample stripped of `assetService` side-effect (purity-of-extractProps invariant matches §11.1.f Risk 2 mitigation); §11.1 summary phase reference also corrected to Phase 4
+> - v7 — restructured §5 from "Out of scope" → "Tracked TODOs" and folded HCI audit (Phase 8) and Figma + Storybook alignment (Phase 9) into in-scope phases; updated §0 goal and §7 decision log accordingly. §11 renamed to "Investigation appendix" since the three sub-sections now feed live phases. §5 retains four genuine TODOs only: spec→widget→UI broader registry story, server `Cache-Control`, wider auth-abstraction migration, server-side pagination.
