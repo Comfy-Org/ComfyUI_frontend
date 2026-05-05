@@ -224,12 +224,15 @@ export class JobHistorySidebarTab extends SidebarTab {
     super(page, 'job-history')
     this.root = page.locator('.sidebar-content-container')
     this.searchInput = this.root.getByPlaceholder('Search...')
-    this.allTab = this.root.getByRole('tab', { name: 'All', exact: true })
-    this.completedTab = this.root.getByRole('tab', {
+    this.allTab = this.root.getByRole('button', { name: 'All', exact: true })
+    this.completedTab = this.root.getByRole('button', {
       name: 'Completed',
       exact: true
     })
-    this.failedTab = this.root.getByRole('tab', { name: 'Failed', exact: true })
+    this.failedTab = this.root.getByRole('button', {
+      name: 'Failed',
+      exact: true
+    })
     this.moreOptionsButton = this.root.getByLabel('More options')
     this.clearQueuedButton = this.root.getByRole('button', {
       name: 'Clear queue'

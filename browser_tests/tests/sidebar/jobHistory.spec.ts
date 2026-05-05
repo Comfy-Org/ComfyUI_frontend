@@ -54,11 +54,27 @@ async function openOverlayMenu(comfyPage: {
     .click()
 }
 
+async function openDockedJobHistory(comfyPage: {
+  page: {
+    getByTestId(id: string): Locator
+    getByLabel(label: string | RegExp): Locator
+  }
+  menu: {
+    jobHistoryTab: {
+      searchInput: Locator
+    }
+  }
+}) {
+  await openOverlayMenu(comfyPage)
+  await comfyPage.page.getByTestId('docked-job-history-action').click()
+  await expect(comfyPage.menu.jobHistoryTab.searchInput).toBeVisible()
+}
+
 test.describe('Job history sidebar', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
     await assetScenario.mockGeneratedHistory(HISTORY_JOBS)
     await comfyPage.setupSettings({
-      'Comfy.Queue.QPOV2': true
+      'Comfy.Queue.QPOV2': false
     })
     await comfyPage.setup()
   })
@@ -67,7 +83,7 @@ test.describe('Job history sidebar', () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
-    await tab.open()
+    await openDockedJobHistory(comfyPage)
 
     await expect(tab.jobRow('job-completed-1')).toBeVisible()
     await expect(tab.jobRow('job-failed-1')).toBeVisible()
@@ -82,7 +98,7 @@ test.describe('Job history sidebar', () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
-    await tab.open()
+    await openDockedJobHistory(comfyPage)
 
     await tab.jobRow('job-completed-1').dblclick()
 
@@ -91,7 +107,7 @@ test.describe('Job history sidebar', () => {
 
   test('clears history from the docked sidebar', async ({ comfyPage }) => {
     const tab = comfyPage.menu.jobHistoryTab
-    await tab.open()
+    await openDockedJobHistory(comfyPage)
 
     await tab.moreOptionsButton.click()
     await comfyPage.page.getByTestId('clear-history-action').click()
@@ -108,7 +124,7 @@ test.describe('Job history sidebar', () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
-    await tab.open()
+    await openDockedJobHistory(comfyPage)
 
     await expect(tab.clearQueuedButton).toBeDisabled()
   })
@@ -126,8 +142,7 @@ test.describe('Floating overlay dock to job history', () => {
   test('opens the docked job history sidebar from the floating overlay', async ({
     comfyPage
   }) => {
-    await openOverlayMenu(comfyPage)
-    await comfyPage.page.getByTestId('docked-job-history-action').click()
+    await openDockedJobHistory(comfyPage)
 
     await expect(comfyPage.menu.jobHistoryTab.searchInput).toBeVisible()
     await expect(
