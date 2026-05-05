@@ -22,7 +22,7 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const ERROR_CLASS = /ring-destructive-background/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
-const KSAMPLER_MODEL_INPUT_INDEX = 0
+const KSAMPLER_MODEL_INPUT_NAME = 'model'
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
@@ -80,19 +80,28 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       async ({ comfyPage }) => {
         const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
         const ksamplerNode = comfyPage.vueNodes.getNodeLocator(ksamplerId)
-        const modelInputSlot = comfyPage.page.locator(
-          `[data-slot-key="${getSlotKey(
-            ksamplerId,
-            KSAMPLER_MODEL_INPUT_INDEX,
-            true
-          )}"]`
+        const modelInputIndex = await comfyPage.page.evaluate(
+          ({ nodeId, inputName }) => {
+            const node = window.app!.graph.getNodeById(nodeId)
+            const index =
+              node?.inputs?.findIndex((input) => input.name === inputName) ?? -1
+            if (index < 0) {
+              throw new Error(`Input slot "${inputName}" not found`)
+            }
+            return index
+          },
+          { nodeId: ksamplerId, inputName: KSAMPLER_MODEL_INPUT_NAME }
         )
+        const modelInputSlot = comfyPage.page.locator(
+          `[data-slot-key="${getSlotKey(ksamplerId, modelInputIndex, true)}"]`
+        )
+        const modelInputSlotHighlight = modelInputSlot.locator('xpath=..')
         const exec = new ExecutionHelper(comfyPage)
         await exec.mockValidationFailure({
           [ksamplerId]: buildKSamplerError(
             'required_input_missing',
-            'model',
-            'Required input is missing: model'
+            KSAMPLER_MODEL_INPUT_NAME,
+            `Required input is missing: ${KSAMPLER_MODEL_INPUT_NAME}`
           )
         })
 
@@ -102,6 +111,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
         await expect(modelInputSlot).toBeVisible()
         await expect(modelInputSlot).toBeInViewport()
+        await expect(modelInputSlotHighlight).toHaveClass(/before:ring-error/)
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
         ).toHaveClass(ERROR_CLASS)

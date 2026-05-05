@@ -70,8 +70,9 @@ const filteredInputs = computed(() => [
   ...linkedWidgetInputs.value
 ])
 
-const inputHasError = (input: INodeSlot): boolean =>
-  executionErrorStore.slotHasError(nodeLocatorId.value, input.name)
+function inputHasError(input: INodeSlot): boolean {
+  return executionErrorStore.slotHasError(nodeLocatorId.value, input.name)
+}
 
 const unifiedWrapperClass = computed((): string =>
   cn(

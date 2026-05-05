@@ -39,7 +39,7 @@ export function seedRequiredInputMissingNodeError(
   executionId: NodeId,
   inputName: string,
   options?: RequiredInputMissingNodeErrorOptions
-) {
+): void {
   store.lastNodeErrors = {
     [String(executionId)]: createRequiredInputMissingNodeError(
       inputName,
