@@ -13,6 +13,7 @@ import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -20,6 +21,7 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const ERROR_CLASS = /ring-destructive-background/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
+const KSAMPLER_MODEL_INPUT_NAME = 'model'
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
@@ -70,6 +72,59 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
       ).toHaveClass(ERROR_CLASS)
     })
+
+    test(
+      'highlights the missing required input slot',
+      { tag: ['@screenshot', '@node'] },
+      async ({ comfyPage }) => {
+        const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+        const ksamplerNode = comfyPage.vueNodes.getNodeLocator(ksamplerId)
+        const modelInputIndex = await comfyPage.page.evaluate(
+          ({ nodeId, inputName }) => {
+            const node = window.app!.graph.getNodeById(nodeId)
+            const index =
+              node?.inputs?.findIndex((input) => input.name === inputName) ?? -1
+            if (index < 0) {
+              throw new Error(`Input slot "${inputName}" not found`)
+            }
+            return index
+          },
+          { nodeId: ksamplerId, inputName: KSAMPLER_MODEL_INPUT_NAME }
+        )
+        const modelInputSlotRow = comfyPage.vueNodes.getInputSlotRow(
+          ksamplerId,
+          modelInputIndex
+        )
+        const modelInputSlotHighlight =
+          comfyPage.vueNodes.getInputSlotConnectionDot(
+            ksamplerId,
+            modelInputIndex
+          )
+        const exec = new ExecutionHelper(comfyPage)
+        await exec.mockValidationFailure({
+          [ksamplerId]: buildKSamplerError(
+            'required_input_missing',
+            KSAMPLER_MODEL_INPUT_NAME,
+            `Required input is missing: ${KSAMPLER_MODEL_INPUT_NAME}`
+          )
+        })
+
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
+        await fitToViewInstant(comfyPage)
+
+        await expect(modelInputSlotRow).toBeVisible()
+        await expect(modelInputSlotRow).toBeInViewport()
+        await expect(modelInputSlotHighlight).toHaveClass(/before:ring-error/)
+        await expect(
+          comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
+        ).toHaveClass(ERROR_CLASS)
+        await comfyPage.expectScreenshot(
+          ksamplerNode,
+          'vue-node-required-input-missing-slot-error.png'
+        )
+      }
+    )
 
     test('clears error ring when user edits an out-of-range number widget back into range', async ({
       comfyPage
