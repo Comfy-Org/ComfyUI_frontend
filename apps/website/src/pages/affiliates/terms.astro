@@ -15,11 +15,14 @@ const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
   noindex
 >
   <HeroSection title={t('affiliate-terms.page.heading', locale)} />
+  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+    {t('affiliate-terms.page.effectiveDateLabel', locale)}: {
+      t('affiliate-terms.effective-date', locale)
+    }
+  </p>
   <LegalContentSection
     prefix="affiliate-terms"
     locale={locale}
-    effectiveDateKey="affiliate-terms.effective-date"
-    effectiveDateLabelKey="affiliate-terms.page.effectiveDateLabel"
     tocLabelKey="affiliate-terms.page.tocLabel"
     client:load
   />

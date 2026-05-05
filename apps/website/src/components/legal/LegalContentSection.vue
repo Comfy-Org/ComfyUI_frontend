@@ -11,14 +11,10 @@ import { scrollTo } from '../../scripts/smoothScroll'
 const {
   prefix,
   locale = 'en',
-  effectiveDateKey,
-  effectiveDateLabelKey,
   tocLabelKey
 } = defineProps<{
   prefix: string
   locale?: Locale
-  effectiveDateKey: TranslationKey
-  effectiveDateLabelKey: TranslationKey
   tocLabelKey: TranslationKey
 }>()
 
@@ -235,17 +231,6 @@ function listItems(key: TranslationKey): string[] {
             </ul>
           </template>
         </section>
-
-        <footer
-          class="border-transparency-white-t4 text-primary-warm-gray mt-16 border-t pt-6 text-sm"
-        >
-          <p>
-            <span class="font-semibold"
-              >{{ t(effectiveDateLabelKey, locale) }}:</span
-            >
-            {{ t(effectiveDateKey, locale) }}
-          </p>
-        </footer>
       </article>
     </div>
   </section>
