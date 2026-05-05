@@ -517,6 +517,19 @@ describe(assetService.getAssetsByTag, () => {
     expect(params.get('include_public')).toBe('true')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
+
+  it('normalizes tag query parameters', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
+    )
+
+    await assetService.getAssetsByTag(' input ')
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('input')
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+  })
 })
 
 describe(assetService.getAllAssetsByTag, () => {

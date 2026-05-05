@@ -212,6 +212,10 @@ function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw createAbortError()
 }
 
+function normalizeAssetTags(tags: string[]): string[] {
+  return tags.map((tag) => tag.trim()).filter(Boolean)
+}
+
 async function withCallerAbort<T>(
   promise: Promise<T>,
   signal?: AbortSignal
@@ -298,12 +302,15 @@ function createAssetService() {
       includePublic,
       signal
     } = options
+    const normalizedIncludeTags = normalizeAssetTags(includeTags)
+    const normalizedExcludeTags = normalizeAssetTags(excludeTags)
+
     const queryParams = new URLSearchParams({
-      include_tags: includeTags.join(','),
+      include_tags: normalizedIncludeTags.join(','),
       limit: limit.toString()
     })
-    if (excludeTags.length > 0) {
-      queryParams.set('exclude_tags', excludeTags.join(','))
+    if (normalizedExcludeTags.length > 0) {
+      queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
     }
     if (offset !== undefined && offset > 0) {
       queryParams.set('offset', offset.toString())
@@ -465,9 +472,7 @@ function createAssetService() {
     const result = assetItemSchema.safeParse(data)
     if (result.success) return result.data
 
-    const error = result.error
-      ? fromZodError(result.error)
-      : 'Unknown validation error'
+    const error = fromZodError(result.error)
     throw new Error(
       `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
     )

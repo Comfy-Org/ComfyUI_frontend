@@ -215,8 +215,8 @@ export class AssetHelper {
     return this.store.size
   }
   private handleListAssets(route: Route, url: URL) {
-    const includeTags = url.searchParams.get('include_tags')?.split(',') ?? []
-    const excludeTags = url.searchParams.get('exclude_tags')?.split(',') ?? []
+    const includeTags = parseAssetTagParam(url.searchParams.get('include_tags'))
+    const excludeTags = parseAssetTagParam(url.searchParams.get('exclude_tags'))
     const limit = parseInt(url.searchParams.get('limit') ?? '0', 10)
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
 
@@ -310,6 +310,16 @@ export class AssetHelper {
     )
   }
 }
+
+function parseAssetTagParam(value: string | null): string[] {
+  return (
+    value
+      ?.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean) ?? []
+  )
+}
+
 export function createAssetHelper(
   page: Page,
   ...operators: AssetOperator[]

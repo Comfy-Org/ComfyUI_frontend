@@ -148,7 +148,7 @@ test.describe('AssetHelper', () => {
       await assetApi.mock()
 
       const { body } = await assetApi.fetch(
-        `${comfyPage.url}/api/assets?include_tags=input&exclude_tags=missing`
+        `${comfyPage.url}/api/assets?include_tags=input,&exclude_tags= missing,`
       )
       const data = body as { assets: Array<{ id: string }> }
       expect(data.assets.map((asset) => asset.id)).toEqual([
