@@ -3032,31 +3032,7 @@
       "workflows": "工作流程"
     },
     "logout": "登出",
-    "mediaAssets": {
-
-        "title": "媒體資源",
-
-        "filterImage": "圖片",
-
-        "filterVideo": "影片",
-
-        "filterAudio": "音訊",
-
-        "filter3D": "3D",
-
-        "filterText": "文字",
-
-        "sortNewestFirst": "最新的優先",
-
-        "sortOldestFirst": "最舊的優先",
-
-        "sortLongestFirst": "生成時間（最長優先）",
-
-        "sortFastestFirst": "生成時間（最快優先）",
-
-        "viewSettings": "檢視設定"
-
-    },
+    "mediaAssets": "媒體資源",
     "modelLibrary": "模型庫",
     "newBlankWorkflow": "建立新的空白工作流程",
     "noFilesFound": "找不到檔案",
