@@ -11711,8 +11711,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAI의 GPT Image 1 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "OpenAI의 GPT Image 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "배경",
@@ -11746,7 +11746,7 @@
       },
       "prompt": {
         "name": "프롬프트",
-        "tooltip": "GPT Image 1을 위한 텍스트 프롬프트"
+        "tooltip": "GPT Image 2를 위한 텍스트 프롬프트"
       },
       "quality": {
         "name": "품질",

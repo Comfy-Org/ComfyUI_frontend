@@ -11711,8 +11711,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAIのGPT Image 1エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "OpenAIのGPT Image 2エンドポイントを通じて同期的に画像を生成します。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11746,7 +11746,7 @@
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "GPT Image 1用のテキストプロンプト"
+        "tooltip": "GPT Image 2用のテキストプロンプト"
       },
       "quality": {
         "name": "品質",
