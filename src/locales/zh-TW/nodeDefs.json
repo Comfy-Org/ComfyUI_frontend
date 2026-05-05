@@ -11186,8 +11186,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "透過 OpenAI 的 GPT Image 1 端點同步產生影像。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "透過 OpenAI 的 GPT Image 2 端點同步產生影像。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11213,7 +11213,7 @@
       },
       "prompt": {
         "name": "提示詞",
-        "tooltip": "用於 GPT Image 1 的文字提示"
+        "tooltip": "用於 GPT Image 2 的文字提示"
       },
       "quality": {
         "name": "品質",

@@ -11186,8 +11186,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAI'nin GPT Görüntü 1 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
-    "display_name": "OpenAI GPT Görüntü 1",
+    "description": "OpenAI'nin GPT Görüntü 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
+    "display_name": "OpenAI GPT Görüntü 2",
     "inputs": {
       "background": {
         "name": "arka_plan",
@@ -11213,7 +11213,7 @@
       },
       "prompt": {
         "name": "istem",
-        "tooltip": "GPT Görüntü 1 için metin istemi"
+        "tooltip": "GPT Görüntü 2 için metin istemi"
       },
       "quality": {
         "name": "kalite",
