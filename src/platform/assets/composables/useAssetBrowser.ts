@@ -44,12 +44,7 @@ export interface AssetDisplayItem extends AssetItem {
   }
 }
 
-// Identity-stable cache so navigating between filter tabs reuses the same
-// AssetDisplayItem reference for an unchanged AssetItem. Without this every
-// recomputation of `filteredAssets` re-ran the full transform on every asset,
-// which made switching All / Inputs / Outputs tabs noticeably slow at scale
-// and forced downstream `:key` based diffing in the asset grid to re-render
-// every visible card. (FE-229)
+// WeakMap so GC can reclaim entries when assets are released. (FE-229)
 const displayItemCache = new WeakMap<AssetItem, AssetDisplayItem>()
 
 function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
