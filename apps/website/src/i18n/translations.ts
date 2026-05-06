@@ -3903,6 +3903,30 @@ const translations = {
     en: 'Comfy logomark',
     'zh-CN': 'Comfy logomark'
   },
+  'affiliate-landing.assets.tile.comfy-full-logo-yellow.title': {
+    en: 'Comfy full logo (yellow)',
+    'zh-CN': 'Comfy full logo (yellow)'
+  },
+  'affiliate-landing.assets.tile.comfy-full-logo-ink.title': {
+    en: 'Comfy full logo (ink)',
+    'zh-CN': 'Comfy full logo (ink)'
+  },
+  'affiliate-landing.assets.tile.amplified-logo-mark.title': {
+    en: 'Amplified logo mark',
+    'zh-CN': 'Amplified logo mark'
+  },
+  'affiliate-landing.assets.tile.dimensional-logo-mark.title': {
+    en: 'Dimensional logo mark',
+    'zh-CN': 'Dimensional logo mark'
+  },
+  'affiliate-landing.assets.tile.color-combo-yellow.title': {
+    en: 'Color combo (yellow)',
+    'zh-CN': 'Color combo (yellow)'
+  },
+  'affiliate-landing.assets.tile.color-combo-ink.title': {
+    en: 'Color combo (ink)',
+    'zh-CN': 'Color combo (ink)'
+  },
   'affiliate-landing.assets.tile.banner-leaderboard.title': {
     en: 'Banner — 728×90',
     'zh-CN': 'Banner — 728×90'
