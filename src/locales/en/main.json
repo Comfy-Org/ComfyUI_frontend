@@ -686,7 +686,12 @@
       "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
       "amdDescription": "Use your AMD GPU with ROCm™ acceleration for the best performance.",
       "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
-      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
+      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware",
+      "appleMetal": "Apple Metal",
+      "nvidia": "NVIDIA",
+      "amd": "AMD",
+      "cpu": "CPU",
+      "manualInstall": "Manual Install"
     },
     "locationPicker": {
       "title": "Choose where to install ComfyUI",
@@ -1661,7 +1666,6 @@
     "conditioning": "conditioning",
     "loaders": "loaders",
     "guiders": "guiders",
-    "batch": "batch",
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
@@ -1669,6 +1673,8 @@
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
+    "utils": "utils",
+    "string": "string",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
@@ -1677,7 +1683,6 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
-    "utils": "utils",
     "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
@@ -1712,7 +1717,7 @@
     "sd": "sd",
     "Ideogram": "Ideogram",
     "transform": "transform",
-    "color": "color",
+    "batch": "batch",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "compositing": "compositing",
@@ -2187,8 +2192,7 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead",
-      "backToGithubLogin": "Sign up with Github instead"
+      "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {
       "title": "Create an account",
