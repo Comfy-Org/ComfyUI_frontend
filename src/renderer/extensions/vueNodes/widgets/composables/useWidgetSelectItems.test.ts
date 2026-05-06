@@ -681,6 +681,105 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].name).toBe('preview.png [output]')
       consoleWarnSpy.mockRestore()
     })
+
+    it('does not partially expand the list while some multi-output jobs are still resolving (FE-227)', async () => {
+      mockMediaAssets.media.value = [
+        makeMultiOutputAsset('job-FIRST', 'previewFirst.png', '1', 3),
+        makeMultiOutputAsset('job-SECOND', 'previewSecond.png', '2', 2)
+      ]
+
+      let resolveFirst!: (items: AssetItem[]) => void
+      let resolveSecond!: (items: AssetItem[]) => void
+      const firstPromise = new Promise<AssetItem[]>((res) => {
+        resolveFirst = res
+      })
+      const secondPromise = new Promise<AssetItem[]>((res) => {
+        resolveSecond = res
+      })
+
+      mockResolveOutputAssetItems.mockImplementation(
+        async (meta: { jobId: string }) => {
+          if (meta.jobId === 'job-FIRST') return firstPromise
+          if (meta.jobId === 'job-SECOND') return secondPromise
+          return []
+        }
+      )
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+        'previewFirst.png [output]',
+        'previewSecond.png [output]'
+      ])
+
+      resolveSecond([
+        {
+          id: 'job-SECOND-2--out2a.png',
+          name: 'out2a.png',
+          preview_url: '',
+          tags: ['output']
+        },
+        {
+          id: 'job-SECOND-2--out2b.png',
+          name: 'out2b.png',
+          preview_url: '',
+          tags: ['output']
+        }
+      ])
+
+      // Allow microtasks for the resolved promise to settle.
+      await nextTick()
+      await nextTick()
+
+      // Bug: while job-FIRST is still pending, the head of the list must not
+      // shift. Without the fix, dropdownItems becomes
+      // [previewFirst, out2a, out2b] — i.e. children of job-SECOND get
+      // unshifted in front of the unresolved job-FIRST representative.
+      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+        'previewFirst.png [output]',
+        'previewSecond.png [output]'
+      ])
+
+      resolveFirst([
+        {
+          id: 'job-FIRST-1--out1a.png',
+          name: 'out1a.png',
+          preview_url: '',
+          tags: ['output']
+        },
+        {
+          id: 'job-FIRST-1--out1b.png',
+          name: 'out1b.png',
+          preview_url: '',
+          tags: ['output']
+        },
+        {
+          id: 'job-FIRST-1--out1c.png',
+          name: 'out1c.png',
+          preview_url: '',
+          tags: ['output']
+        }
+      ])
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value).toHaveLength(5)
+      })
+
+      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+        'out1a.png [output]',
+        'out1b.png [output]',
+        'out1c.png [output]',
+        'out2a.png [output]',
+        'out2b.png [output]'
+      ])
+    })
   })
 
   describe('output asset subfolder', () => {
