@@ -1968,6 +1968,10 @@
     "description": "تنظیم دستی پنجره‌های زمینه.",
     "display_name": "پنجره‌های زمینه (دستی)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "آیا یک فریم اصلاح علّی به پنجره‌های زمینه‌ای که با شاخص ۰ شروع نمی‌شوند اضافه شود یا خیر."
+      },
       "closed_loop": {
         "name": "حلقه بسته",
         "tooltip": "آیا حلقه پنجره زمینه بسته شود؛ فقط برای برنامه‌ریزی حلقه‌ای قابل استفاده است."
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "ویرایش یک تصویر موجود با استفاده از متن راهنما و مدل Luma UNI-1.",
+    "display_name": "ویرایش تصویر Luma UNI-1",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای ویرایش."
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "model_web_search": {
+        "name": "جستجوی وب"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح ویرایش مورد نظر. ۱ تا ۶۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "source": {
+        "name": "منبع",
+        "tooltip": "تصویر منبع برای ویرایش."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "تغییر تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
     "display_name": "Luma Image to Image",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "وزن تصویر سبک. اگر style_image ارائه نشود، نادیده گرفته می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "تولید تصویر از متن با استفاده از مدل Luma UNI-1.",
+    "display_name": "تصویر Luma UNI-1",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "model_web_search": {
+        "name": "جستجوی وب"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی تصویر مورد نظر. ۱ تا ۶۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -11711,8 +11808,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 1 شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 2 شرکت OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -14307,6 +14404,20 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "نمونه‌بردار ویدئوی AR",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "تعداد فریم در هر بلوک",
+        "tooltip": "تعداد فریم در هر بلوک خودبازگشتی. ۱ = فریم به فریم، ۳ = به صورت تکه‌ای. باید با حالت آموزش checkpoint مطابقت داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

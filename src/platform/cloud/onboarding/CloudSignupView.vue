@@ -23,7 +23,10 @@
       </Message>
 
       <template v-if="!showEmailForm">
-        <p v-if="isFreeTierEnabled" class="mb-4 text-sm text-muted-foreground">
+        <p
+          v-if="isFreeTierEnabled && !googleSsoBlockedReason"
+          class="mb-4 text-sm text-muted-foreground"
+        >
           {{
             freeTierCredits
               ? t('auth.login.freeTierDescription', {
@@ -86,7 +89,11 @@
             class="text-sm underline"
             @click="switchToSocialLogin"
           >
-            {{ t('auth.login.backToSocialLogin') }}
+            {{
+              googleSsoBlockedReason
+                ? t('auth.login.backToGithubLogin')
+                : t('auth.login.backToSocialLogin')
+            }}
           </Button>
         </div>
       </template>
