@@ -45,10 +45,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           />
           <span
             v-else
-            class="text-primary-comfy-canvas/40 text-xs tracking-widest uppercase"
+            class="text-primary-comfy-canvas/60 text-xs tracking-widest uppercase"
             aria-hidden="true"
           >
-            {{ t('affiliate-landing.assets.comingSoonLabel', locale) }}
+            {{ t(asset.titleKey, locale) }}
           </span>
         </div>
         <div class="flex flex-1 flex-col gap-2 p-5">
@@ -56,20 +56,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             {{ t(asset.titleKey, locale) }}
           </h3>
           <a
-            v-if="asset.download && !asset.comingSoon"
             :href="asset.download"
-            :download="`${asset.id}.svg`"
+            :download="
+              asset.downloadFilename ?? asset.download.split('/').pop()
+            "
             class="text-primary-comfy-yellow mt-auto inline-flex items-center gap-1 text-sm font-bold tracking-wider uppercase hover:underline"
           >
             {{ t('affiliate-landing.assets.downloadLabel', locale) }}
             <span aria-hidden="true">↓</span>
           </a>
-          <span
-            v-else
-            class="text-primary-comfy-canvas/50 mt-auto inline-flex items-center gap-1 text-sm font-bold tracking-wider uppercase"
-          >
-            {{ t('affiliate-landing.assets.comingSoonLabel', locale) }}
-          </span>
         </div>
       </li>
     </ul>

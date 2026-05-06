@@ -3883,17 +3883,13 @@ const translations = {
     'zh-CN': 'Brand assets'
   },
   'affiliate-landing.assets.subheading': {
-    en: 'Logos and banners for your content. More assets in your affiliate dashboard after approval.',
+    en: 'Logos and the brand typeface for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
     'zh-CN':
-      'Logos and banners for your content. More assets in your affiliate dashboard after approval.'
+      'Logos and the brand typeface for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.'
   },
   'affiliate-landing.assets.downloadLabel': {
     en: 'Download',
     'zh-CN': 'Download'
-  },
-  'affiliate-landing.assets.comingSoonLabel': {
-    en: 'Coming soon',
-    'zh-CN': 'Coming soon'
   },
   'affiliate-landing.assets.tile.logo-horizontal.title': {
     en: 'Comfy logo (horizontal)',
@@ -3927,21 +3923,9 @@ const translations = {
     en: 'Color combo (ink)',
     'zh-CN': 'Color combo (ink)'
   },
-  'affiliate-landing.assets.tile.banner-leaderboard.title': {
-    en: 'Banner — 728×90',
-    'zh-CN': 'Banner — 728×90'
-  },
-  'affiliate-landing.assets.tile.banner-medium-rectangle.title': {
-    en: 'Banner — 300×250',
-    'zh-CN': 'Banner — 300×250'
-  },
-  'affiliate-landing.assets.tile.banner-skyscraper.title': {
-    en: 'Banner — 160×600',
-    'zh-CN': 'Banner — 160×600'
-  },
-  'affiliate-landing.assets.tile.banner-social.title': {
-    en: 'Social card — 1200×628',
-    'zh-CN': 'Social card — 1200×628'
+  'affiliate-landing.assets.tile.pp-formula-font.title': {
+    en: 'PP Formula font (ZIP)',
+    'zh-CN': 'PP Formula font (ZIP)'
   },
 
   // FAQ — keys follow the FAQSection contract: <prefix>.<n>.q / <prefix>.<n>.a, 1-indexed

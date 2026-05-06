@@ -3,9 +3,9 @@ import type { TranslationKey } from '../../i18n/translations'
 interface BrandAsset {
   id: string
   titleKey: TranslationKey
-  download?: string
+  download: string
   preview?: string
-  comingSoon?: boolean
+  downloadFilename?: string
 }
 
 export const brandAssets: BrandAsset[] = [
@@ -58,23 +58,9 @@ export const brandAssets: BrandAsset[] = [
     preview: '/affiliates/brand/comfy-color-combo-ink.svg'
   },
   {
-    id: 'banner-leaderboard',
-    titleKey: 'affiliate-landing.assets.tile.banner-leaderboard.title',
-    comingSoon: true
-  },
-  {
-    id: 'banner-medium-rectangle',
-    titleKey: 'affiliate-landing.assets.tile.banner-medium-rectangle.title',
-    comingSoon: true
-  },
-  {
-    id: 'banner-skyscraper',
-    titleKey: 'affiliate-landing.assets.tile.banner-skyscraper.title',
-    comingSoon: true
-  },
-  {
-    id: 'banner-social',
-    titleKey: 'affiliate-landing.assets.tile.banner-social.title',
-    comingSoon: true
+    id: 'pp-formula-font',
+    titleKey: 'affiliate-landing.assets.tile.pp-formula-font.title',
+    download: '/affiliates/fonts/PP_Formula.zip',
+    downloadFilename: 'PP_Formula.zip'
   }
 ]

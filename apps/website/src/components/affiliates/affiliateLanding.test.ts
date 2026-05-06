@@ -106,7 +106,6 @@ describe('affiliate landing i18n', () => {
     expect(hasKey(`${PREFIX}.assets.heading`)).toBe(true)
     expect(hasKey(`${PREFIX}.assets.subheading`)).toBe(true)
     expect(hasKey(`${PREFIX}.assets.downloadLabel`)).toBe(true)
-    expect(hasKey(`${PREFIX}.assets.comingSoonLabel`)).toBe(true)
     for (const asset of brandAssets) {
       expect(hasKey(asset.titleKey)).toBe(true)
     }
