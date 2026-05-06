@@ -6,6 +6,7 @@ const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
 
 const SECTION_TESTIDS = [
+  'affiliate-hero',
   'affiliate-trust-band',
   'affiliate-how-it-works',
   'affiliate-audience',
@@ -30,10 +31,19 @@ test.describe('Affiliates landing — desktop @smoke', () => {
     expect(robotsContent).toContain('noindex')
   })
 
-  test('exposes every page section in order', async ({ page }) => {
+  test('renders every page section in top-to-bottom order', async ({
+    page
+  }) => {
+    const ys: number[] = []
     for (const id of SECTION_TESTIDS) {
-      await expect(page.getByTestId(id)).toBeVisible()
+      const section = page.getByTestId(id)
+      await expect(section).toBeVisible()
+      const box = await section.boundingBox()
+      expect(box, `${id} bounding box`).not.toBeNull()
+      ys.push(box!.y)
     }
+    const sortedYs = [...ys].sort((a, b) => a - b)
+    expect(ys).toEqual(sortedYs)
   })
 
   test('renders the program details table on desktop', async ({ page }) => {
@@ -42,8 +52,16 @@ test.describe('Affiliates landing — desktop @smoke', () => {
     const rows = table.getByRole('row')
     await expect(rows).toHaveCount(7)
   })
+})
 
-  test('emits FAQPage structured data', async ({ page }) => {
+test.describe('Affiliates landing — desktop interactions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('emits FAQPage structured data with one entry per FAQ', async ({
+    page
+  }) => {
     const faqJsonLd = await page.evaluate(() => {
       const scripts = Array.from(
         document.querySelectorAll<HTMLScriptElement>(
@@ -77,7 +95,9 @@ test.describe('Affiliates landing — desktop @smoke', () => {
     await expect(footerCta).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  test('footer links to the affiliate terms page', async ({ page }) => {
+  test('footer links to the affiliate terms page as a same-tab navigation', async ({
+    page
+  }) => {
     const link = page
       .getByTestId('affiliate-footer-cta')
       .getByRole('link', { name: /Read the affiliate program terms/i })
@@ -85,12 +105,6 @@ test.describe('Affiliates landing — desktop @smoke', () => {
     await expect(link).toBeEnabled()
     await expect(link).toHaveAttribute('href', '/affiliates/terms')
     await expect(link).not.toHaveAttribute('target', '_blank')
-  })
-})
-
-test.describe('Affiliates landing — desktop interactions', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(PATH)
   })
 
   test('Apply Now CTA opens the application form in a new tab', async ({

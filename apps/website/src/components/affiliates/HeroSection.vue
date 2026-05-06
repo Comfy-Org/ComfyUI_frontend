@@ -18,6 +18,7 @@ const highlightKeys: TranslationKey[] = [
 <template>
   <section
     class="max-w-9xl mx-auto flex flex-col items-stretch gap-10 px-6 pt-12 pb-16 lg:flex-row lg:items-center lg:gap-16 lg:px-20 lg:pt-20 lg:pb-24"
+    data-testid="affiliate-hero"
   >
     <div class="flex-1">
       <h1

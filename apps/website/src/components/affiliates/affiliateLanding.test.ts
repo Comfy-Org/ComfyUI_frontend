@@ -112,16 +112,27 @@ describe('affiliate landing i18n', () => {
     }
   })
 
-  // FAQ keys are 1-indexed because that is the naming contract enforced by
-  // common/FAQSection.vue. Other indexed sections (hero highlights, audience
-  // items, details rows) are 0-indexed in this file.
-  it('exposes every faq question/answer pair the FAQSection will render', () => {
+  it('exposes every 1-indexed faq.<n>.q/a pair from 1 to AFFILIATE_FAQ_COUNT (FAQSection contract)', () => {
     expect(AFFILIATE_FAQ_PREFIX).toBe(`${PREFIX}.faq`)
     expect(hasKey(AFFILIATE_FAQ_HEADING_KEY)).toBe(true)
     for (let n = 1; n <= AFFILIATE_FAQ_COUNT; n++) {
       expect(hasKey(`${AFFILIATE_FAQ_PREFIX}.${n}.q`)).toBe(true)
       expect(hasKey(`${AFFILIATE_FAQ_PREFIX}.${n}.a`)).toBe(true)
     }
+  })
+
+  it('keeps AFFILIATE_FAQ_COUNT in sync with the actual faq.<n>.q keys in translations', () => {
+    const faqQuestionKeyPattern = new RegExp(
+      `^${AFFILIATE_FAQ_PREFIX}\\.(\\d+)\\.q$`
+    )
+    const indices = translationKeys
+      .map((k) => k.match(faqQuestionKeyPattern)?.[1])
+      .filter((m): m is string => m !== undefined)
+      .map((s) => parseInt(s, 10))
+      .sort((a, b) => a - b)
+    expect(indices).toEqual(
+      Array.from({ length: AFFILIATE_FAQ_COUNT }, (_, i) => i + 1)
+    )
   })
 
   it('exposes the footer cta copy', () => {

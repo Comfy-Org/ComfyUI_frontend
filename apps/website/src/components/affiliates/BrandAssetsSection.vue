@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
@@ -31,11 +29,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <li
         v-for="asset in brandAssets"
         :key="asset.id"
-        :class="
-          cn(
-            'bg-transparency-white-t4 border-primary-comfy-canvas/10 flex flex-col overflow-hidden rounded-4xl border'
-          )
-        "
+        class="bg-transparency-white-t4 border-primary-comfy-canvas/10 flex flex-col overflow-hidden rounded-4xl border"
         :data-testid="`affiliate-asset-${asset.id}`"
       >
         <div
