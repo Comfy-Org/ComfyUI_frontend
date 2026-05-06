@@ -4,7 +4,7 @@ import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
@@ -44,24 +44,24 @@ watch(
   }
 )
 
-function isSectionCollapsed(nodeId: string): boolean {
+function isSectionCollapsed(nodeId: NodeId): boolean {
   // Defaults to collapsed when not explicitly set by the user
   return collapseMap[nodeId] ?? true
 }
 
-function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
   collapseMap[nodeId] = collapsed
 }
 
 const isAllCollapsed = computed({
   get() {
     return searchedWidgetsSectionDataList.value.every(({ node }) =>
-      isSectionCollapsed(String(node.id))
+      isSectionCollapsed(node.id)
     )
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(String(node.id), collapse)
+      setSectionCollapsed(node.id, collapse)
     }
   }
 })
@@ -101,7 +101,7 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
@@ -109,7 +109,7 @@ async function searcher(query: string) {
       "
       show-locate-button
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(String(node.id), $event)"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
 </template>
