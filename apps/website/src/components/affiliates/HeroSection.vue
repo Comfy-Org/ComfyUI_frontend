@@ -70,13 +70,13 @@ const highlightKeys: TranslationKey[] = [
     >
       <slot name="media">
         <video
-          src="https://media.comfy.org/website/homepage/hero-logo-seq.webm"
+          src="https://media.comfy.org/website/homepage/showcase/node-workflow.webm"
           autoplay
           loop
           muted
           playsinline
           aria-hidden="true"
-          class="w-full max-w-xl"
+          class="w-full max-w-xl rounded-4xl"
         />
       </slot>
     </div>
