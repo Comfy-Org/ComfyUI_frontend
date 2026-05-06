@@ -4,7 +4,8 @@ import {
   NodeSourceType,
   getNodeSource,
   isCustomNode,
-  isEssentialNode
+  isEssentialNode,
+  isFromCustomPack
 } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 
@@ -153,5 +154,31 @@ describe('isCustomNode', () => {
     NodeSourceType.Blueprint
   ])('returns false for %s nodes', (type) => {
     expect(isCustomNode(makeNode(type))).toBe(false)
+  })
+})
+
+describe('isFromCustomPack', () => {
+  it('returns true for nodes shipped from custom_nodes.* modules', () => {
+    expect(isFromCustomPack({ python_module: 'custom_nodes.kjnodes' })).toBe(
+      true
+    )
+  })
+
+  it('returns true even when the node is also classified as Essentials by source type', () => {
+    expect(
+      isFromCustomPack({ python_module: 'custom_nodes.comfyui-kjnodes' })
+    ).toBe(true)
+  })
+
+  it('returns false for core modules', () => {
+    expect(isFromCustomPack({ python_module: 'nodes' })).toBe(false)
+    expect(
+      isFromCustomPack({ python_module: 'comfy_extras.nodes_canny' })
+    ).toBe(false)
+  })
+
+  it('returns false when python_module is missing', () => {
+    expect(isFromCustomPack({})).toBe(false)
+    expect(isFromCustomPack({ python_module: undefined })).toBe(false)
   })
 })

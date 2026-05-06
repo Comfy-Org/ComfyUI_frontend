@@ -90,6 +90,22 @@ export function isCustomNode(node: NodeDefLike): boolean {
   return node.nodeSource.type === NodeSourceType.CustomNodes
 }
 
+interface NodeWithModule {
+  python_module?: string
+}
+
+/**
+ * True when the node is shipped from a `custom_nodes.*` Python module.
+ *
+ * Unlike `isCustomNode`, this checks the module path directly instead of
+ * `nodeSource.type`, so custom-pack nodes that declare `essentials_category`
+ * (which makes their `nodeSource.type` `Essentials` for badge styling) are
+ * still classified as custom-pack here.
+ */
+export function isFromCustomPack(node: NodeWithModule): boolean {
+  return node.python_module?.startsWith('custom_nodes') ?? false
+}
+
 export enum NodeBadgeMode {
   None = 'None',
   ShowAll = 'Show all',

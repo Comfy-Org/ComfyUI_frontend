@@ -230,6 +230,85 @@ describe('NodeSearchContent', () => {
       })
     })
 
+    it('should not show custom-pack nodes under Essentials even when essentials_category is set', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CoreEssential',
+          display_name: 'Core Essential',
+          essentials_category: 'image tools',
+          python_module: 'comfy_extras.nodes_images'
+        }),
+        createMockNodeDef({
+          name: 'CustomPackEssential',
+          display_name: 'Custom Pack Essential',
+          essentials_category: 'image tools',
+          python_module: 'custom_nodes.comfyui-kjnodes',
+          category: 'KJNodes/masking'
+        })
+      ])
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Essentials')
+
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('Core Essential')
+      })
+    })
+
+    it('should not show pack-name folders in Essentials sidebar', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CoreEssential',
+          display_name: 'Core Essential',
+          essentials_category: 'image tools',
+          python_module: 'comfy_extras.nodes_images'
+        }),
+        createMockNodeDef({
+          name: 'CustomPackEssential',
+          display_name: 'Custom Pack Essential',
+          essentials_category: 'image tools',
+          python_module: 'custom_nodes.comfyui-kjnodes',
+          category: 'KJNodes/masking'
+        })
+      ])
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Essentials')
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('category-essentials/KJNodes')).toBeNull()
+      })
+    })
+
+    it('should expose custom-pack nodes under Extensions even when essentials_category is set', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CustomPackEssential',
+          display_name: 'Custom Pack Essential',
+          essentials_category: 'image tools',
+          python_module: 'custom_nodes.comfyui-kjnodes',
+          category: 'KJNodes/masking'
+        }),
+        createMockNodeDef({
+          name: 'CoreEssential',
+          display_name: 'Core Essential',
+          essentials_category: 'image tools',
+          python_module: 'comfy_extras.nodes_images'
+        })
+      ])
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Extensions')
+
+      await waitFor(() => {
+        const items = screen.getAllByTestId('node-item')
+        expect(items).toHaveLength(1)
+        expect(items[0]).toHaveTextContent('Custom Pack Essential')
+      })
+    })
+
     it('should show only API nodes when Partner Nodes filter is active', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
