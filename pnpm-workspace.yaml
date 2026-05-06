@@ -36,6 +36,8 @@ catalog:
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
+  '@swc-node/register': ^1.11.1
+  '@swc/core': ^1.15.33
   '@tailwindcss/vite': ^4.2.0
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
@@ -113,8 +115,8 @@ catalog:
   storybook: ^10.2.10
   stylelint: ^16.26.1
   tailwindcss: ^4.2.0
-  three: ^0.170.0
   tailwindcss-primeui: ^0.6.1
+  three: ^0.170.0
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
