@@ -111,7 +111,7 @@ test.describe('App mode builder selection', () => {
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
     await ksampler.header.dblclick({ force: true })
-    await expect(ksampler.titleInput).toBeHidden()
+    await expect(ksampler.titleEditor.input).toBeHidden()
 
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
