@@ -197,5 +197,6 @@ LiteGraphGlobal {
   "use_uuids": false,
   "uuidv4": [Function],
   "vueNodesMode": false,
+  "wheelInputMode": "auto",
 }
 `;
