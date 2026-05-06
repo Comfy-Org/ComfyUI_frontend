@@ -46,6 +46,7 @@ describe('userStore', () => {
       const store = useUserStore()
 
       await expect(store.initialize()).rejects.toThrow('network down')
+      expect(store.initialized).toBe(false)
       await expect(store.initialize()).resolves.toBeUndefined()
 
       expect(getUserConfig).toHaveBeenCalledTimes(2)
