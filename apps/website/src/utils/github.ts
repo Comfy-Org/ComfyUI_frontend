@@ -1,6 +1,8 @@
 const GITHUB_REPO_API_URL = 'https://api.github.com/repos/Comfy-Org/ComfyUI'
+// Fetched from GitHub on 2026-05-06.
+const GITHUB_STARS_FALLBACK = 111_605
 
-let inflight: Promise<number | null> | undefined
+let inflight: Promise<number> | undefined
 
 export function resetGitHubStarsFetcherForTests(): void {
   inflight = undefined
@@ -8,8 +10,10 @@ export function resetGitHubStarsFetcherForTests(): void {
 
 export function fetchGitHubStarsForBuild(
   fetchImpl: typeof fetch = fetch
-): Promise<number | null> {
-  inflight ??= fetchGitHubStars(fetchImpl)
+): Promise<number> {
+  inflight ??= fetchGitHubStars(fetchImpl).then(
+    (stars) => stars ?? GITHUB_STARS_FALLBACK
+  )
   return inflight
 }
 
