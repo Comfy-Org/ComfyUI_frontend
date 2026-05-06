@@ -36,12 +36,16 @@ class ComfyQueueButton {
   }
 
   public async toggleOptions() {
-    return await this.openOptions()
+    await this.dropdownButton.click()
+    return new ComfyQueueButtonOptions(this.actionbar.page)
   }
 
   public async openOptions() {
-    await this.dropdownButton.click()
-    return new ComfyQueueButtonOptions(this.actionbar.page)
+    const options = new ComfyQueueButtonOptions(this.actionbar.page)
+    if (!(await options.menu.isVisible())) {
+      await this.dropdownButton.click()
+    }
+    return options
   }
 }
 
