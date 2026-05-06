@@ -215,11 +215,12 @@ export class AssetHelper {
     return this.store.size
   }
   private handleListAssets(route: Route, url: URL) {
-    const includeTags = url.searchParams.get('include_tags')?.split(',') ?? []
+    const includeTags = parseAssetTagParam(url.searchParams.get('include_tags'))
+    const excludeTags = parseAssetTagParam(url.searchParams.get('exclude_tags'))
     const limit = parseInt(url.searchParams.get('limit') ?? '0', 10)
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
 
-    let filtered = this.getFilteredAssets(includeTags)
+    let filtered = this.getFilteredAssets(includeTags, excludeTags)
     if (limit > 0) {
       filtered = filtered.slice(offset, offset + limit)
     }
@@ -296,15 +297,29 @@ export class AssetHelper {
     this.paginationOptions = null
     this.uploadResponse = null
   }
-  private getFilteredAssets(tags: string[]): Asset[] {
+  private getFilteredAssets(
+    includeTags: string[],
+    excludeTags: string[]
+  ): Asset[] {
     const assets = [...this.store.values()]
-    if (tags.length === 0) return assets
 
-    return assets.filter((asset) =>
-      tags.every((tag) => (asset.tags ?? []).includes(tag))
+    return assets.filter(
+      (asset) =>
+        includeTags.every((tag) => (asset.tags ?? []).includes(tag)) &&
+        excludeTags.every((tag) => !(asset.tags ?? []).includes(tag))
     )
   }
 }
+
+function parseAssetTagParam(value: string | null): string[] {
+  return (
+    value
+      ?.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean) ?? []
+  )
+}
+
 export function createAssetHelper(
   page: Page,
   ...operators: AssetOperator[]
