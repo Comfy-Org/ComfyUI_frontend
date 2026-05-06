@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -44,7 +45,7 @@ const baseProps: Props = {
 
 function renderFooter(overrides: Partial<Props> = {}) {
   return render(NodeFooter, {
-    global: { plugins: [i18n] },
+    global: { plugins: [i18n, createPinia()] },
     props: { ...baseProps, ...overrides }
   })
 }

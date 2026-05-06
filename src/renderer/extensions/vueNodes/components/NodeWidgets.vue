@@ -38,7 +38,7 @@
           "
         >
           <InputSlot
-            v-if="widget.slotMetadata"
+            v-if="widget.slotMetadata && !compactModeStore.isCompactMode"
             :key="`widget-slot-${widget.name}-${widget.slotMetadata.index}`"
             :slot-data="{
               name: widget.name,
@@ -88,6 +88,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -103,6 +104,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+const compactModeStore = useCompactModeStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return

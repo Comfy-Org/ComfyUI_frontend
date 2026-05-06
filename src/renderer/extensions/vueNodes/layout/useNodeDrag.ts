@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -23,6 +24,7 @@ export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 function useNodeDragIndividual() {
   const mutations = useLayoutMutations()
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
+  const compactModeStore = useCompactModeStore()
 
   // Get transform utilities from TransformPane if available
   const transformState = useTransformState()
@@ -52,6 +54,7 @@ function useNodeDragIndividual() {
   let lastPointerY = 0
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
+    if (compactModeStore.isCompactMode) return
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
     if (!layout) return
     const position = layout.position ?? { x: 0, y: 0 }

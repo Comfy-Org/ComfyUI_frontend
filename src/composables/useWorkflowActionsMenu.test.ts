@@ -61,6 +61,10 @@ const mockFeatureFlags = vi.hoisted(() => ({
   flags: { linearToggleEnabled: false }
 }))
 
+const mockSettingStore = vi.hoisted(() => ({
+  get: vi.fn<(key: string) => unknown>(() => undefined)
+}))
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => mockWorkflowStore),
   useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
@@ -92,6 +96,10 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
 
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => mockSettingStore)
+}))
+
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
 function actionItems(items: MenuItems): WorkflowMenuAction[] {
@@ -120,6 +128,9 @@ describe('useWorkflowActionsMenu', () => {
     mockFeatureFlags.flags.linearToggleEnabled = false
     mockAppModeStore.selectedInputs.length = 0
     mockAppModeStore.selectedOutputs.length = 0
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.VueNodes.Enabled' ? true : undefined
+    )
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
       isPersisted: true
@@ -373,6 +384,25 @@ describe('useWorkflowActionsMenu', () => {
     const bookmark = findItem(menuItems.value, 'tabMenu.addToBookmarks')
 
     expect(bookmark.disabled).toBe(true)
+  })
+
+  it('shows the Compact Mode item when Vue Nodes is enabled', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).toContain('breadcrumbsMenu.enterCompactMode')
+  })
+
+  it('hides the Compact Mode item when Vue Nodes is disabled', () => {
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.VueNodes.Enabled' ? false : undefined
+    )
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('breadcrumbsMenu.enterCompactMode')
+    expect(labels).not.toContain('breadcrumbsMenu.exitCompactMode')
   })
 
   it('switches to custom workflow before executing rename', async () => {

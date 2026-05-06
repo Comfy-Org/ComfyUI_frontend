@@ -114,7 +114,7 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery'"
+      v-if="viewMode === 'gallery' && !compactModeStore.isCompactMode"
       class="pt-2 text-center text-xs text-base-foreground"
     >
       <span
@@ -174,6 +174,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -201,6 +202,7 @@ function defaultViewMode(urls: readonly string[]): ViewMode {
   return urls.length > 1 ? 'grid' : 'gallery'
 }
 
+const compactModeStore = useCompactModeStore()
 const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const galleryPanelEl = ref<HTMLDivElement>()

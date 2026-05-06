@@ -19,6 +19,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -90,6 +91,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
+  const compactModeStore = useCompactModeStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -106,6 +108,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
   ) => {
+    if (compactModeStore.isCompactMode) return
     const selectedNodes = getSelectedNodes()
     if (selectedNodes.length === 0) return
 
@@ -594,6 +597,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'essentials' as const,
       function: () => {
+        if (compactModeStore.isCompactMode) return
         const { canvas } = app
         if (!canvas.selectedItems?.size) {
           toastStore.add({
@@ -898,6 +902,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: 'Paste',
       function: () => {
+        if (compactModeStore.isCompactMode) return
         app.canvas.pasteFromClipboard()
       }
     },
@@ -906,6 +911,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: () => t('Paste with Connect'),
       function: () => {
+        if (compactModeStore.isCompactMode) return
         app.canvas.pasteFromClipboard({ connectInputs: true })
       }
     },
@@ -923,6 +929,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (compactModeStore.isCompactMode) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
@@ -1034,6 +1041,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.20.1',
       category: 'essentials' as const,
       function: () => {
+        if (compactModeStore.isCompactMode) return
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
@@ -1348,6 +1356,35 @@ export function useCoreCommands(): ComfyCommand[] {
         const newMode = !canvasStore.linearMode
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
         canvasStore.linearMode = newMode
+      }
+    },
+    {
+      id: 'Comfy.ToggleCompactMode',
+      icon: 'pi pi-th-large',
+      label: 'Toggle Compact Mode',
+      category: 'view-controls' as const,
+      active: () => compactModeStore.isCompactMode,
+      function: async () => {
+        compactModeStore.toggle()
+        if (compactModeStore.isCompactMode) {
+          compactModeStore.savedLinkRenderMode = settingStore.get(
+            'Comfy.LinkRenderMode'
+          )
+          await settingStore.set('Comfy.LinkRenderMode', LiteGraph.HIDDEN_LINK)
+          return
+        }
+        const linksAreStillHidden =
+          settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
+        if (
+          linksAreStillHidden &&
+          compactModeStore.savedLinkRenderMode != null
+        ) {
+          await settingStore.set(
+            'Comfy.LinkRenderMode',
+            compactModeStore.savedLinkRenderMode
+          )
+        }
+        compactModeStore.savedLinkRenderMode = null
       }
     }
   ]
