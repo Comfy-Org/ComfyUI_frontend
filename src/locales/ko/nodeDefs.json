@@ -1968,6 +1968,10 @@
     "description": "컨텍스트 윈도우를 수동으로 설정합니다.",
     "display_name": "컨텍스트 윈도우 (수동)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "0이 아닌 인덱스의 컨텍스트 윈도우에 인과적 수정 프레임을 추가할지 여부입니다."
+      },
       "closed_loop": {
         "name": "closed_loop",
         "tooltip": "컨텍스트 윈도우 루프를 닫을지 여부입니다. 루프 스케줄에만 적용됩니다."
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1 모델을 사용하여 텍스트 프롬프트로 기존 이미지를 편집합니다.",
+    "display_name": "Luma UNI-1 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "편집에 사용할 모델입니다."
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 편집에 대한 설명입니다. 1~6000자."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드 값은 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "편집할 원본 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "프롬프트와 종횡비에 따라 이미지를 동기적으로 수정합니다.",
     "display_name": "Luma 이미지 생성 (이미지 → 이미지)",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "스타일 이미지 가중치",
         "tooltip": "스타일 이미지의 가중치. 스타일 이미지가 제공되지 않으면 무시됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1 모델을 사용하여 텍스트로부터 이미지를 생성합니다.",
+    "display_name": "Luma UNI-1 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 이미지에 대한 텍스트 설명입니다. 1~6000자."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드 값은 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -14307,6 +14404,20 @@
       },
       "2": {
         "name": "잠재 비디오"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "오토리그레시브 블록당 프레임 수입니다. 1 = 프레임 단위, 3 = 청크 단위. 체크포인트의 학습 모드와 일치해야 합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
