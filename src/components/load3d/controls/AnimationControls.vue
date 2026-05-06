@@ -21,7 +21,7 @@
       </Button>
 
       <Select
-        :model-value="String(selectedSpeed)"
+        :model-value="selectedSpeed != null ? String(selectedSpeed) : undefined"
         @update:model-value="(val) => (selectedSpeed = Number(val))"
       >
         <SelectTrigger size="md" class="w-24">
@@ -39,7 +39,9 @@
       </Select>
 
       <Select
-        :model-value="String(selectedAnimation)"
+        :model-value="
+          selectedAnimation != null ? String(selectedAnimation) : undefined
+        "
         @update:model-value="(val) => (selectedAnimation = Number(val))"
       >
         <SelectTrigger size="md" class="w-32">
