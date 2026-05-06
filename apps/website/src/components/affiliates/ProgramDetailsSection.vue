@@ -1,37 +1,11 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import SectionHeader from '../common/SectionHeader.vue'
+import { programDetailRows } from './programDetails'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const rows: { labelKey: TranslationKey; valueKey: TranslationKey }[] = [
-  {
-    labelKey: 'affiliate-landing.details.row.0.label',
-    valueKey: 'affiliate-landing.details.row.0.value'
-  },
-  {
-    labelKey: 'affiliate-landing.details.row.1.label',
-    valueKey: 'affiliate-landing.details.row.1.value'
-  },
-  {
-    labelKey: 'affiliate-landing.details.row.2.label',
-    valueKey: 'affiliate-landing.details.row.2.value'
-  },
-  {
-    labelKey: 'affiliate-landing.details.row.3.label',
-    valueKey: 'affiliate-landing.details.row.3.value'
-  },
-  {
-    labelKey: 'affiliate-landing.details.row.4.label',
-    valueKey: 'affiliate-landing.details.row.4.value'
-  },
-  {
-    labelKey: 'affiliate-landing.details.row.5.label',
-    valueKey: 'affiliate-landing.details.row.5.value'
-  }
-]
 </script>
 
 <template>
@@ -66,7 +40,7 @@ const rows: { labelKey: TranslationKey; valueKey: TranslationKey }[] = [
           </thead>
           <tbody>
             <tr
-              v-for="row in rows"
+              v-for="row in programDetailRows"
               :key="row.labelKey"
               class="border-primary-comfy-canvas/10 border-b"
             >
@@ -86,7 +60,7 @@ const rows: { labelKey: TranslationKey; valueKey: TranslationKey }[] = [
 
       <dl class="flex flex-col gap-6 md:hidden">
         <div
-          v-for="row in rows"
+          v-for="row in programDetailRows"
           :key="row.labelKey"
           class="border-primary-comfy-canvas/10 flex flex-col gap-1 border-b pb-4"
         >

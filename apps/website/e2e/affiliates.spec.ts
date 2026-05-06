@@ -4,6 +4,7 @@ import {
   AFFILIATE_FAQ_COUNT,
   AFFILIATE_FAQ_PREFIX
 } from '../src/components/affiliates/affiliateFaqs'
+import { programDetailRows } from '../src/components/affiliates/programDetails'
 import type { TranslationKey } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -16,6 +17,9 @@ const FIRST_FAQ_ANSWER = t(
   `${AFFILIATE_FAQ_PREFIX}.1.a` as TranslationKey,
   'en'
 )
+const FIRST_PROGRAM_DETAIL_LABEL = t(programDetailRows[0].labelKey, 'en')
+const FIRST_PROGRAM_DETAIL_VALUE = t(programDetailRows[0].valueKey, 'en')
+const PROGRAM_DETAIL_TABLE_ROW_COUNT = programDetailRows.length + 1
 
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
@@ -65,7 +69,7 @@ test.describe('Affiliates landing — desktop @smoke', () => {
     const table = page.getByTestId('affiliate-program-details-table')
     await expect(table).toBeVisible()
     const rows = table.getByRole('row')
-    await expect(rows).toHaveCount(7)
+    await expect(rows).toHaveCount(PROGRAM_DETAIL_TABLE_ROW_COUNT)
   })
 })
 
@@ -175,8 +179,12 @@ test.describe('Affiliates landing — mobile @mobile', () => {
       .getByTestId('affiliate-program-details')
       .locator('dl')
     await expect(detailsList).toBeVisible()
-    await expect(detailsList.getByText('Commission rate')).toBeVisible()
-    await expect(detailsList.getByText('30% recurring')).toBeVisible()
+    await expect(
+      detailsList.getByText(FIRST_PROGRAM_DETAIL_LABEL)
+    ).toBeVisible()
+    await expect(
+      detailsList.getByText(FIRST_PROGRAM_DETAIL_VALUE)
+    ).toBeVisible()
   })
 
   test('all major sections remain visible without horizontal overflow', async ({
