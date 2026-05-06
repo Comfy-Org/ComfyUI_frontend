@@ -61,7 +61,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   let baseCanvas: HTMLCanvasElement | null = null
   let baseCtx: CanvasRenderingContext2D | null = null
   let hasBaseSnapshot = false
-  let hasStrokes = false
 
   let dirtyX0 = 0
   let dirtyY0 = 0
@@ -413,7 +412,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
-    hasStrokes = true
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -513,7 +511,10 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
-    hasStrokes = false
+    // Clear any cached upload reference. Without this, an empty canvas
+    // combined with a stale `modelValue` would resurrect the previously
+    // uploaded mask on the next serialize.
+    modelValue.value = ''
   }
 
   function updateCursorPos(e: PointerEvent) {
@@ -619,17 +620,39 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     return { filename, subfolder, type }
   }
 
-  function isCanvasEmpty(): boolean {
-    return !hasStrokes
+  /**
+   * Reads canvas pixel data to determine whether the canvas has any visible
+   * content. Robust against state-flag drift caused by closure resets on
+   * remount, handleClear edge cases, and pointerdown variants where
+   * `e.button !== 0` short-circuits `startStroke`.
+   */
+  function isCanvasPixelEmpty(el: HTMLCanvasElement): boolean {
+    const ctx = el.getContext('2d')
+    if (!ctx) return true
+    const { data } = ctx.getImageData(0, 0, el.width, el.height)
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] !== 0) return false
+    }
+    return true
   }
 
   async function serializeValue(): Promise<string> {
-    if (!isDirty.value) return modelValue.value
-
     const el = canvasEl.value
     if (!el) return modelValue.value
 
-    if (isCanvasEmpty()) return ''
+    // Authoritative emptiness check: read actual pixel data instead of
+    // relying on the `isDirty` flag, which can desync from canvas content
+    // on WidgetPainter remount or on non-primary pointerdown variants where
+    // the closure-local stroke bookkeeping was bypassed.
+    // When the canvas is empty, defer to `modelValue` so a workflow-restored
+    // mask reference (or a pending image-restore) survives. `handleClear`
+    // explicitly resets `modelValue` so a user-initiated clear still yields ''.
+    if (isCanvasPixelEmpty(el)) return modelValue.value
+
+    // Canvas has visible content. If we already uploaded this exact content
+    // (no new strokes since last successful upload) and the cached value is
+    // valid, reuse it to avoid redundant uploads.
+    if (!isDirty.value && modelValue.value) return modelValue.value
 
     const blob = await new Promise<Blob | null>((resolve) =>
       el.toBlob(resolve, 'image/png')
@@ -717,7 +740,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
       isDirty.value = false
-      hasStrokes = true
     }
     img.onerror = () => {
       modelValue.value = ''

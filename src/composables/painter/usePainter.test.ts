@@ -92,6 +92,35 @@ function makeWidget(name: string, value: unknown = null): IBaseWidget {
 }
 
 /**
+ * Builds a minimal HTMLCanvasElement-like stub with a 2D context that exposes
+ * the methods `usePainter` actually calls (`getImageData`, `clearRect`,
+ * `drawImage`, `toBlob`). jsdom's canvas implementation is incomplete, so we
+ * synthesize one to drive the pixel-emptiness check deterministically.
+ */
+function makeFakeCanvas(
+  width: number,
+  height: number,
+  pixels: Uint8ClampedArray
+): HTMLCanvasElement {
+  const ctx = {
+    getImageData: vi.fn(() => ({ data: pixels })),
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    fillRect: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn()
+  }
+  return {
+    width,
+    height,
+    getContext: vi.fn(() => ctx),
+    toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+  } as unknown as HTMLCanvasElement
+}
+
+/**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.
  */
 function mountPainter(nodeId = 'test-node', initialModelValue = '') {
@@ -367,6 +396,66 @@ describe('usePainter', () => {
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/existing.png [temp]')
+    })
+
+    it('uploads canvas content even when the isDirty flag is false (regression: stroke-tracking flag can desync from real canvas pixel data on remount or non-primary pointerdown)', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      const fetchApiMock = vi.mocked(api.fetchApi)
+      fetchApiMock.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ name: 'uploaded.png' })
+      } as Response)
+
+      const { canvasEl } = mountPainter('test-node', '')
+      // Simulate a remount-style scenario: closure flags say "no strokes",
+      // but the canvas itself has visible pixel content (e.g. produced by a
+      // pointerdown path that bypassed startStroke, or compositeStrokeToMain
+      // that ran before the new closure was installed).
+      const paintedPixels = new Uint8ClampedArray(4 * 4 * 4)
+      // Mark pixel 0 as opaque red.
+      paintedPixels[3] = 255
+      canvasEl.value = makeFakeCanvas(4, 4, paintedPixels)
+      await nextTick()
+
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      expect(result).toBe('painter/uploaded.png [temp]')
+      expect(fetchApiMock).toHaveBeenCalledWith(
+        '/upload/image',
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+
+    it('returns empty string when canvas has no pixels and modelValue is empty', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      const { canvasEl } = mountPainter('test-node', '')
+      // All-zero alpha — canvas considered empty.
+      canvasEl.value = makeFakeCanvas(4, 4, new Uint8ClampedArray(4 * 4 * 4))
+      await nextTick()
+
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      expect(result).toBe('')
+    })
+
+    it('returns empty string after handleClear even when modelValue previously held an upload reference', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      const { painter, canvasEl, modelValue } = mountPainter(
+        'test-node',
+        'painter/old-upload.png [temp]'
+      )
+      canvasEl.value = makeFakeCanvas(4, 4, new Uint8ClampedArray(4 * 4 * 4))
+      await nextTick()
+
+      painter.handleClear()
+      expect(modelValue.value).toBe('')
+
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      expect(result).toBe('')
     })
   })
 
