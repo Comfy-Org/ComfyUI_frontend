@@ -359,15 +359,14 @@ describe('usePainter', () => {
       expect(result).toBe('')
     })
 
-    it('returns empty string when canvas has no strokes even if modelValue is set', async () => {
+    it('returns existing modelValue when not dirty (regression: WidgetPainter remount must not blank a workflow-restored mask reference)', async () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      const { modelValue } = mountPainter()
-      modelValue.value = 'painter/existing.png [temp]'
+      mountPainter('test-node', 'painter/existing.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
-      expect(result).toBe('')
+      expect(result).toBe('painter/existing.png [temp]')
     })
   })
 

@@ -624,12 +624,12 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   }
 
   async function serializeValue(): Promise<string> {
+    if (!isDirty.value) return modelValue.value
+
     const el = canvasEl.value
-    if (!el) return ''
+    if (!el) return modelValue.value
 
     if (isCanvasEmpty()) return ''
-
-    if (!isDirty.value) return modelValue.value
 
     const blob = await new Promise<Blob | null>((resolve) =>
       el.toBlob(resolve, 'image/png')
