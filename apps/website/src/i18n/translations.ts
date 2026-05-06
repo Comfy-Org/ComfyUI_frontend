@@ -3656,6 +3656,60 @@ const translations = {
     'zh-CN': 'Creative Studios AI 负责人'
   },
 
+  // Models – UI keys
+  'models.hero.eyebrow': {
+    en: 'AI Model',
+    'zh-CN': 'AI 模型'
+  },
+  'models.hero.primaryCta': {
+    en: 'TRY IN COMFY',
+    'zh-CN': '在 Comfy 中试用'
+  },
+  'models.hero.secondaryCta': {
+    en: 'DOWNLOAD MODEL',
+    'zh-CN': '下载模型'
+  },
+  'models.hero.cloudCta': {
+    en: 'RUN ON CLOUD',
+    'zh-CN': '云端运行'
+  },
+  'models.hero.tutorialCta': {
+    en: 'VIEW TUTORIAL',
+    'zh-CN': '查看教程'
+  },
+  'models.hero.blogLink': {
+    en: 'Read blog post',
+    'zh-CN': '阅读博客文章'
+  },
+  'models.hero.workflowCount': {
+    en: '{count} workflows use this model',
+    'zh-CN': '{count} 个工作流使用此模型'
+  },
+  'models.whatIs.heading': {
+    en: 'What is {name}?',
+    'zh-CN': '什么是 {name}？'
+  },
+  'models.whatIs.tutorialLink': {
+    en: 'Read the full tutorial →',
+    'zh-CN': '阅读完整教程 →'
+  },
+  'models.index.title': {
+    en: 'Supported Models',
+    'zh-CN': '支持的模型'
+  },
+  'models.index.subtitle': {
+    en: "Run the world's leading AI models in ComfyUI",
+    'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
+  },
+  'models.breadcrumb.home': {
+    en: 'Home',
+    'zh-CN': '首页'
+  },
+  'models.breadcrumb.models': {
+    en: 'Supported Models',
+    'zh-CN': '支持的模型'
+  },
+
   // Payment status pages
   'payment.success.label': {
     en: 'PAYMENT',
