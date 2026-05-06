@@ -79,7 +79,18 @@ const mergedGridStyle = computed<CSSProperties>(() => {
 })
 
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
+const totalRows = computed(() => Math.ceil(items.length / cols.value))
+const maxOffsetRows = computed(() =>
+  Math.max(0, totalRows.value - viewRows.value)
+)
+// Clamp offsetRows so the last page stays visible when scrollY drifts past
+// the natural max (e.g. items list shrinks while scroll position is retained,
+// or rubberband over-scroll temporarily exceeds the limit). Without this,
+// state.start === state.end === items.length and the grid renders blank
+// until another scroll event re-syncs the position. (FE-535)
+const offsetRows = computed(() =>
+  Math.min(maxOffsetRows.value, Math.floor(scrollY.value / itemHeight.value))
+)
 const isValidGrid = computed(() => height.value && width.value && items?.length)
 
 const state = computed<GridState>(() => {

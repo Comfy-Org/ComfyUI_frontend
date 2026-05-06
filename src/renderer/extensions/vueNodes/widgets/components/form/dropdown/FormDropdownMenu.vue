@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import type { CSSProperties } from 'vue'
-import { computed } from 'vue'
-
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import { computed, ref } from 'vue'
 
 import type {
   FilterOption,
@@ -82,17 +81,30 @@ const layoutConfig = computed<LayoutConfig>(
 const gridStyle = computed<CSSProperties>(() => ({
   display: 'grid',
   gap: layoutConfig.value.gap,
-  padding: '1rem',
-  width: '100%'
+  gridTemplateColumns: `repeat(${layoutConfig.value.maxColumns}, minmax(0, 1fr))`
 }))
 
-type VirtualDropdownItem = FormDropdownItem & { key: string }
-const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  items.map((item) => ({
-    ...item,
-    key: String(item.id)
-  }))
-)
+const cols = computed(() => layoutConfig.value.maxColumns)
+const rowCount = computed(() => Math.ceil(items.length / cols.value))
+
+const scrollContainer = ref<HTMLElement | null>(null)
+
+const virtualizer = useVirtualizer({
+  get count() {
+    return rowCount.value
+  },
+  estimateSize: () => layoutConfig.value.itemHeight,
+  getScrollElement: () => scrollContainer.value,
+  overscan: 2
+})
+
+const virtualRows = computed(() => virtualizer.value.getVirtualItems())
+const totalSize = computed(() => virtualizer.value.getTotalSize())
+
+function rowItems(rowIndex: number): FormDropdownItem[] {
+  const start = rowIndex * cols.value
+  return items.slice(start, start + cols.value)
+}
 </script>
 
 <template>
@@ -127,28 +139,45 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
         class="icon-[lucide--circle-off] size-30 text-muted-foreground/20"
       />
     </div>
-    <VirtualGrid
+    <div
       v-else
+      ref="scrollContainer"
       :key="layoutMode"
-      :items="virtualItems"
-      :grid-style
-      :max-columns="layoutConfig.maxColumns"
-      :default-item-height="layoutConfig.itemHeight"
-      :default-item-width="layoutConfig.itemWidth"
-      :buffer-rows="2"
-      class="mt-2 min-h-0 flex-1"
+      class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface) mt-2 min-h-0 flex-1 overflow-y-auto p-4 [overflow-anchor:none] [scrollbar-gutter:stable]"
     >
-      <template #item="{ item, index }">
-        <FormDropdownMenuItem
-          :index
-          :selected="isSelected(item, index)"
-          :preview-url="item.preview_url ?? ''"
-          :name="item.name"
-          :label="item.label"
-          :layout="layoutMode"
-          @click="emit('item-click', item, index)"
-        />
-      </template>
-    </VirtualGrid>
+      <div
+        :style="{
+          position: 'relative',
+          width: '100%',
+          height: `${totalSize}px`
+        }"
+      >
+        <div
+          v-for="virtualRow in virtualRows"
+          :key="virtualRow.index"
+          :style="{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            transform: `translateY(${virtualRow.start}px)`
+          }"
+        >
+          <div :style="gridStyle">
+            <FormDropdownMenuItem
+              v-for="(item, i) in rowItems(virtualRow.index)"
+              :key="item.id"
+              :index="virtualRow.index * cols + i"
+              :selected="isSelected(item, virtualRow.index * cols + i)"
+              :preview-url="item.preview_url ?? ''"
+              :name="item.name"
+              :label="item.label"
+              :layout="layoutMode"
+              @click="emit('item-click', item, virtualRow.index * cols + i)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
