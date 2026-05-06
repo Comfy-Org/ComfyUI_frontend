@@ -183,6 +183,17 @@ describe('pasteImageNode', () => {
     expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
   })
+
+  it('should accept image files with empty MIME type when extension is recognized', async () => {
+    const mockNode = createMockNode()
+    const imageFile = createImageFile('test.jpg', '')
+    const dataTransfer = createDataTransfer([imageFile])
+
+    await pasteImageNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
+  })
 })
 
 describe('pasteImageNodes', () => {
@@ -437,6 +448,23 @@ describe('usePaste', () => {
     })
   })
 
+  it('should handle image paste with empty MIME type by extension', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    usePaste()
+
+    const file = createImageFile('test.jpg', '')
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
   it('should handle audio paste using createNode helper', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -561,6 +589,28 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('should prefer the selected image node when mixed media is pasted', () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isImageNode).mockReturnValue(true)
+
+    usePaste()
+
+    const audioFile = createAudioFile()
+    const imageFile = createImageFile()
+    const dataTransfer = createDataTransfer([audioFile, imageFile])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
   })
 
   it('should call canvas pasteFromClipboard for non-workflow text', () => {
