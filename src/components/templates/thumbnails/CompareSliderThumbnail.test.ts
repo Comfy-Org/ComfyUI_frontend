@@ -93,6 +93,22 @@ describe('CompareSliderThumbnail', () => {
     expect(divider.style.left).toBe('25%')
   })
 
+  it('clamps slider position to [0, 100] when pointer overshoots', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 200)
+
+    const user = userEvent.setup()
+
+    await user.pointer({ target: container, coords: { clientX: -10 } })
+    let divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('0%')
+
+    await user.pointer({ target: container, coords: { clientX: 250 } })
+    divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('100%')
+  })
+
   it('ignores mousemove when container has zero width', async () => {
     renderThumbnail()
     const container = screen.getByTestId('compare-slider-container')

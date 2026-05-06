@@ -70,6 +70,10 @@ function updateSliderPosition(event: MouseEvent) {
   const el = event.currentTarget as HTMLElement
   const rect = el.getBoundingClientRect()
   if (rect.width === 0) return
-  sliderPosition.value = ((event.clientX - rect.left) / rect.width) * 100
+  // Clamp to [0, 100] — subpixel rounding or stale rects on hover-in can
+  // push the raw percentage slightly out of range, which would offset the
+  // divider past the container or invert the overlay's clipPath.
+  const raw = ((event.clientX - rect.left) / rect.width) * 100
+  sliderPosition.value = Math.max(0, Math.min(100, raw))
 }
 </script>
