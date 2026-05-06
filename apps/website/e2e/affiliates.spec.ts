@@ -1,7 +1,21 @@
 import { expect } from '@playwright/test'
 
-import { AFFILIATE_FAQ_COUNT } from '../src/components/affiliates/affiliateFaqs'
+import {
+  AFFILIATE_FAQ_COUNT,
+  AFFILIATE_FAQ_PREFIX
+} from '../src/components/affiliates/affiliateFaqs'
+import type { TranslationKey } from '../src/i18n/translations'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+
+const FIRST_FAQ_QUESTION = t(
+  `${AFFILIATE_FAQ_PREFIX}.1.q` as TranslationKey,
+  'en'
+)
+const FIRST_FAQ_ANSWER = t(
+  `${AFFILIATE_FAQ_PREFIX}.1.a` as TranslationKey,
+  'en'
+)
 
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
@@ -115,6 +129,7 @@ test.describe('Affiliates landing — desktop interactions', () => {
     const popupPromise = context.waitForEvent('page')
     await page.getByTestId('affiliate-hero-cta').click()
     const popup = await popupPromise
+    await popup.waitForLoadState('domcontentloaded')
     const popupUrl = popup.url()
     expect(
       popupUrl.includes('forms.gle/RS8L2ttcuGap4Q1v6') ||
@@ -124,16 +139,12 @@ test.describe('Affiliates landing — desktop interactions', () => {
   })
 
   test('FAQ items toggle open and closed on click', async ({ page }) => {
-    const firstQuestion = page.getByRole('button', {
-      name: 'How do I track my referrals?'
-    })
+    const firstQuestion = page.getByRole('button', { name: FIRST_FAQ_QUESTION })
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
-    await expect(
-      page.getByText('Real-time dashboard via our partner portal.')
-    ).toBeVisible()
+    await expect(page.getByText(FIRST_FAQ_ANSWER)).toBeVisible()
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
