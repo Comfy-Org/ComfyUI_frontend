@@ -21,11 +21,9 @@ import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetVi
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { usePromotionStore } from '@/stores/promotionStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createTestRootGraph,
@@ -75,7 +73,7 @@ function setupSubgraph(
 
 function setPromotions(
   subgraphNode: SubgraphNode,
-  entries: [string, string][]
+  entries: SerializedProxyWidgetTuple[]
 ) {
   usePromotionStore().setPromotions(
     subgraphNode.rootGraph.id,
@@ -263,7 +261,7 @@ describe(createPromotedWidgetView, () => {
     expect(view.linkedWidgets?.[0].name).toBe('control_after_generate')
   })
 
-  test('value is store-backed via widgetValueStore', () => {
+  test('value writes propagate to the interior widget (write-through)', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'myWidget', 'initial', () => {})
@@ -273,18 +271,32 @@ describe(createPromotedWidgetView, () => {
       'myWidget'
     )
 
-    // Value should read from the store (which was populated by addWidget)
+    // Value should read from interior default initially
     expect(view.value).toBe('initial')
 
-    // Setting value through the view updates the store
     view.value = 'updated'
-    expect(view.value).toBe('updated')
 
-    // The interior widget reads from the same store
+    expect(view.value).toBe('updated')
+    // Write-through projects the new value onto the interior widget so
+    // direct interior consumers (prompt-build, etc.) stay consistent.
     expect(innerNode.widgets![0].value).toBe('updated')
+
+    const perInstanceCell = useWidgetValueStore().getWidget(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      view.storeName
+    )
+    expect(perInstanceCell?.value).toBe('updated')
+
+    const interiorCell = useWidgetValueStore().getWidget(
+      subgraphNode.rootGraph.id,
+      innerNode.id,
+      'myWidget'
+    )
+    expect(interiorCell?.value).toBe('updated')
   })
 
-  test('value falls back to interior widget when store entry is missing', () => {
+  test('value falls back to interior widget when no store entry exists', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     const fallbackWidgetShape = {
@@ -305,12 +317,11 @@ describe(createPromotedWidgetView, () => {
       'myWidget'
     )
 
+    // Read falls back to the interior widget when no store entry exists
     expect(view.value).toBe('initial')
-    view.value = 'updated'
-    expect(fallbackWidget.value).toBe('updated')
   })
 
-  test('value setter falls back to host widget when linked states are unavailable', () => {
+  test('value setter writes to both per-instance override and interior widget', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'string_a', type: '*' }]
     })
@@ -327,11 +338,11 @@ describe(createPromotedWidgetView, () => {
     const linkedView = promotedWidgets(subgraphNode)[0]
     if (!linkedView) throw new Error('Expected a linked promoted widget')
 
-    const widgetValueStore = useWidgetValueStore()
-    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
-
     linkedView.value = 'updated'
 
+    expect(linkedView.value).toBe('updated')
+    // Write-through projects onto the interior so direct interior
+    // consumers (prompt-build, legacy serialization) stay consistent.
     expect(linkedNode.widgets?.[0].value).toBe('updated')
   })
 
@@ -475,17 +486,80 @@ describe(createPromotedWidgetView, () => {
     expect(view.hidden).toBe(true)
   })
 
-  test('label setter persists to widget state', () => {
+  test('label setter propagates to the bound subgraph slot', () => {
+    // Real promotion fixture: produce a view with a genuine slot binding
+    // (input._widget === view AND input._subgraphSlot set), exercising the
+    // production path rather than asserting the rejected widget-state
+    // implementation detail. Mirrors the pattern at "defers promotions
+    // while subgraph node id is -1 and flushes on add" earlier in this file.
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'myWidget', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 41 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('myWidget', '*')
+    innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    innerInput.widget = { name: 'myWidget' }
+    subgraph.add(innerNode)
+
+    subgraph.inputNode.slots[0].connect(innerInput, innerNode)
+    subgraphNode._internalConfigureAfterSlots()
+
+    const view = subgraphNode.widgets[0] as PromotedWidgetView | undefined
+    if (!view) throw new Error('Expected a promoted view')
+
+    view.label = 'Renamed'
+
+    expect(view.label).toBe('Renamed')
+    // Slot-side persistence is the durable home for label state.
+    const slot = subgraphNode.inputs.find(
+      (i) => i._widget === view
+    )?._subgraphSlot
+    expect(slot?.label).toBe('Renamed')
+  })
+
+  test('label binding uses the exact promoted view instance when same source widget is promoted twice', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
-    innerNode.addWidget('text', 'myWidget', 'val', () => {})
-    const view = createPromotedWidgetView(
+    innerNode.addWidget('text', 'shared', 'value', () => {})
+
+    subgraphNode.addInput('slot_a', '*')
+    subgraphNode.addInput('slot_b', '*')
+
+    const viewA = createPromotedWidgetView(
       subgraphNode,
       String(innerNode.id),
-      'myWidget'
+      'shared',
+      'Slot A'
     )
-    view.label = 'Renamed'
-    expect(view.label).toBe('Renamed')
+    const viewB = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'shared',
+      'Slot B'
+    )
+
+    if (!subgraphNode.inputs[0] || !subgraphNode.inputs[1]) {
+      throw new Error('Expected two subgraph inputs')
+    }
+
+    subgraphNode.inputs[0]._widget = viewA
+    Object.defineProperty(subgraphNode.inputs[0], '_subgraphSlot', {
+      value: { name: 'slot_a', label: 'A' },
+      configurable: true,
+      writable: true
+    })
+    subgraphNode.inputs[1]._widget = viewB
+    Object.defineProperty(subgraphNode.inputs[1], '_subgraphSlot', {
+      value: { name: 'slot_b', label: 'B' },
+      configurable: true,
+      writable: true
+    })
+
+    expect(viewA.label).toBe('A')
+    expect(viewB.label).toBe('B')
   })
 
   test('value getter handles number values via isWidgetValue', () => {
@@ -515,16 +589,7 @@ describe(createPromotedWidgetView, () => {
   test('value setter handles object values via isWidgetValue', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
-    const fallbackWidget = {
-      name: 'objWidget',
-      type: 'text',
-      value: 'old',
-      options: {}
-    } as unknown as IBaseWidget
-    innerNode.widgets = [fallbackWidget]
-
-    const widgetValueStore = useWidgetValueStore()
-    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
+    innerNode.addWidget('text', 'objWidget', 'old', () => {})
 
     const view = createPromotedWidgetView(
       subgraphNode,
@@ -534,7 +599,9 @@ describe(createPromotedWidgetView, () => {
 
     const objValue = { key: 'data' }
     view.value = objValue
-    expect(fallbackWidget.value).toBe(objValue)
+    expect(view.value).toEqual(objValue)
+    // Write-through projects the object onto the interior widget.
+    expect(innerNode.widgets![0].value).toEqual(objValue)
   })
 
   test('onPointerDown returns true when interior widget onPointerDown handles it', () => {
@@ -876,16 +943,19 @@ describe('SubgraphNode.widgets getter', () => {
 
     linkedView.value = 'shared-value'
 
-    // Both linked nodes share the same SubgraphInput slot, so the value
-    // propagates to all connected widgets via getLinkedInputWidgets().
+    // Write-through hits only the representative interior (first link).
+    // Sibling interiors and unrelated promoted peers stay independent.
+    expect(linkedView.value).toBe('shared-value')
     expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
-    expect(linkedNodeB.widgets?.[0]?.value).toBe('shared-value')
+    expect(linkedNodeB.widgets?.[0]?.value).toBe('b')
     expect(promotedNode.widgets?.[0]?.value).toBe('independent')
 
     promotedView.value = 'independent-updated'
 
+    expect(promotedView.value).toBe('independent-updated')
+    expect(linkedView.value).toBe('shared-value')
     expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
-    expect(linkedNodeB.widgets?.[0]?.value).toBe('shared-value')
+    expect(linkedNodeB.widgets?.[0]?.value).toBe('b')
     expect(promotedNode.widgets?.[0]?.value).toBe('independent-updated')
   })
 
@@ -1223,11 +1293,17 @@ describe('SubgraphNode.widgets getter', () => {
     firstView.value = 'first-updated'
     secondView.value = 'second-updated'
 
+    // Distinct subgraph slots map to distinct interior nodes, so
+    // write-through stays scoped to each view's own representative.
+    expect(firstView.value).toBe('first-updated')
+    expect(secondView.value).toBe('second-updated')
     expect(firstNode.widgets?.[0].value).toBe('first-updated')
     expect(secondNode.widgets?.[0].value).toBe('second-updated')
 
     subgraphNode.serialize()
 
+    expect(firstView.value).toBe('first-updated')
+    expect(secondView.value).toBe('second-updated')
     expect(firstNode.widgets?.[0].value).toBe('first-updated')
     expect(secondNode.widgets?.[0].value).toBe('second-updated')
   })
@@ -1548,14 +1624,22 @@ describe('SubgraphNode.widgets getter', () => {
     independentView.value = 'independent-value'
     linkedView.value = 'shared-linked'
 
-    const widgetStore = useWidgetValueStore()
-    const getValue = (nodeId: string) =>
-      widgetStore.getWidget(graph.id, stripGraphPrefix(nodeId), 'string_a')
-        ?.value
+    // Per-instance views carry their own values; both linked and
+    // independent promoted views read from their per-instance store entries
+    // and do not contaminate each other.
+    expect(linkedView.value).toBe('shared-linked')
+    expect(independentView.value).toBe('independent-value')
 
-    expect(getValue('20')).toBe('shared-linked')
-    expect(getValue('18')).toBe('shared-linked')
-    expect(getValue('19')).toBe('independent-value')
+    // Per-instance overrides are owned by the SubgraphNode itself at
+    // `(graphId, hostNode.id, *)`. Each PromotedWidgetView is a first-class
+    // widget on the SubgraphNode, so writes land in the natural
+    // (graphId, nodeId, *) namespace and are isolated from interior entries.
+    const overrideValues = useWidgetValueStore()
+      .getNodeWidgets(graph.id, hostNode.id)
+      .map((entry) => entry.value)
+    expect(overrideValues).toEqual(
+      expect.arrayContaining(['shared-linked', 'independent-value'])
+    )
   })
 
   test('fixture refreshes duplicate fallback after linked representative recovers', () => {
@@ -2022,13 +2106,15 @@ describe('three-level nested value propagation', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  test('value set at outermost level propagates to concrete widget', () => {
+  test('value set at outermost level is visible through the promoted view', () => {
     const { concreteNode, subgraphNodeA } = createThreeLevelNestedSubgraph()
 
     expect(subgraphNodeA.widgets).toHaveLength(1)
     expect(subgraphNodeA.widgets[0].value).toBe(100)
 
     subgraphNodeA.widgets[0].value = 200
+    expect(subgraphNodeA.widgets[0].value).toBe(200)
+    // Write-through chains through every nested view down to the concrete.
     expect(concreteNode.widgets![0].value).toBe(200)
   })
 
@@ -2108,6 +2194,8 @@ describe('three-level nested value propagation', () => {
 
     widgets[1].value = 'updated-second'
 
+    // Write-through follows the disambig chain — only secondTextNode's
+    // interior is mutated; firstTextNode stays untouched.
     expect(firstTextNode.widgets?.[0]?.value).toBe('11111111111')
     expect(secondTextNode.widgets?.[0]?.value).toBe('updated-second')
     expect(widgets[0].value).toBe('11111111111')
@@ -2156,13 +2244,14 @@ describe('multi-link representative determinism for input-based promotion', () =
     // Read returns the first link's value
     expect(widgets[0].value).toBe('first-val')
 
-    // Write propagates to all linked nodes
+    // Write-through hits only the representative interior (first link).
+    // Sibling interiors connected via the same input stay at their defaults.
     widgets[0].value = 'updated'
     expect(firstNode.widgets![0].value).toBe('updated')
-    expect(secondNode.widgets![0].value).toBe('updated')
-    expect(thirdNode.widgets![0].value).toBe('updated')
+    expect(secondNode.widgets![0].value).toBe('second-val')
+    expect(thirdNode.widgets![0].value).toBe('third-val')
 
-    // Repeated reads are still deterministic
+    // Repeated reads through the view return the per-instance override
     expect(widgets[0].value).toBe('updated')
   })
 })
@@ -2277,13 +2366,15 @@ describe('promoted combo rendering', () => {
     expect(renderedText).toContain('a')
   })
 
-  test('value updates propagate through two promoted input layers', () => {
+  test('value updates at the outer layer write through to the interior combo widget', () => {
     const { comboWidget, subgraphNodeB } = createTwoLevelNestedSubgraph()
     comboWidget.computedDisabled = true
     const promotedWidget = subgraphNodeB.widgets[0]
 
     expect(promotedWidget.value).toBe('a')
     promotedWidget.value = 'b'
+    expect(promotedWidget.value).toBe('b')
+    // Write-through chains down to the concrete combo widget.
     expect(comboWidget.value).toBe('b')
 
     const fillText = vi.fn()
@@ -2676,5 +2767,104 @@ describe('DOM widget promotion', () => {
     expect(mockDomWidgetStore.clearPositionOverride).toHaveBeenCalledWith(
       'dom-widget-widgetB'
     )
+  })
+
+  test('value setter is a no-op while the SubgraphNode is unattached (id === -1)', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'preAttach', 'initial', () => {})
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'preAttach'
+    )
+
+    // Detach the SubgraphNode so its id reverts to the pre-attach sentinel.
+    Object.assign(subgraphNode, { id: -1 })
+
+    view.value = 'should-not-persist'
+
+    // No WidgetState entry registered at id -1
+    const entries = useWidgetValueStore().getNodeWidgets(
+      subgraphNode.rootGraph.id,
+      -1
+    )
+    expect(entries).toHaveLength(0)
+    // Read still falls back to the interior default
+    expect(view.value).toBe('initial')
+  })
+
+  test('label setter is a no-op while the SubgraphNode is unattached (id === -1)', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'preAttachLabel', 'initial', () => {})
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'preAttachLabel'
+    )
+
+    Object.assign(subgraphNode, { id: -1 })
+
+    view.label = 'My Label'
+
+    const entries = useWidgetValueStore().getNodeWidgets(
+      subgraphNode.rootGraph.id,
+      -1
+    )
+    expect(entries).toHaveLength(0)
+  })
+
+  test('label setter materializes a per-instance override when no slot is bound', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'labelOnly', 'initial', () => {})
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'labelOnly'
+    )
+
+    view.label = 'My Label'
+
+    // Without a bound subgraph slot the per-instance override is the only
+    // place the new label can live; the setter must materialize it so
+    // the rename actually takes effect (the getter falls back to
+    // state?.label when no slot is found).
+    const entries = useWidgetValueStore().getNodeWidgets(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(entries).toHaveLength(1)
+    expect(entries[0].label).toBe('My Label')
+    expect(view.label).toBe('My Label')
+  })
+
+  test('label setter updates an existing per-instance override when a value override is present', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'valueAndLabel', 'initial', () => {})
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'valueAndLabel'
+    )
+
+    // Triggering a value write materialises the override (legitimate ownership).
+    view.value = 'override'
+
+    // Now setting a label should update the existing override, not create a new one.
+    view.label = 'My Label'
+
+    const entries = useWidgetValueStore().getNodeWidgets(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(entries).toHaveLength(1)
+    expect(entries[0].label).toBe('My Label')
   })
 })

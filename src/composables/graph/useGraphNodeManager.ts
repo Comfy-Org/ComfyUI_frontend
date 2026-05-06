@@ -50,13 +50,19 @@ export interface WidgetSlotMetadata {
 
 /**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
- * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
+ * Per-instance promoted-widget state still lives in widgetValueStore.
  */
 export interface SafeWidgetData {
+  /** For promoted widgets: host SubgraphNode instance used for store lookup. */
   nodeId?: NodeId
-  storeNodeId?: NodeId
+  /** Display-facing widget name; not a stable per-instance key. */
   name: string
-  storeName?: string
+  /** Opaque widget-store name paired with nodeId in `widgetValueStore`—do not parse. */
+  instanceWidgetName?: string
+  /** Promoted source identity for grouping and lookups. */
+  source?: PromotedWidgetSource
+  /** Locator ID of the resolved source node. */
+  sourceNodeLocatorId?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -80,22 +86,13 @@ export interface SafeWidgetData {
   spec?: InputSpec
   /** Input slot metadata (index and link status) */
   slotMetadata?: WidgetSlotMetadata
-  /**
-   * Original LiteGraph widget name used for slot metadata matching.
-   * For promoted widgets, `name` is `sourceWidgetName` (interior widget name)
-   * which differs from the subgraph node's input slot widget name.
-   */
+  /** Subgraph input slot name used when displayName comes from the source widget. */
   slotName?: string
-  /**
-   * Execution ID of the interior node that owns the source widget.
-   * Only set for promoted widgets where the source node differs from the
-   * host subgraph node. Used for missing-model lookups that key by
-   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
-   */
+  /** Execution ID of the resolved source node for promoted-widget lookups. */
   sourceExecutionId?: string
   /** Tooltip text from the resolved widget. */
   tooltip?: string
-  /** For promoted widgets, the display label from the subgraph input slot. */
+  /** Current promoted-view label, if any. */
   promotedLabel?: string
 }
 
@@ -277,7 +274,7 @@ function safeWidgetMapper(
       const { displayName, promotedSource } =
         resolvePromotedWidgetIdentity(widget)
 
-      // Get shared enhancements (controlWidget, spec, nodeType)
+      // Get shared widget enhancements.
       const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
       const slotInfo =
         slotMetadata.get(displayName) ?? slotMetadata.get(widget.name)
@@ -297,7 +294,7 @@ function safeWidgetMapper(
       const isPromotedPseudoWidget =
         isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
 
-      // Extract only render-critical options (canvasOnly, advanced, read_only)
+      // Extract render-facing widget options.
       const options = extractWidgetDisplayOptions(widget)
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
@@ -319,25 +316,47 @@ function safeWidgetMapper(
 
       const effectiveWidget = sourceWidget ?? widget
 
-      const localId = isPromotedWidgetView(widget)
-        ? String(
-            sourceNode?.id ??
-              promotedSource?.disambiguatingSourceNodeId ??
-              promotedSource?.sourceNodeId
-          )
-        : undefined
-      const nodeId =
-        subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const storeName = isPromotedWidgetView(widget)
+      // Host node id: for promoted views, the SubgraphNode instance id;
+      // for non-promoted widgets, undefined (consumers fall back to the
+      // host node id from rendering context).
+      const nodeId = isPromotedWidgetView(widget) ? String(node.id) : undefined
+
+      const sourceWidgetName = isPromotedWidgetView(widget)
         ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
         : undefined
-      const name = storeName ?? displayName
+      const rawSourceLocalId = isPromotedWidgetView(widget)
+        ? (sourceNode?.id ??
+          promotedSource?.disambiguatingSourceNodeId ??
+          promotedSource?.sourceNodeId)
+        : undefined
+      const sourceLocalId =
+        rawSourceLocalId != null ? String(rawSourceLocalId) : undefined
+      const source: PromotedWidgetSource | undefined =
+        isPromotedWidgetView(widget) && sourceLocalId && sourceWidgetName
+          ? {
+              sourceNodeId: sourceLocalId,
+              sourceWidgetName,
+              disambiguatingSourceNodeId:
+                promotedSource?.disambiguatingSourceNodeId
+            }
+          : undefined
+      const sourceNodeLocatorId =
+        source && subgraphId
+          ? `${subgraphId}:${source.sourceNodeId}`
+          : undefined
+
+      const instanceWidgetName = isPromotedWidgetView(widget)
+        ? widget.storeName
+        : undefined
+
+      const widgetDisplayName = sourceWidgetName ?? displayName
 
       return {
         nodeId,
-        storeNodeId: nodeId,
-        name,
-        storeName,
+        name: widgetDisplayName,
+        instanceWidgetName,
+        source,
+        sourceNodeLocatorId,
         type: effectiveWidget.type,
         ...sharedEnhancements,
         callback,
@@ -350,9 +369,10 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
-        // For promoted widgets, name is sourceWidgetName while widget.name
-        // is the subgraph input slot name — store the slot name for lookups.
-        slotName: name !== widget.name ? widget.name : undefined,
+        // For promoted widgets, displayName is sourceWidgetName while
+        // widget.name is the subgraph input slot name — store the slot
+        // name for lookups.
+        slotName: widgetDisplayName !== widget.name ? widget.name : undefined,
         sourceExecutionId:
           sourceNode && app.rootGraph
             ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)

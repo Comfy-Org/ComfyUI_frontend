@@ -3,10 +3,26 @@ import { fromZodError } from 'zod-validation-error'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
-const proxyWidgetTupleSchema = z.union([
-  z.tuple([z.string(), z.string(), z.string()]),
-  z.tuple([z.string(), z.string()])
+export const serializedProxyWidgetTupleSchema = z.tuple([
+  z.string(),
+  z.string()
 ])
+export type SerializedProxyWidgetTuple = z.infer<
+  typeof serializedProxyWidgetTupleSchema
+>
+
+const legacyProxyWidgetTupleSchema = z.tuple([
+  z.string(),
+  z.string(),
+  z.string()
+])
+
+export const proxyWidgetTupleSchema = z.union([
+  legacyProxyWidgetTupleSchema,
+  serializedProxyWidgetTupleSchema
+])
+export type ProxyWidgetTuple = z.infer<typeof proxyWidgetTupleSchema>
+
 const proxyWidgetsPropertySchema = z.array(proxyWidgetTupleSchema)
 type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 

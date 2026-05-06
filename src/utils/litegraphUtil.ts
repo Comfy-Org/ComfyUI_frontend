@@ -328,25 +328,43 @@ export function resolveNode(
   }
   return undefined
 }
+
+export function getSelectedWidgetIdentity(
+  node: Pick<LGraphNode, 'id'>,
+  widget: IBaseWidget
+): [NodeId, string] {
+  if (isPromotedWidgetView(widget)) return [node.id, widget.storeName]
+  return [node.id, widget.name]
+}
+
 export function resolveNodeWidget(
   nodeId: NodeId,
   widgetName?: string,
-  graph: LGraph = app.rootGraph
+  graph: LGraph | null | undefined = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  if (!graph || typeof graph.getNodeById !== 'function') return []
+
   const node = graph.getNodeById(nodeId)
+  const normalizedSourceNodeId = String(nodeId)
   if (!widgetName) return node ? [node] : []
+
   if (node) {
-    const widget = node.widgets?.find((w) => w.name === widgetName)
+    const widget = node.widgets?.find(
+      (w) =>
+        w.name === widgetName ||
+        (isPromotedWidgetView(w) && w.storeName === widgetName)
+    )
     return widget ? [node, widget] : []
   }
 
   for (const node of graph.nodes) {
-    if (!node.isSubgraphNode()) continue
+    if (typeof node.isSubgraphNode !== 'function' || !node.isSubgraphNode())
+      continue
     const widget = node.widgets?.find(
       (w) =>
         isPromotedWidgetView(w) &&
         w.sourceWidgetName === widgetName &&
-        w.sourceNodeId === nodeId
+        w.sourceNodeId === normalizedSourceNodeId
     )
     if (widget) return [node, widget]
   }

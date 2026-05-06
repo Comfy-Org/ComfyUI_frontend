@@ -1027,4 +1027,29 @@ describe('Zero UUID handling in configure', () => {
     subgraph.configure(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
   })
+
+  describe('trigger() events bus', () => {
+    it('dispatches node:slot-label:changed on graph.events when trigger() is called', () => {
+      const graph = new LGraph()
+      const received: Array<{ type: string; nodeId: NodeId }> = []
+      graph.events.addEventListener('node:slot-label:changed', (e) => {
+        received.push(e.detail)
+      })
+      graph.trigger('node:slot-label:changed', { nodeId: 42 })
+      expect(received.length).toBe(1)
+      expect(received[0]).toEqual({
+        type: 'node:slot-label:changed',
+        nodeId: 42
+      })
+    })
+
+    it('still invokes the legacy onTrigger field for backward compatibility', () => {
+      const graph = new LGraph()
+      const received: Array<{ type: string }> = []
+      graph.onTrigger = (event) => received.push(event)
+      graph.trigger('node:slot-label:changed', { nodeId: 7 })
+      expect(received.length).toBe(1)
+      expect(received[0].type).toBe('node:slot-label:changed')
+    })
+  })
 })

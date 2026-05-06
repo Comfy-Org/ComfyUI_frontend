@@ -14,6 +14,7 @@ import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { makeCompositeKey } from '@/utils/compositeKey'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -42,10 +43,10 @@ const createMockWidget = (
 })
 
 describe('getWidgetIdentity', () => {
-  it('returns stable dedupeIdentity for widgets with storeNodeId', () => {
+  it('returns stable dedupeIdentity for widgets with nodeId and instanceWidgetName', () => {
     const widget = createMockWidget({
-      storeNodeId: 'subgraph:19',
-      storeName: 'text',
+      nodeId: 'subgraph:19',
+      instanceWidgetName: 'text',
       slotName: 'text',
       type: 'text'
     })
@@ -54,24 +55,26 @@ describe('getWidgetIdentity', () => {
     expect(renderKey).toBe(dedupeIdentity)
   })
 
-  it('returns transient renderKey for widgets without stable identity', () => {
+  it('returns transient renderKey when neither widget nor caller provide a stable identity', () => {
     const widget = createMockWidget({
       nodeId: undefined,
-      storeNodeId: undefined,
       sourceExecutionId: undefined
     })
-    const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '5', 3)
+    const { dedupeIdentity, renderKey } = getWidgetIdentity(
+      widget,
+      undefined,
+      3
+    )
     expect(dedupeIdentity).toBeUndefined()
-    expect(renderKey).toBe('transient:5:test_widget:test_widget:combo:3')
+    expect(renderKey).toBe('transient::test_widget:test_widget:combo:3')
   })
 
-  it('uses sourceExecutionId for identity when no nodeId', () => {
+  it('uses sourceExecutionId for identity when no node id is available', () => {
     const widget = createMockWidget({
       nodeId: undefined,
-      storeNodeId: undefined,
       sourceExecutionId: '65:18'
     })
-    const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
+    const { dedupeIdentity } = getWidgetIdentity(widget, undefined, 0)
     expect(dedupeIdentity).toBe('exec:65:18:test_widget:test_widget:combo')
   })
 })
@@ -211,9 +214,9 @@ describe('computeProcessedWidgets borderStyle', () => {
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: 'inner-subgraph:1',
-      storeNodeId: 'inner-subgraph:1',
-      storeName: 'text',
+      nodeId: '3',
+      instanceWidgetName: 'promoted:text:1',
+      source: { sourceNodeId: '1', sourceWidgetName: 'text' },
       slotName: 'text'
     })
 
@@ -247,13 +250,58 @@ describe('computeProcessedWidgets borderStyle', () => {
     ).toBe(true)
   })
 
+  it('uses disambiguatingSourceNodeId when checking promoted border styling', () => {
+    const promotedWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: '3',
+      instanceWidgetName: 'promoted:text:1',
+      source: {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      },
+      slotName: 'text'
+    })
+
+    usePromotionStore().promote('graph-test', '4', {
+      sourceNodeId: '3',
+      sourceWidgetName: 'text',
+      disambiguatingSourceNodeId: '1'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '3',
+        type: 'SubgraphNode',
+        widgets: [promotedWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(
+      result.some((w) => w.simplified.borderStyle?.includes('promoted'))
+    ).toBe(true)
+    expect(result[0]?.id).toBe('3')
+  })
+
   it('does not apply promoted border styling to outermost widgets', () => {
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: 'inner-subgraph:1',
-      storeNodeId: 'inner-subgraph:1',
-      storeName: 'text',
+      nodeId: '4',
+      instanceWidgetName: 'promoted:text:1',
+      source: { sourceNodeId: '1', sourceWidgetName: 'text' },
       slotName: 'text'
     })
 
@@ -323,8 +371,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      storeNodeId: '1',
-      storeName: 'text',
+      instanceWidgetName: 'text',
       slotName: 'text',
       options: { hidden: true }
     })
@@ -333,8 +380,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      storeNodeId: '1',
-      storeName: 'text',
+      instanceWidgetName: 'text',
       slotName: 'text'
     })
 
@@ -359,6 +405,162 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].hidden).toBe(false)
+  })
+})
+
+describe('per-instance value lookup for promoted widgets', () => {
+  const GRAPH_ID = 'graph-test'
+  const INTERIOR_NODE_ID = '5'
+  const INTERIOR_WIDGET_NAME = 'text'
+  const STORE_NAME = makeCompositeKey([
+    INTERIOR_NODE_ID,
+    INTERIOR_WIDGET_NAME,
+    ''
+  ])
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function buildPromotedWidget(instanceId: string): SafeWidgetData {
+    return createMockWidget({
+      name: INTERIOR_WIDGET_NAME,
+      type: 'text',
+      slotName: INTERIOR_WIDGET_NAME,
+      nodeId: instanceId,
+      instanceWidgetName: STORE_NAME,
+      source: {
+        sourceNodeId: INTERIOR_NODE_ID,
+        sourceWidgetName: INTERIOR_WIDGET_NAME
+      },
+      sourceNodeLocatorId: `subgraph-def:${INTERIOR_NODE_ID}`
+    })
+  }
+
+  function processInstance(
+    instanceId: string,
+    widget: SafeWidgetData
+  ): ReturnType<typeof computeProcessedWidgets> {
+    return computeProcessedWidgets({
+      nodeData: {
+        id: instanceId,
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Subgraph Instance',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+  }
+
+  it('reads per-instance values from per-instance WidgetState entries when multiple instances share a definition', () => {
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: '100',
+      name: STORE_NAME,
+      type: 'text',
+      value: 'valueA',
+      options: {}
+    })
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: '200',
+      name: STORE_NAME,
+      type: 'text',
+      value: 'valueB',
+      options: {}
+    })
+
+    const [instanceA] = processInstance('100', buildPromotedWidget('100'))
+    const [instanceB] = processInstance('200', buildPromotedWidget('200'))
+
+    expect(instanceA.value).toBe('valueA')
+    expect(instanceB.value).toBe('valueB')
+  })
+
+  it('produces distinct dedupe identities per instance so duplicate-pruning does not collapse them', () => {
+    const widgetA = buildPromotedWidget('100')
+    const widgetB = buildPromotedWidget('200')
+
+    const identityA = getWidgetIdentity(widgetA, '100', 0)
+    const identityB = getWidgetIdentity(widgetB, '200', 0)
+
+    expect(identityA.dedupeIdentity).not.toBe(identityB.dedupeIdentity)
+  })
+
+  it('falls back to interior WidgetState value when per-instance override is absent for a promoted widget', () => {
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: INTERIOR_NODE_ID,
+      name: INTERIOR_WIDGET_NAME,
+      type: 'text',
+      value: 'interior-value',
+      options: {}
+    })
+
+    const promotedWidget = createMockWidget({
+      name: INTERIOR_WIDGET_NAME,
+      type: 'text',
+      slotName: INTERIOR_WIDGET_NAME,
+      nodeId: '57',
+      instanceWidgetName: 'STORE',
+      source: {
+        sourceNodeId: INTERIOR_NODE_ID,
+        sourceWidgetName: INTERIOR_WIDGET_NAME
+      }
+    })
+
+    const [result] = processInstance('57', promotedWidget)
+
+    expect(result.value).toBe('interior-value')
+  })
+})
+
+describe('ordinary widget dedupe', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('does not collapse duplicate ordinary widget refs in node.widgets[]', () => {
+    // Ordinary widgets do NOT carry their own identity (no widget.nodeId,
+    // no instanceWidgetName). When a host node legitimately renders the
+    // same widget twice, both must produce distinct entries with distinct
+    // renderKeys.
+    const ordinaryWidget = createMockWidget({
+      name: 'seed',
+      type: 'number',
+      nodeId: undefined,
+      instanceWidgetName: undefined
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '1',
+        type: 'TestNode',
+        widgets: [ordinaryWidget, ordinaryWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result).toHaveLength(2)
+    expect(result[0].renderKey).not.toBe(result[1].renderKey)
   })
 })
 

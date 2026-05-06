@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -187,7 +188,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 
-  it('updates slotMetadata for promoted widgets where SafeWidgetData.name differs from input.widget.name', async () => {
+  it('updates slotMetadata for promoted widgets where SafeWidgetData.displayName differs from input.widget.name', async () => {
     // Set up a subgraph with an interior node that has a "prompt" widget.
     // createPromotedWidgetView resolves against this interior node.
     const subgraph = createTestSubgraph()
@@ -201,7 +202,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     // Create a PromotedWidgetView with identityName="value" (subgraph input
     // slot name) and sourceWidgetName="prompt" (interior widget name).
     // PromotedWidgetView.name returns "value" (identity), safeWidgetMapper
-    // sets SafeWidgetData.name to sourceWidgetName ("prompt").
+    // sets SafeWidgetData.displayName to sourceWidgetName ("prompt").
     const promotedView = createPromotedWidgetView(
       subgraphNode,
       '10',
@@ -224,7 +225,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(hostNode.id))
 
-    // SafeWidgetData.name is "prompt" (sourceWidgetName), but the
+    // SafeWidgetData.displayName is "prompt" (sourceWidgetName), but the
     // input slot widget name is "value" — slotName bridges this gap.
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
     expect(widgetData).toBeDefined()
@@ -471,10 +472,15 @@ describe('Nested promoted widget mapping', () => {
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    expect(mappedWidget?.storeName).toBe('picker')
-    expect(mappedWidget?.storeNodeId).toBe(
+    expect(mappedWidget?.name).toBe('picker')
+    expect(mappedWidget?.sourceNodeLocatorId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
+    expect(mappedWidget?.source).toEqual({
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'picker',
+      disambiguatingSourceNodeId: undefined
+    })
   })
 
   it('keeps linked and independent same-name promotions as distinct sources', () => {
@@ -516,7 +522,7 @@ describe('Nested promoted widget mapping', () => {
 
     expect(promotedWidgets).toHaveLength(2)
     expect(
-      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+      new Set(promotedWidgets?.map((widget) => widget.sourceNodeLocatorId))
     ).toEqual(
       new Set([
         `${subgraph.id}:${linkedNode.id}`,
@@ -580,13 +586,105 @@ describe('Nested promoted widget mapping', () => {
 
     expect(promotedWidgets).toHaveLength(2)
     expect(
-      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+      new Set(promotedWidgets?.map((widget) => widget.sourceNodeLocatorId))
     ).toEqual(
       new Set([
         `${outerSubgraphNode.subgraph.id}:${firstTextNode.id}`,
         `${outerSubgraphNode.subgraph.id}:${secondTextNode.id}`
       ])
     )
+  })
+})
+
+describe('safeWidgetMapper per-instance widget identity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('populates nodeId with the SubgraphNode instance id and instanceWidgetName with the view storeName for promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('CLIPTextEncode')
+    const interiorInput = interiorNode.addInput('text', 'STRING')
+    interiorNode.addWidget('text', 'text', '', () => undefined, {})
+    interiorInput.widget = { name: 'text' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 100 })
+    subgraphNode._internalConfigureAfterSlots()
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    const promotedView = subgraphNode.widgets[0]
+    if (!promotedView || !isPromotedWidgetView(promotedView)) {
+      throw new Error('Expected first widget to be a promoted view')
+    }
+    const expectedStoreName = promotedView.storeName
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgetData = vueNodeData
+      .get(String(subgraphNode.id))
+      ?.widgets?.find((w) => w.name === 'text')
+
+    expect(widgetData).toBeDefined()
+    expect(widgetData?.nodeId).toBe(String(subgraphNode.id))
+    expect(widgetData?.instanceWidgetName).toBe(expectedStoreName)
+  })
+
+  it('does not set nodeId or instanceWidgetName for non-promoted widgets', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgetData = vueNodeData
+      .get(String(node.id))
+      ?.widgets?.find((w) => w.name === 'steps')
+
+    expect(widgetData).toBeDefined()
+    expect(widgetData?.nodeId).toBeUndefined()
+    expect(widgetData?.instanceWidgetName).toBeUndefined()
+  })
+
+  it('produces distinct nodeId values for two SubgraphNode instances of one definition', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('CLIPTextEncode')
+    const interiorInput = interiorNode.addInput('text', 'STRING')
+    interiorNode.addWidget('text', 'text', '', () => undefined, {})
+    interiorInput.widget = { name: 'text' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const instanceA = createTestSubgraphNode(subgraph, { id: 100 })
+    instanceA._internalConfigureAfterSlots()
+    const graph = instanceA.graph as LGraph
+    graph.add(instanceA)
+
+    const instanceB = createTestSubgraphNode(subgraph, {
+      id: 200,
+      parentGraph: graph
+    })
+    instanceB._internalConfigureAfterSlots()
+    graph.add(instanceB)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgetA = vueNodeData
+      .get(String(instanceA.id))
+      ?.widgets?.find((w) => w.name === 'text')
+    const widgetB = vueNodeData
+      .get(String(instanceB.id))
+      ?.widgets?.find((w) => w.name === 'text')
+
+    expect(widgetA?.nodeId).toBe('100')
+    expect(widgetB?.nodeId).toBe('200')
+    // Both share the same definition so instanceWidgetName matches —
+    // only nodeId distinguishes them.
+    expect(widgetA?.instanceWidgetName).toBe(widgetB?.instanceWidgetName)
   })
 })
 

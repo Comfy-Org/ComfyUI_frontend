@@ -1367,7 +1367,9 @@ export class LGraph
     ])
 
     if (validEventTypes.has(action) && param && typeof param === 'object') {
-      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+      const event = { type: action, ...param } as LGraphTriggerEvent
+      this.onTrigger?.(event)
+      this.events.dispatch(action as LGraphTriggerEvent['type'], event)
     }
     // Don't handle unknown events - just ignore them
   }

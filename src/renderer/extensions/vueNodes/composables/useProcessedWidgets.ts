@@ -126,8 +126,12 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
-  const storeWidgetName = widget.storeName ?? widget.name
+  // Only widgets that carry their own identity (promoted widget views set
+  // `widget.nodeId`) get a stable dedupe identity. Ordinary widgets must
+  // fall through to the transient renderKey form so duplicate refs in
+  // `node.widgets[]` are not collapsed into one entry.
+  const rawWidgetId = widget.nodeId
+  const storeWidgetName = widget.instanceWidgetName ?? widget.name
   const slotNameForIdentity = widget.slotName ?? widget.name
   const stableIdentityRoot = rawWidgetId
     ? `node:${String(stripGraphPrefix(rawWidgetId))}`
@@ -187,6 +191,7 @@ export function computeProcessedWidgets({
     identity: ReturnType<typeof getWidgetIdentity>
     mergedOptions: IWidgetOptions
     widgetState: WidgetState | undefined
+    perInstanceWidgetState: WidgetState | undefined
     isVisible: boolean
   }> = []
   const dedupeIndexByIdentity = new Map<string, number>()
@@ -195,13 +200,24 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const storeWidgetName = widget.storeName ?? widget.name
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const widgetState = graphId
+    const storeWidgetName = widget.instanceWidgetName ?? widget.name
+    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
+    const perInstanceWidgetState = graphId
       ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
+    // For freshly-created promoted widget views the per-instance host
+    // override may not be registered yet. Fall back to the interior source
+    // WidgetState entry for reads only — the write path keeps using the
+    // per-instance override.
+    const fallbackWidgetState =
+      graphId && widget.source && !perInstanceWidgetState
+        ? widgetValueStore.getWidget(
+            graphId,
+            widget.source.sourceNodeId,
+            widget.source.sourceWidgetName
+          )
+        : undefined
+    const widgetState = perInstanceWidgetState ?? fallbackWidgetState
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
@@ -213,6 +229,7 @@ export function computeProcessedWidgets({
         identity,
         mergedOptions,
         widgetState,
+        perInstanceWidgetState,
         isVisible: visible
       })
       continue
@@ -226,6 +243,7 @@ export function computeProcessedWidgets({
         identity,
         mergedOptions,
         widgetState,
+        perInstanceWidgetState,
         isVisible: visible
       })
       continue
@@ -238,6 +256,7 @@ export function computeProcessedWidgets({
         identity,
         mergedOptions,
         widgetState,
+        perInstanceWidgetState,
         isVisible: true
       }
     }
@@ -247,14 +266,21 @@ export function computeProcessedWidgets({
     widget,
     mergedOptions,
     widgetState,
+    perInstanceWidgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
     const hostNodeId = String(nodeId ?? '')
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const promotionSourceNodeId = widget.storeName
-      ? String(bareWidgetId)
+    const hostBareId = String(stripGraphPrefix(nodeId ?? ''))
+    const sourceNodeId = widget.source?.sourceNodeId
+    const widgetId = sourceNodeId ?? hostBareId
+    // Promotion-store grouping keys off the interior source identity.
+    // For promoted views: use the source local id; for non-promoted
+    // widgets: the host node id stands in (a non-promoted widget acts as
+    // its own source for border-style purposes).
+    const promotionLookupNodeId =
+      widget.source?.disambiguatingSourceNodeId ?? sourceNodeId ?? hostBareId
+    const promotionSourceNodeId = widget.source
+      ? promotionLookupNodeId
       : undefined
 
     const vueComponent =
@@ -274,7 +300,7 @@ export function computeProcessedWidgets({
       graphId &&
       promotionStore.isPromotedByAny(graphId, {
         sourceNodeId: hostNodeId,
-        sourceWidgetName: widget.storeName ?? widget.name,
+        sourceWidgetName: widget.name,
         disambiguatingSourceNodeId: promotionSourceNodeId
       })
         ? 'ring ring-component-node-widget-promoted'
@@ -290,11 +316,12 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = widget.nodeId
-      ? widget.nodeId
-      : nodeData
-        ? getLocatorIdFromNodeData(nodeData)
-        : undefined
+    // Locator points at the source node for promoted views (canvas/save
+    // flows resolve through the interior identity), and falls back to
+    // the host node's locator for non-promoted widgets.
+    const nodeLocatorId =
+      widget.sourceNodeLocatorId ??
+      (nodeData ? getLocatorIdFromNodeData(nodeData) : undefined)
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -311,7 +338,7 @@ export function computeProcessedWidgets({
     }
 
     const updateHandler = createWidgetUpdateHandler(
-      widgetState,
+      perInstanceWidgetState,
       widget,
       nodeExecId,
       widgetOptions,
@@ -323,13 +350,7 @@ export function computeProcessedWidgets({
       e.preventDefault()
       e.stopPropagation()
       if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
-      showNodeOptions(
-        e,
-        widget.name,
-        widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
-          : undefined
-      )
+      showNodeOptions(e, widget.name, widget.source?.sourceNodeId)
     }
 
     result.push({
@@ -344,7 +365,7 @@ export function computeProcessedWidgets({
         missingModelStore
       ),
       hidden: mergedOptions.hidden ?? false,
-      id: String(bareWidgetId),
+      id: widgetId,
       name: widget.name,
       renderKey,
       type: widget.type,
