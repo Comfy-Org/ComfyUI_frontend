@@ -23,9 +23,9 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const tabs = [
-  ['linearMode.mobileControls', 'icon-[lucide--play]'],
-  ['nodeHelpPage.outputs', 'icon-[comfy--image-ai-edit]'],
-  ['sideToolbar.assets', 'icon-[lucide--images]']
+  ['linearMode.mobileControls', 'icon-[lucide--play]', 'control'],
+  ['nodeHelpPage.outputs', 'icon-[comfy--image-ai-edit]', 'preview'],
+  ['sideToolbar.assets', 'icon-[lucide--images]', 'output']
 ]
 
 const canvasStore = useCanvasStore()
@@ -196,18 +196,22 @@ const menuEntries = computed<MenuItem[]>(() => [
         :style="{ translate }"
       >
         <div
+          id="mobile-app-control-panel"
           class="absolute h-full w-screen overflow-y-auto contain-size"
           role="tabpanel"
           :aria-hidden="activeIndex !== 0"
-          :aria-label="t(tabs[0][0])"
+          aria-labelledby="mobile-app-control-tab"
+          :inert="activeIndex !== 0"
         >
           <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
         <div
+          id="mobile-app-preview-panel"
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 1"
-          :aria-label="t(tabs[1][0])"
+          aria-labelledby="mobile-app-preview-tab"
+          :inert="activeIndex !== 1"
         >
           <MobileError
             v-if="executionErrorStore.isErrorOverlayOpen"
@@ -216,10 +220,12 @@ const menuEntries = computed<MenuItem[]>(() => [
           <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
+          id="mobile-app-output-panel"
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 2"
-          :aria-label="t(tabs[2][0])"
+          aria-labelledby="mobile-app-output-tab"
+          :inert="activeIndex !== 2"
         />
       </div>
     </div>
@@ -229,12 +235,14 @@ const menuEntries = computed<MenuItem[]>(() => [
       role="tablist"
     >
       <Button
-        v-for="([label, icon], index) in tabs"
+        v-for="([label, icon, id], index) in tabs"
+        :id="`mobile-app-${id}-tab`"
         :key="label"
         :variant="index === activeIndex ? 'secondary' : 'muted-textonly'"
         class="h-14 grow flex-col"
         role="tab"
         :aria-selected="index === activeIndex"
+        :aria-controls="`mobile-app-${id}-panel`"
         @click="onClick(index)"
       >
         <div class="relative size-4">
