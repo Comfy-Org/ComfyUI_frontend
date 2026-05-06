@@ -3742,17 +3742,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this._ghostKeyHandler = null
     }
 
+    this.isDragging = false
+    this._autoPan?.stop()
+    this._autoPan = null
+
     const nodeId = this.state.ghostNodeId
     if (nodeId == null) return
 
     this.state.ghostNodeId = null
-    this.isDragging = false
     this.dispatchEvent('litegraph:ghost-placement', {
       active: false,
       nodeId
     })
-    this._autoPan?.stop()
-    this._autoPan = null
 
     const node = this.graph?.getNodeById(nodeId)
     if (!node) return
