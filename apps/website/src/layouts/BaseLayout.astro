@@ -139,9 +139,11 @@ const websiteJsonLd = {
     <script>
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
       import { ScrollTrigger } from '../scripts/gsapSetup'
+      import { initAttributionPersistence } from '../scripts/attribution'
       import { initPostHog, capturePageview } from '../scripts/posthog'
 
       initSmoothScroll()
+      initAttributionPersistence()
 
       if (import.meta.env.PROD) {
         initPostHog()
