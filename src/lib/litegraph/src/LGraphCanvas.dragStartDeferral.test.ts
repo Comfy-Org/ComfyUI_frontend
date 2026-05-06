@@ -120,4 +120,31 @@ describe('_startDraggingItems defers onSelectionChange', () => {
 
     expect(canvas.onSelectionChange).toBe(onSelectionChange)
   })
+
+  it('does not schedule a deferred notification when starting a drag on an already-selected sticky item', () => {
+    canvas.select(node)
+    const onSelectionChange = vi.fn()
+    canvas.onSelectionChange = onSelectionChange
+
+    canvas['_startDraggingItems'](node, pointer, true)
+
+    vi.advanceTimersByTime(16)
+    expect(onSelectionChange).not.toHaveBeenCalled()
+  })
+
+  it('restores onSelectionChange even when processSelect throws', () => {
+    const onSelectionChange = vi.fn()
+    canvas.onSelectionChange = onSelectionChange
+    const original = canvas.processSelect
+    canvas.processSelect = () => {
+      throw new Error('boom')
+    }
+
+    expect(() => canvas['_startDraggingItems'](node, pointer, true)).toThrow(
+      'boom'
+    )
+
+    expect(canvas.onSelectionChange).toBe(onSelectionChange)
+    canvas.processSelect = original
+  })
 })
