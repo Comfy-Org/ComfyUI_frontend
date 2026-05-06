@@ -1,7 +1,12 @@
 import type { RemoteItemSchema } from '@/schemas/nodeDefSchema'
-import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 
-/** Traverse an object by dot-path, treating numeric segments as array indices */
+export interface DropdownItemShape {
+  id: string
+  name: string
+  description?: string
+  preview_url?: string
+}
+
 export function getByPath(obj: unknown, path: string): unknown {
   return path.split('.').reduce((acc: unknown, key: string) => {
     if (acc == null) return undefined
@@ -11,7 +16,6 @@ export function getByPath(obj: unknown, path: string): unknown {
   }, obj)
 }
 
-/** Resolve a label — either dot-path or template with {field.path} placeholders */
 export function resolveLabel(template: string, item: unknown): string {
   if (!template.includes('{')) {
     return String(getByPath(item, template) ?? '')
@@ -21,11 +25,10 @@ export function resolveLabel(template: string, item: unknown): string {
   )
 }
 
-/** Map a raw API object to a FormDropdownItem using the item_schema */
 export function mapToDropdownItem(
   raw: unknown,
   schema: RemoteItemSchema
-): FormDropdownItem {
+): DropdownItemShape {
   return {
     id: String(getByPath(raw, schema.value_field) ?? ''),
     name: resolveLabel(schema.label_field, raw),
@@ -38,12 +41,6 @@ export function mapToDropdownItem(
   }
 }
 
-/**
- * Extract items array from a full API response using `responseKey`.
- * Returns `null` when the resolved value isn't an array (path missing,
- * wrong shape, etc.) so callers can distinguish a malformed response
- * from a legitimate empty list.
- */
 export function extractItems(
   response: unknown,
   responseKey?: string
@@ -52,7 +49,6 @@ export function extractItems(
   return Array.isArray(data) ? data : null
 }
 
-/** Build search text for an item from the specified search fields */
 export function buildSearchText(raw: unknown, searchFields: string[]): string {
   return searchFields
     .map((field) => String(getByPath(raw, field) ?? ''))

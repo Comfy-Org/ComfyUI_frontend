@@ -6,7 +6,7 @@ import {
   getByPath,
   mapToDropdownItem,
   resolveLabel
-} from '@/renderer/extensions/vueNodes/widgets/utils/itemSchemaUtils'
+} from '@/base/remote/itemSchema'
 
 describe('getByPath', () => {
   it('returns a top-level value for a plain key', () => {

@@ -1,6 +1,7 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
@@ -10,6 +11,8 @@ import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
+
+import { createAppQueryClient } from '@/platform/remote/queryClient'
 
 import { getFirebaseConfig } from '@/config/firebase'
 import {
@@ -82,7 +85,9 @@ Sentry.init({
       })
 })
 app.directive('tooltip', Tooltip)
+const queryClient = createAppQueryClient()
 app
+  .use(VueQueryPlugin, { queryClient })
   .use(router)
   .use(PrimeVue, {
     theme: {

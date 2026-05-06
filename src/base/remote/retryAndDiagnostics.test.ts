@@ -1,70 +1,8 @@
 import { AxiosError, AxiosHeaders } from 'axios'
 import { describe, expect, it } from 'vitest'
 
-import type { RemoteComboConfig } from '@/schemas/nodeDefSchema'
-
-import {
-  buildCacheKey,
-  getBackoff,
-  isRetriableError,
-  summarizeError,
-  summarizePayload
-} from '@/renderer/extensions/vueNodes/widgets/utils/richComboHelpers'
-
-const baseConfig: RemoteComboConfig = {
-  route: '/voices',
-  item_schema: {
-    value_field: 'id',
-    label_field: 'name',
-    preview_type: 'image'
-  }
-}
-
-function parseKey(key: string): URLSearchParams {
-  return new URL(key).searchParams
-}
-
-describe('buildCacheKey', () => {
-  it('encodes the route and response_key', () => {
-    const params = parseKey(
-      buildCacheKey(
-        {
-          ...baseConfig,
-          route: '/voices',
-          response_key: 'data.items'
-        },
-        'fb:user-a'
-      )
-    )
-    expect(params.get('route')).toBe('/voices')
-    expect(params.get('responseKey')).toBe('data.items')
-  })
-
-  it('partitions by authScope', () => {
-    const a = buildCacheKey(baseConfig, 'ws:team-a')
-    const b = buildCacheKey(baseConfig, 'ws:team-b')
-    expect(a).not.toBe(b)
-    expect(parseKey(a).get('u')).toBe('ws:team-a')
-    expect(parseKey(b).get('u')).toBe('ws:team-b')
-  })
-
-  it('treats workspace, firebase, and api-key scopes as distinct buckets', () => {
-    const ws = buildCacheKey(baseConfig, 'ws:abc')
-    const fb = buildCacheKey(baseConfig, 'fb:abc')
-    const apikey = buildCacheKey(baseConfig, 'apikey')
-    expect(new Set([ws, fb, apikey]).size).toBe(3)
-  })
-
-  it('falls back to "anon" when authScope is missing', () => {
-    expect(parseKey(buildCacheKey(baseConfig, null)).get('u')).toBe('anon')
-    expect(parseKey(buildCacheKey(baseConfig, undefined)).get('u')).toBe('anon')
-  })
-
-  it('treats missing optional fields as empty so the key stays stable', () => {
-    const params = parseKey(buildCacheKey(baseConfig, 'fb:user-a'))
-    expect(params.get('responseKey')).toBe('')
-  })
-})
+import { getBackoff, isRetriableError } from '@/base/remote/retry'
+import { summarizeError, summarizePayload } from '@/base/remote/diagnostics'
 
 describe('getBackoff', () => {
   it('grows exponentially from 1s', () => {
