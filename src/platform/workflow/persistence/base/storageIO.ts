@@ -23,6 +23,10 @@ export function markStorageUnavailable(): void {
   storageAvailable = false
 }
 
+export function resetStorageAvailable(): void {
+  storageAvailable = true
+}
+
 function isQuotaExceeded(error: unknown): boolean {
   return (
     error instanceof DOMException &&
