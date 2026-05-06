@@ -1661,6 +1661,7 @@
     "conditioning": "conditioning",
     "loaders": "loaders",
     "guiders": "guiders",
+    "batch": "batch",
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
@@ -1668,8 +1669,6 @@
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
-    "utils": "utils",
-    "string": "string",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
@@ -1678,6 +1677,7 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
+    "utils": "utils",
     "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
@@ -1712,7 +1712,7 @@
     "sd": "sd",
     "Ideogram": "Ideogram",
     "transform": "transform",
-    "batch": "batch",
+    "color": "color",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "compositing": "compositing",
@@ -2187,7 +2187,8 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead"
+      "backToSocialLogin": "Sign up with Google or Github instead",
+      "backToGithubLogin": "Sign up with Github instead"
     },
     "signup": {
       "title": "Create an account",
