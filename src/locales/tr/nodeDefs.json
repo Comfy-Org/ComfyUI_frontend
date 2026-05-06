@@ -1968,6 +1968,10 @@
     "description": "Bağlam pencerelerini manuel olarak ayarlayın.",
     "display_name": "Bağlam Pencereleri (Manuel)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Sıfırdan farklı indeksli context pencerelerine nedensel düzeltme karesi eklenip eklenmeyeceği."
+      },
       "closed_loop": {
         "name": "kapalı döngü",
         "tooltip": "Bağlam penceresi döngüsünün kapatılıp kapatılmayacağı; sadece döngülü çizelgeler için geçerlidir."
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "ses",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1 modeliyle bir metin istemi kullanarak mevcut bir görseli düzenleyin.",
+    "display_name": "Luma UNI-1 Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Düzenleme için kullanılacak model."
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "model_web_search": {
+        "name": "web_arama"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenilen düzenlemenin açıklaması. 1–6000 karakter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Düzenlenecek kaynak görsel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "İstem ve en boy oranına göre görüntüleri eşzamanlı olarak değiştirir.",
     "display_name": "Luma Görüntüden Görüntüye",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "stil_görüntüsü_ağırlığı",
         "tooltip": "Stil görüntüsünün ağırlığı. Stil_görüntüsü sağlanmazsa yoksayılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1 modeliyle metinden görseller oluşturun.",
+    "display_name": "Luma UNI-1 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Oluşturma için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy_oranı"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "model_web_search": {
+        "name": "web_arama"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenilen görselin metin açıklaması. 1–6000 karakter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
       }
     },
     "outputs": {
@@ -14307,6 +14404,20 @@
       },
       "2": {
         "name": "gizli"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Her bir otoregresif blok başına kare sayısı. 1 = kare bazında, 3 = blok bazında. Kontrol noktası eğitim modu ile eşleşmelidir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
