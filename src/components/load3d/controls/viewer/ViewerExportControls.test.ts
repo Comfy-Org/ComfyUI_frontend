@@ -5,47 +5,56 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 
-vi.mock('@/components/ui/select/Select.vue', () => ({
-  default: {
-    name: 'Select',
-    props: ['modelValue'],
-    emits: ['update:modelValue'],
-    provide(this: {
-      modelValue: string
-      $emit: (event: string, ...args: unknown[]) => void
-    }) {
-      return {
-        selectModelValue: (): string => this.modelValue,
-        selectUpdate: (v: string) => this.$emit('update:modelValue', v)
-      }
-    },
-    template: '<div><slot /></div>'
+vi.mock('@/components/ui/select/Select.vue', async () => {
+  const { provide } = await import('vue')
+  return {
+    default: {
+      name: 'Select',
+      props: ['modelValue'],
+      emits: ['update:modelValue'],
+      setup(
+        props: { modelValue: string },
+        { emit }: { emit: (event: string, value: string) => void }
+      ) {
+        provide('selectModelValue', (): string => props.modelValue)
+        provide('selectUpdate', (v: string): void =>
+          emit('update:modelValue', v)
+        )
+      },
+      template: '<div><slot /></div>'
+    }
   }
-}))
+})
 
-vi.mock('@/components/ui/select/SelectContent.vue', () => ({
-  default: {
-    name: 'SelectContent',
-    inject: ['selectUpdate'],
-    template:
-      '<select @change="selectUpdate($event.target.value)"><slot /></select>'
+vi.mock('@/components/ui/select/SelectContent.vue', async () => {
+  const { inject, ref, onMounted } = await import('vue')
+  return {
+    default: {
+      name: 'SelectContent',
+      setup() {
+        const selectModelValue = inject<() => string>('selectModelValue')
+        const selectUpdate = inject<(v: string) => void>('selectUpdate')
+        const el = ref<HTMLSelectElement | null>(null)
+        onMounted(() => {
+          if (el.value) el.value.value = selectModelValue?.() ?? ''
+        })
+        return {
+          el,
+          onChange: (e: Event) => {
+            selectUpdate?.((e.target as HTMLSelectElement).value)
+          }
+        }
+      },
+      template: '<select ref="el" @change="onChange"><slot /></select>'
+    }
   }
-}))
+})
 
 vi.mock('@/components/ui/select/SelectItem.vue', () => ({
   default: {
     name: 'SelectItem',
     props: ['value'],
-    inject: ['selectModelValue'],
-    computed: {
-      isSelected(this: {
-        selectModelValue: () => string
-        value: string
-      }): boolean {
-        return this.selectModelValue() === this.value
-      }
-    },
-    template: '<option :value="value" :selected="isSelected"><slot /></option>'
+    template: '<option :value="value"><slot /></option>'
   }
 }))
 
