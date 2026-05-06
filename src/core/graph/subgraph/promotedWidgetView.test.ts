@@ -1386,10 +1386,17 @@ describe('SubgraphNode.widgets getter', () => {
     const restoredNode = createTestSubgraphNode(subgraphNode.subgraph, {
       id: 99
     })
+    // ADR 0009: serialize() no longer re-emits proxyWidgets from the store.
+    // To exercise the legacy configure-time hydration path, inject the
+    // expected legacy payload directly.
     restoredNode.configure({
       ...serialized,
       id: restoredNode.id,
-      type: subgraphNode.subgraph.id
+      type: subgraphNode.subgraph.id,
+      properties: {
+        ...serialized.properties,
+        proxyWidgets: [[String(innerNode.id), 'widgetA']]
+      }
     })
 
     const restoredEntries = usePromotionStore().getPromotions(
@@ -1438,11 +1445,21 @@ describe('SubgraphNode.widgets getter', () => {
 
     const serialized = subgraphNode.serialize()
     const restoredNode = createTestSubgraphNode(subgraph, { id: 98 })
+    // ADR 0009: inject legacy proxyWidgets payload to exercise the
+    // configure-time hydration path; serialize() no longer emits it.
     restoredNode.configure({
       ...serialized,
       id: restoredNode.id,
       type: subgraph.id,
-      inputs: []
+      inputs: [],
+      properties: {
+        ...serialized.properties,
+        proxyWidgets: [
+          [String(linkedNodeA.id), 'string_a'],
+          [String(linkedNodeB.id), 'string_a'],
+          [String(storeOnlyNode.id), 'string_a']
+        ]
+      }
     })
 
     const restoredWidgets = promotedWidgets(restoredNode)
@@ -1495,6 +1512,8 @@ describe('SubgraphNode.widgets getter', () => {
 
     const serialized = subgraphNode.serialize()
     const restoredNode = createTestSubgraphNode(subgraph, { id: 108 })
+    // ADR 0009: inject legacy proxyWidgets payload to exercise the
+    // configure-time hydration path; serialize() no longer emits it.
     restoredNode.configure({
       ...serialized,
       id: restoredNode.id,
@@ -1505,7 +1524,15 @@ describe('SubgraphNode.widgets getter', () => {
           type: '*',
           link: null
         }
-      ]
+      ],
+      properties: {
+        ...serialized.properties,
+        proxyWidgets: [
+          [String(linkedNodeA.id), 'string_a'],
+          [String(linkedNodeB.id), 'string_a'],
+          [String(storeOnlyNode.id), 'string_a']
+        ]
+      }
     })
 
     const restoredWidgets = promotedWidgets(restoredNode)
@@ -1634,12 +1661,17 @@ describe('SubgraphNode.widgets getter', () => {
     expect(finalIndependentView.value).toBe('independent-final')
   })
 
-  test('clone output preserves proxyWidgets for promotion hydration', () => {
+  // ADR 0009: clone output no longer carries properties.proxyWidgets — the
+  // canonical promotion identity lives on the linked SubgraphInputs that
+  // travel via inputs/links. Hydration of legacy proxyWidgets is exercised
+  // separately via the explicit-inject pattern in the round-trip tests above.
+  test('clone output omits properties.proxyWidgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'widgetA', 'a', () => {})
 
     setPromotions(subgraphNode, [[String(innerNode.id), 'widgetA']])
+    delete subgraphNode.properties.proxyWidgets
 
     const createNodeSpy = vi
       .spyOn(LiteGraph, 'createNode')
@@ -1653,29 +1685,11 @@ describe('SubgraphNode.widgets getter', () => {
     if (!clonedNode) throw new Error('Expected clone to return a node')
 
     const clonedSerialized = clonedNode.serialize()
-    expect(clonedSerialized.properties?.proxyWidgets).toStrictEqual([
-      [String(innerNode.id), 'widgetA']
-    ])
-
-    const hydratedClone = createTestSubgraphNode(subgraphNode.subgraph, {
-      id: 100
-    })
-    hydratedClone.configure({
-      ...clonedSerialized,
-      id: hydratedClone.id,
-      type: subgraphNode.subgraph.id
-    })
-
-    const hydratedEntries = usePromotionStore().getPromotions(
-      hydratedClone.rootGraph.id,
-      hydratedClone.id
-    )
-    expect(hydratedEntries).toStrictEqual([
-      {
-        sourceNodeId: String(innerNode.id),
-        sourceWidgetName: 'widgetA'
-      }
-    ])
+    // Either undefined (preferred) or an empty array — the legacy
+    // _internalConfigureAfterSlots writeback may seed an empty default
+    // until slice 6 retires that path entirely.
+    const cloned = clonedSerialized.properties?.proxyWidgets
+    expect(cloned === undefined || (Array.isArray(cloned) && cloned.length === 0)).toBe(true)
   })
 })
 

@@ -270,10 +270,15 @@ describe('Subgraph proxyWidgets', () => {
     expect(serialized.widgets_values).toBeUndefined()
   })
 
-  test('serialize preserves proxyWidgets in properties', () => {
+  // ADR 0009: serialize() no longer re-emits properties.proxyWidgets.
+  // Promoted-widget identity is owned by the linked SubgraphInput; the legacy
+  // proxyWidgets array is preserved on load only and is not the source of
+  // truth at save time.
+  test('serialize does not re-emit proxyWidgets from the promotion store', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    delete subgraphNode.properties.proxyWidgets
     usePromotionStore().setPromotions(
       subgraphNode.rootGraph.id,
       subgraphNode.id,
@@ -285,10 +290,7 @@ describe('Subgraph proxyWidgets', () => {
 
     const serialized = subgraphNode.serialize()
 
-    expect(serialized.properties?.proxyWidgets).toStrictEqual([
-      [innerIds[0], 'widgetA'],
-      [innerIds[0], 'widgetB']
-    ])
+    expect(serialized.properties?.proxyWidgets).toBeUndefined()
   })
 
   test('multi-link representative is deterministic across repeated reads', () => {

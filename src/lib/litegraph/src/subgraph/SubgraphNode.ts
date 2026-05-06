@@ -43,12 +43,15 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
+import { readHostQuarantine } from '@/core/graph/subgraph/migration/quarantineEntry'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -1574,33 +1577,39 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Synchronizes widget values from this SubgraphNode instance to the
-   * corresponding widgets in the subgraph definition before serialization.
-   * This ensures nested subgraph widget values are preserved when saving.
+   * Serializes this SubgraphNode instance.
+   *
+   * After ADR 0009 the canonical owner of each promoted value widget is the
+   * linked `SubgraphInput` itself; host-overlay values live in
+   * `widgets_values`, and previews live in `properties.previewExposures`.
+   * `properties.proxyWidgets` is no longer re-emitted; legacy data is preserved
+   * for one-way ratchet load only.
    */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization.
-    // Only sync for inputs that are linked to a promoted widget via _widget.
-    for (const input of this.inputs) {
-      if (!input._widget) continue
+    // TODO(adr-0009): Remove this comment once one stable release has shipped
+    // without complaints about subgraph value drift. Host promoted-widget
+    // values now serialize through standard SubgraphInput widgets and must not
+    // be copied into interior widgets, which would cause cross-host stomping.
 
-      const subgraphInput =
-        input._subgraphSlot ??
-        this.subgraph.inputNode.slots.find((slot) => slot.name === input.name)
-      if (!subgraphInput) continue
+    const rootGraphId = this.rootGraph.id
+    const hostLocator = createNodeLocatorId(rootGraphId, this.id)
 
-      const connectedWidgets = subgraphInput.getConnectedWidgets()
-      for (const connectedWidget of connectedWidgets) {
-        connectedWidget.value = input._widget.value
-      }
+    const previewExposures = usePreviewExposureStore().getExposures(
+      rootGraphId,
+      hostLocator
+    )
+    if (previewExposures.length > 0) {
+      this.properties.previewExposures = previewExposures.map((entry) => ({
+        ...entry
+      }))
+    } else {
+      delete this.properties.previewExposures
     }
 
-    // Write promotion store state back to properties for serialization
-    const entries = usePromotionStore().getPromotions(
-      this.rootGraph.id,
-      this.id
-    )
-    this.properties.proxyWidgets = this._serializeEntries(entries)
+    const quarantine = readHostQuarantine(this)
+    if (quarantine.length === 0) {
+      delete this.properties.proxyWidgetErrorQuarantine
+    }
 
     return super.serialize()
   }

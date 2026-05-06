@@ -427,31 +427,21 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
       const hostNode = createTestSubgraphNode(subgraph)
-
-      // serialize() syncs the promotion store into properties.proxyWidgets
       const serialized = hostNode.serialize()
-      const originalProxyWidgets = serialized.properties!
-        .proxyWidgets as string[][]
 
-      expect(originalProxyWidgets.length).toBeGreaterThan(0)
-      expect(
-        originalProxyWidgets.some(([, widgetName]) => widgetName === 'text')
-      ).toBe(true)
-
-      // Simulate clone: create a second SubgraphNode configured from serialized data
+      // ADR 0009: clone preservation no longer relies on properties.proxyWidgets.
+      // The promoted widgets are derived from the linked SubgraphInputs that
+      // come through the serialized inputs/links, so the host's own widgets
+      // getter should expose the promoted view after configure.
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
-      const cloneProxyWidgets = cloneNode.properties.proxyWidgets as string[][]
 
-      expect(cloneProxyWidgets.length).toBeGreaterThan(0)
-      expect(
-        cloneProxyWidgets.some(([, widgetName]) => widgetName === 'text')
-      ).toBe(true)
+      const promotedNames = cloneNode.widgets
+        .filter(isPromotedWidgetView)
+        .filter((widget) => !widget.name.startsWith('$$'))
+        .map((widget) => widget.sourceWidgetName)
 
-      // Clone's proxyWidgets should reference the same interior node
-      const originalNodeIds = originalProxyWidgets.map(([nodeId]) => nodeId)
-      const cloneNodeIds = cloneProxyWidgets.map(([nodeId]) => nodeId)
-      expect(cloneNodeIds).toStrictEqual(originalNodeIds)
+      expect(promotedNames).toContain('text')
     })
   })
 
