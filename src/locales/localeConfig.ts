@@ -14,110 +14,34 @@ type LocaleDefinition = {
   loaders: LocaleLoaderBundle | null
 }
 
-export const localeDefinitions = {
-  en: {
-    text: 'English',
-    loaders: null
-  },
-  zh: {
-    text: '中文',
-    loaders: {
-      main: () => import('./zh/main.json'),
-      nodeDefs: () => import('./zh/nodeDefs.json'),
-      commands: () => import('./zh/commands.json'),
-      settings: () => import('./zh/settings.json')
-    }
-  },
-  'zh-TW': {
-    text: '繁體中文',
-    loaders: {
-      main: () => import('./zh-TW/main.json'),
-      nodeDefs: () => import('./zh-TW/nodeDefs.json'),
-      commands: () => import('./zh-TW/commands.json'),
-      settings: () => import('./zh-TW/settings.json')
-    }
-  },
-  ru: {
-    text: 'Русский',
-    loaders: {
-      main: () => import('./ru/main.json'),
-      nodeDefs: () => import('./ru/nodeDefs.json'),
-      commands: () => import('./ru/commands.json'),
-      settings: () => import('./ru/settings.json')
-    }
-  },
-  ja: {
-    text: '日本語',
-    loaders: {
-      main: () => import('./ja/main.json'),
-      nodeDefs: () => import('./ja/nodeDefs.json'),
-      commands: () => import('./ja/commands.json'),
-      settings: () => import('./ja/settings.json')
-    }
-  },
-  ko: {
-    text: '한국어',
-    loaders: {
-      main: () => import('./ko/main.json'),
-      nodeDefs: () => import('./ko/nodeDefs.json'),
-      commands: () => import('./ko/commands.json'),
-      settings: () => import('./ko/settings.json')
-    }
-  },
-  fr: {
-    text: 'Français',
-    loaders: {
-      main: () => import('./fr/main.json'),
-      nodeDefs: () => import('./fr/nodeDefs.json'),
-      commands: () => import('./fr/commands.json'),
-      settings: () => import('./fr/settings.json')
-    }
-  },
-  es: {
-    text: 'Español',
-    loaders: {
-      main: () => import('./es/main.json'),
-      nodeDefs: () => import('./es/nodeDefs.json'),
-      commands: () => import('./es/commands.json'),
-      settings: () => import('./es/settings.json')
-    }
-  },
-  ar: {
-    text: 'عربي',
-    loaders: {
-      main: () => import('./ar/main.json'),
-      nodeDefs: () => import('./ar/nodeDefs.json'),
-      commands: () => import('./ar/commands.json'),
-      settings: () => import('./ar/settings.json')
-    }
-  },
-  tr: {
-    text: 'Türkçe',
-    loaders: {
-      main: () => import('./tr/main.json'),
-      nodeDefs: () => import('./tr/nodeDefs.json'),
-      commands: () => import('./tr/commands.json'),
-      settings: () => import('./tr/settings.json')
-    }
-  },
-  'pt-BR': {
-    text: 'Português (BR)',
-    loaders: {
-      main: () => import('./pt-BR/main.json'),
-      nodeDefs: () => import('./pt-BR/nodeDefs.json'),
-      commands: () => import('./pt-BR/commands.json'),
-      settings: () => import('./pt-BR/settings.json')
-    }
-  },
-  fa: {
-    text: 'فارسی',
-    loaders: {
-      main: () => import('./fa/main.json'),
-      nodeDefs: () => import('./fa/nodeDefs.json'),
-      commands: () => import('./fa/commands.json'),
-      settings: () => import('./fa/settings.json')
-    }
+// Vite code-splits each matched module into its own async chunk; only the
+// resolved locale's bundle is fetched at runtime.
+const localeFiles = import.meta.glob<{ default: Record<string, unknown> }>(
+  './*/{main,nodeDefs,commands,settings}.json'
+)
+
+function loadersFor(locale: string): LocaleLoaderBundle {
+  return {
+    main: localeFiles[`./${locale}/main.json`],
+    nodeDefs: localeFiles[`./${locale}/nodeDefs.json`],
+    commands: localeFiles[`./${locale}/commands.json`],
+    settings: localeFiles[`./${locale}/settings.json`]
   }
+}
+
+export const localeDefinitions = {
+  en: { text: 'English', loaders: null },
+  zh: { text: '中文', loaders: loadersFor('zh') },
+  'zh-TW': { text: '繁體中文', loaders: loadersFor('zh-TW') },
+  ru: { text: 'Русский', loaders: loadersFor('ru') },
+  ja: { text: '日本語', loaders: loadersFor('ja') },
+  ko: { text: '한국어', loaders: loadersFor('ko') },
+  fr: { text: 'Français', loaders: loadersFor('fr') },
+  es: { text: 'Español', loaders: loadersFor('es') },
+  ar: { text: 'عربي', loaders: loadersFor('ar') },
+  tr: { text: 'Türkçe', loaders: loadersFor('tr') },
+  'pt-BR': { text: 'Português (BR)', loaders: loadersFor('pt-BR') },
+  fa: { text: 'فارسی', loaders: loadersFor('fa') }
 } as const satisfies Record<string, LocaleDefinition>
 
 export type SupportedLocale = keyof typeof localeDefinitions

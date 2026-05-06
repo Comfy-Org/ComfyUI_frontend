@@ -41,15 +41,7 @@ Add your language to the shared runtime locale definition. This feeds the
 settings dropdown, supported-locale resolution, and lazy locale loading:
 
 ```typescript
-'zh-TW': {
-  text: '繁體中文 (台灣)',
-  loaders: {
-    main: () => import('./zh-TW/main.json'),
-    nodeDefs: () => import('./zh-TW/nodeDefs.json'),
-    commands: () => import('./zh-TW/commands.json'),
-    settings: () => import('./zh-TW/settings.json')
-  }
-}
+'zh-TW': { text: '繁體中文', loaders: loadersFor('zh-TW') }
 ```
 
 ### Step 2: Generate Translation Files

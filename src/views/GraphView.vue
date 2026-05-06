@@ -191,7 +191,13 @@ watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
   if (!locale) return
   try {
-    await setActiveLocale(locale)
+    const resolved = await setActiveLocale(locale)
+    // Self-heal: a stored value from an older build (e.g. 'de') would otherwise
+    // leave the language dropdown — derived from SUPPORTED_LOCALE_OPTIONS —
+    // showing nothing selected until the user picks one manually.
+    if (resolved !== locale) {
+      await settingStore.set('Comfy.Locale', resolved)
+    }
   } catch (error) {
     console.error(`Failed to switch to locale "${locale}":`, error)
   }

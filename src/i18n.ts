@@ -96,11 +96,19 @@ export async function loadLocale(locale: SupportedLocale): Promise<void> {
 /**
  * Boundary helper for arbitrary locale input (settings, browser preferences):
  * resolves to a shipped tag, loads it, and updates the active locale.
+ *
+ * Returns the resolved tag so callers can detect a clamp (e.g. a stale stored
+ * `Comfy.Locale` from an older build) and self-heal persisted state.
  */
 export async function setActiveLocale(
   input: string | readonly string[] | null | undefined
 ): Promise<SupportedLocale> {
   const resolved = resolveSupportedLocale(input)
+  if (typeof input === 'string' && input && input !== resolved) {
+    // Single warn — gated on a real clamp event, never per missing key — so
+    // stale stored locales surface in logs without re-introducing #1867's spam.
+    console.warn(`Locale "${input}" not shipped; using "${resolved}"`)
+  }
   await loadLocale(resolved)
   i18n.global.locale.value = resolved
   return resolved

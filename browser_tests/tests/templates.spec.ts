@@ -131,19 +131,12 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test('Falls back to English templates when locale file not found', async ({
     comfyPage
   }) => {
-    // Pick a shipped locale and simulate its template index returning 404.
+    // Pick a shipped LTR locale and simulate its template index returning 404.
     // (Previously this test used 'de', but unsupported locales are now
-    // clamped to 'en' at boot so they never hit the template fallback path.)
-    const locale = 'fa'
-
-    await comfyPage.settings.setSetting('Comfy.Locale', locale)
-
-    const localeRequestPromise = comfyPage.page.waitForRequest(
-      `**/templates/index.${locale}.json`
-    )
-    const englishRequestPromise = comfyPage.page.waitForRequest(
-      '**/templates/index.json'
-    )
+    // clamped to 'en' at boot so they never hit the template fallback path.
+    // 'fa' would also work but flips document.dir to rtl, which can leak
+    // into adjacent specs in the same worker.)
+    const locale = 'tr'
 
     await comfyPage.page.route(
       `**/templates/index.${locale}.json`,
@@ -160,6 +153,15 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       route.continue()
     )
 
+    await comfyPage.settings.setSetting('Comfy.Locale', locale)
+
+    const localeRequestPromise = comfyPage.page.waitForRequest(
+      `**/templates/index.${locale}.json`
+    )
+    const englishRequestPromise = comfyPage.page.waitForRequest(
+      '**/templates/index.json'
+    )
+
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
@@ -169,12 +171,11 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     expect(localeRequest.url()).toContain(`templates/index.${locale}.json`)
     expect(englishRequest.url()).toContain('templates/index.json')
 
-    // The English categories from index.json should be rendered.
-    // Use a stable testid rather than a language-specific string, since the
-    // dialog header is i18n'd to the locale we set above.
-    await expect(
-      comfyPage.page.getByTestId('template-workflows-content')
-    ).toBeVisible()
+    // Assert on rendered content, not just the container — the container
+    // testid is present even when the dialog body is empty, which would let
+    // a regression where the fallback fetch succeeds but no cards render
+    // pass silently.
+    await expect(comfyPage.templates.allTemplateCards.first()).toBeVisible()
   })
 
   test('template cards are dynamically sized and responsive', async ({
