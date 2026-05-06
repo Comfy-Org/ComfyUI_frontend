@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import AudienceSection from '../../components/affiliates/AudienceSection.vue'
+import BrandAssetsSection from '../../components/affiliates/BrandAssetsSection.vue'
+import FooterCtaSection from '../../components/affiliates/FooterCtaSection.vue'
+import HeroSection from '../../components/affiliates/HeroSection.vue'
+import HowItWorksSection from '../../components/affiliates/HowItWorksSection.vue'
+import ProgramDetailsSection from '../../components/affiliates/ProgramDetailsSection.vue'
+import TrustBandSection from '../../components/affiliates/TrustBandSection.vue'
+import FAQSection from '../../components/common/FAQSection.vue'
+import {
+  AFFILIATE_FAQ_COUNT,
+  AFFILIATE_FAQ_HEADING_KEY,
+  AFFILIATE_FAQ_PREFIX
+} from '../../components/affiliates/affiliateFaqs'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+const locale: Locale =
+  Astro.currentLocale === 'zh-CN' ? 'zh-CN' : 'en'
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: Array.from({ length: AFFILIATE_FAQ_COUNT }, (_, i) => {
+    const n = i + 1
+    return {
+      '@type': 'Question',
+      name: t(`${AFFILIATE_FAQ_PREFIX}.${n}.q` as TranslationKey, locale),
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: t(`${AFFILIATE_FAQ_PREFIX}.${n}.a` as TranslationKey, locale)
+      }
+    }
+  })
+}
+---
+
+<BaseLayout
+  title={t('affiliate-landing.page.title', locale)}
+  description={t('affiliate-landing.page.description', locale)}
+  noindex
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(faqJsonLd)}
+    />
+  </Fragment>
+
+  <HeroSection locale={locale} client:load />
+  <TrustBandSection locale={locale} />
+  <HowItWorksSection locale={locale} />
+  <AudienceSection locale={locale} />
+  <ProgramDetailsSection locale={locale} />
+  <BrandAssetsSection locale={locale} />
+  <FAQSection
+    locale={locale}
+    headingKey={AFFILIATE_FAQ_HEADING_KEY}
+    faqPrefix={AFFILIATE_FAQ_PREFIX}
+    faqCount={AFFILIATE_FAQ_COUNT}
+    client:load
+  />
+  <FooterCtaSection locale={locale} client:load />
+</BaseLayout>
