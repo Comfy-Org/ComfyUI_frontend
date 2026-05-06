@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, shallowRef } from 'vue'
+import { nextTick, reactive, ref, shallowRef } from 'vue'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -9,6 +11,7 @@ import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import {
@@ -59,6 +62,18 @@ vi.mock('@/i18n', () => ({
   t: vi.fn((key) => key)
 }))
 
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    getActivePinia: vi.fn(() => null)
+  }
+})
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn()
+}))
+
 describe('useLoad3d', () => {
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
@@ -67,6 +82,7 @@ describe('useLoad3d', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     nodeToLoad3dMap.clear()
+    vi.mocked(getActivePinia).mockReturnValue(null as unknown as Pinia)
 
     mockNode = createMockLGraphNode({
       properties: {
@@ -141,6 +157,15 @@ describe('useLoad3d', () => {
       exportModel: vi.fn().mockResolvedValue(undefined),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getCurrentModelCapabilities: vi.fn().mockReturnValue({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe'],
+        fitTargetSize: 5
+      }),
       hasSkeleton: vi.fn().mockReturnValue(false),
       setShowSkeleton: vi.fn(),
       loadHDRI: vi.fn().mockResolvedValue(undefined),
@@ -324,6 +349,73 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(nodeRef)
 
       expect(composable.sceneConfig.value.backgroundColor).toBe('#000000')
+    })
+
+    it('passes getZoomScale callback to createLoad3d', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(createLoad3d).toHaveBeenCalledWith(
+        containerRef,
+        expect.objectContaining({ getZoomScale: expect.any(Function) })
+      )
+    })
+  })
+
+  describe('zoom watcher', () => {
+    it('calls load3d.handleResize after debounce when canvas appScalePercentage changes', async () => {
+      vi.useFakeTimers()
+
+      const canvasStore = reactive({ appScalePercentage: 100 })
+      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      vi.mocked(useCanvasStore).mockReturnValue(
+        canvasStore as unknown as ReturnType<typeof useCanvasStore>
+      )
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      vi.mocked(mockLoad3d.handleResize!).mockClear()
+
+      canvasStore.appScalePercentage = 200
+      await nextTick()
+      expect(mockLoad3d.handleResize).not.toHaveBeenCalled()
+
+      vi.advanceTimersByTime(150)
+      expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
+
+      vi.useRealTimers()
+    })
+
+    it('debounces rapid zoom changes into a single handleResize call', async () => {
+      vi.useFakeTimers()
+
+      const canvasStore = reactive({ appScalePercentage: 100 })
+      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      vi.mocked(useCanvasStore).mockReturnValue(
+        canvasStore as unknown as ReturnType<typeof useCanvasStore>
+      )
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      vi.mocked(mockLoad3d.handleResize!).mockClear()
+
+      canvasStore.appScalePercentage = 150
+      await nextTick()
+      canvasStore.appScalePercentage = 200
+      await nextTick()
+      canvasStore.appScalePercentage = 250
+      await nextTick()
+
+      vi.advanceTimersByTime(150)
+      expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
+
+      vi.useRealTimers()
     })
   })
 

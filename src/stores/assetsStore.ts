@@ -6,7 +6,10 @@ import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  TagsOperationResult
+} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -123,7 +126,7 @@ export const useAssetsStore = defineStore('assets', () => {
     state: inputAssets,
     isLoading: inputLoading,
     error: inputError,
-    execute: updateInputs
+    execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
     immediate: false,
     resetOnExecute: false,
@@ -131,6 +134,12 @@ export const useAssetsStore = defineStore('assets', () => {
       console.error('Error fetching input assets:', err)
     }
   })
+
+  const updateInputs = async () => {
+    const result = await executeUpdateInputs()
+    assetService.invalidateInputAssetsIncludingPublic()
+    return result
+  }
 
   /**
    * Fetch history assets with pagination support
@@ -604,11 +613,16 @@ export const useAssetsStore = defineStore('assets', () => {
 
         updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
 
+        let removedTagsOnServer: string[] = []
         try {
-          const removeResult =
-            tagsToRemove.length > 0
-              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
-              : undefined
+          let removeResult: TagsOperationResult | undefined
+          if (tagsToRemove.length > 0) {
+            removeResult = await assetService.removeAssetTags(
+              asset.id,
+              tagsToRemove
+            )
+            removedTagsOnServer = removeResult.removed ?? tagsToRemove
+          }
 
           const addResult =
             tagsToAdd.length > 0
@@ -622,6 +636,33 @@ export const useAssetsStore = defineStore('assets', () => {
         } catch (error) {
           console.error('Failed to update asset tags:', error)
           updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+
+          if (removedTagsOnServer.length > 0) {
+            try {
+              await assetService.addAssetTags(asset.id, removedTagsOnServer)
+            } catch (compensationError) {
+              console.error(
+                'Failed to restore tags after partial failure; invalidating cache to force refetch:',
+                compensationError
+              )
+              const categoriesToInvalidate = new Set<string>()
+              const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
+              if (resolved) {
+                categoriesToInvalidate.add(resolved)
+              }
+              for (const [
+                category,
+                state
+              ] of modelStateByCategory.value.entries()) {
+                if (state.assets?.has(asset.id)) {
+                  categoriesToInvalidate.add(category)
+                }
+              }
+              for (const category of categoriesToInvalidate) {
+                invalidateCategory(category)
+              }
+            }
+          }
         }
       }
 

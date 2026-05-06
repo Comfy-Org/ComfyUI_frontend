@@ -988,7 +988,7 @@
     }
   },
   "CaseConverter": {
-    "display_name": "Text Case Converter",
+    "display_name": "Convert Text Case",
     "inputs": {
       "string": {
         "name": "string"
@@ -1553,12 +1553,16 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "ColorTransfer",
+    "display_name": "Color Transfer",
     "description": "Match the colors of one image to another using various algorithms.",
     "inputs": {
       "image_target": {
         "name": "image_target",
         "tooltip": "Image(s) to apply the color transform to."
+      },
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Reference image(s) to match colors to."
       },
       "method": {
         "name": "method"
@@ -1569,10 +1573,6 @@
       },
       "strength": {
         "name": "strength"
-      },
-      "image_ref": {
-        "name": "image_ref",
-        "tooltip": "Reference image(s) to match colors to. If not provided, processing is skipped"
       }
     },
     "outputs": {
@@ -2011,6 +2011,10 @@
       "split_conds_to_windows": {
         "name": "split_conds_to_windows",
         "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
+      },
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Whether to add a causal fix frame to non-0-indexed context windows."
       }
     },
     "outputs": {
@@ -2020,7 +2024,7 @@
     }
   },
   "ControlNetApply": {
-    "display_name": "Apply ControlNet (OLD)",
+    "display_name": "Apply ControlNet (DEPRECATED)",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -2434,7 +2438,7 @@
     }
   },
   "CropMask": {
-    "display_name": "CropMask",
+    "display_name": "Crop Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -2966,6 +2970,28 @@
       }
     }
   },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAudio": {
     "display_name": "Empty Audio",
     "inputs": {
@@ -3112,7 +3138,7 @@
     }
   },
   "EmptyImage": {
-    "display_name": "EmptyImage",
+    "display_name": "Empty Image",
     "inputs": {
       "width": {
         "name": "width"
@@ -3331,7 +3357,7 @@
     }
   },
   "FeatherMask": {
-    "display_name": "FeatherMask",
+    "display_name": "Feather Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -5146,7 +5172,7 @@
     }
   },
   "ImageAddNoise": {
-    "display_name": "ImageAddNoise",
+    "display_name": "Add Noise to Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5169,7 +5195,7 @@
     }
   },
   "ImageBatch": {
-    "display_name": "Batch Images",
+    "display_name": "Batch Images (DEPRECATED)",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -5180,7 +5206,7 @@
     }
   },
   "ImageBlend": {
-    "display_name": "Image Blend",
+    "display_name": "Blend Images",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -5237,7 +5263,7 @@
     }
   },
   "ImageCompare": {
-    "display_name": "Image Compare",
+    "display_name": "Compare Images",
     "description": "Compares two images side by side with a slider.",
     "inputs": {
       "compare_view": {
@@ -5252,7 +5278,7 @@
     }
   },
   "ImageCompositeMasked": {
-    "display_name": "ImageCompositeMasked",
+    "display_name": "Image Composite Masked",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -5280,7 +5306,7 @@
     }
   },
   "ImageCrop": {
-    "display_name": "Image Crop (Deprecated)",
+    "display_name": "Crop Image (DEPRECATED)",
     "inputs": {
       "image": {
         "name": "image"
@@ -5305,7 +5331,7 @@
     }
   },
   "ImageCropV2": {
-    "display_name": "Image Crop",
+    "display_name": "Crop Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5344,7 +5370,7 @@
     }
   },
   "ImageFlip": {
-    "display_name": "ImageFlip",
+    "display_name": "Flip Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5360,7 +5386,7 @@
     }
   },
   "ImageFromBatch": {
-    "display_name": "ImageFromBatch",
+    "display_name": "Get Image from Batch",
     "inputs": {
       "image": {
         "name": "image"
@@ -5440,7 +5466,7 @@
     }
   },
   "ImageInvert": {
-    "display_name": "Invert Image",
+    "display_name": "Invert Image Colors",
     "inputs": {
       "image": {
         "name": "image"
@@ -5537,7 +5563,7 @@
     }
   },
   "ImageRGBToYUV": {
-    "display_name": "ImageRGBToYUV",
+    "display_name": "Image RGB to YUV",
     "inputs": {
       "image": {
         "name": "image"
@@ -5559,7 +5585,7 @@
     }
   },
   "ImageRotate": {
-    "display_name": "Image Rotate",
+    "display_name": "Rotate Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5609,7 +5635,7 @@
     }
   },
   "ImageScaleToMaxDimension": {
-    "display_name": "ImageScaleToMaxDimension",
+    "display_name": "Scale Image to Max Dimension",
     "inputs": {
       "image": {
         "name": "image"
@@ -5628,7 +5654,7 @@
     }
   },
   "ImageScaleToTotalPixels": {
-    "display_name": "ImageScaleToTotalPixels",
+    "display_name": "Scale Image to Total Pixels",
     "inputs": {
       "image": {
         "name": "image"
@@ -5672,7 +5698,7 @@
     }
   },
   "ImageStitch": {
-    "display_name": "Image Stitch",
+    "display_name": "Stitch Images",
     "description": "Stitches image2 to image1 in the specified direction.\nIf image2 is not provided, returns image1 unchanged.\nOptional spacing can be added between images.",
     "inputs": {
       "image1": {
@@ -5733,7 +5759,7 @@
     }
   },
   "ImageYUVToRGB": {
-    "display_name": "ImageYUVToRGB",
+    "display_name": "Image YUV to RGB",
     "inputs": {
       "Y": {
         "name": "Y"
@@ -5818,7 +5844,7 @@
     }
   },
   "InvertMask": {
-    "display_name": "InvertMask",
+    "display_name": "Invert Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -5865,7 +5891,7 @@
     }
   },
   "JsonExtractString": {
-    "display_name": "Extract String from JSON",
+    "display_name": "Extract Text from JSON",
     "inputs": {
       "json_string": {
         "name": "json_string"
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "display_name": "Luma UNI-1 Image Edit",
+    "description": "Edit an existing image with a text prompt using the Luma UNI-1 model.",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Source image to edit."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description of the desired edit. 1–6000 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for editing."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "display_name": "Luma Image to Image",
     "description": "Modifies images synchronously based on prompt and aspect ratio.",
@@ -8395,6 +8457,41 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "display_name": "Luma UNI-1 Image",
+    "description": "Generate images from text using the Luma UNI-1 model.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. 1–6000 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
       }
     },
     "outputs": {
@@ -8775,7 +8872,7 @@
     }
   },
   "MaskComposite": {
-    "display_name": "MaskComposite",
+    "display_name": "Combine Masks",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -11489,120 +11586,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "display_name": "Moonvalley Marey Image to Video",
-    "description": "Moonvalley Marey Image to Video Node",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "The reference image used to generate the video"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative prompt text"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Resolution of the output video"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Guidance scale for generation control"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Random seed value"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of denoising steps"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Text to Video",
-    "inputs": {
-      "prompt": {
-        "name": "prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative prompt text"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Resolution of the output video"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Guidance scale for generation control"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Random seed value"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Inference steps"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video to Video",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Describes the video to generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative prompt text"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Random seed value"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "The reference video used to generate the output video. Must be at least 5 seconds long. Videos longer than 5s will be automatically trimmed. Only MP4 format supported."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of inference steps"
-      },
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "Only used if control_type is 'Motion Transfer'"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11846,7 +11829,7 @@
       },
       "size": {
         "name": "size",
-        "tooltip": "Image size"
+        "tooltip": "Image size. Select 'Custom' to use the custom width and height (GPT Image 2 only)."
       },
       "n": {
         "name": "n",
@@ -11862,6 +11845,14 @@
       },
       "model": {
         "name": "model"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -11893,7 +11884,7 @@
     }
   },
   "OpenAIVideoSora2": {
-    "display_name": "OpenAI Sora - Video (Deprecated)",
+    "display_name": "OpenAI Sora - Video (DEPRECATED)",
     "description": "OpenAI video and audio generation.\n\nDEPRECATION NOTICE: OpenAI will stop serving the Sora v2 API in September 2026. This node will be removed from ComfyUI at that time.",
     "inputs": {
       "model": {
@@ -12529,7 +12520,7 @@
       "value": {
         "name": "value"
       },
-      "control_after_generate": {
+      "fixed": {
         "name": "control after generate"
       }
     },
@@ -12540,7 +12531,7 @@
     }
   },
   "PrimitiveString": {
-    "display_name": "String",
+    "display_name": "Text String",
     "inputs": {
       "value": {
         "name": "value"
@@ -12553,7 +12544,7 @@
     }
   },
   "PrimitiveStringMultiline": {
-    "display_name": "String (Multiline)",
+    "display_name": "Text String (Multiline)",
     "inputs": {
       "value": {
         "name": "value"
@@ -13289,7 +13280,7 @@
     }
   },
   "RegexExtract": {
-    "display_name": "Text Extract Substring",
+    "display_name": "Extract Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -13320,7 +13311,7 @@
     }
   },
   "RegexMatch": {
-    "display_name": "Text Match",
+    "display_name": "Match Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -13346,7 +13337,7 @@
     }
   },
   "RegexReplace": {
-    "display_name": "Text Replace (Regex)",
+    "display_name": "Replace Text (Regex)",
     "description": "Find and replace text using regex patterns.",
     "inputs": {
       "string": {
@@ -13399,7 +13390,7 @@
     }
   },
   "RepeatImageBatch": {
-    "display_name": "RepeatImageBatch",
+    "display_name": "Repeat Image Batch",
     "inputs": {
       "image": {
         "name": "image"
@@ -13482,7 +13473,7 @@
     }
   },
   "ResizeAndPadImage": {
-    "display_name": "ResizeAndPadImage",
+    "display_name": "Resize And Pad Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -14158,6 +14149,20 @@
       }
     }
   },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Frames per autoregressive block. 1 = framewise, 3 = chunkwise. Must match the checkpoint's training mode."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplerCustom": {
     "display_name": "SamplerCustom",
     "inputs": {
@@ -14728,7 +14733,7 @@
     }
   },
   "SaveSVGNode": {
-    "display_name": "SaveSVGNode",
+    "display_name": "Save SVG",
     "description": "Save SVG files on disk.",
     "inputs": {
       "svg": {
@@ -14784,7 +14789,7 @@
     }
   },
   "SaveWEBM": {
-    "display_name": "SaveWEBM",
+    "display_name": "Save WEBM",
     "inputs": {
       "images": {
         "name": "images"
@@ -15842,7 +15847,7 @@
     }
   },
   "StringCompare": {
-    "display_name": "Text Compare",
+    "display_name": "Compare Text",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15864,7 +15869,7 @@
     }
   },
   "StringConcatenate": {
-    "display_name": "Text Concatenate",
+    "display_name": "Concatenate Text",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15883,7 +15888,7 @@
     }
   },
   "StringContains": {
-    "display_name": "Text Contains",
+    "display_name": "Contains Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -15917,7 +15922,7 @@
     }
   },
   "StringReplace": {
-    "display_name": "Text Replace",
+    "display_name": "Replace Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -15936,7 +15941,7 @@
     }
   },
   "StringSubstring": {
-    "display_name": "Text Substring",
+    "display_name": "Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -15955,7 +15960,7 @@
     }
   },
   "StringTrim": {
-    "display_name": "Text Trim",
+    "display_name": "Trim Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -16631,6 +16636,13 @@
       "image": {
         "name": "image"
       },
+      "video": {
+        "name": "video",
+        "tooltip": "Video frames as image batch. Assumed to be 24 FPS; subsampled to 1 FPS internally."
+      },
+      "audio": {
+        "name": "audio"
+      },
       "thinking": {
         "name": "thinking",
         "tooltip": "Operate in thinking mode if the model supports it."
@@ -16685,6 +16697,13 @@
       },
       "image": {
         "name": "image"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video frames as image batch. Assumed to be 24 FPS; subsampled to 1 FPS internally."
+      },
+      "audio": {
+        "name": "audio"
       },
       "thinking": {
         "name": "thinking",
@@ -16845,7 +16864,7 @@
     }
   },
   "TopazVideoEnhance": {
-    "display_name": "Topaz Video Enhance",
+    "display_name": "Topaz Video Enhance (Legacy)",
     "description": "Breathe new life into video with powerful upscaling and recovery technology.",
     "inputs": {
       "video": {
@@ -16889,6 +16908,45 @@
       "dynamic_compression_level": {
         "name": "dynamic_compression_level",
         "tooltip": "CQP level."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "display_name": "Topaz Video Enhance",
+    "description": "Breathe new life into video with powerful upscaling and recovery technology.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "dynamic_compression_level": {
+        "name": "dynamic_compression_level",
+        "tooltip": "CQP level."
+      },
+      "upscaler_model_creativity": {
+        "name": "creativity"
+      },
+      "upscaler_model_prompt": {
+        "name": "prompt"
+      },
+      "upscaler_model_realism": {
+        "name": "realism"
+      },
+      "upscaler_model_sharp": {
+        "name": "sharp"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "upscaler_resolution"
       }
     },
     "outputs": {

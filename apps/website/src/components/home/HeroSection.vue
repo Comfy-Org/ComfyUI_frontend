@@ -1,22 +1,31 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
+import { externalLinks } from '../../config/routes'
+import { useHeroLogo } from '../../composables/useHeroLogo'
 import { t } from '../../i18n/translations'
+import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const logoContainer = ref<HTMLElement>()
+const { loaded: logoLoaded } = useHeroLogo(logoContainer)
 </script>
 
 <template>
   <section
     class="relative flex min-h-auto flex-col lg:flex-row lg:items-center"
   >
-    <div class="relative flex-1">
-      <video
-        src="https://media.comfy.org/website/homepage/hero-logo-seq.webm"
-        autoplay
-        loop
-        muted
-        playsinline
-        class="w-full"
+    <div
+      ref="logoContainer"
+      class="relative flex aspect-square w-full flex-1 items-center justify-center"
+    >
+      <img
+        v-show="!logoLoaded"
+        src="https://media.comfy.org/website/homepage/hero-logo-seq/Logo00.webp"
+        alt="Comfy logo"
+        class="w-3/5"
       />
     </div>
 
@@ -32,6 +41,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       >
         {{ t('hero.subtitle', locale) }}
       </p>
+
+      <BrandButton
+        :href="externalLinks.workflows"
+        variant="outline"
+        size="lg"
+        class="mt-8 w-full p-4 uppercase lg:w-auto lg:min-w-60"
+      >
+        {{ t('hero.runFirstWorkflow', locale) }}
+      </BrandButton>
     </div>
   </section>
 </template>

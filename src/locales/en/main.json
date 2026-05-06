@@ -230,6 +230,7 @@
     "warning": "Warning",
     "name": "Name",
     "category": "Category",
+    "categories": "Categories",
     "sort": "Sort",
     "source": "Source",
     "filter": "Filter",
@@ -1660,6 +1661,7 @@
     "conditioning": "conditioning",
     "loaders": "loaders",
     "guiders": "guiders",
+    "batch": "batch",
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
@@ -1667,8 +1669,6 @@
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
-    "utils": "utils",
-    "string": "string",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
@@ -1677,6 +1677,7 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
+    "utils": "utils",
     "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
@@ -1711,7 +1712,7 @@
     "sd": "sd",
     "Ideogram": "Ideogram",
     "transform": "transform",
-    "batch": "batch",
+    "color": "color",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "compositing": "compositing",
@@ -1726,7 +1727,6 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "cond pair": "cond pair",
@@ -2187,7 +2187,8 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead"
+      "backToSocialLogin": "Sign up with Google or Github instead",
+      "backToGithubLogin": "Sign up with Github instead"
     },
     "signup": {
       "title": "Create an account",
@@ -2794,51 +2795,55 @@
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
-      "steps": {
-        "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+      "intro": "Help us tailor your ComfyUI experience.",
+      "errors": {
+        "chooseAnOption": "Please choose an option.",
+        "selectAtLeastOne": "Please select at least one option.",
+        "describeAnswer": "Please describe your answer."
       },
-      "questions": {
+      "steps": {
+        "usage": "How do you plan to use ComfyUI?",
         "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+        "intent": "What do you want to create with ComfyUI?",
+        "source": "Where did you hear about ComfyUI?"
       },
       "options": {
+        "usage": {
+          "personal": "Personal use",
+          "work": "Work",
+          "education": "Education (student or educator)"
+        },
         "familiarity": {
-          "new": "New to ComfyUI (never used it before)",
-          "starting": "Just getting started (following tutorials)",
-          "basics": "Comfortable with basics",
-          "advanced": "Advanced user (custom workflows)",
-          "expert": "Expert (help others)"
+          "new": "New — never used it",
+          "starting": "Beginner — following tutorials",
+          "basics": "Intermediate — comfortable with basics",
+          "advanced": "Advanced — build and edit workflows",
+          "expert": "Expert — I help others"
         },
-        "purpose": {
-          "personal": "Personal projects / hobby",
-          "community": "Community contributions (nodes, workflows, etc.)",
-          "client": "Client work (freelance)",
-          "inhouse": "My own workplace (in-house)",
-          "research": "Academic research"
-        },
-        "industry": {
-          "film_tv_animation": "Film, TV, & animation",
-          "gaming": "Gaming",
-          "marketing": "Marketing & advertising",
-          "architecture": "Architecture",
-          "product_design": "Product & graphic design",
-          "fine_art": "Fine art & illustration",
-          "software": "Software & technology",
-          "education": "Education",
-          "other": "Other",
-          "otherPlaceholder": "Please specify"
-        },
-        "making": {
+        "intent": {
+          "workflows": "Custom workflows or pipelines",
+          "custom_nodes": "Custom nodes",
+          "videos": "Videos",
           "images": "Images",
-          "video": "Video & animation",
-          "3d": "3D assets",
+          "3d_game": "3D assets / game assets",
           "audio": "Audio / music",
-          "custom_nodes": "Custom nodes & workflows"
+          "apps": "Simplified Apps from workflows",
+          "api": "API endpoints to run workflows",
+          "not_sure": "Not sure"
+        },
+        "source": {
+          "youtube": "YouTube",
+          "reddit": "Reddit",
+          "twitter": "Twitter / X",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "friend": "Friend or colleague",
+          "search": "Google / search",
+          "newsletter": "Newsletter or blog",
+          "conference": "Conference or event",
+          "discord": "Discord / community",
+          "github": "GitHub",
+          "other": "Other"
         }
       }
     },
@@ -2908,10 +2913,10 @@
   "cloudForgotPassword_emailRequired": "Email is required",
   "cloudForgotPassword_passwordResetSent": "Password reset sent",
   "cloudForgotPassword_passwordResetError": "Failed to send password reset email",
+  "cloudSurvey_steps_usage": "How do you plan to use ComfyUI?",
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
-  "cloudSurvey_steps_purpose": "What will you primarily use ComfyUI for?",
-  "cloudSurvey_steps_industry": "What's your primary industry?",
-  "cloudSurvey_steps_making": "What do you plan on making?",
+  "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
+  "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",

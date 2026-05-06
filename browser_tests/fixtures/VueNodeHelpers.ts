@@ -5,6 +5,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 export class VueNodeHelpers {
   /**
@@ -28,6 +29,29 @@ export class VueNodeHelpers {
    */
   getNodeLocator(nodeId: string): Locator {
     return this.page.locator(`[data-node-id="${nodeId}"]`)
+  }
+
+  /**
+   * Get the inner wrapper element of a Vue node.
+   */
+  getNodeInnerWrapper(nodeId: string): Locator {
+    return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  getInputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--input')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+        )
+      })
+  }
+
+  getInputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getInputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
   }
 
   /**
@@ -119,10 +143,9 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Return a DOM-focused VueNodeFixture for the first node matching the title.
-   * Resolves the node id up front so subsequent interactions survive title changes.
+   * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getNodeIdByTitle(title: string): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -133,6 +156,15 @@ export class VueNodeHelpers {
       )
     }
 
+    return nodeId
+  }
+
+  /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
+   */
+  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+    const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 

@@ -126,6 +126,7 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   const pages = [
     '/',
     '/cloud',
+    '/cloud/enterprise',
     '/cloud/pricing',
     '/contact',
     '/download',

@@ -1968,6 +1968,10 @@
     "description": "Ручная установка контекстных окон.",
     "display_name": "Контекстные окна (Ручная настройка)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Добавлять ли причинно-следственный корректирующий кадр к окнам контекста с индексом, отличным от 0."
+      },
       "closed_loop": {
         "name": "замкнутый_цикл",
         "tooltip": "Замыкать ли цикл контекстного окна; применимо только к циклическим расписаниям."
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Редактирование существующего изображения с помощью текстового запроса, используя модель Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, используемая для редактирования."
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Описание желаемого редактирования. 1–6000 символов."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Исходное изображение для редактирования."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "Синхронно изменяет изображения на основе запроса и соотношения сторон.",
     "display_name": "Luma Image to Image",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "Вес изображения стиля. Игнорируется, если style_image не предоставлено."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Генерация изображений по текстовому описанию с помощью модели Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, используемая для генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. 1–6000 символов."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
       }
     },
     "outputs": {
@@ -11489,120 +11586,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Узел Moonvalley Marey: Изображение в видео",
-    "display_name": "Moonvalley Marey: Изображение в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Эталонное изображение, используемое для генерации видео"
-      },
-      "negative_prompt": {
-        "name": "негативный_промпт",
-        "tooltip": "Текст негативного промпта"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "prompt_adherence": {
-        "name": "следование_промпту",
-        "tooltip": "Коэффициент управления генерацией"
-      },
-      "resolution": {
-        "name": "разрешение",
-        "tooltip": "Разрешение выходного видео"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Значение случайного сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Количество шагов денизинга"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey: Текст в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "negative_prompt": {
-        "name": "негативный_промпт",
-        "tooltip": "Текст негативного промпта"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "prompt_adherence": {
-        "name": "следование_запросу",
-        "tooltip": "Коэффициент управления генерацией"
-      },
-      "resolution": {
-        "name": "разрешение",
-        "tooltip": "Разрешение выходного видео"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное значение сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Шаги вывода"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video to Video",
-    "inputs": {
-      "control_type": {
-        "name": "тип_управления"
-      },
-      "motion_intensity": {
-        "name": "интенсивность_движения",
-        "tooltip": "Используется только если тип_управления 'Передача движения'"
-      },
-      "negative_prompt": {
-        "name": "негативный_запрос",
-        "tooltip": "Текст негативного запроса"
-      },
-      "prompt": {
-        "name": "запрос",
-        "tooltip": "Описывает видео для генерации"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное значение сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Количество шагов вывода"
-      },
-      "video": {
-        "name": "видео",
-        "tooltip": "Эталонное видео, используемое для генерации выходного видео. Должно быть длиной не менее 5 секунд. Видео длиннее 5 секунд будут автоматически обрезаны. Поддерживается только формат MP4."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "Морфология изображения",
     "inputs": {
@@ -11825,8 +11808,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Генерирует изображения синхронно через конечную точку OpenAI GPT Image 1.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Генерирует изображения синхронно через конечную точку OpenAI GPT Image 2.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11834,6 +11817,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -11852,7 +11843,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Текстовый запрос для GPT Image 1"
+        "tooltip": "Текстовый запрос для GPT Image 2"
       },
       "quality": {
         "name": "quality",
@@ -12526,7 +12517,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "контроль после генерации"
       },
       "value": {
@@ -14413,6 +14404,20 @@
       },
       "2": {
         "name": "латентный"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Кадров в каждом авторегрессионном блоке. 1 = покадрово, 3 = блоками. Должно соответствовать режиму обучения контрольной точки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16616,6 +16621,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16659,6 +16667,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Кадры видео как пакет изображений. Предполагается 24 кадра в секунду; внутренне дискретизируется до 1 кадра в секунду."
       }
     },
     "outputs": {
@@ -16671,6 +16683,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16714,6 +16729,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Кадры видео как пакет изображений. Предполагается 24 кадра в секунду; внутренне дискретизируется до 1 кадра в секунду."
       }
     },
     "outputs": {
@@ -16886,6 +16905,45 @@
       },
       "upscaler_resolution": {
         "name": "разрешение увеличителя"
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Оживите видео с помощью мощных технологий увеличения разрешения и восстановления.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "уровень динамического сжатия",
+        "tooltip": "Уровень CQP."
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "креативность"
+      },
+      "upscaler_model_prompt": {
+        "name": "промпт"
+      },
+      "upscaler_model_realism": {
+        "name": "реализм"
+      },
+      "upscaler_model_sharp": {
+        "name": "резкость"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "разрешение увеличения"
       },
       "video": {
         "name": "видео"

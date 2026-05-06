@@ -461,6 +461,12 @@
       "wantToRun": "代わりにローカルでComfyUIを実行したいですか？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "オプションを選択してください。",
+        "describeAnswer": "回答を記述してください。",
+        "selectAtLeastOne": "少なくとも1つ選択してください。"
+      },
+      "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
       "options": {
         "familiarity": {
           "advanced": "上級ユーザー（カスタムワークフロー）",
@@ -469,45 +475,43 @@
           "new": "ComfyUI初心者（使用経験なし）",
           "starting": "使い始め（チュートリアルをフォロー中）"
         },
-        "industry": {
-          "architecture": "建築",
-          "education": "教育",
-          "film_tv_animation": "映画、テレビ、アニメーション",
-          "fine_art": "ファインアート & イラストレーション",
-          "gaming": "ゲーミング",
-          "marketing": "マーケティング & 広告",
-          "other": "その他",
-          "otherPlaceholder": "詳細を入力してください",
-          "product_design": "プロダクト & グラフィックデザイン",
-          "software": "ソフトウェア & テクノロジー"
-        },
-        "making": {
-          "3d": "3Dアセット",
-          "audio": "オーディオ / 音楽",
-          "custom_nodes": "カスタムノード & ワークフロー",
+        "intent": {
+          "3d_game": "3Dアセット／ゲームアセット",
+          "api": "ワークフロー実行用APIエンドポイント",
+          "apps": "ワークフローから簡易アプリ作成",
+          "audio": "音声／音楽",
+          "custom_nodes": "カスタムノード",
           "images": "画像",
-          "video": "ビデオ & アニメーション"
+          "not_sure": "まだ分からない",
+          "videos": "動画",
+          "workflows": "カスタムワークフローやパイプライン"
         },
-        "purpose": {
-          "client": "クライアントワーク（フリーランス）",
-          "community": "コミュニティ貢献（ノード、ワークフローなど）",
-          "inhouse": "自社での利用（社内）",
-          "personal": "個人プロジェクト／趣味",
-          "research": "学術研究"
+        "source": {
+          "conference": "カンファレンスやイベント",
+          "discord": "Discord／コミュニティ",
+          "friend": "友人または同僚",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "ニュースレターやブログ",
+          "other": "その他",
+          "reddit": "Reddit",
+          "search": "Google／検索",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "教育（学生または教育者）",
+          "personal": "個人利用",
+          "work": "仕事"
         }
       },
       "placeholder": "アンケート質問のプレースホルダー",
-      "questions": {
-        "familiarity": "ComfyUIの使用経験はどの程度ですか？",
-        "industry": "あなたの主な業界は何ですか？",
-        "making": "何を作成する予定ですか？",
-        "purpose": "ComfyUIを主に何に使用しますか？"
-      },
       "steps": {
         "familiarity": "ComfyUIの使用経験はどの程度ですか？",
-        "industry": "あなたの主な業界は何ですか？",
-        "making": "何を作成する予定ですか？",
-        "purpose": "ComfyUIを主に何に使用しますか？"
+        "intent": "ComfyUIで何を作成したいですか？",
+        "source": "ComfyUIをどこで知りましたか？",
+        "usage": "ComfyUIをどのように利用する予定ですか？"
       },
       "title": "クラウドアンケート"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "数秒で作成を開始",
   "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
   "cloudSurvey_steps_familiarity": "ComfyUIにどの程度精通していますか？",
-  "cloudSurvey_steps_industry": "あなたの主な業界は何ですか？",
-  "cloudSurvey_steps_making": "何を作成する予定ですか？",
-  "cloudSurvey_steps_purpose": "ComfyUIを主に何に使用しますか？",
+  "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
+  "cloudSurvey_steps_source": "ComfyUIをどこで知りましたか？",
+  "cloudSurvey_steps_usage": "ComfyUIをどのように利用する予定ですか？",
   "cloudWaitlist_contactLink": "こちら",
   "cloudWaitlist_questionsText": "質問がありますか？お問い合わせください",
   "color": {
@@ -1017,6 +1021,7 @@
     "cancel": "キャンセル",
     "cancelled": "キャンセル済み",
     "capture": "キャプチャ",
+    "categories": "カテゴリ",
     "category": "カテゴリ",
     "changeKeybinding": "キーバインドを変更",
     "chart": "チャート",
@@ -2258,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2287,6 +2291,7 @@
     "camera": "カメラ",
     "chroma_radiance": "chroma_radiance",
     "clip": "クリップ",
+    "color": "カラー",
     "combine": "結合",
     "compositing": "合成",
     "cond pair": "条件ペア",
@@ -2338,7 +2343,6 @@
     "shader": "shader",
     "sigmas": "シグマ",
     "stable_cascade": "安定したカスケード",
-    "string": "文字列",
     "style_model": "スタイルモデル",
     "supir": "supir",
     "text": "テキスト",
