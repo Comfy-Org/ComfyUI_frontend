@@ -57,6 +57,7 @@ useExtensionService().registerExtension({
         showValueWidget.hidden = true
         showValueWidget.options.hidden = true
         showValueWidget.options.read_only = true
+        showValueWidget.options.serialize = false
         showValueWidget.element.readOnly = true
         showValueWidget.serialize = false
 
@@ -64,8 +65,14 @@ useExtensionService().registerExtension({
         showValueWidgetPlain.hidden = false
         showValueWidgetPlain.options.hidden = false
         showValueWidgetPlain.options.read_only = true
+        showValueWidgetPlain.options.serialize = false
         showValueWidgetPlain.element.readOnly = true
         showValueWidgetPlain.serialize = false
+
+        // The previewMode toggle is a frontend-only display preference and
+        // is not declared in the backend INPUT_TYPES, so it must not be
+        // serialized into the API prompt (would alter the cache signature).
+        showAsPlaintextWidget.widget.options.serialize = false
       }
 
       const onExecuted = nodeType.prototype.onExecuted
