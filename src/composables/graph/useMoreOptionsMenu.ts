@@ -126,6 +126,8 @@ export function useMoreOptionsMenu() {
     selectedNodes,
     nodeDef,
     showNodeHelp,
+    isSingleNode,
+    isSingleSubgraph,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
@@ -243,7 +245,8 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
+    // Match the right side panel's Info tab visibility: single non-subgraph node.
+    if (nodeDef.value && isSingleNode.value && !isSingleSubgraph.value) {
       options.push(getNodeInfoOption(showNodeHelp))
     }
     if (groupContext) {

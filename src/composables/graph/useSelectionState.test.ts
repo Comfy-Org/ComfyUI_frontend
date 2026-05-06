@@ -212,5 +212,54 @@ describe('useSelectionState', () => {
 
       expect(openPanelSpy).not.toHaveBeenCalled()
     })
+
+    test('does nothing when selection includes more than one item', () => {
+      const canvasStore = useCanvasStore()
+      const node = createMockLGraphNode({ id: 11, type: 'KSampler' })
+      const otherItem = { id: 12, isNode: false } as unknown as Parameters<
+        typeof canvasStore.$state.selectedItems.push
+      >[0]
+      canvasStore.$state.selectedItems = [node, otherItem]
+
+      const nodeDefStore = useNodeDefStore()
+      vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue({
+        nodePath: 'KSampler'
+      } as ReturnType<typeof nodeDefStore.fromLGraphNode>)
+
+      const rightSidePanelStore = useRightSidePanelStore()
+      const openPanelSpy = vi
+        .spyOn(rightSidePanelStore, 'openPanel')
+        .mockImplementation(() => {})
+
+      const { showNodeHelp } = useSelectionState()
+      showNodeHelp()
+
+      expect(openPanelSpy).not.toHaveBeenCalled()
+    })
+
+    test('does nothing when the selected node is a subgraph node', () => {
+      const canvasStore = useCanvasStore()
+      const subgraphNode = createMockLGraphNode({
+        id: 13,
+        type: 'Subgraph'
+      })
+      Object.assign(subgraphNode, { isSubgraphNode: () => true })
+      canvasStore.$state.selectedItems = [subgraphNode]
+
+      const nodeDefStore = useNodeDefStore()
+      vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue({
+        nodePath: 'Subgraph'
+      } as ReturnType<typeof nodeDefStore.fromLGraphNode>)
+
+      const rightSidePanelStore = useRightSidePanelStore()
+      const openPanelSpy = vi
+        .spyOn(rightSidePanelStore, 'openPanel')
+        .mockImplementation(() => {})
+
+      const { showNodeHelp } = useSelectionState()
+      showNodeHelp()
+
+      expect(openPanelSpy).not.toHaveBeenCalled()
+    })
   })
 })

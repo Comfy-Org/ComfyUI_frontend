@@ -96,7 +96,7 @@ export function useSelectionState() {
 
   /** Open the right side panel Info tab for the selected node. */
   const showNodeHelp = () => {
-    if (!nodeDef.value) return
+    if (!nodeDef.value || !isSingleNode.value || isSingleSubgraph.value) return
     rightSidePanelStore.openPanel('info')
   }
 
