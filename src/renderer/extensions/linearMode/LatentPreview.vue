@@ -22,7 +22,10 @@ const { variant = 0 } = defineProps<{ variant?: number }>()
 </template>
 
 <style scoped>
-/* Vertical 3-stop gradients — dark crown, mid-value belly, warm
+/* `<style>` block exception: four multi-stop named gradients per
+   variant don't read clearly as Tailwind arbitrary classes; CSS rules
+   are the legible representation here.
+   Vertical 3-stop gradients — dark crown, mid-value belly, warm
    foot. Average lightness ~40-45% so an incoming preview image
    doesn't pop against a too-dark or too-light field.
    Hex values are deliberate; see the script-block comment. */

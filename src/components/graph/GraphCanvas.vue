@@ -90,7 +90,10 @@
   <!-- Builder select-mode scrim. Placed after both bitmap canvases so the
        grid and link overlay both dim together. Vue nodes each have an
        explicit inline z-index and paint above this auto-z-index scrim,
-       so node bodies and their selection rings stay bright. -->
+       so node bodies and their selection rings stay bright.
+       The 65% black is deliberate fixed visual identity, not a theme
+       token: a scrim's job is to dim everything else regardless of the
+       active palette, the same way a modal backdrop does. -->
   <div
     v-if="isSelectMode"
     class="pointer-events-none absolute inset-0 bg-black/65"

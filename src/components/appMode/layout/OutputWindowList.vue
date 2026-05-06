@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -284,12 +285,14 @@ async function reuseParams(entry: OutputWindowEntry): Promise<void> {
         </div>
         <button
           type="button"
-          :class="[
-            'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg',
-            'border-0 bg-destructive-background text-destructive-foreground',
-            'transition-[filter] duration-200 hover:brightness-110',
-            'focus-visible:ring-2 focus-visible:ring-destructive-foreground/70 focus-visible:outline-none'
-          ]"
+          :class="
+            cn(
+              'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg',
+              'border-0 bg-destructive-background text-destructive-foreground',
+              'transition-[filter] duration-200 hover:brightness-110',
+              'focus-visible:ring-2 focus-visible:ring-destructive-foreground/70 focus-visible:outline-none'
+            )
+          "
           :title="t('linearMode.stop')"
           :aria-label="t('linearMode.stop')"
           data-testid="output-window-cancel-run"

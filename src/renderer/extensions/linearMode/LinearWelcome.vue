@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -42,12 +43,14 @@ async function runFromPill(e: MouseEvent) {
 <template>
   <section
     data-testid="linear-welcome"
-    :class="[
-      'panel-chrome pointer-events-auto absolute z-1 flex flex-col overflow-hidden',
-      'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))]',
-      'max-h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
-      'left-(--spacing-layout-outer) w-(--panel-dock-width,440px)'
-    ]"
+    :class="
+      cn(
+        'panel-chrome pointer-events-auto absolute z-1 flex flex-col overflow-hidden',
+        'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))]',
+        'max-h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
+        'left-(--spacing-layout-outer) w-(--panel-dock-width,440px)'
+      )
+    "
   >
     <header
       class="flex min-h-layout-cell items-center gap-2 border-b border-(--border-color) bg-(--color-layout-header-fill) px-[10px] py-2 select-none"
@@ -72,13 +75,14 @@ async function runFromPill(e: MouseEvent) {
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <Button
-              variant="primary"
               size="unset"
-              :class="[
-                'mx-1 translate-y-px transform px-3 py-1 text-sm',
-                'border-0! bg-success-background! hover:brightness-110',
-                'text-success-foreground!'
-              ]"
+              :class="
+                cn(
+                  'mx-1 translate-y-px transform px-3 py-1 text-sm',
+                  'border-0 bg-success-background hover:brightness-110',
+                  'text-success-foreground'
+                )
+              "
               @click="runFromPill"
             >
               <i class="icon-[lucide--play] size-4" />

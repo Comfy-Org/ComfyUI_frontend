@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef, watch } from 'vue'
@@ -93,13 +94,15 @@ const gridSpacing = computed(() => {
   <!-- z-50 above graph canvas, below AppChrome / FloatingPanel / toolbar. -->
   <div
     v-if="isArrangeMode"
-    :class="[
-      'builder-backdrop pointer-events-none fixed z-50 overflow-hidden',
-      'top-(--workflow-tabs-height) right-0 bottom-0',
-      'left-(--sidebar-width,0px)',
-      'bg-layout-canvas',
-      'bg-[radial-gradient(circle,var(--color-layout-grid-dot)_1px,transparent_1.5px)]'
-    ]"
+    :class="
+      cn(
+        'builder-backdrop pointer-events-none fixed z-50 overflow-hidden',
+        'top-(--workflow-tabs-height) right-0 bottom-0',
+        'left-(--sidebar-width,0px)',
+        'bg-layout-canvas',
+        'bg-[radial-gradient(circle,var(--color-layout-grid-dot)_1px,transparent_1.5px)]'
+      )
+    "
     :style="{
       backgroundSize: `${gridSpacing}px ${gridSpacing}px`,
       backgroundPosition: `${viewportOffsetX}px ${viewportOffsetY}px`

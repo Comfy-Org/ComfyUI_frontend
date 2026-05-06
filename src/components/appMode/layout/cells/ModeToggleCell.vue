@@ -11,7 +11,11 @@ import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown
 </template>
 
 <style scoped>
-/* Reset WorkflowActionsDropdown's pill chrome so the cell surface
+/* `<style>` block exception: WorkflowActionsDropdown is rendered as
+   third-party PrimeVue DOM that we don't author, so its inner classes
+   can't be reached via Tailwind utility classes on the template — we
+   need `:deep()` selectors to pierce the wrapper.
+   Reset WorkflowActionsDropdown's pill chrome so the cell surface
    owns the visuals. */
 .mode-toggle-cell :deep(.bg-secondary-background) {
   display: flex;

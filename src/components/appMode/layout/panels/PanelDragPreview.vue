@@ -3,6 +3,7 @@
  * Translucent outline at the snap-target preset's bounds during a
  * panel drag — signals where the panel will land on release.
  */
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { PANEL_PRESET_CLASSES } from './panelPresetClasses'
@@ -29,14 +30,16 @@ const sizeStyle = computed(() => {
 
 <template>
   <div
-    :class="[
-      'pointer-events-none absolute z-20',
-      'w-(--panel-dock-width,440px)',
-      'rounded-[10px] border-2 border-primary-background',
-      'bg-primary-background/30',
-      'duration-layout transition-[top,bottom,left,right,max-height] ease-layout',
-      presetClass
-    ]"
+    :class="
+      cn(
+        'pointer-events-none absolute z-20',
+        'w-(--panel-dock-width,440px)',
+        'rounded-[10px] border-2 border-primary-background',
+        'bg-primary-background/30',
+        'duration-layout transition-[top,bottom,left,right,max-height] ease-layout',
+        presetClass
+      )
+    "
     :style="sizeStyle"
     aria-hidden="true"
     data-testid="panel-drag-preview"

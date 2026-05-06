@@ -251,7 +251,13 @@ async function rerun(e: Event) {
   />
 </template>
 
-<!-- Unscoped: <Transition> classes apply to slot-child roots. -->
+<!--
+  `<style>` block exception: Vue's <Transition> generates class names
+  on slot-child roots at runtime (DOM Vue does not statically render),
+  so Tailwind utility classes on the template can't reach them. The
+  block is also unscoped so the transition classes match across the
+  slot boundary.
+-->
 <style>
 .preview-fade-enter-active,
 .preview-fade-leave-active {

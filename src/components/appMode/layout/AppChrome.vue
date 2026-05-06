@@ -229,10 +229,12 @@ function cellClass(cell: ChromeCell): string {
     :data-variant="variant"
   >
     <div
-      :class="[
-        ZONE_BASE,
-        'top-(--spacing-layout-outer) left-(--spacing-layout-outer)'
-      ]"
+      :class="
+        cn(
+          ZONE_BASE,
+          'top-(--spacing-layout-outer) left-(--spacing-layout-outer)'
+        )
+      "
     >
       <div
         v-for="cell in topLeftCells"
@@ -261,10 +263,12 @@ function cellClass(cell: ChromeCell): string {
     </div>
 
     <div
-      :class="[
-        ZONE_BASE,
-        'top-(--spacing-layout-outer) right-(--spacing-layout-outer)'
-      ]"
+      :class="
+        cn(
+          ZONE_BASE,
+          'top-(--spacing-layout-outer) right-(--spacing-layout-outer)'
+        )
+      "
     >
       <div
         v-for="cell in topRightCells"
@@ -290,10 +294,12 @@ function cellClass(cell: ChromeCell): string {
     </div>
 
     <div
-      :class="[
-        ZONE_BASE,
-        'bottom-(--spacing-layout-outer) left-(--spacing-layout-outer)'
-      ]"
+      :class="
+        cn(
+          ZONE_BASE,
+          'bottom-(--spacing-layout-outer) left-(--spacing-layout-outer)'
+        )
+      "
     >
       <div
         v-for="cell in bottomLeftCells"
@@ -309,10 +315,12 @@ function cellClass(cell: ChromeCell): string {
     </div>
 
     <div
-      :class="[
-        ZONE_BASE,
-        'right-(--spacing-layout-outer) bottom-(--spacing-layout-outer)'
-      ]"
+      :class="
+        cn(
+          ZONE_BASE,
+          'right-(--spacing-layout-outer) bottom-(--spacing-layout-outer)'
+        )
+      "
     >
       <div
         v-for="cell in bottomRightCells"
@@ -342,11 +350,13 @@ function cellClass(cell: ChromeCell): string {
         />
         <div
           v-else-if="cell.kind === 'nav-zoom-percent'"
-          :class="[
-            'flex size-full items-center justify-center',
-            'font-inter text-layout-md text-layout-text tabular-nums',
-            'cursor-default select-none'
-          ]"
+          :class="
+            cn(
+              'flex size-full items-center justify-center',
+              'font-inter text-layout-md text-layout-text tabular-nums',
+              'cursor-default select-none'
+            )
+          "
         >
           {{ zoomPercent }}
         </div>

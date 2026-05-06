@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref, useTemplateRef } from 'vue'
 
 import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { executionStatusMessage } = useExecutionStatus()
 
@@ -47,20 +47,21 @@ function onImageLoad() {
     <img
       ref="imageRef"
       :src
-      :class="[
-        'size-full',
-        fit === 'cover' ? 'object-cover' : 'object-contain'
-      ]"
+      :class="
+        cn('size-full', fit === 'cover' ? 'object-cover' : 'object-contain')
+      "
       @load="onImageLoad"
     />
   </div>
   <img
     v-else
     ref="imageRef"
-    :class="[
-      'grow contain-size',
-      fit === 'cover' ? 'object-cover' : 'object-contain'
-    ]"
+    :class="
+      cn(
+        'grow contain-size',
+        fit === 'cover' ? 'object-cover' : 'object-contain'
+      )
+    "
     :src
     @load="onImageLoad"
   />

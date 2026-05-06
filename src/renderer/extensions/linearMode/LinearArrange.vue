@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
 import PreviewCard from '@/components/appMode/layout/PreviewCard.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -87,11 +88,13 @@ const existingOutput = computed(() => {
     </div>
     <Button
       size="lg"
-      :class="[
-        'border bg-primary-background text-white',
-        'border-primary-background-hover',
-        'hover:bg-primary-background-hover'
-      ]"
+      :class="
+        cn(
+          'border bg-primary-background text-primary-foreground',
+          'border-primary-background-hover',
+          'hover:bg-primary-background-hover'
+        )
+      "
       data-testid="linear-arrange-switch-to-outputs"
       @click="setMode('builder:outputs')"
     >

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
@@ -385,12 +386,14 @@ const showHeader = computed(() => {
       >
         <!-- Visible cue on the SE corner. -->
         <div
-          :class="[
-            'pointer-events-none absolute right-2 bottom-2 size-1.5 rounded-full bg-base-foreground/30',
-            'opacity-0 transition-opacity duration-150',
-            'group-hover/resize:opacity-100',
-            resizing && 'opacity-100'
-          ]"
+          :class="
+            cn(
+              'pointer-events-none absolute right-2 bottom-2 size-1.5 rounded-full bg-base-foreground/30',
+              'opacity-0 transition-opacity duration-150',
+              'group-hover/resize:opacity-100',
+              resizing && 'opacity-100'
+            )
+          "
         />
       </div>
     </template>
