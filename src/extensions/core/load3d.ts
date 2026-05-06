@@ -296,7 +296,7 @@ useExtensionService().registerExtension({
 
           const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
-            modelWidget.value = ''
+            modelWidget.value = 'none'
           }
         })
 
