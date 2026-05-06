@@ -8,10 +8,12 @@ import { t } from '../../i18n/translations'
 const {
   arcadeId,
   title,
+  aspectRatio = 16 / 9,
   locale = 'en'
 } = defineProps<{
   arcadeId: string
   title: string
+  aspectRatio?: number
   locale?: Locale
 }>()
 
@@ -24,7 +26,8 @@ const loaded = ref(false)
     :aria-label="t('demos.embed.label', locale)"
   >
     <div
-      class="relative mx-auto aspect-video max-w-6xl overflow-hidden rounded-4xl border border-white/10"
+      class="relative mx-auto max-w-6xl overflow-hidden rounded-4xl border border-white/10"
+      :style="{ aspectRatio }"
     >
       <div
         v-if="!loaded"
