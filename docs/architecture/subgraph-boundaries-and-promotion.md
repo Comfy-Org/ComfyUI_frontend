@@ -466,9 +466,9 @@ and produces the recursive `ExportedSubgraph` structure, matching the current
 format exactly. Existing workflows, the ComfyUI backend, and third-party tools
 see no change.
 
-| Direction       | Format                          | Notes                                    |
-| --------------- | ------------------------------- | ---------------------------------------- |
-| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree     |
+| Direction       | Format                          | Notes                                      |
+| --------------- | ------------------------------- | ------------------------------------------ |
+| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree       |
 | **Load/import** | Nested (current) or future flat | Migration: normalize to flat World on load |
 
 The migration pattern: load any supported format and normalize to the internal
