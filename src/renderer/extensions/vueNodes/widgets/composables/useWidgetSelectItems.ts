@@ -197,13 +197,16 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
+      // Cloud `/api/view` resolves output files by asset_hash. Fall back to
+      // `name` for the local/history path where assets are not hash-keyed.
+      const filenameForUrl = asset.asset_hash || asset.name
       const subfolder =
         kind === 'mesh'
           ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
           : undefined
       const pathWithSubfolder = subfolder
-        ? `${subfolder}/${asset.name}`
-        : asset.name
+        ? `${subfolder}/${filenameForUrl}`
+        : filenameForUrl
       const annotatedPath = `${pathWithSubfolder} [output]`
       const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
@@ -211,7 +214,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(asset.name, 'output', kind),
+            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

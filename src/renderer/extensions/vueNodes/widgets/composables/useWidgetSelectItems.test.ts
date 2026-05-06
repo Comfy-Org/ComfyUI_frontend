@@ -682,6 +682,60 @@ describe('useWidgetSelectItems', () => {
       consoleWarnSpy.mockRestore()
     })
 
+    it('uses asset_hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-out-1',
+          name: 'z-image-turbo_00093_.png',
+          asset_hash:
+            '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
+          preview_url: '/api/view?filename=039b...0b13.png',
+          tags: ['output']
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      // The value (item.name) — what becomes modelValue on click — must be the
+      // hash-keyed path so /api/view resolves it. Cloud's hash is in
+      // asset_hash, not asset.name (which is the human filename).
+      expect(dropdownItems.value[0].name).toBe(
+        '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png [output]'
+      )
+      // The label keeps the human filename for the dropdown UI.
+      expect(dropdownItems.value[0].label).toContain('z-image-turbo_00093_.png')
+    })
+
+    it('falls back to asset.name when asset_hash is absent (local/history path)', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'local-1',
+          name: 'ComfyUI_00001_.png',
+          tags: ['output']
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('ComfyUI_00001_.png [output]')
+    })
+
     it('does not partially expand the list while some multi-output jobs are still resolving (FE-227)', async () => {
       mockMediaAssets.media.value = [
         makeMultiOutputAsset('job-FIRST', 'previewFirst.png', '1', 3),
