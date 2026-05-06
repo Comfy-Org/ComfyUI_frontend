@@ -198,6 +198,7 @@
                   v-for="(binding, idx) in (slotProps.data as ICommandData)
                     .keybindings"
                   :key="binding.combo.serialize()"
+                  data-testid="keybinding-expansion-binding"
                   class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
                 >
                   <div class="flex items-center gap-4">

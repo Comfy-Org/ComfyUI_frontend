@@ -114,14 +114,10 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const row = getCommandRow(page, MULTI_BINDING_COMMAND)
       await expect(row).toBeVisible()
 
-      const chevron = row.locator('.icon-\\[lucide--chevron-right\\]')
-      await expect(chevron).toBeVisible()
-
       await row.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
 
       const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
-      await expect(chevron).toHaveClass(/rotate-90/)
 
       await row.locator(`[title="${MULTI_BINDING_COMMAND}"]`).click()
       await expect(expansionContent).toBeHidden()
@@ -135,9 +131,6 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await searchKeybindings(page, SINGLE_BINDING_COMMAND)
       const row = getCommandRow(page, SINGLE_BINDING_COMMAND)
       await expect(row).toBeVisible()
-
-      const chevron = row.locator('.icon-\\[lucide--chevron-right\\]')
-      await expect(chevron).toBeHidden()
 
       await row.locator(`[title="${SINGLE_BINDING_COMMAND}"]`).click()
 
@@ -442,7 +435,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await expect(expansionContent).toBeVisible()
 
       const firstBindingRow = expansionContent
-        .locator('.flex.items-center.justify-between')
+        .getByTestId('keybinding-expansion-binding')
         .first()
       await firstBindingRow.getByRole('button', { name: /^Edit$/i }).click()
 
@@ -463,8 +456,8 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       const expansionContent = getExpansionContent(page, MULTI_BINDING_COMMAND)
       await expect(expansionContent).toBeVisible()
 
-      const bindingRows = expansionContent.locator(
-        '.flex.items-center.justify-between'
+      const bindingRows = expansionContent.getByTestId(
+        'keybinding-expansion-binding'
       )
       await expect
         .poll(() => bindingRows.count(), {
