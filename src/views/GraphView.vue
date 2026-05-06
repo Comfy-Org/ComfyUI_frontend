@@ -60,7 +60,7 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import { i18n, loadLocale } from '@/i18n'
+import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
@@ -189,15 +189,17 @@ watchEffect(() => {
 
 watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
-  if (locale) {
-    // Load the locale dynamically if not already loaded
-    try {
-      await loadLocale(locale)
-      // Type assertion is safe here as loadLocale validates the locale exists
-      i18n.global.locale.value = locale as typeof i18n.global.locale.value
-    } catch (error) {
-      console.error(`Failed to switch to locale "${locale}":`, error)
+  if (!locale) return
+  try {
+    const resolved = await setActiveLocale(locale)
+    // Self-heal: a stored value from an older build (e.g. 'de') would otherwise
+    // leave the language dropdown — derived from SUPPORTED_LOCALE_OPTIONS —
+    // showing nothing selected until the user picks one manually.
+    if (resolved !== locale) {
+      await settingStore.set('Comfy.Locale', resolved)
     }
+  } catch (error) {
+    console.error(`Failed to switch to locale "${locale}":`, error)
   }
 })
 
