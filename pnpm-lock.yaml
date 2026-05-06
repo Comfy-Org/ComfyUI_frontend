@@ -345,9 +345,6 @@ catalogs:
     tailwindcss-primeui:
       specifier: ^0.6.1
       version: 0.6.1
-    three:
-      specifier: ^0.170.0
-      version: 0.170.0
     tsx:
       specifier: ^4.15.6
       version: 4.19.4
@@ -979,9 +976,6 @@ importers:
       posthog-js:
         specifier: 'catalog:'
         version: 1.358.1
-      three:
-        specifier: 'catalog:'
-        version: 0.170.0
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.9.3)
@@ -14406,7 +14400,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@24.10.4)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+      vitest: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
 
   '@vitest/utils@3.2.4':
     dependencies:

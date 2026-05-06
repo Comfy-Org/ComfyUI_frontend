@@ -116,7 +116,6 @@ catalog:
   stylelint: ^16.26.1
   tailwindcss: ^4.2.0
   tailwindcss-primeui: ^0.6.1
-  three: ^0.170.0
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
