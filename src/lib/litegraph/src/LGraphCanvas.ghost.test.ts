@@ -238,13 +238,18 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
     }
   })
 
-  it('removes listeners even when ghostNodeId was already cleared before finalize', async () => {
+  it('removes listeners and resets transient drag state when ghostNodeId was already cleared', async () => {
     const processMoveSpy = vi.spyOn(canvas, 'processMouseMove')
     canvas.startGhostPlacement(node)
+    expect(canvas.isDragging).toBe(true)
+    expect(canvas['_autoPan']).not.toBeNull()
 
     canvas.state.ghostNodeId = null
 
     canvas.finalizeGhostPlacement(true)
+
+    expect(canvas.isDragging).toBe(false)
+    expect(canvas['_autoPan']).toBeNull()
 
     document.dispatchEvent(new MouseEvent('pointermove'))
     expect(processMoveSpy).not.toHaveBeenCalled()
