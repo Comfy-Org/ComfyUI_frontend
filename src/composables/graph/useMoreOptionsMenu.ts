@@ -155,7 +155,9 @@ export function useMoreOptionsMenu() {
   const {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
-    getSubgraphOptions
+    getSubgraphOptions,
+    getDeleteOption,
+    getAlignmentOptions
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -253,6 +255,7 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
+      options.push(...getAlignmentOptions())
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
@@ -304,6 +307,8 @@ export function useMoreOptionsMenu() {
         options.push({ type: 'divider' })
       }
     }
+
+    options.push(getDeleteOption())
 
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 
