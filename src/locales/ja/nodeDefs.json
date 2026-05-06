@@ -1968,6 +1968,10 @@
     "description": "コンテキストウィンドウを手動で設定します。",
     "display_name": "コンテキストウィンドウ（手動）",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "非0インデックスのコンテキストウィンドウに因果修正フレームを追加するかどうか。"
+      },
       "closed_loop": {
         "name": "closed_loop",
         "tooltip": "コンテキストウィンドウのループを閉じるかどうか。ループスケジュールにのみ適用されます。"
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1モデルを使用して、テキストプロンプトで既存の画像を編集します。",
+    "display_name": "Luma UNI-1 画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "編集に使用するモデル。"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_web_search": {
+        "name": "ウェブ検索"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望する編集内容の説明。1～6000文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "編集する元画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "プロンプトとアスペクト比に基づいて画像を同期的に変更します。",
     "display_name": "Luma 画像から画像へ",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "スタイル画像の重み",
         "tooltip": "スタイル画像の重み。style_imageが指定されていない場合は無視されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1モデルを使用してテキストから画像を生成します。",
+    "display_name": "Luma UNI-1 画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_web_search": {
+        "name": "ウェブ検索"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望する画像のテキスト説明。1～6000文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
       }
     },
     "outputs": {
@@ -14307,6 +14404,20 @@
       },
       "2": {
         "name": "潜在"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "自己回帰ブロックごとのフレーム数。1＝フレーム単位、3＝チャンク単位。チェックポイントのトレーニングモードと一致する必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
