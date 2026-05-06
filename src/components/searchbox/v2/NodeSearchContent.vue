@@ -48,6 +48,9 @@
           :node-defs="rootFilteredNodeDefs"
           :root-label="rootFilterLabel"
           :root-key="rootFilter ?? undefined"
+          :group-by="
+            rootFilter === RootCategory.Essentials ? 'essentials' : 'category'
+          "
           @auto-expand="selectedCategory = $event"
         />
 
@@ -121,14 +124,17 @@ import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import {
+  isEssentialsTabNode,
+  resolveEssentialsCategory
+} from '@/services/nodeOrganizationService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
-  isCustomNode,
-  isEssentialNode,
+  isFromCustomPack,
   NodeSourceType
 } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -136,9 +142,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
-    [RootCategory.Essentials]: isEssentialNode,
+    [RootCategory.Essentials]: isEssentialsTabNode,
     [RootCategory.Comfy]: (n) => n.nodeSource.type === NodeSourceType.Core,
-    [RootCategory.Custom]: isCustomNode
+    [RootCategory.Custom]: isFromCustomPack
   }
 
 const { filters } = defineProps<{
@@ -164,12 +170,16 @@ const nodeAvailability = computed(() => {
   let partner = false
   let custom = false
   for (const n of nodeDefStore.visibleNodeDefs) {
-    if (!essential && flags.nodeLibraryEssentialsEnabled && isEssentialNode(n))
+    if (
+      !essential &&
+      flags.nodeLibraryEssentialsEnabled &&
+      isEssentialsTabNode(n)
+    )
       essential = true
     if (!blueprint && n.category.startsWith(BLUEPRINT_CATEGORY))
       blueprint = true
     if (!partner && n.api_node) partner = true
-    if (!custom && isCustomNode(n)) custom = true
+    if (!custom && isFromCustomPack(n)) custom = true
     if (essential && blueprint && partner && custom) break
   }
   return { essential, blueprint, partner, custom }
@@ -278,10 +288,15 @@ const sidebarCategory = computed({
   }
 })
 
-// Check if any tree category has children (for chevron visibility)
-const anyTreeCategoryHasChildren = computed(() =>
-  rootFilteredNodeDefs.value.some((n) => n.category.includes('/'))
-)
+const anyTreeCategoryHasChildren = computed(() => {
+  if (rootFilter.value === RootCategory.Essentials) {
+    return (
+      new Set(rootFilteredNodeDefs.value.map(resolveEssentialsCategory)).size >
+      1
+    )
+  }
+  return rootFilteredNodeDefs.value.some((n) => n.category.includes('/'))
+})
 
 function getMostRelevantResults(baseNodes: ComfyNodeDefImpl[]) {
   if (searchQuery.value || filters.length > 0) {
@@ -299,6 +314,11 @@ function getCategoryResults(baseNodes: ComfyNodeDefImpl[], category: string) {
   const categoryPath = category.startsWith(rootPrefix)
     ? category.slice(rootPrefix.length)
     : category
+  if (rootFilter.value === RootCategory.Essentials) {
+    return baseNodes.filter(
+      (n) => resolveEssentialsCategory(n) === categoryPath
+    )
+  }
   return baseNodes.filter((n) => {
     const nodeCategory = n.category.startsWith(rootPrefix)
       ? n.category.slice(rootPrefix.length)

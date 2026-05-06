@@ -75,13 +75,15 @@ const {
   hidePresets = false,
   nodeDefs,
   rootLabel,
-  rootKey
+  rootKey,
+  groupBy = 'category'
 } = defineProps<{
   hideChevrons?: boolean
   hidePresets?: boolean
   nodeDefs?: ComfyNodeDefImpl[]
   rootLabel?: string
   rootKey?: string
+  groupBy?: 'category' | 'essentials'
 }>()
 
 const selectedCategory = defineModel<string>('selectedCategory', {
@@ -101,9 +103,10 @@ const topCategories = computed(() => [
 
 const categoryTree = computed<CategoryNode[]>(() => {
   const defs = nodeDefs ?? nodeDefStore.visibleNodeDefs
-  const tree = nodeOrganizationService.organizeNodes(defs, {
-    groupBy: 'category'
-  })
+  const tree =
+    groupBy === 'essentials'
+      ? nodeOrganizationService.organizeEssentialsTree(defs)
+      : nodeOrganizationService.organizeNodes(defs, { groupBy: 'category' })
 
   const stripRootPrefix = (key: string) => key.replace(/^root\//, '')
 

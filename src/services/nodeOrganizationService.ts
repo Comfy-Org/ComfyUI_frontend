@@ -22,7 +22,7 @@ import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 const DEFAULT_ICON = 'pi pi-sort'
 const UNKNOWN_RANK = Number.MAX_SAFE_INTEGER
 
-function resolveEssentialsCategory(
+export function resolveEssentialsCategory(
   nodeDef: ComfyNodeDefImpl
 ): EssentialsCategory | undefined {
   if (!nodeDef.isCoreNode) return undefined
@@ -35,6 +35,10 @@ function resolveEssentialsCategory(
     )
   }
   return resolveBlueprintEssentialsCategory(nodeDef.name)
+}
+
+export function isEssentialsTabNode(nodeDef: ComfyNodeDefImpl): boolean {
+  return resolveEssentialsCategory(nodeDef) !== undefined
 }
 
 function sortByKnownOrder<T>(
@@ -176,6 +180,10 @@ class NodeOrganizationService {
   }
 
   private organizeEssentials(nodes: ComfyNodeDefImpl[]): NodeSection[] {
+    return [{ tree: this.organizeEssentialsTree(nodes) }]
+  }
+
+  organizeEssentialsTree(nodes: ComfyNodeDefImpl[]): TreeNode {
     const categoryByNode = new Map<ComfyNodeDefImpl, EssentialsCategory>()
     const essentialNodes = nodes.filter((node) => {
       const category = resolveEssentialsCategory(node)
@@ -188,7 +196,7 @@ class NodeOrganizationService {
       pathExtractor: (node) => [categoryByNode.get(node)!, node.name]
     })
     this.sortEssentialsTree(tree)
-    return [{ tree }]
+    return tree
   }
 
   private sortEssentialsTree(tree: TreeNode): void {
