@@ -15,18 +15,15 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useTelemetry } from '@/platform/telemetry'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-const rightSidePanelStore = useRightSidePanelStore()
+const { showNodeHelp } = useSelectionState()
 
-/**
- * Track node info button click and toggle node help.
- */
 const onInfoClick = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'selection_toolbox_node_info_opened'
   })
-  rightSidePanelStore.openPanel('info')
+  showNodeHelp()
 }
 </script>

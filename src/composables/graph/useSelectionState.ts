@@ -1,14 +1,12 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isImageNode, isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
@@ -25,9 +23,7 @@ export interface NodeSelectionState {
 export function useSelectionState() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
-  const sidebarTabStore = useSidebarTabStore()
-  const nodeHelpStore = useNodeHelpStore()
-  const { id: nodeLibraryTabId } = useNodeLibrarySidebarTab()
+  const rightSidePanelStore = useRightSidePanelStore()
 
   const { selectedItems } = storeToRefs(canvasStore)
 
@@ -98,27 +94,10 @@ export function useSelectionState() {
   const computeSelectionFlags = (): NodeSelectionState =>
     computeSelectionStatesFromNodes(selectedNodes.value)
 
-  /** Toggle node help sidebar/panel for the single selected node (if any). */
+  /** Open the right side panel Info tab for the selected node. */
   const showNodeHelp = () => {
-    const def = nodeDef.value
-    if (!def) return
-
-    const isSidebarActive =
-      sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
-    const currentHelpNode = nodeHelpStore.currentHelpNode
-    const isSameNodeHelpOpen =
-      isSidebarActive &&
-      nodeHelpStore.isHelpOpen &&
-      currentHelpNode?.nodePath === def.nodePath
-
-    if (isSameNodeHelpOpen) {
-      nodeHelpStore.closeHelp()
-      sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
-      return
-    }
-
-    if (!isSidebarActive) sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
-    nodeHelpStore.openHelp(def)
+    if (!nodeDef.value) return
+    rightSidePanelStore.openPanel('info')
   }
 
   return {

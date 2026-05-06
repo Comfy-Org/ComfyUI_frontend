@@ -9,13 +9,13 @@ import { createI18n } from 'vue-i18n'
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { openPanelMock } = vi.hoisted(() => ({
-  openPanelMock: vi.fn()
+const { showNodeHelpMock } = vi.hoisted(() => ({
+  showNodeHelpMock: vi.fn()
 }))
 
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
-  useRightSidePanelStore: () => ({
-    openPanel: openPanelMock
+vi.mock('@/composables/graph/useSelectionState', () => ({
+  useSelectionState: () => ({
+    showNodeHelp: showNodeHelpMock
   })
 }))
 
@@ -53,12 +53,12 @@ describe('InfoButton', () => {
     })
   }
 
-  it('should open the info panel on click', async () => {
+  it('should call showNodeHelp on click', async () => {
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Node Info' }))
 
-    expect(openPanelMock).toHaveBeenCalledWith('info')
+    expect(showNodeHelpMock).toHaveBeenCalledTimes(1)
   })
 })
