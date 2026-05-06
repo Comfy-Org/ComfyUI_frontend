@@ -70,7 +70,7 @@ const highlightKeys: TranslationKey[] = [
     >
       <slot name="media">
         <video
-          src="https://media.comfy.org/website/homepage/showcase/node-workflow.webm"
+          src="https://media.comfy.org/website/homepage/showcase/ui-overview.webm"
           autoplay
           loop
           muted
