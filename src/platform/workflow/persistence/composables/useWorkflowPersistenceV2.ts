@@ -164,7 +164,10 @@ export function useWorkflowPersistenceV2() {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
-      await useCommandStore().execute('Comfy.BrowseTemplates')
+      // Skip the templates browser when share param is in URL
+      if (!route.query.share) {
+        await useCommandStore().execute('Comfy.BrowseTemplates')
+      }
     } else {
       await comfyApp.loadGraphData()
     }
