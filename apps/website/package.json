@@ -27,7 +27,6 @@
     "gsap": "catalog:",
     "lenis": "catalog:",
     "posthog-js": "catalog:",
-    "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
   },

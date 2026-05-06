@@ -140,6 +140,8 @@
     "@storybook/addon-mcp": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",
+    "@swc-node/register": "catalog:",
+    "@swc/core": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
