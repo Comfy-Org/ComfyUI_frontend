@@ -12,6 +12,7 @@ import type { RemoteComboContext } from './state'
 const props = defineProps<{
   class?: string
   context?: RemoteComboContext
+  disabled?: boolean
 }>()
 
 const injected = inject(RemoteComboKey, null)
@@ -35,6 +36,7 @@ async function handleClick() {
     variant="textonly"
     size="icon"
     type="button"
+    :disabled="props.disabled"
     :aria-label="t('widgets.remoteCombo.refresh')"
     :title="t('widgets.remoteCombo.refresh')"
     :class="cn('shrink-0', props.class)"

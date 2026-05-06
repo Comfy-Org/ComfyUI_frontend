@@ -68,6 +68,7 @@ const showRefreshButton = computed(
   () => remoteConfig.value?.refresh_button !== false
 )
 
+const isDisabled = computed(() => widget.options?.disabled === true)
 const previewType = computed(() => itemSchema.value?.preview_type ?? 'image')
 void previewType.value
 void RemoteComboKey
@@ -80,8 +81,12 @@ void RemoteComboKey
     @pointermove.stop
     @pointerup.stop
   >
-    <RemoteComboRoot :context="context" class="min-w-0 flex-1">
-      <RemoteComboTrigger class="min-w-0 flex-1" />
+    <RemoteComboRoot
+      :context="context"
+      :disabled="isDisabled"
+      class="min-w-0 flex-1"
+    >
+      <RemoteComboTrigger :disabled="isDisabled" class="min-w-0 flex-1" />
       <RemoteComboContent>
         <RemoteComboSearch />
         <RemoteComboLoading v-if="combo.isLoading.value" />
@@ -97,6 +102,10 @@ void RemoteComboKey
         </RemoteComboList>
       </RemoteComboContent>
     </RemoteComboRoot>
-    <RemoteComboRefresh v-if="showRefreshButton" :context="context" />
+    <RemoteComboRefresh
+      v-if="showRefreshButton"
+      :context="context"
+      :disabled="isDisabled"
+    />
   </div>
 </template>

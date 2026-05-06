@@ -252,3 +252,92 @@ describe('buildSearchText', () => {
     expect(buildSearchText({ name: 'Alice' }, ['missing'])).toBe('')
   })
 })
+
+describe('mapToDropdownItem preview_url normalization', () => {
+  const baseSchema = {
+    value_field: 'id',
+    label_field: 'name',
+    preview_url_field: 'thumb',
+    preview_type: 'image' as const
+  }
+
+  it('preserves absolute https URLs', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: 'https://cdn.example.com/a.png' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBe('https://cdn.example.com/a.png')
+  })
+
+  it('preserves protocol-relative URLs', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: '//cdn.example.com/a.png' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBe('//cdn.example.com/a.png')
+  })
+
+  it('preserves data: URIs', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: 'data:image/png;base64,AAA' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBe('data:image/png;base64,AAA')
+  })
+
+  it('preserves blob: URLs', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: 'blob:https://app/abc' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBe('blob:https://app/abc')
+  })
+
+  it('joins relative paths against the previewBaseUrl', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: '/voices/1/preview.png' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBe('https://api.comfy.org/voices/1/preview.png')
+  })
+
+  it('adds a leading slash when relative path lacks one', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: 'voices/1/preview.png' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBe('https://api.comfy.org/voices/1/preview.png')
+  })
+
+  it('strips trailing slashes from previewBaseUrl', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: '/x.png' },
+      baseSchema,
+      { previewBaseUrl: 'https://api.comfy.org/' }
+    )
+    expect(item.preview_url).toBe('https://api.comfy.org/x.png')
+  })
+
+  it('returns relative path unchanged when no previewBaseUrl is provided', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A', thumb: '/x.png' },
+      baseSchema
+    )
+    expect(item.preview_url).toBe('/x.png')
+  })
+
+  it('returns undefined when preview_url_field is unset', () => {
+    const item = mapToDropdownItem(
+      { id: 'a', name: 'A' },
+      { value_field: 'id', label_field: 'name', preview_type: 'image' },
+      { previewBaseUrl: 'https://api.comfy.org' }
+    )
+    expect(item.preview_url).toBeUndefined()
+  })
+})

@@ -9,6 +9,7 @@ import {
   mapToDropdownItem
 } from '@/base/remote/itemSchema'
 import type { DropdownItemShape } from '@/base/remote/itemSchema'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions'
 import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
 import type { RemoteComboConfig } from '@/schemas/nodeDefSchema'
@@ -69,7 +70,10 @@ export function useRemoteCombo(args: UseRemoteComboArgs): UseRemoteComboResult {
     const config = toValue(args.config)
     const schema = config?.item_schema
     if (schema) {
-      return rawItems.value.map((raw) => mapToDropdownItem(raw, schema))
+      const previewBaseUrl = getComfyApiBaseUrl()
+      return rawItems.value.map((raw) =>
+        mapToDropdownItem(raw, schema, { previewBaseUrl })
+      )
     }
     return rawItems.value.map((raw) => {
       const val = String(raw ?? '')
