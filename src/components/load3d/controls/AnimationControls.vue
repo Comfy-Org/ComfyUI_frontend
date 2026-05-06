@@ -21,20 +21,40 @@
       </Button>
 
       <Select
-        v-model="selectedSpeed"
-        :options="speedOptions"
-        option-label="name"
-        option-value="value"
-        class="w-24"
-      />
+        :model-value="String(selectedSpeed)"
+        @update:model-value="(val) => (selectedSpeed = Number(val))"
+      >
+        <SelectTrigger size="md" class="w-24">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="opt in speedOptions"
+            :key="opt.value"
+            :value="String(opt.value)"
+          >
+            {{ opt.name }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       <Select
-        v-model="selectedAnimation"
-        :options="animations"
-        option-label="name"
-        option-value="index"
-        class="w-32"
-      />
+        :model-value="String(selectedAnimation)"
+        @update:model-value="(val) => (selectedAnimation = Number(val))"
+      >
+        <SelectTrigger size="md" class="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="anim in animations"
+            :key="anim.index"
+            :value="String(anim.index)"
+          >
+            {{ anim.name }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <div class="flex w-full max-w-xs items-center gap-2 px-4">
@@ -54,10 +74,14 @@
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Select from '@/components/ui/select/Select.vue'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 
 type Animation = { name: string; index: number }
