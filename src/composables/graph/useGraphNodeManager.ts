@@ -786,6 +786,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 showAdvanced: Boolean(propertyEvent.newValue)
               })
               break
+            case 'badges': {
+              const badges = app.canvas.graph?.getNodeById(nodeId)?.badges
+              vueNodeData.set(nodeId, { ...currentData, badges })
+            }
           }
         }
       },
