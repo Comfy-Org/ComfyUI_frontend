@@ -69,29 +69,15 @@ const highlightKeys: TranslationKey[] = [
       data-testid="affiliate-hero-media"
     >
       <slot name="media">
-        <div
-          class="bg-transparency-white-t4 border-primary-comfy-canvas/10 flex aspect-video w-full max-w-xl items-center justify-center rounded-4xl border"
+        <video
+          src="https://media.comfy.org/website/homepage/hero-logo-seq.webm"
+          autoplay
+          loop
+          muted
+          playsinline
           aria-hidden="true"
-        >
-          <svg
-            viewBox="0 0 200 120"
-            class="text-primary-comfy-yellow size-3/5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="40" cy="60" r="14" />
-            <circle cx="100" cy="30" r="10" />
-            <circle cx="100" cy="90" r="10" />
-            <circle cx="160" cy="60" r="14" />
-            <path d="M54 60 L90 32" />
-            <path d="M54 60 L90 88" />
-            <path d="M110 30 L146 56" />
-            <path d="M110 90 L146 64" />
-          </svg>
-        </div>
+          class="w-full max-w-xl"
+        />
       </slot>
     </div>
   </section>

@@ -3883,9 +3883,9 @@ const translations = {
     'zh-CN': 'Brand assets'
   },
   'affiliate-landing.assets.subheading': {
-    en: 'Logos and the brand typeface for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
+    en: 'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
     'zh-CN':
-      'Logos and the brand typeface for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.'
+      'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.'
   },
   'affiliate-landing.assets.downloadLabel': {
     en: 'Download',
@@ -3922,10 +3922,6 @@ const translations = {
   'affiliate-landing.assets.tile.color-combo-ink.title': {
     en: 'Color combo (ink)',
     'zh-CN': 'Color combo (ink)'
-  },
-  'affiliate-landing.assets.tile.pp-formula-font.title': {
-    en: 'PP Formula font (ZIP)',
-    'zh-CN': 'PP Formula font (ZIP)'
   },
 
   // FAQ — keys follow the FAQSection contract: <prefix>.<n>.q / <prefix>.<n>.a, 1-indexed

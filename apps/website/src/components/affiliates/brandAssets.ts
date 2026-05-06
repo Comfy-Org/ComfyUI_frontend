@@ -4,8 +4,7 @@ interface BrandAsset {
   id: string
   titleKey: TranslationKey
   download: string
-  preview?: string
-  downloadFilename?: string
+  preview: string
 }
 
 export const brandAssets: BrandAsset[] = [
@@ -56,11 +55,5 @@ export const brandAssets: BrandAsset[] = [
     titleKey: 'affiliate-landing.assets.tile.color-combo-ink.title',
     download: '/affiliates/brand/comfy-color-combo-ink.svg',
     preview: '/affiliates/brand/comfy-color-combo-ink.svg'
-  },
-  {
-    id: 'pp-formula-font',
-    titleKey: 'affiliate-landing.assets.tile.pp-formula-font.title',
-    download: '/affiliates/fonts/PP_Formula.zip',
-    downloadFilename: 'PP_Formula.zip'
   }
 ]

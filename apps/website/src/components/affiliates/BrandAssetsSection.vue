@@ -36,20 +36,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           class="bg-primary-comfy-ink/40 flex aspect-video items-center justify-center overflow-hidden p-6"
         >
           <img
-            v-if="asset.preview"
             :src="asset.preview"
             :alt="t(asset.titleKey, locale)"
             class="max-h-full max-w-full object-contain"
             loading="lazy"
             decoding="async"
           />
-          <span
-            v-else
-            class="text-primary-comfy-canvas/60 text-xs tracking-widest uppercase"
-            aria-hidden="true"
-          >
-            {{ t(asset.titleKey, locale) }}
-          </span>
         </div>
         <div class="flex flex-1 flex-col gap-2 p-5">
           <h3 class="text-primary-comfy-canvas text-base font-light">
@@ -57,9 +49,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           </h3>
           <a
             :href="asset.download"
-            :download="
-              asset.downloadFilename ?? asset.download.split('/').pop()
-            "
+            :download="asset.download.split('/').pop()"
             class="text-primary-comfy-yellow mt-auto inline-flex items-center gap-1 text-sm font-bold tracking-wider uppercase hover:underline"
           >
             {{ t('affiliate-landing.assets.downloadLabel', locale) }}
