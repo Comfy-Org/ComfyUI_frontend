@@ -212,7 +212,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {
     name: 'PrimitiveNode',
     display_name: 'Primitive',
-    category: 'utils',
+    category: 'utils/primitive',
     input: { required: {}, optional: {} },
     output: ['*'],
     output_name: ['connect to widget input'],
