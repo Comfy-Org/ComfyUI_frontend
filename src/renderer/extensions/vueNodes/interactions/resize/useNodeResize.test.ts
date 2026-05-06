@@ -465,5 +465,51 @@ describe('useNodeResize', () => {
       // Probe value should be reverted, not left at '0px'
       expect(el.style.getPropertyValue('--node-height')).toBe('400px')
     })
+
+    it('measures with the candidate width applied (responsive breakpoint frame)', async () => {
+      // Simulate a responsive widget: when width < 350, content reflows to
+      // 280; when width >= 350, content fits in 150.
+      const breakpointAwareElement = (() => {
+        const element = document.createElement('div')
+        element.setAttribute('data-node-id', 'test-node')
+        element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
+        element.getBoundingClientRect = () => {
+          const nodeHeight = element.style.getPropertyValue('--node-height')
+          if (nodeHeight === '0px') {
+            const widthVar = element.style.getPropertyValue('--node-width')
+            const probedWidth = parseFloat(widthVar) || 300
+            const minH = probedWidth < 350 ? 280 : 150
+            return { width: probedWidth, height: minH } as DOMRect
+          }
+          return { width: 300, height: 400 } as DOMRect
+        }
+        return element
+      })()
+      const cb = vi.fn<ResizeCallback>()
+      const h = createMockHandle(breakpointAwareElement)
+      const { useNodeResize } = await import('./useNodeResize')
+      const { startResize } = useNodeResize(cb)
+
+      // Start at width=300 (still narrow side, but the breakpoint logic
+      // matters when the user attempts to shrink toward narrow on this frame).
+      breakpointAwareElement.style.setProperty('--node-width', '400px')
+      startResizeAt(startResize, h, 'SE')
+
+      // First move drives newWidth to 340 (below breakpoint). Probe must use
+      // 340, not the DOM's currently-applied 400, to return 280.
+      simulateMove(-60, -300)
+      const payload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      expect(payload.size.height).toBe(280)
+    })
+
+    it('restores --node-width after probing (does not clobber state)', async () => {
+      const { el, handle: h, startResize } = await setupDynamic(() => 150)
+      el.style.setProperty('--node-width', '350px')
+
+      startResizeAt(startResize, h, 'SE')
+      simulateMove(10, 10)
+
+      expect(el.style.getPropertyValue('--node-width')).toBe('350px')
+    })
   })
 })

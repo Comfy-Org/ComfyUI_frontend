@@ -59,12 +59,14 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const measureMinContentHeight = () => {
-      const savedNodeHeight =
-        nodeElement.style.getPropertyValue('--node-height')
+    const measureMinContentHeight = (candidateWidth: number) => {
+      const savedWidth = nodeElement.style.getPropertyValue('--node-width')
+      const savedHeight = nodeElement.style.getPropertyValue('--node-height')
+      nodeElement.style.setProperty('--node-width', `${candidateWidth}px`)
       nodeElement.style.setProperty('--node-height', '0px')
       const measured = nodeElement.getBoundingClientRect().height
-      nodeElement.style.setProperty('--node-height', savedNodeHeight || '')
+      nodeElement.style.setProperty('--node-height', savedHeight || '')
+      nodeElement.style.setProperty('--node-width', savedWidth || '')
       const currentScale = transformState.camera.z || 1
       return measured / currentScale
     }
@@ -170,9 +172,12 @@ export function useNodeResize(
         }
         newWidth = minWidth
       }
-      // Re-measure on each move: widget content (e.g. painter controls)
-      // can re-flow taller as width shrinks, raising the true minimum.
-      const minContentHeight = measureMinContentHeight()
+      // Re-measure on each move with the candidate width applied: widget
+      // content (e.g. painter controls) can re-flow taller as width shrinks,
+      // raising the true minimum. Probing with newWidth — not the DOM's
+      // current width — keeps the clamp accurate on the frame that crosses
+      // a responsive breakpoint.
+      const minContentHeight = measureMinContentHeight(newWidth)
       if (newHeight < minContentHeight) {
         if (activeCorner.includes('N')) {
           newY =
