@@ -194,6 +194,29 @@ describe('contextMenuConverter', () => {
       expect(result[0].disabled).toBe(true)
     })
 
+    it('forwards the LGraphNode argument to the callback (LGraphCanvas.onMenuNode* contract)', () => {
+      const fakeNode = { id: 42, isFakeNode: true } as unknown as Parameters<
+        typeof convertContextMenuToOptions
+      >[1]
+      let receivedNode: unknown = 'NOT_CALLED'
+      const callback = function (
+        this: unknown,
+        _value: unknown,
+        _options: unknown,
+        _e: unknown,
+        _menu: unknown,
+        node: unknown
+      ) {
+        receivedNode = node
+      }
+      const items = [{ content: 'Custom Action', callback }]
+
+      const result = convertContextMenuToOptions(items, fakeNode, false)
+      result[0].action?.()
+
+      expect(receivedNode).toBe(fakeNode)
+    })
+
     it('should apply structuring by default', () => {
       const items = [
         { content: 'Copy', callback: () => {} },
