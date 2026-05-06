@@ -62,6 +62,8 @@ export class AppModeHelper {
   public readonly vueNodeSwitchDismissButton: Locator
   /** The "Don't show again" checkbox inside the Vue Node switch popup. */
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
+  /** The main content area where outputs are displayed*/
+  public readonly centerPanel: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.mobile = new MobileAppHelper(comfyPage)
@@ -128,6 +130,7 @@ export class AppModeHelper {
     this.vueNodeSwitchDontShowAgainCheckbox = this.page.getByTestId(
       TestIds.appMode.vueNodeSwitchDontShowAgain
     )
+    this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
   }
 
   private get page(): Page {
@@ -221,10 +224,6 @@ export class AppModeHelper {
     }, inputs)
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()
-  }
-
-  get centerPanel(): Locator {
-    return this.page.getByTestId(TestIds.linear.centerPanel)
   }
 
   /**

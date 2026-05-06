@@ -1,14 +1,13 @@
 <template>
-  <div
-    :aria-label="widget.name"
-    class="widget-markdown relative w-full"
-    @dblclick="startEditing"
-  >
+  <div class="widget-markdown relative w-full" @dblclick="startEditing">
     <div
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       :class="isEditing ? 'invisible' : 'visible'"
       tabindex="0"
       data-capture-wheel="true"
+      role="textarea"
+      :aria-label="widget.name || $t('g.markdown')"
+      aria-readonly="true"
       v-html="renderedHtml"
     />
 

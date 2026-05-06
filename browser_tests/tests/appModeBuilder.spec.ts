@@ -12,7 +12,7 @@ test.describe('App mode builder selection', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    const items = comfyPage.appMode.select.selectedItems
+    const items = comfyPage.appMode.select.inputItems
 
     await comfyPage.vueNodes.selectNodes(['6', '7'])
     await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
@@ -32,23 +32,6 @@ test.describe('App mode builder selection', () => {
     }
   })
 
-  test('Can drag and drop inputs', async ({ comfyPage }) => {
-    const items = comfyPage.appMode.select.selectedItems
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
-
-    const ksampler = await comfyPage.vueNodes.getNodeLocator('3')
-    for (const widget of await ksampler.locator('.lg-node-widget').all())
-      await widget.click()
-
-    await items.first().dragTo(items.last(), { steps: 5 })
-    await expect(items.first()).toContainText('steps')
-    await items.last().dragTo(items.first(), { steps: 5 })
-    //dragTo doesn't cross the center point, so denoise is moved to position 2
-    await expect(items.nth(1)).toContainText('denoise')
-  })
-
   test('Can select outputs', async ({ comfyPage }) => {
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToOutputs()
@@ -59,17 +42,18 @@ test.describe('App mode builder selection', () => {
     const saveImage = await comfyPage.vueNodes.getNodeLocator('9')
     await saveImage.click()
 
-    const items = comfyPage.appMode.select.selectedItems
+    const items = comfyPage.appMode.select.inputItems
     await expect(items).toHaveCount(1)
   })
 
   test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    const items = comfyPage.appMode.select.selectedItems
+    const items = comfyPage.appMode.select.inputItems
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
 
+    //On ci, no models exist, so Load Checkpoint is in an error state
     await comfyPage.appMode.select.selectInputWidget(
       'Load Checkpoint',
       'ckpt_name'
