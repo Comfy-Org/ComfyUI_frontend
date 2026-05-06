@@ -76,15 +76,25 @@ vi.mock(
   })
 )
 
+const commandStoreMocks = vi.hoisted(() => ({
+  execute: vi.fn()
+}))
+
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
-    execute: vi.fn()
+    execute: commandStoreMocks.execute
   })
+}))
+
+const routeMocks = vi.hoisted(() => ({
+  query: {} as Record<string, unknown>
 }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
-    query: {}
+    get query() {
+      return routeMocks.query
+    }
   }),
   useRouter: () => ({
     replace: vi.fn()
@@ -178,6 +188,8 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.apiMock.removeEventListener.mockImplementation(() => {})
     openWorkflowMock.mockReset()
     loadBlankWorkflowMock.mockReset()
+    commandStoreMocks.execute.mockReset()
+    routeMocks.query = {}
   })
 
   afterEach(() => {
@@ -355,6 +367,30 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('loadDefaultWorkflow', () => {
+    it('opens templates browser for first-time users', async () => {
+      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when share param is in URL', async () => {
+      routeMocks.query = { share: 'test-share-id' }
+
+      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
     })
   })
 })

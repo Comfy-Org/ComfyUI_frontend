@@ -106,6 +106,49 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(comfyPage.templates.content).toBeVisible()
   })
 
+  test('dialog should not be shown when first-time user opens a shared workflow link', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.route(
+      '**/workflows/published/test-share-id',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            share_id: 'test-share-id',
+            workflow_id: 'wf-1',
+            name: 'Shared Workflow',
+            listed: true,
+            publish_time: new Date().toISOString(),
+            workflow_json: {
+              version: 0.4,
+              nodes: [],
+              links: [],
+              groups: [],
+              config: {},
+              extra: {}
+            },
+            assets: []
+          })
+        })
+      }
+    )
+
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+
+    await comfyPage.setup({
+      clearStorage: true,
+      url: '/?share=test-share-id'
+    })
+
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Open shared workflow' })
+    ).toBeVisible()
+
+    await expect(comfyPage.templates.content).toBeHidden()
+  })
+
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
 
