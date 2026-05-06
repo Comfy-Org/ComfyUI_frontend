@@ -788,14 +788,9 @@ describe('useWidgetSelectItems', () => {
         }
       ])
 
-      // Allow microtasks for the resolved promise to settle.
       await nextTick()
       await nextTick()
 
-      // Bug: while job-FIRST is still pending, the head of the list must not
-      // shift. Without the fix, dropdownItems becomes
-      // [previewFirst, out2a, out2b] — i.e. children of job-SECOND get
-      // unshifted in front of the unresolved job-FIRST representative.
       expect(dropdownItems.value.map((i) => i.name)).toEqual([
         'previewFirst.png [output]',
         'previewSecond.png [output]'

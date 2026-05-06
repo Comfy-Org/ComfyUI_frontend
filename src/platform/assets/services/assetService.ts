@@ -179,6 +179,8 @@ const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
 export const MODELS_TAG = 'models'
+export const INPUT_TAG = 'input'
+export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 

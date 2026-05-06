@@ -2,15 +2,20 @@ import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 import { assetService } from '@/platform/assets/services/assetService'
 
-import { useFlatOutputAssets } from './useFlatOutputAssets'
+import { _resetForTests, useFlatOutputAssets } from './useFlatOutputAssets'
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetsByTag: vi.fn()
+vi.mock('@/platform/assets/services/assetService', async () => {
+  const actual = await vi.importActual<typeof AssetServiceModule>(
+    '@/platform/assets/services/assetService'
+  )
+  return {
+    ...actual,
+    assetService: { getAssetsByTag: vi.fn() }
   }
-}))
+})
 
 const PAGE_SIZE = 200
 
@@ -28,6 +33,7 @@ describe('useFlatOutputAssets', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.mocked(assetService.getAssetsByTag).mockReset()
+    _resetForTests()
   })
 
   it('fetches outputs via getAssetsByTag with the output tag', async () => {
@@ -94,7 +100,7 @@ describe('useFlatOutputAssets', () => {
     expect(provider.media.value.at(-1)?.id).toBe('newId')
   })
 
-  it('records error and keeps existing media on failure', async () => {
+  it('records error and clears media on initial-fetch failure', async () => {
     const err = new Error('network down')
     vi.mocked(assetService.getAssetsByTag).mockRejectedValueOnce(err)
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -123,5 +129,27 @@ describe('useFlatOutputAssets', () => {
 
     expect(provider.media.value.map((a) => a.id)).toEqual(['fresh'])
     expect(provider.hasMore.value).toBe(false)
+  })
+
+  it('shares state across consumers and dedupes concurrent fetches', async () => {
+    let resolvePage!: (assets: AssetItem[]) => void
+    const pagePromise = new Promise<AssetItem[]>((res) => {
+      resolvePage = res
+    })
+    vi.mocked(assetService.getAssetsByTag).mockReturnValueOnce(pagePromise)
+
+    const a = useFlatOutputAssets()
+    const b = useFlatOutputAssets()
+
+    const p1 = a.fetchMediaList()
+    const p2 = b.fetchMediaList()
+
+    expect(vi.mocked(assetService.getAssetsByTag)).toHaveBeenCalledTimes(1)
+
+    resolvePage([makeAsset('shared-1', 'shared.png', 'h.png')])
+    await Promise.all([p1, p2])
+
+    expect(a.media.value).toBe(b.media.value)
+    expect(a.media.value.map((x) => x.id)).toEqual(['shared-1'])
   })
 })

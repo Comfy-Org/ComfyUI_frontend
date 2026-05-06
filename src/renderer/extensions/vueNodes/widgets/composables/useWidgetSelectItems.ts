@@ -13,7 +13,8 @@ import {
   getAssetBaseModels,
   getAssetDisplayFilename,
   getAssetDisplayName,
-  getAssetFilename
+  getAssetFilename,
+  getAssetUrlFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -197,9 +198,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
-      // Cloud `/api/view` resolves output files by asset_hash. Fall back to
-      // `name` for the local/history path where assets are not hash-keyed.
-      const filenameForUrl = asset.asset_hash || asset.name
+      const filenameForUrl = getAssetUrlFilename(asset)
       const subfolder =
         kind === 'mesh'
           ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
