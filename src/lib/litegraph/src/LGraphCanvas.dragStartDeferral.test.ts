@@ -132,6 +132,18 @@ describe('_startDraggingItems defers onSelectionChange', () => {
     expect(onSelectionChange).not.toHaveBeenCalled()
   })
 
+  it('invokes the deferred onSelectionChange with the canvas as receiver', () => {
+    const receivedThis: unknown[] = []
+    canvas.onSelectionChange = function (this: unknown) {
+      receivedThis.push(this)
+    }
+
+    canvas['_startDraggingItems'](node, pointer, true)
+    vi.advanceTimersByTime(16)
+
+    expect(receivedThis).toEqual([canvas])
+  })
+
   it('restores onSelectionChange even when processSelect throws', () => {
     const onSelectionChange = vi.fn()
     canvas.onSelectionChange = onSelectionChange
