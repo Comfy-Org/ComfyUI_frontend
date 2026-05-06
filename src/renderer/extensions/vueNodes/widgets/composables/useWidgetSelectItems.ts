@@ -101,7 +101,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
-  const pendingJobIds = new Set<string>()
 
   watch(
     () => outputMediaAssets.media.value,
@@ -109,8 +108,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       let cancelled = false
       onCleanup(() => {
         cancelled = true
-        pendingJobIds.clear()
       })
+
+      const seenJobIds = new Set<string>()
+      const jobsToResolve: Array<{
+        jobId: string
+        meta: ReturnType<typeof getOutputAssetMetadata>
+        createdAt?: string
+      }> = []
 
       for (const asset of assets) {
         const meta = getOutputAssetMetadata(asset.user_metadata)
@@ -120,29 +125,41 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         if (
           outputCount <= 1 ||
           resolvedByJobId.value.has(meta.jobId) ||
-          pendingJobIds.has(meta.jobId)
+          seenJobIds.has(meta.jobId)
         )
           continue
 
-        pendingJobIds.add(meta.jobId)
-        void resolveOutputAssetItems(meta, { createdAt: asset.created_at })
-          .then((resolved) => {
-            if (cancelled || !resolved.length) return
-            const next = new Map(resolvedByJobId.value)
-            next.set(meta.jobId, resolved)
-            resolvedByJobId.value = next
-          })
-          .catch((error) => {
-            console.warn(
-              'Failed to resolve multi-output job',
-              meta.jobId,
-              error
-            )
-          })
-          .finally(() => {
-            pendingJobIds.delete(meta.jobId)
-          })
+        seenJobIds.add(meta.jobId)
+        jobsToResolve.push({
+          jobId: meta.jobId,
+          meta,
+          createdAt: asset.created_at
+        })
       }
+
+      if (jobsToResolve.length === 0) return
+
+      void Promise.all(
+        jobsToResolve.map(({ jobId, meta, createdAt }) =>
+          resolveOutputAssetItems(meta!, { createdAt })
+            .then((resolved) => ({ jobId, resolved }))
+            .catch((error) => {
+              console.warn('Failed to resolve multi-output job', jobId, error)
+              return { jobId, resolved: [] as AssetItem[] }
+            })
+        )
+      ).then((results) => {
+        if (cancelled) return
+
+        const next = new Map(resolvedByJobId.value)
+        let changed = false
+        for (const { jobId, resolved } of results) {
+          if (!resolved.length) continue
+          next.set(jobId, resolved)
+          changed = true
+        }
+        if (changed) resolvedByJobId.value = next
+      })
     },
     { immediate: true }
   )
