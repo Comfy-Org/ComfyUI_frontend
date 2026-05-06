@@ -560,3 +560,47 @@ test.describe(
     })
   }
 )
+
+test('@vue-nodes Promote/Demote by Context Menu', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const ksampler = comfyPage.vueNodes.getNodeLocator('1')
+  const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+
+  await test.step('Promote widget', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    await comfyPage.subgraph.promoteWidget(ksampler, 'steps')
+    await comfyPage.subgraph.exitViaBreadcrumb()
+
+    await expect(steps).toBeVisible()
+  })
+
+  await test.step('Un-promote widget', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+    await comfyPage.subgraph.exitViaBreadcrumb()
+
+    await expect(subgraphNode).toBeVisible()
+    await expect(steps).toBeHidden()
+  })
+})
+
+test('@vue-nodes Promote/Demote by side panel', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+  const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+
+  await comfyPage.subgraph.toggleContainedWidgetPromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'steps',
+    toState: true
+  })
+  await expect(steps, 'Promote widget').toBeVisible()
+
+  await comfyPage.subgraph.toggleContainedWidgetPromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'steps',
+    toState: false
+  })
+  await expect(steps, 'Un-promote widget').toBeHidden()
+})

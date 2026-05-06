@@ -73,6 +73,12 @@ export class ContextMenu {
     return this
   }
 
+  async openForWidget(widget: Locator): Promise<this> {
+    await widget.click({ button: 'right' })
+    await this.primeVueMenu.waitFor({ state: 'visible' })
+    return this
+  }
+
   async waitForHidden(): Promise<void> {
     await Promise.all([
       this.primeVueMenu.waitFor({ state: 'hidden' }),

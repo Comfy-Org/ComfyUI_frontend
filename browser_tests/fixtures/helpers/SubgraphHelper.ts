@@ -327,6 +327,67 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async toggleContainedWidgetPromotion(
+    subgraphNode: Locator,
+    options: (
+      | { nodeName: string; nodeId?: undefined }
+      | { nodeName?: undefined; nodeId: string }
+    ) & { widgetName: string; toState?: boolean }
+  ) {
+    await this.comfyPage.vueNodes.selectNodeByLocator(subgraphNode)
+    await this.comfyPage.command.executeCommand(
+      'Comfy.Graph.EditSubgraphWidgets'
+    )
+    const { root } = this.comfyPage.menu.propertiesPanel
+    await expect(root, 'Open Properties Panel').toBeVisible()
+
+    const resolvePromotionItem: () => Locator = () => {
+      const labelLocator = this.comfyPage.page
+        .getByTestId(TestIds.subgraphEditor.widgetLabel)
+        .filter({ hasText: options.widgetName })
+
+      const named = root
+        .getByTestId(TestIds.subgraphEditor.widgetItem)
+        .filter({ has: labelLocator })
+      if (options.nodeName !== undefined) {
+        const nodeNameLocator = this.comfyPage.page
+          .getByTestId(TestIds.subgraphEditor.nodeName)
+          .filter({ hasText: options.nodeName })
+        return named.filter({ has: nodeNameLocator })
+      }
+
+      const idLocator = this.comfyPage.page.locator(
+        `[data-nodeid="${options.nodeId}"]`
+      )
+      return named.filter({ has: idLocator })
+    }
+    const item = resolvePromotionItem()
+
+    const toggleButton = item.getByTestId(TestIds.subgraphEditor.iconEye)
+    if (options.toState !== undefined) {
+      const expectedIcon = `icon-[lucide--eye${options.toState ? '-off' : ''}]`
+      await expect(toggleButton).toContainClass(expectedIcon)
+    }
+    await toggleButton.click()
+  }
+
+  async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openForWidget(widget)
+      .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
+  }
+
+  async unpromoteWidget(
+    nodeLocator: Locator,
+    widgetName: string
+  ): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openForWidget(widget)
+      .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
