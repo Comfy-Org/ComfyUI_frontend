@@ -179,7 +179,7 @@ export class SubgraphInputNode
 
     const linkId = input.link
     input.link = null
-    if (input.widget) {
+    if (input.widget && linkId != null) {
       subgraph.trigger('node:slot-links:changed', {
         nodeId: node.id,
         slotType: NodeSlotType.INPUT,
