@@ -126,12 +126,18 @@ onBeforeUnmount(() => {
 })
 
 const translateItem = (item: ServerConfig<ServerConfigValue>): FormItemType => {
+  const options = item.options?.map((opt) => {
+    const key = `serverConfigItems.${item.id}.options.${opt}`
+    const translated = t(key, opt)
+    return { text: translated, value: opt }
+  })
   return {
     ...item,
     name: t(`serverConfigItems.${item.id}.name`, item.name),
     tooltip: item.tooltip
       ? t(`serverConfigItems.${item.id}.tooltip`, item.tooltip)
-      : undefined
+      : undefined,
+    options: options ?? item.options
   }
 }
 </script>
