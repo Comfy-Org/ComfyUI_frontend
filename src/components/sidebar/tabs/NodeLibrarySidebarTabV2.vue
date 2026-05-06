@@ -117,7 +117,9 @@
     <template #body>
       <NodeDragPreview />
       <div class="flex h-full flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto py-2">
+        <div
+          class="min-h-0 flex-1 overflow-y-auto py-2 [scrollbar-gutter:stable]"
+        >
           <TabPanel
             v-if="flags.nodeLibraryEssentialsEnabled"
             :model-value="selectedTab"
