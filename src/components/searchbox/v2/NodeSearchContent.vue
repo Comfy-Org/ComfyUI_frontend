@@ -288,10 +288,13 @@ const sidebarCategory = computed({
   }
 })
 
-// Check if any tree category has children (for chevron visibility).
-// Essentials mode groups by canonical essentials_category, which is flat.
 const anyTreeCategoryHasChildren = computed(() => {
-  if (rootFilter.value === RootCategory.Essentials) return false
+  if (rootFilter.value === RootCategory.Essentials) {
+    return (
+      new Set(rootFilteredNodeDefs.value.map(resolveEssentialsCategory)).size >
+      1
+    )
+  }
   return rootFilteredNodeDefs.value.some((n) => n.category.includes('/'))
 })
 

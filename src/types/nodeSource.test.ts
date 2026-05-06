@@ -177,6 +177,13 @@ describe('isFromCustomPack', () => {
     ).toBe(false)
   })
 
+  it('returns false for modules whose first segment merely starts with custom_nodes', () => {
+    expect(
+      isFromCustomPack({ python_module: 'custom_nodes_archive.legacy' })
+    ).toBe(false)
+    expect(isFromCustomPack({ python_module: 'custom_nodes2' })).toBe(false)
+  })
+
   it('returns false when python_module is missing', () => {
     expect(isFromCustomPack({})).toBe(false)
     expect(isFromCustomPack({ python_module: undefined })).toBe(false)

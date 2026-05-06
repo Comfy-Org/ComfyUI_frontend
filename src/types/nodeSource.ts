@@ -101,9 +101,13 @@ interface NodeWithModule {
  * `nodeSource.type`, so custom-pack nodes that declare `essentials_category`
  * (which makes their `nodeSource.type` `Essentials` for badge styling) are
  * still classified as custom-pack here.
+ *
+ * Matches `getNodeSource`'s rule: only an exact first segment of
+ * `custom_nodes` qualifies, so unrelated modules like `custom_nodes_archive`
+ * do not get bucketed as custom packs.
  */
 export function isFromCustomPack(node: NodeWithModule): boolean {
-  return node.python_module?.startsWith('custom_nodes') ?? false
+  return node.python_module?.split('.')[0] === 'custom_nodes'
 }
 
 export enum NodeBadgeMode {
