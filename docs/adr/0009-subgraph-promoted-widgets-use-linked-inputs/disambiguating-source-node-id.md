@@ -51,14 +51,14 @@ identity model that asks host UI state to identify private nested internals.
 
 ## Existing places that need it
 
-| Area | Current use of `disambiguatingSourceNodeId` | Ambiguity being patched |
-| --- | --- | --- |
-| Promotion source types | `PromotedWidgetSource` and `PromotedWidgetView` carry the optional field. | Source identity needs more than immediate node ID plus widget name for nested promoted views. |
-| Concrete widget resolution | `findWidgetByIdentity(...)` matches promoted views by `(disambiguatingSourceNodeId ?? sourceNodeId)` when a source node ID is supplied. | Multiple promoted views under the same intermediate node can share a widget name. |
-| Legacy proxy normalization | Prefixed legacy names such as `123:widget_name` are converted into structured source identity and tested with candidate disambiguators. | Old serialized names encode leaf identity inside the widget name string. |
-| Promotion store keys | `makePromotionEntryKey(...)`, `isPromoted(...)`, and `demote(...)` include the field in equality. | Store-level uniqueness would collapse distinct nested promotions without the leaf ID. |
+| Area                         | Current use of `disambiguatingSourceNodeId`                                                                                                   | Ambiguity being patched                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Promotion source types       | `PromotedWidgetSource` and `PromotedWidgetView` carry the optional field.                                                                     | Source identity needs more than immediate node ID plus widget name for nested promoted views.       |
+| Concrete widget resolution   | `findWidgetByIdentity(...)` matches promoted views by `(disambiguatingSourceNodeId ?? sourceNodeId)` when a source node ID is supplied.       | Multiple promoted views under the same intermediate node can share a widget name.                   |
+| Legacy proxy normalization   | Prefixed legacy names such as `123:widget_name` are converted into structured source identity and tested with candidate disambiguators.       | Old serialized names encode leaf identity inside the widget name string.                            |
+| Promotion store keys         | `makePromotionEntryKey(...)`, `isPromoted(...)`, and `demote(...)` include the field in equality.                                             | Store-level uniqueness would collapse distinct nested promotions without the leaf ID.               |
 | Linked promotion propagation | `SubgraphNode._resolveLinkedPromotionBySubgraphInput(...)` preserves the leaf ID when a linked input targets an inner subgraph promoted view. | The outer host otherwise sees only the immediate inner `SubgraphNode` and the promoted widget name. |
-| Subgraph editor UI | The editor uses the field when resolving active widgets and when writing reordered/toggled promotions back to the store. | UI list operations must not merge same-name promoted views from different leaves. |
+| Subgraph editor UI           | The editor uses the field when resolving active widgets and when writing reordered/toggled promotions back to the store.                      | UI list operations must not merge same-name promoted views from different leaves.                   |
 
 ## New promoted-widget identity
 
@@ -104,15 +104,15 @@ identity, and `label` / `localized_name` are display-only.
 
 ## How the new form removes each need
 
-| Previous disambiguation site | New canonical replacement |
-| --- | --- |
-| `PromotedWidgetSource.disambiguatingSourceNodeId` | Host value identity is `hostNodeLocator + SubgraphInput.name`; source locator fields become migration/diagnostic metadata only. |
-| `PromotedWidgetView.disambiguatingSourceNodeId` | Host-scoped widget entities are derived from subgraph inputs, not from promoted views chained through nested source widgets. |
-| `findWidgetByIdentity(...)` leaf matching | Runtime value lookup starts from the host input identity; source traversal is metadata resolution, not value identity resolution. |
-| Legacy prefixed widget-name normalization | Load migration consumes legacy source-shaped entries and writes standard subgraph input state or quarantine metadata. |
-| PromotionStore source-key equality | `PromotionStore` becomes a temporary derived index; canonical consumers query subgraph inputs directly. |
-| Linked promotion propagation across nested hosts | Nested value composition is represented boundary-by-boundary by linked subgraph inputs with stable names. |
-| Subgraph editor active widget matching | Editor state can operate on host boundary entries instead of matching leaf source widgets through same-name promoted views. |
+| Previous disambiguation site                      | New canonical replacement                                                                                                         |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `PromotedWidgetSource.disambiguatingSourceNodeId` | Host value identity is `hostNodeLocator + SubgraphInput.name`; source locator fields become migration/diagnostic metadata only.   |
+| `PromotedWidgetView.disambiguatingSourceNodeId`   | Host-scoped widget entities are derived from subgraph inputs, not from promoted views chained through nested source widgets.      |
+| `findWidgetByIdentity(...)` leaf matching         | Runtime value lookup starts from the host input identity; source traversal is metadata resolution, not value identity resolution. |
+| Legacy prefixed widget-name normalization         | Load migration consumes legacy source-shaped entries and writes standard subgraph input state or quarantine metadata.             |
+| PromotionStore source-key equality                | `PromotionStore` becomes a temporary derived index; canonical consumers query subgraph inputs directly.                           |
+| Linked promotion propagation across nested hosts  | Nested value composition is represented boundary-by-boundary by linked subgraph inputs with stable names.                         |
+| Subgraph editor active widget matching            | Editor state can operate on host boundary entries instead of matching leaf source widgets through same-name promoted views.       |
 
 ## Boundary-by-boundary nested flow
 
