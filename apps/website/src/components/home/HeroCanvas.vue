@@ -2,12 +2,7 @@
 import { useResizeObserver } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-type NodeId =
-  | 'n-green'
-  | 'n-red'
-  | 'n-blue'
-  | 'n-purple'
-  | 'n-output-ui'
+type NodeId = 'n-green' | 'n-red' | 'n-blue' | 'n-purple' | 'n-output-ui'
 
 type NodeBase = {
   x: number
@@ -267,26 +262,46 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
     ctx.fill()
 
     ctx.beginPath()
-    ctx.arc(x + chipX + dotOffsetX, y + chip1Y + chipH / 2, dotR, 0, Math.PI * 2)
+    ctx.arc(
+      x + chipX + dotOffsetX,
+      y + chip1Y + chipH / 2,
+      dotR,
+      0,
+      Math.PI * 2
+    )
     ctx.fillStyle = YELLOW
     ctx.fill()
 
     ctx.font = "800 14px 'PP Formula', sans-serif"
     ctx.fillStyle = YELLOW
-    ctx.fillText('CANNY EDGE', x + chipX + textOffsetX, y + chip1Y + chipH / 2 + 5)
+    ctx.fillText(
+      'CANNY EDGE',
+      x + chipX + textOffsetX,
+      y + chip1Y + chipH / 2 + 5
+    )
 
     roundRect(ctx, x + chipX, y + chip2Y, chipW, chipH, chipR)
     ctx.fillStyle = INK
     ctx.fill()
 
     ctx.beginPath()
-    ctx.arc(x + chipX + dotOffsetX, y + chip2Y + chipH / 2, dotR, 0, Math.PI * 2)
+    ctx.arc(
+      x + chipX + dotOffsetX,
+      y + chip2Y + chipH / 2,
+      dotR,
+      0,
+      Math.PI * 2
+    )
     ctx.fillStyle = YELLOW
     ctx.fill()
 
     ctx.font = "800 14px 'PP Formula', sans-serif"
     ctx.fillStyle = YELLOW
-    ctx.fillText('DEPTH MAP', x + chipX + textOffsetX, y + chip2Y + chipH / 2 + 5)
+    ctx.fillText(
+      'DEPTH MAP',
+      x + chipX + textOffsetX,
+      y + chip2Y + chipH / 2 + 5
+    )
   } else if (n.type === 'image') {
     const outputUi = nodes['n-output-ui'] as SvgNode
     const filter = id === 'n-blue' ? levelsFilter(outputUi.progress) : null
@@ -391,8 +406,7 @@ function fitView() {
   // Fit the node bounding box (not the full world) into the container with a
   // small safety margin, and center it. This prevents wide/short heroes from
   // leaving huge empty gutters around the scene.
-  const z =
-    Math.min(cssW / CONTENT_W, cssH / CONTENT_H) * 0.92 * dpr
+  const z = Math.min(cssW / CONTENT_W, cssH / CONTENT_H) * 0.92 * dpr
   vz = z
   vx = canvas.width / 2 - CONTENT_CX * z
   vy = canvas.height / 2 - CONTENT_CY * z
@@ -428,8 +442,10 @@ function clampNodeOffset(id: NodeId) {
 
   // If the viewport is too small to contain the node entirely, center it on
   // the available axis rather than producing an impossible clamp range.
-  n.ox = maxOx < minOx ? (minOx + maxOx) / 2 : Math.min(maxOx, Math.max(minOx, n.ox))
-  n.oy = maxOy < minOy ? (minOy + maxOy) / 2 : Math.min(maxOy, Math.max(minOy, n.oy))
+  n.ox =
+    maxOx < minOx ? (minOx + maxOx) / 2 : Math.min(maxOx, Math.max(minOx, n.ox))
+  n.oy =
+    maxOy < minOy ? (minOy + maxOy) / 2 : Math.min(maxOy, Math.max(minOy, n.oy))
 }
 
 function clientToWorld(cx: number, cy: number) {
@@ -528,7 +544,7 @@ function onPointerUp() {
 function defineNodes() {
   nodes = {
     'n-green': {
-      x: 100,
+      x: 25,
       y: 350,
       w: 339,
       h: 409,
@@ -540,7 +556,7 @@ function defineNodes() {
       img: imgGreen
     },
     'n-red': {
-      x: 950,
+      x: 875,
       y: 100,
       w: 339,
       h: 409,
@@ -552,7 +568,7 @@ function defineNodes() {
       img: imgRed
     },
     'n-blue': {
-      x: 950,
+      x: 875,
       y: 650,
       w: 339,
       h: 409,
@@ -564,7 +580,7 @@ function defineNodes() {
       img: imgBlue
     },
     'n-purple': {
-      x: 1450,
+      x: 1375,
       y: 250,
       w: 595,
       h: 718,
@@ -576,7 +592,7 @@ function defineNodes() {
       img: imgPurple
     },
     'n-output-ui': {
-      x: 500,
+      x: 425,
       y: 530,
       w: 386,
       h: 116,
@@ -683,10 +699,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    ref="containerRef"
-    class="relative size-full overflow-hidden"
-  >
+  <div ref="containerRef" class="relative size-full overflow-hidden">
     <canvas
       ref="canvasRef"
       class="block size-full touch-pan-y select-none"
