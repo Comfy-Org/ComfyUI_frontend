@@ -104,10 +104,7 @@ const updateDomClipping = () => {
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
 
 function composeStyle() {
-  const override = widgetState.positionOverride
-  const isDisabled = override
-    ? (override.widget.computedDisabled ?? widget.computedDisabled)
-    : widget.computedDisabled
+  const isDisabled = widgetState.computedDisabled
 
   style.value = {
     ...positionStyle.value,
@@ -122,15 +119,40 @@ function composeStyle() {
 }
 
 watch(
-  [() => widgetState, left, top, enableDomClipping],
-  ([widgetState]) => {
+  [
+    () => widgetState.pos,
+    () => widgetState.size,
+    // Visibility transitions (e.g. LOD low_quality flipping) must refresh
+    // style: while invisible, DomWidgets.vue does not update widgetState
+    // and ds.offset/ds.scale are non-reactive, so updatePosition must be
+    // re-run against the current viewport when the widget reappears.
+    () => widgetState.visible,
+    left,
+    top
+  ],
+  () => {
     updatePosition(widgetState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }
     composeStyle()
-  },
-  { deep: true }
+  }
+)
+
+watch(
+  [
+    () => widgetState.zIndex,
+    () => widgetState.readonly,
+    () => widgetState.computedDisabled,
+    () => widgetState.positionOverride,
+    enableDomClipping
+  ],
+  () => {
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
+    composeStyle()
+  }
 )
 
 // Recompose style when clippingStyle updates asynchronously via RAF.
