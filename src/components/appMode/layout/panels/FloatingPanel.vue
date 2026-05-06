@@ -76,7 +76,7 @@ const sectionClass = computed(() =>
     'app-mode-themed floating-panel pointer-events-auto absolute z-10 flex flex-col overflow-hidden',
     !isDocked.value && 'w-(--panel-dock-width,440px)',
     'max-w-[calc(100vw-var(--spacing-layout-outer)*2)]',
-    'rounded-[10px] border border-white/8 bg-layout-cell',
+    'rounded-[10px] border border-(--border-color) bg-layout-cell',
     // Drop blur while dragging — re-computing it every frame tanks
     // framerate when a run is repainting in parallel.
     !isDragging.value && 'backdrop-blur-sm',

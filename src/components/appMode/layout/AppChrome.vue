@@ -204,7 +204,7 @@ function cellClass(cell: ChromeCell): string {
   const bare = cell.kind === 'system-run'
   return cn(
     'pointer-events-auto flex h-full overflow-hidden',
-    !bare && 'rounded-[10px] border border-white/8 bg-layout-cell',
+    !bare && 'rounded-[10px] border border-(--border-color) bg-layout-cell',
     cell.disabled && 'cursor-not-allowed select-none'
   )
 }

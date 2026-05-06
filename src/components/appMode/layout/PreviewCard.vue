@@ -6,7 +6,7 @@ defineProps<{ title: string }>()
 <template>
   <section class="panel-chrome flex flex-col overflow-hidden">
     <header
-      class="flex min-h-layout-cell items-center gap-2 border-b border-white/8 bg-(--color-layout-header-fill) px-[10px] py-2 select-none"
+      class="flex min-h-layout-cell items-center gap-2 border-b border-(--border-color) bg-(--color-layout-header-fill) px-[10px] py-2 select-none"
     >
       <span class="truncate text-layout-md font-semibold text-layout-text">
         {{ title }}

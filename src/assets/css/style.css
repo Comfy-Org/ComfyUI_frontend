@@ -1,19 +1,9 @@
 @import '@comfyorg/design-system/css/style.css';
 
-/* Run/Stop button colors — temporary, pending product/design feedback. */
-:root {
-  --app-mode-go-bg: #279252;
-  --app-mode-go-bg-hover: #35a361;
-  --app-mode-go-border: #2c7c49;
-  --app-mode-stop-bg: #ef4444;
-  --app-mode-stop-bg-hover: #f87171;
-  --app-mode-stop-border: #b91c1c;
-}
-
 /* Shared surface for FloatingPanel + Builder toolbars. */
 .panel-chrome {
   background-color: var(--color-layout-cell);
-  border: 1px solid rgb(255 255 255 / 0.08);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   box-shadow:
     0 2px 4px rgb(0 0 0 / 0.4),
@@ -33,19 +23,15 @@
  * below — change a value here and every gated rule picks it up.
  * ====================================================================== */
 
+/* Local sizing constants — not theme-related. */
 .app-mode-themed {
-  --app-mode-widget-bg: var(--color-layout-canvas);
-  --app-mode-widget-border: rgb(255 255 255 / 0.08);
-  --app-mode-widget-border-focus: rgb(255 255 255 / 0.18);
   /* 2.5rem (40px = Tailwind h-10) — matches NodeWidgets' responsive
-     `not-md:**:[.h-7]:h-10` bump on the number-input pill, so the
-     dropdown / textarea / input baseline stays consistent inside
-     the docked input panel (which always triggers the not-md break). */
+     `not-md:**:[.h-7]:h-10` bump on the number-input pill so the
+     dropdown / textarea / input baseline stays consistent inside the
+     docked input panel (always triggers the not-md break). */
   --app-mode-widget-min-h: 2.5rem;
   --app-mode-widget-input-pad-x: 6px;
   --app-mode-widget-textarea-pad: 16px;
-  --app-mode-widget-selection-bg: rgb(255 255 255 / 0.18);
-  --app-mode-widget-button-hover-bg: rgb(255 255 255 / 0.1);
 }
 
 /* Reduced label size on the input panel (design-system default = 15px). */
@@ -58,8 +44,8 @@
 .app-mode-themed input,
 .app-mode-themed .bg-component-node-widget-background,
 .app-mode-themed .p-select {
-  background-color: var(--app-mode-widget-bg);
-  border: 1px solid var(--app-mode-widget-border);
+  background-color: var(--comfy-input-bg);
+  border: 1px solid var(--border-color);
   outline: none;
   transition: border-color 150ms ease;
 }
@@ -80,7 +66,7 @@
 }
 .app-mode-themed .p-select:focus-within,
 .app-mode-themed .p-select.p-focus {
-  border-color: var(--app-mode-widget-border-focus);
+  border-color: var(--fg-color);
 }
 
 /* Single-line widgets share a min-height and tight horizontal padding. */
@@ -94,14 +80,6 @@
 /* Multi-line textarea wants room around wrapped lines. */
 .app-mode-themed textarea {
   padding: var(--app-mode-widget-textarea-pad);
-}
-
-/* Custom selection color — browser default system-blue reads as an
-   artifact on a dark surface. */
-.app-mode-themed textarea::selection,
-.app-mode-themed input::selection {
-  background-color: var(--app-mode-widget-selection-bg);
-  color: inherit;
 }
 
 /* ScrubableNumberInput pill matches the input/textarea baseline. */
@@ -120,7 +98,7 @@
 }
 
 .app-mode-themed .bg-component-node-widget-background button:hover {
-  background-color: var(--app-mode-widget-button-hover-bg);
+  background-color: var(--content-hover-bg);
 }
 
 /* Brighter border on focus — the pill border is the only active /
@@ -128,7 +106,7 @@
 .app-mode-themed textarea:focus,
 .app-mode-themed input:focus,
 .app-mode-themed .bg-component-node-widget-background:focus-within {
-  border-color: var(--app-mode-widget-border-focus);
+  border-color: var(--fg-color);
   outline: none;
   box-shadow: none;
 }

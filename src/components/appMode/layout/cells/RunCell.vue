@@ -21,7 +21,7 @@ async function handleClick(e: MouseEvent | KeyboardEvent) {
 <template>
   <Button
     size="unset"
-    class="size-full rounded-lg border border-(--app-mode-go-border) bg-(--app-mode-go-bg) text-layout-xl text-white transition-transform duration-100 ease-out hover:bg-(--app-mode-go-bg-hover) focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 active:scale-[0.97]"
+    class="size-full rounded-lg border-0 bg-success-background text-layout-xl text-white transition-[filter,transform] duration-100 ease-out hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 active:scale-[0.97]"
     data-testid="layout-run-cell"
     @click="handleClick"
   >

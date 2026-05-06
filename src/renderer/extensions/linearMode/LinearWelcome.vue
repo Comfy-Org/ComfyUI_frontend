@@ -50,7 +50,7 @@ async function runFromPill(e: MouseEvent) {
     ]"
   >
     <header
-      class="flex min-h-layout-cell items-center gap-2 border-b border-white/8 bg-(--color-layout-header-fill) px-[10px] py-2 select-none"
+      class="flex min-h-layout-cell items-center gap-2 border-b border-(--border-color) bg-(--color-layout-header-fill) px-[10px] py-2 select-none"
     >
       <span class="truncate text-layout-md font-semibold text-layout-text">
         {{ t('linearMode.welcome.header') }}
@@ -76,7 +76,7 @@ async function runFromPill(e: MouseEvent) {
               size="unset"
               :class="[
                 'mx-1 translate-y-px transform px-3 py-1 text-sm',
-                'border-[#166534]! bg-[#16a34a]! hover:bg-[#22c55e]!',
+                'border-0! bg-success-background! hover:brightness-110',
                 'text-white!'
               ]"
               @click="runFromPill"

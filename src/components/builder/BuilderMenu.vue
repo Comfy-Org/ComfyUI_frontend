@@ -14,7 +14,7 @@
             'left-layout-outer z-1000',
             'inline-flex h-layout-cell cursor-pointer items-center gap-2 px-3',
             'rounded-[10px] transition-colors',
-            'border border-white/8 bg-layout-cell text-layout-text',
+            'border border-(--border-color) bg-layout-cell text-layout-text',
             'hover:bg-layout-cell-hover',
             'data-[state=open]:bg-layout-cell-hover',
             'data-[sidebar=left]:left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))]'

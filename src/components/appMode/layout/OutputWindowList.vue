@@ -249,11 +249,11 @@ async function reuseParams(entry: OutputWindowEntry): Promise<void> {
     <template #body-overlay>
       <div
         v-if="entry.id === inFlightWindowId && entry.state !== 'image'"
-        class="pointer-events-auto flex w-[360px] items-center gap-3 rounded-xl bg-black/65 p-3 shadow-2xl backdrop-blur-md"
+        class="pointer-events-auto flex w-[360px] items-center gap-3 rounded-xl bg-(--comfy-menu-bg)/95 p-3 shadow-2xl backdrop-blur-md"
         data-testid="output-window-run-status"
       >
         <div
-          class="relative h-8 flex-1 overflow-hidden rounded-lg border border-white/8 bg-white/5"
+          class="relative h-8 flex-1 overflow-hidden rounded-lg border border-(--border-color) bg-(--fg-color)/10"
           role="progressbar"
           :aria-label="t('linearMode.runProgress')"
           :aria-valuenow="progressPercent"
@@ -261,11 +261,11 @@ async function reuseParams(entry: OutputWindowEntry): Promise<void> {
           aria-valuemax="100"
         >
           <div
-            class="h-full bg-(--app-mode-go-bg) transition-[width] duration-300 ease-out"
+            class="h-full bg-success-background transition-[width] duration-300 ease-out"
             :style="{ width: `${progressPercent}%` }"
           />
           <div
-            class="pointer-events-none absolute inset-0 flex items-center justify-between px-3 text-xs text-white tabular-nums"
+            class="pointer-events-none absolute inset-0 flex items-center justify-between px-3 text-xs text-(--fg-color) tabular-nums"
           >
             <span>
               <template v-if="stepProgress">{{
@@ -286,8 +286,8 @@ async function reuseParams(entry: OutputWindowEntry): Promise<void> {
           type="button"
           :class="[
             'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg',
-            'border border-(--app-mode-stop-border) bg-(--app-mode-stop-bg) text-white',
-            'transition-colors duration-200 hover:bg-(--app-mode-stop-bg-hover)',
+            'border-0 bg-destructive-background text-white',
+            'transition-[filter] duration-200 hover:brightness-110',
             'focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none'
           ]"
           :title="t('linearMode.stop')"

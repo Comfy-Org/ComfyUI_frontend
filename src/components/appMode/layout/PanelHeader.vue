@@ -46,7 +46,7 @@ const CONTROL_CLASS =
       cn(
         'flex min-h-layout-cell items-center gap-2 select-none',
         'bg-(--color-layout-header-fill) px-[10px] py-2',
-        'border-b border-white/8',
+        'border-b border-(--border-color)',
         draggable && 'cursor-grab touch-none',
         draggable && dragging && 'cursor-grabbing',
         !draggable && 'cursor-default'
