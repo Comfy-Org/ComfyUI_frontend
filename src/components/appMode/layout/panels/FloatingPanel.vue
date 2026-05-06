@@ -80,7 +80,7 @@ const sectionClass = computed(() =>
     // Drop blur while dragging — re-computing it every frame tanks
     // framerate when a run is repainting in parallel.
     !isDragging.value && 'backdrop-blur-sm',
-    'shadow-[0_2px_4px_rgb(0_0_0/0.4),0_16px_48px_rgb(0_0_0/0.45)]',
+    'shadow-(--app-mode-floating-panel-shadow)',
     'duration-layout ease-layout',
     movable && isDragging.value
       ? 'opacity-[0.15] transition-opacity'

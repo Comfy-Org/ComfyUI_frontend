@@ -48,7 +48,7 @@
 }
 .drag-demo .cursor {
   fill: currentColor;
-  stroke: var(--color-layout-canvas, #0a0a0a);
+  stroke: var(--color-layout-canvas);
   /* paint-order stroke-under-fill leaves only the outer 1.5px stroke
      visible, matching the frame outline. */
   stroke-width: 3;

@@ -118,7 +118,7 @@ const isSaved = computed(
 // horizontal to 8px and shrink height to 32px so the accent pill feels
 // square-balanced rather than a tall rectangle with a short word.
 const activeSaveClasses =
-  'bg-primary-background text-white border border-primary-background-hover ' +
+  'bg-primary-background text-primary-foreground border border-primary-background-hover ' +
   'hover:bg-primary-background-hover h-8 px-2'
 const disabledSaveClasses =
   'bg-secondary-background text-muted-foreground/50 ' +

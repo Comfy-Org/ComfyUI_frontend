@@ -77,7 +77,7 @@ async function runFromPill(e: MouseEvent) {
               :class="[
                 'mx-1 translate-y-px transform px-3 py-1 text-sm',
                 'border-0! bg-success-background! hover:brightness-110',
-                'text-white!'
+                'text-success-foreground!'
               ]"
               @click="runFromPill"
             >

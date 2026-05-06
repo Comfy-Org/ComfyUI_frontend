@@ -165,6 +165,12 @@ const candidates = computed<Candidate[]>(() => {
 <template>
   <template v-if="active">
     <Teleport to="body">
+      <!--
+        Modal scrim — a semi-transparent black overlay is convention for
+        "dim everything else, focus attention here." Theme-independent
+        on purpose: the same scrim works whether the underlying canvas
+        is light or dark, since 40% black darkens both.
+      -->
       <div
         class="pointer-events-auto fixed inset-0 cursor-grab bg-black/40"
         @pointerdown="canvasInteractions.forwardEventToCanvas"

@@ -3,6 +3,17 @@
 // "Nihon no iro" inspired gradients so a fresh tile reads as
 // intentional rather than empty. Mid-value lightness keeps the
 // jump small when the latent / final image arrives.
+//
+// These gradients are deliberately fixed visual identity, not theme
+// tokens. They are placeholder art, not chrome — like a brand mark
+// or a logo gradient, they should look the same regardless of the
+// active palette. The mid-value lightness (~40-45%) is chosen so an
+// incoming preview image doesn't pop against a too-dark or too-light
+// field, which would be undermined by theme-driven recoloring. If
+// future product feedback says these should follow the active theme,
+// the right move is a separate set of design-system tokens
+// (--latent-preview-gradient-{0,1,2,3}) with explicit light and
+// dark variants — not computing from palette tokens.
 const { variant = 0 } = defineProps<{ variant?: number }>()
 </script>
 
@@ -13,7 +24,8 @@ const { variant = 0 } = defineProps<{ variant?: number }>()
 <style scoped>
 /* Vertical 3-stop gradients — dark crown, mid-value belly, warm
    foot. Average lightness ~40-45% so an incoming preview image
-   doesn't pop against a too-dark or too-light field. */
+   doesn't pop against a too-dark or too-light field.
+   Hex values are deliberate; see the script-block comment. */
 .latent-bg-0 {
   background: linear-gradient(180deg, #1d2a44 0%, #3e5876 50%, #c5a07b 100%);
 }

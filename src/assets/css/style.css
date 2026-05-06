@@ -1,13 +1,22 @@
 @import '@comfyorg/design-system/css/style.css';
 
+:root {
+  /* Heavier directional drop shadow for App Mode's floating panels and
+     builder toolbars. The design-system's --shadow-interface is sized
+     for inset panels; App Mode panels float over the canvas and need
+     more separation. Could be lifted to a design-system
+     --shadow-floating-panel token in a follow-up. */
+  --app-mode-floating-panel-shadow:
+    0 2px 4px rgb(0 0 0 / 0.4),
+    0 16px 48px rgb(0 0 0 / 0.45);
+}
+
 /* Shared surface for FloatingPanel + Builder toolbars. */
 .panel-chrome {
   background-color: var(--color-layout-cell);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  box-shadow:
-    0 2px 4px rgb(0 0 0 / 0.4),
-    0 16px 48px rgb(0 0 0 / 0.45);
+  box-shadow: var(--app-mode-floating-panel-shadow);
   backdrop-filter: blur(8px);
 }
 
