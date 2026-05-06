@@ -21,8 +21,27 @@
           {{ workflowOption.workflow.filename }}
         </span>
         <div class="relative">
+          <i
+            v-if="jobState"
+            data-testid="job-state-indicator"
+            role="status"
+            :data-state="jobState"
+            :aria-label="jobStateLabel"
+            :class="
+              cn(
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                jobState === 'running' &&
+                  'icon-[lucide--loader-circle] animate-spin text-muted-foreground',
+                jobState === 'completed' &&
+                  'icon-[lucide--circle-check] text-success-background',
+                jobState === 'failed' &&
+                  'icon-[lucide--octagon-alert] text-destructive-background'
+              )
+            "
+          />
           <span
-            v-if="shouldShowStatusIndicator"
+            v-else-if="shouldShowStatusIndicator"
+            data-testid="unsaved-indicator"
             class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
             >•</span
           >
@@ -31,6 +50,7 @@
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
+            data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
             <i class="pi pi-times" />
@@ -84,8 +104,11 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
+import type { WorkflowStatus } from '@/stores/executionStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
+import { cn } from '@/utils/tailwindUtil'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
@@ -112,6 +135,7 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
+const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
 const workflowThumbnail = useWorkflowThumbnail()
@@ -158,6 +182,22 @@ const isBuilderState = computed(() => {
 const isActiveTab = computed(() => {
   return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
 })
+
+const jobState = computed(() => {
+  const path = props.workflowOption.workflow.path
+  if (!path || isActiveTab.value) return null
+  return executionStore.workflowStatus.get(path) ?? null
+})
+
+const jobStateI18nKeys: Record<WorkflowStatus, string> = {
+  running: 'g.running',
+  completed: 'g.completed',
+  failed: 'g.failed'
+}
+
+const jobStateLabel = computed(() =>
+  jobState.value ? t(jobStateI18nKeys[jobState.value]) : undefined
+)
 
 const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
