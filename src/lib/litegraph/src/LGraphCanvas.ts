@@ -3612,7 +3612,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.emitAfterChange()
     }
 
+    // Selection-update side effects (onSelectionChange callback) are deferred
+    // to the next frame so the node visibly starts following the pointer
+    // before downstream reactivity (e.g. Vue store updates) runs.
+    const onSelectionChange = this.onSelectionChange
+    this.onSelectionChange = undefined
     this.processSelect(item, pointer.eDown, sticky)
+    this.onSelectionChange = onSelectionChange
+    if (onSelectionChange) {
+      requestAnimationFrame(() => onSelectionChange(this.selected_nodes))
+    }
+
     this.isDragging = true
 
     this._startNodeAutoPan()
