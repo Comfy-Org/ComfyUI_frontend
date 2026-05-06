@@ -7,38 +7,72 @@ import { createI18n } from 'vue-i18n'
 import ViewerCameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('primevue/select', () => ({
+vi.mock('@/components/ui/select/Select.vue', () => ({
   default: {
     name: 'Select',
-    props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
+    props: ['modelValue'],
     emits: ['update:modelValue'],
-    template: `
-      <select
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
-      >
-        <option v-for="opt in options" :key="opt[optionValue]" :value="opt[optionValue]">
-          {{ opt[optionLabel] }}
-        </option>
-      </select>
-    `
+    provide(this: {
+      modelValue: string
+      $emit: (event: string, ...args: unknown[]) => void
+    }) {
+      return {
+        selectModelValue: (): string => this.modelValue,
+        selectUpdate: (v: string) => this.$emit('update:modelValue', v)
+      }
+    },
+    template: '<div><slot /></div>'
   }
 }))
 
-vi.mock('primevue/slider', () => ({
+vi.mock('@/components/ui/select/SelectContent.vue', () => ({
   default: {
-    name: 'Slider',
-    props: ['modelValue', 'min', 'max', 'step', 'ariaLabel'],
+    name: 'SelectContent',
+    inject: ['selectUpdate'],
+    template:
+      '<select @change="selectUpdate($event.target.value)"><slot /></select>'
+  }
+}))
+
+vi.mock('@/components/ui/select/SelectItem.vue', () => ({
+  default: {
+    name: 'SelectItem',
+    props: ['value'],
+    inject: ['selectModelValue'],
+    computed: {
+      isSelected(this: {
+        selectModelValue: () => string
+        value: string
+      }): boolean {
+        return this.selectModelValue() === this.value
+      }
+    },
+    template: '<option :value="value" :selected="isSelected"><slot /></option>'
+  }
+}))
+
+vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
+  default: { name: 'SelectTrigger', template: '<span />' }
+}))
+
+vi.mock('@/components/ui/select/SelectValue.vue', () => ({
+  default: { name: 'SelectValue', template: '<span />' }
+}))
+
+vi.mock('@/components/ui/slider/Slider.vue', () => ({
+  default: {
+    name: 'UiSlider',
+    props: ['modelValue', 'min', 'max', 'step'],
     emits: ['update:modelValue'],
     template: `
       <input
         type="range"
-        :value="modelValue"
+        role="slider"
+        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
         :min="min"
         :max="max"
         :step="step"
-        :aria-label="ariaLabel"
-        @input="$emit('update:modelValue', Number($event.target.value))"
+        @input="$emit('update:modelValue', [Number($event.target.value)])"
       />
     `
   }

@@ -5,22 +5,56 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 
-vi.mock('primevue/select', () => ({
+vi.mock('@/components/ui/select/Select.vue', () => ({
   default: {
     name: 'Select',
-    props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
+    props: ['modelValue'],
     emits: ['update:modelValue'],
-    template: `
-      <select
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
-      >
-        <option v-for="opt in options" :key="opt[optionValue]" :value="opt[optionValue]">
-          {{ opt[optionLabel] }}
-        </option>
-      </select>
-    `
+    provide(this: {
+      modelValue: string
+      $emit: (event: string, ...args: unknown[]) => void
+    }) {
+      return {
+        selectModelValue: (): string => this.modelValue,
+        selectUpdate: (v: string) => this.$emit('update:modelValue', v)
+      }
+    },
+    template: '<div><slot /></div>'
   }
+}))
+
+vi.mock('@/components/ui/select/SelectContent.vue', () => ({
+  default: {
+    name: 'SelectContent',
+    inject: ['selectUpdate'],
+    template:
+      '<select @change="selectUpdate($event.target.value)"><slot /></select>'
+  }
+}))
+
+vi.mock('@/components/ui/select/SelectItem.vue', () => ({
+  default: {
+    name: 'SelectItem',
+    props: ['value'],
+    inject: ['selectModelValue'],
+    computed: {
+      isSelected(this: {
+        selectModelValue: () => string
+        value: string
+      }): boolean {
+        return this.selectModelValue() === this.value
+      }
+    },
+    template: '<option :value="value" :selected="isSelected"><slot /></option>'
+  }
+}))
+
+vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
+  default: { name: 'SelectTrigger', template: '<span />' }
+}))
+
+vi.mock('@/components/ui/select/SelectValue.vue', () => ({
+  default: { name: 'SelectValue', template: '<span />' }
 }))
 
 const i18n = createI18n({
