@@ -74,7 +74,7 @@ test.describe('App mode builder selection', () => {
       'Load Checkpoint',
       'ckpt_name'
     )
-    //await expect.soft(items).toHaveCount(0)
+    await expect(items).toHaveCount(0)
 
     await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
     await comfyPage.appMode.enterBuilder()
@@ -94,27 +94,41 @@ test.describe('App mode builder selection', () => {
     )
 
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
+    await expect(
+      comfyPage.searchBox.input,
+      'Canvas is initially editable'
+    ).toHaveCount(1)
     await comfyPage.page.keyboard.press('Escape')
 
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
 
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
+    await expect(
+      comfyPage.searchBox.input,
+      'Entering builder makes the canvas readonly'
+    ).toHaveCount(0)
 
-    //space toggles panning mode, canvas should remain readOnly after pressing
     await comfyPage.page.keyboard.press('Space')
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
+    await expect(
+      comfyPage.searchBox.input,
+      'Canvas remains readonly after pressing space'
+    ).toHaveCount(0)
 
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
     await ksampler.header.dblclick({ force: true })
-    await expect(ksampler.titleEditor.input).toBeHidden()
+    await expect(
+      ksampler.titleEditor.input,
+      'Double clicking node titles will not initiate a rename'
+    ).toBeHidden()
 
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
+    await expect(
+      comfyPage.searchBox.input,
+      'Canvas is no longer readonly after exiting'
+    ).toHaveCount(1)
   })
 })
