@@ -25,19 +25,43 @@ export function resolveLabel(template: string, item: unknown): string {
   )
 }
 
+const ABSOLUTE_URL_REGEX = /^([a-z][a-z0-9+.-]*:)?\/\//i
+const DATA_URL_PREFIX = 'data:'
+const BLOB_URL_PREFIX = 'blob:'
+
+function resolvePreviewUrl(
+  raw: string | undefined,
+  baseUrl?: string
+): string | undefined {
+  if (!raw) return undefined
+  if (
+    ABSOLUTE_URL_REGEX.test(raw) ||
+    raw.startsWith(DATA_URL_PREFIX) ||
+    raw.startsWith(BLOB_URL_PREFIX)
+  ) {
+    return raw
+  }
+  if (!baseUrl) return raw
+  const normalizedBase = baseUrl.replace(/\/+$/, '')
+  const normalizedPath = raw.startsWith('/') ? raw : `/${raw}`
+  return normalizedBase + normalizedPath
+}
+
 export function mapToDropdownItem(
   raw: unknown,
-  schema: RemoteItemSchema
+  schema: RemoteItemSchema,
+  options: { previewBaseUrl?: string } = {}
 ): DropdownItemShape {
+  const previewRaw = schema.preview_url_field
+    ? String(getByPath(raw, schema.preview_url_field) ?? '')
+    : undefined
   return {
     id: String(getByPath(raw, schema.value_field) ?? ''),
     name: resolveLabel(schema.label_field, raw),
     description: schema.description_field
       ? resolveLabel(schema.description_field, raw)
       : undefined,
-    preview_url: schema.preview_url_field
-      ? String(getByPath(raw, schema.preview_url_field) ?? '')
-      : undefined
+    preview_url: resolvePreviewUrl(previewRaw, options.previewBaseUrl)
   }
 }
 

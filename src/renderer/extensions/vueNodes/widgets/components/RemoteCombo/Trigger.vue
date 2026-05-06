@@ -15,6 +15,7 @@ const props = defineProps<{
   border?: TriggerVariants['border']
   class?: string
   placeholder?: string
+  disabled?: boolean
 }>()
 
 const ctx = inject(RemoteComboKey)
@@ -59,7 +60,12 @@ const computedBorder = computed<TriggerVariants['border']>(() => {
           field: ctx.fieldLabel.value
         })
       "
-      :aria-disabled="ctx.isLoading.value || !!ctx.errorMessage.value"
+      :disabled="
+        props.disabled || ctx.isLoading.value || !!ctx.errorMessage.value
+      "
+      :aria-disabled="
+        props.disabled || ctx.isLoading.value || !!ctx.errorMessage.value
+      "
       data-testid="remote-combo-trigger"
     >
       <span class="truncate">{{ displayLabel }}</span>
