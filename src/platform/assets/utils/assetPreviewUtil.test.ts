@@ -15,6 +15,7 @@ const mockGetServerFeature = vi.hoisted(() => vi.fn(() => false))
 const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
+const mockSetAssetPreview = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -31,6 +32,10 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     uploadAssetFromBase64: mockUploadAssetFromBase64,
     updateAsset: mockUpdateAsset
   }
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({ setAssetPreview: mockSetAssetPreview })
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
@@ -263,5 +268,67 @@ describe('persistThumbnail', () => {
     expect(mockUpdateAsset).toHaveBeenCalledWith(cloudAsset.id, {
       preview_id: 'new-preview-id'
     })
+  })
+
+  it('patches the assets store by name with the new preview after upload', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAsset])
+    mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
+    mockUpdateAsset.mockResolvedValue({})
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockSetAssetPreview).toHaveBeenCalledWith(
+      localAsset.name,
+      'new-preview-id',
+      'http://localhost:8188/assets/new-preview-id/content'
+    )
+  })
+
+  it('uses the cloud asset name (not the hash) when patching the store', async () => {
+    mockFetchResponse([cloudAsset])
+    mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
+    mockUpdateAsset.mockResolvedValue({})
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('c6cadcee57dd.glb', blob)
+
+    expect(mockSetAssetPreview).toHaveBeenCalledWith(
+      cloudAsset.name,
+      'new-preview-id',
+      'http://localhost:8188/assets/new-preview-id/content'
+    )
+  })
+
+  it('does not patch the store when the asset already has a preview', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAssetWithPreview])
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+  })
+
+  it('does not patch the store when no asset is found', async () => {
+    mockFetchEmpty()
+    mockFetchEmpty()
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('nonexistent.glb', blob)
+
+    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+  })
+
+  it('does not patch the store when upload fails', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAsset])
+    mockUploadAssetFromBase64.mockRejectedValue(new Error('upload failed'))
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockSetAssetPreview).not.toHaveBeenCalled()
   })
 })
