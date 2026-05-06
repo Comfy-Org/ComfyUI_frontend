@@ -21,7 +21,9 @@ const HARD_BLACKLIST = new Set([
   'Title',
   'Mode',
   'Properties Panel',
-  'Copy (Clipspace)'
+  'Copy (Clipspace)',
+  'Collapse', // Use 'Minimize Node' / 'Expand Node' instead
+  'Expand' // Use 'Minimize Node' / 'Expand Node' instead
 ])
 
 /**
@@ -46,8 +48,7 @@ const CORE_MENU_ITEMS = new Set([
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
-  'Expand',
-  'Collapse',
+  'Expand Node',
   // Info and adjustments
   'Node Info',
   'Resize',
@@ -231,8 +232,7 @@ const MENU_ORDER: string[] = [
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
-  'Expand',
-  'Collapse',
+  'Expand Node',
   'Resize',
   'Clone',
   // Section 4: Node properties
@@ -303,7 +303,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   // Section boundaries based on MENU_ORDER indices
   // Section 1: 0-2 (Rename, Copy, Duplicate)
   // Section 2: 3-8 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
-  // Section 3: 9-15 (Convert to Subgraph, Frame selection, Minimize Node, Expand, Collapse, Resize, Clone)
+  // Section 3: 9-15 (Convert to Subgraph, Frame selection, Frame Nodes, Minimize Node, Expand Node, Resize, Clone)
   // Section 4: 16-17 (Node Info, Color)
   // Section 5: 18+ (Image operations and fallback items)
   const getSectionNumber = (index: number): number => {
