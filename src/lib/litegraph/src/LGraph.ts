@@ -54,6 +54,7 @@ import type {
   Size
 } from './interfaces'
 import { LiteGraph, SubgraphNode } from './litegraph'
+import { runSubgraphMigrationFlushHook } from './subgraph/subgraphMigrationHook'
 import {
   alignOutsideContainer,
   alignToContainer,
@@ -2734,6 +2735,16 @@ export class LGraph
       }
 
       this.updateExecutionOrder()
+
+      // ADR 0009: forward-ratchet legacy properties.proxyWidgets on each
+      // host SubgraphNode. Late-bound hook (registered in app init) so the
+      // LGraph layer doesn't pull in the PreviewExposureStore at module
+      // load — that would create a circular dependency.
+      for (const node of this._nodes) {
+        if (!(node instanceof SubgraphNode)) continue
+        if (node.properties?.proxyWidgets === undefined) continue
+        runSubgraphMigrationFlushHook(node, nodeDataMap.get(node.id))
+      }
 
       this.onConfigure?.(data)
       this.incrementVersion()
