@@ -387,6 +387,7 @@ export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 export type ObjectInfoResponse = Record<string, ComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
 export type RemoteComboConfig = z.infer<typeof zRemoteComboConfig>
+export type RemoteItemSchema = z.infer<typeof zRemoteItemSchema>
 
 export type ComboInputOptions = z.infer<typeof zComboInputOptions>
 export type NumericInputOptions = z.infer<typeof zNumericInputOptions>
