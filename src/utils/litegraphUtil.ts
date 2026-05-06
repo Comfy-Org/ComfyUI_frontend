@@ -24,6 +24,7 @@ import type {
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 
@@ -57,7 +58,13 @@ export async function createNode(
     newNode.pos = [posX, posY]
     const addedNode = graph.add(newNode) ?? null
 
-    if (addedNode) graph.change()
+    if (addedNode) {
+      // Ensure newly created nodes appear above existing ones in the
+      // Vue node renderer (Nodes 2.0). Without this, nodes default to
+      // zIndex 0 and render underneath existing nodes (FE-555).
+      useNodeZIndex().bringNodeToFront(addedNode.id)
+      graph.change()
+    }
     return addedNode
   } else {
     useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
