@@ -144,6 +144,26 @@ describe('_startDraggingItems defers onSelectionChange', () => {
     expect(receivedThis).toEqual([canvas])
   })
 
+  it('schedules the deferred callback on the canvas-owning window (popup-host safe)', () => {
+    const onSelectionChange = vi.fn()
+    canvas.onSelectionChange = onSelectionChange
+
+    const popupRaf = vi.fn(
+      (_cb: FrameRequestCallback) => 1
+    ) as unknown as Window['requestAnimationFrame']
+    const popupWindow = { requestAnimationFrame: popupRaf } as unknown as Window
+    const getCanvasWindowSpy = vi
+      .spyOn(canvas, 'getCanvasWindow')
+      .mockReturnValue(popupWindow)
+
+    canvas['_startDraggingItems'](node, pointer, true)
+
+    expect(getCanvasWindowSpy).toHaveBeenCalled()
+    expect(popupRaf).toHaveBeenCalledTimes(1)
+
+    getCanvasWindowSpy.mockRestore()
+  })
+
   it('restores onSelectionChange even when processSelect throws', () => {
     const onSelectionChange = vi.fn()
     canvas.onSelectionChange = onSelectionChange
