@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import {
   ComfyNodeDefImpl,
+  PRIMITIVE_NODE_CATEGORY,
   SYSTEM_NODE_DEFS,
   buildNodeDefTree,
   useNodeDefStore
@@ -366,8 +367,14 @@ describe('useNodeDefStore', () => {
   })
 
   describe('SYSTEM_NODE_DEFS', () => {
+    it('exposes the shared utils/primitive constant', () => {
+      expect(PRIMITIVE_NODE_CATEGORY).toBe('utils/primitive')
+    })
+
     it('places PrimitiveNode under the utils/primitive subcategory', () => {
-      expect(SYSTEM_NODE_DEFS.PrimitiveNode.category).toBe('utils/primitive')
+      expect(SYSTEM_NODE_DEFS.PrimitiveNode.category).toBe(
+        PRIMITIVE_NODE_CATEGORY
+      )
     })
 
     it('keeps remaining frontend-only virtual nodes under the flat utils category', () => {

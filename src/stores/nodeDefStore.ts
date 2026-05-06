@@ -208,11 +208,13 @@ export class ComfyNodeDefImpl
   }
 }
 
+export const PRIMITIVE_NODE_CATEGORY = 'utils/primitive'
+
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {
     name: 'PrimitiveNode',
     display_name: 'Primitive',
-    category: 'utils/primitive',
+    category: PRIMITIVE_NODE_CATEGORY,
     input: { required: {}, optional: {} },
     output: ['*'],
     output_name: ['connect to widget input'],
