@@ -59,10 +59,15 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const savedNodeHeight = nodeElement.style.getPropertyValue('--node-height')
-    nodeElement.style.setProperty('--node-height', '0px')
-    const minContentHeight = nodeElement.getBoundingClientRect().height / scale
-    nodeElement.style.setProperty('--node-height', savedNodeHeight || '')
+    const measureMinContentHeight = () => {
+      const savedNodeHeight =
+        nodeElement.style.getPropertyValue('--node-height')
+      nodeElement.style.setProperty('--node-height', '0px')
+      const measured = nodeElement.getBoundingClientRect().height
+      nodeElement.style.setProperty('--node-height', savedNodeHeight || '')
+      const currentScale = transformState.camera.z || 1
+      return measured / currentScale
+    }
 
     const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
     const startPosition: Point = nodeLayout
@@ -165,6 +170,9 @@ export function useNodeResize(
         }
         newWidth = minWidth
       }
+      // Re-measure on each move: widget content (e.g. painter controls)
+      // can re-flow taller as width shrinks, raising the true minimum.
+      const minContentHeight = measureMinContentHeight()
       if (newHeight < minContentHeight) {
         if (activeCorner.includes('N')) {
           newY =
