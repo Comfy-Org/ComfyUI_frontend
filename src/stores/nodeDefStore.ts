@@ -25,6 +25,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
+import { PRIMITIVE_NODE_CATEGORY } from '@/constants/primitiveNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -207,8 +208,6 @@ export class ComfyNodeDefImpl
     return ''
   }
 }
-
-export const PRIMITIVE_NODE_CATEGORY = 'utils/primitive'
 
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {

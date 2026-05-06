@@ -23,7 +23,7 @@ import {
 } from '@/scripts/widgets'
 import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
-import { PRIMITIVE_NODE_CATEGORY } from '@/stores/nodeDefStore'
+import { PRIMITIVE_NODE_CATEGORY } from '@/constants/primitiveNodes'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
