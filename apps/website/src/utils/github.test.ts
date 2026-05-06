@@ -35,7 +35,7 @@ describe('fetchGitHubStars', () => {
   })
 
   it('memoizes build-time star fetches within a single process', async () => {
-    const fetchImpl = vi.fn(
+    const fetchImpl = vi.fn<typeof fetch>(
       async () =>
         new Response(JSON.stringify({ stargazers_count: 110000 }), {
           status: 200,
@@ -44,8 +44,8 @@ describe('fetchGitHubStars', () => {
     )
 
     const [a, b] = await Promise.all([
-      fetchGitHubStarsForBuild(fetchImpl as unknown as typeof fetch),
-      fetchGitHubStarsForBuild(fetchImpl as unknown as typeof fetch)
+      fetchGitHubStarsForBuild(fetchImpl),
+      fetchGitHubStarsForBuild(fetchImpl)
     ])
 
     expect(a).toBe(110000)
@@ -54,11 +54,11 @@ describe('fetchGitHubStars', () => {
   })
 
   it('falls back to the last known star count for build-time fetch failures', async () => {
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 403 }))
-
-    const fallback = await fetchGitHubStarsForBuild(
-      fetchImpl as unknown as typeof fetch
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 403 })
     )
+
+    const fallback = await fetchGitHubStarsForBuild(fetchImpl)
 
     expect(Number.isSafeInteger(fallback)).toBe(true)
     expect(fallback).toBeGreaterThan(0)
