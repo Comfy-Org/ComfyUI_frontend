@@ -1553,12 +1553,16 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "ColorTransfer",
+    "display_name": "Color Transfer",
     "description": "Match the colors of one image to another using various algorithms.",
     "inputs": {
       "image_target": {
         "name": "image_target",
         "tooltip": "Image(s) to apply the color transform to."
+      },
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Reference image(s) to match colors to."
       },
       "method": {
         "name": "method"
@@ -1569,10 +1573,6 @@
       },
       "strength": {
         "name": "strength"
-      },
-      "image_ref": {
-        "name": "image_ref",
-        "tooltip": "Reference image(s) to match colors to. If not provided, processing is skipped"
       }
     },
     "outputs": {
@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "display_name": "Moonvalley Marey Image to Video",
-    "description": "Moonvalley Marey Image to Video Node",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "The reference image used to generate the video"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative prompt text"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Resolution of the output video"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Guidance scale for generation control"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Random seed value"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of denoising steps"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Text to Video",
-    "inputs": {
-      "prompt": {
-        "name": "prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative prompt text"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Resolution of the output video"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Guidance scale for generation control"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Random seed value"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Inference steps"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video to Video",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Describes the video to generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative prompt text"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Random seed value"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "The reference video used to generate the output video. Must be at least 5 seconds long. Videos longer than 5s will be automatically trimmed. Only MP4 format supported."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of inference steps"
-      },
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "Only used if control_type is 'Motion Transfer'"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11846,7 +11732,7 @@
       },
       "size": {
         "name": "size",
-        "tooltip": "Image size"
+        "tooltip": "Image size. Select 'Custom' to use the custom width and height (GPT Image 2 only)."
       },
       "n": {
         "name": "n",
@@ -11862,6 +11748,14 @@
       },
       "model": {
         "name": "model"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Used only when `size` is 'Custom'. Must be a multiple of 16 (GPT Image 2 only)."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -12529,7 +12423,7 @@
       "value": {
         "name": "value"
       },
-      "control_after_generate": {
+      "fixed": {
         "name": "control after generate"
       }
     },
@@ -16631,6 +16525,13 @@
       "image": {
         "name": "image"
       },
+      "video": {
+        "name": "video",
+        "tooltip": "Video frames as image batch. Assumed to be 24 FPS; subsampled to 1 FPS internally."
+      },
+      "audio": {
+        "name": "audio"
+      },
       "thinking": {
         "name": "thinking",
         "tooltip": "Operate in thinking mode if the model supports it."
@@ -16685,6 +16586,13 @@
       },
       "image": {
         "name": "image"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video frames as image batch. Assumed to be 24 FPS; subsampled to 1 FPS internally."
+      },
+      "audio": {
+        "name": "audio"
       },
       "thinking": {
         "name": "thinking",
@@ -16845,7 +16753,7 @@
     }
   },
   "TopazVideoEnhance": {
-    "display_name": "Topaz Video Enhance",
+    "display_name": "Topaz Video Enhance (Legacy)",
     "description": "Breathe new life into video with powerful upscaling and recovery technology.",
     "inputs": {
       "video": {
@@ -16889,6 +16797,45 @@
       "dynamic_compression_level": {
         "name": "dynamic_compression_level",
         "tooltip": "CQP level."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "display_name": "Topaz Video Enhance",
+    "description": "Breathe new life into video with powerful upscaling and recovery technology.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "dynamic_compression_level": {
+        "name": "dynamic_compression_level",
+        "tooltip": "CQP level."
+      },
+      "upscaler_model_creativity": {
+        "name": "creativity"
+      },
+      "upscaler_model_prompt": {
+        "name": "prompt"
+      },
+      "upscaler_model_realism": {
+        "name": "realism"
+      },
+      "upscaler_model_sharp": {
+        "name": "sharp"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "upscaler_resolution"
       }
     },
     "outputs": {

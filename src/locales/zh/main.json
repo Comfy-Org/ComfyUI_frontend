@@ -461,6 +461,12 @@
       "wantToRun": "想在本机运行 ComfyUI 吗？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "请选择一个选项。",
+        "describeAnswer": "请描述您的答案。",
+        "selectAtLeastOne": "请至少选择一个选项。"
+      },
+      "intro": "帮助我们为您定制 ComfyUI 体验。",
       "options": {
         "familiarity": {
           "advanced": "高级用户（自定义工作流）",
@@ -469,45 +475,43 @@
           "new": "ComfyUI 新手（从未使用过）",
           "starting": "刚刚开始（正在学习教程）"
         },
-        "industry": {
-          "architecture": "架构",
-          "education": "教育",
-          "film_tv_animation": "电影、电视与动画",
-          "fine_art": "美术与插画",
-          "gaming": "游戏",
-          "marketing": "营销与广告",
-          "other": "其他",
-          "otherPlaceholder": "请指定",
-          "product_design": "产品与平面设计",
-          "software": "软件与技术"
-        },
-        "making": {
-          "3d": "3D 资产",
+        "intent": {
+          "3d_game": "3D 资产 / 游戏资产",
+          "api": "运行工作流的 API 端点",
+          "apps": "基于工作流的简化应用",
           "audio": "音频 / 音乐",
-          "custom_nodes": "自定义节点和工作流",
-          "images": "图片",
-          "video": "视频与动画"
+          "custom_nodes": "自定义节点",
+          "images": "图像",
+          "not_sure": "不确定",
+          "videos": "视频",
+          "workflows": "自定义工作流或流程"
         },
-        "purpose": {
-          "client": "客户工作（自由职业）",
-          "community": "社区贡献（节点、工作流等）",
-          "inhouse": "我自己的工作场所（内部）",
-          "personal": "个人项目 / 爱好",
-          "research": "学术研究"
+        "source": {
+          "conference": "会议或活动",
+          "discord": "Discord / 社区",
+          "friend": "朋友或同事",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "新闻通讯或博客",
+          "other": "其他",
+          "reddit": "Reddit",
+          "search": "Google / 搜索",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "教育（学生或教师）",
+          "personal": "个人使用",
+          "work": "工作"
         }
       },
       "placeholder": "调查问题占位符",
-      "questions": {
-        "familiarity": "你对 ComfyUI 有多熟悉？",
-        "industry": "您的主要行业是什么？",
-        "making": "你打算做什么？",
-        "purpose": "您主要将使用 ComfyUI 做什么？"
-      },
       "steps": {
         "familiarity": "你对 ComfyUI 有多熟悉？",
-        "industry": "您的主要行业是什么？",
-        "making": "你打算做什么？",
-        "purpose": "您将主要使用 ComfyUI 做什么？"
+        "intent": "您希望用 ComfyUI 创作什么？",
+        "source": "您是从哪里了解到 ComfyUI 的？",
+        "usage": "您打算如何使用 ComfyUI？"
       },
       "title": "云调研"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "几秒钟内开始创作",
   "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudSurvey_steps_familiarity": "你对 ComfyUI 有多熟悉？",
-  "cloudSurvey_steps_industry": "您的主要行业是什么？",
-  "cloudSurvey_steps_making": "你打算做什么？",
-  "cloudSurvey_steps_purpose": "您将主要使用 ComfyUI 做什么？",
+  "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
+  "cloudSurvey_steps_source": "您是从哪里了解到 ComfyUI 的？",
+  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
   "cloudWaitlist_contactLink": "这里",
   "cloudWaitlist_questionsText": "有问题？联系我们",
   "color": {
@@ -899,8 +903,8 @@
     "resume": "恢复下载"
   },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的账户无权使用此功能。",
+    "accessRestrictedTitle": "访问受限",
     "defaultTitle": "发生错误",
     "extensionFileHint": "这可能是由于以下脚本",
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
@@ -1017,6 +1021,7 @@
     "cancel": "取消",
     "cancelled": "已取消",
     "capture": "捕获",
+    "categories": "分类",
     "category": "类别",
     "changeKeybinding": "更改快捷键",
     "chart": "图表",
@@ -2258,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",

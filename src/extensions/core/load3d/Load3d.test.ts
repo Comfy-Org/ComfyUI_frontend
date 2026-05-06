@@ -280,7 +280,7 @@ describe('Load3d', () => {
       const sceneResize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize },
+        renderer: { domElement: canvas, setSize, setPixelRatio: vi.fn() },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -382,6 +382,70 @@ describe('Load3d', () => {
       const args = updateBackgroundSize.mock.calls[0]
       expect(args[2]).toBe(800)
       expect(args[3]).toBe(400)
+    })
+
+    it('handleResize calls setPixelRatio with the value returned by getZoomScaleCallback', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setPixelRatio = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        getZoomScaleCallback: () => 2.5,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setPixelRatio).toHaveBeenCalledWith(2.5)
+    })
+
+    it('handleResize defaults to pixelRatio 1 when no getZoomScaleCallback is provided', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setPixelRatio = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        getZoomScaleCallback: undefined,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setPixelRatio).toHaveBeenCalledWith(1)
     })
   })
 

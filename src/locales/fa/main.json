@@ -461,6 +461,12 @@
       "wantToRun": "می‌خواهید ComfyUI را به صورت محلی اجرا کنید؟"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "لطفاً یک گزینه را انتخاب کنید.",
+        "describeAnswer": "لطفاً پاسخ خود را توضیح دهید.",
+        "selectAtLeastOne": "لطفاً حداقل یک گزینه را انتخاب کنید."
+      },
+      "intro": "به ما کمک کنید تا تجربه شما از ComfyUI را متناسب‌سازی کنیم.",
       "options": {
         "familiarity": {
           "advanced": "کاربر پیشرفته (جریان‌کارهای سفارشی)",
@@ -469,45 +475,43 @@
           "new": "جدید در ComfyUI (تا کنون استفاده نکرده‌ام)",
           "starting": "تازه شروع کرده‌ام (در حال دنبال کردن آموزش‌ها)"
         },
-        "industry": {
-          "architecture": "معماری",
-          "education": "آموزش",
-          "film_tv_animation": "فیلم، تلویزیون و انیمیشن",
-          "fine_art": "هنرهای زیبا و تصویرسازی",
-          "gaming": "بازی‌سازی",
-          "marketing": "بازاریابی و تبلیغات",
-          "other": "سایر",
-          "otherPlaceholder": "لطفاً مشخص کنید",
-          "product_design": "طراحی محصول و گرافیک",
-          "software": "نرم‌افزار و فناوری"
-        },
-        "making": {
-          "3d": "دارایی‌های سه‌بعدی",
+        "intent": {
+          "3d_game": "دارایی سه‌بعدی / دارایی بازی",
+          "api": "API endpoint برای اجرای workflow",
+          "apps": "اپلیکیشن ساده‌شده از workflow",
           "audio": "صدا / موسیقی",
-          "custom_nodes": "nodeها و workflowهای سفارشی",
-          "images": "تصاویر",
-          "video": "ویدیو و انیمیشن"
+          "custom_nodes": "node سفارشی",
+          "images": "تصویر",
+          "not_sure": "مطمئن نیستم",
+          "videos": "ویدیو",
+          "workflows": "workflow یا pipeline سفارشی"
         },
-        "purpose": {
-          "client": "کار برای مشتری (فریلنس)",
-          "community": "مشارکت در جامعه (nodeها، workflowها و غیره)",
-          "inhouse": "محل کار خودم (درون‌سازمانی)",
-          "personal": "پروژه‌های شخصی / سرگرمی",
-          "research": "پژوهش دانشگاهی"
+        "source": {
+          "conference": "کنفرانس یا رویداد",
+          "discord": "Discord / انجمن",
+          "friend": "دوست یا همکار",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "خبرنامه یا وبلاگ",
+          "other": "سایر",
+          "reddit": "Reddit",
+          "search": "Google / جستجو",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "آموزشی (دانشجو یا مدرس)",
+          "personal": "استفاده شخصی",
+          "work": "کاری"
         }
       },
       "placeholder": "جای‌نگهدار سوالات نظرسنجی",
-      "questions": {
-        "familiarity": "تا چه حد با ComfyUI آشنایی دارید؟",
-        "industry": "صنعت اصلی شما چیست؟",
-        "making": "قصد دارید چه چیزی بسازید؟",
-        "purpose": "هدف اصلی شما از استفاده از ComfyUI چیست؟"
-      },
       "steps": {
         "familiarity": "تا چه حد با ComfyUI آشنایی دارید؟",
-        "industry": "صنعت اصلی شما چیست؟",
-        "making": "قصد دارید چه چیزی بسازید؟",
-        "purpose": "هدف اصلی شما از استفاده از ComfyUI چیست؟"
+        "intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
+        "source": "از کجا با ComfyUI آشنا شدید؟",
+        "usage": "برنامه شما برای استفاده از ComfyUI چیست؟"
       },
       "title": "نظرسنجی ابری"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "در چند ثانیه شروع به خلق کنید",
   "cloudStart_wantToRun": "مایلید ComfyUI را به صورت محلی اجرا کنید؟",
   "cloudSurvey_steps_familiarity": "تا چه اندازه با ComfyUI آشنایی دارید؟",
-  "cloudSurvey_steps_industry": "صنعت اصلی شما چیست؟",
-  "cloudSurvey_steps_making": "برنامه دارید چه چیزی بسازید؟",
-  "cloudSurvey_steps_purpose": "عمدتاً قصد دارید از ComfyUI برای چه کاری استفاده کنید؟",
+  "cloudSurvey_steps_intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
+  "cloudSurvey_steps_source": "از کجا با ComfyUI آشنا شدید؟",
+  "cloudSurvey_steps_usage": "برنامه شما برای استفاده از ComfyUI چیست؟",
   "cloudWaitlist_contactLink": "اینجا",
   "cloudWaitlist_questionsText": "سؤالی دارید؟ با ما تماس بگیرید",
   "color": {
@@ -1017,6 +1021,7 @@
     "cancel": "لغو",
     "cancelled": "لغو شده",
     "capture": "گرفتن",
+    "categories": "دسته‌بندی‌ها",
     "category": "دسته‌بندی",
     "changeKeybinding": "تغییر کلید میانبر",
     "chart": "نمودار",
@@ -2258,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",

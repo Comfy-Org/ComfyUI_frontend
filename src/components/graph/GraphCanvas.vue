@@ -6,13 +6,9 @@
     <template v-if="showUI" #workflow-tabs>
       <div
         v-if="workflowTabsPosition === 'Topbar'"
+        data-testid="topbar-workflow-tabs"
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
-        <!-- Native drag area for Electron -->
-        <div
-          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
-        />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
@@ -196,7 +192,6 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'

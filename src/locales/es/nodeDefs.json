@@ -11489,120 +11489,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Nodo Moonvalley Marey Imagen a Video",
-    "display_name": "Moonvalley Marey Imagen a Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control después de generar"
-      },
-      "image": {
-        "name": "imagen",
-        "tooltip": "La imagen de referencia utilizada para generar el video"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto del prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "adherencia_al_prompt",
-        "tooltip": "Escala de guía para control de generación"
-      },
-      "resolution": {
-        "name": "resolución",
-        "tooltip": "Resolución del video de salida"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Valor de semilla aleatoria"
-      },
-      "steps": {
-        "name": "pasos",
-        "tooltip": "Número de pasos de eliminación de ruido"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Texto a Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control después de generar"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto del prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "adherencia_al_prompt",
-        "tooltip": "Escala de guía para control de generación"
-      },
-      "resolution": {
-        "name": "resolución",
-        "tooltip": "Resolución del video de salida"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Valor de semilla aleatoria"
-      },
-      "steps": {
-        "name": "pasos",
-        "tooltip": "Pasos de inferencia"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video a Video",
-    "inputs": {
-      "control_type": {
-        "name": "tipo_control"
-      },
-      "motion_intensity": {
-        "name": "intensidad_movimiento",
-        "tooltip": "Solo se usa si el tipo_control es 'Transferencia de Movimiento'"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto del prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Describe el video a generar"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Valor de semilla aleatoria"
-      },
-      "steps": {
-        "name": "pasos",
-        "tooltip": "Número de pasos de inferencia"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "El video de referencia utilizado para generar el video de salida. Debe tener al menos 5 segundos de duración. Los videos más largos de 5s se recortarán automáticamente. Solo se admite formato MP4."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "MorfologiaDeImagen",
     "inputs": {
@@ -11825,8 +11711,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 1 de OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 2 de OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11834,6 +11720,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Se utiliza solo cuando el valor de `size` es 'Custom'. Debe ser un múltiplo de 16 (solo para GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Se utiliza solo cuando el valor de `size` es 'Custom'. Debe ser un múltiplo de 16 (solo para GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -11852,7 +11746,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Texto de entrada para GPT Image 1"
+        "tooltip": "Texto de entrada para GPT Image 2"
       },
       "quality": {
         "name": "quality",
@@ -12526,8 +12420,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
-        "name": "controlar después de generar"
+      "fixed": {
+        "name": "control after generate"
       },
       "value": {
         "name": "valor"
@@ -16616,6 +16510,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "audio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16659,6 +16556,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Usar la plantilla/sistema incorporado si el modelo dispone de uno."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fotogramas de video como lote de imágenes. Se asume a 24 FPS; se reduce internamente a 1 FPS."
       }
     },
     "outputs": {
@@ -16671,6 +16572,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "audio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16714,6 +16618,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Usar la plantilla/sistema incorporado si el modelo dispone de uno."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fotogramas de video como lote de imágenes. Se asume a 24 FPS; se reduce internamente a 1 FPS."
       }
     },
     "outputs": {
@@ -16885,6 +16793,45 @@
         "name": "upscaler_model"
       },
       "upscaler_resolution": {
+        "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Da nueva vida a tus videos con tecnología avanzada de escalado y recuperación.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "dynamic_compression_level",
+        "tooltip": "Nivel CQP."
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "creativity"
+      },
+      "upscaler_model_prompt": {
+        "name": "prompt"
+      },
+      "upscaler_model_realism": {
+        "name": "realism"
+      },
+      "upscaler_model_sharp": {
+        "name": "sharp"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "upscaler_resolution"
       },
       "video": {

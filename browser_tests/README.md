@@ -96,6 +96,17 @@ pnpm test:browser:local                    # Run all tests
 pnpm test:browser:local widget.spec.ts     # Run specific test file
 ```
 
+### Slowing the browser down for debugging
+
+When running with `--headed` (or `--ui`), set `SLOW_MO` to a millisecond delay
+to slow every Playwright action down so you can watch what is happening. The
+delay only applies when `PLAYWRIGHT_LOCAL` is set (the default for the
+`pnpm test:browser:local` script).
+
+```bash
+SLOW_MO=250 pnpm test:browser:local --headed widget.spec.ts
+```
+
 ## Test Structure
 
 Browser tests in this project follow a specific organization pattern:

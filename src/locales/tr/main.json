@@ -461,6 +461,12 @@
       "wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Lütfen bir seçenek seçin.",
+        "describeAnswer": "Lütfen cevabınızı açıklayın.",
+        "selectAtLeastOne": "Lütfen en az bir seçenek seçin."
+      },
+      "intro": "ComfyUI deneyiminizi size özel hale getirmemize yardımcı olun.",
       "options": {
         "familiarity": {
           "advanced": "İleri seviye kullanıcı (özel iş akışları)",
@@ -469,45 +475,43 @@
           "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
           "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)"
         },
-        "industry": {
-          "architecture": "Mimarlık",
-          "education": "Eğitim",
-          "film_tv_animation": "Film, TV ve animasyon",
-          "fine_art": "Güzel sanatlar ve illüstrasyon",
-          "gaming": "Oyun",
-          "marketing": "Pazarlama ve reklamcılık",
-          "other": "Diğer",
-          "otherPlaceholder": "Lütfen belirtin",
-          "product_design": "Ürün ve grafik tasarımı",
-          "software": "Yazılım ve teknoloji"
-        },
-        "making": {
-          "3d": "3D varlıklar",
+        "intent": {
+          "3d_game": "3D varlıklar / oyun varlıkları",
+          "api": "İş akışlarını çalıştırmak için API uç noktaları",
+          "apps": "İş akışlarından basitleştirilmiş uygulamalar",
           "audio": "Ses / müzik",
-          "custom_nodes": "Özel düğümler ve iş akışları",
+          "custom_nodes": "Özel node'lar",
           "images": "Görseller",
-          "video": "Video ve animasyon"
+          "not_sure": "Emin değilim",
+          "videos": "Videolar",
+          "workflows": "Özel iş akışları veya boru hatları"
         },
-        "purpose": {
-          "client": "Müşteri işleri (serbest çalışma)",
-          "community": "Topluluk katkıları (düğümler, iş akışları vb.)",
-          "inhouse": "Kendi işyerim (şirket içi)",
-          "personal": "Kişisel projeler / hobi",
-          "research": "Akademik araştırma"
+        "source": {
+          "conference": "Konferans veya etkinlik",
+          "discord": "Discord / topluluk",
+          "friend": "Arkadaş veya iş arkadaşı",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Bülten veya blog",
+          "other": "Diğer",
+          "reddit": "Reddit",
+          "search": "Google / arama",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Eğitim (öğrenci veya eğitmen)",
+          "personal": "Kişisel kullanım",
+          "work": "İş"
         }
       },
       "placeholder": "Anket soruları yer tutucusu",
-      "questions": {
-        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "industry": "Birincil sektörünüz nedir?",
-        "making": "Ne yapmayı planlıyorsunuz?",
-        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?"
-      },
       "steps": {
         "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "industry": "Birincil sektörünüz nedir?",
-        "making": "Ne yapmayı planlıyorsunuz?",
-        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?"
+        "intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
+        "source": "ComfyUI'yi nereden duydunuz?",
+        "usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?"
       },
       "title": "Bulut Anketi"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
   "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
   "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
-  "cloudSurvey_steps_industry": "Birincil sektörünüz nedir?",
-  "cloudSurvey_steps_making": "Ne yapmayı planlıyorsunuz?",
-  "cloudSurvey_steps_purpose": "ComfyUI'yı öncelikle ne için kullanacaksınız?",
+  "cloudSurvey_steps_intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
+  "cloudSurvey_steps_source": "ComfyUI'yi nereden duydunuz?",
+  "cloudSurvey_steps_usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?",
   "cloudWaitlist_contactLink": "burada",
   "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
   "color": {
@@ -1017,6 +1021,7 @@
     "cancel": "İptal",
     "cancelled": "İptal Edildi",
     "capture": "yakala",
+    "categories": "Kategoriler",
     "category": "Kategori",
     "changeKeybinding": "Kısayol tuşunu değiştir",
     "chart": "Grafik",
@@ -2258,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",

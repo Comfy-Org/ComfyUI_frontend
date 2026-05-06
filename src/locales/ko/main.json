@@ -461,6 +461,12 @@
       "wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "옵션을 선택해 주세요.",
+        "describeAnswer": "답변을 설명해 주세요.",
+        "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
+      },
+      "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
       "options": {
         "familiarity": {
           "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
@@ -469,45 +475,43 @@
           "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
           "starting": "막 시작한 단계 (튜토리얼 따라하는 중)"
         },
-        "industry": {
-          "architecture": "건축",
-          "education": "교육",
-          "film_tv_animation": "영화, TV 및 애니메이션",
-          "fine_art": "순수 미술 및 일러스트레이션",
-          "gaming": "게임",
-          "marketing": "마케팅 및 광고",
-          "other": "기타",
-          "otherPlaceholder": "구체적으로 입력",
-          "product_design": "제품 및 그래픽 디자인",
-          "software": "소프트웨어 및 기술"
-        },
-        "making": {
-          "3d": "3D 에셋",
+        "intent": {
+          "3d_game": "3D 에셋 / 게임 에셋",
+          "api": "워크플로우 실행용 API 엔드포인트",
+          "apps": "워크플로우 기반 간소화 앱",
           "audio": "오디오 / 음악",
-          "custom_nodes": "사용자 정의 노드 및 워크플로우",
+          "custom_nodes": "커스텀 노드",
           "images": "이미지",
-          "video": "비디오 및 애니메이션"
+          "not_sure": "잘 모르겠음",
+          "videos": "비디오",
+          "workflows": "맞춤형 워크플로우 또는 파이프라인"
         },
-        "purpose": {
-          "client": "클라이언트 작업 (프리랜서)",
-          "community": "커뮤니티 기여 (노드, 워크플로우 등)",
-          "inhouse": "자사 업무 (내부 사용)",
-          "personal": "개인 프로젝트 / 취미",
-          "research": "학술 연구"
+        "source": {
+          "conference": "컨퍼런스 또는 이벤트",
+          "discord": "Discord / 커뮤니티",
+          "friend": "친구 또는 동료",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "뉴스레터 또는 블로그",
+          "other": "기타",
+          "reddit": "Reddit",
+          "search": "Google / 검색",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "교육용(학생 또는 교육자)",
+          "personal": "개인용",
+          "work": "업무용"
         }
       },
       "placeholder": "설문 질문 자리표시자",
-      "questions": {
-        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "industry": "주로 어떤 업계에서 일하시나요?",
-        "making": "무엇을 만들 계획이신가요?",
-        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?"
-      },
       "steps": {
         "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "industry": "주로 어떤 업계에서 일하시나요?",
-        "making": "무엇을 만들 계획이신가요?",
-        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?"
+        "intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
+        "source": "ComfyUI를 어디에서 알게 되셨나요?",
+        "usage": "ComfyUI를 어떻게 사용하실 계획인가요?"
       },
       "title": "클라우드 설문"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "몇 초 만에 제작 시작",
   "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
   "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-  "cloudSurvey_steps_industry": "주요 업계는 무엇인가요?",
-  "cloudSurvey_steps_making": "무엇을 만들 계획인가요?",
-  "cloudSurvey_steps_purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획인가요?",
+  "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
+  "cloudSurvey_steps_source": "ComfyUI를 어디에서 알게 되셨나요?",
+  "cloudSurvey_steps_usage": "ComfyUI를 어떻게 사용하실 계획인가요?",
   "cloudWaitlist_contactLink": "여기",
   "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
   "color": {
@@ -1017,6 +1021,7 @@
     "cancel": "취소",
     "cancelled": "취소됨",
     "capture": "캡처",
+    "categories": "카테고리",
     "category": "카테고리",
     "changeKeybinding": "키 바인딩 변경",
     "chart": "차트",
@@ -2258,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",

@@ -106,6 +106,11 @@ function onNavKeydown(event: KeyboardEvent) {
   navButtons()?.[next]?.focus({ preventScroll: true })
 }
 
+function onCategoryHover(index: number) {
+  if (isEnabled.value) return
+  activeCategory.value = index
+}
+
 function travelRange(el: HTMLElement) {
   if (window.matchMedia('(min-width: 1024px)').matches) return 150
 
@@ -116,31 +121,29 @@ function travelRange(el: HTMLElement) {
 }
 
 const pinScrubEnd = `+=${categories.length * VH_PER_ITEM}%`
+const parallaxMediaQuery = '(max-width: 1023px)'
 useParallax([rightImgRef], {
   trigger: sectionRef,
   fromY: (el) => -travelRange(el),
   y: (el) => travelRange(el),
   start: 'top top',
-  end: pinScrubEnd
+  end: pinScrubEnd,
+  mediaQuery: parallaxMediaQuery
 })
 useParallax([leftImgRef], {
   trigger: sectionRef,
   fromY: (el) => travelRange(el),
   y: (el) => -travelRange(el),
   start: 'top top',
-  end: pinScrubEnd
+  end: pinScrubEnd,
+  mediaQuery: parallaxMediaQuery
 })
 </script>
 
 <template>
   <section
     ref="sectionRef"
-    :class="
-      cn(
-        'bg-primary-comfy-ink relative isolate overflow-x-clip pt-20 lg:py-24',
-        isEnabled && 'lg:h-[calc(100vh+60px)]'
-      )
-    "
+    class="bg-primary-comfy-ink relative isolate overflow-x-clip pt-20 lg:h-[calc(100vh+60px)] lg:py-24"
   >
     <svg class="absolute size-0" width="0" height="0" aria-hidden="true">
       <defs>
@@ -202,6 +205,8 @@ useParallax([leftImgRef], {
               "
               :aria-current="index === activeCategory ? 'true' : undefined"
               @click="scrollToIndex(index)"
+              @mouseenter="onCategoryHover(index)"
+              @focus="onCategoryHover(index)"
             >
               {{ category.label }}
             </button>
