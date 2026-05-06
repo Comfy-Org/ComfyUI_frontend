@@ -682,6 +682,53 @@ describe('useWidgetSelectItems', () => {
       consoleWarnSpy.mockRestore()
     })
 
+    it('does not expand a hash-keyed asset even if its metadata reports outputCount > 1', async () => {
+      // Defense against future cloud-schema changes: if a flat output row
+      // ever ships with both asset_hash AND multi-output user_metadata, the
+      // watcher must NOT replace it with synthesized AssetItems lacking the
+      // hash, or select+load reverts to the FE-227 broken state.
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-flat-1',
+          name: 'z-image-turbo_00093_.png',
+          asset_hash:
+            '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-future',
+            nodeId: '9',
+            subfolder: '',
+            outputCount: 4,
+            allOutputs: [
+              {
+                filename: 'should-not-replace.png',
+                subfolder: '',
+                type: 'output',
+                nodeId: '9',
+                mediaType: 'images'
+              }
+            ]
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+      await nextTick()
+
+      expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe(
+        '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png [output]'
+      )
+    })
+
     it('uses asset_hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
       mockMediaAssets.media.value = [
         {

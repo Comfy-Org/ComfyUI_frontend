@@ -119,6 +119,12 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       }> = []
 
       for (const asset of assets) {
+        // Hash-keyed assets are leaf rows from the cloud `/assets` API and
+        // already carry their own URL-resolvable filename. Expanding them via
+        // resolveOutputAssetItems would synthesize sibling AssetItems without
+        // an asset_hash and reintroduce the FE-227 hash→name fallback bug.
+        if (asset.asset_hash) continue
+
         const meta = getOutputAssetMetadata(asset.user_metadata)
         if (!meta) continue
 
