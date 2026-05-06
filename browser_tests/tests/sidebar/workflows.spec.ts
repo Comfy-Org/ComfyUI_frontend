@@ -364,6 +364,34 @@ test.describe('Workflows sidebar', () => {
       .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
   })
 
+  test('Can upload workflow to library by drag and drop', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.setupWorkflowsDirectory({})
+
+    const { workflowsTab } = comfyPage.menu
+
+    expect(await workflowsTab.getTopLevelSavedWorkflowNames()).not.toContain(
+      'default'
+    )
+
+    const sidebarBox = (await comfyPage.page
+      .locator('.workflows-sidebar-tab')
+      .boundingBox())!
+    const dropPosition = {
+      x: sidebarBox.x + sidebarBox.width / 2,
+      y: sidebarBox.y + sidebarBox.height / 2
+    }
+    await comfyPage.dragDrop.dragAndDropFile('default.json', {
+      dropPosition,
+      preserveNativePropagation: true
+    })
+
+    await expect
+      .poll(() => workflowsTab.getTopLevelSavedWorkflowNames())
+      .toContain('default')
+  })
+
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'
