@@ -2,6 +2,12 @@
 
 Date: 2026-05-05
 
+Appendices:
+
+- [Before/after flow diagrams](./0009-subgraph-promoted-widgets-use-linked-inputs/before-after-flows.md)
+- [System comparison](./0009-subgraph-promoted-widgets-use-linked-inputs/system-comparison.md)
+- [Removing `disambiguatingSourceNodeId`](./0009-subgraph-promoted-widgets-use-linked-inputs/disambiguating-source-node-id.md)
+
 ## Status
 
 Proposed
@@ -111,7 +117,7 @@ effective source default or when restored from persisted host state. Canonical
 save/load must not eagerly mirror source defaults or use interior widgets as
 persistence carriers.
 
-## Forward ratchet
+## Forward migration
 
 Loading a workflow with legacy `proxyWidgets` runs a one-way repair:
 
@@ -131,7 +137,7 @@ Loading a workflow with legacy `proxyWidgets` runs a one-way repair:
 6. If already represented by a linked `SubgraphInput`, consider the legacy
    entry resolved and consume it.
 7. Otherwise repair through existing subgraph input/link systems.
-8. If the entry is display-only preview surfacing, ratchet it into the separate
+8. If the entry is display-only preview surfacing, migrate it into the separate
    preview-exposure representation instead of creating a linked `SubgraphInput`.
 9. If value-widget repair fails, write inert quarantine metadata and warn.
 
@@ -185,7 +191,7 @@ Workflow-level promotion/value intent is preserved by
 
 Legacy `proxyWidgets` may point at `PrimitiveNode` outputs. Primitive nodes
 serve nearly the same purpose as subgraph inputs: they provide a widget value to
-one or more target widget inputs. The ratchet repairs this expected legacy
+one or more target widget inputs. The migration repairs this expected legacy
 shape in the first migration rather than quarantining it by default.
 
 Primitive repair:
@@ -204,7 +210,7 @@ Primitive repair:
   inert.
 
 Primitive repair is all-or-quarantine. If any target cannot be validated or
-reconnected, the ratchet does not leave a partial rewrite; it quarantines the
+reconnected, the migration does not leave a partial rewrite; it quarantines the
 entry with `hostValue` and logs the reason.
 
 ## Serialization
@@ -231,7 +237,7 @@ projection only.
 
 The old `SubgraphNode.serialize()` behavior that copied exterior promoted
 values into connected interior widgets is removed. A temporary TODO should mark
-that removal point until the ratchet is proven stable. Host values are
+that removal point until the migration is proven stable. Host values are
 serialized through standard subgraph-input widgets instead.
 
 Longer term, `widgets_values` should move from array order to an object/map
@@ -240,7 +246,7 @@ decision.
 
 ## App mode, builder, and favorites
 
-The runtime ratchet and UI identity migration ship in the same slice. The UI
+The runtime migration and UI identity migration ship in the same slice. The UI
 must not persist promoted selections by source node/widget identity after this
 change.
 
@@ -254,7 +260,8 @@ type PromotedWidgetUiIdentity = {
 ```
 
 Legacy source-identity selections are migrated when they resolve through the
-ratcheted standard input. Unresolved selections are dropped with a warning.
+standard input created or confirmed by the migration. Unresolved selections are
+dropped with a warning.
 
 Preview exposure output selections are also host-scoped and must not persist
 interior source node identity. Canonical preview/output identity is:
@@ -302,7 +309,7 @@ the primitive node when the repair can be validated all-or-nothing.
 ### Migrate `widgets_values` to object/map form now
 
 Rejected for this slice. Name-keyed object form is the desired long-term
-direction, but combining it with the promotion ratchet increases blast radius
+direction, but combining it with the promotion migration increases blast radius
 for existing workflow consumers that still assume array order.
 
 ## Consequences
@@ -314,5 +321,5 @@ for existing workflow consumers that still assume array order.
   runtime promotion.
 - Primitive fanout repair is more complex, but avoids breaking common existing
   workflows.
-- UI code must migrate with the runtime ratchet to avoid mixed identity states.
+- UI code must migrate with the runtime migration to avoid mixed identity states.
 - `PromotionStore` has a clear removal path.
