@@ -2,11 +2,374 @@
 
 import { z } from 'zod'
 
+/**
+ * Response indicating whether a Hub username is available.
+ */
+export const zHubUsernameCheckResponse = z.object({
+  username: z.string(),
+  available: z.boolean(),
+  suggestions: z.array(z.string()).optional(),
+  validation_error: z.string().optional()
+})
+
+/**
+ * Response containing a signed upload URL and the target asset path.
+ */
+export const zHubAssetUploadUrlResponse = z.object({
+  upload_url: z.string(),
+  public_url: z.string(),
+  token: z.string()
+})
+
+/**
+ * Request body for requesting a signed upload URL for a Hub asset.
+ */
+export const zHubAssetUploadUrlRequest = z.object({
+  filename: z.string(),
+  content_type: z.string()
+})
+
+/**
+ * Partial update for a published hub workflow (admin moderation). All fields are optional. Semantics match UpdateHubProfileRequest / avatar_token:
+ *
+ * * field omitted or null — leave unchanged
+ * * string field = ""     — clear (for clearable string fields)
+ * * array field  = []     — clear the list
+ * * any other value       — set to the provided value
+ *
+ * Array fields use full-replacement (PUT) semantics when a value is supplied. The two single-value thumbnail token fields accept only upload tokens (not existing URLs) since omitting them already expresses "keep the current value".
+ * Backend note: cleared string columns are persisted as the empty string "" in the Ent schema (description, thumbnail_url, thumbnail_comparison_url, tutorial_url). thumbnail_type is the only true SQL-nullable column but is not clearable via this endpoint.
+ *
+ */
+export const zUpdateHubWorkflowRequest = z.object({
+  name: z.string().min(1).nullish(),
+  description: z.string().nullish(),
+  tags: z.array(z.string()).nullish(),
+  models: z.array(z.string()).nullish(),
+  custom_nodes: z.array(z.string()).nullish(),
+  tutorial_url: z.string().nullish(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
+  thumbnail_token: z.string().nullish(),
+  thumbnail_comparison_token: z.string().nullish(),
+  sample_image_tokens_or_urls: z.array(z.string()).nullish(),
+  metadata: z.record(z.unknown()).nullish()
+})
+
+/**
+ * Request body for publishing or updating a workflow on the Hub.
+ */
+export const zPublishHubWorkflowRequest = z.object({
+  username: z.string(),
+  name: z.string(),
+  workflow_filename: z.string(),
+  asset_ids: z.array(z.string()),
+  description: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  models: z.array(z.string()).optional(),
+  custom_nodes: z.array(z.string()).optional(),
+  tutorial_url: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
+  thumbnail_token_or_url: z.string().optional(),
+  thumbnail_comparison_token_or_url: z.string().optional(),
+  sample_image_tokens_or_urls: z.array(z.string()).optional()
+})
+
+/**
+ * Lightweight asset reference used in workflow publishing payloads.
+ */
+export const zAssetInfo = z.object({
+  id: z.string(),
+  name: z.string(),
+  preview_url: z.string(),
+  storage_url: z.string(),
+  model: z.boolean(),
+  public: z.boolean(),
+  in_library: z.boolean()
+})
+
+/**
+ * Abbreviated Hub profile used in workflow listings.
+ */
+export const zHubProfileSummary = z.object({
+  username: z.string(),
+  display_name: z.string().optional(),
+  avatar_url: z.string().optional()
+})
+
+/**
+ * Reference to a Hub label by ID.
+ */
+export const zLabelRef = z.object({
+  name: z.string(),
+  display_name: z.string()
+})
+
+/**
+ * Public workflow status. NULL in the database is represented as pending in API responses.
+ */
+export const zHubWorkflowStatus = z.enum([
+  'pending',
+  'approved',
+  'rejected',
+  'deprecated'
+])
+
+/**
+ * Full Hub workflow detail including versions, assets, and statistics.
+ */
+export const zHubWorkflowDetail = z.object({
+  share_id: z.string(),
+  workflow_id: z.string(),
+  name: z.string(),
+  status: zHubWorkflowStatus,
+  description: z.string().optional(),
+  tags: z.array(zLabelRef).optional(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
+  thumbnail_url: z.string().optional(),
+  thumbnail_comparison_url: z.string().optional(),
+  models: z.array(zLabelRef).optional(),
+  custom_nodes: z.array(zLabelRef).optional(),
+  tutorial_url: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+  sample_image_urls: z.array(z.string()).optional(),
+  publish_time: z.string().datetime().nullish(),
+  workflow_json: z.record(z.unknown()),
+  assets: z.array(zAssetInfo),
+  profile: zHubProfileSummary
+})
+
+/**
+ * Abbreviated Hub workflow metadata used in search and listing results.
+ */
+export const zHubWorkflowSummary = z.object({
+  share_id: z.string(),
+  name: z.string(),
+  status: zHubWorkflowStatus,
+  description: z.string().optional(),
+  tags: z.array(zLabelRef).optional(),
+  models: z.array(zLabelRef).optional(),
+  custom_nodes: z.array(zLabelRef).optional(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
+  thumbnail_url: z.string().optional(),
+  thumbnail_comparison_url: z.string().optional(),
+  publish_time: z.string().datetime().nullish(),
+  profile: zHubProfileSummary,
+  metadata: z.record(z.unknown()).optional(),
+  tutorial_url: z.string().optional(),
+  sample_image_urls: z.array(z.string()).optional()
+})
+
+/**
+ * Paginated list of Hub workflows matching search criteria.
+ */
+export const zHubWorkflowListResponse = z.object({
+  workflows: z.array(z.union([zHubWorkflowSummary, zHubWorkflowDetail])),
+  next_cursor: z.string().optional()
+})
+
+/**
+ * Metadata for a single Hub label.
+ */
+export const zHubLabelInfo = z.object({
+  name: z.string(),
+  display_name: z.string(),
+  description: z.string().optional(),
+  type: z.enum(['tag', 'model', 'custom_node'])
+})
+
+/**
+ * List of available Hub labels for categorizing workflows.
+ */
+export const zHubLabelListResponse = z.object({
+  labels: z.array(zHubLabelInfo)
+})
+
+/**
+ * Entry in the curated workflow template gallery shown on the home page.
+ */
+export const zHubWorkflowTemplateEntry = z.object({
+  name: z.string(),
+  title: z.string(),
+  status: zHubWorkflowStatus,
+  description: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  models: z.array(z.string()).optional(),
+  requiresCustomNodes: z.array(z.string()).optional(),
+  thumbnailVariant: z.string().optional(),
+  mediaType: z.string().optional(),
+  mediaSubtype: z.string().optional(),
+  size: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  vram: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  usage: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  searchRank: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  isEssential: z.boolean().optional(),
+  openSource: z.boolean().optional(),
+  profile: zHubProfileSummary.optional(),
+  tutorialUrl: z.string().optional(),
+  logos: z.array(z.record(z.unknown())).optional(),
+  date: z.string().optional(),
+  io: z
+    .object({
+      inputs: z.array(z.record(z.unknown())).optional(),
+      outputs: z.array(z.record(z.unknown())).optional()
+    })
+    .optional(),
+  includeOnDistributions: z.array(z.string()).optional(),
+  thumbnailUrl: z.string().optional(),
+  thumbnailComparisonUrl: z.string().optional(),
+  shareId: z.string().optional(),
+  extendedDescription: z.string().optional(),
+  metaDescription: z.string().optional(),
+  howToUse: z.array(z.string()).optional(),
+  suggestedUseCases: z.array(z.string()).optional(),
+  faqItems: z
+    .array(
+      z.object({
+        question: z.string(),
+        answer: z.string()
+      })
+    )
+    .optional(),
+  contentTemplate: z.string().optional()
+})
+
+/**
+ * Request body for updating an existing Hub profile.
+ */
+export const zUpdateHubProfileRequest = z.object({
+  display_name: z.string().optional(),
+  description: z.string().optional(),
+  avatar_token: z.string().nullish(),
+  website_urls: z.array(z.string()).optional()
+})
+
+/**
+ * Request body for creating a new Hub profile.
+ */
+export const zCreateHubProfileRequest = z.object({
+  workspace_id: z.string(),
+  username: z.string(),
+  display_name: z.string().optional(),
+  description: z.string().optional(),
+  avatar_token: z.string().optional(),
+  website_urls: z.array(z.string()).optional()
+})
+
+/**
+ * Full public profile for a Hub creator.
+ */
+export const zHubProfile = z.object({
+  username: z.string(),
+  display_name: z.string().optional(),
+  description: z.string().optional(),
+  avatar_url: z.string().optional(),
+  website_urls: z.array(z.string()).optional()
+})
+
+/**
+ * Response after importing published workflow assets.
+ */
+export const zImportPublishedAssetsResponse = z.object({
+  assets: z.array(zAssetInfo)
+})
+
+/**
+ * Request body for importing assets from a published workflow.
+ */
+export const zImportPublishedAssetsRequest = z.object({
+  published_asset_ids: z.array(z.string().min(1).max(64)).max(1000),
+  share_id: z.string().min(1).max(64)
+})
+
+/**
+ * Full detail of a publicly published workflow on the Hub.
+ */
+export const zPublishedWorkflowDetail = z.object({
+  share_id: z.string(),
+  workflow_id: z.string(),
+  name: z.string(),
+  listed: z.boolean(),
+  publish_time: z.string().datetime().nullish(),
+  workflow_json: z.record(z.unknown()),
+  assets: z.array(zAssetInfo)
+})
+
+/**
+ * Response containing assets associated with a workflow.
+ */
+export const zWorkflowApiAssetsResponse = z.object({
+  assets: z.array(zAssetInfo)
+})
+
+/**
+ * Request body for querying assets associated with a workflow.
+ */
+export const zWorkflowApiAssetsRequest = z.object({
+  workflow_api_json: z.record(z.unknown())
+})
+
+/**
+ * Request body for publishing workflow assets to the Hub.
+ */
+export const zPublishWorkflowAssetsRequest = z.object({
+  asset_ids: z.array(z.string())
+})
+
+/**
+ * Publishing metadata for a workflow shared to the Hub.
+ */
+export const zWorkflowPublishInfo = z.object({
+  workflow_id: z.string(),
+  share_id: z.string(),
+  publish_time: z.string().datetime().nullish(),
+  listed: z.boolean(),
+  assets: z.array(zAssetInfo)
+})
+
+/**
+ * Request body for forking an existing workflow into the user's account.
+ */
 export const zForkWorkflowRequest = z.object({
   source_version: z.number().int(),
   name: z.string().optional()
 })
 
+/**
+ * Full workflow version including the serialized workflow JSON.
+ */
 export const zWorkflowVersionContentResponse = z.object({
   id: z.string(),
   version: z.number().int(),
@@ -16,6 +379,9 @@ export const zWorkflowVersionContentResponse = z.object({
   dependency_asset_ids: z.array(z.string()).optional()
 })
 
+/**
+ * Metadata for a single workflow version.
+ */
 export const zWorkflowVersionResponse = z.object({
   id: z.string(),
   version: z.number().int(),
@@ -24,11 +390,17 @@ export const zWorkflowVersionResponse = z.object({
   created_at: z.string().datetime()
 })
 
+/**
+ * Request body for creating a new version of a saved workflow.
+ */
 export const zCreateWorkflowVersionRequest = z.object({
   base_version: z.number().int(),
   workflow_json: z.record(z.unknown())
 })
 
+/**
+ * Offset/limit-based pagination metadata included in list responses.
+ */
 export const zPaginationInfo = z.object({
   offset: z.number().int().gte(0),
   limit: z.number().int().gte(1),
@@ -36,11 +408,17 @@ export const zPaginationInfo = z.object({
   has_more: z.boolean()
 })
 
+/**
+ * Reference to the parent workflow from which this workflow was forked.
+ */
 export const zWorkflowForkedFrom = z.object({
   workflow_id: z.string().optional(),
   workflow_version_id: z.string().optional()
 })
 
+/**
+ * Full workflow entity including metadata and version history.
+ */
 export const zWorkflowResponse = z.object({
   id: z.string(),
   name: z.string().optional(),
@@ -53,17 +431,26 @@ export const zWorkflowResponse = z.object({
   updated_at: z.string().datetime()
 })
 
+/**
+ * Paginated list of saved workflows.
+ */
 export const zWorkflowListResponse = z.object({
   data: z.array(zWorkflowResponse),
   pagination: zPaginationInfo
 })
 
+/**
+ * Request body for updating an existing saved workflow.
+ */
 export const zUpdateWorkflowRequest = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   default_view: z.enum(['workflow', 'app']).optional()
 })
 
+/**
+ * Request body for creating a new saved workflow.
+ */
 export const zCreateWorkflowRequest = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
@@ -73,10 +460,16 @@ export const zCreateWorkflowRequest = z.object({
   forked_from_workflow_version_id: z.string().optional()
 })
 
+/**
+ * Response after recording partner usage data.
+ */
 export const zPartnerUsageResponse = z.object({
   status: z.string()
 })
 
+/**
+ * Request body for reporting partner resource usage (admin endpoint).
+ */
 export const zPartnerUsageRequest = z.object({
   workspace_id: z.string().min(1),
   user_id: z.string().optional(),
@@ -86,6 +479,9 @@ export const zPartnerUsageRequest = z.object({
   properties: z.record(z.unknown()).optional()
 })
 
+/**
+ * Status of an asynchronous billing operation.
+ */
 export const zBillingOpStatusResponse = z.object({
   id: z.string(),
   status: z.enum(['pending', 'succeeded', 'failed']),
@@ -94,6 +490,9 @@ export const zBillingOpStatusResponse = z.object({
   completed_at: z.string().datetime().optional()
 })
 
+/**
+ * Response after successfully purchasing a credit top-up.
+ */
 export const zCreateTopupResponse = z.object({
   billing_op_id: z.string(),
   topup_id: z.string(),
@@ -108,6 +507,9 @@ export const zCreateTopupResponse = z.object({
     })
 })
 
+/**
+ * Request body for purchasing a one-time credit top-up.
+ */
 export const zCreateTopupRequest = z.object({
   amount_cents: z.coerce
     .bigint()
@@ -118,33 +520,54 @@ export const zCreateTopupRequest = z.object({
   idempotency_key: z.string().optional()
 })
 
+/**
+ * Response containing a redirect URL to the payment portal.
+ */
 export const zPaymentPortalResponse = z.object({
   url: z.string()
 })
 
+/**
+ * Request body for generating a payment portal session URL.
+ */
 export const zPaymentPortalRequest = z.object({
   return_url: z.string().optional()
 })
 
+/**
+ * Response after successfully resubscribing to a billing plan.
+ */
 export const zResubscribeResponse = z.object({
   billing_op_id: z.string(),
   status: z.enum(['active']),
   message: z.string().optional()
 })
 
+/**
+ * Request body for reactivating a previously cancelled subscription.
+ */
 export const zResubscribeRequest = z.object({
   idempotency_key: z.string().optional()
 })
 
+/**
+ * Response after successfully cancelling a subscription.
+ */
 export const zCancelSubscriptionResponse = z.object({
   billing_op_id: z.string(),
   cancel_at: z.string().datetime()
 })
 
+/**
+ * Request body for cancelling the current subscription.
+ */
 export const zCancelSubscriptionRequest = z.object({
   idempotency_key: z.string().optional()
 })
 
+/**
+ * Response after successfully subscribing to a billing plan.
+ */
 export const zSubscribeResponse = z.object({
   billing_op_id: z.string(),
   status: z.enum(['subscribed', 'needs_payment_method', 'pending_payment']),
@@ -152,6 +575,9 @@ export const zSubscribeResponse = z.object({
   payment_method_url: z.string().optional()
 })
 
+/**
+ * Request body for subscribing a workspace to a billing plan.
+ */
 export const zSubscribeRequest = z.object({
   plan_slug: z.string(),
   idempotency_key: z.string().optional(),
@@ -226,6 +652,9 @@ export const zPreviewPlanInfo = z.object({
   period_end: z.string().datetime().optional()
 })
 
+/**
+ * Itemized cost preview for a pending subscription change.
+ */
 export const zPreviewSubscribeResponse = z.object({
   allowed: z.boolean(),
   reason: z.string().optional(),
@@ -273,6 +702,9 @@ export const zPreviewSubscribeResponse = z.object({
   new_plan: zPreviewPlanInfo
 })
 
+/**
+ * Request body for previewing the cost of a plan subscription change.
+ */
 export const zPreviewSubscribeRequest = z.object({
   plan_slug: z.string()
 })
@@ -288,11 +720,17 @@ export const zPlanAvailabilityReason = z.enum([
   'exceeds_max_seats'
 ])
 
+/**
+ * Availability and eligibility information for a billing plan.
+ */
 export const zPlanAvailability = z.object({
   available: z.boolean(),
   reason: zPlanAvailabilityReason.optional()
 })
 
+/**
+ * Billing plan details including pricing, limits, and features.
+ */
 export const zPlan = z.object({
   slug: z.string(),
   tier: zSubscriptionTier,
@@ -325,11 +763,17 @@ export const zPlan = z.object({
   seat_summary: zPlanSeatSummary
 })
 
+/**
+ * List of available billing plans for subscription.
+ */
 export const zBillingPlansResponse = z.object({
   current_plan_slug: z.string().optional(),
   plans: z.array(zPlan)
 })
 
+/**
+ * User secret metadata (the secret value itself is never returned after creation).
+ */
 export const zSecretResponse = z.object({
   id: z.string().uuid(),
   name: z.string(),
@@ -339,21 +783,33 @@ export const zSecretResponse = z.object({
   updated_at: z.string().datetime()
 })
 
+/**
+ * List of user secrets with metadata only.
+ */
 export const zSecretListResponse = z.object({
   data: z.array(zSecretResponse)
 })
 
+/**
+ * Request body for updating an existing user secret.
+ */
 export const zUpdateSecretRequest = z.object({
   name: z.string().min(1).max(255).optional(),
   secret_value: z.string().min(1).optional()
 })
 
+/**
+ * Request body for creating a new user secret.
+ */
 export const zCreateSecretRequest = z.object({
   name: z.string().min(1).max(255),
   provider: z.string().max(64).optional(),
   secret_value: z.string().min(1)
 })
 
+/**
+ * A single billing event such as a charge, credit, or adjustment.
+ */
 export const zBillingEvent = z.object({
   event_type: z.string(),
   event_id: z.string(),
@@ -361,6 +817,9 @@ export const zBillingEvent = z.object({
   createdAt: z.string().datetime()
 })
 
+/**
+ * Paginated list of billing events for a workspace.
+ */
 export const zBillingEventsResponse = z.object({
   total: z.number().int(),
   events: z.array(zBillingEvent),
@@ -369,6 +828,9 @@ export const zBillingEventsResponse = z.object({
   totalPages: z.number().int()
 })
 
+/**
+ * Current credit balance and usage details for a workspace.
+ */
 export const zBillingBalanceResponse = z.object({
   amount_micros: z.number(),
   prepaid_balance_micros: z.number().optional(),
@@ -389,6 +851,9 @@ export const zBillingStatus = z.enum([
   'inactive'
 ])
 
+/**
+ * Current billing and subscription status for a workspace.
+ */
 export const zBillingStatusResponse = z.object({
   is_active: z.boolean(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
@@ -401,6 +866,9 @@ export const zBillingStatusResponse = z.object({
   renewal_date: z.string().datetime().optional()
 })
 
+/**
+ * A single JSON Web Key entry within a JWKS response.
+ */
 export const zJwkKey = z.object({
   kty: z.string(),
   crv: z.string(),
@@ -411,19 +879,119 @@ export const zJwkKey = z.object({
   y: z.string()
 })
 
+/**
+ * JSON Web Key Set containing the public keys used to verify Cloud JWTs.
+ */
 export const zJwksResponse = z.object({
   keys: z.array(zJwkKey)
 })
 
+/**
+ * Response after synchronizing an API key into the local database.
+ */
+export const zSyncApiKeyResponse = z.object({
+  result: z.enum(['revoked', 'already_revoked', 'no_op'])
+})
+
+/**
+ * Request body for synchronizing an API key from the external registry.
+ */
+export const zSyncApiKeyRequest = z.object({
+  event: z.enum(['delete']),
+  key_hash: z.string().regex(/^[0-9a-fA-F]{64}$/),
+  customer_id: z.string().min(1)
+})
+
+/**
+ * Response confirming the validity and scope of a workspace API key.
+ */
+export const zVerifyApiKeyResponse = z.object({
+  user_id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  is_admin: z.boolean(),
+  workspace_id: z.string(),
+  workspace_type: z.enum(['personal', 'team']),
+  role: z.enum(['owner', 'member']),
+  has_funds: z.boolean(),
+  is_active: z.boolean(),
+  permissions: z.array(z.string())
+})
+
+/**
+ * Request body for verifying a workspace API key (admin endpoint).
+ */
+export const zVerifyApiKeyRequest = z.object({
+  api_key: z.string()
+})
+
+/**
+ * Response after bulk-revoking API keys for a workspace member.
+ */
+export const zBulkRevokeApiKeysResponse = z.object({
+  revoked_count: z.number().int().gte(0)
+})
+
+/**
+ * Metadata for a workspace-scoped API key (secret is never returned).
+ */
+export const zWorkspaceApiKeyInfo = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string(),
+  user_id: z.string(),
+  name: z.string(),
+  key_prefix: z.string(),
+  expires_at: z.string().datetime().optional(),
+  last_used_at: z.string().datetime().optional(),
+  revoked_at: z.string().datetime().optional(),
+  created_at: z.string().datetime()
+})
+
+/**
+ * List of API keys associated with the current workspace.
+ */
+export const zListWorkspaceApiKeysResponse = z.object({
+  api_keys: z.array(zWorkspaceApiKeyInfo)
+})
+
+/**
+ * Response containing the newly created workspace API key.
+ */
+export const zCreateWorkspaceApiKeyResponse = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  key: z.string(),
+  key_prefix: z.string(),
+  expires_at: z.string().datetime().optional(),
+  created_at: z.string().datetime()
+})
+
+/**
+ * Request body for creating a new workspace-scoped API key.
+ */
+export const zCreateWorkspaceApiKeyRequest = z.object({
+  name: z.string(),
+  expires_at: z.string().datetime().optional()
+})
+
+/**
+ * Response returned after successfully accepting a workspace invitation.
+ */
 export const zAcceptInviteResponse = z.object({
   workspace_id: z.string(),
   workspace_name: z.string()
 })
 
+/**
+ * Request body for inviting a user to a workspace.
+ */
 export const zCreateInviteRequest = z.object({
   email: z.string().email()
 })
 
+/**
+ * An outstanding workspace invitation that has not yet been accepted.
+ */
 export const zPendingInvite = z.object({
   id: z.string(),
   email: z.string().email(),
@@ -432,10 +1000,16 @@ export const zPendingInvite = z.object({
   expires_at: z.string().datetime()
 })
 
+/**
+ * List of pending invitations for the current workspace.
+ */
 export const zListInvitesResponse = z.object({
   invites: z.array(zPendingInvite)
 })
 
+/**
+ * Workspace member with profile and role information.
+ */
 export const zMember = z.object({
   id: z.string(),
   name: z.string(),
@@ -444,19 +1018,31 @@ export const zMember = z.object({
   joined_at: z.string().datetime()
 })
 
+/**
+ * List of members in the current workspace.
+ */
 export const zListMembersResponse = z.object({
   members: z.array(zMember),
   pagination: zPaginationInfo
 })
 
+/**
+ * Request body for updating an existing workspace's settings.
+ */
 export const zUpdateWorkspaceRequest = z.object({
   name: z.string().min(1).max(100).optional()
 })
 
+/**
+ * Request body for creating a new workspace.
+ */
 export const zCreateWorkspaceRequest = z.object({
   name: z.string().min(1).max(100)
 })
 
+/**
+ * Workspace entity annotated with the requesting user's role.
+ */
 export const zWorkspaceWithRole = z.object({
   id: z.string(),
   name: z.string(),
@@ -467,10 +1053,16 @@ export const zWorkspaceWithRole = z.object({
   subscription_tier: zSubscriptionTier.optional()
 })
 
+/**
+ * Paginated list of workspaces the authenticated user belongs to.
+ */
 export const zListWorkspacesResponse = z.object({
   workspaces: z.array(zWorkspaceWithRole)
 })
 
+/**
+ * Full workspace entity with configuration and ownership details.
+ */
 export const zWorkspace = z.object({
   id: z.string(),
   name: z.string(),
@@ -478,12 +1070,18 @@ export const zWorkspace = z.object({
   created_at: z.string().datetime()
 })
 
+/**
+ * Abbreviated workspace metadata used in list responses.
+ */
 export const zWorkspaceSummary = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['personal', 'team'])
 })
 
+/**
+ * Response containing the issued Cloud JWT and its expiry.
+ */
 export const zExchangeTokenResponse = z.object({
   token: z.string(),
   expires_at: z.string().datetime(),
@@ -492,6 +1090,12 @@ export const zExchangeTokenResponse = z.object({
   permissions: z.array(z.string())
 })
 
+/**
+ * Optional request body for the token exchange endpoint. The Firebase JWT
+ * being exchanged is supplied via the `Authorization: Bearer` header; this
+ * body only carries workspace-selection input.
+ *
+ */
 export const zExchangeTokenRequest = z.object({
   workspace_id: z.string().optional()
 })
@@ -525,16 +1129,25 @@ export const zTaskEntry = z.object({
   completed_at: z.string().datetime().optional()
 })
 
+/**
+ * Paginated list of background tasks for the authenticated user.
+ */
 export const zTasksListResponse = z.object({
   tasks: z.array(zTaskEntry),
   pagination: zPaginationInfo
 })
 
+/**
+ * Current status of a user data deletion request.
+ */
 export const zDeletionStatus = z.object({
   status_name: z.string(),
   status_details: z.string()
 })
 
+/**
+ * Details of a pending or completed user data deletion request.
+ */
 export const zDeletionRequest = z.object({
   id: z.string(),
   firebase_id: z.string(),
@@ -542,6 +1155,119 @@ export const zDeletionRequest = z.object({
   deletion_status: z.array(zDeletionStatus)
 })
 
+/**
+ * Detailed execution error information from ComfyUI
+ */
+export const zExecutionError = z.object({
+  node_id: z.string(),
+  node_type: z.string(),
+  exception_message: z.string(),
+  exception_type: z.string(),
+  traceback: z.array(z.string()),
+  current_inputs: z.record(z.unknown()),
+  current_outputs: z.record(z.unknown())
+})
+
+/**
+ * Full job details including workflow and outputs
+ */
+export const zJobDetailResponse = z.object({
+  id: z.string().uuid(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled'
+  ]),
+  workflow: z.record(z.unknown()).optional(),
+  execution_error: zExecutionError.optional(),
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  update_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  outputs: z.record(z.unknown()).optional(),
+  preview_output: z.record(z.unknown()).optional(),
+  outputs_count: z.number().int().optional(),
+  workflow_id: z.string().optional(),
+  execution_status: z.record(z.unknown()).optional(),
+  execution_meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Response for POST /api/jobs/{job_id}/cancel. Returned on both fresh cancels and idempotent no-ops.
+ */
+export const zJobCancelResponse = z.object({
+  cancelled: z.boolean()
+})
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export const zJobEntry = z.object({
+  id: z.string().uuid(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled'
+  ]),
+  execution_error: zExecutionError.optional(),
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  preview_output: z.record(z.unknown()).optional(),
+  outputs_count: z.number().int().optional(),
+  workflow_id: z.string().optional(),
+  execution_start_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_end_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * Paginated list of jobs for the authenticated user.
+ */
+export const zJobsListResponse = z.object({
+  jobs: z.array(zJobEntry),
+  pagination: zPaginationInfo
+})
+
+/**
+ * Response after adding, updating, or removing tags on an asset.
+ */
 export const zTagsModificationResponse = z.object({
   added: z.array(z.string()).optional(),
   removed: z.array(z.string()).optional(),
@@ -550,24 +1276,36 @@ export const zTagsModificationResponse = z.object({
   total_tags: z.array(z.string())
 })
 
+/**
+ * Details of a single validation error encountered during asset operations.
+ */
 export const zValidationError = z.object({
   code: z.string(),
   message: z.string(),
   field: z.string()
 })
 
+/**
+ * Result of validating a set of asset operations.
+ */
 export const zValidationResult = z.object({
   is_valid: z.boolean(),
   errors: z.array(zValidationError).optional(),
   warnings: z.array(zValidationError).optional()
 })
 
+/**
+ * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
+ */
 export const zAssetDownloadResponse = z.object({
   task_id: z.string().uuid(),
   status: z.enum(['created', 'running', 'completed', 'failed']),
   message: z.string().optional()
 })
 
+/**
+ * Metadata for a remotely hosted asset resolved by URL.
+ */
 export const zAssetMetadataResponse = z.object({
   content_length: z.coerce
     .bigint()
@@ -585,21 +1323,33 @@ export const zAssetMetadataResponse = z.object({
   validation: zValidationResult.optional()
 })
 
+/**
+ * Histogram of tag counts used for refining asset search results.
+ */
 export const zAssetTagHistogramResponse = z.object({
   tag_counts: z.record(z.number().int())
 })
 
+/**
+ * Metadata for a single tag that can be applied to assets.
+ */
 export const zTagInfo = z.object({
   name: z.string(),
   count: z.number().int()
 })
 
+/**
+ * Paginated list of available asset tags.
+ */
 export const zListTagsResponse = z.object({
   tags: z.array(zTagInfo),
   total: z.number().int(),
   has_more: z.boolean()
 })
 
+/**
+ * Represents a user-owned asset (image, video, or other generated output).
+ */
 export const zAsset = z.object({
   id: z.string().uuid(),
   name: z.string(),
@@ -628,12 +1378,18 @@ export const zAsset = z.object({
   is_immutable: z.boolean().optional()
 })
 
+/**
+ * Paginated list of assets belonging to the authenticated user.
+ */
 export const zListAssetsResponse = z.object({
   assets: z.array(zAsset),
   total: z.number().int(),
   has_more: z.boolean()
 })
 
+/**
+ * Response returned when an existing asset is successfully updated.
+ */
 export const zAssetUpdated = z.object({
   id: z.string().uuid(),
   name: z.string().optional(),
@@ -647,6 +1403,9 @@ export const zAssetUpdated = z.object({
   updated_at: z.string().datetime()
 })
 
+/**
+ * Response returned when a new asset is successfully created.
+ */
 export const zAssetCreated = zAsset.and(
   z.object({
     created_new: z.boolean()
@@ -654,35 +1413,19 @@ export const zAssetCreated = zAsset.and(
 )
 
 /**
- * Response after sending an invite email
+ * Response after updating the review status of a Hub workflow.
  */
-export const zSendUserInviteEmailResponse = z.object({
-  success: z.boolean(),
-  message: z.string()
+export const zSetReviewStatusResponse = z.object({
+  share_ids: z.array(z.string()),
+  status: z.enum(['approved', 'rejected'])
 })
 
 /**
- * Request to send an invite email to a user
+ * Request body for setting the review status of a Hub workflow.
  */
-export const zSendUserInviteEmailRequest = z.object({
-  email: z.string(),
-  force: z.boolean().optional().default(false)
-})
-
-/**
- * Response after successfully claiming an invite code
- */
-export const zInviteCodeClaimResponse = z.object({
-  success: z.boolean(),
-  message: z.string()
-})
-
-/**
- * Invite code status response
- */
-export const zInviteCodeStatusResponse = z.object({
-  claimed: z.boolean(),
-  expired: z.boolean()
+export const zSetReviewStatusRequest = z.object({
+  share_ids: z.array(z.string()).min(1),
+  status: z.enum(['approved', 'rejected'])
 })
 
 /**
@@ -704,30 +1447,35 @@ export const zCreateSessionResponse = z.object({
  * User information response
  */
 export const zUserResponse = z.object({
+  id: z.string(),
   status: z.string()
 })
 
-export const zLogsSubscribeRequest = z.object({
-  enabled: z.boolean()
-})
-
 /**
- * Raw logs response with entries and size
+ * System statistics response
  */
-export const zRawLogsResponse = z.object({
-  entries: z
-    .array(
-      z.object({
-        m: z.string().optional()
-      })
-    )
-    .optional(),
-  size: z
-    .object({
-      cols: z.number().int().optional(),
-      rows: z.number().int().optional()
+export const zSystemStatsResponse = z.object({
+  system: z.object({
+    os: z.string(),
+    python_version: z.string(),
+    embedded_python: z.boolean(),
+    comfyui_version: z.string(),
+    comfyui_frontend_version: z.string().optional(),
+    workflow_templates_version: z.string().optional(),
+    cloud_version: z.string().optional(),
+    pytorch_version: z.string(),
+    argv: z.array(z.string()),
+    ram_total: z.number(),
+    ram_free: z.number()
+  }),
+  devices: z.array(
+    z.object({
+      name: z.string(),
+      type: z.string(),
+      vram_total: z.number().optional(),
+      vram_free: z.number().optional()
     })
-    .optional()
+  )
 })
 
 /**
@@ -775,6 +1523,58 @@ export const zModelFolder = z.object({
 })
 
 /**
+ * Error response for ComfyUI prompt execution.
+ */
+export const zPromptErrorResponse = z.record(z.unknown())
+
+/**
+ * Individual file entry within a full user data response.
+ */
+export const zGetUserDataResponseFullFile = z.object({
+  path: z.string().optional(),
+  size: z.number().int().optional(),
+  modified: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * List of user data file entries (each with path, size, and modification time) returned when full_info=true.
+ */
+export const zGetUserDataResponseFull = z.array(zGetUserDataResponseFullFile)
+
+/**
+ * User data listing entry with file metadata (path, size, modification time).
+ */
+export const zUserDataResponseFull = z.object({
+  path: z.string().optional(),
+  size: z.number().int().optional(),
+  modified: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * Request to manage history operations
+ */
+export const zHistoryManageRequest = z.object({
+  delete: z.array(z.string()).optional(),
+  clear: z.boolean().optional()
+})
+
+/**
  * Job status information
  */
 export const zJobStatusResponse = z.object({
@@ -792,6 +1592,100 @@ export const zJobStatusResponse = z.object({
   last_state_update: z.string().datetime().optional(),
   assigned_inference: z.string().nullish(),
   error_message: z.string().nullish()
+})
+
+/**
+ * Response after a queue management action (delete or clear).
+ */
+export const zQueueManageResponse = z.object({
+  deleted: z.array(z.string()).optional(),
+  cleared: z.boolean().optional()
+})
+
+/**
+ * Request to manage queue operations
+ */
+export const zQueueManageRequest = z.object({
+  delete: z.array(z.string()).optional(),
+  clear: z.boolean().optional()
+})
+
+/**
+ * Queue information with pending and running jobs
+ */
+export const zQueueInfo = z.object({
+  queue_running: z
+    .array(
+      z.tuple([z.unknown(), z.unknown(), z.unknown(), z.unknown(), z.unknown()])
+    )
+    .optional(),
+  queue_pending: z
+    .array(
+      z.tuple([z.unknown(), z.unknown(), z.unknown(), z.unknown(), z.unknown()])
+    )
+    .optional()
+})
+
+/**
+ * History entry with full prompt data
+ */
+export const zHistoryDetailEntry = z.object({
+  prompt: z
+    .object({
+      priority: z.number().optional(),
+      prompt_id: z.string().optional(),
+      prompt: z.record(z.unknown()).optional(),
+      extra_data: z.record(z.unknown()).optional(),
+      outputs_to_execute: z.array(z.string()).optional()
+    })
+    .optional(),
+  outputs: z.record(z.unknown()).optional(),
+  status: z.record(z.unknown()).optional(),
+  meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Detailed execution history response for a specific prompt.
+ * Returns a dictionary with prompt_id as key and full history data as value.
+ *
+ */
+export const zHistoryDetailResponse = z.record(zHistoryDetailEntry)
+
+/**
+ * History entry with prompt_id and execution data
+ */
+export const zHistoryEntry = z.object({
+  prompt_id: z.string(),
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  workflow_id: z.string().optional(),
+  prompt: z
+    .object({
+      priority: z.number().optional(),
+      prompt_id: z.string().optional(),
+      extra_data: z.record(z.unknown()).optional()
+    })
+    .optional(),
+  outputs: z.record(z.unknown()).optional(),
+  status: z.record(z.unknown()).optional(),
+  meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Execution history response with history array.
+ * Returns an object with a "history" key containing an array of history entries.
+ * Each entry includes prompt_id as a property along with execution data.
+ *
+ */
+export const zHistoryResponse = z.object({
+  history: z.array(zHistoryEntry)
 })
 
 /**
@@ -818,16 +1712,86 @@ export const zGlobalSubgraphInfo = z.object({
   data: z.string().optional()
 })
 
+/**
+ * Metadata describing a single ComfyUI node type and its inputs/outputs.
+ */
+export const zNodeInfo = z.object({
+  input: z.record(z.unknown()).optional(),
+  input_order: z.record(z.array(z.string())).optional(),
+  output: z.array(z.string()).optional(),
+  output_is_list: z.array(z.boolean()).optional(),
+  output_name: z.array(z.string()).optional(),
+  name: z.string().optional(),
+  display_name: z.string().optional(),
+  description: z.string().optional(),
+  python_module: z.string().optional(),
+  category: z.string().optional(),
+  output_node: z.boolean().optional(),
+  output_tooltips: z.array(z.string()).optional(),
+  deprecated: z.boolean().optional(),
+  experimental: z.boolean().optional(),
+  api_node: z.boolean().optional()
+})
+
+/**
+ * Metadata about the currently running and queued prompts.
+ */
+export const zPromptInfo = z.object({
+  exec_info: z
+    .object({
+      queue_remaining: z.number().int().optional()
+    })
+    .optional()
+})
+
+/**
+ * Response containing a signed download URL for an exported asset archive.
+ */
 export const zExportDownloadUrlResponse = z.object({
   url: z.string(),
   expires_at: z.string().datetime().optional()
 })
 
+/**
+ * Error shape returned when request binding or validation fails before the handler runs.
+ */
+export const zBindingErrorResponse = z.object({
+  message: z.string()
+})
+
+/**
+ * Standard error response with a machine-readable code and human-readable message.
+ */
 export const zErrorResponse = z.object({
   code: z.string(),
   message: z.string()
 })
 
+/**
+ * Response returned after successfully queuing a workflow prompt.
+ */
+export const zPromptResponse = z.object({
+  prompt_id: z.string().uuid().optional(),
+  number: z.number().optional(),
+  node_errors: z.record(z.unknown()).optional()
+})
+
+/**
+ * Request body for submitting a ComfyUI workflow prompt for execution.
+ */
+export const zPromptRequest = z.object({
+  prompt: z.record(z.unknown()),
+  number: z.number().optional(),
+  front: z.boolean().optional(),
+  extra_data: z.record(z.unknown()).optional(),
+  partial_execution_targets: z.array(z.string()).optional(),
+  workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional()
+})
+
+/**
+ * Represents a user-owned asset (image, video, or other generated output).
+ */
 export const zAssetWritable = z.object({
   id: z.string().uuid(),
   name: z.string(),
@@ -855,12 +1819,18 @@ export const zAssetWritable = z.object({
   is_immutable: z.boolean().optional()
 })
 
+/**
+ * Paginated list of assets belonging to the authenticated user.
+ */
 export const zListAssetsResponseWritable = z.object({
   assets: z.array(zAssetWritable),
   total: z.number().int(),
   has_more: z.boolean()
 })
 
+/**
+ * Response returned when a new asset is successfully created.
+ */
 export const zAssetCreatedWritable = zAssetWritable.and(
   z.object({
     created_new: z.boolean()
@@ -871,6 +1841,64 @@ export const zAssetCreatedWritable = zAssetWritable.and(
  * Response after submitting feedback
  */
 export const zFeedbackResponseWritable = z.record(z.unknown())
+
+export const zGetPromptInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetPromptInfoResponse = zPromptInfo
+
+export const zExecutePromptData = z.object({
+  body: zPromptRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Prompt accepted
+ */
+export const zExecutePromptResponse = zPromptResponse
+
+export const zGetNodeInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetNodeInfoResponse = z.record(zNodeInfo)
+
+export const zGetFeaturesData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetFeaturesResponse = z.object({
+  supports_preview_metadata: z.boolean().optional(),
+  max_upload_size: z.number().int().optional()
+})
+
+export const zGetNodeReplacementsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Node replacement mappings
+ */
+export const zGetNodeReplacementsResponse = z.record(z.unknown())
 
 export const zGetWorkflowTemplatesData = z.object({
   body: z.never().optional(),
@@ -946,6 +1974,116 @@ export const zGetModelPreviewData = z.object({
  */
 export const zGetModelPreviewResponse = z.string()
 
+export const zGetLegacyHistoryData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zManageHistoryData = z.object({
+  body: zHistoryManageRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetHistoryData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      max_items: z.number().int().optional(),
+      offset: z.number().int().optional().default(0)
+    })
+    .optional()
+})
+
+/**
+ * Success - Execution history retrieved
+ */
+export const zGetHistoryResponse = zHistoryResponse
+
+export const zGetHistoryForPromptData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    prompt_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Success - History for prompt retrieved
+ */
+export const zGetHistoryForPromptResponse = zHistoryDetailResponse
+
+export const zListJobsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      status: z.string().optional(),
+      workflow_id: z.string().optional(),
+      output_type: z.enum(['image', 'video', 'audio', '3d']).optional(),
+      sort_by: z.enum(['create_time', 'execution_time']).optional(),
+      sort_order: z.enum(['asc', 'desc']).optional(),
+      offset: z.number().int().gte(0).optional().default(0),
+      limit: z.number().int().gte(1).lte(1000).optional().default(100)
+    })
+    .optional()
+})
+
+/**
+ * Success - Jobs retrieved
+ */
+export const zListJobsResponse = zJobsListResponse
+
+export const zGetJobDetailData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string().uuid()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Job details retrieved
+ */
+export const zGetJobDetailResponse = zJobDetailResponse
+
+export const zCancelJobData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string().uuid()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Cancel request accepted (or job was already terminal)
+ */
+export const zCancelJobResponse = zJobCancelResponse
+
+export const zViewFileData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    subfolder: z.string().optional(),
+    type: z.string().optional(),
+    fullpath: z.string().optional(),
+    format: z.string().optional(),
+    frame_rate: z.number().int().optional(),
+    workflow: z.string().optional(),
+    timestamp: z.number().int().optional(),
+    channel: z.string().optional(),
+    res: z.number().int().gte(64).lte(1024).optional()
+  })
+})
+
+/**
+ * Processed PNG image with extracted channel
+ */
+export const zViewFileResponse = z.string()
+
 export const zGetMaskLayersData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -992,7 +2130,9 @@ export const zListAssetsData = z.object({
         .enum(['name', 'created_at', 'updated_at', 'size', 'last_access_time'])
         .optional(),
       order: z.enum(['asc', 'desc']).optional(),
-      include_public: z.boolean().optional().default(true)
+      job_ids: z.array(z.string().uuid()).optional(),
+      include_public: z.boolean().optional().default(true),
+      asset_hash: z.string().optional()
     })
     .optional()
 })
@@ -1070,7 +2210,7 @@ export const zCreateAssetExportData = z.object({
     job_ids: z.array(z.string()).optional(),
     asset_ids: z.array(z.string()).optional(),
     naming_strategy: z
-      .enum(['group_by_job_id', 'prepend_job_id', 'preserve', 'asset_id'])
+      .enum(['group_by_job_id', 'preserve', 'asset_id', 'group_by_job_time'])
       .optional(),
     job_asset_name_filters: z.record(z.array(z.string()).min(1)).optional()
   }),
@@ -1234,6 +2374,56 @@ export const zCheckAssetByHashData = z.object({
   query: z.never().optional()
 })
 
+export const zPostAssetsFromWorkflowData = z.object({
+  body: zWorkflowApiAssetsRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zPostAssetsFromWorkflowResponse = zWorkflowApiAssetsResponse
+
+export const zImportPublishedAssetsData = z.object({
+  body: zImportPublishedAssetsRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Successfully imported assets
+ */
+export const zImportPublishedAssetsResponse2 = zImportPublishedAssetsResponse
+
+export const zGetQueueInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetQueueInfoResponse = zQueueInfo
+
+export const zManageQueueData = z.object({
+  body: zQueueManageRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zManageQueueResponse = zQueueManageResponse
+
+export const zInterruptJobData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
 export const zListSecretsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -1295,6 +2485,28 @@ export const zUpdateSecretData = z.object({
  */
 export const zUpdateSecretResponse = zSecretResponse
 
+export const zGetAllSettingsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * User settings as key-value pairs
+ */
+export const zGetAllSettingsResponse = z.record(z.unknown())
+
+export const zUpdateMultipleSettingsData = z.object({
+  body: z.record(z.unknown()),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Updated user settings
+ */
+export const zUpdateMultipleSettingsResponse = z.record(z.unknown())
+
 export const zGetSettingByKeyData = z.object({
   body: z.never().optional(),
   path: z.object({
@@ -1336,6 +2548,164 @@ export const zSubmitFeedbackData = z.object({
  */
 export const zSubmitFeedbackResponse = zFeedbackResponse
 
+export const zGetUserdataData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      dir: z.string().optional(),
+      recurse: z.boolean().optional().default(false),
+      split: z.boolean().optional().default(false),
+      full_info: z.boolean().optional().default(false)
+    })
+    .optional()
+})
+
+/**
+ * A list of user data files.
+ */
+export const zGetUserdataResponse = zGetUserDataResponseFull
+
+export const zGetUserdataFilePublishData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Publish info (publish_time is null if never published)
+ */
+export const zGetUserdataFilePublishResponse = zWorkflowPublishInfo
+
+export const zPostUserdataFilePublishData = z.object({
+  body: zPublishWorkflowAssetsRequest,
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Workflow published
+ */
+export const zPostUserdataFilePublishResponse = zWorkflowPublishInfo
+
+export const zDeleteUserdataFileData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * File deleted successfully (No Content).
+ */
+export const zDeleteUserdataFileResponse = z.void()
+
+export const zGetUserdataFileData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Successfully retrieved the file.
+ */
+export const zGetUserdataFileResponse = z.string()
+
+export const zPostUserdataFileData = z.object({
+  body: z.string(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z
+    .object({
+      overwrite: z.enum(['true', 'false']).optional(),
+      full_info: z.enum(['true', 'false']).optional()
+    })
+    .optional()
+})
+
+/**
+ * File uploaded successfully.
+ */
+export const zPostUserdataFileResponse = zUserDataResponseFull
+
+export const zMoveUserdataFileData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string(),
+    dest: z.string()
+  }),
+  query: z
+    .object({
+      overwrite: z.enum(['true', 'false']).optional()
+    })
+    .optional()
+})
+
+/**
+ * File moved successfully.
+ */
+export const zMoveUserdataFileResponse = zUserDataResponseFull
+
+export const zUploadImageData = z.object({
+  body: z.object({
+    image: z.string(),
+    overwrite: z.string().optional(),
+    subfolder: z.string().optional(),
+    type: z.string().optional()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Image uploaded successfully
+ */
+export const zUploadImageResponse = z.object({
+  name: z.string().optional(),
+  subfolder: z.string().optional(),
+  type: z.string().optional()
+})
+
+export const zUploadMaskData = z.object({
+  body: z.object({
+    image: z.string(),
+    original_ref: z.string()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Mask uploaded successfully
+ */
+export const zUploadMaskResponse = z.object({
+  name: z.string().optional(),
+  subfolder: z.string().optional(),
+  type: z.string().optional(),
+  metadata: z
+    .object({
+      is_mask: z.boolean().optional(),
+      original_hash: z.string().optional(),
+      mask_type: z.string().optional(),
+      related_files: z
+        .object({
+          mask: z.string().optional(),
+          paint: z.string().optional(),
+          painted: z.string().optional()
+        })
+        .optional()
+    })
+    .optional()
+})
+
 export const zGetLogsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -1347,7 +2717,7 @@ export const zGetLogsData = z.object({
  */
 export const zGetLogsResponse = zLogsResponse
 
-export const zGetRawLogsData = z.object({
+export const zGetSystemStatsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
   query: z.never().optional()
@@ -1356,20 +2726,7 @@ export const zGetRawLogsData = z.object({
 /**
  * Success
  */
-export const zGetRawLogsResponse = zRawLogsResponse
-
-export const zSubscribeToLogsData = z.object({
-  body: zLogsSubscribeRequest,
-  path: z.never().optional(),
-  query: z.never().optional()
-})
-
-/**
- * Success
- */
-export const zSubscribeToLogsResponse = z.object({
-  enabled: z.boolean().optional()
-})
+export const zGetSystemStatsResponse = zSystemStatsResponse
 
 export const zDeleteSessionData = z.object({
   body: z.never().optional(),
@@ -1564,6 +2921,70 @@ export const zRemoveWorkspaceMemberData = z.object({
  */
 export const zRemoveWorkspaceMemberResponse = z.void()
 
+export const zListWorkspaceApiKeysData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * List of API keys
+ */
+export const zListWorkspaceApiKeysResponse2 = zListWorkspaceApiKeysResponse
+
+export const zCreateWorkspaceApiKeyData = z.object({
+  body: zCreateWorkspaceApiKeyRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * API key created (plaintext returned once)
+ */
+export const zCreateWorkspaceApiKeyResponse2 = zCreateWorkspaceApiKeyResponse
+
+export const zRevokeWorkspaceApiKeyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    id: z.string().uuid()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * API key revoked
+ */
+export const zRevokeWorkspaceApiKeyResponse = z.void()
+
+export const zBulkRevokeWorkspaceMemberApiKeysData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    user_id: z.string().min(1)
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Keys revoked successfully
+ */
+export const zBulkRevokeWorkspaceMemberApiKeysResponse =
+  zBulkRevokeApiKeysResponse
+
+export const zVerifyWorkspaceApiKeyData = z.object({
+  body: zVerifyApiKeyRequest,
+  path: z.never().optional(),
+  query: z
+    .object({
+      include_billing: z.boolean().optional().default(false)
+    })
+    .optional()
+})
+
+/**
+ * Key is valid
+ */
+export const zVerifyWorkspaceApiKeyResponse = zVerifyApiKeyResponse
+
 export const zGetUserData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -1575,42 +2996,29 @@ export const zGetUserData = z.object({
  */
 export const zGetUserResponse = zUserResponse
 
-export const zGetInviteCodeStatusData = z.object({
-  body: z.never().optional(),
-  path: z.object({
-    code: z.string()
-  }),
-  query: z.never().optional()
-})
-
-/**
- * Success - invite code exists
- */
-export const zGetInviteCodeStatusResponse = zInviteCodeStatusResponse
-
-export const zClaimInviteCodeData = z.object({
-  body: z.never().optional(),
-  path: z.object({
-    code: z.string()
-  }),
-  query: z.never().optional()
-})
-
-/**
- * Success - invite code claimed successfully
- */
-export const zClaimInviteCodeResponse = zInviteCodeClaimResponse
-
-export const zSendUserInviteEmailData = z.object({
-  body: zSendUserInviteEmailRequest,
+export const zSetReviewStatusData = z.object({
+  body: zSetReviewStatusRequest,
   path: z.never().optional(),
   query: z.never().optional()
 })
 
 /**
- * Success - invite email sent successfully
+ * Status updated successfully
  */
-export const zSendUserInviteEmailResponse2 = zSendUserInviteEmailResponse
+export const zSetReviewStatusResponse2 = zSetReviewStatusResponse
+
+export const zUpdateHubWorkflowData = z.object({
+  body: zUpdateHubWorkflowRequest,
+  path: z.object({
+    share_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Updated hub workflow detail
+ */
+export const zUpdateHubWorkflowResponse = zHubWorkflowDetail
 
 export const zGetDeletionRequestData = z.object({
   body: z.never().optional(),
@@ -1633,6 +3041,13 @@ export const zCreateDeletionRequestData = z.object({
   query: z.never().optional()
 })
 
+/**
+ * Created - deletion request created or already exists
+ */
+export const zCreateDeletionRequestResponse = z.object({
+  user_found_in_cloud: z.boolean()
+})
+
 export const zReportPartnerUsageData = z.object({
   body: zPartnerUsageRequest,
   path: z.never().optional(),
@@ -1643,6 +3058,34 @@ export const zReportPartnerUsageData = z.object({
  * Usage reported successfully
  */
 export const zReportPartnerUsageResponse = zPartnerUsageResponse
+
+export const zUpdateSubscriptionCacheData = z.object({
+  body: z.object({
+    user_id: z.string(),
+    is_active: z.boolean(),
+    tier: z.string().optional()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Cache updated successfully
+ */
+export const zUpdateSubscriptionCacheResponse = z.object({
+  status: z.string().optional()
+})
+
+export const zSyncApiKeyData = z.object({
+  body: zSyncApiKeyRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Sync processed — see `result` field
+ */
+export const zSyncApiKeyResponse2 = zSyncApiKeyResponse
 
 export const zGetJobStatusData = z.object({
   body: z.never().optional(),
@@ -1928,3 +3371,462 @@ export const zForkWorkflowData = z.object({
  * Workflow forked successfully
  */
 export const zForkWorkflowResponse = zWorkflowResponse
+
+export const zCreateHubProfileData = z.object({
+  body: zCreateHubProfileRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Hub profile created
+ */
+export const zCreateHubProfileResponse = zHubProfile
+
+export const zGetMyHubProfileData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Hub profile
+ */
+export const zGetMyHubProfileResponse = zHubProfile
+
+export const zCheckHubUsernameData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    username: z.string()
+  })
+})
+
+/**
+ * Username availability result
+ */
+export const zCheckHubUsernameResponse = zHubUsernameCheckResponse
+
+export const zGetHubProfileByUsernameData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    username: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Hub profile
+ */
+export const zGetHubProfileByUsernameResponse = zHubProfile
+
+export const zUpdateHubProfileData = z.object({
+  body: zUpdateHubProfileRequest,
+  path: z.object({
+    username: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Hub profile updated
+ */
+export const zUpdateHubProfileResponse = zHubProfile
+
+export const zCreateHubAssetUploadUrlData = z.object({
+  body: zHubAssetUploadUrlRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Presigned upload URL and token
+ */
+export const zCreateHubAssetUploadUrlResponse = zHubAssetUploadUrlResponse
+
+export const zListHubLabelsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      type: z.enum(['tag', 'model', 'custom_node']).optional()
+    })
+    .optional()
+})
+
+/**
+ * List of labels
+ */
+export const zListHubLabelsResponse = zHubLabelListResponse
+
+export const zListHubWorkflowsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      cursor: z.string().optional(),
+      limit: z.number().int().gte(1).lte(100).optional().default(20),
+      search: z.string().optional(),
+      tag: z.string().optional(),
+      username: z.string().optional(),
+      detail: z.boolean().optional().default(false),
+      status: z.array(zHubWorkflowStatus).optional()
+    })
+    .optional()
+})
+
+/**
+ * Paginated list of hub workflows
+ */
+export const zListHubWorkflowsResponse = zHubWorkflowListResponse
+
+export const zPublishHubWorkflowData = z.object({
+  body: zPublishHubWorkflowRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Workflow published to hub
+ */
+export const zPublishHubWorkflowResponse = zHubWorkflowDetail
+
+export const zListHubWorkflowIndexData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      status: z.array(zHubWorkflowStatus).optional()
+    })
+    .optional()
+})
+
+/**
+ * List of hub workflow template entries
+ */
+export const zListHubWorkflowIndexResponse = z.array(zHubWorkflowTemplateEntry)
+
+export const zDeleteHubWorkflowData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    share_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Successfully unpublished
+ */
+export const zDeleteHubWorkflowResponse = z.void()
+
+export const zGetHubWorkflowData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    share_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Hub workflow detail
+ */
+export const zGetHubWorkflowResponse = zHubWorkflowDetail
+
+export const zGetPublishedWorkflowData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    share_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Published workflow details with asset statuses
+ */
+export const zGetPublishedWorkflowResponse = zPublishedWorkflowDetail
+
+export const zGetExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * URL paths (relative to web root) of available extension JS files
+ */
+export const zGetExtensionsResponse = z.array(z.string())
+
+export const zGetNodeInfoSchemaData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetNodeByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetVhsViewVideoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    type: z.string().optional(),
+    subfolder: z.string().optional()
+  })
+})
+
+export const zGetVhsViewAudioData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    type: z.string().optional(),
+    subfolder: z.string().optional()
+  })
+})
+
+export const zGetVhsQueryVideoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+/**
+ * Video metadata
+ */
+export const zGetVhsQueryVideoResponse = z.object({
+  source: z.object({
+    size: z.tuple([z.number().int(), z.number().int()]),
+    fps: z.number(),
+    frames: z.number().int(),
+    duration: z.number()
+  })
+})
+
+export const zGetUsersInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Userdata storage information
+ */
+export const zGetUsersInfoResponse = z.object({
+  storage: z.string(),
+  migrated: z.boolean()
+})
+
+export const zGetApiViewVideoAliasData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetViewCompatAliasData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetWebsocketData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      clientId: z.string().optional()
+    })
+    .optional()
+})
+
+export const zGetTemplateProxyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetHealthData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Service is healthy
+ */
+export const zGetHealthResponse = z.string()
+
+export const zGetOpenapiSpecData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetMonitoringTasksData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zDeleteMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zPostMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetPprofData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetPprofProfileData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetPprofTraceData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zPostPprofSymbolData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetStaticExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetCustomNodeProxyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zPostCustomNodeProxyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyPromptByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    prompt_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyHistoryByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    prompt_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyJobByIdData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyJobOutputsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyModelsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetLegacyModelsByFolderData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    folder: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyObjectInfoByNodeClassData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    node_class: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyUserdataV2Data = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetLegacyAssetContentData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetLegacyViewMetadataData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    folder_name: z.string()
+  }),
+  query: z.never().optional()
+})

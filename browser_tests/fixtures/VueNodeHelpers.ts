@@ -3,17 +3,25 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from './selectors'
-import { VueNodeFixture } from './utils/vueNodeFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 export class VueNodeHelpers {
-  constructor(private page: Page) {}
-
   /**
    * Get locator for all Vue node components in the DOM
    */
-  get nodes(): Locator {
-    return this.page.locator('[data-node-id]')
+  public readonly nodes: Locator
+  /**
+   * Get locator for selected Vue node components (using visual selection indicators)
+   */
+  public readonly selectedNodes: Locator
+
+  constructor(private page: Page) {
+    this.nodes = page.locator('[data-node-id]')
+    this.selectedNodes = page.locator(
+      '[data-node-id].outline-node-component-outline'
+    )
   }
 
   /**
@@ -24,17 +32,37 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Get locator for selected Vue node components (using visual selection indicators)
+   * Get the inner wrapper element of a Vue node.
    */
-  get selectedNodes(): Locator {
-    return this.page.locator('[data-node-id].outline-node-component-outline')
+  getNodeInnerWrapper(nodeId: string): Locator {
+    return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  getInputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--input')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+        )
+      })
+  }
+
+  getInputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getInputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
   }
 
   /**
-   * Get locator for a Vue node by the node's title (displayed name in the header)
+   * Get locator for Vue nodes by the node's title (displayed name in the header).
+   * Matches against the actual title element, not the full node body.
+   * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
   getNodeByTitle(title: string): Locator {
-    return this.page.locator(`[data-node-id]`).filter({ hasText: title })
+    return this.page.locator('[data-node-id]').filter({
+      has: this.page.getByTestId('node-title').filter({ hasText: title })
+    })
   }
 
   /**
@@ -42,13 +70,6 @@ export class VueNodeHelpers {
    */
   async getNodeCount(): Promise<number> {
     return await this.nodes.count()
-  }
-
-  /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
   }
 
   /**
@@ -106,6 +127,14 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Select a node by ID and delete it.
+   */
+  async deleteNode(nodeId: string): Promise<void> {
+    await this.selectNode(nodeId)
+    await this.deleteSelected()
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
@@ -114,10 +143,9 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Return a DOM-focused VueNodeFixture for the first node matching the title.
-   * Resolves the node id up front so subsequent interactions survive title changes.
+   * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getNodeIdByTitle(title: string): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -128,6 +156,15 @@ export class VueNodeHelpers {
       )
     }
 
+    return nodeId
+  }
+
+  /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
+   */
+  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+    const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 
@@ -141,7 +178,7 @@ export class VueNodeHelpers {
         expectedCount
       )
     } else {
-      await this.page.waitForSelector('[data-node-id]')
+      await this.page.locator('[data-node-id]').first().waitFor()
     }
   }
 
@@ -152,6 +189,21 @@ export class VueNodeHelpers {
     return this.getNodeByTitle(nodeTitle).getByLabel(widgetName, {
       exact: true
     })
+  }
+
+  /**
+   * Select an option from a combo widget on a node.
+   */
+  async selectComboOption(
+    nodeTitle: string,
+    widgetName: string,
+    optionName: string
+  ): Promise<void> {
+    const node = this.getNodeByTitle(nodeTitle)
+    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
+    await this.page
+      .getByRole('option', { name: optionName, exact: true })
+      .click()
   }
 
   /**

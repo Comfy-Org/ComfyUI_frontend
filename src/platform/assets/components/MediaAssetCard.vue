@@ -44,7 +44,7 @@
         :context="{ type: assetType }"
         class="absolute inset-0"
         @view="handleZoomClick"
-        @download="actions.downloadAsset()"
+        @download="asset && actions.downloadAssets([asset])"
         @video-playing-state-changed="isVideoPlaying = $event"
         @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
@@ -122,6 +122,7 @@
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
+            :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             variant="secondary"
             @click.stop="handleOutputCountClick"
           >
@@ -135,12 +136,15 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -149,7 +153,6 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
@@ -157,7 +160,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -279,7 +282,8 @@ const formattedDuration = computed(() => {
 // Get metadata info based on file kind
 const metaInfo = computed(() => {
   if (!asset) return ''
-  if (fileKind.value === 'image' && imageDimensions.value) {
+  // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
+  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
     return `${imageDimensions.value.width}x${imageDimensions.value.height}`
   }
   if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
@@ -311,6 +315,13 @@ function dragStart(e: DragEvent) {
 
   const { dataTransfer } = e
   if (!dataTransfer) return
+
+  const { filename, subfolder, type } =
+    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
+  if (filename) {
+    const outputString = JSON.stringify({ filename, subfolder, type })
+    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
+  }
 
   const url = URL.parse(asset.preview_url, location.href)
   if (!url) return

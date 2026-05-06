@@ -129,6 +129,8 @@
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
+    "on": "On",
+    "off": "Off",
     "cancel": "Cancel",
     "close": "Close",
     "closeDialog": "Close dialog",
@@ -199,6 +201,7 @@
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
     "uploadAlreadyInProgress": "Upload already in progress",
+    "uploadTimedOut": "Upload timed out. Please try again.",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} node | {count} nodes",
@@ -207,6 +210,7 @@
     "filterByType": "Filter by {type}...",
     "mostRelevant": "Most relevant",
     "favorites": "Favorites",
+    "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
     "output": "Output",
@@ -226,6 +230,7 @@
     "warning": "Warning",
     "name": "Name",
     "category": "Category",
+    "categories": "Categories",
     "sort": "Sort",
     "source": "Source",
     "filter": "Filter",
@@ -278,8 +283,7 @@
     "clearAll": "Clear all",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
-    "itemSelected": "{selectedCount} item selected",
-    "itemsSelected": "{selectedCount} items selected",
+    "itemsSelected": "No items selected | {count} item selected | {count} items selected",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
@@ -367,6 +371,8 @@
     "preloadErrorTitle": "Loading Error",
     "recents": "Recents",
     "partner": "Partner",
+    "blueprints": "Blueprints",
+    "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },
@@ -377,6 +383,10 @@
     "actions": "Actions",
     "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "incompatibleVersion": {
+      "title": "ComfyUI-Manager upgrade required",
+      "message": "Please upgrade ComfyUI-Manager to version 4.2.1 or higher.\n• Desktop: Update the ComfyUI Desktop app\n• Standalone: Run pip install -U comfyui-manager and restart\nLearn more: https://github.com/Comfy-Org/ComfyUI-Manager"
+    },
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
@@ -1651,6 +1661,7 @@
     "conditioning": "conditioning",
     "loaders": "loaders",
     "guiders": "guiders",
+    "batch": "batch",
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
@@ -1658,8 +1669,6 @@
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
-    "utils": "utils",
-    "string": "string",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
@@ -1668,6 +1677,8 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
+    "utils": "utils",
+    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "math": "math",
@@ -1679,6 +1690,8 @@
     "scheduling": "scheduling",
     "create": "create",
     "deprecated": "deprecated",
+    "detection": "detection",
+    "": "",
     "debug": "debug",
     "model": "model",
     "ElevenLabs": "ElevenLabs",
@@ -1689,18 +1702,17 @@
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
-    "": "",
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
     "shader": "shader",
     "Grok": "Grok",
+    "Wan": "Wan",
     "HitPaw": "HitPaw",
     "sd": "sd",
     "Ideogram": "Ideogram",
-    "postprocessing": "postprocessing",
     "transform": "transform",
-    "batch": "batch",
+    "color": "color",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "compositing": "compositing",
@@ -1715,7 +1727,6 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "cond pair": "cond pair",
@@ -1733,10 +1744,12 @@
     "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
+    "Sonilo": "Sonilo",
     "Stability AI": "Stability AI",
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "supir": "supir",
     "Tencent": "Tencent",
     "textgen": "textgen",
     "Topaz": "Topaz",
@@ -1744,7 +1757,6 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "camera": "camera",
-    "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
@@ -1767,6 +1779,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
+    "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -1780,11 +1793,13 @@
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
     "GLIGEN": "GLIGEN",
     "GUIDER": "GUIDER",
+    "HISTOGRAM": "HISTOGRAM",
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
+    "INTERP_MODEL": "INTERP_MODEL",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -1812,6 +1827,7 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
     "STRING": "STRING",
@@ -1938,6 +1954,7 @@
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
+    "fitToViewer": "Fit to Viewer",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -1985,7 +2002,24 @@
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
-    "uploadingModel": "Uploading 3D model..."
+    "uploadingModel": "Uploading 3D model...",
+    "loadingHDRI": "Loading HDRI...",
+    "hdri": {
+      "label": "HDRI Environment",
+      "uploadFile": "Upload HDRI (.hdr, .exr)",
+      "changeFile": "Change HDRI",
+      "removeFile": "Remove HDRI",
+      "showAsBackground": "Show as Background",
+      "intensity": "Intensity"
+    },
+    "gizmo": {
+      "label": "Gizmo",
+      "toggle": "Gizmo",
+      "translate": "Translate",
+      "rotate": "Rotate",
+      "scale": "Scale",
+      "reset": "Reset Transform"
+    }
   },
   "imageCrop": {
     "loading": "Loading...",
@@ -2046,6 +2080,7 @@
     "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
+    "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
     "errorOpenImage": "Error opening image: {error}",
@@ -2080,7 +2115,11 @@
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
     "failedToUploadBackgroundImage": "Failed to upload background image",
-    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
+    "failedToLoadHDRI": "Failed to load HDRI file",
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
+    "failedToToggleGizmo": "Failed to toggle gizmo",
+    "failedToSetGizmoMode": "Failed to set gizmo mode"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -2357,6 +2396,7 @@
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
+    "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
       "benefit1FreeTier": "More monthly credits, top up anytime",
@@ -2698,6 +2738,7 @@
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
+    "blueprint": "Blueprint",
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
@@ -2744,56 +2785,64 @@
     "dontAskAgain": "Don't Ask Again",
     "loadError": "Failed to load survey. Please try again later."
   },
+  "errorPanelSurvey": {
+    "ctaText": "How's the new error panel?",
+    "ctaButton": "Give feedback"
+  },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
-      "steps": {
-        "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+      "intro": "Help us tailor your ComfyUI experience.",
+      "errors": {
+        "chooseAnOption": "Please choose an option.",
+        "selectAtLeastOne": "Please select at least one option.",
+        "describeAnswer": "Please describe your answer."
       },
-      "questions": {
+      "steps": {
+        "usage": "How do you plan to use ComfyUI?",
         "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+        "intent": "What do you want to create with ComfyUI?",
+        "source": "Where did you hear about ComfyUI?"
       },
       "options": {
+        "usage": {
+          "personal": "Personal use",
+          "work": "Work",
+          "education": "Education (student or educator)"
+        },
         "familiarity": {
-          "new": "New to ComfyUI (never used it before)",
-          "starting": "Just getting started (following tutorials)",
-          "basics": "Comfortable with basics",
-          "advanced": "Advanced user (custom workflows)",
-          "expert": "Expert (help others)"
+          "new": "New — never used it",
+          "starting": "Beginner — following tutorials",
+          "basics": "Intermediate — comfortable with basics",
+          "advanced": "Advanced — build and edit workflows",
+          "expert": "Expert — I help others"
         },
-        "purpose": {
-          "personal": "Personal projects / hobby",
-          "community": "Community contributions (nodes, workflows, etc.)",
-          "client": "Client work (freelance)",
-          "inhouse": "My own workplace (in-house)",
-          "research": "Academic research"
-        },
-        "industry": {
-          "film_tv_animation": "Film, TV, & animation",
-          "gaming": "Gaming",
-          "marketing": "Marketing & advertising",
-          "architecture": "Architecture",
-          "product_design": "Product & graphic design",
-          "fine_art": "Fine art & illustration",
-          "software": "Software & technology",
-          "education": "Education",
-          "other": "Other",
-          "otherPlaceholder": "Please specify"
-        },
-        "making": {
+        "intent": {
+          "workflows": "Custom workflows or pipelines",
+          "custom_nodes": "Custom nodes",
+          "videos": "Videos",
           "images": "Images",
-          "video": "Video & animation",
-          "3d": "3D assets",
+          "3d_game": "3D assets / game assets",
           "audio": "Audio / music",
-          "custom_nodes": "Custom nodes & workflows"
+          "apps": "Simplified Apps from workflows",
+          "api": "API endpoints to run workflows",
+          "not_sure": "Not sure"
+        },
+        "source": {
+          "youtube": "YouTube",
+          "reddit": "Reddit",
+          "twitter": "Twitter / X",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "friend": "Friend or colleague",
+          "search": "Google / search",
+          "newsletter": "Newsletter or blog",
+          "conference": "Conference or event",
+          "discord": "Discord / community",
+          "github": "GitHub",
+          "other": "Other"
         }
       }
     },
@@ -2863,10 +2912,10 @@
   "cloudForgotPassword_emailRequired": "Email is required",
   "cloudForgotPassword_passwordResetSent": "Password reset sent",
   "cloudForgotPassword_passwordResetError": "Failed to send password reset email",
+  "cloudSurvey_steps_usage": "How do you plan to use ComfyUI?",
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
-  "cloudSurvey_steps_purpose": "What will you primarily use ComfyUI for?",
-  "cloudSurvey_steps_industry": "What's your primary industry?",
-  "cloudSurvey_steps_making": "What do you plan on making?",
+  "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
+  "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
@@ -2932,7 +2981,9 @@
     "finish": "Finish",
     "importAnother": "Import Another",
     "genericLinkPlaceholder": "Paste link here",
+    "gridView": "Grid view",
     "jobId": "Job ID",
+    "listView": "List view",
     "loadingModels": "Loading {type}...",
     "maxFileSize": "Max file size: {size}",
     "maxFileSizeValue": "1 GB",
@@ -2964,6 +3015,7 @@
     "sortingType": "Sorting Type",
     "sortPopular": "Popular",
     "sortRecent": "Recent",
+    "sortUnsorted": "Unsorted",
     "sortZA": "Z-A",
     "tags": "Tags",
     "tagsHelp": "Separate tags with commas",
@@ -3166,6 +3218,7 @@
   },
   "comfyHubPublish": {
     "title": "Publish to ComfyHub",
+    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
@@ -3173,12 +3226,6 @@
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
-    "workflowType": "Workflow type",
-    "workflowTypePlaceholder": "Select the type",
-    "workflowTypeImageGeneration": "Image generation",
-    "workflowTypeVideoGeneration": "Video generation",
-    "workflowTypeUpscaling": "Upscaling",
-    "workflowTypeEditing": "Editing",
     "tags": "Tags",
     "tagsDescription": "Select tags so people can find your workflow faster",
     "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
@@ -3205,11 +3252,19 @@
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
     "uploadExampleImage": "Upload example image",
+    "removeExampleImage": "Remove example image",
     "exampleImage": "Example image {index}",
+    "exampleImagePosition": "Example image {index} of {total}",
     "videoPreview": "Video thumbnail preview",
     "maxExamples": "You can select up to {max} examples",
+    "shareAs": "Share as",
+    "additionalInfo": "Additional information",
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
-    "createProfileCta": "Create a profile"
+    "createProfileCta": "Create a profile",
+    "publishFailedTitle": "Publish failed",
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishSuccessTitle": "Published successfully",
+    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
@@ -3228,6 +3283,7 @@
     "namePlaceholder": "Enter your name here",
     "usernameLabel": "Your username (required)",
     "usernamePlaceholder": "@",
+    "usernameError": "3–42 lowercase alphanumeric characters and hyphens, must start and end with a letter or number",
     "descriptionLabel": "Your description",
     "descriptionPlaceholder": "Tell the community about yourself...",
     "createProfile": "Create profile",
@@ -3397,6 +3453,8 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
+    "editTitle": "Edit title",
+    "editSubgraph": "Edit subgraph",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
     "title": "No item(s) selected | 1 item selected | {count} items selected",
@@ -3522,12 +3580,40 @@
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
-      "downloadAll": "Download all"
+      "downloadAll": "Download all",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing missing models.",
+      "refreshFailed": "Failed to refresh missing models. Please try again."
+    },
+    "missingMedia": {
+      "missingMediaTitle": "Missing Inputs",
+      "image": "Images",
+      "video": "Videos",
+      "audio": "Audio",
+      "locateNode": "Locate node",
+      "expandNodes": "Show referencing nodes",
+      "collapseNodes": "Hide referencing nodes",
+      "uploadFile": "Upload {type}",
+      "uploading": "Uploading...",
+      "uploaded": "Uploaded",
+      "selectedFromLibrary": "Selected from library",
+      "useFromLibrary": "Use from Library",
+      "confirmSelection": "Confirm selection",
+      "cancelSelection": "Cancel selection",
+      "or": "OR"
     }
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORS",
-    "seeErrors": "See Errors"
+    "seeErrors": "See Errors",
+    "showMissingNodes": "Show missing nodes",
+    "showMissingModels": "Show missing models",
+    "showSwapNodes": "Show swap nodes",
+    "showMissingMedia": "Show missing inputs",
+    "missingNodes": "Some nodes are missing and need to be installed",
+    "missingModels": "{count} required model is missing | {count} required models are missing",
+    "swapNodes": "Some nodes can be replaced with alternatives",
+    "missingMedia": "Some nodes are missing required inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -3671,27 +3757,30 @@
     "outputsDescription": "Choose outputs",
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
-    "defaultView": "Set a default view",
-    "defaultViewDescription": "Choose how this opens",
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
     "connectOutputBody2": "Switch to the 'Output' step and click on output nodes to add them here.",
     "switchToOutputs": "Switch to Outputs",
-    "defaultViewTitle": "Set the default view for this workflow",
     "defaultViewLabel": "By default, this workflow will open as:",
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
     "nodeGraphDescription": "Opens as node graph by default",
-    "defaultModeAppliedTitle": "Successfully set",
-    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
-    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
-    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
-    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
     "viewApp": "View app",
-    "exitToWorkflow": "Exit to workflow",
+    "saveAs": "Save as",
+    "filename": "Filename",
     "emptyWorkflowTitle": "This workflow has no nodes",
     "emptyWorkflowPrompt": "Do you want to start with a template?"
+  },
+  "builderFooter": {
+    "opensAsApp": "Open as an {mode}",
+    "opensAsGraph": "Open as a {mode}"
+  },
+  "builderSave": {
+    "successTitle": "Successfully saved",
+    "successBody": "Would you like to view it now?",
+    "successBodyApp": "This workflow will open in App Mode by default from now on.\n\nWould you like to view it now?",
+    "successBodyGraph": "This workflow will open as a node graph."
   },
   "builderMenu": {
     "enterAppMode": "Enter app mode",
@@ -3707,5 +3796,18 @@
     "footer": "ComfyUI stays free and open source. Cloud is optional.",
     "continueLocally": "Continue Locally",
     "exploreCloud": "Try Cloud for Free"
+  },
+  "execution": {
+    "generating": "Generating…",
+    "saving": "Saving…",
+    "loading": "Loading…",
+    "encoding": "Encoding…",
+    "decoding": "Decoding…",
+    "processing": "Processing…",
+    "resizing": "Resizing…",
+    "generatingVideo": "Generating video…",
+    "training": "Training…",
+    "processingVideo": "Processing video…",
+    "running": "Running…"
   }
 }

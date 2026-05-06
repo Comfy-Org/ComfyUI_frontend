@@ -8,7 +8,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
-  NodeId
+  NodeId,
+  WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
@@ -18,6 +19,7 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
+  JobId,
   NodeProgressState,
   NotificationWsMessage,
   ProgressStateWsMessage,
@@ -82,26 +84,26 @@ export const useExecutionStore = defineStore('execution', () => {
   const executionErrorStore = useExecutionErrorStore()
 
   const clientId = ref<string | null>(null)
-  const activeJobId = ref<string | null>(null)
+  const activeJobId = ref<JobId | null>(null)
   const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
-    Record<string, Record<string, NodeProgressState>>
+    Record<JobId, Record<string, NodeProgressState>>
   >({})
 
   /**
    * Map of job ID to workflow ID for quick lookup across the app.
    */
-  const jobIdToWorkflowId = ref<Map<string, string>>(new Map())
+  const jobIdToWorkflowId = ref<Map<JobId, WorkflowId>>(new Map())
 
   /**
    * Map of job ID to workflow file path in the current session.
    * Only populated for jobs that are queued in this browser tab.
    */
-  const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
+  const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
 
-  const initializingJobIds = ref<Set<string>>(new Set())
+  const initializingJobIds = ref<Set<JobId>>(new Set())
 
   /**
    * Cache for executionIdToNodeLocatorId lookups.
@@ -469,7 +471,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  function clearInitializationByJobId(jobId: string | null) {
+  function clearInitializationByJobId(jobId: JobId | null) {
     if (!jobId) return
     if (!initializingJobIds.value.has(jobId)) return
     const next = new Set(initializingJobIds.value)
@@ -477,7 +479,7 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingJobIds.value = next
   }
 
-  function clearInitializationByJobIds(jobIds: string[]) {
+  function clearInitializationByJobIds(jobIds: JobId[]) {
     if (!jobIds.length) return
     const current = initializingJobIds.value
     const toRemove = jobIds.filter((id) => current.has(id))
@@ -489,14 +491,14 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingJobIds.value = next
   }
 
-  function reconcileInitializingJobs(activeJobIds: Set<string>) {
+  function reconcileInitializingJobs(activeJobIds: Set<JobId>) {
     const orphaned = [...initializingJobIds.value].filter(
       (id) => !activeJobIds.has(id)
     )
     clearInitializationByJobIds(orphaned)
   }
 
-  function isJobInitializing(jobId: string | number | undefined): boolean {
+  function isJobInitializing(jobId: JobId | number | undefined): boolean {
     if (!jobId) return false
     return initializingJobIds.value.has(String(jobId))
   }
@@ -504,7 +506,7 @@ export const useExecutionStore = defineStore('execution', () => {
   /**
    * Reset execution-related state after a run completes or is stopped.
    */
-  function resetExecutionState(jobIdParam?: string | null) {
+  function resetExecutionState(jobIdParam?: JobId | null) {
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
@@ -540,7 +542,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
-    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
+    const node = canvasStore.canvas?.graph?.getNodeById(currentId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
@@ -553,7 +555,7 @@ export const useExecutionStore = defineStore('execution', () => {
     workflow
   }: {
     nodes: string[]
-    id: string
+    id: JobId
     promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
   }) {
@@ -570,17 +572,17 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.workflow = workflow
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
-      jobIdToWorkflowId.value.set(String(id), String(wid))
+      jobIdToWorkflowId.value.set(id, wid)
     }
     if (workflow?.path) {
-      ensureSessionWorkflowPath(String(id), workflow.path)
+      ensureSessionWorkflowPath(id, workflow.path)
     }
   }
 
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
   const MAX_SESSION_PATH_ENTRIES = 4000
 
-  function ensureSessionWorkflowPath(jobId: string, path: string) {
+  function ensureSessionWorkflowPath(jobId: JobId, path: string) {
     if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
@@ -595,9 +597,9 @@ export const useExecutionStore = defineStore('execution', () => {
   /**
    * Register or update a mapping from job ID to workflow ID.
    */
-  function registerJobWorkflowIdMapping(jobId: string, workflowId: string) {
+  function registerJobWorkflowIdMapping(jobId: JobId, workflowId: WorkflowId) {
     if (!jobId || !workflowId) return
-    jobIdToWorkflowId.value.set(String(jobId), String(workflowId))
+    jobIdToWorkflowId.value.set(jobId, workflowId)
   }
 
   /**
@@ -612,8 +614,8 @@ export const useExecutionStore = defineStore('execution', () => {
     return executionId
   }
 
-  const runningJobIds = computed<string[]>(() => {
-    const result: string[] = []
+  const runningJobIds = computed<JobId[]>(() => {
+    const result: JobId[] = []
     for (const [pid, nodes] of Object.entries(nodeProgressStatesByJob.value)) {
       if (Object.values(nodes).some((n) => n.state === 'running')) {
         result.push(pid)

@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type {
@@ -5,12 +6,12 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {
   collectMissingNodes,
   graphHasMissingNodes
 } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 import type { NodeDefLookup } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 type NodeDefs = NodeDefLookup
 
@@ -18,23 +19,23 @@ let nodeIdCounter = 0
 const mockNodeDef = {} as ComfyNodeDefImpl
 
 const createGraph = (nodes: LGraphNode[] = []): LGraph => {
-  return { nodes } as Partial<LGraph> as LGraph
+  return fromPartial<LGraph>({ nodes })
 }
 
 const createSubgraph = (nodes: LGraphNode[]): Subgraph => {
-  return { nodes } as Partial<Subgraph> as Subgraph
+  return fromPartial<Subgraph>({ nodes })
 }
 
 const createNode = (
   type?: string,
   subgraphNodes?: LGraphNode[]
 ): LGraphNode => {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: nodeIdCounter++,
     type,
     isSubgraphNode: subgraphNodes ? () => true : undefined,
     subgraph: subgraphNodes ? createSubgraph(subgraphNodes) : undefined
-  } as unknown as LGraphNode
+  })
 }
 
 describe('graphHasMissingNodes', () => {

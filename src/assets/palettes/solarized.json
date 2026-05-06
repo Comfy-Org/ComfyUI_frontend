@@ -19,9 +19,7 @@
     "litegraph_base": {
       "NODE_TITLE_COLOR": "#fdf6e3",
       "NODE_SELECTED_TITLE_COLOR": "#A9D400",
-      "NODE_TEXT_SIZE": 14,
       "NODE_TEXT_COLOR": "#657b83",
-      "NODE_SUBTEXT_SIZE": 12,
       "NODE_DEFAULT_COLOR": "#094656",
       "NODE_DEFAULT_BGCOLOR": "#073642",
       "NODE_DEFAULT_BOXCOLOR": "#839496",
@@ -30,7 +28,6 @@
       "NODE_BYPASS_BGCOLOR": "#FF00FF",
       "NODE_ERROR_COLOUR": "#E00",
       "DEFAULT_SHADOW_COLOR": "rgba(0,0,0,0.5)",
-      "DEFAULT_GROUP_FONT": 24,
       "WIDGET_BGCOLOR": "#002b36",
       "WIDGET_OUTLINE_COLOR": "#839496",
       "WIDGET_TEXT_COLOR": "#fdf6e3",

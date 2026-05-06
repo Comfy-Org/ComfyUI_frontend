@@ -143,11 +143,16 @@
             <Button
               v-if="shouldShowDeleteButton"
               size="icon"
+              data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button size="icon" @click="handleDownloadSelected">
+            <Button
+              size="icon"
+              data-testid="assets-download-selected"
+              @click="handleDownloadSelected"
+            >
               <i class="icon-[lucide--download] size-4" />
             </Button>
           </template>
@@ -156,12 +161,17 @@
             <Button
               v-if="shouldShowDeleteButton"
               variant="secondary"
+              data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
               <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button variant="secondary" @click="handleDownloadSelected">
+            <Button
+              variant="secondary"
+              data-testid="assets-download-selected"
+              @click="handleDownloadSelected"
+            >
               <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
               <i class="icon-[lucide--download] size-4" />
             </Button>
@@ -246,7 +256,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -317,7 +327,7 @@ const {
 } = useAssetSelection()
 
 const {
-  downloadMultipleAssets,
+  downloadAssets,
   deleteAssets,
   addMultipleToWorkflow,
   openMultipleWorkflows,
@@ -523,7 +533,7 @@ function handleContextMenuHide() {
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
-  downloadMultipleAssets(assets)
+  downloadAssets(assets)
   clearSelection()
 }
 
@@ -549,7 +559,7 @@ const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
 }
 
 const handleDownloadSelected = () => {
-  downloadMultipleAssets(selectedAssets.value)
+  downloadAssets(selectedAssets.value)
   clearSelection()
 }
 

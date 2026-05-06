@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-4">
-    <div v-if="!hasBackgroundImage">
+    <div v-if="!hasBackgroundImage" class="flex flex-col gap-2">
       <label>
         {{ $t('load3d.backgroundColor') }}
       </label>
-      <input v-model="backgroundColor" type="color" class="w-full" />
+      <input v-model="backgroundColor" type="color" class="h-8 w-full" />
     </div>
 
     <div>

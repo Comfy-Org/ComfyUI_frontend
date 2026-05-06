@@ -1,4 +1,4 @@
-import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
+import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -29,11 +29,11 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import {
   createPromotedWidgetView,
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
+import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -76,7 +76,7 @@ const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
 
-  override readonly type: UUID
+  override readonly type: SubgraphId
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
@@ -450,6 +450,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
       const sourceNode = this.subgraph.getNodeById(entry.sourceNodeId)
       if (!sourceNode) return linkedWidgetNames.has(entry.sourceWidgetName)
+      if (sourceNode.type === 'PrimitiveNode') return true
 
       const hasSourceWidget =
         sourceNode.widgets?.some(
@@ -515,6 +516,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const prunedEntries: PromotedWidgetSource[] = []
 
     for (const entry of fallbackStoredEntries) {
+      if (!this.subgraph.getNodeById(entry.sourceNodeId)) continue
+
       const concreteKey = this._resolveConcretePromotionEntryKey(entry)
       if (concreteKey && linkedConcreteKeys.has(concreteKey)) continue
 
@@ -882,8 +885,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           usePromotionStore().demote(this.rootGraph.id, this.id, source)
         }
 
-        const didSetWidgetFromEvent = !input._widget
-        if (didSetWidgetFromEvent)
+        const boundWidget =
+          input._widget && isPromotedWidgetView(input._widget)
+            ? input._widget
+            : undefined
+        const hasStaleBoundWidget =
+          boundWidget &&
+          this.subgraph
+            .getNodeById(boundWidget.sourceNodeId)
+            ?.widgets?.some(
+              (widget) => widget.name === boundWidget.sourceWidgetName
+            ) !== true
+
+        const shouldSetWidgetFromEvent = !input._widget || hasStaleBoundWidget
+        if (shouldSetWidgetFromEvent)
           this._setWidget(
             subgraphInput,
             input,
@@ -1063,20 +1078,23 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           }
           return null
         }
-        const entry: PromotedWidgetSource = {
-          sourceNodeId: nodeId,
-          sourceWidgetName: widgetName,
-          ...(sourceNodeId && { disambiguatingSourceNodeId: sourceNodeId })
-        }
-        return entry
+        if (!this.subgraph.getNodeById(nodeId)) return null
+
+        return normalizeLegacyProxyWidgetEntry(
+          this,
+          nodeId,
+          widgetName,
+          sourceNodeId
+        )
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
 
     store.setPromotions(this.rootGraph.id, this.id, entries)
 
-    // Write back resolved entries so legacy -1 format doesn't persist
-    if (raw.some(([id]) => id === '-1')) {
-      this.properties.proxyWidgets = this._serializeEntries(entries)
+    // Write back resolved entries so legacy or stale entries don't persist
+    const serialized = this._serializeEntries(entries)
+    if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
+      this.properties.proxyWidgets = serialized
     }
 
     // Check all inputs for connected widgets
@@ -1106,6 +1124,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (store.isPromoted(this.rootGraph.id, this.id, source)) continue
       store.promote(this.rootGraph.id, this.id, source)
     }
+  }
+
+  /**
+   * Clears all cached promoted widget views and re-resolves `input._widget`
+   * bindings from the current subgraph connections.  Called after ancestor
+   * promotions are repointed during nested subgraph packing.
+   */
+  rebuildInputWidgetBindings(): void {
+    this._promotedViewManager.clear()
+    this._invalidatePromotedViewsCache()
+
+    for (const input of this.inputs) {
+      delete input.widget
+      delete input.pos
+      input._widget = undefined
+      const subgraphInput = input._subgraphSlot
+      if (!subgraphInput) continue
+      this._resolveInputWidget(subgraphInput, input)
+    }
+
+    this._syncPromotions()
   }
 
   private _resolveInputWidget(

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
+import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const {
@@ -8,7 +9,8 @@ const {
   mockGetAuthHeader,
   mockUserId,
   mockIsCloud,
-  mockGetCheckoutAttribution
+  mockGetCheckoutAttribution,
+  mockLocalStorage
 } = vi.hoisted(() => ({
   mockTelemetry: {
     trackBeginCheckout: vi.fn()
@@ -29,21 +31,50 @@ const {
     gclid: 'gclid-123',
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
-  }))
+  })),
+  mockLocalStorage: (() => {
+    const store = new Map<string, string>()
+
+    return {
+      getItem: vi.fn((key: string) => store.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value)
+      }),
+      removeItem: vi.fn((key: string) => {
+        store.delete(key)
+      }),
+      clear: vi.fn(() => {
+        store.clear()
+      }),
+      __reset: () => {
+        store.clear()
+      }
+    }
+  })()
 }))
+
+Object.defineProperty(window, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() =>
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() =>
     reactive({
       getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     })
   ),
-  FirebaseAuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {}
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -81,16 +112,20 @@ describe('performSubscriptionCheckout', () => {
     vi.clearAllMocks()
     mockIsCloud.value = true
     mockUserId.value = 'user-123'
+    mockLocalStorage.__reset()
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
     setDistribution('localhost')
+    mockLocalStorage.__reset()
   })
 
   it('tracks begin_checkout with user id and tier metadata', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => window as unknown as Window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -175,7 +210,9 @@ describe('performSubscriptionCheckout', () => {
 
   it('uses the latest userId when it changes after checkout starts', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => window as unknown as Window)
     const authHeader = createDeferred<{ Authorization: string }>()
 
     mockUserId.value = 'user-early'
@@ -202,5 +239,22 @@ describe('performSubscriptionCheckout', () => {
       })
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('does not persist a pending attempt when the checkout popup is blocked', async () => {
+    const checkoutUrl = 'https://checkout.stripe.com/test'
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: checkoutUrl })
+    } as Response)
+
+    await performSubscriptionCheckout('pro', 'monthly', true)
+
+    expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+    expect(
+      window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    ).toBeNull()
   })
 })

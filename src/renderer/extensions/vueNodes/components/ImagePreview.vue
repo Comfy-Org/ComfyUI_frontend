@@ -14,7 +14,7 @@
       <button
         v-for="(url, index) in imageUrls"
         :key="index"
-        class="focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+        class="focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:outline-none"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
@@ -117,7 +117,11 @@
       v-if="viewMode === 'gallery'"
       class="pt-2 text-center text-xs text-base-foreground"
     >
-      <span v-if="imageError" class="text-error">
+      <span
+        v-if="imageError"
+        class="text-error"
+        data-testid="error-loading-image"
+      >
         {{ $t('g.errorLoadingImage') }}
       </span>
       <span v-else-if="showLoader" class="text-base-foreground">
@@ -172,7 +176,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -189,7 +193,7 @@ const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
 
 const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
+  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
 
 type ViewMode = 'gallery' | 'grid'
 

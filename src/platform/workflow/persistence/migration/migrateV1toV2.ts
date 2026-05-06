@@ -10,7 +10,12 @@ import type { DraftIndexV2 } from '../base/draftTypes'
 import { upsertEntry, createEmptyIndex } from '../base/draftCacheV2'
 import { hashPath } from '../base/hashUtil'
 import { getWorkspaceId } from '../base/storageKeys'
-import { readIndex, writeIndex, writePayload } from '../base/storageIO'
+import {
+  readIndex,
+  writeIndex,
+  writeOpenPaths,
+  writePayload
+} from '../base/storageIO'
 
 /**
  * V1 draft snapshot structure (from draftCache.ts)
@@ -27,7 +32,9 @@ interface V1DraftSnapshot {
  */
 const V1_KEYS = {
   drafts: (workspaceId: string) => `Comfy.Workflow.Drafts:${workspaceId}`,
-  order: (workspaceId: string) => `Comfy.Workflow.DraftOrder:${workspaceId}`
+  order: (workspaceId: string) => `Comfy.Workflow.DraftOrder:${workspaceId}`,
+  openPaths: 'Comfy.OpenWorkflowsPaths',
+  activeIndex: 'Comfy.ActiveWorkflowIndex'
 }
 
 /**
@@ -64,7 +71,10 @@ function readV1Drafts(
  *
  * @returns Number of drafts migrated, or -1 if migration not needed/failed
  */
-export function migrateV1toV2(workspaceId: string = getWorkspaceId()): number {
+export function migrateV1toV2(
+  workspaceId: string = getWorkspaceId(),
+  clientId?: string
+): number {
   // Check if V2 already exists
   if (isV2MigrationComplete(workspaceId)) {
     return -1
@@ -116,10 +126,46 @@ export function migrateV1toV2(workspaceId: string = getWorkspaceId()): number {
     return -1
   }
 
+  // Migrate V1 tab state pointers to V2 sessionStorage format.
+  // V1 used setStorageValue which stored tab state in localStorage as fallback.
+  // V2 uses sessionStorage keyed by clientId. Without this migration,
+  // users upgrading from V1 lose their open tab list.
+  migrateV1TabState(workspaceId, clientId)
+
   if (migrated > 0) {
     console.warn(`[V2 Migration] Migrated ${migrated} drafts from V1 to V2`)
   }
   return migrated
+}
+
+/**
+ * Migrates V1 tab state (open paths + active index) to V2 format.
+ * V1 stored these in localStorage via setStorageValue fallback.
+ * V2 uses sessionStorage keyed by clientId.
+ */
+function migrateV1TabState(workspaceId: string, clientId?: string): void {
+  if (!clientId) return
+
+  try {
+    const pathsJson = localStorage.getItem(V1_KEYS.openPaths)
+    if (!pathsJson) return
+
+    const paths = JSON.parse(pathsJson)
+    if (!Array.isArray(paths) || paths.length === 0) return
+
+    const indexJson = localStorage.getItem(V1_KEYS.activeIndex)
+    let activeIndex = 0
+    if (indexJson !== null) {
+      const parsed = JSON.parse(indexJson)
+      if (typeof parsed === 'number' && Number.isFinite(parsed)) {
+        activeIndex = Math.min(Math.max(0, parsed), paths.length - 1)
+      }
+    }
+
+    writeOpenPaths(clientId, { workspaceId, paths, activeIndex })
+  } catch {
+    // Best effort - don't block draft migration on tab state errors
+  }
 }
 
 /**

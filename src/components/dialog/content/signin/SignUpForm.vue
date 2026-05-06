@@ -15,9 +15,10 @@
       </label>
       <InputText
         pt:root:id="comfy-org-sign-up-email"
+        pt:root:name="email"
         pt:root:autocomplete="email"
         class="h-10"
-        type="text"
+        type="email"
         :placeholder="t('auth.signup.emailPlaceholder')"
         :invalid="$field.invalid"
       />
@@ -54,12 +55,12 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import PasswordFields from './PasswordFields.vue'
 
 const { t } = useI18n()
-const authStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
 const emit = defineEmits<{

@@ -116,12 +116,12 @@ import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {
@@ -133,8 +133,8 @@ interface CreditHistoryItemData {
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const dialogService = useDialogService()
-const authStore = useFirebaseAuthStore()
-const authActions = useFirebaseAuthActions()
+const authStore = useAuthStore()
+const authActions = useAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 const { isActiveSubscription } = useBillingContext()

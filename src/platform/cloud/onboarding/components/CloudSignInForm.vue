@@ -89,9 +89,9 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
-const authStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()

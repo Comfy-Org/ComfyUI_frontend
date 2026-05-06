@@ -3,10 +3,8 @@ name: 'CI: Performance Report'
 on:
   push:
     branches: [main, core/*]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
 
 concurrency:
   group: perf-${{ github.ref }}
@@ -16,12 +14,24 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   perf-tests:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.12
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -57,21 +67,6 @@ jobs:
           path: test-results/perf-metrics.json
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Save PR metadata
-        if: github.event_name == 'pull_request'
-        run: |
-          mkdir -p temp/perf-meta
-          echo "${{ github.event.number }}" > temp/perf-meta/number.txt
-          echo "${{ github.event.pull_request.base.ref }}" > temp/perf-meta/base.txt
-          echo "${{ github.event.pull_request.head.sha }}" > temp/perf-meta/head-sha.txt
-
-      - name: Upload PR metadata
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v6
-        with:
-          name: perf-meta
-          path: temp/perf-meta/
 
       - name: Save perf baseline to perf-data branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'

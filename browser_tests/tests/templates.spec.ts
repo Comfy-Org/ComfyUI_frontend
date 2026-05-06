@@ -1,7 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -14,10 +16,6 @@ async function checkTemplateFileExists(
 }
 
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('should have a JSON workflow file for each template', async ({
     comfyPage
   }) => {
@@ -32,8 +30,13 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   })
 
-  // TODO: Re-enable this test once issue resolved
+  // Flaky: /templates is proxied to an external server, so thumbnail
+  // availability varies across CI runs.
+  // FIX: Make hermetic — fixture index.json and thumbnail responses via
+  // page.route(), and change checkTemplateFileExists to use browser-context
+  // fetch (page.request.head bypasses Playwright routing).
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
+  // oxlint-disable-next-line playwright/no-skipped-test -- https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
   test.skip('should have all required thumbnail media for each template', async ({
     comfyPage
   }) => {
@@ -72,9 +75,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect(async () => {
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-    }).toPass({ timeout: 250 })
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -87,9 +88,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(comfyPage.templates.content).toBeHidden()
 
     // Ensure we now have some nodes
-    await expect(async () => {
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
-    }).toPass({ timeout: 250 })
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(0)
   })
 
   test('dialog should be automatically shown to first-time users', async ({
@@ -102,7 +103,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.setup({ clearStorage: true })
 
     // Expect the templates dialog to be shown
-    expect(await comfyPage.templates.content.isVisible()).toBe(true)
+    await expect(comfyPage.templates.content).toBeVisible()
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
@@ -110,9 +111,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
 
-    const dialog = comfyPage.page.getByRole('dialog').filter({
-      has: comfyPage.page.getByRole('heading', { name: 'Modèles', exact: true })
-    })
+    const dialog = comfyPage.templatesDialog.filterByHeading('Modèles')
     await expect(dialog).toBeVisible()
 
     // Validate that French-localized strings from the templates index are rendered
@@ -183,8 +182,8 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await comfyPage.templates.content.waitFor({ state: 'visible' })
 
-    const templateGrid = comfyPage.page.locator(
-      '[data-testid="template-workflows-content"]'
+    const templateGrid = comfyPage.page.getByTestId(
+      'template-workflows-content'
     )
     const nav = comfyPage.page.locator('header', { hasText: 'Templates' })
 
@@ -207,6 +206,30 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test(
+    'select components in filter bar render correctly',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+      await expect(comfyPage.templates.content).toBeVisible()
+
+      // Wait for filter bar select components to render
+      const sortBySelect = comfyPage.templatesDialog.getCombobox(/Sort/)
+      await expect(sortBySelect).toBeVisible()
+
+      // Screenshot the filter bar containing MultiSelect and SingleSelect
+      const filterBar = sortBySelect.locator(
+        'xpath=ancestor::div[contains(@class, "justify-between")]'
+      )
+      await expect(filterBar).toHaveScreenshot(
+        'template-filter-bar-select-components.png',
+        {
+          mask: [comfyPage.page.locator('.p-toast')]
+        }
+      )
+    }
+  )
+
+  test(
     'template cards descriptions adjust height dynamically',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
@@ -214,7 +237,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.page.route(
         '**/templates/index.json',
         async (route, _) => {
-          const response = [
+          const response: WorkflowTemplates[] = [
             {
               moduleName: 'default',
               title: 'Test Templates',
@@ -276,20 +299,18 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
       // Wait for cards to load
       await expect(
-        comfyPage.page.locator(
-          '[data-testid="template-workflow-short-description"]'
-        )
-      ).toBeVisible({ timeout: 5000 })
+        comfyPage.page.getByTestId('template-workflow-short-description')
+      ).toBeVisible()
 
       // Verify all three cards with different descriptions are visible
-      const shortDescCard = comfyPage.page.locator(
-        '[data-testid="template-workflow-short-description"]'
+      const shortDescCard = comfyPage.page.getByTestId(
+        'template-workflow-short-description'
       )
-      const mediumDescCard = comfyPage.page.locator(
-        '[data-testid="template-workflow-medium-description"]'
+      const mediumDescCard = comfyPage.page.getByTestId(
+        'template-workflow-medium-description'
       )
-      const longDescCard = comfyPage.page.locator(
-        '[data-testid="template-workflow-long-description"]'
+      const longDescCard = comfyPage.page.getByTestId(
+        'template-workflow-long-description'
       )
 
       await expect(shortDescCard).toBeVisible()
@@ -307,12 +328,79 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(longDesc).toContainText('much longer description')
 
       // Verify grid layout maintains consistency
-      const templateGrid = comfyPage.page.locator(
-        '[data-testid="template-workflows-content"]'
+      const templateGrid = comfyPage.page.getByTestId(
+        'template-workflows-content'
       )
       await expect(templateGrid).toBeVisible()
       await expect(templateGrid).toHaveScreenshot(
         'template-grid-varying-content.png'
+      )
+    }
+  )
+
+  test(
+    'template cards display overlay tags correctly',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.page.route('**/templates/index.json', async (route) => {
+        const response = [
+          {
+            moduleName: 'default',
+            title: 'Test Templates',
+            type: 'image',
+            templates: [
+              {
+                name: 'tagged-template',
+                title: 'Tagged Template',
+                mediaType: 'image',
+                mediaSubtype: 'webp',
+                description: 'A template with tags.',
+                tags: ['Relight', 'Image Edit']
+              },
+              {
+                name: 'no-tags',
+                title: 'No Tags',
+                mediaType: 'image',
+                mediaSubtype: 'webp',
+                description: 'A template without tags.'
+              }
+            ]
+          }
+        ]
+        await route.fulfill({
+          status: 200,
+          body: JSON.stringify(response),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
+        })
+      })
+
+      await comfyPage.page.route('**/templates/**.webp', async (route) => {
+        await route.fulfill({
+          status: 200,
+          path: 'browser_tests/assets/example.webp',
+          headers: {
+            'Content-Type': 'image/webp',
+            'Cache-Control': 'no-store'
+          }
+        })
+      })
+
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+      await expect(comfyPage.templates.content).toBeVisible()
+
+      const taggedCard = comfyPage.page.getByTestId(
+        TestIds.templates.workflowCard('tagged-template')
+      )
+      await expect(taggedCard).toBeVisible()
+      await expect(taggedCard.getByText('Relight')).toBeVisible()
+      await expect(taggedCard.getByText('Image Edit')).toBeVisible()
+
+      const templateGrid = comfyPage.page.getByTestId(TestIds.templates.content)
+      await expect(templateGrid).toHaveScreenshot(
+        'template-cards-with-overlay-tags.png'
       )
     }
   )

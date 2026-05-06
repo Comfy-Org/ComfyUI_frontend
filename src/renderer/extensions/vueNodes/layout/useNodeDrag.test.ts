@@ -1,12 +1,20 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+
 import type { NodeLayout } from '@/renderer/core/layout/types'
 
+// TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
+// of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
 const testState = vi.hoisted(() => {
+  // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
+  // be used here. This local identity function serves the same purpose
+  // (runtime no-op cast) until the test is rewritten to use real stores.
+  const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: null as unknown as Ref<Set<string>>,
-    selectedItems: null as unknown as Ref<unknown[]>,
+    selectedNodeIds: placeholder<Ref<Set<string>>>(null),
+    selectedItems: placeholder<Ref<unknown[]>>(null),
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       setSource: vi.fn(),
@@ -114,12 +122,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   const target = document.createElement('div')
   target.hasPointerCapture = vi.fn(() => false)
   target.setPointerCapture = vi.fn()
-  return {
-    clientX,
-    clientY,
-    target,
-    pointerId: 1
-  } as unknown as PointerEvent
+  return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
 describe('useNodeDrag', () => {

@@ -35,14 +35,14 @@
 
         <!-- OAuth Buttons (primary) -->
         <div class="flex flex-col gap-4">
-          <div class="relative">
+          <div v-if="!googleSsoBlockedReason" class="relative">
             <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
               <i class="pi pi-google mr-2"></i>
               {{ t('auth.signup.signUpWithGoogle') }}
             </Button>
             <span
               v-if="isFreeTierEnabled"
-              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-gray-900"
+              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-gray-900"
             >
               {{ t('auth.login.freeTierBadge') }}
             </span>
@@ -133,7 +133,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { isCloud } from '@/platform/distribution/types'
@@ -141,11 +141,12 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
@@ -158,6 +159,7 @@ const {
   switchToEmailForm,
   switchToSocialLogin
 } = useFreeTierOnboarding()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })

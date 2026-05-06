@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -47,7 +48,7 @@ vi.mock('@/utils/executableGroupNodeDto', () => ({
   isGroupNode: vi.fn(() => false)
 }))
 
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
@@ -80,8 +81,7 @@ describe('swapNodeGroups computed', () => {
   })
 
   function getSwapNodeGroups(nodeTypes: MissingNodeType[]) {
-    const store = useExecutionErrorStore()
-    store.surfaceMissingNodes(nodeTypes)
+    useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 
     const searchQuery = ref('')
     const t = (key: string) => key
@@ -160,7 +160,7 @@ describe('swapNodeGroups computed', () => {
 
   it('excludes string nodeType entries', async () => {
     const swap = getSwapNodeGroups([
-      'StringGroupNode' as unknown as MissingNodeType,
+      fromAny<MissingNodeType, unknown>('StringGroupNode'),
       makeMissingNodeType('OldNode', {
         nodeId: '1',
         isReplaceable: true,

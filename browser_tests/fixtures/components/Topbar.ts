@@ -1,14 +1,23 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
+  readonly newWorkflowButton: Locator
+  readonly workflowTabs: Locator
+  readonly integratedTabBarActions: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
+    this.newWorkflowButton = page.locator('.new-blank-workflow-button')
+    this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.integratedTabBarActions = this.workflowTabs.getByTestId(
+      TestIds.topbar.integratedTabBarActions
+    )
   }
 
   async getTabNames(): Promise<string[]> {
@@ -56,9 +65,20 @@ export class Topbar {
       .locator('..')
   }
 
+  getTab(index: number): Locator {
+    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+  }
+
+  getActiveTab(): Locator {
+    return this.page.locator(
+      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
+    )
+  }
+
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
-    await tab.getByRole('button', { name: 'Close' }).click({ force: true })
+    await tab.hover()
+    await tab.locator('.close-button').click()
   }
 
   getSaveDialog(): Locator {
@@ -92,7 +112,7 @@ export class Topbar {
       { timeout: 3000 }
     )
     // Wait for the dialog to close.
-    await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
+    await this.getSaveDialog().waitFor({ state: 'hidden' })
 
     // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
     // If so, return early to let the test handle the confirmation
@@ -124,6 +144,27 @@ export class Topbar {
   async closeTopbarMenu() {
     await this.page.locator('body').click({ position: { x: 300, y: 10 } })
     await this.menuLocator.waitFor({ state: 'hidden' })
+  }
+
+  /**
+   * Set Nodes 2.0 on or off via the Comfy logo menu switch (no-op if already
+   * in the requested state).
+   */
+  async setVueNodesEnabled(enabled: boolean) {
+    await this.openTopbarMenu()
+    const nodes2Switch = this.page.getByRole('switch', { name: 'Nodes 2.0' })
+    await nodes2Switch.waitFor({ state: 'visible' })
+    if ((await nodes2Switch.isChecked()) !== enabled) {
+      await nodes2Switch.click()
+      await this.page.waitForFunction(
+        (wantEnabled) =>
+          window.app!.ui.settings.getSettingValue('Comfy.VueNodes.Enabled') ===
+          wantEnabled,
+        enabled,
+        { timeout: 5000 }
+      )
+    }
+    await this.closeTopbarMenu()
   }
 
   /**

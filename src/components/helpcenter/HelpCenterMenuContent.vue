@@ -14,6 +14,7 @@
           type="button"
           class="help-menu-item"
           :class="{ 'more-item': menuItem.key === 'more' }"
+          :data-testid="`help-menu-item-${menuItem.key}`"
           role="menuitem"
           @click="menuItem.action"
           @mouseenter="onMenuItemHover(menuItem.key, $event)"
@@ -103,6 +104,7 @@
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
           class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          :data-testid="`help-release-item-${release.version}`"
           role="button"
           tabindex="0"
           @click="onReleaseClick(release)"
@@ -159,7 +161,7 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
@@ -299,9 +301,18 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       icon: 'icon-[lucide--clipboard-pen]',
       label: t('helpCenter.feedback'),
+      showExternalIcon: isCloud || isNightly,
       action: () => {
-        trackResourceClick('help_feedback', false)
-        void commandStore.execute('Comfy.ContactSupport')
+        trackResourceClick('help_feedback', isCloud || isNightly)
+        if (isCloud || isNightly) {
+          window.open(
+            'https://form.typeform.com/to/q7azbWPi',
+            '_blank',
+            'noopener,noreferrer'
+          )
+        } else {
+          void commandStore.execute('Comfy.ContactSupport')
+        }
         emit('close')
       }
     },

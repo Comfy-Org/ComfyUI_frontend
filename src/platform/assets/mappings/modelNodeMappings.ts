@@ -170,5 +170,35 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'LLM/Florence-2-large-PromptGen-v2.0',
     'LTXVPromptEnhancerLoader',
     'image_captioner_name'
-  ]
+  ],
+
+  // ---- BiRefNet background removal (comfyui_layerstyle) ----
+  ['BiRefNet', 'LayerMask: LoadBiRefNetModelV2', 'version'],
+
+  // ---- EVF-SAM segmentation (comfyui_layerstyle) ----
+  ['EVF-SAM', 'LayerMask: EVFSAMUltra', 'model'],
+
+  // ---- Florence2 vision-language (comfyui-florence2) ----
+  ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
+
+  // ---- GIMM-VFI frame interpolation (ComfyUI-GIMM-VFI) ----
+  ['interpolation', 'DownloadAndLoadGIMMVFIModel', 'model'],
+
+  // ---- RMBG background removal (comfyui-rmbg) ----
+  ['rmbg', 'RMBG', 'model'],
+
+  // ---- SmolLM2/SmolVLM language models (comfyui_layerstyle) ----
+  ['smol', 'LayerUtility: LoadSmolLM2Model', 'model'],
+
+  // ---- Transparent background removal (comfyui_layerstyle) ----
+  ['transparent-background', 'LayerMask: TransparentBackgroundUltra', 'model'],
+
+  // ---- YOLO object detection (comfyui_layerstyle) ----
+  ['yolo', 'LayerMask: ObjectDetectorYOLO8', 'yolo_model'],
+
+  // ---- MediaPipe face detection (comfyui-liveportrait) ----
+  ['mediapipe', 'LivePortraitLoadMediaPipeCropper', ''],
+
+  // ---- Superprompt text enhancement ----
+  ['superprompt-v1', 'Superprompt', '']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>
