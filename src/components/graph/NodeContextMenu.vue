@@ -270,11 +270,17 @@ function constrainMenuHeight() {
   if (!rootList) return
 
   const rect = rootList.getBoundingClientRect()
-  const maxHeight = window.innerHeight - rect.top - 8
-  if (maxHeight > 0) {
-    rootList.style.maxHeight = `${maxHeight}px`
-    rootList.style.overflowY = 'auto'
-  }
+  const availableHeight = window.innerHeight - rect.top - 8
+  if (availableHeight <= 0) return
+
+  // Setting overflow-y to auto/scroll on the root <ul> coerces overflow-x
+  // to a non-visible value too (CSS spec), which clips horizontally-opening
+  // submenus like Shape. Only apply the constraint when content truly
+  // overflows so the common case keeps overflow visible.
+  if (rootList.scrollHeight <= availableHeight) return
+
+  rootList.style.maxHeight = `${availableHeight}px`
+  rootList.style.overflowY = 'auto'
 }
 
 function onMenuShow() {
