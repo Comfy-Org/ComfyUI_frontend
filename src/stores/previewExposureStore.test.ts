@@ -212,20 +212,28 @@ describe(usePreviewExposureStore, () => {
   })
 
   describe('resolveChain', () => {
-    it('returns a single-link chain for an existing exposure', () => {
+    it('returns a single-step chain for an existing exposure when no resolver is provided', () => {
       const entry = store.addExposure(rootGraphA, hostA, {
         sourceNodeId: '42',
         sourcePreviewName: 'preview'
       })
 
-      expect(store.resolveChain(rootGraphA, hostA, entry.name)).toEqual({
+      const result = store.resolveChain(rootGraphA, hostA, entry.name)
+
+      expect(result?.steps).toHaveLength(1)
+      expect(result?.steps[0]).toMatchObject({
         rootGraphId: rootGraphA,
         hostNodeLocator: hostA,
-        name: 'preview',
-        source: {
+        exposure: {
+          name: 'preview',
           sourceNodeId: '42',
           sourcePreviewName: 'preview'
         }
+      })
+      expect(result?.leaf).toEqual({
+        rootGraphId: rootGraphA,
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
       })
     })
 
@@ -233,10 +241,7 @@ describe(usePreviewExposureStore, () => {
       expect(store.resolveChain(rootGraphA, hostA, 'absent')).toBeUndefined()
     })
 
-    it('does not yet walk nested-host chains (PR-A stub)', () => {
-      // Set up a host whose exposure points to a sourceNodeId that itself
-      // has its own preview exposure registered. PR-A must surface only the
-      // direct source — no recursion through the inner host.
+    it('walks one nested host when a resolver is provided', () => {
       const innerHost = createNodeLocatorId(rootGraphA, 99)
       store.addExposure(rootGraphA, innerHost, {
         sourceNodeId: 'inner-leaf',
@@ -244,14 +249,70 @@ describe(usePreviewExposureStore, () => {
       })
       const outer = store.addExposure(rootGraphA, hostA, {
         sourceNodeId: '99',
-        sourcePreviewName: 'outer-preview'
+        sourcePreviewName: 'inner-preview'
       })
 
-      const resolved = store.resolveChain(rootGraphA, hostA, outer.name)
+      const resolved = store.resolveChain(
+        rootGraphA,
+        hostA,
+        outer.name,
+        (rootGraphId, hostLocator, sourceNodeId) => {
+          if (hostLocator === hostA && sourceNodeId === '99') {
+            return { rootGraphId, hostNodeLocator: innerHost }
+          }
+          return undefined
+        }
+      )
 
-      expect(resolved?.source).toEqual({
-        sourceNodeId: '99',
-        sourcePreviewName: 'outer-preview'
+      expect(resolved?.steps).toHaveLength(2)
+      expect(resolved?.steps[0].hostNodeLocator).toBe(hostA)
+      expect(resolved?.steps[1].hostNodeLocator).toBe(innerHost)
+      expect(resolved?.leaf).toEqual({
+        rootGraphId: rootGraphA,
+        sourceNodeId: 'inner-leaf',
+        sourcePreviewName: 'inner-preview'
+      })
+    })
+
+    it('walks two nested hosts (three-step chain)', () => {
+      const inner = createNodeLocatorId(rootGraphA, 50)
+      const innermost = createNodeLocatorId(rootGraphA, 60)
+      store.addExposure(rootGraphA, innermost, {
+        sourceNodeId: 'leaf',
+        sourcePreviewName: '$$canvas-image-preview'
+      })
+      store.addExposure(rootGraphA, inner, {
+        sourceNodeId: '60',
+        sourcePreviewName: '$$canvas-image-preview'
+      })
+      const outer = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '50',
+        sourcePreviewName: '$$canvas-image-preview'
+      })
+
+      const resolved = store.resolveChain(
+        rootGraphA,
+        hostA,
+        outer.name,
+        (rootGraphId, hostLocator, sourceNodeId) => {
+          if (hostLocator === hostA && sourceNodeId === '50')
+            return { rootGraphId, hostNodeLocator: inner }
+          if (hostLocator === inner && sourceNodeId === '60')
+            return { rootGraphId, hostNodeLocator: innermost }
+          return undefined
+        }
+      )
+
+      expect(resolved?.steps).toHaveLength(3)
+      expect(resolved?.steps.map((s) => s.hostNodeLocator)).toEqual([
+        hostA,
+        inner,
+        innermost
+      ])
+      expect(resolved?.leaf).toEqual({
+        rootGraphId: rootGraphA,
+        sourceNodeId: 'leaf',
+        sourcePreviewName: '$$canvas-image-preview'
       })
     })
   })

@@ -1,31 +1,28 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import type { PreviewExposureChainContext } from '@/core/graph/subgraph/preview/previewExposureChain'
+import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
+import type { ResolvedPreviewChain } from '@/core/graph/subgraph/preview/previewExposureTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 
+export type { ResolvedPreviewChain } from '@/core/graph/subgraph/preview/previewExposureTypes'
+
 /**
- * A resolved chain of preview exposures from a host node down to the originating
- * source preview.
+ * Optional resolver passed by callers that want {@link resolveChain} to walk
+ * nested subgraph host boundaries.
  *
- * @remarks
- * PR-A skeleton type: this currently represents a single-link chain (the
- * direct exposure on the host). PR-B will expand this to model a full
- * walk through nested subgraph hosts so that an interior host's exposure
- * may resolve through one or more enclosing hosts to its ultimate source.
+ * Given a `(rootGraphId, hostNodeLocator, sourceNodeId)` triple, return the
+ * `(rootGraphId, hostNodeLocator)` of the inner host SubgraphNode the source
+ * resolves to, or `undefined` for non-host (leaf) sources.
  */
-export interface ResolvedPreviewChain {
-  rootGraphId: UUID
-  hostNodeLocator: string
-  name: string
-  source: {
-    sourceNodeId: string
-    sourcePreviewName: string
-  }
-}
+export type ResolveNestedHostFn = NonNullable<
+  PreviewExposureChainContext['resolveNestedHost']
+>
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   // Keyed by (rootGraphId, hostNodeLocator).
@@ -130,35 +127,24 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   }
 
   /**
-   * Resolve the chain of exposures from a host down to the originating source preview.
+   * Resolve the chain of exposures from a host down to the originating source
+   * preview, optionally walking through nested subgraph hosts.
    *
-   * @remarks
-   * PR-A stub: returns a single-link chain wrapping the direct exposure if it
-   * exists on `(rootGraphId, hostNodeLocator)`, otherwise `undefined`. No nested
-   * subgraph host walking is performed yet.
-   *
-   * TODO(PR-B): implement full nested-host chain walking so that when an
-   * exposure's `sourceNodeId` itself refers to a subgraph host, this method
-   * follows the named exposure on that interior host recursively until it
-   * reaches a leaf (non-host) source.
+   * @param resolveNestedHost If provided, the walker recurses through nested
+   * SubgraphNode boundaries by calling this resolver. Without it, the chain is
+   * a single-step walk on the starting host.
    */
   function resolveChain(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    name: string
+    name: string,
+    resolveNestedHost?: ResolveNestedHostFn
   ): ResolvedPreviewChain | undefined {
-    const current = _getExposuresRef(rootGraphId, hostNodeLocator)
-    const entry = current?.find((e) => e.name === name)
-    if (!entry) return undefined
-    return {
-      rootGraphId,
-      hostNodeLocator,
-      name: entry.name,
-      source: {
-        sourceNodeId: entry.sourceNodeId,
-        sourcePreviewName: entry.sourcePreviewName
-      }
+    const ctx: PreviewExposureChainContext = {
+      getExposures,
+      resolveNestedHost: resolveNestedHost ?? (() => undefined)
     }
+    return resolvePreviewExposureChain(rootGraphId, hostNodeLocator, name, ctx)
   }
 
   return {
