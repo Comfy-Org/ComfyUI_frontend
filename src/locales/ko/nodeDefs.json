@@ -1968,6 +1968,10 @@
     "description": "컨텍스트 윈도우를 수동으로 설정합니다.",
     "display_name": "컨텍스트 윈도우 (수동)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "0이 아닌 인덱스의 컨텍스트 윈도우에 인과적 수정 프레임을 추가할지 여부입니다."
+      },
       "closed_loop": {
         "name": "closed_loop",
         "tooltip": "컨텍스트 윈도우 루프를 닫을지 여부입니다. 루프 스케줄에만 적용됩니다."
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1 모델을 사용하여 텍스트 프롬프트로 기존 이미지를 편집합니다.",
+    "display_name": "Luma UNI-1 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "편집에 사용할 모델입니다."
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 편집에 대한 설명입니다. 1~6000자."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드 값은 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "편집할 원본 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "프롬프트와 종횡비에 따라 이미지를 동기적으로 수정합니다.",
     "display_name": "Luma 이미지 생성 (이미지 → 이미지)",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "스타일 이미지 가중치",
         "tooltip": "스타일 이미지의 가중치. 스타일 이미지가 제공되지 않으면 무시됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1 모델을 사용하여 텍스트로부터 이미지를 생성합니다.",
+    "display_name": "Luma UNI-1 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 이미지에 대한 텍스트 설명입니다. 1~6000자."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드 값은 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -11489,120 +11586,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "문밸리 마레이 이미지 투 비디오 노드",
-    "display_name": "문밸리 마레이 이미지 투 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오 생성에 사용되는 참조 이미지"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "네거티브 프롬프트 텍스트"
-      },
-      "prompt": {
-        "name": "프롬프트"
-      },
-      "prompt_adherence": {
-        "name": "프롬프트 준수도",
-        "tooltip": "생성 제어를 위한 가이던스 스케일"
-      },
-      "resolution": {
-        "name": "해상도",
-        "tooltip": "출력 비디오의 해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "랜덤 시드 값"
-      },
-      "steps": {
-        "name": "스텝",
-        "tooltip": "노이즈 제거 스텝 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "문밸리 마레이 텍스트 투 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "네거티브 프롬프트 텍스트"
-      },
-      "prompt": {
-        "name": "프롬프트"
-      },
-      "prompt_adherence": {
-        "name": "프롬프트 준수도",
-        "tooltip": "생성 제어를 위한 가이던스 스케일"
-      },
-      "resolution": {
-        "name": "해상도",
-        "tooltip": "출력 비디오의 해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "랜덤 시드 값"
-      },
-      "steps": {
-        "name": "스텝",
-        "tooltip": "추론 단계"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 비디오 투 비디오",
-    "inputs": {
-      "control_type": {
-        "name": "제어 유형"
-      },
-      "motion_intensity": {
-        "name": "모션 강도",
-        "tooltip": "'모션 전송' 제어 유형일 때만 사용됩니다"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "네거티브 프롬프트 텍스트"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "생성할 비디오를 설명합니다"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "랜덤 시드 값"
-      },
-      "steps": {
-        "name": "단계",
-        "tooltip": "추론 단계 수"
-      },
-      "video": {
-        "name": "비디오",
-        "tooltip": "출력 비디오를 생성하는 데 사용되는 참조 비디오. 최소 5초 이상이어야 합니다. 5초보다 긴 비디오는 자동으로 잘립니다. MP4 형식만 지원됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "이미지 형태 변환",
     "inputs": {
@@ -11825,8 +11808,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAI의 GPT Image 1 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "OpenAI의 GPT Image 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "배경",
@@ -11860,7 +11843,7 @@
       },
       "prompt": {
         "name": "프롬프트",
-        "tooltip": "GPT Image 1을 위한 텍스트 프롬프트"
+        "tooltip": "GPT Image 2를 위한 텍스트 프롬프트"
       },
       "quality": {
         "name": "품질",
@@ -12534,7 +12517,7 @@
   "PrimitiveInt": {
     "display_name": "정수",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "생성 후 제어"
       },
       "value": {
@@ -14421,6 +14404,20 @@
       },
       "2": {
         "name": "잠재 비디오"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "오토리그레시브 블록당 프레임 수입니다. 1 = 프레임 단위, 3 = 청크 단위. 체크포인트의 학습 모드와 일치해야 합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16624,6 +16621,9 @@
   "TextGenerate": {
     "display_name": "텍스트 생성",
     "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16667,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "모델에 내장된 시스템 프롬프트/템플릿이 있으면 사용합니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "비디오 프레임을 이미지 배치로 처리합니다. 24 FPS로 가정하며, 내부적으로 1 FPS로 샘플링됩니다."
       }
     },
     "outputs": {
@@ -16679,6 +16683,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16729,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "모델에 내장된 시스템 프롬프트/템플릿이 있으면 사용합니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "비디오 프레임을 이미지 배치로 처리합니다. 24 FPS로 가정하며, 내부적으로 1 FPS로 샘플링됩니다."
       }
     },
     "outputs": {
@@ -16897,6 +16908,45 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "강력한 업스케일링 및 복원 기술로 비디오에 새 생명을 불어넣으세요.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "동적 압축 레벨",
+        "tooltip": "CQP 레벨."
+      },
+      "interpolation_model": {
+        "name": "보간 모델"
+      },
+      "upscaler_model": {
+        "name": "업스케일러 모델"
+      },
+      "upscaler_model_creativity": {
+        "name": "창의성"
+      },
+      "upscaler_model_prompt": {
+        "name": "프롬프트"
+      },
+      "upscaler_model_realism": {
+        "name": "사실감"
+      },
+      "upscaler_model_sharp": {
+        "name": "선명도"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "업스케일러 해상도"
+      },
+      "video": {
+        "name": "비디오"
       }
     },
     "outputs": {

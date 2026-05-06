@@ -1968,6 +1968,10 @@
     "description": "Bağlam pencerelerini manuel olarak ayarlayın.",
     "display_name": "Bağlam Pencereleri (Manuel)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Sıfırdan farklı indeksli context pencerelerine nedensel düzeltme karesi eklenip eklenmeyeceği."
+      },
       "closed_loop": {
         "name": "kapalı döngü",
         "tooltip": "Bağlam penceresi döngüsünün kapatılıp kapatılmayacağı; sadece döngülü çizelgeler için geçerlidir."
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "ses",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1 modeliyle bir metin istemi kullanarak mevcut bir görseli düzenleyin.",
+    "display_name": "Luma UNI-1 Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Düzenleme için kullanılacak model."
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "model_web_search": {
+        "name": "web_arama"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenilen düzenlemenin açıklaması. 1–6000 karakter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Düzenlenecek kaynak görsel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "İstem ve en boy oranına göre görüntüleri eşzamanlı olarak değiştirir.",
     "display_name": "Luma Görüntüden Görüntüye",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "stil_görüntüsü_ağırlığı",
         "tooltip": "Stil görüntüsünün ağırlığı. Stil_görüntüsü sağlanmazsa yoksayılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1 modeliyle metinden görseller oluşturun.",
+    "display_name": "Luma UNI-1 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Oluşturma için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy_oranı"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "model_web_search": {
+        "name": "web_arama"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenilen görselin metin açıklaması. 1–6000 karakter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
       }
     },
     "outputs": {
@@ -11489,120 +11586,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey Görüntüden Videoya Düğümü",
-    "display_name": "Moonvalley Marey Görüntüden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Videoyu oluşturmak için kullanılan referans görüntü"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negatif prompt metni"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Üretim kontrolü için rehberlik ölçeği"
-      },
-      "resolution": {
-        "name": "çözünürlük",
-        "tooltip": "Çıktı videosunun çözünürlüğü"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Rastgele seed değeri"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Gürültü giderme adımlarının sayısı"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Metinden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "üretim sonrası kontrol"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negatif prompt metni"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "komut uyumu",
-        "tooltip": "Üretim kontrolü için rehberlik ölçeği"
-      },
-      "resolution": {
-        "name": "çözünürlük",
-        "tooltip": "Çıktı videosunun çözünürlüğü"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Rastgele tohum değeri"
-      },
-      "steps": {
-        "name": "adımlar",
-        "tooltip": "Çıkarım adımları"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video'dan Video'ya",
-    "inputs": {
-      "control_type": {
-        "name": "kontrol_tipi"
-      },
-      "motion_intensity": {
-        "name": "hareket_yoğunluğu",
-        "tooltip": "Sadece kontrol_tipi 'Hareket Transferi' ise kullanılır"
-      },
-      "negative_prompt": {
-        "name": "negatif_komut",
-        "tooltip": "Negatif komut metni"
-      },
-      "prompt": {
-        "name": "komut",
-        "tooltip": "Oluşturulacak videoyu tanımlar"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Rastgele tohum değeri"
-      },
-      "steps": {
-        "name": "adımlar",
-        "tooltip": "Çıkarım adım sayısı"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "Çıktı videosunu oluşturmak için kullanılan referans video. En az 5 saniye uzunluğunda olmalıdır. 5 saniyeden uzun videolar otomatik olarak kırpılacaktır. Sadece MP4 formatı desteklenir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "GörüntüMorfolojisi",
     "inputs": {
@@ -11825,8 +11808,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAI'nin GPT Görüntü 1 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
-    "display_name": "OpenAI GPT Görüntü 1",
+    "description": "OpenAI'nin GPT Görüntü 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
+    "display_name": "OpenAI GPT Görüntü 2",
     "inputs": {
       "background": {
         "name": "arka_plan",
@@ -11860,7 +11843,7 @@
       },
       "prompt": {
         "name": "istem",
-        "tooltip": "GPT Görüntü 1 için metin istemi"
+        "tooltip": "GPT Görüntü 2 için metin istemi"
       },
       "quality": {
         "name": "kalite",
@@ -12534,7 +12517,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "oluşturduktan sonra kontrol et"
       },
       "value": {
@@ -14421,6 +14404,20 @@
       },
       "2": {
         "name": "gizli"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Her bir otoregresif blok başına kare sayısı. 1 = kare bazında, 3 = blok bazında. Kontrol noktası eğitim modu ile eşleşmelidir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16624,6 +16621,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "ses"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16667,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video kareleri, bir görüntü grubu olarak. 24 FPS varsayılır; dahili olarak 1 FPS'ye örneklenir."
       }
     },
     "outputs": {
@@ -16679,6 +16683,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "ses"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16729,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Modelde yerleşik bir sistem istemi/şablonu varsa bunu kullan."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video kareleri, bir görüntü grubu olarak. 24 FPS varsayılır; dahili olarak 1 FPS'ye örneklenir."
       }
     },
     "outputs": {
@@ -16894,6 +16905,45 @@
       },
       "upscaler_resolution": {
         "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Güçlü yükseltme ve iyileştirme teknolojisiyle videolarınıza yeni bir soluk kazandırın.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "dinamik_sıkıştırma_seviyesi",
+        "tooltip": "CQP seviyesi."
+      },
+      "interpolation_model": {
+        "name": "enterpolasyon_modeli"
+      },
+      "upscaler_model": {
+        "name": "yükseltici_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "yaratıcılık"
+      },
+      "upscaler_model_prompt": {
+        "name": "istem"
+      },
+      "upscaler_model_realism": {
+        "name": "gerçekçilik"
+      },
+      "upscaler_model_sharp": {
+        "name": "keskin"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "yükseltici_çözünürlüğü"
       },
       "video": {
         "name": "video"

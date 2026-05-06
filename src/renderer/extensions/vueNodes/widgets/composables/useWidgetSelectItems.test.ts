@@ -683,6 +683,95 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('output asset subfolder', () => {
+    it('prefixes the subfolder onto the annotated path so the load URL targets the right folder', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-1',
+          name: 'ComfyUI_00105_.glb',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-mesh',
+            nodeId: '7',
+            subfolder: '3d'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('3d/ComfyUI_00105_.glb [output]')
+    })
+
+    it('omits the subfolder prefix when the asset has none', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-2',
+          name: 'plain.glb',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-plain',
+            nodeId: '8',
+            subfolder: ''
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
+    })
+
+    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-image-1',
+          name: 'photo.png',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-image',
+            nodeId: '9',
+            subfolder: 'sub'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'image' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+    })
+  })
+
   describe('FE-228: output dropdown label uses human-readable filename', () => {
     it('renders metadata.filename in label when asset.name is a hash', async () => {
       mockMediaAssets.media.value = [

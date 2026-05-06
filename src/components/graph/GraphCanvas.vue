@@ -6,6 +6,7 @@
     <template v-if="showUI" #workflow-tabs>
       <div
         v-if="workflowTabsPosition === 'Topbar'"
+        data-testid="topbar-workflow-tabs"
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
         <div

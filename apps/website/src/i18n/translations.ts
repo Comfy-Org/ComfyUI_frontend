@@ -1599,7 +1599,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
-  'nav.blogs': { en: 'Blogs', 'zh-CN': '博客' },
+  'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
   'nav.docs': { en: 'Docs', 'zh-CN': '文档' },
@@ -3498,18 +3498,6 @@ const translations = {
     en: 'Dale Carman | Co-founder @ Groove Jones',
     'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
   },
-  'customers.detail.groove-jones.topic-10.block.2.label': {
-    en: 'GROOVE JONES CONTRIBUTORS',
-    'zh-CN': 'GROOVE JONES 贡献者'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.name': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.role': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
 
   // Contact – FormSection
   'contact.form.badge': {
@@ -3541,6 +3529,80 @@ const translations = {
     en: "and we'll route your request.",
     'zh-CN': '我们会为您处理请求。'
   },
+
+  'demos.category.templates': { en: 'TEMPLATES', 'zh-CN': '模板' },
+  'demos.category.gettingStarted': { en: 'GETTING STARTED', 'zh-CN': '入门' },
+
+  'demos.image-to-video.title': {
+    en: 'Create a Video from an Image',
+    'zh-CN': '从图片创建视频'
+  },
+  'demos.image-to-video.description': {
+    en: 'Learn how to use the Image to Video workflow template in ComfyUI to generate short video clips from a single image.',
+    'zh-CN':
+      '了解如何使用 ComfyUI 中的图片转视频工作流模板，从单张图片生成短视频。'
+  },
+  'demos.image-to-video.transcript': {
+    en: '<ol><li><strong>Open ComfyUI</strong> — Launch the application and you\'ll see the node-based workflow canvas where all your AI pipelines are built.</li><li><strong>Browse templates</strong> — Click the workflow templates button in the sidebar to browse available starting points.</li><li><strong>Select Image to Video</strong> — Find and select the "Image to Video" template from the list to load it onto your canvas.</li><li><strong>Upload your image</strong> — Click the image upload node and select the source image you want to animate.</li><li><strong>Run the workflow</strong> — Click the "Queue" button to execute the workflow and generate your video output.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开 ComfyUI</strong> — 启动应用程序，您将看到基于节点的工作流画布。</li><li><strong>浏览模板</strong> — 点击侧栏中的工作流模板按钮，浏览可用模板。</li><li><strong>选择图片转视频</strong> — 从列表中找到并选择"图片转视频"模板。</li><li><strong>上传图片</strong> — 点击图片上传节点，选择要动画化的源图片。</li><li><strong>运行工作流</strong> — 点击"排队"按钮执行工作流并生成视频输出。</li></ol>'
+  },
+
+  'demos.workflow-templates.title': {
+    en: 'Browse Workflow Templates',
+    'zh-CN': '浏览工作流模板'
+  },
+  'demos.workflow-templates.description': {
+    en: "Explore ComfyUI's built-in workflow templates to quickly get started with common AI generation tasks.",
+    'zh-CN': '探索 ComfyUI 内置的工作流模板，快速开始常见的 AI 生成任务。'
+  },
+  'demos.workflow-templates.transcript': {
+    en: '<ol><li><strong>Open the template browser</strong> — Click the templates icon in the ComfyUI sidebar to open the template library.</li><li><strong>Browse categories</strong> — Templates are organized by task: image generation, video, upscaling, and more.</li><li><strong>Preview a template</strong> — Hover over any template to see a preview of its workflow and expected output.</li><li><strong>Load and customize</strong> — Click to load a template, then modify parameters to fit your needs.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开模板浏览器</strong> — 点击 ComfyUI 侧栏中的模板图标。</li><li><strong>浏览分类</strong> — 模板按任务分类：图像生成、视频、放大等。</li><li><strong>预览模板</strong> — 将鼠标悬停在模板上查看预览。</li><li><strong>加载并自定义</strong> — 点击加载模板，然后修改参数。</li></ol>'
+  },
+
+  'demos.nav.nextDemo': { en: "What's Next", 'zh-CN': '下一个演示' },
+  'demos.nav.viewDemo': { en: 'View Demo', 'zh-CN': '查看演示' },
+  'demos.nav.allDemos': { en: 'All Demos', 'zh-CN': '所有演示' },
+  'demos.transcript.label': { en: 'Demo transcript', 'zh-CN': '演示文字记录' },
+  'demos.transcript.note': {
+    en: '(for accessibility & search)',
+    'zh-CN': '（无障碍和搜索）'
+  },
+  'demos.loading': {
+    en: 'Loading interactive demo…',
+    'zh-CN': '正在加载互动演示…'
+  },
+  'demos.noscript': {
+    en: 'This interactive demo requires JavaScript.',
+    'zh-CN': '此互动演示需要 JavaScript。'
+  },
+  'demos.noscript.link': {
+    en: 'View on Arcade →',
+    'zh-CN': '在 Arcade 上查看 →'
+  },
+  'demos.duration.2min': { en: '~2 min', 'zh-CN': '~2 分钟' },
+  'demos.difficulty.beginner': { en: 'Beginner', 'zh-CN': '入门' },
+  'demos.difficulty.intermediate': {
+    en: 'Intermediate',
+    'zh-CN': '中级'
+  },
+  'demos.difficulty.advanced': { en: 'Advanced', 'zh-CN': '高级' },
+  'demos.embed.label': {
+    en: 'Interactive demo',
+    'zh-CN': '互动演示'
+  },
+  'demos.comingSoon.title': {
+    en: 'Coming Soon',
+    'zh-CN': '即将推出'
+  },
+  'demos.comingSoon.body': {
+    en: 'This page is being redesigned. Check back soon.',
+    'zh-CN': '此页面正在重新设计中，请稍后再来。'
+  },
+  'demos.breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
+  'demos.breadcrumb.demos': { en: 'Demos', 'zh-CN': '演示' },
 
   'customers.story.whatsNext': {
     en: "What's next?",
@@ -3592,6 +3654,49 @@ const translations = {
   'customers.feedback.role3': {
     en: 'Head of AI at Creative Studios',
     'zh-CN': 'Creative Studios AI 负责人'
+  },
+
+  // Payment status pages
+  'payment.success.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.success.title': {
+    en: 'Payment successful',
+    'zh-CN': '支付成功'
+  },
+  'payment.success.subtitle': {
+    en: "Thanks for your purchase. Your account has been credited and you're ready to keep building.",
+    'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
+  },
+  'payment.success.primaryCta': {
+    en: 'CONTINUE TO COMFY CLOUD',
+    'zh-CN': '前往 COMFY CLOUD'
+  },
+  'payment.success.secondaryCta': {
+    en: 'VIEW USAGE & PAYMENTS',
+    'zh-CN': '查看用量与支付'
+  },
+  'payment.failed.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.failed.title': {
+    en: 'Unable to complete payment',
+    'zh-CN': '无法完成支付'
+  },
+  'payment.failed.subtitle': {
+    en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",
+    'zh-CN':
+      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅订阅文档。'
+  },
+  'payment.failed.primaryCta': {
+    en: 'CONTACT SUPPORT',
+    'zh-CN': '联系支持'
+  },
+  'payment.failed.secondaryCta': {
+    en: 'READ SUBSCRIPTION DOCS',
+    'zh-CN': '查看订阅文档'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

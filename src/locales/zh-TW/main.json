@@ -461,6 +461,12 @@
       "wantToRun": "想要在本機運行 ComfyUI？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "請選擇一個選項。",
+        "describeAnswer": "請描述您的答案。",
+        "selectAtLeastOne": "請至少選擇一個選項。"
+      },
+      "intro": "協助我們為您量身打造 ComfyUI 體驗。",
       "options": {
         "familiarity": {
           "advanced": "進階使用者（自訂工作流程）",
@@ -469,45 +475,43 @@
           "new": "ComfyUI 新手（從未使用過）",
           "starting": "剛開始（正在跟隨教學）"
         },
-        "industry": {
-          "architecture": "建築",
-          "education": "教育",
-          "film_tv_animation": "電影、電視與動畫",
-          "fine_art": "美術與插畫",
-          "gaming": "遊戲",
-          "marketing": "行銷與廣告",
+        "intent": {
+          "3d_game": "3D 素材／遊戲素材",
+          "api": "執行工作流程的 API 端點",
+          "apps": "由工作流程簡化的應用程式",
+          "audio": "音訊／音樂",
+          "custom_nodes": "自訂節點",
+          "images": "圖像",
+          "not_sure": "尚未確定",
+          "videos": "影片",
+          "workflows": "自訂工作流程或管線"
+        },
+        "source": {
+          "conference": "研討會或活動",
+          "discord": "Discord／社群",
+          "friend": "朋友或同事",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "電子報或部落格",
           "other": "其他",
-          "otherPlaceholder": "請具體說明",
-          "product_design": "產品與平面設計",
-          "software": "軟體與科技"
+          "reddit": "Reddit",
+          "search": "Google／搜尋引擎",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
         },
-        "making": {
-          "3d": "3D 資產",
-          "audio": "音訊 / 音樂",
-          "custom_nodes": "自訂節點與工作流程",
-          "images": "圖片",
-          "video": "影片與動畫"
-        },
-        "purpose": {
-          "client": "客戶工作（自由接案）",
-          "community": "社群貢獻（節點、工作流程等）",
-          "inhouse": "我的工作場所（公司內部）",
-          "personal": "個人專案／興趣",
-          "research": "學術研究"
+        "usage": {
+          "education": "教育用途（學生或教育者）",
+          "personal": "個人用途",
+          "work": "工作用途"
         }
       },
       "placeholder": "問卷問題佔位符",
-      "questions": {
-        "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "industry": "您的主要行業是什麼？",
-        "making": "您計劃製作什麼？",
-        "purpose": "您主要會使用 ComfyUI 來做什麼？"
-      },
       "steps": {
         "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "industry": "您的主要行業是什麼？",
-        "making": "您計劃製作什麼內容？",
-        "purpose": "您主要會使用 ComfyUI 來做什麼？"
+        "intent": "您想用 ComfyUI 創作什麼？",
+        "source": "您是從哪裡得知 ComfyUI 的？",
+        "usage": "您打算如何使用 ComfyUI？"
       },
       "title": "雲端問卷"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "數秒內開始創作",
   "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
   "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
-  "cloudSurvey_steps_industry": "您的主要行業是什麼？",
-  "cloudSurvey_steps_making": "您計劃製作什麼？",
-  "cloudSurvey_steps_purpose": "您主要會使用 ComfyUI 做什麼？",
+  "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
+  "cloudSurvey_steps_source": "您是從哪裡得知 ComfyUI 的？",
+  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
@@ -899,8 +903,8 @@
     "resume": "繼續下載"
   },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的帳戶無權使用此功能。",
+    "accessRestrictedTitle": "存取受限",
     "defaultTitle": "發生錯誤",
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
@@ -2259,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "月谷馬雷",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2288,6 +2291,7 @@
     "camera": "相機",
     "chroma_radiance": "色度光輝",
     "clip": "CLIP",
+    "color": "顏色",
     "combine": "合併",
     "compositing": "合成",
     "cond pair": "條件配對",
@@ -2339,7 +2343,6 @@
     "shader": "著色器",
     "sigmas": "西格瑪值",
     "stable_cascade": "stable_cascade",
-    "string": "字串",
     "style_model": "風格模型",
     "supir": "supir",
     "text": "文字",

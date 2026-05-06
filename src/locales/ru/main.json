@@ -461,6 +461,12 @@
       "wantToRun": "Хотите запустить ComfyUI локально?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Пожалуйста, выберите вариант.",
+        "describeAnswer": "Пожалуйста, опишите ваш ответ.",
+        "selectAtLeastOne": "Пожалуйста, выберите хотя бы один вариант."
+      },
+      "intro": "Помогите нам адаптировать ваш опыт работы с ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
@@ -469,45 +475,43 @@
           "new": "Новичок в ComfyUI (никогда не использовал)",
           "starting": "Только начинаю (следую руководствам)"
         },
-        "industry": {
-          "architecture": "Архитектура",
-          "education": "Образование",
-          "film_tv_animation": "Кино, ТВ и анимация",
-          "fine_art": "Изобразительное искусство и иллюстрация",
-          "gaming": "Игровая индустрия",
-          "marketing": "Маркетинг и реклама",
-          "other": "Другое",
-          "otherPlaceholder": "Пожалуйста, уточните",
-          "product_design": "Продуктовый и графический дизайн",
-          "software": "Программное обеспечение и технологии"
-        },
-        "making": {
-          "3d": "3D-ресурсы",
+        "intent": {
+          "3d_game": "3D-ассеты / игровые ассеты",
+          "api": "API endpoints для запуска workflow",
+          "apps": "Упрощённые приложения из workflow",
           "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские узлы и рабочие процессы",
+          "custom_nodes": "Пользовательские node",
           "images": "Изображения",
-          "video": "Видео и анимация"
+          "not_sure": "Не уверен",
+          "videos": "Видео",
+          "workflows": "Пользовательские workflow или pipeline"
         },
-        "purpose": {
-          "client": "Работа с клиентами (фриланс)",
-          "community": "Вклад в сообщество (узлы, рабочие процессы и т.д.)",
-          "inhouse": "Моё рабочее место (внутреннее использование)",
-          "personal": "Личные проекты / хобби",
-          "research": "Академические исследования"
+        "source": {
+          "conference": "Конференция или мероприятие",
+          "discord": "Discord / сообщество",
+          "friend": "Друг или коллега",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Новостная рассылка или блог",
+          "other": "Другое",
+          "reddit": "Reddit",
+          "search": "Google / поиск",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Образование (студент или преподаватель)",
+          "personal": "Личное использование",
+          "work": "Работа"
         }
       },
       "placeholder": "Вопросы для опроса",
-      "questions": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будетете использовать ComfyUI?"
-      },
       "steps": {
         "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будете использовать ComfyUI?"
+        "intent": "Что вы хотите создавать с помощью ComfyUI?",
+        "source": "Где вы узнали о ComfyUI?",
+        "usage": "Как вы планируете использовать ComfyUI?"
       },
       "title": "Облачный опрос"
     }
@@ -522,9 +526,9 @@
   "cloudStart_title": "начать создавать за секунды",
   "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
   "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
-  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
-  "cloudSurvey_steps_making": "Что вы планируете создавать?",
-  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
+  "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
+  "cloudSurvey_steps_source": "Где вы узнали о ComfyUI?",
+  "cloudSurvey_steps_usage": "Как вы планируете использовать ComfyUI?",
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
@@ -2259,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2288,6 +2291,7 @@
     "camera": "камера",
     "chroma_radiance": "chroma_radiance",
     "clip": "clip",
+    "color": "цвет",
     "combine": "объединить",
     "compositing": "композиционирование",
     "cond pair": "условие_пара",
@@ -2339,7 +2343,6 @@
     "shader": "шейдер",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
-    "string": "строка",
     "style_model": "модель_стиля",
     "supir": "supir",
     "text": "текст",

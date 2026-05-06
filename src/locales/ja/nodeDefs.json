@@ -1968,6 +1968,10 @@
     "description": "コンテキストウィンドウを手動で設定します。",
     "display_name": "コンテキストウィンドウ（手動）",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "非0インデックスのコンテキストウィンドウに因果修正フレームを追加するかどうか。"
+      },
       "closed_loop": {
         "name": "closed_loop",
         "tooltip": "コンテキストウィンドウのループを閉じるかどうか。ループスケジュールにのみ適用されます。"
@@ -2928,6 +2932,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8327,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1モデルを使用して、テキストプロンプトで既存の画像を編集します。",
+    "display_name": "Luma UNI-1 画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "編集に使用するモデル。"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_web_search": {
+        "name": "ウェブ検索"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望する編集内容の説明。1～6000文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "編集する元画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "プロンプトとアスペクト比に基づいて画像を同期的に変更します。",
     "display_name": "Luma 画像から画像へ",
@@ -8395,6 +8457,41 @@
       "style_image_weight": {
         "name": "スタイル画像の重み",
         "tooltip": "スタイル画像の重み。style_imageが指定されていない場合は無視されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1モデルを使用してテキストから画像を生成します。",
+    "display_name": "Luma UNI-1 画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_web_search": {
+        "name": "ウェブ検索"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望する画像のテキスト説明。1～6000文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
       }
     },
     "outputs": {
@@ -11489,120 +11586,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey 画像から動画ノード",
-    "display_name": "Moonvalley Marey 画像から動画",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画生成に使用する参照画像"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "ネガティブプロンプトテキスト"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "prompt_adherence": {
-        "name": "プロンプト遵守度",
-        "tooltip": "生成制御のためのガイダンススケール"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ランダムシード値"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "ノイズ除去ステップ数"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey テキストから動画",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "ネガティブプロンプトテキスト"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "prompt_adherence": {
-        "name": "プロンプト遵守度",
-        "tooltip": "生成制御のためのガイダンススケール"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ランダムシード値"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "推論ステップ数"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 動画から動画",
-    "inputs": {
-      "control_type": {
-        "name": "制御タイプ"
-      },
-      "motion_intensity": {
-        "name": "モーション強度",
-        "tooltip": "control_typeが「モーション転送」の場合のみ使用"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "ネガティブプロンプトテキスト"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "生成する動画の説明"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ランダムシード値"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "推論ステップ数"
-      },
-      "video": {
-        "name": "動画",
-        "tooltip": "出力動画の生成に使用する参照動画。最低5秒以上である必要があります。5秒を超える動画は自動的にトリミングされます。MP4形式のみ対応。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "画像形態学",
     "inputs": {
@@ -11825,8 +11808,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAIのGPT Image 1エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "OpenAIのGPT Image 2エンドポイントを通じて同期的に画像を生成します。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11860,7 +11843,7 @@
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "GPT Image 1用のテキストプロンプト"
+        "tooltip": "GPT Image 2用のテキストプロンプト"
       },
       "quality": {
         "name": "品質",
@@ -12534,7 +12517,7 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "生成後に制御"
       },
       "value": {
@@ -14421,6 +14404,20 @@
       },
       "2": {
         "name": "潜在"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "自己回帰ブロックごとのフレーム数。1＝フレーム単位、3＝チャンク単位。チェックポイントのトレーニングモードと一致する必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16624,6 +16621,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16667,6 +16667,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
       }
     },
     "outputs": {
@@ -16679,6 +16683,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16722,6 +16729,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
       }
     },
     "outputs": {
@@ -16897,6 +16908,45 @@
       },
       "video": {
         "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "強力なアップスケーリングと復元技術でビデオに新たな命を吹き込みます。",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "ダイナミック圧縮レベル",
+        "tooltip": "CQPレベル。"
+      },
+      "interpolation_model": {
+        "name": "補間モデル"
+      },
+      "upscaler_model": {
+        "name": "アップスケーラーモデル"
+      },
+      "upscaler_model_creativity": {
+        "name": "創造性"
+      },
+      "upscaler_model_prompt": {
+        "name": "プロンプト"
+      },
+      "upscaler_model_realism": {
+        "name": "リアリズム"
+      },
+      "upscaler_model_sharp": {
+        "name": "シャープ"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "アップスケーラー解像度"
+      },
+      "video": {
+        "name": "ビデオ"
       }
     },
     "outputs": {

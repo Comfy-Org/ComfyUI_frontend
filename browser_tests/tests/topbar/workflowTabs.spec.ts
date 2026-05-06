@@ -125,6 +125,48 @@ test.describe('Workflow tabs', () => {
     await expect(activeTab.locator('text=•')).toBeVisible()
   })
 
+  test('Can drag tab to end', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+    const [a, b, c] = await topbar.getTabNames()
+
+    await topbar.getTab(0).dragTo(topbar.getTab(2))
+
+    await expect.poll(() => topbar.getTabNames()).toEqual([b, c, a])
+  })
+
+  test('Can drag tab to start', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+    const [a, b, c] = await topbar.getTabNames()
+
+    await topbar.getTab(2).dragTo(topbar.getTab(0))
+
+    await expect.poll(() => topbar.getTabNames()).toEqual([c, a, b])
+  })
+
+  test('Drag preserves active tab', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+
+    const [, b] = await topbar.getTabNames()
+    await topbar.getTab(1).click()
+    await expect.poll(() => topbar.getActiveTabName()).toContain(b)
+
+    await topbar.getTab(0).dragTo(topbar.getTab(2))
+
+    await expect.poll(() => topbar.getActiveTabName()).toContain(b)
+  })
+
   test('Multiple tabs can be created, switched, and closed', async ({
     comfyPage
   }) => {
