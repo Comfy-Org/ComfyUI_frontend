@@ -17,6 +17,10 @@ Six stores extract entity state out of class instances into centralized, queryab
 | NodeOutputStore         | Execution results   | `nodeLocatorId`               | `"${subgraphId}:${nodeId}"`       | Output data, preview URLs     |
 | SubgraphNavigationStore | Canvas viewport     | `subgraphId`                  | `subgraphId` or `'root'`          | LRU viewport cache            |
 
+ADR 0009 refines promoted-widget identity: promoted value widgets are keyed by
+the host boundary (`host node locator + SubgraphInput.name`), while interior
+source node/widget identity is migration and diagnostic metadata only.
+
 ## 2. WidgetValueStore
 
 **File:** `src/stores/widgetValueStore.ts`
@@ -254,6 +258,9 @@ Each store invents its own identity scheme:
 | NodeOutputStore  | `"${subgraphId}:${nodeId}"`       | Composite string        | No         |
 
 In the ECS target, all of these would use branded entity IDs (`WidgetEntityId`, `NodeEntityId`, etc.) with compile-time cross-kind protection.
+For promoted value widgets, ADR 0009 narrows the target key to host boundary
+identity (`host node locator + SubgraphInput.name`) instead of interior source
+identity.
 
 ## 6. Extraction Map
 

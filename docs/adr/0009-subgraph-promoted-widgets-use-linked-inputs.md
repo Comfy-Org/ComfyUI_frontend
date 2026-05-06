@@ -98,6 +98,9 @@ state to private nested graph internals.
 
 - UI/value identity is host-scoped: host node locator plus
   `SubgraphInput.name`.
+- Host-scoped identity means the host `SubgraphNode` instance within its
+  containing `graphScope`; the interior source node is not the state or
+  persistence owner.
 - `SubgraphInput.name` is the stable internal identity.
 - `SubgraphInput.label` / `localized_name` are display-only.
 - `SubgraphInput.id` may be used for slot-instance reconciliation, not as the
