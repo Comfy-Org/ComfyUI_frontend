@@ -46,9 +46,7 @@ test.describe(
       // overflow-y visible. Setting it to auto/scroll on a <ul> coerces
       // overflow-x to a non-visible value (CSS spec), which produces FE-570.
       await expect
-        .poll(() =>
-          rootList.evaluate((el) => getComputedStyle(el).overflowY)
-        )
+        .poll(() => rootList.evaluate((el) => getComputedStyle(el).overflowY))
         .toBe('visible')
 
       const shapeItem = menu.getByRole('menuitem', { name: 'Shape' })
