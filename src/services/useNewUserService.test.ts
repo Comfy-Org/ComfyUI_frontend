@@ -26,9 +26,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettingStore
 }))
 
-//@ts-expect-error Define global for the test
-global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
-
 import { useNewUserService } from '@/services/useNewUserService'
 
 describe('useNewUserService', () => {
@@ -118,6 +115,73 @@ describe('useNewUserService', () => {
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify existing user when V1 draft store keys exist', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.Drafts') return '{}'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify existing user when V1 draft order key exists', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftOrder') return '[]'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify existing user when V2 draft index has entries', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
+          return '{"v":2,"updatedAt":1,"order":["abc"],"entries":{"abc":{"path":"workflows/Untitled.json","name":"Untitled","isTemporary":true,"updatedAt":1}}}'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify new user when V2 draft index exists but is empty', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
+          return '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(true)
+    })
+
+    it('should identify new user when V2 draft index is malformed', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return 'not json'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(true)
     })
 
     it('should identify new user when tutorial is explicitly false', async () => {
