@@ -818,24 +818,24 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       applyGizmoConfigToLoad3d()
       isFirstModelLoad = false
+    },
+    modelReady: () => {
+      if (!load3d || !isAssetPreviewSupported()) return
 
-      if (load3d && isAssetPreviewSupported()) {
-        const node = nodeRef.value
+      const node = nodeRef.value
+      const modelWidget = node?.widgets?.find(
+        (w) => w.name === 'model_file' || w.name === 'image'
+      )
+      const value = modelWidget?.value
+      if (typeof value !== 'string' || !value) return
 
-        const modelWidget = node?.widgets?.find(
-          (w) => w.name === 'model_file' || w.name === 'image'
-        )
-        const value = modelWidget?.value
-        if (typeof value === 'string' && value) {
-          const filename = value.trim().replace(/\s*\[output\]$/, '')
-          const modelName = Load3dUtils.splitFilePath(filename)[1]
-          load3d
-            .captureThumbnail(256, 256)
-            .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-            .then((blob) => persistThumbnail(modelName, blob))
-            .catch(() => {})
-        }
-      }
+      const filename = value.trim().replace(/\s*\[output\]$/, '')
+      const modelName = Load3dUtils.splitFilePath(filename)[1]
+      load3d
+        .captureThumbnail(256, 256)
+        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+        .then((blob) => persistThumbnail(modelName, blob))
+        .catch(() => {})
     },
     skeletonVisibilityChange: (value: boolean) => {
       modelConfig.value.showSkeleton = value
@@ -911,9 +911,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const handleFitToViewer = () => {
-    if (load3d) {
-      load3d.fitToViewer()
-    }
+    if (!load3d) return
+    load3d.fitToViewer()
+
+    if (!modelConfig.value.gizmo) return
+    const transform = load3d.getGizmoTransform()
+    modelConfig.value.gizmo.position = transform.position
+    modelConfig.value.gizmo.scale = transform.scale
   }
 
   const handleResetGizmoTransform = () => {
