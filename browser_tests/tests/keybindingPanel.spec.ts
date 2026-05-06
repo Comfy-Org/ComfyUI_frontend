@@ -31,7 +31,7 @@ function getExpansionContent(page: Page, commandId: string): Locator {
   // expanded row. Scoping by sibling avoids matching unrelated expanded rows.
   return getCommandRow(page, commandId)
     .locator('xpath=following-sibling::tr[1]')
-    .locator('.pl-4')
+    .getByTestId('keybinding-expansion-content')
 }
 
 async function openContextMenu(page: Page, commandId: string) {

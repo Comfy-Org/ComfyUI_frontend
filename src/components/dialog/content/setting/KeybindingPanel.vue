@@ -193,7 +193,7 @@
               </template>
             </Column>
             <template #expansion="slotProps">
-              <div class="pl-4">
+              <div class="pl-4" data-testid="keybinding-expansion-content">
                 <div
                   v-for="(binding, idx) in (slotProps.data as ICommandData)
                     .keybindings"
