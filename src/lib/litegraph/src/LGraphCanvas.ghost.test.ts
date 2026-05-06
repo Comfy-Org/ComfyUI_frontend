@@ -237,4 +237,25 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
       window.removeEventListener('keydown', windowSpy)
     }
   })
+
+  it('removes listeners even when ghostNodeId was already cleared before finalize', async () => {
+    const processMoveSpy = vi.spyOn(canvas, 'processMouseMove')
+    canvas.startGhostPlacement(node)
+
+    canvas.state.ghostNodeId = null
+
+    canvas.finalizeGhostPlacement(true)
+
+    document.dispatchEvent(new MouseEvent('pointermove'))
+    expect(processMoveSpy).not.toHaveBeenCalled()
+
+    const windowSpy = vi.fn()
+    window.addEventListener('keydown', windowSpy)
+    try {
+      await userEvent.keyboard('{Escape}')
+      expect(windowSpy).toHaveBeenCalledTimes(1)
+    } finally {
+      window.removeEventListener('keydown', windowSpy)
+    }
+  })
 })
