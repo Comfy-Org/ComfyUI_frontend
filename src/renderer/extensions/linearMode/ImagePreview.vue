@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed } from 'vue'
 
 import ZoomPane from '@/components/ui/ZoomPane.vue'
 import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
@@ -16,15 +17,20 @@ const { src, showSize = true } = defineProps<{
   showSize?: boolean
 }>()
 
-const imageRef = useTemplateRef('imageRef')
-const width = ref<number | null>(null)
-const height = ref<number | null>(null)
+const { state: imageState, isReady } = useImage(
+  computed(() => ({ src, alt: '' }))
+)
 
-function onImageLoad() {
-  if (!imageRef.value || !showSize) return
-  width.value = imageRef.value.naturalWidth
-  height.value = imageRef.value.naturalHeight
-}
+const width = computed(() =>
+  showSize && isReady.value && imageState.value
+    ? imageState.value.naturalWidth || null
+    : null
+)
+const height = computed(() =>
+  showSize && isReady.value && imageState.value
+    ? imageState.value.naturalHeight || null
+    : null
+)
 </script>
 <template>
   <ZoomPane
@@ -32,21 +38,9 @@ function onImageLoad() {
     v-slot="slotProps"
     :class="cn('w-full flex-1', $attrs.class as string)"
   >
-    <img
-      ref="imageRef"
-      :src
-      v-bind="slotProps"
-      class="size-full object-contain"
-      @load="onImageLoad"
-    />
+    <img :src v-bind="slotProps" class="size-full object-contain" />
   </ZoomPane>
-  <img
-    v-else
-    ref="imageRef"
-    class="grow object-contain contain-size"
-    :src
-    @load="onImageLoad"
-  />
+  <img v-else class="grow object-contain contain-size" :src />
   <span
     v-if="executionStatusMessage"
     class="animate-pulse self-center text-muted md:z-10"

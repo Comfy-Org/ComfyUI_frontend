@@ -20,8 +20,6 @@ function createDefaultCropState() {
     isLockEnabled: ref(false),
     cropBoxStyle: ref({}),
     resizeHandles: ref([]),
-    handleImageLoad: () => {},
-    handleImageError: () => {},
     handleDragStart: () => {},
     handleDragMove: () => {},
     handleDragEnd: () => {},
