@@ -3629,7 +3629,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.onSelectionChange = onSelectionChange
     }
     if (onSelectionChange && selectionNotified) {
-      requestAnimationFrame(() => onSelectionChange(this.selected_nodes))
+      requestAnimationFrame(() => {
+        onSelectionChange.call(this, this.selected_nodes)
+      })
     }
 
     this.isDragging = true
