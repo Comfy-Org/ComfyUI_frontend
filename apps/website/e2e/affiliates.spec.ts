@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { AFFILIATE_FAQ_COUNT } from '../src/components/affiliates/affiliateFaqs'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/affiliates'
@@ -77,7 +78,7 @@ test.describe('Affiliates landing — desktop interactions', () => {
     const parsed = JSON.parse(faqJsonLd!)
     expect(parsed['@type']).toBe('FAQPage')
     expect(Array.isArray(parsed.mainEntity)).toBe(true)
-    expect(parsed.mainEntity.length).toBe(8)
+    expect(parsed.mainEntity.length).toBe(AFFILIATE_FAQ_COUNT)
   })
 
   test('hero and footer CTAs target the application form in a new tab', async ({
