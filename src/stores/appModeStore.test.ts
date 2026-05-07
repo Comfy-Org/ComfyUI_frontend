@@ -334,7 +334,8 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [],
-        outputs: [1]
+        outputs: [1],
+        layout: { panelRows: [] }
       })
     })
 
@@ -398,7 +399,8 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [[42, 'prompt']],
-        outputs: []
+        outputs: [],
+        layout: { panelRows: [] }
       })
     })
   })
@@ -438,7 +440,8 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [[42, 'prompt', { height: 300 }]],
-        outputs: []
+        outputs: [],
+        layout: { panelRows: [] }
       })
     })
   })
