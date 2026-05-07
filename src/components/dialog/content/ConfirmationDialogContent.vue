@@ -9,16 +9,14 @@
           {{ item }}
         </li>
       </ul>
-      <Message
+      <div
         v-if="hint"
-        class="mt-2"
-        icon="pi pi-info-circle"
-        severity="secondary"
-        size="small"
-        variant="simple"
+        role="status"
+        class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
       >
-        {{ hint }}
-      </Message>
+        <i class="pi pi-info-circle mt-0.5" aria-hidden="true" />
+        <span>{{ hint }}</span>
+      </div>
     </div>
     <div class="flex shrink-0 flex-wrap justify-end gap-4">
       <div
@@ -115,7 +113,6 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

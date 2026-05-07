@@ -11,6 +11,7 @@
         <DialogOverlay />
         <DialogContent
           :size="item.dialogComponentProps.size ?? 'md'"
+          :class="item.dialogComponentProps.contentClass"
           :aria-labelledby="item.key"
           @escape-key-down="
             (e) =>

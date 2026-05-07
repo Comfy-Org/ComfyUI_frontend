@@ -229,9 +229,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       // The dialog appearing proves the keybinding was intercepted by the app.
       await comfyPage.keyboard.press('Control+s')
 
-      // The Save As dialog should appear (p-dialog overlay)
-      const dialogOverlay = comfyPage.page.locator('.p-dialog-mask')
-      await expect(dialogOverlay).toBeVisible()
+      // The Save As dialog should appear
+      const saveDialog = comfyPage.page.getByRole('dialog')
+      await expect(saveDialog).toBeVisible()
 
       // Dismiss the dialog
       await comfyPage.keyboard.press('Escape')

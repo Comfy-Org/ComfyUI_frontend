@@ -82,7 +82,7 @@ export class Topbar {
   }
 
   getSaveDialog(): Locator {
-    return this.page.locator('.p-dialog-content input')
+    return this.page.getByRole('dialog').getByRole('textbox')
   }
 
   saveWorkflow(workflowName: string): Promise<void> {
@@ -116,9 +116,9 @@ export class Topbar {
 
     // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
     // If so, return early to let the test handle the confirmation
-    const confirmationDialog = this.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
+    const confirmationDialog = this.page
+      .getByRole('dialog')
+      .filter({ hasText: 'Overwrite' })
     if (await confirmationDialog.isVisible()) {
       return
     }
