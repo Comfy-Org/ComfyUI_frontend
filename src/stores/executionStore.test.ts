@@ -1,10 +1,14 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 
 // Create mock functions that will be shared
 const {
@@ -18,10 +22,6 @@ const {
   mockNodeLocatorIdToNodeExecutionId: vi.fn(),
   mockShowTextPreview: vi.fn()
 }))
-
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeProgressState } from '@/schemas/apiSchema'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -70,7 +70,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/imagePreviewStore', () => ({
+vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: vi.fn()
   })
@@ -93,6 +93,26 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
+
+function createQueuedWorkflow(path: string = 'workflows/test.json') {
+  return {
+    activeState: { id: 'workflow-id' },
+    initialState: { id: 'workflow-id' },
+    path
+  } as Parameters<
+    ReturnType<typeof useExecutionStore>['storeJob']
+  >[0]['workflow']
+}
+
+function createPromptNode(title: string, classType: string) {
+  return {
+    inputs: {},
+    class_type: classType,
+    _meta: {
+      title
+    }
+  }
+}
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
@@ -658,6 +678,103 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   })
 })
 
+describe('useExecutionStore - executingNode with subgraphs', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should find executing node info in root graph from queued prompt data', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '123': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '123',
+        prompt_id: 'test-prompt',
+        node_id: '123'
+      }
+    }
+
+    expect(store.executingNode).toEqual({
+      title: 'Test Node',
+      type: 'TestNode'
+    })
+  })
+
+  it('should find executing node info in subgraph using execution ID', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['456:789'],
+      promptOutput: {
+        '456:789': createPromptNode('Nested Node', 'NestedNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '456:789': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '456:789',
+        prompt_id: 'test-prompt',
+        node_id: '456:789'
+      }
+    }
+
+    expect(store.executingNode).toEqual({
+      title: 'Nested Node',
+      type: 'NestedNode'
+    })
+  })
+
+  it('should return null when no node is executing', () => {
+    store.nodeProgressStates = {}
+
+    expect(store.executingNode).toBeNull()
+  })
+
+  it('should return null when executing node metadata cannot be found', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '999': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '999',
+        prompt_id: 'test-prompt',
+        node_id: '999'
+      }
+    }
+
+    expect(store.executingNode).toBeNull()
+  })
+})
+
 describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
   let store: ReturnType<typeof useMissingNodesErrorStore>
 
@@ -1025,9 +1142,21 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       path: '/workflows/foo.json'
     } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
 
-    store.storeJob({ nodes: ['a', 'b'], id: 'job-1', workflow })
+    store.storeJob({
+      nodes: ['a', 'b'],
+      id: 'job-1',
+      promptOutput: {
+        a: createPromptNode('Node A', 'NodeA'),
+        b: createPromptNode('Node B', 'NodeB')
+      },
+      workflow
+    })
 
     expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false, b: false })
+    expect(store.queuedJobs['job-1']?.nodeLookup).toEqual({
+      a: { title: 'Node A', type: 'NodeA' },
+      b: { title: 'Node B', type: 'NodeB' }
+    })
     expect(store.queuedJobs['job-1']?.workflow).toStrictEqual(workflow)
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
