@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "ve",
+      "backToGithubLogin": "Bunun yerine Github ile kaydol",
       "backToLogin": "Girişe dön",
       "backToSocialLogin": "Bunun yerine Google veya Github ile kaydolun",
       "confirmPasswordLabel": "Şifreyi Onayla",
@@ -835,6 +836,7 @@
     "NOISE": "GÜRÜLTÜ",
     "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_ŞABLONU",
     "POSE_KEYPOINT": "POZ ANAHTAR NOKTASI",
