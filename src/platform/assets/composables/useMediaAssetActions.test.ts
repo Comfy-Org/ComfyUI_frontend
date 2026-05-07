@@ -179,19 +179,6 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    removeNodeOutputs: mockRemoveNodeOutputs
-  })
-}))
-
-const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
-vi.mock('../utils/clearNodePreviewCacheForValues', () => ({
-  clearNodePreviewCacheForValues: mockClearNodePreviewCache,
-  findNodesReferencingValues: vi.fn(() => [])
-}))
-
 const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
 vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
   markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
@@ -841,7 +828,7 @@ describe('useMediaAssetActions', () => {
       mockAppGraph.value = { _nodes: [] }
     })
 
-    it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
+    it('marks deleted assets as missing media with canonical widget-value variants', async () => {
       mockDeleteAsset.mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
@@ -854,19 +841,8 @@ describe('useMediaAssetActions', () => {
       await actions.deleteAssets(asset)
 
       await vi.waitFor(() => {
-        expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
+        expect(mockMarkMissingMedia).toHaveBeenCalledTimes(1)
       })
-      const [graphArg, valuesArg, removeArg] =
-        mockClearNodePreviewCache.mock.calls[0]
-      expect(graphArg).toBe(mockAppGraph.value)
-      expect(valuesArg).toEqual(
-        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
-      )
-      expect(typeof removeArg).toBe('function')
-
-      removeArg({ id: 42 })
-      expect(mockRemoveNodeOutputs).toHaveBeenCalledWith(42)
-
       expect(mockMarkMissingMedia).toHaveBeenCalledWith(
         mockAppGraph.value,
         new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
@@ -889,9 +865,9 @@ describe('useMediaAssetActions', () => {
       await actions.deleteAssets(asset)
 
       await vi.waitFor(() => {
-        expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
+        expect(mockMarkMissingMedia).toHaveBeenCalledTimes(1)
       })
-      const [, valuesArg] = mockClearNodePreviewCache.mock.calls[0]
+      const [, valuesArg] = mockMarkMissingMedia.mock.calls[0]
       expect(valuesArg).toEqual(new Set(['outputs/2025/gen.png [output]']))
       expect(valuesArg.has('gen.png')).toBe(false)
       expect(valuesArg.has('gen.png [input]')).toBe(false)
@@ -911,7 +887,6 @@ describe('useMediaAssetActions', () => {
       await vi.waitFor(() => {
         expect(mockDeleteAsset).toHaveBeenCalled()
       })
-      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
     })
   })

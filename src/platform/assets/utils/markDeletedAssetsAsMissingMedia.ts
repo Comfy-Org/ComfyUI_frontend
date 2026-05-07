@@ -1,11 +1,31 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
+function findNodesReferencingValues(
+  rootGraph: LGraph | Subgraph,
+  deletedValues: ReadonlySet<string>
+): LGraphNode[] {
+  if (deletedValues.size === 0) return []
+  const matches: LGraphNode[] = []
+  for (const node of collectAllNodes(rootGraph)) {
+    if (!node.widgets?.length) continue
+    if (node.isSubgraphNode?.()) continue
+    const referencesDeleted = node.widgets.some(
+      (w) => typeof w.value === 'string' && deletedValues.has(w.value)
+    )
+    if (referencesDeleted) matches.push(node)
+  }
+  return matches
+}
 
 /**
  * After a successful asset deletion, surface the affected Load Image / Load
