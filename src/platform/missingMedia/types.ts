@@ -16,7 +16,7 @@ export interface MissingMediaCandidate {
   /**
    * - `true`  — confirmed missing
    * - `false` — confirmed present
-   * - `undefined` — pending async verification (cloud only)
+   * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
 }

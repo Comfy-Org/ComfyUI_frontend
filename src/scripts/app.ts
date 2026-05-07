@@ -96,7 +96,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
-  verifyCloudMediaCandidates
+  verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -1508,9 +1508,13 @@ export class ComfyApp {
       return
     }
 
-    if (isCloud) {
+    const pending = candidates.some((c) => c.isMissing === undefined)
+    if (pending) {
       const controller = missingMediaStore.createVerificationAbortController()
-      void verifyCloudMediaCandidates(candidates, controller.signal)
+      void verifyMediaCandidates(candidates, {
+        isCloud,
+        signal: controller.signal
+      })
         .then(() => {
           if (controller.signal.aborted) return
           // Re-check ancestor after async verification (see model pipeline).

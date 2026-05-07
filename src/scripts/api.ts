@@ -65,8 +65,10 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
+  fetchHistoryPage,
   fetchJobDetail,
-  fetchQueue
+  fetchQueue,
+  type FetchHistoryPageResult
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
@@ -1034,6 +1036,31 @@ export class ComfyApi extends EventTarget {
     } catch (error) {
       console.error(error)
       return []
+    }
+  }
+
+  /**
+   * Gets one page of prompt execution history with pagination metadata.
+   */
+  async getHistoryPage(
+    max_items: number = 200,
+    options?: { offset?: number }
+  ): Promise<FetchHistoryPageResult> {
+    try {
+      return await fetchHistoryPage(
+        this.fetchApi.bind(this),
+        max_items,
+        options?.offset
+      )
+    } catch (error) {
+      console.error(error)
+      return {
+        jobs: [],
+        total: 0,
+        offset: options?.offset ?? 0,
+        limit: max_items,
+        hasMore: false
+      }
     }
   }
 
