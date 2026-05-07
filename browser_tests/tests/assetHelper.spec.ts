@@ -133,6 +133,30 @@ test.describe('AssetHelper', () => {
       await assetApi.clearMocks()
     })
 
+    test('GET /assets filters by exclude_tags', async ({ comfyPage }) => {
+      const { assetApi } = comfyPage
+
+      assetApi.configure(
+        withAsset(STABLE_INPUT_IMAGE),
+        withAsset({
+          ...STABLE_INPUT_IMAGE,
+          id: 'missing-input',
+          tags: ['input', 'missing']
+        })
+      )
+      await assetApi.mock()
+
+      const { body } = await assetApi.fetch(
+        `${comfyPage.url}/api/assets?include_tags=input,&exclude_tags= missing,`
+      )
+      const data = body as { assets: Array<{ id: string }> }
+      expect(data.assets.map((asset) => asset.id)).toEqual([
+        STABLE_INPUT_IMAGE.id
+      ])
+
+      await assetApi.clearMocks()
+    })
+
     test('GET /assets/:id returns single asset or 404', async ({
       comfyPage
     }) => {
