@@ -94,7 +94,7 @@ class Load3DConfiguration {
     )
 
     if (filePath) {
-      onModelWidgetUpdate(filePath)
+      void onModelWidgetUpdate(filePath)
     }
   }
 
@@ -110,7 +110,7 @@ class Load3DConfiguration {
       silentOnNotFound
     )
     if (modelWidget.value) {
-      onModelWidgetUpdate(modelWidget.value)
+      void onModelWidgetUpdate(modelWidget.value)
     }
 
     const originalCallback = modelWidget.callback
@@ -131,7 +131,7 @@ class Load3DConfiguration {
     })
 
     modelWidget.callback = (value: string | number | boolean | object) => {
-      onModelWidgetUpdate(value)
+      void onModelWidgetUpdate(value)
 
       if (originalCallback) {
         originalCallback(value)
@@ -309,6 +309,8 @@ class Load3DConfiguration {
         }
         isFirstLoad = false
       }
+
+      this.load3d.emitModelReady()
     }
   }
 

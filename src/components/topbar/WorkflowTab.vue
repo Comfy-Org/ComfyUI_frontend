@@ -23,6 +23,7 @@
         <div class="relative">
           <span
             v-if="shouldShowStatusIndicator"
+            data-testid="workflow-dirty-indicator"
             class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
             >•</span
           >

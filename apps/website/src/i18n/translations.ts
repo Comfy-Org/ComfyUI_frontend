@@ -1119,6 +1119,10 @@ const translations = {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
   },
+  'pricing.plan.creator.feature2': {
+    en: '3 concurrent API jobs',
+    'zh-CN': '3 个并发 API 任务'
+  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.summary': {
@@ -1142,6 +1146,10 @@ const translations = {
   'pricing.plan.pro.feature1': {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'pricing.plan.pro.feature2': {
+    en: '5 concurrent API jobs',
+    'zh-CN': '5 个并发 API 任务'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1599,7 +1607,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
-  'nav.blogs': { en: 'Blogs', 'zh-CN': '博客' },
+  'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
   'nav.docs': { en: 'Docs', 'zh-CN': '文档' },
