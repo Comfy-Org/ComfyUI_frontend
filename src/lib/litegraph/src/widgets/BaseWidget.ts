@@ -86,8 +86,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: Omit<WidgetState, 'nodeId'> &
-    Partial<Pick<WidgetState, 'nodeId'>>
+  private _state: WidgetState
 
   get label(): string | undefined {
     return this._state.label
@@ -147,6 +146,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
       // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
       value: this.value,
+      name: this.name,
       nodeId
     })
   }
@@ -196,7 +196,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     Object.assign(this, safeValues)
 
     this._state = {
-      name: this.name,
       type: this.type as TWidgetType,
       value,
       label,
