@@ -659,7 +659,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 32 : 100,
+    defaultValue: 100,
     versionAdded: '1.3.5'
   },
   {
