@@ -441,7 +441,12 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
     drawChip(chip2Y, 'DEPTH MAP', depthOn, depthHovered)
   } else if (n.type === 'image') {
     const outputUi = nodes['n-output-ui'] as SvgNode
-    const filter = id === 'n-blue' ? levelsFilter(outputUi.progress) : null
+    let filter: string | null = null
+    if (id === 'n-blue') filter = levelsFilter(outputUi.progress)
+    // The input PNG runs hot in pure #15FF00 territory — soften it just
+    // enough that the eye lands on the final-output card first while the
+    // green still reads as "input source".
+    else if (id === 'n-green') filter = 'saturate(0.78) brightness(0.92)'
     drawImageCover(ctx, x, y, n.w, n.h, n.rx, n.color, n.img, filter)
   } else if (n.type === 'svg') {
     if (n.img && n.img.complete && n.img.naturalWidth !== 0) {
