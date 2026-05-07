@@ -291,9 +291,9 @@ describe('SubgraphWidgetPromotion', () => {
 
       hostNode.configure(serializedHostNode)
 
-      expect(hostNode.properties.proxyWidgets).toStrictEqual([
-        [String(interiorNode.id), 'batch_size']
-      ])
+      // ADR 0009: configure() no longer writes resolved entries back to
+      // properties.proxyWidgets. Hydration is observable via the synthetic
+      // widget surface instead.
       expect(hostNode.widgets).toHaveLength(1)
       expect(hostNode.widgets[0].name).toBe('batch_size')
       expect(hostNode.widgets[0].value).toBe(1)
@@ -408,9 +408,8 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedWidgets[0].disambiguatingSourceNodeId).toBe(
         String(samplerNode.id)
       )
-      expect(hostNode.properties.proxyWidgets).toStrictEqual([
-        [String(nestedNode.id), 'noise_seed', String(samplerNode.id)]
-      ])
+      // ADR 0009: configure() no longer rewrites properties.proxyWidgets.
+      // Normalization is observable on the synthetic widget surface above.
     })
 
     it('should preserve promoted widget entries after cloning', () => {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -14,11 +14,24 @@ export function makePromotionEntryKey(source: PromotedWidgetSource): string {
     : base
 }
 
+/**
+ * Runtime PromotionStore.
+ *
+ * After ADR 0009 the canonical owner of a promoted value widget is the linked
+ * `SubgraphInput` itself (and the host's `_widget` slot). This store no
+ * longer owns serialized state — it is a runtime index used by callers that
+ * key off `(rootGraphId, subgraphNodeId)`.
+ *
+ * The internal map is rebuilt by `setPromotions(...)` from current host
+ * inputs by the PromotionStore's only writer, `_internalConfigureAfterSlots`,
+ * and by the slice 5 migration flush. `isPromotedByAny` is a derived
+ * `computed` over all entries in a graph; it has no separate ref-count
+ * store.
+ */
 export const usePromotionStore = defineStore('promotion', () => {
   const graphPromotions = ref(
     new Map<UUID, Map<NodeId, PromotedWidgetSource[]>>()
   )
-  const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
 
   function _getPromotionsForGraph(
     graphId: UUID
@@ -31,41 +44,18 @@ export const usePromotionStore = defineStore('promotion', () => {
     return nextPromotions
   }
 
-  function _getRefCountsForGraph(graphId: UUID): Map<string, number> {
-    const refCounts = graphRefCounts.value.get(graphId)
-    if (refCounts) return refCounts
-
-    const nextRefCounts = new Map<string, number>()
-    graphRefCounts.value.set(graphId, nextRefCounts)
-    return nextRefCounts
-  }
-
-  function _incrementKeys(
-    graphId: UUID,
-    entries: PromotedWidgetSource[]
-  ): void {
-    const refCounts = _getRefCountsForGraph(graphId)
-    for (const e of entries) {
-      const key = makePromotionEntryKey(e)
-      refCounts.set(key, (refCounts.get(key) ?? 0) + 1)
-    }
-  }
-
-  function _decrementKeys(
-    graphId: UUID,
-    entries: PromotedWidgetSource[]
-  ): void {
-    const refCounts = _getRefCountsForGraph(graphId)
-    for (const e of entries) {
-      const key = makePromotionEntryKey(e)
-      const count = (refCounts.get(key) ?? 1) - 1
-      if (count <= 0) {
-        refCounts.delete(key)
-      } else {
-        refCounts.set(key, count)
+  /** Derived: keys-by-graph of all promotion entry keys (any subgraph node). */
+  const allKeysByGraph = computed(() => {
+    const result = new Map<UUID, Set<string>>()
+    for (const [graphId, hosts] of graphPromotions.value) {
+      const keys = new Set<string>()
+      for (const entries of hosts.values()) {
+        for (const entry of entries) keys.add(makePromotionEntryKey(entry))
       }
+      result.set(graphId, keys)
     }
-  }
+    return result
+  })
 
   function getPromotionsRef(
     graphId: UUID,
@@ -100,8 +90,8 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphId: UUID,
     source: PromotedWidgetSource
   ): boolean {
-    const refCounts = _getRefCountsForGraph(graphId)
-    return (refCounts.get(makePromotionEntryKey(source)) ?? 0) > 0
+    const keys = allKeysByGraph.value.get(graphId)
+    return keys?.has(makePromotionEntryKey(source)) ?? false
   }
 
   function setPromotions(
@@ -110,10 +100,6 @@ export const usePromotionStore = defineStore('promotion', () => {
     entries: PromotedWidgetSource[]
   ): void {
     const promotions = _getPromotionsForGraph(graphId)
-    const oldEntries = promotions.get(subgraphNodeId) ?? []
-
-    _decrementKeys(graphId, oldEntries)
-    _incrementKeys(graphId, entries)
 
     if (entries.length === 0) {
       promotions.delete(subgraphNodeId)
@@ -187,7 +173,6 @@ export const usePromotionStore = defineStore('promotion', () => {
 
   function clearGraph(graphId: UUID): void {
     graphPromotions.value.delete(graphId)
-    graphRefCounts.value.delete(graphId)
   }
 
   return {

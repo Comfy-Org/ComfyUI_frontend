@@ -364,7 +364,10 @@ describe(usePromotionStore, () => {
     })
   })
 
-  describe('ref-counted isPromotedByAny', () => {
+  // ADR 0009: isPromotedByAny is now derived (computed) over all entries
+  // in a graph rather than tracked via a separate ref-count map. The
+  // behavioral contract is unchanged.
+  describe('derived isPromotedByAny', () => {
     const nodeA = 1 as NodeId
     const nodeB = 2 as NodeId
 

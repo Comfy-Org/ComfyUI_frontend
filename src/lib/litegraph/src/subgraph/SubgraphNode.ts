@@ -648,16 +648,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
-  private _serializeEntries(
-    entries: PromotedWidgetSource[]
-  ): (string[] | [string, string, string])[] {
-    return entries.map((e) =>
-      e.disambiguatingSourceNodeId
-        ? [e.sourceNodeId, e.sourceWidgetName, e.disambiguatingSourceNodeId]
-        : [e.sourceNodeId, e.sourceWidgetName]
-    )
-  }
-
   private _resolveLegacyEntry(
     widgetName: string
   ): [string, string] | undefined {
@@ -1055,16 +1045,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // This prevents stale/duplicate serialized inputs from persisting (#9977).
     this.inputs = this.inputs.filter((input) => input._subgraphSlot)
 
-    // Ensure proxyWidgets is initialized so it serializes
-    this.properties.proxyWidgets ??= []
-
     // Clear view cache — forces re-creation on next getter access.
-    // Do NOT clear properties.proxyWidgets — it was already populated
-    // from serialized data by super.configure(info) before this runs.
     this._promotedViewManager.clear()
     this._invalidatePromotedViewsCache()
 
-    // Hydrate the store from serialized properties.proxyWidgets
+    // ADR 0009: hydrate the runtime PromotionStore index from any legacy
+    // properties.proxyWidgets present on this host. Hydration is read-only
+    // — we no longer write back resolved entries to the property; the
+    // post-configure flush in LGraph.configure forward-ratchets the
+    // payload into canonical state.
     const raw = parseProxyWidgets(this.properties.proxyWidgets)
     const store = usePromotionStore()
 
@@ -1093,12 +1082,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       .filter((e): e is NonNullable<typeof e> => e !== null)
 
     store.setPromotions(this.rootGraph.id, this.id, entries)
-
-    // Write back resolved entries so legacy or stale entries don't persist
-    const serialized = this._serializeEntries(entries)
-    if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
-      this.properties.proxyWidgets = serialized
-    }
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {
