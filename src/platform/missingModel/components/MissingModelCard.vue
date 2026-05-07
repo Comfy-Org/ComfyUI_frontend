@@ -1,7 +1,7 @@
 <template>
   <div class="px-4 pb-2">
     <div
-      v-if="downloadableModels.length > 0"
+      v-if="downloadableModelEntries.length > 0"
       data-testid="missing-model-actions"
       class="flex items-center gap-2 border-b border-interface-stroke py-2"
     >
@@ -117,12 +117,13 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { downloadModel } from '@/platform/missingModel/missingModelDownload'
-import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
+import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
+import { getDownloadableModelEntries } from '@/platform/missingModel/missingModelViewUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -138,25 +139,45 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const missingModelStore = useMissingModelStore()
 
-const downloadableModels = computed(() => {
+const downloadableModelEntries = computed(() => {
   if (isCloud) return []
 
-  return getDownloadableModels(missingModelGroups)
+  return getDownloadableModelEntries(missingModelGroups)
 })
 
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')
-  const total = downloadableModels.value.reduce(
-    (sum, model) => sum + (missingModelStore.fileSizes[model.url] ?? 0),
+  const total = downloadableModelEntries.value.reduce(
+    (sum, { model }) => sum + (missingModelStore.fileSizes[model.url] ?? 0),
     0
   )
   return total > 0 ? `${base} (${formatSize(total)})` : base
 })
 
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
+async function downloadAndTrackModel({
+  key,
+  model
+}: {
+  key: string
+  model: ModelWithUrl
+}) {
+  try {
+    const result = await downloadModel(model, missingModelStore.folderPaths)
+    if (!result.started || !isDesktop) return
+
+    missingModelStore.downloadRefs[key] = {
+      kind: 'electron-download',
+      ...(result.downloadId ? { downloadId: result.downloadId } : {}),
+      url: model.url
+    }
+    missingModelStore.selectedLibraryModel[key] = model.name
+  } catch (error: unknown) {
+    console.warn('[MissingModelCard] Failed to start model download:', error)
   }
+}
+
+async function downloadAllModels() {
+  await Promise.all(downloadableModelEntries.value.map(downloadAndTrackModel))
 }
 
 function handleRefreshClick() {

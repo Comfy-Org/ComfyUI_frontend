@@ -54,7 +54,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** Clear all error state. Called at execution start and workflow changes.
    *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
+   *  in-progress model repairs (download refs, URL inputs, etc.).
    *  Missing models are cleared separately during workflow load/clean paths. */
   function clearAllErrors() {
     lastExecutionError.value = null
