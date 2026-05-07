@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "و",
+      "backToGithubLogin": "به‌جای آن با Github ثبت‌نام کنید",
       "backToLogin": "بازگشت به ورود",
       "backToSocialLogin": "ثبت‌نام با Google یا Github",
       "confirmPasswordLabel": "تأیید رمز عبور",
@@ -835,6 +836,7 @@
     "NOISE": "نویز",
     "OPENAI_CHAT_CONFIG": "پیکربندی گفتگوی OpenAI",
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "قالب Pixverse",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
