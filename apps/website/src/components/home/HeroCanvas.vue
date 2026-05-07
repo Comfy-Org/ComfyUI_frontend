@@ -126,6 +126,14 @@ let connectionDragStart = { x: 0, y: 0 }
 let dragCursorWorld = { x: 0, y: 0 }
 let hoverSlot: SlotEnd | null = null
 
+// Drives the wire-flow pulse — incremented from the rAF loop, sampled in
+// drawEdge as a 0–1 position along each bezier.
+let pulsePhase = 0
+let rafId: number | null = null
+let lastTickMs = 0
+const TICK_MS = 1000 / 30
+const PULSE_PERIOD_MS = 4500
+
 function absPos(id: NodeId) {
   const n = nodes[id]
   return { x: n.x + n.ox, y: n.y + n.oy, w: n.w, h: n.h }
@@ -403,23 +411,42 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
   ctx.restore()
 }
 
+// Compute consistent bezier control points for a wire that flows
+// horizontally (source on the right edge of one node, target on the left
+// edge of the next). The handle length is proportional to the horizontal
+// gap with a floor — this keeps short hops from collapsing into a kink and
+// long hops from looking limp.
+function bezierHandles(ax: number, ay: number, bx: number, by: number) {
+  const dir = bx >= ax ? 1 : -1
+  const handleLen = Math.max(80, Math.abs(bx - ax) * 0.55)
+  return {
+    cp1x: ax + handleLen * dir,
+    cp1y: ay,
+    cp2x: bx - handleLen * dir,
+    cp2y: by
+  }
+}
+
+function bezierAt(p0: number, p1: number, p2: number, p3: number, t: number) {
+  const u = 1 - t
+  return (
+    u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3
+  )
+}
+
 function drawBezierWire(
   ctx: CanvasRenderingContext2D,
   ax: number,
   ay: number,
   bx: number,
   by: number,
-  options: { dashed?: boolean; alpha?: number } = {}
+  options: { dashed?: boolean; alpha?: number; lineWidth?: number } = {}
 ) {
-  const dx = bx - ax
-  const cp1x = ax + dx * 0.5
-  const cp1y = ay
-  const cp2x = ax + dx * 0.5
-  const cp2y = by
+  const { cp1x, cp1y, cp2x, cp2y } = bezierHandles(ax, ay, bx, by)
 
   ctx.save()
   ctx.strokeStyle = YELLOW
-  ctx.lineWidth = 2
+  ctx.lineWidth = options.lineWidth ?? 1.7
   ctx.lineCap = 'round'
   if (options.alpha !== undefined) ctx.globalAlpha = options.alpha
   if (options.dashed) ctx.setLineDash([10, 8])
@@ -427,6 +454,22 @@ function drawBezierWire(
   ctx.moveTo(ax, ay)
   ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, bx, by)
   ctx.stroke()
+  ctx.restore()
+}
+
+function drawEndpointGlow(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save()
+  const grad = ctx.createRadialGradient(x, y, 0, x, y, 10)
+  grad.addColorStop(0, 'rgba(242,255,89,0.55)')
+  grad.addColorStop(1, 'rgba(242,255,89,0)')
+  ctx.fillStyle = grad
+  ctx.beginPath()
+  ctx.arc(x, y, 10, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = YELLOW
+  ctx.beginPath()
+  ctx.arc(x, y, 4, 0, Math.PI * 2)
+  ctx.fill()
   ctx.restore()
 }
 
@@ -440,14 +483,29 @@ function drawEdge(ctx: CanvasRenderingContext2D, e: Edge) {
   const b = anchor(e.tgt, e.tfx, e.tfy)
 
   drawBezierWire(ctx, a.x, a.y, b.x, b.y)
+  drawEndpointGlow(ctx, a.x, a.y)
+  drawEndpointGlow(ctx, b.x, b.y)
 
+  // Subtle pulse traveling source → target. Eased so the dot lingers near
+  // the endpoints (where the eye expects to see it land).
+  const t = pulsePhase
+  const ease = t * t * (3 - 2 * t)
+  const { cp1x, cp1y, cp2x, cp2y } = bezierHandles(a.x, a.y, b.x, b.y)
+  const px = bezierAt(a.x, cp1x, cp2x, b.x, ease)
+  const py = bezierAt(a.y, cp1y, cp2y, b.y, ease)
+  // Fade in/out at the very ends so the pulse doesn't pop.
+  const edgeFade = Math.min(1, Math.min(t, 1 - t) * 8)
   ctx.save()
-  ctx.fillStyle = YELLOW
+  const pulseGrad = ctx.createRadialGradient(px, py, 0, px, py, 16)
+  pulseGrad.addColorStop(0, `rgba(242,255,89,${(0.85 * edgeFade).toFixed(3)})`)
+  pulseGrad.addColorStop(
+    0.5,
+    `rgba(242,255,89,${(0.35 * edgeFade).toFixed(3)})`
+  )
+  pulseGrad.addColorStop(1, 'rgba(242,255,89,0)')
+  ctx.fillStyle = pulseGrad
   ctx.beginPath()
-  ctx.arc(a.x, a.y, 5.2, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(b.x, b.y, 5.2, 0, Math.PI * 2)
+  ctx.arc(px, py, 16, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 }
@@ -974,9 +1032,35 @@ onMounted(async () => {
     canvas.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('pointercancel', onPointerUp)
   }
+
+  startAnimation()
 })
 
+function tick(timestamp: number) {
+  if (timestamp - lastTickMs >= TICK_MS) {
+    pulsePhase = ((timestamp % PULSE_PERIOD_MS) / PULSE_PERIOD_MS) % 1
+    draw()
+    lastTickMs = timestamp
+  }
+  rafId = requestAnimationFrame(tick)
+}
+
+function startAnimation() {
+  if (rafId !== null) return
+  if (typeof window === 'undefined') return
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  rafId = requestAnimationFrame(tick)
+}
+
+function stopAnimation() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+}
+
 onBeforeUnmount(() => {
+  stopAnimation()
   const canvas = canvasRef.value
   if (canvas) {
     canvas.removeEventListener('pointerdown', onPointerDown)
