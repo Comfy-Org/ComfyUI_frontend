@@ -112,6 +112,20 @@ let dragStart = { x: 0, y: 0 }
 let dragOffStart = { x: 0, y: 0 }
 let isSliding: NodeId | null = null
 
+type SlotEnd = { edgeId: ToggleEdgeId; end: 'src' | 'tgt' }
+// While the user is rewiring an edge, the slot they grabbed stays anchored
+// — the wire pivots from that point — and the cursor controls the opposite
+// end. Either side can initiate the drag (rip-off when connected, new wire
+// when disconnected); dropping on a slot of the same edge reconnects, and
+// dropping anywhere else disconnects.
+let connectionDrag: {
+  edgeId: ToggleEdgeId
+  anchor: 'src' | 'tgt'
+} | null = null
+let connectionDragStart = { x: 0, y: 0 }
+let dragCursorWorld = { x: 0, y: 0 }
+let hoverSlot: SlotEnd | null = null
+
 function absPos(id: NodeId) {
   const n = nodes[id]
   return { x: n.x + n.ox, y: n.y + n.oy, w: n.w, h: n.h }
@@ -289,19 +303,59 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
     const dotR = 5
     const textOffsetX = 38
 
-    const drawChip = (labelY: number, label: string, active: boolean) => {
+    const drawChip = (
+      labelY: number,
+      label: string,
+      active: boolean,
+      hovered: boolean
+    ) => {
+      // Soft yellow halo behind the chip when hovered — reads as "grab me".
+      if (hovered) {
+        ctx.save()
+        roundRect(
+          ctx,
+          x + chipX - 4,
+          y + labelY - 4,
+          chipW + 8,
+          chipH + 8,
+          chipR + 4
+        )
+        ctx.fillStyle = 'rgba(242,255,89,0.18)'
+        ctx.fill()
+        ctx.restore()
+      }
+
       roundRect(ctx, x + chipX, y + labelY, chipW, chipH, chipR)
       ctx.fillStyle = INK
       ctx.fill()
 
+      // Hairline rim — disconnected chips show a dim warm-gray rim so the
+      // click target still reads as a control even when off.
+      ctx.save()
+      roundRect(ctx, x + chipX, y + labelY, chipW, chipH, chipR)
+      ctx.strokeStyle = active ? YELLOW : WARM_GRAY
+      ctx.globalAlpha = hovered ? 0.95 : active ? 0.55 : 0.35
+      ctx.lineWidth = hovered ? 1.5 : 1
+      ctx.stroke()
+      ctx.restore()
+
+      const dotCenterX = x + chipX + dotOffsetX
+      const dotCenterY = y + labelY + chipH / 2
+
+      // Outer ring around the dot — same visual language as the source-side
+      // slot ring so both ends advertise "this is a port".
+      ctx.save()
       ctx.beginPath()
-      ctx.arc(
-        x + chipX + dotOffsetX,
-        y + labelY + chipH / 2,
-        dotR,
-        0,
-        Math.PI * 2
-      )
+      ctx.arc(dotCenterX, dotCenterY, hovered ? 11 : 9, 0, Math.PI * 2)
+      ctx.strokeStyle = active ? YELLOW : WARM_GRAY
+      ctx.globalAlpha = hovered ? 0.9 : active ? 0.7 : 0.45
+      ctx.lineWidth = hovered ? 2 : 1.4
+      ctx.stroke()
+      ctx.restore()
+
+      // Solid dot.
+      ctx.beginPath()
+      ctx.arc(dotCenterX, dotCenterY, dotR, 0, Math.PI * 2)
       ctx.fillStyle = active ? YELLOW : WARM_GRAY
       ctx.fill()
 
@@ -310,8 +364,12 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
       ctx.fillText(label, x + chipX + textOffsetX, y + labelY + chipH / 2 + 5)
     }
 
-    drawChip(chip1Y, 'CANNY EDGE', cannyOn)
-    drawChip(chip2Y, 'DEPTH MAP', depthOn)
+    const cannyHovered =
+      hoverSlot?.edgeId === 'canny-out' && hoverSlot?.end === 'tgt'
+    const depthHovered =
+      hoverSlot?.edgeId === 'depth-out' && hoverSlot?.end === 'tgt'
+    drawChip(chip1Y, 'CANNY EDGE', cannyOn, cannyHovered)
+    drawChip(chip2Y, 'DEPTH MAP', depthOn, depthHovered)
   } else if (n.type === 'image') {
     const outputUi = nodes['n-output-ui'] as SvgNode
     const filter = id === 'n-blue' ? levelsFilter(outputUi.progress) : null
@@ -345,26 +403,45 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
   ctx.restore()
 }
 
-function drawEdge(ctx: CanvasRenderingContext2D, e: Edge) {
-  if (e.connected === false) return
-
-  const a = anchor(e.src, e.sfx, e.sfy)
-  const b = anchor(e.tgt, e.tfx, e.tfy)
-
-  const dx = b.x - a.x
-  const cp1x = a.x + dx * 0.5
-  const cp1y = a.y
-  const cp2x = a.x + dx * 0.5
-  const cp2y = b.y
+function drawBezierWire(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  options: { dashed?: boolean; alpha?: number } = {}
+) {
+  const dx = bx - ax
+  const cp1x = ax + dx * 0.5
+  const cp1y = ay
+  const cp2x = ax + dx * 0.5
+  const cp2y = by
 
   ctx.save()
   ctx.strokeStyle = YELLOW
   ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  if (options.alpha !== undefined) ctx.globalAlpha = options.alpha
+  if (options.dashed) ctx.setLineDash([10, 8])
   ctx.beginPath()
-  ctx.moveTo(a.x, a.y)
-  ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, b.x, b.y)
+  ctx.moveTo(ax, ay)
+  ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, bx, by)
   ctx.stroke()
+  ctx.restore()
+}
 
+function drawEdge(ctx: CanvasRenderingContext2D, e: Edge) {
+  if (e.connected === false) return
+  // Hide the static line for the edge currently being dragged — the ghost
+  // wire takes over while the user is rewiring.
+  if (connectionDrag && connectionDrag.edgeId === e.id) return
+
+  const a = anchor(e.src, e.sfx, e.sfy)
+  const b = anchor(e.tgt, e.tfx, e.tfy)
+
+  drawBezierWire(ctx, a.x, a.y, b.x, b.y)
+
+  ctx.save()
   ctx.fillStyle = YELLOW
   ctx.beginPath()
   ctx.arc(a.x, a.y, 5.2, 0, Math.PI * 2)
@@ -372,7 +449,75 @@ function drawEdge(ctx: CanvasRenderingContext2D, e: Edge) {
   ctx.beginPath()
   ctx.arc(b.x, b.y, 5.2, 0, Math.PI * 2)
   ctx.fill()
+  ctx.restore()
+}
 
+// Visual indicator (ring + soft glow) that a slot is interactive.
+// Source-side dots only — the target-side input lives inside a drawn chip,
+// so its ring is rendered as part of the chip pass for correct stacking.
+function drawSlotRing(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  active: boolean,
+  hovered: boolean
+) {
+  ctx.save()
+  if (hovered) {
+    // Soft outer halo on hover to read as "grab me"
+    const halo = ctx.createRadialGradient(x, y, 4, x, y, 22)
+    halo.addColorStop(0, 'rgba(242,255,89,0.45)')
+    halo.addColorStop(1, 'rgba(242,255,89,0)')
+    ctx.fillStyle = halo
+    ctx.beginPath()
+    ctx.arc(x, y, 22, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.beginPath()
+  ctx.arc(x, y, hovered ? 12 : 10, 0, Math.PI * 2)
+  ctx.strokeStyle = active ? YELLOW : WARM_GRAY
+  ctx.globalAlpha = hovered ? 0.95 : active ? 0.75 : 0.55
+  ctx.lineWidth = hovered ? 2.2 : 1.6
+  ctx.stroke()
+  ctx.restore()
+}
+
+function drawSlotIndicators(ctx: CanvasRenderingContext2D) {
+  if (!edges) return
+  for (const edge of edges) {
+    if (!edge.id || !edge.togglable) continue
+    const srcPos = anchor(edge.src, edge.sfx, edge.sfy)
+    const isHovered = hoverSlot?.edgeId === edge.id && hoverSlot?.end === 'src'
+    drawSlotRing(ctx, srcPos.x, srcPos.y, edge.connected !== false, isHovered)
+  }
+}
+
+function drawConnectionDragGhost(ctx: CanvasRenderingContext2D) {
+  if (!connectionDrag) return
+  const edge = getEdge(connectionDrag.edgeId)
+  if (!edge) return
+  const anchorPos = edgeEndPos(edge, connectionDrag.anchor)
+
+  // If the cursor is over a slot belonging to this edge, snap visually so
+  // the user gets a "click target hit" cue before releasing.
+  const snap =
+    hoverSlot && hoverSlot.edgeId === connectionDrag.edgeId
+      ? edgeEndPos(edge, hoverSlot.end)
+      : dragCursorWorld
+
+  drawBezierWire(ctx, anchorPos.x, anchorPos.y, snap.x, snap.y, {
+    dashed: !hoverSlot || hoverSlot.edgeId !== connectionDrag.edgeId,
+    alpha: 0.85
+  })
+
+  ctx.save()
+  ctx.fillStyle = YELLOW
+  ctx.beginPath()
+  ctx.arc(anchorPos.x, anchorPos.y, 5.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(snap.x, snap.y, 5.2, 0, Math.PI * 2)
+  ctx.fill()
   ctx.restore()
 }
 
@@ -397,6 +542,9 @@ function draw() {
   drawNode(ctx, 'n-output-ui')
 
   edges.forEach((e) => drawEdge(ctx, e))
+
+  drawSlotIndicators(ctx)
+  drawConnectionDragGhost(ctx)
 }
 
 function fitView() {
@@ -480,20 +628,24 @@ function isEdgeConnected(id: ToggleEdgeId): boolean {
   return edge?.connected !== false
 }
 
-// Toggle hit-test for the two interactive connections.
-// Click targets, in priority order:
-//   1. The CANNY EDGE / DEPTH MAP chips on the purple card (~175×44 each —
-//      these chips sit exactly where the input slot dots live).
-//   2. The smaller output slot dots on the right edge of canny / depth.
-function hitTestToggle(wx: number, wy: number): ToggleEdgeId | null {
+// Slot hit-test that distinguishes which end was grabbed.
+// Targets:
+//   - tgt: CANNY EDGE / DEPTH MAP chip on the purple card (~175×44 each —
+//     generous click target, sits exactly over the input slot dot)
+//   - src: smaller output dot on the right edge of canny / depth
+function hitTestSlotEnd(wx: number, wy: number): SlotEnd | null {
   if (nodes && nodes['n-purple']) {
     const p = absPos('n-purple')
     const chipX = p.x + 24
     const chipW = 175
     const chipH = 44
     if (wx >= chipX && wx <= chipX + chipW) {
-      if (wy >= p.y + 42 && wy <= p.y + 42 + chipH) return 'canny-out'
-      if (wy >= p.y + 100 && wy <= p.y + 100 + chipH) return 'depth-out'
+      if (wy >= p.y + 42 && wy <= p.y + 42 + chipH) {
+        return { edgeId: 'canny-out', end: 'tgt' }
+      }
+      if (wy >= p.y + 100 && wy <= p.y + 100 + chipH) {
+        return { edgeId: 'depth-out', end: 'tgt' }
+      }
     }
   }
   if (edges) {
@@ -503,11 +655,31 @@ function hitTestToggle(wx: number, wy: number): ToggleEdgeId | null {
       const dx = wx - a.x
       const dy = wy - a.y
       if (dx * dx + dy * dy < SLOT_DOT_HIT_RADIUS * SLOT_DOT_HIT_RADIUS) {
-        return edge.id
+        return { edgeId: edge.id, end: 'src' }
       }
     }
   }
   return null
+}
+
+function getEdge(id: ToggleEdgeId): Edge | undefined {
+  return edges?.find((e) => e.id === id)
+}
+
+// Either end of a togglable edge can initiate a drag. The wire pivots from
+// the side that was grabbed — so grabbing the middle-node output keeps the
+// wire attached to the output, and grabbing the final-node input keeps it
+// attached to the input. Drop on the matching slot to reconnect, anywhere
+// else to disconnect.
+function isSlotGrabbable(_edge: Edge, _end: 'src' | 'tgt'): boolean {
+  return true
+}
+
+// World-coord position of one end of an edge.
+function edgeEndPos(edge: Edge, end: 'src' | 'tgt') {
+  return end === 'src'
+    ? anchor(edge.src, edge.sfx, edge.sfy)
+    : anchor(edge.tgt, edge.tfx, edge.tfy)
 }
 
 function hitTest(wx: number, wy: number): NodeId | null {
@@ -544,14 +716,24 @@ function onPointerDown(e: PointerEvent) {
   if (!canvas) return
   const w = clientToWorld(e.clientX, e.clientY)
 
-  const toggleId = hitTestToggle(w.x, w.y)
-  if (toggleId && edges) {
-    const edge = edges.find((edge) => edge.id === toggleId)
-    if (edge) {
-      edge.connected = !edge.connected
+  const slotHit = hitTestSlotEnd(w.x, w.y)
+  if (slotHit) {
+    const edge = getEdge(slotHit.edgeId)
+    if (edge && isSlotGrabbable(edge, slotHit.end)) {
+      connectionDrag = { edgeId: slotHit.edgeId, anchor: slotHit.end }
+      connectionDragStart = w
+      dragCursorWorld = w
+      hoverSlot = slotHit
+      canvas.setPointerCapture(e.pointerId)
+      canvas.style.cursor = 'grabbing'
       draw()
       return
     }
+    // Slot was hit but not grabbable (connected input chip). The chip is a
+    // control surface, not a node grip — block node-drag from starting on
+    // it, otherwise users would accidentally drag the whole final-output
+    // card just by tapping a connected chip.
+    return
   }
 
   const hit = hitTest(w.x, w.y)
@@ -582,7 +764,11 @@ function onPointerDown(e: PointerEvent) {
 function onPointerMove(e: PointerEvent) {
   const canvas = canvasRef.value
   if (!canvas) return
-  if (isSliding) {
+  if (connectionDrag) {
+    dragCursorWorld = clientToWorld(e.clientX, e.clientY)
+    hoverSlot = hitTestSlotEnd(dragCursorWorld.x, dragCursorWorld.y)
+    draw()
+  } else if (isSliding) {
     const w = clientToWorld(e.clientX, e.clientY)
     updateSliderInfo(isSliding, w.x)
   } else if (dragId) {
@@ -593,13 +779,46 @@ function onPointerMove(e: PointerEvent) {
     draw()
   } else {
     const w = clientToWorld(e.clientX, e.clientY)
-    if (hitTestToggle(w.x, w.y)) canvas.style.cursor = 'pointer'
+    const slot = hitTestSlotEnd(w.x, w.y)
+    const slotEdge = slot ? getEdge(slot.edgeId) : undefined
+    const grabbable = slot && slotEdge && isSlotGrabbable(slotEdge, slot.end)
+    // Only consider the chip "hovered" when it's actually interactive — a
+    // connected input chip stays static so users learn it isn't a handle.
+    const visibleSlot: SlotEnd | null = grabbable ? slot : null
+    const hoverChanged =
+      (visibleSlot?.edgeId ?? null) !== (hoverSlot?.edgeId ?? null) ||
+      (visibleSlot?.end ?? null) !== (hoverSlot?.end ?? null)
+    hoverSlot = visibleSlot
+    if (grabbable) canvas.style.cursor = 'grab'
     else canvas.style.cursor = hitTest(w.x, w.y) ? 'grab' : 'default'
+    if (hoverChanged) draw()
   }
 }
 
-function onPointerUp() {
+function onPointerUp(e: PointerEvent) {
   const canvas = canvasRef.value
+  if (connectionDrag) {
+    const w = clientToWorld(e.clientX, e.clientY)
+    const dx = w.x - connectionDragStart.x
+    const dy = w.y - connectionDragStart.y
+    const moved = dx * dx + dy * dy > 100 // ~10 world units
+    const edge = getEdge(connectionDrag.edgeId)
+    if (edge) {
+      if (!moved) {
+        // Click without drag: simple toggle (accessibility / quick path).
+        edge.connected = edge.connected === false ? true : false
+      } else {
+        // Drop on any slot of the same edge → reconnect; anywhere else → drop.
+        const dropSlot = hitTestSlotEnd(w.x, w.y)
+        edge.connected = !!dropSlot && dropSlot.edgeId === connectionDrag.edgeId
+      }
+    }
+    connectionDrag = null
+    hoverSlot = null
+    if (canvas) canvas.style.cursor = 'default'
+    draw()
+    return
+  }
   dragId = null
   isSliding = null
   if (canvas) canvas.style.cursor = 'default'
