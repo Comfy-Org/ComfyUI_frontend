@@ -35,12 +35,39 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
   appendWorkflowJsonExt,
-  generateUUID
+  generateUUID,
+  isValidUuid
 } from '@/utils/formatUtil'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
+}
+
+/**
+ * Normalize a workflow id for the same-path reuse equality check in
+ * `afterLoadNewGraph`. Non-UUID ids (empty, slug, or otherwise malformed) are
+ * collapsed to `undefined` so that subsequent loads of a file whose stored
+ * legacy id was rewritten by `ensureWorkflowId` still match the active tab
+ * instead of opening a duplicate.
+ */
+function normalizeWorkflowIdForReuse(id: unknown): string | undefined {
+  return isValidUuid(id) ? id : undefined
+}
+
+/**
+ * Returns the workflow payload with a UUID-shaped `id`, preserving the
+ * existing one when valid and otherwise substituting `fallbackId` (or a fresh
+ * UUID). Used before passing data to `ChangeTracker.reset` so a slug id on the
+ * incoming payload cannot overwrite the migrated UUID already stored on the
+ * reused workflow.
+ */
+function withMigratedId(
+  workflowData: ComfyWorkflowJSON,
+  fallbackId: string | undefined
+): ComfyWorkflowJSON {
+  if (isValidUuid(workflowData.id)) return workflowData
+  return { ...workflowData, id: fallbackId ?? generateUUID() }
 }
 
 export const useWorkflowService = () => {
@@ -459,12 +486,16 @@ export const useWorkflowService = () => {
         //
         // This prevents accidental duplicate tabs when startup/load flows
         // invoke loadGraphData more than once for the same workflow name.
+        const existingId = normalizeWorkflowIdForReuse(
+          existingWorkflow?.activeState?.id
+        )
+        const incomingId = normalizeWorkflowIdForReuse(workflowData.id)
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          (existingWorkflow.activeState?.id === undefined ||
-            workflowData.id === undefined ||
-            existingWorkflow.activeState.id === workflowData.id)
+          (existingId === undefined ||
+            incomingId === undefined ||
+            existingId === incomingId)
 
         if (
           existingWorkflow &&
@@ -482,7 +513,9 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
-          loadedWorkflow.changeTracker.reset(workflowData)
+          loadedWorkflow.changeTracker.reset(
+            withMigratedId(workflowData, existingId)
+          )
           loadedWorkflow.changeTracker.restore()
           return
         }
@@ -503,7 +536,12 @@ export const useWorkflowService = () => {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
     }
-    loadedWorkflow.changeTracker.reset(workflowData)
+    loadedWorkflow.changeTracker.reset(
+      withMigratedId(
+        workflowData,
+        normalizeWorkflowIdForReuse(loadedWorkflow.activeState?.id)
+      )
+    )
     loadedWorkflow.changeTracker.restore()
   }
 
