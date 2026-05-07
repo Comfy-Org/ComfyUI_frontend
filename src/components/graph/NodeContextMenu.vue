@@ -10,7 +10,7 @@
       <a
         v-bind="props.action"
         class="flex items-center gap-2 px-3 py-1.5"
-        @click="item.isColorSubmenu ? showColorPopover($event) : undefined"
+        @click="onItemClick($event, item)"
       >
         <i v-if="item.icon" :class="[item.icon, 'size-4']" />
         <span class="flex-1">{{ item.label }}</span>
@@ -21,7 +21,7 @@
           {{ item.shortcut }}
         </span>
         <i
-          v-if="hasSubmenu || item.isColorSubmenu"
+          v-if="hasSubmenu || item.isColorSubmenu || item.isShapeSubmenu"
           class="icon-[lucide--chevron-right] size-4 opacity-60"
         />
       </a>
@@ -34,7 +34,18 @@
     ref="colorPickerMenu"
     key="color-picker-menu"
     :option="colorOption"
-    @submenu-click="handleColorSelect"
+    @submenu-click="handleSubmenuSelect"
+  />
+
+  <!-- Shape picker menu (body-appended popover so it escapes the menu's
+       overflow container; PrimeVue's nested submenu would be clipped when
+       the root menu scrolls.) -->
+  <ColorPickerMenu
+    v-if="shapeOption"
+    ref="shapePickerMenu"
+    key="shape-picker-menu"
+    :option="shapeOption"
+    @submenu-click="handleSubmenuSelect"
   />
 </template>
 
@@ -58,12 +69,14 @@ import ColorPickerMenu from './selectionToolbox/ColorPickerMenu.vue'
 
 interface ExtendedMenuItem extends MenuItem {
   isColorSubmenu?: boolean
+  isShapeSubmenu?: boolean
   shortcut?: string
   originalOption?: MenuOption
 }
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const colorPickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
+const shapePickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
@@ -150,21 +163,20 @@ useEventListener(
   { passive: true }
 )
 
-// Find color picker option
 const colorOption = computed(() =>
   menuOptions.value.find((opt) => opt.isColorPicker)
 )
 
-// Check if option is the color picker
-function isColorOption(option: MenuOption): boolean {
-  return Boolean(option.isColorPicker)
-}
+const shapeOption = computed(() =>
+  menuOptions.value.find((opt) => opt.isShapePicker)
+)
 
-// Convert MenuOption to PrimeVue MenuItem
 function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
   if (option.type === 'divider') return { separator: true }
 
-  const isColor = isColorOption(option)
+  const isColor = Boolean(option.isColorPicker)
+  const isShape = Boolean(option.isShapePicker)
+  const usesPopover = isColor || isShape
 
   const item: ExtendedMenuItem = {
     label: option.label,
@@ -172,11 +184,14 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
     disabled: option.disabled,
     shortcut: option.shortcut,
     isColorSubmenu: isColor,
+    isShapeSubmenu: isShape,
     originalOption: option
   }
 
-  // Native submenus for non-color options
-  if (option.hasSubmenu && option.submenu && !isColor) {
+  // Submenus opened via popover (color, shape) deliberately omit `items` so
+  // PrimeVue does not render a nested <ul> inside the scrollable root list,
+  // which would be clipped when the menu overflows the viewport (FE-570).
+  if (option.hasSubmenu && option.submenu && !usesPopover) {
     item.items = option.submenu.map((sub) => ({
       label: sub.label,
       icon: sub.icon,
@@ -188,7 +203,6 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
     }))
   }
 
-  // Regular action items
   if (!option.hasSubmenu && option.action) {
     item.command = () => {
       option.action?.()
@@ -245,17 +259,28 @@ function toggle(event: Event) {
 
 defineExpose({ toggle, hide, isOpen, show })
 
-function showColorPopover(event: MouseEvent) {
+function onItemClick(event: MouseEvent, item: ExtendedMenuItem) {
+  if (item.isColorSubmenu) {
+    openSubmenuPopover(event, colorPickerMenu.value)
+  } else if (item.isShapeSubmenu) {
+    openSubmenuPopover(event, shapePickerMenu.value)
+  }
+}
+
+function openSubmenuPopover(
+  event: MouseEvent,
+  menu: InstanceType<typeof ColorPickerMenu> | undefined
+) {
+  if (!menu) return
   event.stopPropagation()
   event.preventDefault()
   const target = Array.from((event.currentTarget as HTMLElement).children).find(
     (el) => el.classList.contains('icon-[lucide--chevron-right]')
   ) as HTMLElement
-  colorPickerMenu.value?.toggle(event, target)
+  menu.toggle(event, target)
 }
 
-// Handle color selection
-function handleColorSelect(subOption: SubMenuOption) {
+function handleSubmenuSelect(subOption: SubMenuOption) {
   subOption.action()
   hide()
 }
@@ -270,11 +295,17 @@ function constrainMenuHeight() {
   if (!rootList) return
 
   const rect = rootList.getBoundingClientRect()
-  const maxHeight = window.innerHeight - rect.top - 8
-  if (maxHeight > 0) {
-    rootList.style.maxHeight = `${maxHeight}px`
-    rootList.style.overflowY = 'auto'
-  }
+  const availableHeight = window.innerHeight - rect.top - 8
+  if (availableHeight <= 0) return
+
+  // Setting overflow-y to auto/scroll on the root <ul> coerces overflow-x
+  // to a non-visible value too (CSS spec), which clips horizontally-opening
+  // submenus like Shape. Only apply the constraint when content truly
+  // overflows so the common case keeps overflow visible.
+  if (rootList.scrollHeight <= availableHeight) return
+
+  rootList.style.maxHeight = `${availableHeight}px`
+  rootList.style.overflowY = 'auto'
 }
 
 function onMenuShow() {
