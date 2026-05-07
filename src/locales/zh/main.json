@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "和",
+      "backToGithubLogin": "改用 Github 注册",
       "backToLogin": "返回登录",
       "backToSocialLogin": "改用 Google 或 Github 注册",
       "confirmPasswordLabel": "确认密码",
@@ -835,6 +836,7 @@
     "NOISE": "噪波",
     "OPENAI_CHAT_CONFIG": "OpenAI对话文件",
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
+    "OPTICAL_FLOW": "光流",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "Pixverse 模板",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
