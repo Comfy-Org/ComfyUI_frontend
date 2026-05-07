@@ -70,6 +70,7 @@ interface ComputeProcessedWidgetsOptions {
   nodeData: VueNodeData | undefined
   graphId: string | undefined
   showAdvanced: boolean
+  isAdvancedHovered?: boolean
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
@@ -161,6 +162,7 @@ export function computeProcessedWidgets({
   nodeData,
   graphId,
   showAdvanced,
+  isAdvancedHovered = false,
   isGraphReady,
   rootGraph,
   ui
@@ -278,7 +280,7 @@ export function computeProcessedWidgets({
         disambiguatingSourceNodeId: promotionSourceNodeId
       })
         ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced
+        : mergedOptions.advanced && isAdvancedHovered
           ? 'ring ring-component-node-widget-advanced'
           : undefined
 
@@ -361,7 +363,8 @@ export function computeProcessedWidgets({
 }
 
 export function useProcessedWidgets(
-  nodeDataGetter: () => VueNodeData | undefined
+  nodeDataGetter: () => VueNodeData | undefined,
+  isAdvancedHoveredGetter: () => boolean = () => false
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
@@ -397,6 +400,7 @@ export function useProcessedWidgets(
       nodeData: nodeDataGetter(),
       graphId: canvasStore.canvas?.graph?.rootGraph.id,
       showAdvanced: showAdvanced.value,
+      isAdvancedHovered: isAdvancedHoveredGetter(),
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
       ui

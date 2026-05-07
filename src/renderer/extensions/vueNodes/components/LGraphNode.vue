@@ -162,7 +162,11 @@
         >
           <NodeSlots :node-data="nodeData" />
 
-          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+          <NodeWidgets
+            v-if="nodeData.widgets?.length"
+            :node-data="nodeData"
+            :is-advanced-hovered="isAdvancedButtonHovered"
+          />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
@@ -203,6 +207,7 @@
       @enter-subgraph="handleEnterSubgraph"
       @open-errors="handleOpenErrors"
       @toggle-advanced="handleToggleAdvanced"
+      @advanced-hover-change="isAdvancedButtonHovered = $event"
     />
     <template
       v-if="
@@ -674,6 +679,8 @@ const handleOpenErrors = () => {
 const handleToggleAdvanced = () => {
   showAdvancedState.value = !showAdvancedState.value
 }
+
+const isAdvancedButtonHovered = ref(false)
 
 const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
