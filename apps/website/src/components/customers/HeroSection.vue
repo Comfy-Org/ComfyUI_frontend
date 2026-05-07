@@ -25,7 +25,7 @@ useHeroAnimation({
 })
 
 function handleLogoLoad() {
-  ScrollTrigger.refresh()
+  ScrollTrigger.refresh(true)
 }
 </script>
 
