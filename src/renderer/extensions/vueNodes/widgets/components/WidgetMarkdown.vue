@@ -5,6 +5,9 @@
       :class="isEditing ? 'invisible' : 'visible'"
       tabindex="0"
       data-capture-wheel="true"
+      role="textarea"
+      :aria-label="widget.name || $t('g.markdown')"
+      aria-readonly="true"
       v-html="renderedHtml"
     />
 

@@ -23,9 +23,9 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const tabs = [
-  ['linearMode.mobileControls', 'icon-[lucide--play]'],
-  ['nodeHelpPage.outputs', 'icon-[comfy--image-ai-edit]'],
-  ['sideToolbar.assets', 'icon-[lucide--images]']
+  ['linearMode.mobileControls', 'icon-[lucide--play]', 'control'],
+  ['nodeHelpPage.outputs', 'icon-[comfy--image-ai-edit]', 'preview'],
+  ['sideToolbar.assets', 'icon-[lucide--images]', 'output']
 ]
 
 const canvasStore = useCanvasStore()
@@ -154,20 +154,24 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 </script>
 <template>
-  <section class="absolute flex size-full flex-col bg-secondary-background">
+  <section
+    class="absolute flex size-full flex-col bg-secondary-background"
+    data-testid="linear-mobile"
+  >
     <header
       class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
     >
       <DropdownMenu :entries="menuEntries" />
       <DropdownMenu
         :entries="workflowsEntries"
-        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width)"
+        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width) overflow-y-auto"
         :collision-padding="20"
       >
         <template #button>
           <!--TODO: Use button here? Probably too much work to destyle-->
           <div
             class="flex h-10 grow items-center gap-2 rounded-sm bg-secondary-background p-2"
+            data-testid="linear-mobile-workflows"
           >
             <i
               class="icon-[lucide--panels-top-left] shrink-0 bg-primary-background"
@@ -191,11 +195,23 @@ const menuEntries = computed<MenuItem[]>(() => [
         "
         :style="{ translate }"
       >
-        <div class="absolute h-full w-screen overflow-y-auto contain-size">
+        <div
+          id="mobile-app-control-panel"
+          class="absolute h-full w-screen overflow-y-auto contain-size"
+          role="tabpanel"
+          :aria-hidden="activeIndex !== 0"
+          aria-labelledby="mobile-app-control-tab"
+          :inert="activeIndex !== 0"
+        >
           <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
         <div
+          id="mobile-app-preview-panel"
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
+          role="tabpanel"
+          :aria-hidden="activeIndex !== 1"
+          aria-labelledby="mobile-app-preview-tab"
+          :inert="activeIndex !== 1"
         >
           <MobileError
             v-if="executionErrorStore.isErrorOverlayOpen"
@@ -204,19 +220,29 @@ const menuEntries = computed<MenuItem[]>(() => [
           <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
+          id="mobile-app-output-panel"
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
+          role="tabpanel"
+          :aria-hidden="activeIndex !== 2"
+          aria-labelledby="mobile-app-output-tab"
+          :inert="activeIndex !== 2"
         />
       </div>
     </div>
     <div
       ref="sliderPaneRef"
       class="flex h-22 w-full items-center justify-around gap-4 bg-secondary-background p-4"
+      role="tablist"
     >
       <Button
-        v-for="([label, icon], index) in tabs"
+        v-for="([label, icon, id], index) in tabs"
+        :id="`mobile-app-${id}-tab`"
         :key="label"
         :variant="index === activeIndex ? 'secondary' : 'muted-textonly'"
         class="h-14 grow flex-col"
+        role="tab"
+        :aria-selected="index === activeIndex"
+        :aria-controls="`mobile-app-${id}-panel`"
         @click="onClick(index)"
       >
         <div class="relative size-4">
