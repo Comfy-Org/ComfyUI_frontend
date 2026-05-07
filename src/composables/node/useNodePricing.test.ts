@@ -625,9 +625,9 @@ describe('useNodePricing', () => {
         getNodeDisplayPrice(node)
         await new Promise((r) => setTimeout(r, 50))
 
-        // VueNodes path bumps per-node ref instead of the global tick.
+        // VueNodes path bumps per-node ref and the global tick.
         expect(getNodeRevisionRef(node.id).value).toBeGreaterThan(revBefore)
-        expect(pricingRevision.value).toBe(tickBefore)
+        expect(pricingRevision.value).toBeGreaterThan(tickBefore)
       } finally {
         LiteGraph.vueNodesMode = false
       }

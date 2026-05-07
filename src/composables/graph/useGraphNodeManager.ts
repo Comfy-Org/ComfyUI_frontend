@@ -48,6 +48,8 @@ export interface WidgetSlotMetadata {
   type: string
 }
 
+type Badges = (LGraphBadge | (() => LGraphBadge))[]
+
 /**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
@@ -107,7 +109,7 @@ export interface VueNodeData {
   title: string
   type: string
   apiNode?: boolean
-  badges?: (LGraphBadge | (() => LGraphBadge))[]
+  badges?: Badges
   bgcolor?: string
   color?: string
   flags?: {
@@ -786,10 +788,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 showAdvanced: Boolean(propertyEvent.newValue)
               })
               break
-            case 'badges': {
-              const badges = app.canvas.graph?.getNodeById(nodeId)?.badges
-              vueNodeData.set(nodeId, { ...currentData, badges })
-            }
+            case 'badges':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                badges: propertyEvent.newValue as Badges
+              })
+              break
           }
         }
       },
