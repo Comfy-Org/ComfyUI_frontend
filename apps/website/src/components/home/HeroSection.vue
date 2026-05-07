@@ -47,6 +47,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       Canvas absolute-fills the section on every viewport. Because it sits on
       top of the text (z-10) and is transparent except for the nodes, users
       can drag nodes freely across the whole hero, over the copy included.
+      The default fit biases the cluster to the left on lg+ so nodes don't
+      start overlapping the text column on the right (see fitView).
     -->
     <div class="absolute inset-0 z-10">
       <HeroCanvas />

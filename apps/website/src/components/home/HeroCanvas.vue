@@ -35,35 +35,48 @@ type SvgNode = NodeBase & {
 
 type NodeDef = ImageNode | PurpleNode | SvgNode
 
+type ToggleEdgeId = 'canny-out' | 'depth-out'
+
 type Edge = {
+  id?: ToggleEdgeId
   src: NodeId
   sfx: number
   sfy: number
   tgt: NodeId
   tfx: number
   tfy: number
+  togglable?: boolean
+  connected?: boolean
 }
 
 const containerRef = ref<HTMLDivElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 
-// Bounding box of the actual node content in scene coordinates
-// (x: 100–2045, y: 100–1059). fitView scales this box — not the outer
-// 2150×1260 world — so nodes fill the container instead of stranding empty
-// margins around them on wide heroes.
-const CONTENT_MIN_X = 100
-const CONTENT_MAX_X = 2045
+// Bounding box of the actual node content in scene coordinates. fitView
+// scales this box to fit the container (with a small safety margin), so
+// asymmetry here translates directly into where the cluster sits in the
+// canvas. The bounds are tuned so each cluster edge has ~80 scene units of
+// breathing room before the fit edge.
+const CONTENT_MIN_X = 60
+const CONTENT_MAX_X = 2055
 const CONTENT_MIN_Y = 100
-const CONTENT_MAX_Y = 1059
+const CONTENT_MAX_Y = 1109
 const CONTENT_W = CONTENT_MAX_X - CONTENT_MIN_X
 const CONTENT_H = CONTENT_MAX_Y - CONTENT_MIN_Y
 const CONTENT_CX = (CONTENT_MIN_X + CONTENT_MAX_X) / 2
 const CONTENT_CY = (CONTENT_MIN_Y + CONTENT_MAX_Y) / 2
 
+// At lg+ widths, HeroSection's text column maxes out at lg:max-w-xl (36rem)
+// inside lg:p-16 (4rem) padding. Reserve that slice on the right so the
+// cluster fits on the left without overlapping the headline / paragraph / CTA.
+const TEXT_COLUMN_RESERVE_CSS = 640
+
 const INK = '#211927'
 const YELLOW = '#F2FF59'
 const CANVAS_COLOR = '#C2BFB9'
 const COOL_GRAY = '#3C3C3C'
+const WARM_GRAY = '#7e7c78'
+const SLOT_DOT_HIT_RADIUS = 26
 
 const svgOutputRaw = `<svg width="386" height="116" viewBox="0 0 193 58" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="193" height="58" rx="16.3661" fill="#7E7C78"/>
@@ -245,7 +258,26 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
 
   if (n.type === 'purple') {
     const outputUi = nodes['n-output-ui'] as SvgNode
-    drawDepthBlur(ctx, x, y, n.w, n.h, n.rx, n.img, outputUi.progress)
+    const cannyOn = isEdgeConnected('canny-out')
+    const depthOn = isEdgeConnected('depth-out')
+
+    // Choose what the output card shows based on which inputs are wired in:
+    //   both → final composed image (with depth-blur scrubber)
+    //   one  → that single processed view, full-bleed, no scrub
+    //   none → empty card placeholder
+    if (cannyOn && depthOn) {
+      drawDepthBlur(ctx, x, y, n.w, n.h, n.rx, n.img, outputUi.progress)
+    } else if (cannyOn) {
+      drawImageCover(ctx, x, y, n.w, n.h, n.rx, INK, imgRed, null)
+    } else if (depthOn) {
+      drawImageCover(ctx, x, y, n.w, n.h, n.rx, INK, imgBlue, null)
+    } else {
+      ctx.save()
+      roundRect(ctx, x, y, n.w, n.h, n.rx)
+      ctx.fillStyle = COOL_GRAY
+      ctx.fill()
+      ctx.restore()
+    }
 
     const chipX = 24
     const chipW = 175
@@ -257,51 +289,29 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
     const dotR = 5
     const textOffsetX = 38
 
-    roundRect(ctx, x + chipX, y + chip1Y, chipW, chipH, chipR)
-    ctx.fillStyle = INK
-    ctx.fill()
+    const drawChip = (labelY: number, label: string, active: boolean) => {
+      roundRect(ctx, x + chipX, y + labelY, chipW, chipH, chipR)
+      ctx.fillStyle = INK
+      ctx.fill()
 
-    ctx.beginPath()
-    ctx.arc(
-      x + chipX + dotOffsetX,
-      y + chip1Y + chipH / 2,
-      dotR,
-      0,
-      Math.PI * 2
-    )
-    ctx.fillStyle = YELLOW
-    ctx.fill()
+      ctx.beginPath()
+      ctx.arc(
+        x + chipX + dotOffsetX,
+        y + labelY + chipH / 2,
+        dotR,
+        0,
+        Math.PI * 2
+      )
+      ctx.fillStyle = active ? YELLOW : WARM_GRAY
+      ctx.fill()
 
-    ctx.font = "800 14px 'PP Formula', sans-serif"
-    ctx.fillStyle = YELLOW
-    ctx.fillText(
-      'CANNY EDGE',
-      x + chipX + textOffsetX,
-      y + chip1Y + chipH / 2 + 5
-    )
+      ctx.font = "800 14px 'PP Formula', sans-serif"
+      ctx.fillStyle = active ? YELLOW : WARM_GRAY
+      ctx.fillText(label, x + chipX + textOffsetX, y + labelY + chipH / 2 + 5)
+    }
 
-    roundRect(ctx, x + chipX, y + chip2Y, chipW, chipH, chipR)
-    ctx.fillStyle = INK
-    ctx.fill()
-
-    ctx.beginPath()
-    ctx.arc(
-      x + chipX + dotOffsetX,
-      y + chip2Y + chipH / 2,
-      dotR,
-      0,
-      Math.PI * 2
-    )
-    ctx.fillStyle = YELLOW
-    ctx.fill()
-
-    ctx.font = "800 14px 'PP Formula', sans-serif"
-    ctx.fillStyle = YELLOW
-    ctx.fillText(
-      'DEPTH MAP',
-      x + chipX + textOffsetX,
-      y + chip2Y + chipH / 2 + 5
-    )
+    drawChip(chip1Y, 'CANNY EDGE', cannyOn)
+    drawChip(chip2Y, 'DEPTH MAP', depthOn)
   } else if (n.type === 'image') {
     const outputUi = nodes['n-output-ui'] as SvgNode
     const filter = id === 'n-blue' ? levelsFilter(outputUi.progress) : null
@@ -336,6 +346,8 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
 }
 
 function drawEdge(ctx: CanvasRenderingContext2D, e: Edge) {
+  if (e.connected === false) return
+
   const a = anchor(e.src, e.sfx, e.sfy)
   const b = anchor(e.tgt, e.tfx, e.tfy)
 
@@ -405,10 +417,15 @@ function fitView() {
 
   // Fit the node bounding box (not the full world) into the container with a
   // small safety margin, and center it. This prevents wide/short heroes from
-  // leaving huge empty gutters around the scene.
-  const z = Math.min(cssW / CONTENT_W, cssH / CONTENT_H) * 0.92 * dpr
+  // leaving huge empty gutters around the scene. From lg up, reserve the
+  // right slice of the hero for the text column so the cluster initially
+  // sits on the left half — drag still works across the full canvas because
+  // canvas.width/height stay at full bleed.
+  const rightReserveCss = cssW >= 1024 ? TEXT_COLUMN_RESERVE_CSS : 0
+  const visibleW = cssW - rightReserveCss
+  const z = Math.min(visibleW / CONTENT_W, cssH / CONTENT_H) * 0.92 * dpr
   vz = z
-  vx = canvas.width / 2 - CONTENT_CX * z
+  vx = (visibleW * dpr) / 2 - CONTENT_CX * z
   vy = canvas.height / 2 - CONTENT_CY * z
 
   // Keep every node inside the newly-sized viewport so a resize can't strand
@@ -458,6 +475,41 @@ function clientToWorld(cx: number, cy: number) {
   return { x: (px - vx) / vz, y: (py - vy) / vz }
 }
 
+function isEdgeConnected(id: ToggleEdgeId): boolean {
+  const edge = edges?.find((e) => e.id === id)
+  return edge?.connected !== false
+}
+
+// Toggle hit-test for the two interactive connections.
+// Click targets, in priority order:
+//   1. The CANNY EDGE / DEPTH MAP chips on the purple card (~175×44 each —
+//      these chips sit exactly where the input slot dots live).
+//   2. The smaller output slot dots on the right edge of canny / depth.
+function hitTestToggle(wx: number, wy: number): ToggleEdgeId | null {
+  if (nodes && nodes['n-purple']) {
+    const p = absPos('n-purple')
+    const chipX = p.x + 24
+    const chipW = 175
+    const chipH = 44
+    if (wx >= chipX && wx <= chipX + chipW) {
+      if (wy >= p.y + 42 && wy <= p.y + 42 + chipH) return 'canny-out'
+      if (wy >= p.y + 100 && wy <= p.y + 100 + chipH) return 'depth-out'
+    }
+  }
+  if (edges) {
+    for (const edge of edges) {
+      if (!edge.id || !edge.togglable) continue
+      const a = anchor(edge.src, edge.sfx, edge.sfy)
+      const dx = wx - a.x
+      const dy = wy - a.y
+      if (dx * dx + dy * dy < SLOT_DOT_HIT_RADIUS * SLOT_DOT_HIT_RADIUS) {
+        return edge.id
+      }
+    }
+  }
+  return null
+}
+
 function hitTest(wx: number, wy: number): NodeId | null {
   const order: NodeId[] = [
     'n-output-ui',
@@ -491,6 +543,17 @@ function onPointerDown(e: PointerEvent) {
   const canvas = canvasRef.value
   if (!canvas) return
   const w = clientToWorld(e.clientX, e.clientY)
+
+  const toggleId = hitTestToggle(w.x, w.y)
+  if (toggleId && edges) {
+    const edge = edges.find((edge) => edge.id === toggleId)
+    if (edge) {
+      edge.connected = !edge.connected
+      draw()
+      return
+    }
+  }
+
   const hit = hitTest(w.x, w.y)
   if (!hit) return
 
@@ -530,7 +593,8 @@ function onPointerMove(e: PointerEvent) {
     draw()
   } else {
     const w = clientToWorld(e.clientX, e.clientY)
-    canvas.style.cursor = hitTest(w.x, w.y) ? 'grab' : 'default'
+    if (hitTestToggle(w.x, w.y)) canvas.style.cursor = 'pointer'
+    else canvas.style.cursor = hitTest(w.x, w.y) ? 'grab' : 'default'
   }
 }
 
@@ -544,8 +608,8 @@ function onPointerUp() {
 function defineNodes() {
   nodes = {
     'n-green': {
-      x: 25,
-      y: 350,
+      x: 100,
+      y: 400,
       w: 339,
       h: 409,
       ox: 0,
@@ -556,8 +620,8 @@ function defineNodes() {
       img: imgGreen
     },
     'n-red': {
-      x: 875,
-      y: 100,
+      x: 850,
+      y: 180,
       w: 339,
       h: 409,
       ox: 0,
@@ -568,8 +632,8 @@ function defineNodes() {
       img: imgRed
     },
     'n-blue': {
-      x: 875,
-      y: 650,
+      x: 850,
+      y: 600,
       w: 339,
       h: 409,
       ox: 0,
@@ -580,8 +644,8 @@ function defineNodes() {
       img: imgBlue
     },
     'n-purple': {
-      x: 1375,
-      y: 250,
+      x: 1380,
+      y: 245,
       w: 595,
       h: 718,
       ox: 0,
@@ -592,8 +656,8 @@ function defineNodes() {
       img: imgPurple
     },
     'n-output-ui': {
-      x: 425,
-      y: 530,
+      x: 460,
+      y: 596,
       w: 386,
       h: 116,
       ox: 0,
@@ -632,20 +696,26 @@ function defineNodes() {
       tfy: 24 / 409
     },
     {
+      id: 'canny-out',
       src: 'n-red',
       sfx: (339 - 24) / 339,
       sfy: 24 / 409,
       tgt: 'n-purple',
       tfx: 42 / 595,
-      tfy: 64 / 718
+      tfy: 64 / 718,
+      togglable: true,
+      connected: true
     },
     {
+      id: 'depth-out',
       src: 'n-blue',
       sfx: (339 - 24) / 339,
       sfy: 24 / 409,
       tgt: 'n-purple',
       tfx: 42 / 595,
-      tfy: 122 / 718
+      tfy: 122 / 718,
+      togglable: true,
+      connected: true
     }
   ]
 }
