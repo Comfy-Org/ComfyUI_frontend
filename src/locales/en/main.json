@@ -1199,7 +1199,8 @@
     "paused": "Paused",
     "resume": "Resume Download",
     "cancel": "Cancel Download",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "error": "Error"
   },
   "maskEditor": {
     "title": "Mask Editor",
