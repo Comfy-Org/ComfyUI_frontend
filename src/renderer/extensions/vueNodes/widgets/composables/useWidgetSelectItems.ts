@@ -13,7 +13,8 @@ import {
   getAssetBaseModels,
   getAssetDisplayFilename,
   getAssetDisplayName,
-  getAssetFilename
+  getAssetFilename,
+  getAssetUrlFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -101,7 +102,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
-  const pendingJobIds = new Set<string>()
 
   watch(
     () => outputMediaAssets.media.value,
@@ -109,10 +109,22 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       let cancelled = false
       onCleanup(() => {
         cancelled = true
-        pendingJobIds.clear()
       })
 
+      const seenJobIds = new Set<string>()
+      const jobsToResolve: Array<{
+        jobId: string
+        meta: ReturnType<typeof getOutputAssetMetadata>
+        createdAt?: string
+      }> = []
+
       for (const asset of assets) {
+        // Hash-keyed assets are leaf rows from the cloud `/assets` API and
+        // already carry their own URL-resolvable filename. Expanding them via
+        // resolveOutputAssetItems would synthesize sibling AssetItems without
+        // an asset_hash and reintroduce the FE-227 hash→name fallback bug.
+        if (asset.asset_hash) continue
+
         const meta = getOutputAssetMetadata(asset.user_metadata)
         if (!meta) continue
 
@@ -120,29 +132,41 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         if (
           outputCount <= 1 ||
           resolvedByJobId.value.has(meta.jobId) ||
-          pendingJobIds.has(meta.jobId)
+          seenJobIds.has(meta.jobId)
         )
           continue
 
-        pendingJobIds.add(meta.jobId)
-        void resolveOutputAssetItems(meta, { createdAt: asset.created_at })
-          .then((resolved) => {
-            if (cancelled || !resolved.length) return
-            const next = new Map(resolvedByJobId.value)
-            next.set(meta.jobId, resolved)
-            resolvedByJobId.value = next
-          })
-          .catch((error) => {
-            console.warn(
-              'Failed to resolve multi-output job',
-              meta.jobId,
-              error
-            )
-          })
-          .finally(() => {
-            pendingJobIds.delete(meta.jobId)
-          })
+        seenJobIds.add(meta.jobId)
+        jobsToResolve.push({
+          jobId: meta.jobId,
+          meta,
+          createdAt: asset.created_at
+        })
       }
+
+      if (jobsToResolve.length === 0) return
+
+      void Promise.all(
+        jobsToResolve.map(({ jobId, meta, createdAt }) =>
+          resolveOutputAssetItems(meta!, { createdAt })
+            .then((resolved) => ({ jobId, resolved }))
+            .catch((error) => {
+              console.warn('Failed to resolve multi-output job', jobId, error)
+              return { jobId, resolved: [] as AssetItem[] }
+            })
+        )
+      ).then((results) => {
+        if (cancelled) return
+
+        const next = new Map(resolvedByJobId.value)
+        let changed = false
+        for (const { jobId, resolved } of results) {
+          if (!resolved.length) continue
+          next.set(jobId, resolved)
+          changed = true
+        }
+        if (changed) resolvedByJobId.value = next
+      })
     },
     { immediate: true }
   )
@@ -180,13 +204,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
+      const filenameForUrl = getAssetUrlFilename(asset)
       const subfolder =
         kind === 'mesh'
           ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
           : undefined
       const pathWithSubfolder = subfolder
-        ? `${subfolder}/${asset.name}`
-        : asset.name
+        ? `${subfolder}/${filenameForUrl}`
+        : filenameForUrl
       const annotatedPath = `${pathWithSubfolder} [output]`
       const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
@@ -194,7 +219,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(asset.name, 'output', kind),
+            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

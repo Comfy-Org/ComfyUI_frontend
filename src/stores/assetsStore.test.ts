@@ -5,6 +5,7 @@ import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
 
@@ -1418,5 +1419,139 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
         mockIsCloud.value = false
       }
     })
+  })
+})
+
+describe('assetsStore - Flat Output Assets (cloud-only)', () => {
+  const FLAT_OUTPUT_PAGE_SIZE = 200
+
+  const makeAsset = (
+    id: string,
+    name: string,
+    asset_hash?: string
+  ): AssetItem => ({
+    id,
+    name,
+    asset_hash,
+    size: 0,
+    tags: ['output']
+  })
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+  })
+
+  it('fetches outputs via getAssetsByTag with the output tag and page size', async () => {
+    vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
+      makeAsset('a1', 'image1.png', 'hash1.png'),
+      makeAsset('a2', 'image2.png', 'hash2.png')
+    ])
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+      'output',
+      true,
+      expect.objectContaining({ limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 })
+    )
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1', 'a2'])
+  })
+
+  it('marks hasMore=false when the page is short', async () => {
+    vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
+      makeAsset('a1', 'one.png')
+    ])
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('marks hasMore=true when a full page is returned', async () => {
+    const fullPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+      makeAsset(`a${i}`, `f${i}.png`)
+    )
+    vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce(fullPage)
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(true)
+  })
+
+  it('appends and dedupes on loadMoreFlatOutputs', async () => {
+    const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+      makeAsset(`a${i}`, `f${i}.png`)
+    )
+    const secondPage = [
+      makeAsset('a0', 'duplicate.png'),
+      makeAsset('newId', 'new.png')
+    ]
+    vi.mocked(assetService.getAssetsByTag)
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce(secondPage)
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(store.flatOutputAssets).toHaveLength(FLAT_OUTPUT_PAGE_SIZE + 1)
+    expect(store.flatOutputAssets.at(-1)?.id).toBe('newId')
+  })
+
+  it('records error and clears media on initial-fetch failure', async () => {
+    const err = new Error('network down')
+    vi.mocked(assetService.getAssetsByTag).mockRejectedValueOnce(err)
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      const result = await store.updateFlatOutputs()
+
+      expect(result).toEqual([])
+      expect(store.flatOutputError).toBe(err)
+      expect(store.flatOutputLoading).toBe(false)
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('refresh resets pagination', async () => {
+    vi.mocked(assetService.getAssetsByTag)
+      .mockResolvedValueOnce(
+        Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+          makeAsset(`a${i}`, `f${i}.png`)
+        )
+      )
+      .mockResolvedValueOnce([makeAsset('fresh', 'fresh.png')])
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh'])
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('dedupes concurrent fetches into a single request', async () => {
+    let resolvePage!: (assets: AssetItem[]) => void
+    const pagePromise = new Promise<AssetItem[]>((res) => {
+      resolvePage = res
+    })
+    vi.mocked(assetService.getAssetsByTag).mockReturnValueOnce(pagePromise)
+
+    const store = useAssetsStore()
+    const p1 = store.updateFlatOutputs()
+    const p2 = store.updateFlatOutputs()
+
+    expect(vi.mocked(assetService.getAssetsByTag)).toHaveBeenCalledTimes(1)
+
+    resolvePage([makeAsset('shared-1', 'shared.png', 'h.png')])
+    await Promise.all([p1, p2])
+
+    expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
   })
 })

@@ -89,6 +89,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+const FLAT_OUTPUT_PAGE_SIZE = 200
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -253,6 +254,65 @@ export const useAssetsStore = defineStore('assets', () => {
     } finally {
       isLoadingMore.value = false
     }
+  }
+
+  const flatOutputAssets = ref<AssetItem[]>([])
+  const flatOutputLoading = ref(false)
+  const flatOutputError = ref<unknown>(null)
+  const flatOutputOffset = ref(0)
+  const flatOutputHasMore = ref(true)
+  const flatOutputIsLoadingMore = ref(false)
+  const flatOutputSeenIds = new Set<string>()
+  let flatOutputInFlight: Promise<AssetItem[]> | null = null
+
+  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
+    if (flatOutputInFlight) return flatOutputInFlight
+
+    if (loadMore) {
+      if (!flatOutputHasMore.value) return flatOutputAssets.value
+      flatOutputIsLoadingMore.value = true
+    } else {
+      flatOutputLoading.value = true
+      flatOutputOffset.value = 0
+      flatOutputHasMore.value = true
+      flatOutputSeenIds.clear()
+    }
+    flatOutputError.value = null
+
+    flatOutputInFlight = (async () => {
+      try {
+        const page = await assetService.getAssetsByTag('output', true, {
+          limit: FLAT_OUTPUT_PAGE_SIZE,
+          offset: flatOutputOffset.value
+        })
+        const fresh = loadMore
+          ? page.filter((asset) => !flatOutputSeenIds.has(asset.id))
+          : page
+        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
+        flatOutputAssets.value = loadMore
+          ? [...flatOutputAssets.value, ...fresh]
+          : page
+        flatOutputOffset.value += page.length
+        flatOutputHasMore.value = page.length === FLAT_OUTPUT_PAGE_SIZE
+        return flatOutputAssets.value
+      } catch (err) {
+        flatOutputError.value = err
+        console.error('Failed to fetch output assets:', err)
+        return loadMore ? flatOutputAssets.value : []
+      } finally {
+        if (loadMore) flatOutputIsLoadingMore.value = false
+        else flatOutputLoading.value = false
+        flatOutputInFlight = null
+      }
+    })()
+
+    return flatOutputInFlight
+  }
+
+  const updateFlatOutputs = () => fetchFlatOutputs(false)
+  const loadMoreFlatOutputs = async () => {
+    if (flatOutputIsLoadingMore.value) return
+    await fetchFlatOutputs(true)
   }
 
   /**
@@ -782,6 +842,15 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+
+    // Flat output assets (cloud-only, tag-based)
+    flatOutputAssets,
+    flatOutputLoading,
+    flatOutputError,
+    flatOutputHasMore,
+    flatOutputIsLoadingMore,
+    updateFlatOutputs,
+    loadMoreFlatOutputs,
 
     // Input mapping helpers
     inputAssetsByFilename,
