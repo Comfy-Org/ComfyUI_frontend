@@ -1,5 +1,8 @@
 <template>
-  <div class="flex flex-col gap-4 text-sm text-muted-foreground">
+  <div
+    :ref="primeVueOverlay.overlayScopeRef"
+    class="flex flex-col gap-4 text-sm text-muted-foreground"
+  >
     <div class="flex flex-col gap-2">
       <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
@@ -39,6 +42,7 @@
         "
         :options="modelTypes"
         :disabled="isLoading"
+        :content-style="selectContentStyle"
         data-attr="upload-model-step2-type-selector"
       />
     </div>
@@ -47,6 +51,7 @@
 
 <script setup lang="ts">
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
@@ -58,4 +63,6 @@ defineProps<{
 const modelValue = defineModel<string | undefined>()
 
 const { modelTypes, isLoading } = useModelTypes()
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const selectContentStyle = primeVueOverlay.contentStyle
 </script>
