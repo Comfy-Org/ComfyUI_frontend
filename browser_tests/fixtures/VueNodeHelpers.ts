@@ -218,12 +218,11 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Locator for the Enter Subgraph footer button. Scoped to a specific node
-   * when nodeId is given, otherwise the first match on the page.
+   * Locator for the Enter Subgraph footer button.
    */
   getSubgraphEnterButton(nodeId?: string): Locator {
     const root = nodeId ? this.getNodeLocator(nodeId) : this.page
-    return root.getByTestId(TestIds.widgets.subgraphEnterButton)
+    return root.getByTestId(TestIds.widgets.subgraphEnterButton).first()
   }
 
   /**

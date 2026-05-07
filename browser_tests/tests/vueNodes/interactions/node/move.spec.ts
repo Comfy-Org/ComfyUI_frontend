@@ -112,7 +112,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       'Comfy.Node.AlwaysShowAdvancedWidgets',
       false
     )
-    comfyPage.nodeOps.addNode(
+    await comfyPage.nodeOps.addNode(
       'ModelSamplingFlux',
       {},
       {
