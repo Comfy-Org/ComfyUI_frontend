@@ -16,6 +16,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import WidgetComponent from '@/renderer/extensions/vueNodes/widgets/components/WidgetComponent.vue'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
@@ -259,7 +260,11 @@ export function computeProcessedWidgets({
 
     const vueComponent =
       getComponent(widget.type) ||
-      (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
+      (widget.isComponentWidget
+        ? WidgetComponent
+        : widget.isDOMWidget
+          ? WidgetDOM
+          : WidgetLegacy)
 
     const { slotMetadata } = widget
 

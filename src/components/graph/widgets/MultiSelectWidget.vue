@@ -7,6 +7,7 @@
       :placeholder="placeholder"
       :max-selected-labels="3"
       :display="display"
+      :aria-label="widget.name"
       class="w-full"
       :pt="{
         dropdownIcon: 'text-button-icon'

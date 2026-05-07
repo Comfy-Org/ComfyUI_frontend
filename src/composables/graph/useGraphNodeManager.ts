@@ -22,7 +22,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isDOMWidget } from '@/scripts/domWidget'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
@@ -66,6 +66,12 @@ export interface SafeWidgetData {
   hasLayoutSize?: boolean
   /** Whether widget is a DOM widget */
   isDOMWidget?: boolean
+  /**
+   * Whether widget is a Vue component-backed widget (e.g. `multi_select`
+   * combos). Rendered through `WidgetComponent` so the widget's own Vue
+   * component is mounted inside the Nodes 2.0 tree.
+   */
+  isComponentWidget?: boolean
   /**
    * Widget options needed for render decisions.
    * Note: Most metadata should be accessed via widgetValueStore.getWidget().
@@ -142,11 +148,15 @@ function isPromotedDOMWidget(widget: IBaseWidget): boolean {
   const sourceWidget = resolvePromotedWidgetSource(widget.node, widget)
   if (!sourceWidget) return false
 
-  const innerWidget = sourceWidget.widget
-  return (
-    ('element' in innerWidget && !!innerWidget.element) ||
-    ('component' in innerWidget && !!innerWidget.component)
-  )
+  return isDOMWidget(sourceWidget.widget)
+}
+
+function isPromotedComponentWidget(widget: IBaseWidget): boolean {
+  if (!isPromotedWidgetView(widget)) return false
+  const sourceWidget = resolvePromotedWidgetSource(widget.node, widget)
+  if (!sourceWidget) return false
+
+  return isComponentWidget(sourceWidget.widget)
 }
 
 export function getControlWidget(
@@ -318,6 +328,8 @@ function safeWidgetMapper(
       const sourceNode = resolvedSource?.node
 
       const effectiveWidget = sourceWidget ?? widget
+      const isComponentBackedWidget =
+        isComponentWidget(effectiveWidget) || isPromotedComponentWidget(widget)
 
       const localId = isPromotedWidgetView(widget)
         ? String(
@@ -342,7 +354,10 @@ function safeWidgetMapper(
         ...sharedEnhancements,
         callback,
         hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
-        isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
+        isDOMWidget:
+          !isComponentBackedWidget &&
+          (isDOMWidget(effectiveWidget) || isPromotedDOMWidget(widget)),
+        isComponentWidget: isComponentBackedWidget,
         options: isPromotedPseudoWidget
           ? {
               ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
