@@ -113,6 +113,12 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 The script exits non-zero on any non-fresh outcome so stale/empty
 snapshots can't be accidentally committed.
 
+## Cloud nodes integration
+
+`/cloud/supported-nodes` (and `/zh-CN/`) lists custom-node packs preinstalled on Comfy Cloud, joined with public metadata from the [ComfyUI Custom Node Registry](https://registry.comfy.org) ([`api.comfy.org`](https://api.comfy.org)). See [`src/pages/cloud/supported-nodes/AGENTS.md`](src/pages/cloud/supported-nodes/AGENTS.md) for the build pipeline, source-file map, and key invariants.
+
+Build-time env var: `WEBSITE_CLOUD_API_KEY` (Cloud `/api/object_info` auth; the build falls back to the committed snapshot when unset). Must also be set in the Vercel project environment.
+
 ## HubSpot contact form
 
 The contact page uses HubSpot's hosted form embed for the interest form:
@@ -146,3 +152,4 @@ renders the documented embed container.
 - `pnpm test:unit` — Vitest unit tests
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
+- `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
