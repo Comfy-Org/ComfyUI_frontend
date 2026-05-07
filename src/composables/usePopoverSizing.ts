@@ -6,6 +6,7 @@ interface PopoverSizeOptions {
   maxWidth?: string
 }
 
+// Matches the highest existing Reka popover z-index (e.g. z-3000 on SearchAutocomplete).
 const PRIMEVUE_DIALOG_CHILD_Z_INDEX_FLOOR = 3000
 
 /**
