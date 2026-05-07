@@ -5,6 +5,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
+import { assertBoundingBox } from '@e2e/fixtures/utils/assertions'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
@@ -272,7 +273,7 @@ export class NodeWidgetReference {
   async dragHorizontal(delta: number) {
     const pos = await this.getPosition()
     const canvas = this.node.comfyPage.canvas
-    const canvasPos = (await canvas.boundingBox())!
+    const canvasPos = await assertBoundingBox(canvas, 'Graph canvas')
     await this.node.comfyPage.canvasOps.dragAndDrop(
       {
         x: canvasPos.x + pos.x,
