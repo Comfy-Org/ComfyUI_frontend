@@ -1,5 +1,8 @@
 <template>
-  <div class="keybinding-panel flex flex-col gap-2">
+  <div
+    :ref="primeVueOverlay.overlayScopeRef"
+    class="keybinding-panel flex flex-col gap-2"
+  >
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
         v-model="filters['global'].value"
@@ -15,10 +18,12 @@
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
           :preset-names="presetNames"
+          :content-style="keybindingOverlayContentStyle"
           @presets-changed="refreshPresetList"
         />
         <DropdownMenu
           :entries="menuEntries"
+          :style="keybindingOverlayContentStyle"
           icon="icon-[lucide--ellipsis]"
           item-class="text-sm gap-2"
           button-size="unset"
@@ -238,6 +243,7 @@
       </ContextMenuTrigger>
       <ContextMenuPortal>
         <ContextMenuContent
+          :style="keybindingOverlayContentStyle"
           class="z-1200 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
         >
           <ContextMenuItem
@@ -314,6 +320,7 @@ import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -337,6 +344,8 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
 
 const presetNames = ref<string[]>([])
 
