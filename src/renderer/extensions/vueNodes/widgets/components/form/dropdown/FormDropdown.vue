@@ -31,6 +31,7 @@ interface Props {
   uploadable?: boolean
   disabled?: boolean
   accept?: string
+  ariaLabel?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
   showOwnershipFilter?: boolean
@@ -57,6 +58,7 @@ const {
   uploadable = false,
   disabled = false,
   accept,
+  ariaLabel,
   filterOptions = [],
   sortOptions = getDefaultSortOptions(),
   showOwnershipFilter,
@@ -202,6 +204,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       :uploadable
       :disabled
       :accept
+      :aria-label="ariaLabel"
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
