@@ -94,9 +94,11 @@ describe('ConfirmationDialogContent', () => {
       ).toBeInTheDocument()
     })
 
-    it("type='dirtyClose' renders Cancel, No, and Save", () => {
+    it("type='dirtyClose' renders No and Save (no Cancel)", () => {
       renderComponent({ type: 'dirtyClose' })
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Cancel' })
+      ).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'No' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     })
@@ -119,5 +121,42 @@ describe('ConfirmationDialogContent', () => {
 
     expect(onConfirm).toHaveBeenCalledWith(true)
     expect(closeSpy).toHaveBeenCalledOnce()
+  })
+
+  describe('dirtyClose deny label', () => {
+    it('uses the provided denyLabel for the deny button', () => {
+      renderComponent({ type: 'dirtyClose', denyLabel: 'Sign out anyway' })
+      expect(screen.getByText('Sign out anyway')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'No' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('falls back to "No" when denyLabel is not provided', () => {
+      renderComponent({ type: 'dirtyClose' })
+      expect(screen.getByRole('button', { name: 'No' })).toBeInTheDocument()
+    })
+
+    it('calls onConfirm(false) when deny is clicked', async () => {
+      const onConfirm = vi.fn()
+      const { user } = renderComponent({
+        type: 'dirtyClose',
+        denyLabel: 'Close anyway',
+        onConfirm
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Close anyway' }))
+
+      expect(onConfirm).toHaveBeenCalledWith(false)
+    })
+
+    it('calls onConfirm(true) when save is clicked', async () => {
+      const onConfirm = vi.fn()
+      const { user } = renderComponent({ type: 'dirtyClose', onConfirm })
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(onConfirm).toHaveBeenCalledWith(true)
+    })
   })
 })

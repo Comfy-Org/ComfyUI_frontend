@@ -53,7 +53,7 @@
       </div>
 
       <Button
-        v-if="type !== 'info'"
+        v-if="type !== 'info' && type !== 'dirtyClose'"
         variant="secondary"
         autofocus
         @click="onCancel"
@@ -84,9 +84,9 @@
       <template v-else-if="type === 'dirtyClose'">
         <Button variant="secondary" @click="onDeny">
           <i class="pi pi-times" />
-          {{ $t('g.no') }}
+          {{ denyLabel ?? $t('g.no') }}
         </Button>
-        <Button @click="onConfirm">
+        <Button autofocus @click="onConfirm">
           <i class="pi pi-save" />
           {{ $t('g.save') }}
         </Button>
@@ -128,6 +128,7 @@ const props = defineProps<{
   onConfirm: (value?: boolean) => void
   itemList?: string[]
   hint?: string
+  denyLabel?: string
 }>()
 
 const { t } = useI18n()
