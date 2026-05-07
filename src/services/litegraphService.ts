@@ -944,6 +944,13 @@ export const useLitegraphService = () => {
     if (!graph || !node) return null
 
     graph.add(node, addOptions)
+    if (!addOptions?.ghost) {
+      const canvas = canvasStore.canvas
+      if (canvas) {
+        canvas.deselectAll()
+        canvas.select(node)
+      }
+    }
     return node
   }
 
