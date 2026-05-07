@@ -950,8 +950,7 @@ export const useLitegraphService = () => {
       const canvas = canvasStore.canvas
       if (canvas) {
         void nextTick(() => {
-          canvas.deselectAll()
-          canvas.select(node)
+          canvas.processSelect(node, undefined)
         })
       }
     }

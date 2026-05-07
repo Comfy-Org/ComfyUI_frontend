@@ -2,8 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockSelect = vi.hoisted(() => vi.fn())
-const mockDeselectAll = vi.hoisted(() => vi.fn())
+const mockProcessSelect = vi.hoisted(() => vi.fn())
 const mockGraphAdd = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/app', () => ({
@@ -13,7 +12,7 @@ vi.mock('@/scripts/app', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({
-    canvas: { select: mockSelect, deselectAll: mockDeselectAll }
+    canvas: { processSelect: mockProcessSelect }
   }))
 }))
 
@@ -67,8 +66,7 @@ describe('useLitegraphService().getCanvasCenter', () => {
 describe('useLitegraphService().addNodeOnGraph', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    mockSelect.mockReset()
-    mockDeselectAll.mockReset()
+    mockProcessSelect.mockReset()
     mockGraphAdd.mockReset()
     Reflect.set(app, 'canvas', undefined)
     Reflect.set(app, 'graph', { add: mockGraphAdd })
@@ -87,9 +85,8 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos: [0, 0] })
     await nextTick()
 
-    expect(mockDeselectAll).toHaveBeenCalledOnce()
-    expect(mockSelect).toHaveBeenCalledOnce()
-    expect(mockSelect).toHaveBeenCalledWith(fakeNode)
+    expect(mockProcessSelect).toHaveBeenCalledOnce()
+    expect(mockProcessSelect).toHaveBeenCalledWith(fakeNode, undefined)
   })
 
   it('does not select the node when placing in ghost mode', async () => {
@@ -109,7 +106,6 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     )
     await nextTick()
 
-    expect(mockSelect).not.toHaveBeenCalled()
-    expect(mockDeselectAll).not.toHaveBeenCalled()
+    expect(mockProcessSelect).not.toHaveBeenCalled()
   })
 })
