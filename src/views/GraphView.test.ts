@@ -10,14 +10,7 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import type * as DistTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
-const apiMock = vi.hoisted(() => {
-  // ComfyApi extends EventTarget in production; reuse the native machinery.
-  const target = new EventTarget()
-  return Object.assign(target, {
-    apiURL: (p: string) => `/api${p}`,
-    clientId: 'test-client'
-  })
-})
+const apiMock = vi.hoisted(() => new EventTarget())
 
 vi.mock('@/scripts/api', () => ({ api: apiMock }))
 
