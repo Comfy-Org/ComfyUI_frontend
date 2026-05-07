@@ -324,24 +324,15 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
 
     // Choose what the output card shows based on which inputs are wired in:
     //   both → final composed image (with depth-blur scrubber)
-    //   one  → that single processed view, full-bleed, with the slider
-    //         applying the same levels filter as the intermediate depth
-    //         node so the slider is never a no-op when something is wired.
+    //   canny only → canny edges, full-bleed, slider has no effect (the
+    //                slider is conceptually depth-tied)
+    //   depth only → depth map, full-bleed, slider drives the same levels
+    //                filter as the intermediate depth node
     //   none → empty card placeholder
     if (cannyOn && depthOn) {
       drawDepthBlur(ctx, x, y, n.w, n.h, n.rx, n.img, outputUi.progress)
     } else if (cannyOn) {
-      drawImageCover(
-        ctx,
-        x,
-        y,
-        n.w,
-        n.h,
-        n.rx,
-        INK,
-        imgRed,
-        levelsFilter(outputUi.progress)
-      )
+      drawImageCover(ctx, x, y, n.w, n.h, n.rx, INK, imgRed, null)
     } else if (depthOn) {
       drawImageCover(
         ctx,
