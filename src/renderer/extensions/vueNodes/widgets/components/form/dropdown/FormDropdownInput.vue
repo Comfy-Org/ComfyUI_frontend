@@ -16,7 +16,8 @@ const {
   maxSelectable,
   uploadable,
   disabled,
-  accept
+  accept,
+  ariaLabel
 } = defineProps<FormDropdownInputProps>()
 
 const { t } = useI18n()
@@ -51,6 +52,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      :aria-label="ariaLabel"
       :class="
         cn(
           theButtonStyle,
