@@ -633,6 +633,14 @@ export function useMediaAssetActions() {
               )
 
               if (hasOutputAssets) {
+                const succeededOutputIds = assetArray
+                  .filter(
+                    (a, i) =>
+                      getAssetType(a) === 'output' &&
+                      results[i].status === 'fulfilled'
+                  )
+                  .map((a) => a.id)
+                assetsStore.removeHistoryItems(succeededOutputIds)
                 await assetsStore.updateHistory()
               }
               if (hasInputAssets) {
