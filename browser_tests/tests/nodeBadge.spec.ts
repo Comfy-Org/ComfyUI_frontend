@@ -165,8 +165,9 @@ for (const vueEnabled of [false, true] as const) {
           mode
         )
         await comfyPage.nodeOps.clearGraph()
-        await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE, {
-          pos: { x: 100, y: 100 }
+        await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE, undefined, {
+          x: 100,
+          y: 100
         })
         await comfyPage.canvasOps.resetView()
         await expect(comfyPage.canvas).toHaveScreenshot(
@@ -201,8 +202,9 @@ for (const vueEnabled of [false, true] as const) {
           enabled
         )
         await comfyPage.nodeOps.clearGraph()
-        await comfyPage.nodeOps.addNode(API_NODE_TYPE, {
-          pos: { x: 100, y: 100 }
+        await comfyPage.nodeOps.addNode(API_NODE_TYPE, undefined, {
+          x: 100,
+          y: 100
         })
         await comfyPage.canvasOps.resetView()
         await expect(comfyPage.canvas).toHaveScreenshot(
