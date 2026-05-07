@@ -5,9 +5,60 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetUserProperties } from '@/platform/assets/schemas/userPropertySchema'
+import { getAssetAdditionalTags } from '@/platform/assets/utils/assetMetadataUtils'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
+
+// --- Property filter parsing and evaluation ---
+
+interface PropertyFilter {
+  key: string
+  op: string
+  target: string
+}
+
+export function parsePropFilter(chip: string): PropertyFilter | null {
+  const body = chip.startsWith('prop:') ? chip.slice(5) : chip
+  const match = body.match(/^(\w+)(>=|<=|>|<|=|~)(.+)$/)
+  if (!match) return null
+  return { key: match[1], op: match[2], target: match[3] }
+}
+
+function matchesPropertyFilter(
+  value: unknown,
+  op: string,
+  target: string
+): boolean {
+  if (typeof value === 'number') {
+    const n = Number(target)
+    if (isNaN(n)) return false
+    switch (op) {
+      case '=':
+        return value === n
+      case '>':
+        return value > n
+      case '<':
+        return value < n
+      case '>=':
+        return value >= n
+      case '<=':
+        return value <= n
+    }
+  }
+  if (typeof value === 'boolean') {
+    if (op !== '=') return false
+    if (target !== 'true' && target !== 'false') return false
+    return value === (target === 'true')
+  }
+  if (typeof value === 'string') {
+    if (op === '~') return value.toLowerCase().includes(target.toLowerCase())
+    if (op === '=') return value === target
+    return false
+  }
+  return false
+}
 
 /**
  * Get timestamp from asset (either create_time or created_at)
@@ -35,9 +86,11 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
   const mediaTypeFilters = ref<string[]>([])
+  const filterTags = ref<string[]>([])
+  const propertyFilters = ref<PropertyFilter[]>([])
 
   const fuseOptions = {
-    keys: ['display_name', 'name'],
+    keys: ['display_name', 'name', 'user_metadata.additional_tags'],
     threshold: 0.4,
     includeScore: true
   }
@@ -53,13 +106,21 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     return results.map((result) => result.item)
   })
 
+  const tagFiltered = computed(() => {
+    if (filterTags.value.length === 0) return searchFiltered.value
+    return searchFiltered.value.filter((asset) => {
+      const assetTags = getAssetAdditionalTags(asset)
+      return filterTags.value.every((t) => assetTags.includes(t))
+    })
+  })
+
   const typeFiltered = computed(() => {
     // Apply media type filter
     if (mediaTypeFilters.value.length === 0) {
-      return searchFiltered.value
+      return tagFiltered.value
     }
 
-    return searchFiltered.value.filter((asset) => {
+    return tagFiltered.value.filter((asset) => {
       const mediaType = getMediaTypeFromFilename(asset.name)
       // Convert '3D' to '3d' for comparison
       const normalizedType = mediaType.toLowerCase()
@@ -67,29 +128,40 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     })
   })
 
+  const propertyFiltered = computed(() => {
+    if (propertyFilters.value.length === 0) return typeFiltered.value
+    return typeFiltered.value.filter((asset) => {
+      const props = getAssetUserProperties(asset.user_metadata)
+      return propertyFilters.value.every(({ key, op, target }) => {
+        const prop = props[key]
+        if (!prop) return false
+        return matchesPropertyFilter(prop.value, op, target)
+      })
+    })
+  })
+
   const filteredAssets = computed(() => {
-    // Sort by create_time (output assets) or created_at (input assets)
     switch (sortBy.value) {
       case 'oldest':
-        // Ascending order (oldest first)
-        return sortByUtil(typeFiltered.value, [getAssetTime])
+        return sortByUtil(propertyFiltered.value, [getAssetTime])
       case 'longest':
-        // Descending order (longest execution time first)
-        return sortByUtil(typeFiltered.value, [
+        return sortByUtil(propertyFiltered.value, [
           (asset) => -getAssetExecutionTime(asset)
         ])
       case 'fastest':
-        // Ascending order (fastest execution time first)
-        return sortByUtil(typeFiltered.value, [getAssetExecutionTime])
+        return sortByUtil(propertyFiltered.value, [getAssetExecutionTime])
       case 'newest':
       default:
-        // Descending order (newest first) - negate for descending
-        return sortByUtil(typeFiltered.value, [(asset) => -getAssetTime(asset)])
+        return sortByUtil(propertyFiltered.value, [
+          (asset) => -getAssetTime(asset)
+        ])
     }
   })
 
   return {
     searchQuery,
+    filterTags,
+    propertyFilters,
     sortBy,
     mediaTypeFilters,
     filteredAssets
