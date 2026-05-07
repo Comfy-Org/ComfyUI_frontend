@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
+
+import type { PanelPreset } from '@/components/appMode/layout/panels/panelTypes'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
 
 const zRendererType = z.enum([
@@ -8,6 +10,15 @@ const zRendererType = z.enum([
   'Vue',
   'Vue-corrected'
 ]) satisfies z.ZodType<RendererType>
+
+const zPanelPreset = z.enum([
+  'right-dock',
+  'left-dock',
+  'float-tr',
+  'float-br',
+  'float-tl',
+  'float-bl'
+]) satisfies z.ZodType<PanelPreset>
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
@@ -318,16 +329,7 @@ const zExtra = z
         layout: z
           .object({
             columns: z.number().int().positive().optional(),
-            panelPreset: z
-              .enum([
-                'right-dock',
-                'left-dock',
-                'float-tr',
-                'float-br',
-                'float-tl',
-                'float-bl'
-              ])
-              .optional(),
+            panelPreset: zPanelPreset.optional(),
             panelCollapsed: z.boolean().optional(),
             panelWidthCells: z.number().int().positive().optional(),
             panelRows: z

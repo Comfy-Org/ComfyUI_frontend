@@ -555,6 +555,7 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
   function clear(): void {
     windows.value = []
     nextZ = 1
+    nextSeq = 1
   }
 
   // Re-flow all tiles into the cell grid sized to the LayoutView.
@@ -618,8 +619,15 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
     win.height = slot.h
   }
 
+  // Wrap `windows` as a computed before exposing so consumers cannot
+  // mutate the array directly. Internal mutation continues to use
+  // `windows.value` inside the store closure.
+  const exposedWindows = computed<readonly OutputWindowEntry[]>(
+    () => windows.value
+  )
+
   return {
-    windows,
+    windows: exposedWindows,
     sortedWindows,
     upsert,
     attachAsset,

@@ -314,8 +314,14 @@ const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 }
 </style>
 
-<!-- Unscoped: <Transition appear> classes apply to the child's root. -->
 <style>
+/* `<style>` block exception: Vue's <Transition appear name="panel-enter">
+   generates `panel-enter-enter-*` class names on the child's root at
+   runtime, so Tailwind utility classes on the template can't reach them.
+   The block is unscoped so the transition classes match across the
+   slot boundary. The doubled `enter-enter` is intentional — the
+   transition is named "panel-enter" and Vue appends "-enter-active"
+   etc. */
 .panel-enter-enter-active {
   transition:
     opacity 300ms ease,
