@@ -8,7 +8,6 @@ test.describe(
   { tag: '@ui' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
@@ -36,38 +35,57 @@ test.describe(
       return menu
     }
 
-    test('Shape submenu opens to the right of the parent menu without being clipped', async ({
+    async function expectShapePopoverVisible(comfyPage: ComfyPage) {
+      // Shape popover renders via PrimeVue Popover (body-appended), so it
+      // escapes the context menu's overflow container. We assert by content.
+      const popover = comfyPage.page
+        .locator('.p-popover')
+        .filter({ hasText: 'Round' })
+      await expect(popover).toBeVisible()
+      await expect(popover).toContainText('Box')
+      await expect(popover).toContainText('Card')
+
+      const popoverBox = await popover.boundingBox()
+      expect(popoverBox).not.toBeNull()
+      expect(popoverBox!.width).toBeGreaterThan(0)
+      expect(popoverBox!.height).toBeGreaterThan(0)
+    }
+
+    test('Shape popover opens when the menu fits in the viewport', async ({
       comfyPage
     }) => {
+      await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
       const menu = await openMoreOptions(comfyPage)
       const rootList = menu.locator(':scope > ul')
 
-      // When the menu fits in the viewport, the root list must keep
-      // overflow-y visible. Setting it to auto/scroll on a <ul> coerces
-      // overflow-x to a non-visible value (CSS spec), which produces FE-570.
+      // When content fits, the constrain-height fallback must not engage,
+      // since overflow-y on the <ul> coerces overflow-x to a non-visible
+      // value (CSS spec) and would clip in-tree submenus.
       await expect
         .poll(() => rootList.evaluate((el) => getComputedStyle(el).overflowY))
         .toBe('visible')
 
-      const shapeItem = menu.getByRole('menuitem', { name: 'Shape' })
-      await expect(shapeItem).toBeVisible()
-      await shapeItem.hover()
+      await menu.getByRole('menuitem', { name: 'Shape' }).click()
+      await expectShapePopoverVisible(comfyPage)
+    })
 
-      const shapeSubmenu = shapeItem.locator(':scope > ul')
-      await expect(shapeSubmenu).toBeVisible()
+    test('Shape popover opens even when the menu must scroll', async ({
+      comfyPage
+    }) => {
+      // Force the More Options menu to overflow the viewport. In this state
+      // constrainMenuHeight applies overflow-y: auto on the root <ul>, which
+      // is exactly the scenario that previously hid the in-tree Shape submenu.
+      await comfyPage.page.setViewportSize({ width: 1280, height: 520 })
+      const menu = await openMoreOptions(comfyPage)
+      const rootList = menu.locator(':scope > ul')
 
-      const submenuRect = await shapeSubmenu.boundingBox()
-      const parentRect = await rootList.boundingBox()
-      expect(submenuRect).not.toBeNull()
-      expect(parentRect).not.toBeNull()
+      await expect
+        .poll(() => rootList.evaluate((el) => el.scrollHeight > el.clientHeight))
+        .toBe(true)
 
-      // Submenu must extend horizontally past the parent menu's right edge.
-      // If the FE-570 clip is back, the submenu either has zero width or its
-      // right edge does not exceed the parent's right edge.
-      expect(submenuRect!.width).toBeGreaterThan(0)
-      expect(submenuRect!.x + submenuRect!.width).toBeGreaterThan(
-        parentRect!.x + parentRect!.width - 1
-      )
+      await menu.getByRole('menuitem', { name: 'Shape' }).scrollIntoViewIfNeeded()
+      await menu.getByRole('menuitem', { name: 'Shape' }).click()
+      await expectShapePopoverVisible(comfyPage)
     })
   }
 )
