@@ -20,7 +20,7 @@
     <span ref="textRef" class="min-w-0 truncate">
       <slot />
     </span>
-    <StatusBadge
+    <Badge
       v-if="badge !== undefined"
       :label="String(badge)"
       severity="contrast"
@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import type { NavItemData } from '@/types/navTypes'
 
 import NavIcon from './NavIcon.vue'

@@ -23,9 +23,10 @@
       </span>
       <Badge
         v-if="showNodeBadgeText"
-        :value="nodeBadgeText"
+        :label="nodeBadgeText"
         severity="secondary"
-        class="leaf-count-badge"
+        :variant="nodeBadgeText.length > 1 ? 'label' : 'circle'"
+        class="ml-2"
       />
     </div>
     <div
@@ -38,7 +39,7 @@
 
 <script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
-import Badge from 'primevue/badge'
+import Badge from '@/components/common/Badge.vue'
 import { computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -145,9 +146,6 @@ if (props.node.droppable) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-.leaf-count-badge {
-  margin-left: 0.5rem;
 }
 .node-content {
   display: flex;

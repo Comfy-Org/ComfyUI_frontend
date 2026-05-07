@@ -216,15 +216,17 @@ describe('useCustomerEventsService', () => {
 
   describe('getEventSeverity', () => {
     it('should return correct severity for known event types', () => {
-      expect(service.getEventSeverity(EventType.CREDIT_ADDED)).toBe('success')
-      expect(service.getEventSeverity(EventType.ACCOUNT_CREATED)).toBe('info')
+      expect(service.getEventSeverity(EventType.CREDIT_ADDED)).toBe('default')
+      expect(service.getEventSeverity(EventType.ACCOUNT_CREATED)).toBe(
+        'secondary'
+      )
       expect(service.getEventSeverity(EventType.API_USAGE_COMPLETED)).toBe(
-        'warning'
+        'warn'
       )
     })
 
     it('should return default severity for unknown event types', () => {
-      expect(service.getEventSeverity('unknown_event')).toBe('info')
+      expect(service.getEventSeverity('unknown_event')).toBe('secondary')
     })
   })
 
