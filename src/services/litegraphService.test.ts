@@ -30,6 +30,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { nextTick } from 'vue'
 
 describe('useLitegraphService().getCanvasCenter', () => {
   beforeEach(() => {
@@ -73,7 +74,7 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     Reflect.set(app, 'graph', { add: mockGraphAdd })
   })
 
-  it('selects the node after placing it on the graph', () => {
+  it('selects the node after placing it on the graph', async () => {
     const fakeNode = { id: 1, flags: {} }
     vi.spyOn(LiteGraph, 'createNode').mockReturnValue(
       fakeNode as unknown as LGraphNode
@@ -84,13 +85,14 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     } as unknown as ComfyNodeDefV1
 
     useLitegraphService().addNodeOnGraph(nodeDef, { pos: [0, 0] })
+    await nextTick()
 
     expect(mockDeselectAll).toHaveBeenCalledOnce()
     expect(mockSelect).toHaveBeenCalledOnce()
     expect(mockSelect).toHaveBeenCalledWith(fakeNode)
   })
 
-  it('does not select the node when placing in ghost mode', () => {
+  it('does not select the node when placing in ghost mode', async () => {
     const fakeNode = { id: 1, flags: {} }
     vi.spyOn(LiteGraph, 'createNode').mockReturnValue(
       fakeNode as unknown as LGraphNode
@@ -105,6 +107,7 @@ describe('useLitegraphService().addNodeOnGraph', () => {
       { pos: [0, 0] },
       { ghost: true }
     )
+    await nextTick()
 
     expect(mockSelect).not.toHaveBeenCalled()
     expect(mockDeselectAll).not.toHaveBeenCalled()

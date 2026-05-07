@@ -62,6 +62,8 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { nextTick } from 'vue'
+
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -947,8 +949,10 @@ export const useLitegraphService = () => {
     if (!addOptions?.ghost) {
       const canvas = canvasStore.canvas
       if (canvas) {
-        canvas.deselectAll()
-        canvas.select(node)
+        void nextTick(() => {
+          canvas.deselectAll()
+          canvas.select(node)
+        })
       }
     }
     return node
