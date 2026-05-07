@@ -2358,6 +2358,7 @@
     "resubscribe": "Resubscribe",
     "resubscribeTo": "Resubscribe to {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
+    "resubscribeFailed": "Failed to resubscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}."
