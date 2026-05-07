@@ -37,7 +37,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="optionStyle"
+        :style="[optionStyle, contentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -82,6 +82,7 @@ import {
   SelectViewport
 } from 'reka-ui'
 import { ref } from 'vue'
+import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
@@ -109,7 +110,8 @@ const {
   disabled = false,
   listMaxHeight = '28rem',
   popoverMinWidth,
-  popoverMaxWidth
+  popoverMaxWidth,
+  contentStyle
 } = defineProps<{
   label?: string
   options?: SelectOption[]
@@ -127,6 +129,7 @@ const {
   popoverMinWidth?: string
   /** Maximum width of the popover (default: auto) */
   popoverMaxWidth?: string
+  contentStyle?: StyleValue
 }>()
 
 const selectedItem = defineModel<string | undefined>({ required: true })

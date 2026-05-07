@@ -40,7 +40,10 @@
 
     <template #contentFilter>
       <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
-        <div class="flex flex-wrap gap-2">
+        <div
+          :ref="primeVueOverlay.overlayScopeRef"
+          class="flex flex-wrap gap-2"
+        >
           <!-- Model Filter -->
           <MultiSelect
             v-model="selectedModelObjects"
@@ -48,6 +51,7 @@
             class="w-[250px]"
             :label="modelFilterLabel"
             :options="modelOptions"
+            :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
@@ -62,6 +66,7 @@
             v-model="selectedUseCaseObjects"
             :label="useCaseFilterLabel"
             :options="useCaseOptions"
+            :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
@@ -76,6 +81,7 @@
             v-model="selectedRunsOnObjects"
             :label="runsOnFilterLabel"
             :options="runsOnOptions"
+            :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
@@ -92,6 +98,7 @@
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
+            :content-style="selectContentStyle"
             class="w-62.5"
           >
             <template #icon>
@@ -416,6 +423,7 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -632,6 +640,8 @@ const selectedRunsOnObjects = computed({
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const selectContentStyle = primeVueOverlay.contentStyle
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
