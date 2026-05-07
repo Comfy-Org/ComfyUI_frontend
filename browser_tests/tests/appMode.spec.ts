@@ -9,41 +9,61 @@ test.describe('App mode usage', () => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     const { centerPanel } = comfyPage.appMode
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
-    await expect(centerPanel).toBeVisible()
+    await expect(centerPanel, 'Enter app mode').toBeVisible()
+
     //an app without an image input will load the workflow
-    await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
-    comfyFiles.deleteAfterTest({ filename: 'workflow.webp', type: 'input' })
-    await expect(centerPanel).toBeHidden()
+    await test.step('App without an image input loads workflow', async () => {
+      await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
+      await expect(centerPanel).toBeHidden()
+    })
 
     //prep a load image
-    await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
-    comfyFiles.deleteAfterTest({ filename: 'og-image.png', type: 'input' })
-    const loadImage = await comfyPage.vueNodes.getNodeLocator('10')
-    await expect(loadImage).toBeVisible()
-
-    await comfyPage.appMode.enterAppModeWithInputs([['10', 'image']])
-    await expect(centerPanel).toBeVisible()
+    await test.step('Add a load image node', async () => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
+      comfyFiles.deleteAfterTest({ filename: 'og-image.png', type: 'input' })
+      const loadImage = await comfyPage.vueNodes.getNodeLocator('10')
+      await expect(loadImage).toBeVisible()
+    })
 
     const imageInput = new WidgetSelectDropdownFixture(
       comfyPage.appMode.linearWidgets.locator('.lg-node-widget')
     )
-    await expect(imageInput.root).toBeVisible()
-    const initialImage = await imageInput.selectedItem()
 
-    //an app with an image input will upload the image to the input
-    await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
-    comfyFiles.deleteAfterTest({ filename: 'workflow (2).webp', type: 'input' })
-    await expect(imageInput.selection).not.toHaveText(initialImage)
-    await expect(
-      centerPanel,
-      'A file with workflow should not open a new workflow'
-    ).toBeVisible()
+    await test.step('Enter app mode with image input', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['10', 'image']])
+      await expect(centerPanel).toBeVisible()
 
-    const secondImage = await imageInput.selectedItem()
-    //an app with an image input can load from a uri-source
-    await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
-    await expect(imageInput.selection).not.toHaveText(secondImage)
+      await expect(imageInput.root).toBeVisible()
+    })
+
+    await test.step('Dragging an image redirects to image input', async () => {
+      const initialImage = await imageInput.selectedItem()
+
+      await comfyPage.dragDrop.dragAndDropExternalResource({
+        fileName: 'workflowInMedia/workflow.webp',
+        preserveNativePropagation: true
+      })
+      comfyFiles.deleteAfterTest({ filename: 'workflow.webp', type: 'input' })
+
+      await expect(imageInput.selection).not.toHaveText(initialImage)
+      await expect(
+        centerPanel,
+        'A file with workflow should not open a new workflow'
+      ).toBeVisible()
+    })
+
+    await test.step('Dragging a url redirects to image input', async () => {
+      const secondImage = await imageInput.selectedItem()
+      await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png', {
+        preserveNativePropagation: true
+      })
+      comfyFiles.deleteAfterTest({
+        filename: 'og-image (1).png',
+        type: 'input'
+      })
+      await expect(imageInput.selection).not.toHaveText(secondImage)
+    })
   })
 
   test('Widget Interaction', async ({ comfyPage }) => {

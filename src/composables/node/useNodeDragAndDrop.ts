@@ -73,12 +73,14 @@ export const useNodeDragAndDrop = <T>(
       return true
     }
 
-    const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
+    const baseUri = e?.dataTransfer?.getData('text/uri-list') ?? ''
+    const uri = URL.parse(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
     try {
       const resp = await fetch(uri)
-      const fileName = uri?.searchParams?.get('filename')
+      const fileName =
+        uri?.searchParams?.get('filename') ?? baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
 
       const blob = await resp.blob()

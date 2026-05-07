@@ -43,7 +43,7 @@ export class DragDropHelper {
       const filePath = assetPath(fileName)
       const buffer = readFileSync(filePath)
 
-      evaluateParams.fileName = fileName
+      evaluateParams.fileName = fileName.split('/').at(-1)!
       evaluateParams.fileType = getMimeType(fileName)
       evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
