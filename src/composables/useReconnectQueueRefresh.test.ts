@@ -77,4 +77,22 @@ describe('useReconnectQueueRefresh', () => {
 
     expect(clearSpy).toHaveBeenCalledWith(new Set())
   })
+
+  it('skips reconcile and preserves state when queue update throws', async () => {
+    const queueStore = useQueueStore()
+    const executionStore = useExecutionStore()
+
+    vi.spyOn(queueStore, 'update').mockRejectedValue(new Error('boom'))
+    const clearSpy = vi
+      .spyOn(executionStore, 'clearActiveJobIfStale')
+      .mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const refresh = useReconnectQueueRefresh()
+    await expect(refresh()).resolves.toBeUndefined()
+
+    expect(clearSpy).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })

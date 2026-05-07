@@ -11,7 +11,12 @@ export function useReconnectQueueRefresh() {
   const executionStore = useExecutionStore()
 
   return async function refreshOnReconnect() {
-    await queueStore.update()
+    try {
+      await queueStore.update()
+    } catch (error) {
+      console.warn('[reconnect] queue refresh failed', error)
+      return
+    }
     const activeJobIds = new Set([
       ...queueStore.runningTasks.map((t) => t.jobId),
       ...queueStore.pendingTasks.map((t) => t.jobId)
