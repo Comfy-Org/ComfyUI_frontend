@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "및",
+      "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",
@@ -835,6 +836,7 @@
     "NOISE": "노이즈",
     "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
