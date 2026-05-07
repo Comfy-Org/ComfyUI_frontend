@@ -5,7 +5,7 @@ import {
   useIntersectionObserver,
   useTemplateRefsList
 } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -71,16 +71,15 @@ function isAtBottom(): boolean {
   )
 }
 
-useEventListener(
-  'scroll',
-  () => {
-    if (isScrolling) return
-    if (!isAtBottom()) return
-    const lastId = sections[sections.length - 1]?.id
-    if (lastId) activeSection.value = lastId
-  },
-  { passive: true }
-)
+function activateLastIfAtBottom() {
+  if (isScrolling) return
+  if (!isAtBottom()) return
+  const lastId = sections[sections.length - 1]?.id
+  if (lastId) activeSection.value = lastId
+}
+
+onMounted(activateLastIfAtBottom)
+useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 function scrollToSection(id: string) {
   activeSection.value = id
