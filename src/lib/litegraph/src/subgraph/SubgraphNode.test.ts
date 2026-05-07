@@ -79,6 +79,19 @@ describe('SubgraphNode Construction', () => {
     expect(subgraphNode.graph).toBeNull()
   })
 
+  it('should return empty widgets array (not throw) after removal', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const parentGraph = subgraphNode.graph!
+    parentGraph.add(subgraphNode)
+
+    parentGraph.remove(subgraphNode)
+
+    expect(subgraphNode.graph).toBeNull()
+    expect(() => subgraphNode.widgets).not.toThrow()
+    expect(subgraphNode.widgets).toEqual([])
+  })
+
   subgraphTest(
     'should synchronize slots with subgraph definition',
     ({ subgraphWithNode }) => {

@@ -1,7 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 vi.mock('@/composables/useAppMode', () => ({
@@ -82,6 +85,41 @@ describe('useCanvasStore', () => {
       app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
 
       expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
+    })
+  })
+
+  describe('node:before-removed selection cleanup', () => {
+    it('removes the node from store.selectedItems before its onRemoved fires', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      graph.add(node)
+
+      const selectedItems = new Set<Positionable>([node])
+      const fakeCanvas = {
+        canvas: document.createElement('canvas'),
+        graph,
+        selectedItems,
+        deselect: vi.fn((item: Positionable) => {
+          selectedItems.delete(item)
+        })
+      }
+      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      await nextTick()
+      store.updateSelectedItems()
+      expect(store.selectedItems).toContain(node)
+
+      let stillSelectedInOnRemoved: boolean | undefined
+      node.onRemoved = () => {
+        stillSelectedInOnRemoved = store.selectedItems.includes(node)
+      }
+
+      graph.remove(node)
+
+      expect(
+        stillSelectedInOnRemoved,
+        'selectedItems must not contain the node when onRemoved fires'
+      ).toBe(false)
+      expect(store.selectedItems).toEqual([])
     })
   })
 })

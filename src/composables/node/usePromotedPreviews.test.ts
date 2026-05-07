@@ -106,6 +106,18 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value).toEqual([])
   })
 
+  it('returns empty array (does not throw) when SubgraphNode is detached', () => {
+    const setup = createSetup()
+    const parentGraph = setup.subgraphNode.graph!
+    parentGraph.add(setup.subgraphNode)
+    parentGraph.remove(setup.subgraphNode)
+
+    expect(setup.subgraphNode.graph).toBeNull()
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(() => promotedPreviews.value).not.toThrow()
+    expect(promotedPreviews.value).toEqual([])
+  })
+
   it('returns empty array when no $$ promotions exist', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
