@@ -143,6 +143,21 @@ describe('NodeFooter', () => {
       await user.click(screen.getByText('Show Advanced Inputs'))
       expect(emitted()).toHaveProperty('toggleAdvanced')
     })
+
+    it('emits advancedHoverChange when hovering the advanced tab', async () => {
+      const { emitted } = renderFooter({ showAdvancedInputsButton: true })
+      const button = screen.getByRole('button', { name: /show advanced/i })
+      await user.hover(button)
+      await user.unhover(button)
+      expect(emitted().advancedHoverChange).toEqual([[true], [false]])
+    })
+
+    it('emits advancedHoverChange when focusing the advanced tab via keyboard', async () => {
+      const { emitted } = renderFooter({ showAdvancedInputsButton: true })
+      await user.tab()
+      const focusedTrue = emitted().advancedHoverChange?.[0]
+      expect(focusedTrue).toEqual([true])
+    })
   })
 
   describe('shape-based radius classes (getBottomRadius)', () => {

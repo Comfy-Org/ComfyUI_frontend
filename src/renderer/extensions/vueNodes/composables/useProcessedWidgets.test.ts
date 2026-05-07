@@ -237,7 +237,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: false,
-      isAdvancedHovered: false,
+      showAdvancedRing: false,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi
@@ -278,7 +278,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: false,
-      isAdvancedHovered: false,
+      showAdvancedRing: false,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi
@@ -310,7 +310,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: true,
-      isAdvancedHovered: true,
+      showAdvancedRing: true,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi
@@ -342,7 +342,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: true,
-      isAdvancedHovered: false,
+      showAdvancedRing: false,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi

@@ -70,7 +70,7 @@ interface ComputeProcessedWidgetsOptions {
   nodeData: VueNodeData | undefined
   graphId: string | undefined
   showAdvanced: boolean
-  isAdvancedHovered?: boolean
+  showAdvancedRing?: boolean
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
@@ -162,7 +162,7 @@ export function computeProcessedWidgets({
   nodeData,
   graphId,
   showAdvanced,
-  isAdvancedHovered = false,
+  showAdvancedRing = false,
   isGraphReady,
   rootGraph,
   ui
@@ -280,7 +280,7 @@ export function computeProcessedWidgets({
         disambiguatingSourceNodeId: promotionSourceNodeId
       })
         ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced && isAdvancedHovered
+        : mergedOptions.advanced && showAdvancedRing
           ? 'ring ring-component-node-widget-advanced'
           : undefined
 
@@ -379,10 +379,12 @@ export function useProcessedWidgets(
     handleNodeRightClick
   }
 
+  const alwaysShowAdvanced = computed(() =>
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+  )
+
   const showAdvanced = computed(
-    () =>
-      nodeDataGetter()?.showAdvanced ||
-      settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+    () => nodeDataGetter()?.showAdvanced || alwaysShowAdvanced.value
   )
 
   const canSelectInputs = computed(() => {
@@ -400,7 +402,11 @@ export function useProcessedWidgets(
       nodeData: nodeDataGetter(),
       graphId: canvasStore.canvas?.graph?.rootGraph.id,
       showAdvanced: showAdvanced.value,
-      isAdvancedHovered: isAdvancedHoveredGetter(),
+      // Outline is normally a hover hint of "what the hide button would
+      // collapse". When the always-show setting is on, the hide button is not
+      // rendered, so we keep the previous behavior of always showing the
+      // outline so that affordance is not lost.
+      showAdvancedRing: alwaysShowAdvanced.value || isAdvancedHoveredGetter(),
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
       ui
