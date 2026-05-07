@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
+import {
+  useEventListener,
+  useIntersectionObserver,
+  useTemplateRefsList
+} from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -42,11 +46,13 @@ const sectionRefs = useTemplateRefsList<HTMLElement>()
 let isScrolling = false
 
 const HEADER_OFFSET = -144
+const BOTTOM_THRESHOLD_PX = 4
 
 useIntersectionObserver(
   sectionRefs,
   (entries) => {
     if (isScrolling) return
+    if (isAtBottom()) return
     let best: IntersectionObserverEntry | null = null
     for (const entry of entries) {
       if (!entry.isIntersecting) continue
@@ -56,6 +62,24 @@ useIntersectionObserver(
     if (best) activeSection.value = best.target.id
   },
   { rootMargin: '-20% 0px -60% 0px' }
+)
+
+function isAtBottom(): boolean {
+  const scrollBottom = window.scrollY + window.innerHeight
+  return (
+    scrollBottom >= document.documentElement.scrollHeight - BOTTOM_THRESHOLD_PX
+  )
+}
+
+useEventListener(
+  'scroll',
+  () => {
+    if (isScrolling) return
+    if (!isAtBottom()) return
+    const lastId = sections[sections.length - 1]?.id
+    if (lastId) activeSection.value = lastId
+  },
+  { passive: true }
 )
 
 function scrollToSection(id: string) {
