@@ -692,18 +692,26 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
   })
 
-  test('Controls collapse to single column in compact mode', async ({
+  test('Controls stack label above widget in compact mode', async ({
     comfyPage
   }) => {
     const painterWidget = comfyPage.vueNodes
       .getNodeLocator('1')
       .locator('.widget-expands')
     const toolLabel = painterWidget.getByText('Tool', { exact: true })
+    const brushButton = painterWidget.getByText('Brush', { exact: true })
 
     await expect(
       toolLabel,
-      'tool label should be visible in two-column layout'
+      'tool label should be visible in wide layout'
     ).toBeVisible()
+
+    const wideLabelBox = await toolLabel.boundingBox()
+    const wideBrushBox = await brushButton.boundingBox()
+    expect(
+      wideLabelBox && wideBrushBox && wideLabelBox.x < wideBrushBox.x,
+      'label should sit to the left of the brush button in wide layout'
+    ).toBe(true)
 
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess | undefined
@@ -716,8 +724,22 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
     await expect(
       toolLabel,
-      'tool label should hide in compact single-column layout'
-    ).toBeHidden()
+      'tool label should remain visible in compact layout'
+    ).toBeVisible()
+
+    await expect
+      .poll(
+        async () => {
+          const labelBox = await toolLabel.boundingBox()
+          const brushBox = await brushButton.boundingBox()
+          if (!labelBox || !brushBox) return false
+          return labelBox.y + labelBox.height <= brushBox.y
+        },
+        {
+          message: 'label should stack above the brush button in compact layout'
+        }
+      )
+      .toBe(true)
   })
 
   test('Multiple sequential strokes at different positions all accumulate', async ({
