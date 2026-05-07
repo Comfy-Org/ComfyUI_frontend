@@ -20,6 +20,7 @@
         <InfoButton v-if="showInfoButton" />
 
         <ColorPickerButton v-if="showColorPicker" />
+        <ArrangeButton v-if="showArrange" />
         <FrameNodes v-if="showFrameNodes" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
         <ConfigureSubgraph v-if="showSubgraphButtons" />
@@ -49,6 +50,7 @@
 import Panel from 'primevue/panel'
 import { computed, ref } from 'vue'
 
+import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
@@ -111,6 +113,7 @@ const showInfoButton = computed(() => !!nodeDef.value)
 
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
+const showArrange = computed(() => hasMultipleSelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
 const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
@@ -129,6 +132,7 @@ const showAnyPrimaryActions = computed(
   () =>
     showColorPicker.value ||
     showConvertToSubgraph.value ||
+    showArrange.value ||
     showFrameNodes.value ||
     showSubgraphButtons.value
 )
