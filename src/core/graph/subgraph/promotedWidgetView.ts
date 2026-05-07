@@ -116,6 +116,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.identityName ?? this.sourceWidgetName
   }
 
+  get storeName(): string {
+    return this.name
+  }
+
   get y(): number {
     return this.yValue
   }

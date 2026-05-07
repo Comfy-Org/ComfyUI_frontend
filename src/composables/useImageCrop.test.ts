@@ -66,7 +66,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/widgetValueStore', () => ({
   useWidgetValueStore: () => ({
-    getNodeWidgets: vi.fn(() => [])
+    getNodeWidgets: vi.fn(() => []),
+    getNodeWidgetsByName: vi.fn(() => new Map())
   })
 }))
 

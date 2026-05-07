@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
+import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
 import {
   LGraph,
@@ -522,15 +523,19 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
     const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
 
-    const rootProxyWidgetsA = graph.getNodeById(102)?.properties?.proxyWidgets
-    expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
-    for (const entry of rootProxyWidgetsA as string[][]) {
+    const rootProxyWidgetsA = parseProxyWidgets(
+      graph.getNodeById(102)?.properties?.proxyWidgets
+    )
+    expect(rootProxyWidgetsA.length).toBeGreaterThan(0)
+    for (const entry of rootProxyWidgetsA) {
       expect(subgraphAIds.has(String(entry[0]))).toBe(true)
     }
 
-    const rootProxyWidgetsB = graph.getNodeById(103)?.properties?.proxyWidgets
-    expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
-    for (const entry of rootProxyWidgetsB as string[][]) {
+    const rootProxyWidgetsB = parseProxyWidgets(
+      graph.getNodeById(103)?.properties?.proxyWidgets
+    )
+    expect(rootProxyWidgetsB.length).toBeGreaterThan(0)
+    for (const entry of rootProxyWidgetsB) {
       expect(subgraphBIds.has(String(entry[0]))).toBe(true)
     }
 

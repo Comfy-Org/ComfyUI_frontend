@@ -57,6 +57,9 @@ export interface SafeWidgetData {
   storeNodeId?: NodeId
   name: string
   storeName?: string
+  instanceWidgetName?: string
+  source?: PromotedWidgetSource
+  sourceNodeLocatorId?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined

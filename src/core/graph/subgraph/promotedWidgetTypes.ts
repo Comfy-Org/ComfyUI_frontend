@@ -24,6 +24,7 @@ export interface PromotedWidgetView extends IBaseWidget {
    * origin.
    */
   readonly disambiguatingSourceNodeId?: string
+  readonly storeName: string
 }
 
 export function isPromotedWidgetView(
