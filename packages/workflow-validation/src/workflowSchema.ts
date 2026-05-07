@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
-import type { RendererType } from '@/lib/litegraph/src/LGraph'
+
+type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 const zRendererType = z.enum([
   'LG',
@@ -313,7 +314,16 @@ const zExtra = z
   .passthrough()
 
 const zGraphDefinitions = z.object({
-  subgraphs: z.lazy(() => z.array(zSubgraphDefinition))
+  subgraphs: z.lazy(
+    (): z.ZodArray<
+      z.ZodType<
+        SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
+        z.ZodTypeDef,
+        SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
+      >,
+      'many'
+    > => z.array(zSubgraphDefinition)
+  )
 })
 
 const zBaseExportableGraph = z.object({

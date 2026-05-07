@@ -2,10 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 
-import {
-  zComfyWorkflow,
-  zComfyWorkflow1
-} from '../src/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow, zComfyWorkflow1 } from '@comfyorg/workflow-validation'
 import { zComfyNodeDef as zComfyNodeDefV2 } from '../src/schemas/nodeDef/nodeDefSchemaV2'
 import { zComfyNodeDef as zComfyNodeDefV1 } from '../src/schemas/nodeDefSchema'
 
@@ -57,4 +54,4 @@ fs.writeFileSync(
   JSON.stringify(nodeDefV2Schema, null, 2)
 )
 
-console.log('JSON Schemas generated successfully!')
+console.warn('JSON Schemas generated successfully!')

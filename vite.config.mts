@@ -634,6 +634,9 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
+      '@/utils/linkFixer': '/packages/workflow-validation/src/linkRepair.ts',
+      '@/platform/workflow/validation/schemas/workflowSchema':
+        '/packages/workflow-validation/src/workflowSchema.ts',
       '@': '/src'
     }
   },

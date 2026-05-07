@@ -24,16 +24,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
-  ISerialisedGraph,
-  ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
+  SerialisedGraph,
+  SerialisedLinkArray,
+  SerialisedLinkObject,
+  SerialisedNode,
+  SerialisedNodeOutput
+} from './serialised'
+import { describeTopologyError, toLinkContext } from './linkTopology'
+import type { LinkContext, TopologyError } from './linkTopology'
 
-interface BadLinksData<T = ISerialisedGraph | LGraph> {
+export interface RepairResult<T = SerialisedGraph> {
   hasBadLinks: boolean
   fixed: boolean
   graph: T
@@ -41,22 +42,49 @@ interface BadLinksData<T = ISerialisedGraph | LGraph> {
   deleted: number
 }
 
+/**
+ * Thrown when the repair pass detects a divergence between its in-memory
+ * patched view and the live graph data — typically because the workflow's
+ * topology cannot be reconciled (e.g. links pointing to slots that do not
+ * exist on the target node). The attached `TopologyError` carries the
+ * `[linkId, src, srcSlot, tgt, tgtSlot]` tuple so callers can report the
+ * precise offending link instead of a generic invariant failure.
+ */
+export class LinkRepairAbortedError extends Error {
+  public readonly topologyError: TopologyError
+  constructor(topologyError: TopologyError) {
+    super(describeTopologyError(topologyError))
+    this.topologyError = topologyError
+    this.name = 'LinkRepairAbortedError'
+  }
+}
+
 enum IoDirection {
   INPUT,
   OUTPUT
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
-  if ((graph as LGraph).getNodeById) {
-    return (graph as LGraph).getNodeById(id)
-  }
-  graph = graph as ISerialisedGraph
-  return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
+interface LiveGraph extends SerialisedGraph {
+  getNodeById(id: string | number): SerialisedNode | undefined
 }
 
-function extendLink(link: SerialisedLLinkArray) {
+function isLiveGraph(graph: SerialisedGraph | LiveGraph): graph is LiveGraph {
+  return typeof (graph as LiveGraph).getNodeById === 'function'
+}
+
+function getNodeById(
+  graph: SerialisedGraph | LiveGraph,
+  id: string | number
+): SerialisedNode | undefined {
+  if (isLiveGraph(graph)) return graph.getNodeById(id)
+  return graph.nodes.find((n) => n.id == id)
+}
+
+function extendLink(link: SerialisedLinkArray): SerialisedLinkObject & {
+  link: SerialisedLinkArray
+} {
   return {
-    link: link,
+    link,
     id: link[0],
     origin_id: link[1],
     origin_slot: link[2],
@@ -66,23 +94,26 @@ function extendLink(link: SerialisedLLinkArray) {
   }
 }
 
+interface RepairOptions {
+  fix?: boolean
+  silent?: boolean
+  logger?: { log: (...args: unknown[]) => void }
+}
+
 /**
- * Takes a ISerialisedGraph or live LGraph and inspects the links and nodes to ensure the linking
- * makes logical sense. Can apply fixes when passed the `fix` argument as true.
+ * Best-effort repair of structurally inconsistent link data on a
+ * serialised or live graph. Pass `{ fix: false }` (default) for a dry
+ * run that only reports whether bad links exist.
  *
- * Note that fixes are a best-effort attempt. Seems to get it correct in most cases, but there is a
- * chance it correct an anomaly that results in placing an incorrect link (say, if there were two
- * links in the data). Users should take care to not overwrite work until manually checking the
- * result.
+ * Throws `LinkRepairAbortedError` when the graph diverges from the
+ * patched view in a way the algorithm cannot reconcile (e.g. links
+ * pointing into out-of-bounds slots). The error carries a structured
+ * `TopologyError` describing the offending link.
  */
-export function fixBadLinks(
-  graph: ISerialisedGraph | LGraph,
-  options: {
-    fix?: boolean
-    silent?: boolean
-    logger?: { log: (...args: unknown[]) => void }
-  } = {}
-): BadLinksData {
+export function repairLinks(
+  graph: SerialisedGraph,
+  options: RepairOptions = {}
+): RepairResult {
   const { fix = false, silent = false, logger: _logger = console } = options
   const logger = {
     log: (...args: unknown[]) => {
@@ -105,18 +136,15 @@ export function fixBadLinks(
   } = {}
 
   const data: {
-    patchedNodes: Array<ISerialisedNode | LGraphNode>
+    patchedNodes: SerialisedNode[]
     deletedLinks: number[]
   } = {
     patchedNodes: [],
     deletedLinks: []
   }
 
-  /**
-   * Internal patch node. We keep track of changes in patchedNodeSlots in case we're in a dry run.
-   */
   function patchNodeSlot(
-    node: ISerialisedNode | LGraphNode,
+    node: SerialisedNode,
     ioDir: IoDirection,
     slot: number,
     linkId: number,
@@ -126,12 +154,9 @@ export function fixBadLinks(
     const patchedNode = patchedNodeSlots[node.id]!
     if (ioDir == IoDirection.INPUT) {
       patchedNode['inputs'] = patchedNode['inputs'] || {}
-      // We can set to null (delete), so undefined means we haven't set it at all.
       if (patchedNode['inputs']![slot] !== undefined) {
         logger.log(
-          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode[
-            'inputs'
-          ]![slot]!} Skipping.`
+          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode['inputs']![slot]!} Skipping.`
         )
         return false
       }
@@ -175,8 +200,7 @@ export function fixBadLinks(
         if (fix) {
           node.outputs = node.outputs || []
           node.outputs[slot] =
-            node.outputs[slot] ||
-            ({} satisfies Partial<INodeOutputSlot> as INodeOutputSlot)
+            node.outputs[slot] || ({} as SerialisedNodeOutput)
           node.outputs[slot]!.links = node.outputs[slot]!.links || []
           node.outputs[slot]!.links!.push(linkId)
         }
@@ -199,25 +223,48 @@ export function fixBadLinks(
     return true
   }
 
-  /**
-   * Internal to check if a node (or patched data) has a linkId.
-   */
+  function buildLinkContext(
+    node: SerialisedNode,
+    ioDir: IoDirection,
+    slot: number,
+    linkId: number
+  ): LinkContext {
+    if (ioDir === IoDirection.INPUT) {
+      return {
+        linkId,
+        originId: '?',
+        originSlot: -1,
+        targetId: node.id,
+        targetSlot: slot
+      }
+    }
+    return {
+      linkId,
+      originId: node.id,
+      originSlot: slot,
+      targetId: '?',
+      targetSlot: -1
+    }
+  }
+
   function nodeHasLinkId(
-    node: ISerialisedNode | LGraphNode,
+    node: SerialisedNode,
     ioDir: IoDirection,
     slot: number,
     linkId: number
   ) {
-    // Patched data should be canonical. We can double check if fixing too.
     let has = false
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
       if (patchedNodeSlots[node.id]?.['inputs']) {
         const patchedHasIt =
           patchedNodeSlots[node.id]!['inputs']![slot] === linkId
-        // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new LinkRepairAbortedError({
+            kind: 'target-link-mismatch',
+            link: buildLinkContext(node, ioDir, slot, linkId),
+            actualLink: node.inputs?.[slot]?.link ?? null
+          })
         }
         has = patchedHasIt
       } else {
@@ -228,9 +275,11 @@ export function fixBadLinks(
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes'][linkId]) {
         const patchedHasIt =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
-        // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new LinkRepairAbortedError({
+            kind: 'origin-link-not-listed',
+            link: buildLinkContext(node, ioDir, slot, linkId)
+          })
         }
         has = !!patchedHasIt
       } else {
@@ -240,24 +289,23 @@ export function fixBadLinks(
     return has
   }
 
-  /**
-   * Internal to check if a node (or patched data) has a linkId.
-   */
   function nodeHasAnyLink(
-    node: ISerialisedNode | LGraphNode,
+    node: SerialisedNode,
     ioDir: IoDirection,
     slot: number
   ) {
-    // Patched data should be canonical. We can double check if fixing too.
     let hasAny = false
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
       if (patchedNodeSlots[node.id]?.['inputs']) {
         const patchedHasAny =
           patchedNodeSlots[node.id]!['inputs']![slot] != null
-        // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new LinkRepairAbortedError({
+            kind: 'target-slot-out-of-bounds',
+            link: buildLinkContext(node, ioDir, slot, -1),
+            targetSlotCount: node.inputs?.length ?? 0
+          })
         }
         hasAny = patchedHasAny
       } else {
@@ -268,9 +316,12 @@ export function fixBadLinks(
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes']) {
         const patchedHasAny =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.length
-        // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new LinkRepairAbortedError({
+            kind: 'origin-slot-out-of-bounds',
+            link: buildLinkContext(node, ioDir, slot, -1),
+            originSlotCount: node.outputs?.length ?? 0
+          })
         }
         hasAny = !!patchedHasAny
       } else {
@@ -280,52 +331,57 @@ export function fixBadLinks(
     return hasAny
   }
 
-  let links: Array<SerialisedLLinkArray | LLink> = []
+  let links: Array<SerialisedLinkArray | SerialisedLinkObject> = []
   if (!Array.isArray(graph.links)) {
-    links = Object.values(graph.links).reduce((acc, v) => {
-      acc[v.id] = v
-      return acc
-    }, links)
+    links = Object.values(graph.links).reduce(
+      (acc: Array<SerialisedLinkArray | SerialisedLinkObject>, v: unknown) => {
+        const link = v as SerialisedLinkObject
+        acc[link.id] = link
+        return acc
+      },
+      links
+    )
   } else {
-    links = graph.links
+    links = graph.links.filter(
+      (l): l is SerialisedLinkArray | SerialisedLinkObject => l != null
+    )
   }
 
   const linksReverse = [...links]
   linksReverse.reverse()
   for (const l of linksReverse) {
     if (!l) continue
-    const link =
-      (l as LLink).origin_slot != null
-        ? (l as LLink)
-        : extendLink(l as SerialisedLLinkArray)
+    const linkObj =
+      (l as SerialisedLinkObject).origin_slot != null
+        ? (l as SerialisedLinkObject)
+        : extendLink(l as SerialisedLinkArray)
 
-    const originNode = getNodeById(graph, link.origin_id)
+    const ctx = toLinkContext(l)
+    const originNode = getNodeById(graph, ctx.originId)
     const originHasLink = () =>
-      nodeHasLinkId(originNode!, IoDirection.OUTPUT, link.origin_slot, link.id)
-    const patchOrigin = (op: 'ADD' | 'REMOVE', id = link.id) =>
-      patchNodeSlot(originNode!, IoDirection.OUTPUT, link.origin_slot, id, op)
+      nodeHasLinkId(originNode!, IoDirection.OUTPUT, ctx.originSlot, ctx.linkId)
+    const patchOrigin = (op: 'ADD' | 'REMOVE', id = ctx.linkId) =>
+      patchNodeSlot(originNode!, IoDirection.OUTPUT, ctx.originSlot, id, op)
 
-    const targetNode = getNodeById(graph, link.target_id)
+    const targetNode = getNodeById(graph, ctx.targetId)
     const targetHasLink = () =>
-      nodeHasLinkId(targetNode!, IoDirection.INPUT, link.target_slot, link.id)
+      nodeHasLinkId(targetNode!, IoDirection.INPUT, ctx.targetSlot, ctx.linkId)
     const targetHasAnyLink = () =>
-      nodeHasAnyLink(targetNode!, IoDirection.INPUT, link.target_slot)
-    const patchTarget = (op: 'ADD' | 'REMOVE', id = link.id) =>
-      patchNodeSlot(targetNode!, IoDirection.INPUT, link.target_slot, id, op)
+      nodeHasAnyLink(targetNode!, IoDirection.INPUT, ctx.targetSlot)
+    const patchTarget = (op: 'ADD' | 'REMOVE', id = ctx.linkId) =>
+      patchNodeSlot(targetNode!, IoDirection.INPUT, ctx.targetSlot, id, op)
 
-    const originLog = `origin(${link.origin_id}).outputs[${link.origin_slot}].links`
-    const targetLog = `target(${link.target_id}).inputs[${link.target_slot}].link`
+    const originLog = `origin(${ctx.originId}).outputs[${ctx.originSlot}].links`
+    const targetLog = `target(${ctx.targetId}).inputs[${ctx.targetSlot}].link`
 
     if (!originNode || !targetNode) {
       if (!originNode && !targetNode) {
         logger.log(
-          `Link ${link.id} is invalid, ` +
-            `both origin ${link.origin_id} and target ${link.target_id} do not exist`
+          `Link ${ctx.linkId} is invalid, both origin ${ctx.originId} and target ${ctx.targetId} do not exist`
         )
       } else if (!originNode) {
         logger.log(
-          `Link ${link.id} is funky... ` +
-            `origin ${link.origin_id} does not exist, but target ${link.target_id} does.`
+          `Link ${ctx.linkId} is funky... origin ${ctx.originId} does not exist, but target ${ctx.targetId} does.`
         )
         if (targetHasLink()) {
           logger.log(
@@ -333,14 +389,13 @@ export function fixBadLinks(
           )
           patchTarget('REMOVE', -1)
         }
-      } else if (!targetNode) {
+      } else {
         logger.log(
-          `Link ${link.id} is funky... ` +
-            `target ${link.target_id} does not exist, but origin ${link.origin_id} does.`
+          `Link ${ctx.linkId} is funky... target ${ctx.targetId} does not exist, but origin ${ctx.originId} does.`
         )
         if (originHasLink()) {
           logger.log(
-            ` > [PATCH] Origin's links' has ${link.id}; will remove the link first.`
+            ` > [PATCH] Origin's links' has ${ctx.linkId}; will remove the link first.`
           )
           patchOrigin('REMOVE')
         }
@@ -351,105 +406,101 @@ export function fixBadLinks(
     if (targetHasLink() || originHasLink()) {
       if (!originHasLink()) {
         logger.log(
-          `${link.id} is funky... ${originLog} does NOT contain it, but ${targetLog} does.`
+          `${ctx.linkId} is funky... ${originLog} does NOT contain it, but ${targetLog} does.`
         )
-
         logger.log(
-          ` > [PATCH] Attempt a fix by adding this ${link.id} to ${originLog}.`
+          ` > [PATCH] Attempt a fix by adding this ${ctx.linkId} to ${originLog}.`
         )
         patchOrigin('ADD')
       } else if (!targetHasLink()) {
         logger.log(
-          `${link.id} is funky... ${targetLog} is NOT correct (is ${
-            targetNode.inputs?.[link.target_slot]?.link
+          `${ctx.linkId} is funky... ${targetLog} is NOT correct (is ${
+            targetNode.inputs?.[ctx.targetSlot]?.link
           }), but ${originLog} contains it`
         )
         if (!targetHasAnyLink()) {
           logger.log(
-            ` > [PATCH] ${targetLog} is not defined, will set to ${link.id}.`
+            ` > [PATCH] ${targetLog} is not defined, will set to ${ctx.linkId}.`
           )
           let patched = patchTarget('ADD')
           if (!patched) {
             logger.log(
-              ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${link.id} from ${originLog}.`
+              ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${ctx.linkId} from ${originLog}.`
             )
             patched = patchOrigin('REMOVE')
           }
         } else {
           logger.log(
-            ` > [PATCH] ${targetLog} is defined, removing ${link.id} from ${originLog}.`
+            ` > [PATCH] ${targetLog} is defined, removing ${ctx.linkId} from ${originLog}.`
           )
           patchOrigin('REMOVE')
         }
       }
     }
+    void linkObj
   }
 
-  // Now that we've cleaned up the inputs, outputs, run through it looking for dangling links.,
   for (const l of linksReverse) {
     if (!l) continue
-    const link =
-      (l as LLink).origin_slot != null
-        ? (l as LLink)
-        : extendLink(l as SerialisedLLinkArray)
-    const originNode = getNodeById(graph, link.origin_id)
-    const targetNode = getNodeById(graph, link.target_id)
-    // Now that we've manipulated the linking, check again if they both exist.
+    const ctx = toLinkContext(l)
+    const originNode = getNodeById(graph, ctx.originId)
+    const targetNode = getNodeById(graph, ctx.targetId)
     if (
       (!originNode ||
         !nodeHasLinkId(
           originNode,
           IoDirection.OUTPUT,
-          link.origin_slot,
-          link.id
+          ctx.originSlot,
+          ctx.linkId
         )) &&
       (!targetNode ||
         !nodeHasLinkId(
           targetNode,
           IoDirection.INPUT,
-          link.target_slot,
-          link.id
+          ctx.targetSlot,
+          ctx.linkId
         ))
     ) {
       logger.log(
-        `${link.id} is def invalid; BOTH origin node ${link.origin_id} ${
-          !originNode ? 'is removed' : `doesn't have ${link.id}`
-        } and ${link.origin_id} target node ${
-          !targetNode ? 'is removed' : `doesn't have ${link.id}`
+        `${ctx.linkId} is def invalid; BOTH origin node ${ctx.originId} ${
+          !originNode ? 'is removed' : `doesn't have ${ctx.linkId}`
+        } and ${ctx.originId} target node ${
+          !targetNode ? 'is removed' : `doesn't have ${ctx.linkId}`
         }.`
       )
-      data.deletedLinks.push(link.id)
+      data.deletedLinks.push(ctx.linkId)
       continue
     }
   }
 
-  // If we're fixing, then we've been patching along the way. Now go through and actually delete
-  // the zombie links from `app.graph.links`
   if (fix) {
     for (let i = data.deletedLinks.length - 1; i >= 0; i--) {
       logger.log(`Deleting link #${data.deletedLinks[i]}.`)
-      if ((graph as LGraph).getNodeById) {
-        delete graph.links[data.deletedLinks[i]!]
+      if (isLiveGraph(graph)) {
+        delete (graph.links as Record<number, unknown>)[data.deletedLinks[i]!]
       } else {
-        graph = graph as ISerialisedGraph
-        // Sometimes we got objects for links if passed after ComfyUI's loadGraphData modifies the
-        // data. We make a copy now, but can handle the bastardized objects just in case.
-        const idx = graph.links.findIndex(
+        const idx = (
+          graph.links as Array<
+            SerialisedLinkArray | SerialisedLinkObject | null
+          >
+        ).findIndex(
           (l) =>
             l &&
-            (l[0] === data.deletedLinks[i] ||
+            ((l as SerialisedLinkArray)[0] === data.deletedLinks[i] ||
               ('id' in l && l.id === data.deletedLinks[i]))
         )
         if (idx === -1) {
           logger.log(`INDEX NOT FOUND for #${data.deletedLinks[i]}`)
+          continue
         }
         logger.log(`splicing ${idx} from links`)
-        graph.links.splice(idx, 1)
+        ;(graph.links as Array<unknown>).splice(idx, 1)
       }
     }
-    // If we're a serialized graph, we can filter out the links because it's just an array.
-    if (!(graph as LGraph).getNodeById) {
-      graph.links = (graph as ISerialisedGraph).links.filter((l) => !!l)
+    if (!isLiveGraph(graph)) {
+      graph.links = (
+        graph.links as Array<SerialisedLinkArray | SerialisedLinkObject | null>
+      ).filter((l): l is SerialisedLinkArray | SerialisedLinkObject => !!l)
     }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {
@@ -470,9 +521,8 @@ export function fixBadLinks(
 
   const hasChanges = !!(data.patchedNodes.length || data.deletedLinks.length)
   let hasBadLinks: boolean = hasChanges
-  // If we're fixing, then let's run it again to see if there are no more bad links.
   if (fix) {
-    const rerun = fixBadLinks(graph, { fix: false, silent: true })
+    const rerun = repairLinks(graph, { fix: false, silent: true })
     hasBadLinks = rerun.hasBadLinks
   }
 

@@ -2261,7 +2261,22 @@
       "special": "Must contain at least one special character",
       "match": "Passwords must match"
     },
-    "personalDataConsentRequired": "You must agree to the processing of your personal data."
+    "personalDataConsentRequired": "You must agree to the processing of your personal data.",
+    "topology": {
+      "invalidLinks": "Workflow has {count} invalid link | Workflow has {count} invalid links",
+      "overflow": "…and {count} more (see console for full list)",
+      "abortedSummary": "Workflow has unrepairable invalid links",
+      "validationSummary": "Workflow Validation",
+      "linksFixedSummary": "Workflow Links Fixed",
+      "linksFixedDetail": "Fixed {patched} node connections and removed {deleted} invalid links.",
+      "tuple": "[link={linkId} src={originId}:{originSlot} tgt={targetId}:{targetSlot}]",
+      "missingOriginNode": "{tuple} origin node {originId} does not exist in graph",
+      "missingTargetNode": "{tuple} target node {targetId} does not exist in graph",
+      "originSlotOutOfBounds": "{tuple} origin slot {originSlot} is out of bounds; node {originId} has {count} output slot | {tuple} origin slot {originSlot} is out of bounds; node {originId} has {count} output slots",
+      "targetSlotOutOfBounds": "{tuple} target slot {targetSlot} is out of bounds; node {targetId} has {count} input slot | {tuple} target slot {targetSlot} is out of bounds; node {targetId} has {count} input slots",
+      "originLinkNotListed": "{tuple} link is not listed in node {originId}.outputs[{originSlot}].links",
+      "targetLinkMismatch": "{tuple} node {targetId}.inputs[{targetSlot}].link is {actualLink}, expected {linkId}"
+    }
   },
   "credits": {
     "activity": "Activity",
