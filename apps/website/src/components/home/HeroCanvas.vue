@@ -126,17 +126,52 @@ let connectionDragStart = { x: 0, y: 0 }
 let dragCursorWorld = { x: 0, y: 0 }
 let hoverSlot: SlotEnd | null = null
 
-// Drives the wire-flow pulse — incremented from the rAF loop, sampled in
-// drawEdge as a 0–1 position along each bezier.
-let pulsePhase = 0
 let rafId: number | null = null
 let lastTickMs = 0
 const TICK_MS = 1000 / 30
-const PULSE_PERIOD_MS = 4500
+
+// Entry animation: each node fades in on a small stagger schedule, then
+// the edges fade in once both endpoints are visible.
+let mountStartMs = 0
+const NODE_ENTER_ORDER: Record<NodeId, number> = {
+  'n-green': 0,
+  'n-red': 1,
+  'n-output-ui': 1,
+  'n-blue': 2,
+  'n-purple': 3
+}
+const STAGGER_MS = 130
+const FADE_MS = 380
+
+// Subtle parallax: the rendered cluster shifts by up to PARALLAX_MAX_PX in
+// the direction the cursor is from canvas center. Eased toward the target
+// every tick to stay smooth.
+let parallaxX = 0
+let parallaxY = 0
+let parallaxTargetX = 0
+let parallaxTargetY = 0
+const PARALLAX_MAX_PX = 14
 
 function absPos(id: NodeId) {
   const n = nodes[id]
   return { x: n.x + n.ox, y: n.y + n.oy, w: n.w, h: n.h }
+}
+
+function smoothstep(t: number): number {
+  if (t <= 0) return 0
+  if (t >= 1) return 1
+  return t * t * (3 - 2 * t)
+}
+
+function nodeAlpha(id: NodeId): number {
+  if (mountStartMs === 0) return 0
+  const elapsed = performance.now() - mountStartMs
+  const start = NODE_ENTER_ORDER[id] * STAGGER_MS
+  return smoothstep((elapsed - start) / FADE_MS)
+}
+
+function edgeAlpha(edge: Edge): number {
+  return Math.min(nodeAlpha(edge.src), nodeAlpha(edge.tgt))
 }
 
 function anchor(id: NodeId, fx: number, fy: number) {
@@ -272,11 +307,15 @@ function drawDepthBlur(
 }
 
 function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
+  const alpha = nodeAlpha(id)
+  if (alpha <= 0) return
+
   const n = nodes[id]
   const x = n.x + n.ox
   const y = n.y + n.oy
 
   ctx.save()
+  ctx.globalAlpha = ctx.globalAlpha * alpha
 
   if (n.type === 'purple') {
     const outputUi = nodes['n-output-ui'] as SvgNode
@@ -285,14 +324,36 @@ function drawNode(ctx: CanvasRenderingContext2D, id: NodeId) {
 
     // Choose what the output card shows based on which inputs are wired in:
     //   both → final composed image (with depth-blur scrubber)
-    //   one  → that single processed view, full-bleed, no scrub
+    //   one  → that single processed view, full-bleed, with the slider
+    //         applying the same levels filter as the intermediate depth
+    //         node so the slider is never a no-op when something is wired.
     //   none → empty card placeholder
     if (cannyOn && depthOn) {
       drawDepthBlur(ctx, x, y, n.w, n.h, n.rx, n.img, outputUi.progress)
     } else if (cannyOn) {
-      drawImageCover(ctx, x, y, n.w, n.h, n.rx, INK, imgRed, null)
+      drawImageCover(
+        ctx,
+        x,
+        y,
+        n.w,
+        n.h,
+        n.rx,
+        INK,
+        imgRed,
+        levelsFilter(outputUi.progress)
+      )
     } else if (depthOn) {
-      drawImageCover(ctx, x, y, n.w, n.h, n.rx, INK, imgBlue, null)
+      drawImageCover(
+        ctx,
+        x,
+        y,
+        n.w,
+        n.h,
+        n.rx,
+        INK,
+        imgBlue,
+        levelsFilter(outputUi.progress)
+      )
     } else {
       ctx.save()
       roundRect(ctx, x, y, n.w, n.h, n.rx)
@@ -427,13 +488,6 @@ function bezierHandles(ax: number, ay: number, bx: number, by: number) {
   }
 }
 
-function bezierAt(p0: number, p1: number, p2: number, p3: number, t: number) {
-  const u = 1 - t
-  return (
-    u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3
-  )
-}
-
 function drawBezierWire(
   ctx: CanvasRenderingContext2D,
   ax: number,
@@ -457,18 +511,11 @@ function drawBezierWire(
   ctx.restore()
 }
 
-function drawEndpointGlow(ctx: CanvasRenderingContext2D, x: number, y: number) {
+function drawEndpointDot(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.save()
-  const grad = ctx.createRadialGradient(x, y, 0, x, y, 10)
-  grad.addColorStop(0, 'rgba(242,255,89,0.55)')
-  grad.addColorStop(1, 'rgba(242,255,89,0)')
-  ctx.fillStyle = grad
-  ctx.beginPath()
-  ctx.arc(x, y, 10, 0, Math.PI * 2)
-  ctx.fill()
   ctx.fillStyle = YELLOW
   ctx.beginPath()
-  ctx.arc(x, y, 4, 0, Math.PI * 2)
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 }
@@ -479,34 +526,17 @@ function drawEdge(ctx: CanvasRenderingContext2D, e: Edge) {
   // wire takes over while the user is rewiring.
   if (connectionDrag && connectionDrag.edgeId === e.id) return
 
+  const ea = edgeAlpha(e)
+  if (ea <= 0) return
+
   const a = anchor(e.src, e.sfx, e.sfy)
   const b = anchor(e.tgt, e.tfx, e.tfy)
 
-  drawBezierWire(ctx, a.x, a.y, b.x, b.y)
-  drawEndpointGlow(ctx, a.x, a.y)
-  drawEndpointGlow(ctx, b.x, b.y)
-
-  // Subtle pulse traveling source → target. Eased so the dot lingers near
-  // the endpoints (where the eye expects to see it land).
-  const t = pulsePhase
-  const ease = t * t * (3 - 2 * t)
-  const { cp1x, cp1y, cp2x, cp2y } = bezierHandles(a.x, a.y, b.x, b.y)
-  const px = bezierAt(a.x, cp1x, cp2x, b.x, ease)
-  const py = bezierAt(a.y, cp1y, cp2y, b.y, ease)
-  // Fade in/out at the very ends so the pulse doesn't pop.
-  const edgeFade = Math.min(1, Math.min(t, 1 - t) * 8)
   ctx.save()
-  const pulseGrad = ctx.createRadialGradient(px, py, 0, px, py, 16)
-  pulseGrad.addColorStop(0, `rgba(242,255,89,${(0.85 * edgeFade).toFixed(3)})`)
-  pulseGrad.addColorStop(
-    0.5,
-    `rgba(242,255,89,${(0.35 * edgeFade).toFixed(3)})`
-  )
-  pulseGrad.addColorStop(1, 'rgba(242,255,89,0)')
-  ctx.fillStyle = pulseGrad
-  ctx.beginPath()
-  ctx.arc(px, py, 16, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.globalAlpha = ctx.globalAlpha * ea
+  drawBezierWire(ctx, a.x, a.y, b.x, b.y)
+  drawEndpointDot(ctx, a.x, a.y)
+  drawEndpointDot(ctx, b.x, b.y)
   ctx.restore()
 }
 
@@ -591,7 +621,8 @@ function draw() {
   // hero copy show through between the nodes.
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  ctx.setTransform(vz, 0, 0, vz, vx, vy)
+  const dpr = window.devicePixelRatio || 1
+  ctx.setTransform(vz, 0, 0, vz, vx + parallaxX * dpr, vy + parallaxY * dpr)
 
   drawNode(ctx, 'n-green')
   drawNode(ctx, 'n-red')
@@ -678,7 +709,10 @@ function clientToWorld(cx: number, cy: number) {
   const dpr = window.devicePixelRatio || 1
   const px = (cx - rect.left) * dpr
   const py = (cy - rect.top) * dpr
-  return { x: (px - vx) / vz, y: (py - vy) / vz }
+  return {
+    x: (px - vx - parallaxX * dpr) / vz,
+    y: (py - vy - parallaxY * dpr) / vz
+  }
 }
 
 function isEdgeConnected(id: ToggleEdgeId): boolean {
@@ -840,8 +874,6 @@ function onPointerMove(e: PointerEvent) {
     const slot = hitTestSlotEnd(w.x, w.y)
     const slotEdge = slot ? getEdge(slot.edgeId) : undefined
     const grabbable = slot && slotEdge && isSlotGrabbable(slotEdge, slot.end)
-    // Only consider the chip "hovered" when it's actually interactive — a
-    // connected input chip stays static so users learn it isn't a handle.
     const visibleSlot: SlotEnd | null = grabbable ? slot : null
     const hoverChanged =
       (visibleSlot?.edgeId ?? null) !== (hoverSlot?.edgeId ?? null) ||
@@ -849,7 +881,29 @@ function onPointerMove(e: PointerEvent) {
     hoverSlot = visibleSlot
     if (grabbable) canvas.style.cursor = 'grab'
     else canvas.style.cursor = hitTest(w.x, w.y) ? 'grab' : 'default'
+    updateParallaxTarget(e.clientX, e.clientY)
+    // Animation loop redraws on its own; only force a redraw on a hover
+    // change so the slot ring updates immediately.
     if (hoverChanged) draw()
+  }
+}
+
+function updateParallaxTarget(clientX: number, clientY: number) {
+  const canvas = canvasRef.value
+  if (!canvas) return
+  const rect = canvas.getBoundingClientRect()
+  if (rect.width === 0 || rect.height === 0) return
+  const nx = (clientX - rect.left) / rect.width - 0.5
+  const ny = (clientY - rect.top) / rect.height - 0.5
+  parallaxTargetX = nx * PARALLAX_MAX_PX * 2
+  parallaxTargetY = ny * PARALLAX_MAX_PX * 2
+}
+
+function onPointerLeave() {
+  parallaxTargetX = 0
+  parallaxTargetY = 0
+  if (!connectionDrag && !dragId && !isSliding) {
+    hoverSlot = null
   }
 }
 
@@ -1031,15 +1085,27 @@ onMounted(async () => {
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('pointercancel', onPointerUp)
+    canvas.addEventListener('pointerleave', onPointerLeave)
   }
 
+  mountStartMs = performance.now()
   startAnimation()
 })
 
 function tick(timestamp: number) {
   if (timestamp - lastTickMs >= TICK_MS) {
-    pulsePhase = ((timestamp % PULSE_PERIOD_MS) / PULSE_PERIOD_MS) % 1
-    draw()
+    parallaxX += (parallaxTargetX - parallaxX) * 0.08
+    parallaxY += (parallaxTargetY - parallaxY) * 0.08
+    // Only spend frames redrawing while there's actual motion to render —
+    // entry stagger or parallax catching up. After both settle the rAF
+    // loop continues but draw() is skipped, so CPU stays idle.
+    const entryActive =
+      performance.now() - mountStartMs <
+      NODE_ENTER_ORDER['n-purple'] * STAGGER_MS + FADE_MS + 16
+    const parallaxMoving =
+      Math.abs(parallaxX - parallaxTargetX) > 0.05 ||
+      Math.abs(parallaxY - parallaxTargetY) > 0.05
+    if (entryActive || parallaxMoving) draw()
     lastTickMs = timestamp
   }
   rafId = requestAnimationFrame(tick)
@@ -1048,7 +1114,14 @@ function tick(timestamp: number) {
 function startAnimation() {
   if (rafId !== null) return
   if (typeof window === 'undefined') return
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    // Skip the rAF loop, but jump mountStartMs into the past so the static
+    // render that follows shows every node at full alpha (no half-faded
+    // entry frame stuck on screen).
+    mountStartMs -= STAGGER_MS * 6 + FADE_MS
+    draw()
+    return
+  }
   rafId = requestAnimationFrame(tick)
 }
 
@@ -1067,6 +1140,7 @@ onBeforeUnmount(() => {
     canvas.removeEventListener('pointermove', onPointerMove)
     canvas.removeEventListener('pointerup', onPointerUp)
     canvas.removeEventListener('pointercancel', onPointerUp)
+    canvas.removeEventListener('pointerleave', onPointerLeave)
   }
 })
 </script>
