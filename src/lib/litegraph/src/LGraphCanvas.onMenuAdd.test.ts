@@ -128,7 +128,10 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
     expect(entry!.callback).toBeDefined()
     expect(typeof entry!.value).toBe('string')
     const callback = entry!.callback!
-    callback({ value: entry!.value }, undefined, sourceEvent, undefined)
+    const menuThis = document.createElement('div') as ThisParameterType<
+      typeof callback
+    >
+    void callback.call(menuThis, entry, undefined, sourceEvent, undefined)
   }
 
   it('sorts top-level category submenus alphabetically (case-insensitive)', () => {
