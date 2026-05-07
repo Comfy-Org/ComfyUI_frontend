@@ -104,4 +104,50 @@ describe('FormDropdownMenu', () => {
       container.firstElementChild!.getAttribute('data-capture-wheel')
     ).toBe('true')
   })
+
+  /** Regression: PrimeVue Popover teleports the menu to document.body, so
+   *  trackpad pinch-zoom and horizontal swipes must be guarded on the menu
+   *  itself rather than relying on the LGraphNode wheel handler. */
+  it.each([
+    { name: 'pinch-zoom', overrides: { ctrlKey: true, deltaY: -10 } },
+    { name: 'horizontal swipe', overrides: { deltaX: 30, deltaY: 5 } }
+  ])('suppresses browser default for $name', ({ overrides }) => {
+    const { container } = render(FormDropdownMenu, {
+      props: defaultProps,
+      global: globalConfig
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const root = container.firstElementChild as HTMLElement
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true
+    })
+    Object.entries(overrides).forEach(([key, value]) => {
+      Object.defineProperty(event, key, { value })
+    })
+    root.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  /** Vertical scrolling must remain native so the dropdown's own scroll
+   *  container can scroll its content. */
+  it('does not suppress vertical scroll', () => {
+    const { container } = render(FormDropdownMenu, {
+      props: defaultProps,
+      global: globalConfig
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const root = container.firstElementChild as HTMLElement
+    const event = new WheelEvent('wheel', {
+      deltaY: 30,
+      bubbles: true,
+      cancelable: true
+    })
+    root.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
 })

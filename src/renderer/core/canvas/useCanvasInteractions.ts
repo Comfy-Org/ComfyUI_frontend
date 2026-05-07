@@ -6,6 +6,22 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 
 /**
+ * Wheel events whose browser default would break the editing experience.
+ * On macOS trackpads:
+ *   - `ctrl/meta + wheel` (pinch-zoom) triggers page-level zoom, which
+ *     pushes fixed-position UI (e.g. ComfyActionbar) off-screen with no
+ *     recovery short of a page reload.
+ *   - Horizontal-dominant wheel (two-finger horizontal swipe) triggers
+ *     back/forward navigation, which leaves the workflow.
+ * Components that intercept wheel events should suppress the default for
+ * these gestures even when they otherwise let the browser scroll natively.
+ */
+export const isCanvasGestureWheel = (event: WheelEvent): boolean =>
+  event.ctrlKey ||
+  event.metaKey ||
+  Math.abs(event.deltaX) > Math.abs(event.deltaY)
+
+/**
  * Composable for handling canvas interactions from Vue components.
  * This provides a unified way to forward events to the LiteGraph canvas.
  */
@@ -41,30 +57,31 @@ export function useCanvasInteractions() {
     return !!(captureElement && active && captureElement.contains(active))
   }
 
+  /**
+   * Forward to canvas when the event is not consumed by a focused widget,
+   * or when it is a canvas gesture (which must override widget consumption
+   * to prevent destructive browser defaults).
+   */
   const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
-    !wheelCapturedByFocusedElement(event) ||
-    (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
+    !wheelCapturedByFocusedElement(event) || isCanvasGestureWheel(event)
 
   /**
    * Handles wheel events from UI components that should be forwarded to canvas
-   * when appropriate (e.g., Ctrl+wheel for zoom in standard mode)
+   * when appropriate (e.g., Ctrl+wheel for zoom, two-finger pan in standard
+   * mode; all wheel events in legacy mode).
    */
   const handleWheel = (event: WheelEvent) => {
     if (!shouldForwardWheelEvent(event)) return
 
-    // In standard mode, Ctrl+wheel should go to canvas for zoom
-    if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
-      forwardEventToCanvas(event)
+    // In standard mode, only canvas gestures (zoom/pan) are forwarded;
+    // vertical wheel falls through so the document/widget scrolls normally.
+    if (isStandardNavMode.value) {
+      if (isCanvasGestureWheel(event)) forwardEventToCanvas(event)
       return
     }
 
-    // In legacy mode, all wheel events go to canvas for zoom
-    if (!isStandardNavMode.value) {
-      forwardEventToCanvas(event)
-      return
-    }
-
-    // Otherwise, let the component handle it normally
+    // In legacy mode, all forwardable wheel events go to canvas for zoom/pan.
+    forwardEventToCanvas(event)
   }
 
   /**
