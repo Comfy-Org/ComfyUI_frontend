@@ -80,10 +80,14 @@ test.describe(
       const rootList = menu.locator(':scope > ul')
 
       await expect
-        .poll(() => rootList.evaluate((el) => el.scrollHeight > el.clientHeight))
+        .poll(() =>
+          rootList.evaluate((el) => el.scrollHeight > el.clientHeight)
+        )
         .toBe(true)
 
-      await menu.getByRole('menuitem', { name: 'Shape' }).scrollIntoViewIfNeeded()
+      await menu
+        .getByRole('menuitem', { name: 'Shape' })
+        .scrollIntoViewIfNeeded()
       await menu.getByRole('menuitem', { name: 'Shape' }).click()
       await expectShapePopoverVisible(comfyPage)
     })
