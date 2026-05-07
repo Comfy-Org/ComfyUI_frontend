@@ -20,6 +20,18 @@ test.describe(
         throw new Error('No KSampler nodes found')
       }
 
+      // Bring the node into the viewport before interacting; the loaded
+      // workflow's coordinates are not guaranteed to be on-screen, and a
+      // missed title-click silently leaves the selection toolbox hidden,
+      // which manifests as a `more-options-button` timeout in CI.
+      const nodePos = await ksamplerNodes[0].getPosition()
+      const viewportSize = comfyPage.page.viewportSize()!
+      await comfyPage.canvasOps.dragAndDrop(
+        { x: nodePos.x, y: nodePos.y },
+        { x: viewportSize.width / 3, y: viewportSize.height * 0.5 }
+      )
+      await comfyPage.nextFrame()
+
       await ksamplerNodes[0].click('title')
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
