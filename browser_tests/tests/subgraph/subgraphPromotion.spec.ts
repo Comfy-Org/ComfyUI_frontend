@@ -3,11 +3,11 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCount
-} from '@e2e/helpers/promotedWidgets'
+} from '@e2e/fixtures/utils/promotedWidgets'
 
 async function expectPromotedWidgetNamesToContain(
   comfyPage: ComfyPage,
@@ -534,6 +534,28 @@ test.describe(
         await expect
           .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeLessThan(initialWidgetCount)
+      })
+
+      test('Does not cleanup unconfigured Primitive', async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-link-and-proxied-primitive'
+        )
+        await expect
+          .poll(
+            () => getPromotedWidgetCount(comfyPage, '2'),
+            'Primitive widget is restored on load'
+          )
+          .toBe(2)
+
+        await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
+        const subgraphNode = await comfyPage.nodeOps.getFirstNodeRef()
+        const promotedPrimitive = await subgraphNode!.getWidget(1)
+        await expect
+          .poll(
+            () => promotedPrimitive.getValue(),
+            'Primitive widget is not in a disconnected state'
+          )
+          .toBe(0)
       })
     })
   }

@@ -23,7 +23,10 @@
       </Message>
 
       <template v-if="!showEmailForm">
-        <p v-if="isFreeTierEnabled" class="mb-4 text-sm text-muted-foreground">
+        <p
+          v-if="isFreeTierEnabled && !googleSsoBlockedReason"
+          class="mb-4 text-sm text-muted-foreground"
+        >
           {{
             freeTierCredits
               ? t('auth.login.freeTierDescription', {
@@ -35,7 +38,7 @@
 
         <!-- OAuth Buttons (primary) -->
         <div class="flex flex-col gap-4">
-          <div class="relative">
+          <div v-if="!googleSsoBlockedReason" class="relative">
             <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
               <i class="pi pi-google mr-2"></i>
               {{ t('auth.signup.signUpWithGoogle') }}
@@ -86,7 +89,11 @@
             class="text-sm underline"
             @click="switchToSocialLogin"
           >
-            {{ t('auth.login.backToSocialLogin') }}
+            {{
+              googleSsoBlockedReason
+                ? t('auth.login.backToGithubLogin')
+                : t('auth.login.backToSocialLogin')
+            }}
           </Button>
         </div>
       </template>
@@ -141,6 +148,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -158,6 +166,7 @@ const {
   switchToEmailForm,
   switchToSocialLogin
 } = useFreeTierOnboarding()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })

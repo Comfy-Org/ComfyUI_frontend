@@ -19,6 +19,11 @@ import activeSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/a
 import bypassedSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/bypassedSubgraphUnmatchedModel.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type * as AssetServiceModule from '@/platform/assets/services/assetService'
+
+const { mockCheckAssetHash } = vi.hoisted(() => ({
+  mockCheckAssetHash: vi.fn()
+}))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
@@ -27,6 +32,20 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
     node: { _testExecutionId?: string; id: number }
   ) => node._testExecutionId ?? String(node.id)
 }))
+
+vi.mock('@/platform/assets/services/assetService', async () => {
+  const actual = await vi.importActual<typeof AssetServiceModule>(
+    '@/platform/assets/services/assetService'
+  )
+
+  return {
+    ...actual,
+    assetService: {
+      ...actual.assetService,
+      checkAssetHash: mockCheckAssetHash
+    }
+  }
+})
 
 /** Helper: create a combo widget mock */
 function makeComboWidget(
@@ -43,7 +62,7 @@ function makeComboWidget(
 }
 
 /** Helper: create an asset widget mock (Cloud combo replacement) */
-function makeAssetWidget(name: string, value: string): IBaseWidget {
+function makeAssetWidget(name: string, value: unknown): IBaseWidget {
   return fromAny<IBaseWidget, unknown>({
     type: 'asset',
     name,
@@ -544,6 +563,16 @@ describe('scanAllModelCandidates', () => {
   it('should skip asset widgets with non-model values', () => {
     const graph = makeGraph([
       makeNode(1, 'SomeNode', [makeAssetWidget('mode', 'not_a_model')])
+    ])
+
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
+  it('should skip asset widgets with non-string values', () => {
+    const graph = makeGraph([
+      makeNode(1, 'SomeNode', [makeAssetWidget('ckpt_name', 123)])
     ])
 
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -1411,6 +1440,7 @@ function makeAssetCandidate(
 describe('verifyAssetSupportedCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckAssetHash.mockResolvedValue('missing')
     mockIsModelLoading.mockReturnValue(false)
     mockHasMore.mockReturnValue(false)
     mockGetAssets.mockReturnValue([])
@@ -1428,6 +1458,125 @@ describe('verifyAssetSupportedCandidates', () => {
     )
   })
 
+  it('should resolve isMissing=false when the blake3 hash endpoint finds the asset', async () => {
+    const hash =
+      '1111111111111111111111111111111111111111111111111111111111111111'
+    const candidates = [
+      makeAssetCandidate('model.safetensors', {
+        hash,
+        hashType: 'blake3'
+      })
+    ]
+    mockCheckAssetHash.mockResolvedValue('exists')
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(mockCheckAssetHash).toHaveBeenCalledWith(`blake3:${hash}`, undefined)
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+  })
+
+  it('should fall back to asset store matching when the blake3 hash is not found', async () => {
+    const hash =
+      '2222222222222222222222222222222222222222222222222222222222222222'
+    const candidates = [
+      makeAssetCandidate('my_model.safetensors', {
+        hash,
+        hashType: 'blake3'
+      })
+    ]
+    mockCheckAssetHash.mockResolvedValue('missing')
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'my_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
+  it('should fall back to asset store matching when hash verification fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const hash =
+      '3333333333333333333333333333333333333333333333333333333333333333'
+    const candidates = [
+      makeAssetCandidate('my_model.safetensors', {
+        hash,
+        hashType: 'blake3'
+      })
+    ]
+    mockCheckAssetHash.mockRejectedValue(new Error('network failed'))
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'my_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockRestore()
+  })
+
+  it('should skip malformed blake3 hashes and use asset store matching', async () => {
+    const candidates = [
+      makeAssetCandidate('my_model.safetensors', {
+        hash: 'abc123',
+        hashType: 'blake3'
+      })
+    ]
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'my_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockCheckAssetHash).not.toHaveBeenCalled()
+    expect(candidates[0].isMissing).toBe(false)
+  })
+
+  it('should not warn or fall back when hash verification is aborted', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const abortError = new Error('aborted')
+    abortError.name = 'AbortError'
+    const hash =
+      '4444444444444444444444444444444444444444444444444444444444444444'
+    const candidates = [
+      makeAssetCandidate('my_model.safetensors', {
+        hash,
+        hashType: 'blake3'
+      })
+    ]
+    mockCheckAssetHash.mockRejectedValue(abortError)
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('should resolve isMissing=false when asset with matching hash exists', async () => {
     const candidates = [
       makeAssetCandidate('model.safetensors', {
@@ -1442,6 +1591,7 @@ describe('verifyAssetSupportedCandidates', () => {
     await verifyAssetSupportedCandidates(candidates)
 
     expect(candidates[0].isMissing).toBe(false)
+    expect(mockCheckAssetHash).not.toHaveBeenCalled()
   })
 
   it('should resolve isMissing=false when asset with matching filename exists', async () => {

@@ -483,9 +483,17 @@
         "name": "اولین فریم",
         "tooltip": "تصویر اولین فریم برای ویدیو."
       },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "شناسه asset_id مربوط به Seedance برای استفاده به عنوان اولین فریم. با ورودی تصویر first_frame ناسازگار است."
+      },
       "last_frame": {
         "name": "آخرین فریم",
         "tooltip": "تصویر آخرین فریم برای ویدیو."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "شناسه asset_id مربوط به Seedance برای استفاده به عنوان آخرین فریم. با ورودی تصویر last_frame ناسازگار است."
       },
       "model": {
         "name": "مدل",
@@ -531,6 +539,9 @@
       "model": {
         "name": "مدل",
         "tooltip": "Seedance 2.0 برای بالاترین کیفیت؛ Seedance 2.0 Fast برای بهینه‌سازی سرعت."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -599,6 +610,54 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "ایجاد یک دارایی تصویر شخصی Seedance 2.0. تصویر ورودی را بارگذاری کرده و آن را در گروه دارایی مشخص ثبت می‌کند. اگر group_id خالی باشد، فرآیند احراز هویت واقعی H5 اجرا می‌شود تا پیش از افزودن دارایی، یک گروه جدید ایجاد گردد.",
+    "display_name": "ایجاد دارایی تصویر ByteDance",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "استفاده مجدد از شناسه گروه دارایی Seedance موجود برای جلوگیری از احراز هویت انسانی تکراری برای یک فرد. اگر خالی باشد، احراز هویت واقعی در مرورگر اجرا شده و یک گروه جدید ایجاد می‌شود."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویری که به عنوان دارایی شخصی ثبت می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "ایجاد یک دارایی ویدیویی شخصی Seedance 2.0. ویدیوی ورودی را بارگذاری کرده و آن را در گروه دارایی مشخص ثبت می‌کند. اگر group_id خالی باشد، فرآیند احراز هویت واقعی H5 اجرا می‌شود تا پیش از افزودن دارایی، یک گروه جدید ایجاد گردد.",
+    "display_name": "ایجاد دارایی ویدیو ByteDance",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "استفاده مجدد از شناسه گروه دارایی Seedance موجود برای جلوگیری از احراز هویت انسانی تکراری برای یک فرد. اگر خالی باشد، احراز هویت واقعی در مرورگر اجرا شده و یک گروه جدید ایجاد می‌شود."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "ویدیویی که به عنوان دارایی شخصی ثبت می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
         "tooltip": null
       }
     }
@@ -1909,6 +1968,10 @@
     "description": "تنظیم دستی پنجره‌های زمینه.",
     "display_name": "پنجره‌های زمینه (دستی)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "آیا یک فریم اصلاح علّی به پنجره‌های زمینه‌ای که با شاخص ۰ شروع نمی‌شوند اضافه شود یا خیر."
+      },
       "closed_loop": {
         "name": "حلقه بسته",
         "tooltip": "آیا حلقه پنجره زمینه بسته شود؛ فقط برای برنامه‌ریزی حلقه‌ای قابل استفاده است."
@@ -2873,6 +2936,28 @@
       }
     }
   },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStep1_5LatentAudio": {
     "display_name": "Empty Ace Step 1.5 Latent Audio",
     "inputs": {
@@ -3691,6 +3776,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "میان‌یابی فریم",
+    "inputs": {
+      "images": {
+        "name": "تصاویر"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "ضریب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "بارگذاری مدل میان‌یابی فریم",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "یک مدل میان‌یابی فریم برای بارگذاری انتخاب کنید. مدل‌ها باید در پوشه 'frame_interpolation' قرار داشته باشند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "اعمال مقیاس‌دهی وابسته به فرکانس بر راهنمایی",
     "display_name": "FreSca",
@@ -4434,6 +4552,156 @@
       },
       "tapered_corners": {
         "name": "گوشه‌های نرم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "تولید ویدیو از یک تصویر فریم اول با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "فریم اول",
+        "tooltip": "تصویر فریم اول. نسبت ابعاد خروجی از این تصویر استخراج می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "تولید ویدیو با حضور یک شخص یا شیء از مواد مرجع با مدل HappyHorse. پشتیبانی از اجراهای تک‌نفره و تعامل چندنفره.",
+    "display_name": "HappyHorse تبدیل مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "تولید ویدیو بر اساس پرامپت متنی با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "ویرایش ویدیو با دستور متنی یا تصاویر مرجع با مدل HappyHorse. مدت زمان خروجی بین ۳ تا ۱۵ ثانیه و مطابق با ویدیوی ورودی است؛ ورودی‌های بیش از ۱۵ ثانیه کوتاه می‌شوند.",
+    "display_name": "HappyHorse ویرایش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی که باید ویرایش شود."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
       }
     },
     "outputs": {
@@ -8085,6 +8353,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "ویرایش یک تصویر موجود با استفاده از متن راهنما و مدل Luma UNI-1.",
+    "display_name": "ویرایش تصویر Luma UNI-1",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای ویرایش."
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "model_web_search": {
+        "name": "جستجوی وب"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح ویرایش مورد نظر. ۱ تا ۶۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "source": {
+        "name": "منبع",
+        "tooltip": "تصویر منبع برای ویرایش."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "تغییر تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
     "display_name": "Luma Image to Image",
@@ -8153,6 +8457,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "وزن تصویر سبک. اگر style_image ارائه نشود، نادیده گرفته می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "تولید تصویر از متن با استفاده از مدل Luma UNI-1.",
+    "display_name": "تصویر Luma UNI-1",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "model_web_search": {
+        "name": "جستجوی وب"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی تصویر مورد نظر. ۱ تا ۶۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -11247,120 +11586,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "گره تبدیل تصویر به ویدیو Moonvalley Marey",
-    "display_name": "Moonvalley Marey Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویر مرجع برای تولید ویدیو استفاده می‌شود"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "prompt_adherence": {
-        "name": "پایبندی به پرامپت",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "مقدار بذر تصادفی"
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد گام‌های حذف نویز"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل متن به ویدیو",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "گام‌های استنتاج"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل ویدیو به ویدیو",
-    "inputs": {
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "فقط در صورتی استفاده می‌شود که control_type برابر با 'Motion Transfer' باشد"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "توضیح ویدیوی مورد نظر برای تولید"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "تعداد گام‌های استنتاج"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "ویدیوی مرجع برای تولید ویدیوی خروجی. باید حداقل ۵ ثانیه باشد. ویدیوهای طولانی‌تر از ۵ ثانیه به‌صورت خودکار کوتاه می‌شوند. فقط فرمت MP4 پشتیبانی می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11583,8 +11808,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 1 شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 2 شرکت OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11592,6 +11817,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -12284,7 +12517,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -13795,6 +14028,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "تشخیص SAM3",
+    "inputs": {
+      "bboxes": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی برای بخش‌بندی درون آن‌ها"
+      },
+      "conditioning": {
+        "name": "شرط‌گذاری",
+        "tooltip": "شرط‌گذاری متنی از CLIPTextEncode"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "individual_masks": {
+        "name": "ماسک‌های جداگانه",
+        "tooltip": "خروجی ماسک برای هر شیء به صورت جداگانه به جای ترکیب"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "negative_coords": {
+        "name": "مختصات منفی",
+        "tooltip": "نقاط راهنمای منفی به صورت JSON [{\"x\": int, \"y\": int}, ...] (مختصات پیکسلی)"
+      },
+      "positive_coords": {
+        "name": "مختصات مثبت",
+        "tooltip": "نقاط راهنمای مثبت به صورت JSON [{\"x\": int, \"y\": int}, ...] (مختصات پیکسلی)"
+      },
+      "refine_iterations": {
+        "name": "تعداد تکرار پالایش",
+        "tooltip": "تعداد دفعات پالایش رمزگشا SAM (۰=استفاده از ماسک‌های خام آشکارساز)"
+      },
+      "threshold": {
+        "name": "آستانه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک‌ها",
+        "tooltip": null
+      },
+      "1": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "پیش‌نمایش ردیابی SAM3",
+    "inputs": {
+      "fps": {
+        "name": "فریم بر ثانیه"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "opacity": {
+        "name": "شفافیت"
+      },
+      "track_data": {
+        "name": "داده ردیابی"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "تبدیل ردیابی SAM3 به ماسک",
+    "inputs": {
+      "object_indices": {
+        "name": "اندیس‌های اشیاء",
+        "tooltip": "اندیس‌های اشیاء مورد نظر به صورت جداشده با ویرگول (مثلاً '۰,۲,۳'). خالی = همه اشیاء."
+      },
+      "track_data": {
+        "name": "داده ردیابی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک‌ها",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "ردیابی ویدئویی SAM3",
+    "inputs": {
+      "conditioning": {
+        "name": "شرط‌گذاری",
+        "tooltip": "شرط‌گذاری متنی برای تشخیص اشیاء جدید در طول ردیابی"
+      },
+      "detect_interval": {
+        "name": "فاصله تشخیص",
+        "tooltip": "اجرای تشخیص هر N فریم (۱=هر فریم). مقادیر بالاتر باعث صرفه‌جویی در محاسبات می‌شود."
+      },
+      "detection_threshold": {
+        "name": "آستانه تشخیص",
+        "tooltip": "آستانه امتیاز برای تشخیص مبتنی بر متن"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "فریم‌های ویدئو به صورت تصاویر دسته‌ای"
+      },
+      "initial_mask": {
+        "name": "ماسک اولیه",
+        "tooltip": "ماسک(ها) برای فریم اول جهت ردیابی (برای هر شیء یک ماسک)"
+      },
+      "max_objects": {
+        "name": "حداکثر اشیاء",
+        "tooltip": "حداکثر اشیاء قابل ردیابی (۰=نامحدود). ماسک‌های اولیه در این محدودیت لحاظ می‌شوند."
+      },
+      "model": {
+        "name": "مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "داده ردیابی",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -14050,6 +14404,20 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "نمونه‌بردار ویدئوی AR",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "تعداد فریم در هر بلوک",
+        "tooltip": "تعداد فریم در هر بلوک خودبازگشتی. ۱ = فریم به فریم، ۳ = به صورت تکه‌ای. باید با حالت آموزش checkpoint مطابقت داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16253,6 +16621,9 @@
   "TextGenerate": {
     "display_name": "تولید متن",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16296,6 +16667,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16308,6 +16683,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "تولید متن LTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16351,6 +16729,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16522,6 +16904,45 @@
         "name": "مدل بزرگ‌نمایی"
       },
       "upscaler_resolution": {
+        "name": "وضوح بزرگ‌نمایی"
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "با فناوری قدرتمند بزرگ‌نمایی و بازیابی، به ویدیو جان تازه ببخشید.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "سطح فشرده‌سازی پویا",
+        "tooltip": "سطح CQP."
+      },
+      "interpolation_model": {
+        "name": "مدل درون‌یابی"
+      },
+      "upscaler_model": {
+        "name": "مدل بزرگ‌نمایی"
+      },
+      "upscaler_model_creativity": {
+        "name": "خلاقیت"
+      },
+      "upscaler_model_prompt": {
+        "name": "پرامپت"
+      },
+      "upscaler_model_realism": {
+        "name": "واقع‌گرایی"
+      },
+      "upscaler_model_sharp": {
+        "name": "وضوح"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "وضوح بزرگ‌نمایی"
       },
       "video": {
@@ -17506,6 +17927,10 @@
       "prompt": {
         "name": "پرامپت",
         "tooltip": "توضیح متنی ویدیو"
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی ویدیو. وضوح ۴K برای مدل‌های veo-3.1-lite و veo-3.0 در دسترس نیست."
       },
       "seed": {
         "name": "seed",

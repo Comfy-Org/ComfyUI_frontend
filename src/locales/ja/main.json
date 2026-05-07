@@ -99,6 +99,7 @@
     "findInLibrary": "モデルライブラリの{type}セクションで見つけることができます。",
     "finish": "完了",
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
+    "gridView": "グリッド表示",
     "importAnother": "別のファイルをインポート",
     "imported": "インポート済み",
     "invalidAsset": "無効なアセット",
@@ -106,6 +107,7 @@
     "invalidFilename": "無効なファイル名",
     "invalidFilenameDetail": "アセットのファイル名を特定できませんでした。もう一度お試しください。",
     "jobId": "ジョブID",
+    "listView": "リスト表示",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "デフォルト",
     "sortPopular": "人気",
     "sortRecent": "最新",
+    "sortUnsorted": "並び替えなし",
     "sortZA": "Z-A",
     "sortingType": "並び替えタイプ",
     "tags": "タグ",
@@ -332,6 +335,7 @@
   },
   "breadcrumbsMenu": {
     "app": "アプリ",
+    "blueprint": "ブループリント",
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
     "deleteWorkflow": "ワークフローを削除",
@@ -457,6 +461,12 @@
       "wantToRun": "代わりにローカルでComfyUIを実行したいですか？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "オプションを選択してください。",
+        "describeAnswer": "回答を記述してください。",
+        "selectAtLeastOne": "少なくとも1つ選択してください。"
+      },
+      "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
       "options": {
         "familiarity": {
           "advanced": "上級ユーザー（カスタムワークフロー）",
@@ -465,45 +475,43 @@
           "new": "ComfyUI初心者（使用経験なし）",
           "starting": "使い始め（チュートリアルをフォロー中）"
         },
-        "industry": {
-          "architecture": "建築",
-          "education": "教育",
-          "film_tv_animation": "映画、テレビ、アニメーション",
-          "fine_art": "ファインアート & イラストレーション",
-          "gaming": "ゲーミング",
-          "marketing": "マーケティング & 広告",
-          "other": "その他",
-          "otherPlaceholder": "詳細を入力してください",
-          "product_design": "プロダクト & グラフィックデザイン",
-          "software": "ソフトウェア & テクノロジー"
-        },
-        "making": {
-          "3d": "3Dアセット",
-          "audio": "オーディオ / 音楽",
-          "custom_nodes": "カスタムノード & ワークフロー",
+        "intent": {
+          "3d_game": "3Dアセット／ゲームアセット",
+          "api": "ワークフロー実行用APIエンドポイント",
+          "apps": "ワークフローから簡易アプリ作成",
+          "audio": "音声／音楽",
+          "custom_nodes": "カスタムノード",
           "images": "画像",
-          "video": "ビデオ & アニメーション"
+          "not_sure": "まだ分からない",
+          "videos": "動画",
+          "workflows": "カスタムワークフローやパイプライン"
         },
-        "purpose": {
-          "client": "クライアントワーク（フリーランス）",
-          "community": "コミュニティ貢献（ノード、ワークフローなど）",
-          "inhouse": "自社での利用（社内）",
-          "personal": "個人プロジェクト／趣味",
-          "research": "学術研究"
+        "source": {
+          "conference": "カンファレンスやイベント",
+          "discord": "Discord／コミュニティ",
+          "friend": "友人または同僚",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "ニュースレターやブログ",
+          "other": "その他",
+          "reddit": "Reddit",
+          "search": "Google／検索",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "教育（学生または教育者）",
+          "personal": "個人利用",
+          "work": "仕事"
         }
       },
       "placeholder": "アンケート質問のプレースホルダー",
-      "questions": {
-        "familiarity": "ComfyUIの使用経験はどの程度ですか？",
-        "industry": "あなたの主な業界は何ですか？",
-        "making": "何を作成する予定ですか？",
-        "purpose": "ComfyUIを主に何に使用しますか？"
-      },
       "steps": {
         "familiarity": "ComfyUIの使用経験はどの程度ですか？",
-        "industry": "あなたの主な業界は何ですか？",
-        "making": "何を作成する予定ですか？",
-        "purpose": "ComfyUIを主に何に使用しますか？"
+        "intent": "ComfyUIで何を作成したいですか？",
+        "source": "ComfyUIをどこで知りましたか？",
+        "usage": "ComfyUIをどのように利用する予定ですか？"
       },
       "title": "クラウドアンケート"
     }
@@ -518,9 +526,9 @@
   "cloudStart_title": "数秒で作成を開始",
   "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
   "cloudSurvey_steps_familiarity": "ComfyUIにどの程度精通していますか？",
-  "cloudSurvey_steps_industry": "あなたの主な業界は何ですか？",
-  "cloudSurvey_steps_making": "何を作成する予定ですか？",
-  "cloudSurvey_steps_purpose": "ComfyUIを主に何に使用しますか？",
+  "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
+  "cloudSurvey_steps_source": "ComfyUIをどこで知りましたか？",
+  "cloudSurvey_steps_usage": "ComfyUIをどのように利用する予定ですか？",
   "cloudWaitlist_contactLink": "こちら",
   "cloudWaitlist_questionsText": "質問がありますか？お問い合わせください",
   "color": {
@@ -807,6 +815,7 @@
     "IMAGE": "画像",
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
+    "INTERP_MODEL": "補間モデル",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -834,6 +843,7 @@
     "RECRAFT_V3_STYLE": "Recraft V3スタイル",
     "RETARGET_TASK_ID": "リターゲットタスクID",
     "RIG_TASK_ID": "リグタスクID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "サンプラー",
     "SIGMAS": "シグマ",
     "STRING": "文字列",
@@ -912,6 +922,10 @@
     "showMissingNodes": "不足しているノードを表示",
     "showSwapNodes": "代替可能なノードを表示",
     "swapNodes": "いくつかのノードは代替可能です"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "フィードバックを送る",
+    "ctaText": "新しいエラーパネルはいかがですか？"
   },
   "essentials": {
     "batchImage": "バッチ画像処理",
@@ -998,13 +1012,16 @@
     "back": "戻る",
     "batchRename": "一括リネーム",
     "beta": "ベータ版",
+    "blueprints": "ブループリント",
     "bookmark": "ライブラリに保存",
+    "bookmarked": "ブックマーク済み",
     "browserReservedKeybinding": "このショートカットは一部のブラウザで予約されており、予期しない動作を引き起こす可能性があります。",
     "browserReservedKeybindingTooltip": "このショートカットはブラウザの予約済みショートカットと競合しています",
     "calculatingDimensions": "寸法を計算中",
     "cancel": "キャンセル",
     "cancelled": "キャンセル済み",
     "capture": "キャプチャ",
+    "categories": "カテゴリ",
     "category": "カテゴリ",
     "changeKeybinding": "キーバインドを変更",
     "chart": "チャート",
@@ -1225,6 +1242,7 @@
     "output": "出力",
     "overwrite": "上書き",
     "partner": "パートナー",
+    "partnerNodes": "パートナーノード",
     "pause": "一時停止",
     "play": "再生",
     "playPause": "再生/一時停止",
@@ -1821,6 +1839,10 @@
     "gettingInfo": "情報を取得中...",
     "importFailedGenericError": "パッケージのインポートに失敗しました。詳細はコンソールを確認してください。",
     "inWorkflow": "ワークフロー内",
+    "incompatibleVersion": {
+      "message": "ComfyUI-Manager をバージョン 4.2.1 以上にアップグレードしてください。\n• デスクトップ: ComfyUI デスクトップアプリを更新してください\n• スタンドアロン: pip install -U comfyui-manager を実行し、再起動してください\n詳細はこちら: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "ComfyUI-Manager のアップグレードが必要です"
+    },
     "infoPanelEmpty": "アイテムをクリックして情報を表示します",
     "installAllMissingNodes": "すべての不足しているノードをインストール",
     "installError": "インストールエラー",
@@ -2241,7 +2263,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2270,6 +2291,7 @@
     "camera": "カメラ",
     "chroma_radiance": "chroma_radiance",
     "clip": "クリップ",
+    "color": "カラー",
     "combine": "結合",
     "compositing": "合成",
     "cond pair": "条件ペア",
@@ -2321,7 +2343,6 @@
     "shader": "shader",
     "sigmas": "シグマ",
     "stable_cascade": "安定したカスケード",
-    "string": "文字列",
     "style_model": "スタイルモデル",
     "supir": "supir",
     "text": "テキスト",
@@ -2593,6 +2614,9 @@
       "metadataFetchFailed": "メタデータの取得に失敗しました。リンクを確認して再試行してください。",
       "missingModelsTitle": "不足しているモデル",
       "or": "または",
+      "refresh": "更新",
+      "refreshFailed": "不足しているモデルの更新に失敗しました。もう一度お試しください。",
+      "refreshing": "不足しているモデルを更新中です。",
       "typeMismatch": "このモデルは「{detectedType}」のようです。本当に続行しますか？",
       "unknownCategory": "不明",
       "unsupportedUrl": "Civitai と Hugging Face のURLのみサポートされています。",
@@ -3486,6 +3510,7 @@
     "no3dScene": "テクスチャを適用する3Dシーンがありません",
     "no3dSceneToExport": "エクスポートする3Dシーンがありません",
     "noTemplatesToExport": "エクスポートするテンプレートがありません",
+    "nodeDefinitionsUpdateFailed": "ノード定義の更新に失敗しました",
     "nodeDefinitionsUpdated": "ノード定義が更新されました",
     "nothingSelected": "選択されていません",
     "nothingToGroup": "グループ化するものがありません",

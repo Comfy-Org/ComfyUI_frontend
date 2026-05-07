@@ -1,11 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration, {
+  parseAnnotatedFilename
+} from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   GizmoConfig,
   ModelConfig
 } from '@/extensions/core/load3d/interfaces'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
@@ -160,5 +164,181 @@ describe('Load3DConfiguration.loadModelConfig', () => {
     const result = createConfig(properties).loadModelConfig()
 
     expect(result.gizmo).toEqual(fullGizmo)
+  })
+})
+
+describe('Load3DConfiguration.silentOnNotFound propagation', () => {
+  let loadModelSpy: ReturnType<typeof vi.fn>
+
+  function makeLoad3dMock(): Load3d {
+    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    return {
+      loadModel: loadModelSpy,
+      setUpDirection: vi.fn(),
+      setMaterialMode: vi.fn(),
+      setTargetSize: vi.fn(),
+      setCameraState: vi.fn(),
+      toggleGrid: vi.fn(),
+      setBackgroundColor: vi.fn(),
+      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
+      toggleCamera: vi.fn(),
+      setFOV: vi.fn(),
+      setLightIntensity: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
+    } as unknown as Load3d
+  }
+
+  async function flush() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+
+  beforeEach(() => {
+    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
+    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+      '/view?filename=model.glb'
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('configureForSaveMesh forwards silentOnNotFound: true to loadModel', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configureForSaveMesh('output', 'model.glb', {
+      silentOnNotFound: true
+    })
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: true
+    })
+  })
+
+  it('configureForSaveMesh uses silentOnNotFound: false when option is omitted', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configureForSaveMesh('output', 'model.glb')
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: false
+    })
+  })
+
+  it('configure forwards silentOnNotFound: true from settings to loadModel', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output',
+      silentOnNotFound: true
+    })
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: true
+    })
+  })
+
+  it('configure uses silentOnNotFound: false when setting is omitted', async () => {
+    const config = new Load3DConfiguration(makeLoad3dMock())
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output'
+    })
+    await flush()
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: false
+    })
+  })
+
+  it('emits modelReady AFTER setCameraState so thumbnail capture sees the restored view', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    const cameraState = {
+      position: { x: 1, y: 2, z: 3 },
+      target: { x: 0, y: 0, z: 0 },
+      zoom: 1,
+      cameraType: 'perspective' as const
+    }
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output',
+      cameraState: cameraState as unknown as Parameters<
+        Load3DConfiguration['configure']
+      >[0]['cameraState']
+    })
+    await flush()
+
+    const setCameraStateMock = vi.mocked(load3d.setCameraState)
+    const emitModelReadyMock = vi.mocked(load3d.emitModelReady)
+    expect(setCameraStateMock).toHaveBeenCalledWith(cameraState)
+    expect(emitModelReadyMock).toHaveBeenCalledTimes(1)
+    expect(setCameraStateMock.mock.invocationCallOrder[0]).toBeLessThan(
+      emitModelReadyMock.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('emits modelReady even when no saved cameraState is provided', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output'
+    })
+    await flush()
+    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+  })
+
+  it('configureForSaveMesh also emits modelReady once the load resolves', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    config.configureForSaveMesh('output', 'model.glb')
+    await flush()
+    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('parseAnnotatedFilename', () => {
+  it('strips a [output] suffix and switches to the output folder', () => {
+    expect(parseAnnotatedFilename('foo.glb [output]', 'input')).toEqual({
+      filename: 'foo.glb',
+      folder: 'output'
+    })
+  })
+
+  it('strips a [input] suffix and switches to the input folder', () => {
+    expect(parseAnnotatedFilename('sub/foo.glb [input]', 'output')).toEqual({
+      filename: 'sub/foo.glb',
+      folder: 'input'
+    })
+  })
+
+  it('strips a [temp] suffix and switches to the temp folder', () => {
+    expect(parseAnnotatedFilename('foo.glb [temp]', 'input')).toEqual({
+      filename: 'foo.glb',
+      folder: 'temp'
+    })
+  })
+
+  it('returns the value unchanged with the fallback folder when unannotated', () => {
+    expect(parseAnnotatedFilename('foo.glb', 'input')).toEqual({
+      filename: 'foo.glb',
+      folder: 'input'
+    })
+  })
+
+  it('does not strip a non-folder annotation', () => {
+    expect(parseAnnotatedFilename('foo.glb [draft]', 'input')).toEqual({
+      filename: 'foo.glb [draft]',
+      folder: 'input'
+    })
+  })
+
+  it('only matches a trailing annotation, not one in the middle', () => {
+    expect(parseAnnotatedFilename('foo [output] bar.glb', 'input')).toEqual({
+      filename: 'foo [output] bar.glb',
+      folder: 'input'
+    })
   })
 })

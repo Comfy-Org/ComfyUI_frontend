@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex flex-col gap-6 px-3 py-4">
+  <nav data-testid="publish-nav" class="flex flex-col gap-6 px-3 py-4">
     <ol class="flex list-none flex-col p-0">
       <li
         v-for="step in steps"
@@ -70,7 +70,7 @@ import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
 type ComfyHubPrimaryStep = Exclude<ComfyHubPublishStep, 'profileCreation'>

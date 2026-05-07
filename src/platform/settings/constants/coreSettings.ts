@@ -69,6 +69,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.NodeSearchBoxImpl.FollowCursor',
+    category: ['Comfy', 'Node Search Box', 'FollowCursor'],
+    name: 'Added nodes follow the cursor',
+    tooltip:
+      'When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.44.4'
+  },
+  {
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
     category: ['Comfy', 'Node Search Box', 'ShowCategory'],
     name: 'Show node category in search results',
@@ -649,7 +659,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 32 : 100,
+    defaultValue: 100,
     versionAdded: '1.3.5'
   },
   {
