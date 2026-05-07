@@ -87,7 +87,7 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
     label: widgetState?.label ?? widget.label,
     options: widgetState?.options ?? widget.options,
     spec: nodeDefStore.getInputSpecForWidget(sourceNode, sourceWidget.name),
-    controlWidget: getControlWidget(sourceWidget)
+    controlWidget: getControlWidget(sourceWidget, sourceNode)
   }
 })
 
