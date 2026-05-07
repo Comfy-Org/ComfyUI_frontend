@@ -21,6 +21,11 @@ import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isAbortError } from '@/utils/typeGuardUtil'
+import { useAssetsStore } from '@/stores/assetsStore'
+import {
+  getAnnotatedMediaPathTypeForDetection,
+  getMediaPathDetectionNames
+} from './annotatedMediaPath'
 
 /** Map of node types to their media widget name and media type. */
 const MEDIA_NODE_WIDGETS: Record<
@@ -93,7 +98,8 @@ export function scanNodeMediaCandidates(
       isMissing = undefined
     } else {
       const options = resolveComboValues(widget)
-      isMissing = !options.includes(value)
+      const detectionNames = getMediaPathDetectionNames(value)
+      isMissing = !detectionNames.some((name) => options.includes(name))
     }
 
     candidates.push({
@@ -109,7 +115,14 @@ export function scanNodeMediaCandidates(
   return candidates
 }
 
-type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
+interface MediaAssetFetcherOptions {
+  includeOutputAssets?: boolean
+}
+
+type MediaAssetFetcher = (
+  signal?: AbortSignal,
+  options?: MediaAssetFetcherOptions
+) => Promise<AssetItem[]>
 
 /**
  * Verify cloud media candidates against input assets available to the user,
@@ -117,21 +130,31 @@ type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
  *
  * A candidate's `name` may be either a filename or an opaque asset hash.
  * Cloud-side `asset_hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.asset_hash`.
+ * match against the union of `asset.name` and `asset.asset_hash`. When a
+ * candidate references output/temp media, generated history assets are also
+ * included because Cloud stores those widget values as hash filenames.
+ * Cloud also accepts compact annotated media paths, so verification compares
+ * both the raw candidate name and its detection-normalized form.
  */
 export async function verifyCloudMediaCandidates(
   candidates: MissingMediaCandidate[],
   signal?: AbortSignal,
-  fetchInputAssets: InputAssetFetcher = fetchMissingInputAssets
+  fetchMediaAssets: MediaAssetFetcher = fetchMissingMediaAssets
 ): Promise<void> {
   if (signal?.aborted) return
 
   const pending = candidates.filter((c) => c.isMissing === undefined)
   if (pending.length === 0) return
+  const includeOutputAssets = pending.some((candidate) => {
+    const type = getAnnotatedMediaPathTypeForDetection(candidate.name, {
+      allowCompactSuffix: true
+    })
+    return type === 'output' || type === 'temp'
+  })
 
-  let inputAssets: AssetItem[]
+  let mediaAssets: AssetItem[]
   try {
-    inputAssets = await fetchInputAssets(signal)
+    mediaAssets = await fetchMediaAssets(signal, { includeOutputAssets })
   } catch (err) {
     if (signal?.aborted || isAbortError(err)) return
     throw err
@@ -140,20 +163,39 @@ export async function verifyCloudMediaCandidates(
   if (signal?.aborted) return
 
   const assetIdentifiers = new Set<string>()
-  for (const asset of inputAssets) {
-    if (asset.asset_hash) assetIdentifiers.add(asset.asset_hash)
-    if (asset.name) assetIdentifiers.add(asset.name)
+  const addAssetIdentifier = (value?: string | null) => {
+    if (!value) return
+    for (const name of getMediaPathDetectionNames(value, {
+      allowCompactSuffix: true
+    })) {
+      assetIdentifiers.add(name)
+    }
+  }
+  for (const asset of mediaAssets) {
+    addAssetIdentifier(asset.asset_hash)
+    addAssetIdentifier(asset.name)
   }
 
   for (const candidate of pending) {
-    candidate.isMissing = !assetIdentifiers.has(candidate.name)
+    const detectionNames = getMediaPathDetectionNames(candidate.name, {
+      allowCompactSuffix: true
+    })
+    candidate.isMissing = !detectionNames.some((name) =>
+      assetIdentifiers.has(name)
+    )
   }
 }
 
-async function fetchMissingInputAssets(
-  signal?: AbortSignal
+async function fetchMissingMediaAssets(
+  signal?: AbortSignal,
+  { includeOutputAssets = false }: MediaAssetFetcherOptions = {}
 ): Promise<AssetItem[]> {
-  return await assetService.getInputAssetsIncludingPublic(signal)
+  const inputAssets = await assetService.getInputAssetsIncludingPublic(signal)
+  if (!includeOutputAssets) return inputAssets
+
+  const assetsStore = useAssetsStore()
+  await assetsStore.updateHistory()
+  return [...inputAssets, ...assetsStore.historyAssets]
 }
 
 /** Group confirmed-missing candidates by file name into view models. */
