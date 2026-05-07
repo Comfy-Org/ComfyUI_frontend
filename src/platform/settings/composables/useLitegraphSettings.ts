@@ -5,9 +5,38 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { useInputDeviceDetection } from '@/platform/settings/composables/useInputDeviceDetection'
 import { useSettingStore } from '@/platform/settings/settingStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+/**
+ * One-time translation of the legacy `Comfy.Canvas.NavigationMode` +
+ * `Comfy.Canvas.MouseWheelScroll` pair into the new `Comfy.Graph.WheelInputMode`
+ * preference, preserving explicit choices made by users on previous versions.
+ *
+ * Idempotency is achieved by resetting NavigationMode to its default after
+ * migration: subsequent boots see `legacy` and exit early.
+ */
+async function migrateLegacyNavigationSettings(
+  settingStore: ReturnType<typeof useSettingStore>
+) {
+  const navMode = settingStore.get('Comfy.Canvas.NavigationMode')
+  if (navMode === 'legacy') return
+
+  let migrated: 'mouse' | 'trackpad' | undefined
+  if (navMode === 'standard') {
+    migrated = 'trackpad'
+  } else if (navMode === 'custom') {
+    const wheelScroll = settingStore.get('Comfy.Canvas.MouseWheelScroll')
+    migrated = wheelScroll === 'panning' ? 'trackpad' : 'mouse'
+  }
+
+  if (migrated && settingStore.get('Comfy.Graph.WheelInputMode') === 'auto') {
+    await settingStore.set('Comfy.Graph.WheelInputMode', migrated)
+  }
+  await settingStore.set('Comfy.Canvas.NavigationMode', 'legacy')
+}
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
@@ -15,6 +44,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
+
+  void migrateLegacyNavigationSettings(settingStore)
 
   watchEffect(() => {
     const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
@@ -142,16 +173,6 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode') as
-      | 'standard'
-      | 'legacy'
-      | 'custom'
-
-    LiteGraph.canvasNavigationMode = navigationMode
-    LiteGraph.macTrackpadGestures = navigationMode === 'standard'
-  })
-
-  watchEffect(() => {
     const leftMouseBehavior = settingStore.get(
       'Comfy.Canvas.LeftMouseClickBehavior'
     ) as 'panning' | 'select'
@@ -159,10 +180,29 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const mouseWheelScroll = settingStore.get(
-      'Comfy.Canvas.MouseWheelScroll'
-    ) as 'panning' | 'zoom'
-    LiteGraph.mouseWheelScroll = mouseWheelScroll
+    LiteGraph.wheelInputMode = settingStore.get(
+      'Comfy.Graph.WheelInputMode'
+    ) as 'auto' | 'mouse' | 'trackpad'
+  })
+
+  /**
+   * Mirror the canvas pointer's auto-detected device onto a reactive ref so
+   * settings UI can show the current detection inside the "Auto" option.
+   * The cleanup detaches the handler from the previous pointer so a stale
+   * canvas instance can no longer mutate the shared ref after replacement.
+   */
+  watchEffect((onCleanup) => {
+    const { canvas } = canvasStore
+    if (!canvas) return
+    const { pointer } = canvas
+    const { detectedInputDevice } = useInputDeviceDetection()
+    detectedInputDevice.value = pointer.detectedDevice
+    pointer.onDetectedDeviceChange = (device) => {
+      detectedInputDevice.value = device
+    }
+    onCleanup(() => {
+      pointer.onDetectedDeviceChange = undefined
+    })
   })
 
   watchEffect(() => {

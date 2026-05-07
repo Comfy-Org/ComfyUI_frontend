@@ -14,8 +14,8 @@ export function useCanvasInteractions() {
   const canvasStore = useCanvasStore()
   const { getCanvas } = canvasStore
 
-  const isStandardNavMode = computed(
-    () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
+  const isTrackpadWheelMode = computed(
+    () => settingStore.get('Comfy.Graph.WheelInputMode') === 'trackpad'
   )
 
   /**
@@ -43,7 +43,7 @@ export function useCanvasInteractions() {
 
   const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
     !wheelCapturedByFocusedElement(event) ||
-    (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
+    (isTrackpadWheelMode.value && (event.ctrlKey || event.metaKey))
 
   /**
    * Handles wheel events from UI components that should be forwarded to canvas
@@ -53,13 +53,13 @@ export function useCanvasInteractions() {
     if (!shouldForwardWheelEvent(event)) return
 
     // In standard mode, Ctrl+wheel should go to canvas for zoom
-    if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
+    if (isTrackpadWheelMode.value && (event.ctrlKey || event.metaKey)) {
       forwardEventToCanvas(event)
       return
     }
 
     // In legacy mode, all wheel events go to canvas for zoom
-    if (!isStandardNavMode.value) {
+    if (!isTrackpadWheelMode.value) {
       forwardEventToCanvas(event)
       return
     }

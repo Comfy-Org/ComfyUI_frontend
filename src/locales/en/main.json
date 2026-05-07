@@ -3495,6 +3495,7 @@
       "showInfoBadges": "Show info badges",
       "showToolbox": "Show toolbox on selection",
       "nodes2": "Nodes 2.0",
+      "inputDevice": "Input device",
       "gridSpacing": "Grid spacing",
       "snapNodesToGrid": "Snap nodes to grid",
       "linkShape": "Link shape",

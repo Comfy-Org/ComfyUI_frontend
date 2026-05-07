@@ -145,14 +145,11 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     })
   })
 
-  test.describe('Comfy.Canvas.MouseWheelScroll', () => {
+  test.describe('Comfy.Graph.WheelInputMode', () => {
     const WHEEL_POS = { x: 400, y: 400 }
 
-    test('wheel zooms when set to zoom', async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.MouseWheelScroll',
-        'zoom'
-      )
+    test('wheel zooms when input device is mouse', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.WheelInputMode', 'mouse')
       const initialScale = await comfyPage.canvasOps.getScale()
 
       await comfyPage.page.mouse.move(WHEEL_POS.x, WHEEL_POS.y)
@@ -166,10 +163,10 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       )
     })
 
-    test('wheel pans when set to panning', async ({ comfyPage }) => {
+    test('wheel pans when input device is trackpad', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
-        'Comfy.Canvas.MouseWheelScroll',
-        'panning'
+        'Comfy.Graph.WheelInputMode',
+        'trackpad'
       )
       const initialScale = await comfyPage.canvasOps.getScale()
       const initialOffset = await comfyPage.canvasOps.getOffset()
