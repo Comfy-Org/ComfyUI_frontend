@@ -29,7 +29,7 @@ vi.mock('@/scripts/api', () => ({
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
   })
 
   it('refreshes the queue and forwards running+pending job ids to clearActiveJobIfStale', async () => {
@@ -93,6 +93,5 @@ describe('useReconnectQueueRefresh', () => {
 
     expect(clearSpy).not.toHaveBeenCalled()
     expect(warnSpy).toHaveBeenCalled()
-    warnSpy.mockRestore()
   })
 })
