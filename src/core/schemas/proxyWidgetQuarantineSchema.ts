@@ -25,7 +25,7 @@ export const proxyWidgetErrorQuarantineEntrySchema = z.object({
   attemptedAtVersion: z.literal(1)
 })
 
-export const proxyWidgetErrorQuarantinePropertySchema = z.array(
+const proxyWidgetErrorQuarantinePropertySchema = z.array(
   proxyWidgetErrorQuarantineEntrySchema
 )
 

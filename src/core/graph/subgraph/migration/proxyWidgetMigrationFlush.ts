@@ -1,7 +1,5 @@
-import {
-  HOST_VALUE_HOLE,
-  type PendingMigrationEntry
-} from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
+import { HOST_VALUE_HOLE } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes';
+import type { PendingMigrationEntry } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes';
 import { migratePreviewExposure } from '@/core/graph/subgraph/migration/migratePreviewExposure'
 import { planProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanner'
 import {
@@ -18,13 +16,13 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
-export interface FlushProxyWidgetMigrationArgs {
+interface FlushProxyWidgetMigrationArgs {
   hostNode: SubgraphNode
   /** widgets_values from the host node at parse time. May be sparse. */
   hostWidgetValues?: readonly unknown[]
 }
 
-export interface FlushProxyWidgetMigrationResult {
+interface FlushProxyWidgetMigrationResult {
   repaired: number
   primitiveRepaired: number
   previewMigrated: number

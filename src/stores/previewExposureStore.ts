@@ -10,8 +10,6 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 
-export type { ResolvedPreviewChain } from '@/core/graph/subgraph/preview/previewExposureTypes'
-
 /**
  * Optional resolver passed by callers that want {@link resolveChain} to walk
  * nested subgraph host boundaries.

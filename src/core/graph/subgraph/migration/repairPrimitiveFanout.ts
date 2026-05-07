@@ -11,7 +11,7 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
-export type RepairPrimitiveFanoutResult =
+type RepairPrimitiveFanoutResult =
   | { ok: true; subgraphInputName: string; reconnectCount: number }
   | { ok: false; reason: 'primitiveBypassFailed' }
 

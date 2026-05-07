@@ -12,7 +12,7 @@ import type {
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 
-export type RepairValueWidgetResult =
+type RepairValueWidgetResult =
   | { ok: true; subgraphInputName: string }
   | { ok: false; reason: ProxyWidgetQuarantineReason }
 

@@ -3,7 +3,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
-export type MigratePreviewExposureResult =
+type MigratePreviewExposureResult =
   | { ok: true; previewName: string }
   | { ok: false; reason: 'missingSourceNode' | 'missingSourceWidget' }
 

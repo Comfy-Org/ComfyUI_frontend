@@ -43,7 +43,7 @@ export type MigrationPlan =
   | { kind: 'previewExposure'; sourcePreviewName: string }
   | { kind: 'quarantine'; reason: ProxyWidgetQuarantineReason }
 
-export type MigrationPlanKind = MigrationPlan['kind']
+type MigrationPlanKind = MigrationPlan['kind']
 
 /**
  * One pending migration entry produced by the planner.

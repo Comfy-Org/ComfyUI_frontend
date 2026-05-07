@@ -12,7 +12,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
-export interface ClassificationResult {
+interface ClassificationResult {
   classification: ProxyEntryClassification
   plan: MigrationPlan
 }

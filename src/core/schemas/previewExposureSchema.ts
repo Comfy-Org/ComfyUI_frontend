@@ -10,7 +10,7 @@ export const previewExposureSchema = z.object({
 })
 export type PreviewExposure = z.infer<typeof previewExposureSchema>
 
-export const previewExposuresPropertySchema = z.array(previewExposureSchema)
+const previewExposuresPropertySchema = z.array(previewExposureSchema)
 
 export function parsePreviewExposures(
   property: NodeProperty | undefined

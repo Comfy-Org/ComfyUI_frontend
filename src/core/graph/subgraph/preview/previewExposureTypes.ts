@@ -2,18 +2,6 @@ import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 /**
- * Host-scoped UI identity for a preview exposure.
- *
- * Identifies a single preview surfacing on a particular host SubgraphNode.
- * `previewName` matches `PreviewExposure.name` — a stable host-scoped identity
- * generated via `nextUniqueName` at creation time, not a display label.
- */
-export interface PreviewExposureIdentity {
-  hostNodeLocator: string
-  previewName: string
-}
-
-/**
  * One step along a chain of preview exposures rooted at an outer host.
  *
  * `exposure` is the canonical entry on `(rootGraphId, hostNodeLocator)` that

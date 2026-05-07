@@ -1,4 +1,3 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import type { SubgraphNode } from './SubgraphNode'
@@ -13,7 +12,7 @@ import type { SubgraphNode } from './SubgraphNode'
  * the flush directly from LGraph would create a circular dependency through
  * the PreviewExposureStore.
  */
-export type SubgraphMigrationFlushHook = (args: {
+type SubgraphMigrationFlushHook = (args: {
   hostNode: SubgraphNode
   nodeData: ISerialisedNode | undefined
 }) => void
@@ -36,17 +35,3 @@ export function runSubgraphMigrationFlushHook(
 ): void {
   registry.flush?.({ hostNode, nodeData })
 }
-
-export function getSubgraphMigrationFlushHookForTesting():
-  | SubgraphMigrationFlushHook
-  | undefined {
-  return registry.flush
-}
-
-/** Visible only for tests; not part of the runtime contract. */
-export function clearSubgraphMigrationFlushHookForTesting(): void {
-  registry.flush = undefined
-}
-
-/** Map key shape for tracking host migration nodeData by id. */
-export type HostNodeDataMap = Map<NodeId, ISerialisedNode>

@@ -11,7 +11,7 @@ import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
-export interface PlanProxyWidgetMigrationArgs {
+interface PlanProxyWidgetMigrationArgs {
   hostNode: SubgraphNode
   /** widgets_values from the host node at parse time. May be sparse. */
   hostWidgetValues?: readonly unknown[]
