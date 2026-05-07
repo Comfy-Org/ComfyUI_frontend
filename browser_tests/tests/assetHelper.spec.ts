@@ -133,27 +133,48 @@ test.describe('AssetHelper', () => {
       expect(data.assets[0].id).toBe(STABLE_CHECKPOINT.id)
     })
 
-    test('GET /assets filters by exclude_tags', async ({
+    test('GET /assets does not filter by exclude_tags (parameter removed)', async ({
       comfyPage,
       assetApi
     }) => {
+      // Regression guard: exclude_tags filtering was removed from handleListAssets
+      // and getFilteredAssets. Passing exclude_tags must NOT exclude any assets —
+      // all assets matching include_tags (or all assets when include_tags is
+      // absent) should be returned regardless of the exclude_tags param.
       assetApi.configure(
         withAsset(STABLE_INPUT_IMAGE),
         withAsset({
           ...STABLE_INPUT_IMAGE,
-          id: 'missing-input',
-          tags: ['input', 'missing']
+          id: 'tagged-input',
+          tags: ['input', 'extra-tag']
         })
       )
       await assetApi.mock()
 
       const { body } = await assetApi.fetch(
-        `${comfyPage.url}/api/assets?include_tags=input,&exclude_tags= missing,`
+        `${comfyPage.url}/api/assets?include_tags=input&exclude_tags=extra-tag`
       )
       const data = body as { assets: Array<{ id: string }> }
-      expect(data.assets.map((asset) => asset.id)).toEqual([
-        STABLE_INPUT_IMAGE.id
-      ])
+      // Both assets share the 'input' include_tag. With exclude_tags removed,
+      // neither should be hidden — the response must contain both.
+      expect(data.assets).toHaveLength(2)
+    })
+
+    test('GET /assets with empty include_tags returns all assets', async ({
+      comfyPage,
+      assetApi
+    }) => {
+      // When include_tags is absent or empty the helper returns the full store.
+      assetApi.configure(
+        withAsset(STABLE_CHECKPOINT),
+        withAsset(STABLE_LORA),
+        withAsset(STABLE_INPUT_IMAGE)
+      )
+      await assetApi.mock()
+
+      const { body } = await assetApi.fetch(`${comfyPage.url}/api/assets`)
+      const data = body as { assets: Array<{ id: string }> }
+      expect(data.assets).toHaveLength(3)
     })
 
     test('GET /assets/:id returns single asset or 404', async ({
