@@ -45,7 +45,8 @@ test.describe('App mode usage', () => {
       const initialImage = await imageInput.selectedItem()
 
       await comfyPage.dragDrop.dragAndDropExternalResource({
-        fileName: 'workflowInMedia/workflow.webp',
+        fileName: 'workflow.webp',
+        filePath: './browser_tests/assets/workflowInMedia/workflow.webp',
         preserveNativePropagation: true
       })
       comfyFiles.deleteAfterTest({ filename: 'workflow.webp', type: 'input' })
