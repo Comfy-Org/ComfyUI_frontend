@@ -1,6 +1,6 @@
 <template>
   <BaseThumbnail :is-hovered="isHovered">
-    <LazyImage
+    <LazyMedia
       :src="baseImageSrc"
       :alt="alt"
       :image-class="
@@ -10,7 +10,7 @@
       "
     />
     <div ref="containerRef" class="absolute inset-0">
-      <LazyImage
+      <LazyMedia
         :src="overlayImageSrc"
         :alt="alt"
         :image-class="
@@ -37,8 +37,9 @@
 import { useMouseInElement } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
-import LazyImage from '@/components/common/LazyImage.vue'
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import LazyMedia from '@/components/templates/thumbnails/LazyMedia.vue'
+import { isVideoSrc } from '@/platform/workflow/templates/utils/hubAssetUrl'
 
 const SLIDER_START_POSITION = 50
 
@@ -52,6 +53,8 @@ const { baseImageSrc, overlayImageSrc, isHovered, isVideo } = defineProps<{
 
 const isVideoType =
   isVideo ||
+  isVideoSrc(baseImageSrc) ||
+  isVideoSrc(overlayImageSrc) ||
   baseImageSrc?.toLowerCase().endsWith('.webp') ||
   overlayImageSrc?.toLowerCase().endsWith('.webp') ||
   false

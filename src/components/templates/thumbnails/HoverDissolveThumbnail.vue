@@ -2,14 +2,14 @@
   <BaseThumbnail :is-hovered="isHovered">
     <div class="relative size-full">
       <div class="absolute inset-0">
-        <LazyImage
+        <LazyMedia
           :src="baseImageSrc"
           :alt="alt"
           :image-class="baseImageClass"
         />
       </div>
       <div class="absolute inset-0 z-10">
-        <LazyImage
+        <LazyMedia
           :src="overlayImageSrc"
           :alt="alt"
           :image-class="overlayImageClass"
@@ -22,8 +22,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import LazyImage from '@/components/common/LazyImage.vue'
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import LazyMedia from '@/components/templates/thumbnails/LazyMedia.vue'
+import { isVideoSrc } from '@/platform/workflow/templates/utils/hubAssetUrl'
 
 const { baseImageSrc, overlayImageSrc, isVideo, isHovered } = defineProps<{
   baseImageSrc: string
@@ -35,6 +36,8 @@ const { baseImageSrc, overlayImageSrc, isVideo, isHovered } = defineProps<{
 
 const isVideoType =
   isVideo ||
+  isVideoSrc(baseImageSrc) ||
+  isVideoSrc(overlayImageSrc) ||
   baseImageSrc?.toLowerCase().endsWith('.webp') ||
   overlayImageSrc?.toLowerCase().endsWith('.webp') ||
   false

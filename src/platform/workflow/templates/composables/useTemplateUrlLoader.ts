@@ -2,9 +2,11 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isCloud } from '@/platform/distribution/types'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -108,9 +110,24 @@ export function useTemplateUrlLoader() {
     try {
       await templateWorkflows.loadTemplates()
 
+      let resolvedTemplate = templateParam
+      let resolvedSource = sourceParam
+
+      if (isCloud) {
+        const workflowTemplatesStore = useWorkflowTemplatesStore()
+        const matchedTemplate =
+          workflowTemplatesStore.getTemplateByName(templateParam) ??
+          workflowTemplatesStore.getTemplateByShareId(templateParam)
+
+        if (matchedTemplate) {
+          resolvedTemplate = matchedTemplate.name
+          resolvedSource = matchedTemplate.sourceModule ?? resolvedSource
+        }
+      }
+
       const success = await templateWorkflows.loadWorkflowTemplate(
-        templateParam,
-        sourceParam
+        resolvedTemplate,
+        resolvedSource
       )
 
       if (!success) {
