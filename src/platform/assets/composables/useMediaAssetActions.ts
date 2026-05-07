@@ -9,14 +9,18 @@ import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { getAssetOutputCount } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -29,6 +33,35 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+/**
+ * Canonical widget-value strings that may reference this asset, scoped by the
+ * asset's source type so basenames cannot cross-match across input/output.
+ *
+ * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
+ * present in metadata). Input/temp assets emit the bare name plus the explicit
+ * annotation. `asset_hash` is included whenever present, since cloud-stored
+ * assets can be referenced by hash.
+ */
+function widgetValueVariantsForAsset(asset: AssetItem): string[] {
+  const variants: string[] = []
+  const type = getAssetType(asset, 'input')
+  const name = asset.name
+  if (name) {
+    if (type === 'output') {
+      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      const path = subfolder ? `${subfolder}/${name}` : name
+      variants.push(`${path} [output]`)
+    } else if (type === 'temp') {
+      variants.push(`${name} [temp]`)
+    } else {
+      variants.push(name)
+      variants.push(`${name} [input]`)
+    }
+  }
+  if (asset.asset_hash) variants.push(asset.asset_hash)
+  return variants
+}
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -637,6 +670,26 @@ export function useMediaAssetActions() {
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
+              }
+
+              const rootGraph = app.rootGraph
+              if (rootGraph) {
+                const deletedValues = new Set<string>()
+                assetArray.forEach((asset, index) => {
+                  if (results[index].status !== 'fulfilled') return
+                  for (const value of widgetValueVariantsForAsset(asset)) {
+                    deletedValues.add(value)
+                  }
+                })
+                if (deletedValues.size > 0) {
+                  const nodeOutputStore = useNodeOutputStore()
+                  clearNodePreviewCacheForValues(
+                    rootGraph,
+                    deletedValues,
+                    (node) => nodeOutputStore.removeNodeOutputs(node.id)
+                  )
+                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
+                }
               }
 
               // Invalidate model caches for affected categories
