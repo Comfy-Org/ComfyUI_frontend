@@ -1689,7 +1689,9 @@ describe('SubgraphNode.widgets getter', () => {
     // _internalConfigureAfterSlots writeback may seed an empty default
     // until slice 6 retires that path entirely.
     const cloned = clonedSerialized.properties?.proxyWidgets
-    expect(cloned === undefined || (Array.isArray(cloned) && cloned.length === 0)).toBe(true)
+    expect(
+      cloned === undefined || (Array.isArray(cloned) && cloned.length === 0)
+    ).toBe(true)
   })
 })
 
@@ -2132,6 +2134,35 @@ describe('three-level nested value propagation', () => {
 describe('multi-link representative determinism for input-based promotion', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('shared subgraph hosts keep promoted widget values isolated by host input', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'shared', type: '*' }]
+    })
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('shared', '*')
+    innerNode.addWidget('text', 'shared', 'initial', () => {})
+    innerInput.widget = { name: 'shared' }
+    subgraph.add(innerNode)
+    subgraph.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const firstHost = createTestSubgraphNode(subgraph, { id: 701 })
+    const secondHost = createTestSubgraphNode(subgraph, { id: 702 })
+    subgraph.rootGraph.add(firstHost)
+    subgraph.rootGraph.add(secondHost)
+
+    const firstWidget = promotedWidgets(firstHost)[0]
+    const secondWidget = promotedWidgets(secondHost)[0]
+    if (!firstWidget || !secondWidget)
+      throw new Error('Expected both hosts to expose a promoted widget')
+
+    firstWidget.value = 'first-host'
+    secondWidget.value = 'second-host'
+
+    expect(firstWidget.value).toBe('first-host')
+    expect(secondWidget.value).toBe('second-host')
   })
 
   test('first link is consistently chosen as representative for reads and writes', () => {

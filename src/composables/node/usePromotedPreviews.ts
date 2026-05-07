@@ -4,24 +4,32 @@ import { computed, toValue } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
+  /** Source node id resolved on the host's interior subgraph. */
   sourceNodeId: string
+  /** Canonical preview name on the source widget (typically `$$`-prefixed). */
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
 }
 
 /**
- * Returns reactive preview media from promoted `$$` pseudo-widgets
- * on a SubgraphNode. Each promoted preview interior node produces
- * a separate entry so they render independently.
+ * Returns reactive preview media exposed by a host SubgraphNode.
+ *
+ * Reads first from the host-scoped {@link usePreviewExposureStore} (the
+ * canonical post-ADR-0009 source). Falls back to the legacy promotion-store
+ * `$$`-prefixed entries when no exposures have been migrated yet — the
+ * configure-time flush will normalize both into the exposure store on next
+ * load.
  */
 export function usePromotedPreviews(
   lgraphNode: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
+  const previewExposureStore = usePreviewExposureStore()
   const promotionStore = usePromotionStore()
   const nodeOutputStore = useNodeOutputStore()
 
@@ -29,26 +37,40 @@ export function usePromotedPreviews(
     const node = toValue(lgraphNode)
     if (!(node instanceof SubgraphNode)) return []
 
-    const entries = promotionStore.getPromotions(node.rootGraph.id, node.id)
-    const pseudoEntries = entries.filter((e) =>
-      e.sourceWidgetName.startsWith('$$')
+    const rootGraphId = node.rootGraph.id
+    const hostLocator = createNodeLocatorId(rootGraphId, node.id)
+
+    const exposures = previewExposureStore.getExposures(
+      rootGraphId,
+      hostLocator
     )
-    if (!pseudoEntries.length) return []
+
+    const exposurePairs = exposures.length
+      ? exposures.map((exposure) => ({
+          sourceNodeId: exposure.sourceNodeId,
+          sourceWidgetName: exposure.sourcePreviewName
+        }))
+      : promotionStore
+          .getPromotions(rootGraphId, node.id)
+          .filter((entry) => entry.sourceWidgetName.startsWith('$$'))
+          .map((entry) => ({
+            sourceNodeId: entry.sourceNodeId,
+            sourceWidgetName: entry.sourceWidgetName
+          }))
+
+    if (!exposurePairs.length) return []
 
     const previews: PromotedPreview[] = []
 
-    for (const entry of pseudoEntries) {
-      const interiorNode = node.subgraph.getNodeById(entry.sourceNodeId)
+    for (const pair of exposurePairs) {
+      const interiorNode = node.subgraph.getNodeById(pair.sourceNodeId)
       if (!interiorNode) continue
 
       // Read from both reactive refs to establish Vue dependency
       // tracking. getNodeImageUrls reads from non-reactive
       // app.nodeOutputs / app.nodePreviewImages, so without this
       // access the computed would never re-evaluate.
-      const locatorId = createNodeLocatorId(
-        node.subgraph.id,
-        entry.sourceNodeId
-      )
+      const locatorId = createNodeLocatorId(node.subgraph.id, pair.sourceNodeId)
       const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
       const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
       if (!reactiveOutputs?.images?.length && !reactivePreviews?.length)
@@ -65,8 +87,8 @@ export function usePromotedPreviews(
             : 'image'
 
       previews.push({
-        sourceNodeId: entry.sourceNodeId,
-        sourceWidgetName: entry.sourceWidgetName,
+        sourceNodeId: pair.sourceNodeId,
+        sourceWidgetName: pair.sourceWidgetName,
         type,
         urls
       })

@@ -28,9 +28,13 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
+  getPromotedWidgetHostStateName,
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
 import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
@@ -51,6 +55,7 @@ import {
   makePromotionEntryKey,
   usePromotionStore
 } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -72,6 +77,14 @@ type LinkedPromotionEntry = PromotedWidgetSource & {
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
+
+function isWidgetValue(value: unknown): value is TWidgetValue {
+  if (value === undefined) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return value !== null && typeof value === 'object'
+}
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -1036,6 +1049,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
+    this._applyPromotedWidgetValues(info.widgets_values)
+  }
+
+  private _applyPromotedWidgetValues(
+    widgetValues: ExportedSubgraphInstance['widgets_values']
+  ): void {
+    if (!widgetValues) return
+
+    let valueIndex = 0
+    for (const input of this.inputs) {
+      const widget = input._widget
+      if (!widget) continue
+      if (valueIndex >= widgetValues.length) return
+      widget.value = widgetValues[valueIndex]
+      valueIndex += 1
+    }
   }
 
   override _internalConfigureAfterSlots() {
@@ -1594,7 +1623,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       delete this.properties.proxyWidgetErrorQuarantine
     }
 
-    return super.serialize()
+    const serialized = super.serialize()
+    const widgetStore = useWidgetValueStore()
+    const widgetValues = this.inputs.flatMap((input) => {
+      const widget = input._widget
+      if (!widget || !isPromotedWidgetView(widget)) return []
+      const state = widgetStore.getWidget(
+        rootGraphId,
+        this.id,
+        getPromotedWidgetHostStateName(widget)
+      )
+      return state && isWidgetValue(state.value) ? [state.value] : []
+    })
+
+    if (widgetValues.length > 0) serialized.widgets_values = widgetValues
+
+    return serialized
   }
   override clone() {
     const clone = super.clone()

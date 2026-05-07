@@ -27,7 +27,7 @@ export async function getPromotedWidgets(
     // Read the live promoted widget views from the host node instead of the
     // serialized proxyWidgets snapshot, which can lag behind the current graph
     // state during promotion and cleanup flows.
-    return widgets.flatMap((widget) => {
+    const widgetEntries = widgets.flatMap((widget) => {
       if (
         widget &&
         typeof widget === 'object' &&
@@ -40,6 +40,29 @@ export async function getPromotedWidgets(
       }
       return []
     })
+
+    const serialized = window.app!.graph!.serialize()
+    const serializedNode = serialized.nodes.find(
+      (candidate) => String(candidate.id) === String(id)
+    )
+    const previewExposures = serializedNode?.properties?.previewExposures
+    const previewEntries = Array.isArray(previewExposures)
+      ? previewExposures.flatMap((exposure) => {
+          if (
+            typeof exposure === 'object' &&
+            exposure !== null &&
+            'sourceNodeId' in exposure &&
+            typeof exposure.sourceNodeId === 'string' &&
+            'sourcePreviewName' in exposure &&
+            typeof exposure.sourcePreviewName === 'string'
+          ) {
+            return [[exposure.sourceNodeId, exposure.sourcePreviewName]]
+          }
+          return []
+        })
+      : []
+
+    return [...widgetEntries, ...previewEntries]
   }, nodeId)
 
   return normalizePromotedWidgets(raw)

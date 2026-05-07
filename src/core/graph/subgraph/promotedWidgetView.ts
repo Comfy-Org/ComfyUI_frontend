@@ -27,6 +27,17 @@ import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidget
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
 
+export function getPromotedWidgetHostStateName(
+  widget: IPromotedWidgetView
+): string {
+  return [
+    widget.name,
+    widget.sourceNodeId,
+    widget.sourceWidgetName,
+    widget.disambiguatingSourceNodeId ?? ''
+  ].join(':')
+}
+
 interface SubgraphSlotRef {
   name: string
   label?: string
@@ -150,12 +161,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    const hostState = this.getHostWidgetState()
+    if (hostState && isWidgetValue(hostState.value)) return hostState.value
+
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {
+    this.setHostWidgetState(value)
+
     const linkedWidgets = this.getLinkedInputWidgets()
     if (linkedWidgets.length > 0) {
       const widgetStore = useWidgetValueStore()
@@ -198,6 +214,40 @@ class PromotedWidgetView implements IPromotedWidgetView {
     if (resolved && isWidgetValue(value)) {
       resolved.widget.value = value
     }
+  }
+
+  private getHostWidgetState(): WidgetState | undefined {
+    return useWidgetValueStore().getWidget(
+      this.graphId,
+      this.subgraphNode.id,
+      this.hostWidgetStateName
+    )
+  }
+
+  private setHostWidgetState(value: IBaseWidget['value']): void {
+    if (!isWidgetValue(value)) return
+
+    const state = this.getHostWidgetState()
+    if (state) {
+      state.value = value
+      return
+    }
+
+    const resolved = this.resolveDeepest()
+    useWidgetValueStore().registerWidget(this.graphId, {
+      nodeId: this.subgraphNode.id,
+      name: this.hostWidgetStateName,
+      type: resolved?.widget.type ?? 'button',
+      value,
+      options: resolved?.widget.options ?? {},
+      label: this.displayName,
+      serialize: this.serialize,
+      disabled: this.computedDisabled
+    })
+  }
+
+  private get hostWidgetStateName(): string {
+    return getPromotedWidgetHostStateName(this)
   }
 
   get label(): string | undefined {

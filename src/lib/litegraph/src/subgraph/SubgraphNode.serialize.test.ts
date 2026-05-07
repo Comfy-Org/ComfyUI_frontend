@@ -76,10 +76,7 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
 
       const { node: interiorNode } = createNodeWithWidget('Interior')
       subgraph.add(interiorNode)
-      subgraph.inputNode.slots[0].connect(
-        interiorNode.inputs[0],
-        interiorNode
-      )
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
       const hostNode = createTestSubgraphNode(subgraph)
 
@@ -87,14 +84,36 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
       // .getConnectedWidgets() and assigned the host wrapper's value to
       // every interior widget. After removal, serialize must not visit
       // that path at all, preventing cross-host stomping.
-      const slot = hostNode.inputs.find((i) => i._subgraphSlot)
-        ?._subgraphSlot
+      const slot = hostNode.inputs.find((i) => i._subgraphSlot)?._subgraphSlot
       expect(slot).toBeDefined()
       const spy = vi.spyOn(slot!, 'getConnectedWidgets')
 
       hostNode.serialize()
 
       expect(spy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('host widget values', () => {
+    it('serializes promoted values from each host independently', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node: interiorNode } = createNodeWithWidget('Interior')
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const firstHost = createTestSubgraphNode(subgraph, { id: 101 })
+      const secondHost = createTestSubgraphNode(subgraph, { id: 102 })
+      subgraph.rootGraph.add(firstHost)
+      subgraph.rootGraph.add(secondHost)
+
+      firstHost.widgets[0].value = 111
+      secondHost.widgets[0].value = 222
+
+      expect(firstHost.serialize().widgets_values).toEqual([111])
+      expect(secondHost.serialize().widgets_values).toEqual([222])
     })
   })
 
@@ -106,10 +125,7 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
 
       const { node: interiorNode } = createNodeWithWidget('Interior')
       subgraph.add(interiorNode)
-      subgraph.inputNode.slots[0].connect(
-        interiorNode.inputs[0],
-        interiorNode
-      )
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
       const hostNode = createTestSubgraphNode(subgraph)
       // Ensure no pre-existing proxyWidgets property leaks through.
@@ -220,9 +236,7 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
 
       const serialized = hostNode.serialize()
 
-      expect(
-        serialized.properties?.proxyWidgetErrorQuarantine
-      ).toBeUndefined()
+      expect(serialized.properties?.proxyWidgetErrorQuarantine).toBeUndefined()
       expect(hostNode.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
   })

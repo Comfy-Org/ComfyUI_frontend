@@ -506,4 +506,49 @@ describe('appModeStore', () => {
       )
     })
   })
+
+  // ADR 0009: legacy `(sourceNodeId, sourceWidgetName)` selection tuples
+  // for promoted widgets must project through the wrapping host SubgraphNode
+  // into `(hostNodeLocator, subgraphInputName)`. Tuples that cannot be
+  // projected are dropped with `console.warn`.
+  describe('legacy selectedInput tuple migration (ADR 0009)', () => {
+    it('warns and drops a tuple whose source node no longer resolves', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockResolveNode.mockReturnValue(undefined)
+
+      const result = store.pruneLinearData({
+        inputs: [[42 as NodeId, 'widget-name', { height: 42 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('legacy selectedInput tuple'),
+        expect.objectContaining({
+          storedId: 42,
+          widgetName: 'widget-name'
+        })
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('passes through tuples already in `hostLocator:subgraphInputName` form', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockResolveNode.mockImplementation(() =>
+        fromAny<LGraphNode, undefined>(undefined)
+      )
+
+      const hostLocator = '11111111-1111-4111-8111-111111111111:5'
+      const result = store.pruneLinearData({
+        inputs: [[hostLocator, 'subgraph_input_name']],
+        outputs: []
+      })
+
+      // The migration short-circuits and the entry passes through to the
+      // existence filter (which returns truthy via the resolveNode mock).
+      expect(result.inputs).toEqual([[hostLocator, 'subgraph_input_name']])
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+  })
 })

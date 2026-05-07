@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -96,7 +97,7 @@ describe(flushProxyWidgetMigration, () => {
     host.subgraph.add(innerNode)
 
     const inputSlot = host.addInput('seed_link', '*')
-    let widgetValue: unknown = 0
+    let widgetValue: TWidgetValue = 0
     inputSlot._widget = fromPartial<PromotedWidgetView>({
       node: host,
       name: 'seed',
@@ -105,7 +106,7 @@ describe(flushProxyWidgetMigration, () => {
       get value() {
         return widgetValue
       },
-      set value(v: unknown) {
+      set value(v: TWidgetValue) {
         widgetValue = v
       }
     })
