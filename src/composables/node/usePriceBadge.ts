@@ -1,6 +1,7 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
@@ -18,6 +19,15 @@ export const usePriceBadge = () => {
     } else {
       node.badges.push(...newBadges)
     }
+    const graph = useCanvasStore().canvas?.graph
+    if (!graph) return
+    graph.trigger('node:property:changed', {
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'badges',
+      oldValue: node.badges,
+      newValue: node.badges
+    })
   }
   function collectCreditsBadges(
     graph: LGraph,

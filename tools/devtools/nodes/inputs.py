@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import time
 
+from comfy_api.v0_0_2 import IO
+
 
 class LongComboDropdown:
     @classmethod
@@ -317,6 +319,30 @@ class NodeWithLegacyWidget:
     def node_with_legacy_widget(self):
         return ()
 
+class NodeWithPriceBadge(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithPriceBadge",
+            display_name="Node With Price Badge",
+            description="An API node with a price badge",
+            inputs=[IO.Combo.Input("price", options=["1x", "2x", "3x"])],
+            is_api_node=True,
+            price_badge=IO.PriceBadge(
+                depends_on=IO.PriceBadgeDepends(widgets=["price"]),
+                expr="""
+                (
+                  $p := widgets.price;
+                  {"type":"usd","usd": $contains($p, "2x") ? 2 : $contains($p, "3x") ? 3 : 1}
+                )
+                """,
+            ),
+        )
+
+    @classmethod
+    async def execute(cls, price):
+        return IO.NodeOutput()
+
 
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
@@ -334,6 +360,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
+    "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -352,6 +379,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
+    "DevToolsNodeWithPriceBadge": "Node With Price Badge",
 }
 
 __all__ = [
