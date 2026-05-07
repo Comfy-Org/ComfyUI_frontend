@@ -1,10 +1,10 @@
 <template>
-  <div class="flex flex-col gap-0.5 text-left">
-    <span class="text-sm font-medium text-base-foreground">
+  <div class="flex flex-col gap-1 text-left">
+    <span class="text-layout-lg font-medium text-base-foreground">
       {{ step.title }}
     </span>
     <span
-      class="hidden text-xs whitespace-nowrap text-muted-foreground sm:inline"
+      class="hidden text-layout-md whitespace-nowrap text-muted-foreground sm:inline"
     >
       {{ step.subtitle }}
     </span>

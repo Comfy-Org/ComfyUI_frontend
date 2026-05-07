@@ -334,7 +334,8 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [],
-        outputs: [1]
+        outputs: [1],
+        layout: { panelRows: [] }
       })
     })
 
@@ -398,7 +399,8 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [[42, 'prompt']],
-        outputs: []
+        outputs: [],
+        layout: { panelRows: [] }
       })
     })
   })
@@ -438,7 +440,8 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [[42, 'prompt', { height: 300 }]],
-        outputs: []
+        outputs: [],
+        layout: { panelRows: [] }
       })
     })
   })
@@ -504,6 +507,150 @@ describe('appModeStore', () => {
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )
+    })
+  })
+
+  describe('viewport', () => {
+    // Realistic viewport rect for cursor-anchored zoom math.
+    const RECT = { left: 0, top: 0, width: 1000, height: 800 }
+
+    describe('zoomStep', () => {
+      it('clamps to MIN_SCALE on extreme zoom-out', () => {
+        store.viewportScale = 0.2
+        // Repeated zoom-outs should bottom out, not go negative or to 0.
+        for (let i = 0; i < 50; i++) store.zoomOut()
+        expect(store.viewportScale).toBeCloseTo(0.1, 5)
+      })
+
+      it('clamps to MAX_SCALE on extreme zoom-in', () => {
+        store.viewportScale = 4
+        for (let i = 0; i < 50; i++) store.zoomIn()
+        expect(store.viewportScale).toBeCloseTo(8, 5)
+      })
+
+      it('is a no-op when noZoomMode is on', () => {
+        store.noZoomMode = true
+        const before = store.viewportScale
+        store.zoomIn()
+        store.zoomOut()
+        expect(store.viewportScale).toBe(before)
+      })
+    })
+
+    describe('zoomAt (cursor-anchored)', () => {
+      it('keeps the focal pixel under the cursor across a zoom step', () => {
+        // Cursor is offset (200, 150) from rect center. Pixel at that
+        // workspace location before zoom should remain at the same
+        // client coords after zoom.
+        const cx = RECT.width / 2 + 200
+        const cy = RECT.height / 2 + 150
+        const prevScale = store.viewportScale
+        const prevX = store.viewportOffsetX
+        const prevY = store.viewportOffsetY
+
+        // Workspace coord under cursor before zoom:
+        // cursorOffset / scale - viewportOffset / scale.
+        const workspaceX = (cx - RECT.left - RECT.width / 2 - prevX) / prevScale
+        const workspaceY = (cy - RECT.top - RECT.height / 2 - prevY) / prevScale
+
+        store.zoomAt(cx, cy, -120, RECT)
+
+        // Same workspace coord, mapped through the new scale + offset,
+        // should land at the same client coords.
+        const projectedX =
+          workspaceX * store.viewportScale +
+          RECT.left +
+          RECT.width / 2 +
+          store.viewportOffsetX
+        const projectedY =
+          workspaceY * store.viewportScale +
+          RECT.top +
+          RECT.height / 2 +
+          store.viewportOffsetY
+
+        expect(projectedX).toBeCloseTo(cx, 1)
+        expect(projectedY).toBeCloseTo(cy, 1)
+      })
+
+      it('is a no-op when noZoomMode is on', () => {
+        store.noZoomMode = true
+        const before = {
+          scale: store.viewportScale,
+          x: store.viewportOffsetX,
+          y: store.viewportOffsetY
+        }
+        store.zoomAt(500, 400, -120, RECT)
+        expect(store.viewportScale).toBe(before.scale)
+        expect(store.viewportOffsetX).toBe(before.x)
+        expect(store.viewportOffsetY).toBe(before.y)
+      })
+    })
+
+    describe('panBy', () => {
+      it('accumulates offsets', () => {
+        store.panBy(10, -20)
+        store.panBy(5, 5)
+        expect(store.viewportOffsetX).toBe(15)
+        expect(store.viewportOffsetY).toBe(-15)
+      })
+
+      it('is a no-op when noZoomMode is on', () => {
+        store.noZoomMode = true
+        store.panBy(50, 50)
+        expect(store.viewportOffsetX).toBe(0)
+        expect(store.viewportOffsetY).toBe(0)
+      })
+    })
+
+    describe('resetView', () => {
+      it('zeros offsets and resets scale to 1 from any state', () => {
+        store.viewportScale = 3
+        store.viewportOffsetX = 200
+        store.viewportOffsetY = -100
+        store.resetView()
+        expect(store.viewportScale).toBe(1)
+        expect(store.viewportOffsetX).toBe(0)
+        expect(store.viewportOffsetY).toBe(0)
+      })
+    })
+
+    describe('toggleNoZoomMode', () => {
+      it('enables noZoom and resets the viewport in one step', () => {
+        store.viewportScale = 2.5
+        store.viewportOffsetX = 100
+        store.toggleNoZoomMode()
+        expect(store.noZoomMode).toBe(true)
+        expect(store.viewportScale).toBe(1)
+        expect(store.viewportOffsetX).toBe(0)
+      })
+
+      it('toggles back off without re-resetting', () => {
+        store.toggleNoZoomMode() // on, resets
+        store.viewportScale = 2 // would be ignored while noZoomMode is on
+        store.toggleNoZoomMode() // off
+        expect(store.noZoomMode).toBe(false)
+        // resetView only fires on the on-transition; turning off leaves
+        // whatever scale was in place.
+        expect(store.viewportScale).toBe(2)
+      })
+    })
+
+    describe('flyTo', () => {
+      it('is a no-op when noZoomMode is on', () => {
+        store.noZoomMode = true
+        const before = {
+          scale: store.viewportScale,
+          x: store.viewportOffsetX,
+          y: store.viewportOffsetY
+        }
+        store.flyTo(
+          { x: 500, y: 500, width: 100, height: 100 },
+          { duration: 0, viewportWidth: 1000, viewportHeight: 800 }
+        )
+        expect(store.viewportScale).toBe(before.scale)
+        expect(store.viewportOffsetX).toBe(before.x)
+        expect(store.viewportOffsetY).toBe(before.y)
+      })
     })
   })
 })

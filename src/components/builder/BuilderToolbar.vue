@@ -1,10 +1,13 @@
 <template>
   <nav
-    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
+    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing-layout-outer))] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
+    <!-- Bar height is 2 cells + 1 gutter (104px), same formula everything
+         else in the chrome uses — puts the stepper on the same rhythm as
+         FloatingPanel (8 cells + 7 gutters) and AppChrome cells (48px). -->
     <div
-      class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+      class="panel-chrome inline-flex h-[calc(2*var(--spacing-layout-cell)+var(--spacing-layout-gutter))] items-center gap-layout-gutter p-layout-gutter"
     >
       <template v-for="(step, index) in steps" :key="step.id">
         <button
@@ -12,14 +15,14 @@
             cn(
               stepClasses,
               activeStep === step.id
-                ? 'bg-interface-builder-mode-background'
+                ? 'bg-transparent ring-2 ring-warning-background ring-inset'
                 : 'bg-transparent hover:bg-secondary-background'
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
           @click="navigateToStep(step.id)"
         >
-          <StepBadge :step :index :model-value="activeStep" />
+          <StepBadge :index />
           <StepLabel :step />
         </button>
 
@@ -47,28 +50,28 @@ import { useBuilderSteps } from './useBuilderSteps'
 const { t } = useI18n()
 const { activeStep, navigateToStep } = useBuilderSteps()
 
+// h-full makes the button span the bar's inner content height, which is
+// 2 cells + 1 gutter − 2 gutter padding = 2 cells − 1 gutter = 88px.
+// Content (badge + label) vertically centers inside that.
 const stepClasses =
-  'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
+  'inline-flex h-full min-h-8 cursor-pointer items-center gap-4 rounded-lg px-4 transition-colors border-none'
 
 const selectInputsStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:inputs',
   title: t('builderToolbar.inputs'),
-  subtitle: t('builderToolbar.inputsDescription'),
-  icon: 'icon-[lucide--mouse-pointer-click]'
+  subtitle: t('builderToolbar.inputsDescription')
 }
 
 const selectOutputsStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:outputs',
   title: t('builderToolbar.outputs'),
-  subtitle: t('builderToolbar.outputsDescription'),
-  icon: 'icon-[lucide--mouse-pointer-click]'
+  subtitle: t('builderToolbar.outputsDescription')
 }
 
 const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:arrange',
   title: t('builderToolbar.arrange'),
-  subtitle: t('builderToolbar.arrangeDescription'),
-  icon: 'icon-[lucide--layout-panel-left]'
+  subtitle: t('builderToolbar.arrangeDescription')
 }
 
 const steps = [selectInputsStep, selectOutputsStep, arrangeStep]

@@ -15,3 +15,8 @@ export const HideLayoutFieldKey: InjectionKey<boolean> = Symbol()
 export function useHideLayoutField(): boolean {
   return inject(HideLayoutFieldKey, false)
 }
+
+export const HideInputSelectionKey: InjectionKey<boolean> = Symbol()
+export function useHideInputSelection(): boolean {
+  return inject(HideInputSelectionKey, false)
+}

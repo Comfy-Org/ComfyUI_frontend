@@ -1,7 +1,135 @@
 @import '@comfyorg/design-system/css/style.css';
 
-/* Use 0.001ms instead of 0s so transitionend/animationend events still fire
-   and JS listeners aren't broken. */
+:root {
+  /* Heavier directional drop shadow for App Mode's floating panels and
+     builder toolbars. The design-system's --shadow-interface is sized
+     for inset panels; App Mode panels float over the canvas and need
+     more separation. Could be lifted to a design-system
+     --shadow-floating-panel token in a follow-up. */
+  --app-mode-floating-panel-shadow:
+    0 2px 4px rgb(0 0 0 / 0.4),
+    0 16px 48px rgb(0 0 0 / 0.45);
+}
+
+/* Shared surface for FloatingPanel + Builder toolbars. */
+.panel-chrome {
+  background-color: var(--color-layout-cell);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--app-mode-floating-panel-shadow);
+  backdrop-filter: blur(8px);
+}
+
+/* === App Mode widget theme — togglable layer ============================
+ *
+ * `.app-mode-themed` is applied to FloatingPanel and AppChrome roots when
+ * the custom widget theme is active. Removing the class binding from
+ * those two components disables every rule below in one move; widgets
+ * fall back to primevue / design-system defaults (lighter backgrounds,
+ * default borders, default padding).
+ *
+ * All magic numbers live in `--app-mode-widget-*` tokens declared once
+ * below — change a value here and every gated rule picks it up.
+ * ====================================================================== */
+
+/* Local sizing constants — not theme-related. */
+.app-mode-themed {
+  /* 2.5rem (40px = Tailwind h-10) — matches NodeWidgets' responsive
+     `not-md:**:[.h-7]:h-10` bump on the number-input pill so the
+     dropdown / textarea / input baseline stays consistent inside the
+     docked input panel (always triggers the not-md break). */
+  --app-mode-widget-min-h: 2.5rem;
+  --app-mode-widget-input-pad-x: 6px;
+  --app-mode-widget-textarea-pad: 16px;
+}
+
+/* Reduced label size on the input panel (design-system default = 15px). */
+.app-mode-themed.floating-panel {
+  --text-layout-md: 14px;
+}
+
+/* Widget surfaces — shared bg + border + focus transition. */
+.app-mode-themed textarea,
+.app-mode-themed input,
+.app-mode-themed .bg-component-node-widget-background,
+.app-mode-themed .p-select {
+  background-color: var(--comfy-input-bg);
+  border: 1px solid var(--border-color);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+/* Select container matches the input/pill baseline height + radius.
+   Flex-center keeps the label vertically aligned when our height
+   override (40px) exceeds the size="small" inner label height. */
+.app-mode-themed .p-select {
+  height: var(--app-mode-widget-min-h);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+.app-mode-themed .p-select .p-select-label {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.app-mode-themed .p-select:focus-within,
+.app-mode-themed .p-select.p-focus {
+  border-color: var(--fg-color);
+}
+
+/* Single-line widgets share a min-height and tight horizontal padding. */
+.app-mode-themed textarea,
+.app-mode-themed input {
+  min-height: var(--app-mode-widget-min-h);
+  padding-left: var(--app-mode-widget-input-pad-x);
+  padding-right: var(--app-mode-widget-input-pad-x);
+}
+
+/* Multi-line textarea wants room around wrapped lines. */
+.app-mode-themed textarea {
+  padding: var(--app-mode-widget-textarea-pad);
+}
+
+/* ScrubableNumberInput pill matches the input/textarea baseline. */
+.app-mode-themed .bg-component-node-widget-background {
+  height: var(--app-mode-widget-min-h);
+}
+
+/* Inner pill input is inset-0; reset min-height + border so the
+   pill's rounded corners stay clean. */
+.app-mode-themed .bg-component-node-widget-background input {
+  min-height: 0;
+}
+.app-mode-themed .bg-component-node-widget-background input,
+.app-mode-themed .bg-component-node-widget-background textarea {
+  border: none;
+}
+
+.app-mode-themed .bg-component-node-widget-background button:hover {
+  background-color: var(--content-hover-bg);
+}
+
+/* Brighter border on focus — the pill border is the only active /
+   selected signal. */
+.app-mode-themed textarea:focus,
+.app-mode-themed input:focus,
+.app-mode-themed .bg-component-node-widget-background:focus-within {
+  border-color: var(--fg-color);
+  outline: none;
+  box-shadow: none;
+}
+
+/* Kill NodeWidgets' focus-within ring; the pill border is the focus signal. */
+.app-mode-themed [class*='focus-within']:focus-within {
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 transparent;
+  --tw-ring-offset-shadow: 0 0 transparent;
+}
+
+/* === End App Mode widget theme ======================================== */
+
+/* 0.001ms (not 0s) so transitionend/animationend still fire. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
@@ -10,7 +138,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* List transition animations */
   .list-scale-move,
   .list-scale-enter-active,
   .list-scale-leave-active {

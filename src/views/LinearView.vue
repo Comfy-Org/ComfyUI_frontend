@@ -8,8 +8,10 @@ import { computed, useTemplateRef } from 'vue'
 
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
+import LayoutView from '@/components/appMode/layout/LayoutView.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -48,6 +50,11 @@ const showLeftBuilder = computed(
 const showRightBuilder = computed(
   () => sidebarOnLeft.value && isArrangeMode.value
 )
+
+// Show the App Mode layout (full-viewport output canvas + floating panel)
+// when not in any builder mode and the workflow has outputs configured.
+// Builder modes still use the old Splitter so existing flows aren't disrupted.
+const showLayoutView = computed(() => !isBuilderMode.value && hasOutputs.value)
 const hasLeftPanel = computed(
   () =>
     isArrangeMode.value ||
@@ -101,7 +108,7 @@ function dragDrop(e: DragEvent) {
   <MobileDisplay v-if="mobileDisplay" />
   <div v-else class="absolute size-full" @dragover.prevent>
     <div
-      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+      class="workflow-tabs-container pointer-events-auto relative z-30 h-(--workflow-tabs-height) w-full border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
     >
       <div class="flex h-full items-center">
         <WorkflowTabs />
@@ -109,7 +116,39 @@ function dragDrop(e: DragEvent) {
         <TopbarSubscribeButton />
       </div>
     </div>
+    <div
+      v-if="showLayoutView"
+      class="flex h-[calc(100%-var(--workflow-tabs-height))] w-full"
+    >
+      <SideToolbar />
+      <Splitter
+        v-if="activeTab"
+        class="flex-1 border-none bg-transparent"
+        state-key="Comfy.LinearView.SidebarPanelSplitter"
+        state-storage="local"
+        @resizestart="$event.originalEvent.preventDefault()"
+      >
+        <SplitterPanel
+          :size="SIDE_PANEL_SIZE"
+          :min-size="SIDEBAR_MIN_SIZE"
+          class="min-w-78 overflow-hidden"
+        >
+          <div
+            class="size-full overflow-x-hidden border-r border-border-subtle"
+          >
+            <ExtensionSlot :extension="activeTab" />
+          </div>
+        </SplitterPanel>
+        <SplitterPanel :size="100 - SIDE_PANEL_SIZE" class="relative">
+          <LayoutView />
+        </SplitterPanel>
+      </Splitter>
+      <div v-else class="relative flex-1">
+        <LayoutView />
+      </div>
+    </div>
     <Splitter
+      v-else
       :key="splitterKey"
       class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
       @resizestart="$event.originalEvent.preventDefault()"

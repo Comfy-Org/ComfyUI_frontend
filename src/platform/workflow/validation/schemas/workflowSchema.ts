@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
+
+import type { PanelPreset } from '@/components/appMode/layout/panels/panelTypes'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
 
 const zRendererType = z.enum([
@@ -8,6 +10,15 @@ const zRendererType = z.enum([
   'Vue',
   'Vue-corrected'
 ]) satisfies z.ZodType<RendererType>
+
+const zPanelPreset = z.enum([
+  'right-dock',
+  'left-dock',
+  'float-tr',
+  'float-br',
+  'float-tl',
+  'float-bl'
+]) satisfies z.ZodType<PanelPreset>
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
@@ -300,13 +311,42 @@ const zExtra = z
               z.tuple([
                 zNodeId,
                 z.string(),
-                z.object({ height: z.number().optional() }).passthrough()
+                z
+                  .object({
+                    height: z.number().optional(),
+                    col: z.number().int().positive().optional(),
+                    row: z.number().int().positive().optional(),
+                    colSpan: z.number().int().positive().optional(),
+                    rowSpan: z.number().int().positive().optional()
+                  })
+                  .passthrough()
               ]),
               z.tuple([zNodeId, z.string()])
             ])
           )
           .optional(),
-        outputs: z.array(zNodeId).optional()
+        outputs: z.array(zNodeId).optional(),
+        layout: z
+          .object({
+            columns: z.number().int().positive().optional(),
+            panelPreset: zPanelPreset.optional(),
+            panelCollapsed: z.boolean().optional(),
+            panelWidthCells: z.number().int().positive().optional(),
+            panelRows: z
+              .array(
+                z.array(
+                  z.object({
+                    id: z.string(),
+                    kind: z.literal('input'),
+                    entryKey: z.string(),
+                    isMultiline: z.boolean().optional()
+                  })
+                )
+              )
+              .optional()
+          })
+          .passthrough()
+          .optional()
       })
       .optional()
   })

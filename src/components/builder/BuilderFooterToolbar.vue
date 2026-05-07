@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed bottom-4 left-1/2 z-1000 flex -translate-x-1/2 flex-col items-center"
+    class="fixed bottom-layout-outer left-1/2 z-1000 flex -translate-x-1/2 flex-col items-center"
   >
     <!-- "Opens as" attachment tab -->
     <BuilderOpensAsPopover
@@ -12,7 +12,7 @@
     <!-- Main toolbar -->
     <nav
       data-testid="builder-footer-nav"
-      class="flex items-center gap-2 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+      class="panel-chrome flex h-layout-cell items-center gap-layout-gutter px-layout-gutter"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
         {{ t('builderMenu.exitAppBuilder') }}
@@ -33,91 +33,43 @@
         {{ t('g.next') }}
         <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
       </Button>
-      <div class="relative min-w-24">
-        <!--
-          Invisible sizers: both labels rendered with matching button padding
-          so the container's intrinsic width equals the wider label.
-          height:0 + overflow:hidden keeps them invisible without affecting height.
-        -->
-        <div class="max-h-0 overflow-y-hidden" aria-hidden="true">
-          <div class="px-4 py-2 text-sm">{{ t('g.save') }}</div>
-          <div class="px-4 py-2 text-sm">{{ t('builderToolbar.saveAs') }}</div>
-        </div>
-        <ConnectOutputPopover
-          v-if="!hasOutputs"
-          class="w-full"
-          :is-select-active="isSelectStep"
-          @switch="navigateToStep('builder:outputs')"
-        >
-          <Button
-            size="lg"
-            class="w-full"
-            :class="disabledSaveClasses"
-            data-testid="builder-save-as-button"
-          >
-            {{ isSaved ? t('g.save') : t('builderToolbar.saveAs') }}
-          </Button>
-        </ConnectOutputPopover>
-        <ButtonGroup
-          v-else-if="isSaved"
-          data-testid="builder-save-group"
-          class="w-full rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
-        >
-          <Button
-            size="lg"
-            :disabled="!isModified"
-            class="flex-1"
-            :class="isModified ? activeSaveClasses : disabledSaveClasses"
-            data-testid="builder-save-button"
-            @click="save()"
-          >
-            {{ t('g.save') }}
-          </Button>
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger as-child>
-              <Button
-                size="lg"
-                :aria-label="t('builderToolbar.saveAs')"
-                data-save-chevron
-                data-testid="builder-save-as-chevron"
-                class="w-6 rounded-l-none border-l border-border-default px-0"
-              >
-                <i
-                  class="icon-[lucide--chevron-down] size-4"
-                  aria-hidden="true"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                align="end"
-                :side-offset="4"
-                class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
-              >
-                <DropdownMenuItem as-child @select="saveAs()">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    class="w-full justify-start font-normal"
-                  >
-                    {{ t('builderToolbar.saveAs') }}
-                  </Button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
-        </ButtonGroup>
+      <!-- Single Save button — "Save As" lives in the top-left builder
+           menu (BuilderMenu.vue) so the footer stays clean. Behavior by
+           state: no outputs → ConnectOutputPopover prompt; unsaved →
+           saveAs() to kick off the first-save dialog; saved → save()
+           with isModified gating. -->
+      <ConnectOutputPopover
+        v-if="!hasOutputs"
+        :is-select-active="isSelectStep"
+        @switch="navigateToStep('builder:outputs')"
+      >
         <Button
-          v-else
           size="lg"
-          class="w-full"
-          :class="activeSaveClasses"
+          :class="disabledSaveClasses"
           data-testid="builder-save-as-button"
-          @click="saveAs()"
         >
-          {{ t('builderToolbar.saveAs') }}
+          {{ isSaved ? t('g.save') : t('builderToolbar.saveAs') }}
         </Button>
-      </div>
+      </ConnectOutputPopover>
+      <Button
+        v-else-if="isSaved"
+        size="lg"
+        :disabled="!isModified"
+        :class="isModified ? activeSaveClasses : disabledSaveClasses"
+        data-testid="builder-save-button"
+        @click="save()"
+      >
+        {{ t('g.save') }}
+      </Button>
+      <Button
+        v-else
+        size="lg"
+        :class="activeSaveClasses"
+        data-testid="builder-save-as-button"
+        @click="saveAs()"
+      >
+        {{ t('builderToolbar.saveAs') }}
+      </Button>
     </nav>
   </div>
 </template>
@@ -126,17 +78,9 @@
 import { computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -169,10 +113,16 @@ const isSaved = computed(
   () => workflowStore.activeWorkflow?.isTemporary === false
 )
 
+// Save has no trailing icon (unlike Next), so the default lg preset's
+// 40px height + 16px horizontal padding reads as lopsided. Tighten
+// horizontal to 8px and shrink height to 32px so the accent pill feels
+// square-balanced rather than a tall rectangle with a short word.
 const activeSaveClasses =
-  'bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/80'
+  'bg-primary-background text-primary-foreground border border-primary-background-hover ' +
+  'hover:bg-primary-background-hover h-8 px-2'
 const disabledSaveClasses =
-  'bg-secondary-background text-muted-foreground/50 disabled:opacity-100'
+  'bg-secondary-background text-muted-foreground/50 ' +
+  'disabled:opacity-100 h-8 px-2'
 
 const isModified = computed(
   () => workflowStore.activeWorkflow?.isModified === true

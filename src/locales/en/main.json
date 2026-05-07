@@ -3336,6 +3336,8 @@
     "dragAndDropImage": "Click to browse or drag an image",
     "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
+    "runProgress": "Run progress",
+    "stop": "Stop",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download {count} assets from this run",
@@ -3349,8 +3351,15 @@
     "hasCreditCost": "Requires additional credits",
     "viewGraph": "View node graph",
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
+    "outputThumbAlt": "Output thumbnail",
+    "blockDragReorderAria": "Drag to reorder {kind} block",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetView": "Reset view",
+    "toggleNoZoom": "Toggle dashboard mode",
     "welcome": {
       "title": "App Mode",
+      "header": "Getting Started",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
@@ -3373,7 +3382,21 @@
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
       "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
-      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+      "inputs": "Inputs",
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app.",
+      "dragHint": "Drag input blocks in the panel to reorder them or split a row into columns."
+    },
+    "outputs": {
+      "title": "Output",
+      "maximize": "Maximize to workspace",
+      "restore": "Restore window",
+      "step": "step {value}/{max}",
+      "etaRemaining": "{eta} remaining",
+      "closeWindow": "Close window",
+      "clearAll": "Clear all output windows"
+    },
+    "inputs": {
+      "title": "Input"
     },
     "builder": {
       "title": "App builder mode",
@@ -3391,7 +3414,16 @@
       "unknownWidget": "Widget not visible",
       "inputPlaceholder": "Inputs will show up here",
       "outputPlaceholder": "Output nodes will show up here",
-      "outputRequiredPlaceholder": "At least one node is required"
+      "outputRequiredPlaceholder": "At least one output node is required",
+      "runDisabledHint": "Run is available once you open this in App Mode"
+    },
+    "floatingPanel": {
+      "collapse": "Collapse panel",
+      "expand": "Expand panel",
+      "menu": "Panel menu",
+      "hidePanel": "Hide panel",
+      "showPanel": "Show panel",
+      "resetLayout": "Reset layout"
     },
     "error": {
       "header": "This app encountered an error",

@@ -13,9 +13,13 @@ const Preview3d = defineAsyncComponent(
 
 defineOptions({ inheritAttrs: false })
 
-const { output } = defineProps<{
+const { output, fit = 'contain' } = defineProps<{
   output: ResultItemImpl
   mobile?: boolean
+  /** Suppress the image/video footer info span (layout renders its own). */
+  hideInfo?: boolean
+  /** `cover` crops to fill the container; `contain` letterboxes. */
+  fit?: 'contain' | 'cover'
 }>()
 
 const attrs = useAttrs()
@@ -32,11 +36,14 @@ const outputLabel = computed(
       :mobile
       :src="output.url"
       :label="outputLabel"
+      :hide-info="hideInfo"
+      :fit
     />
     <VideoPreview
       v-else
       :src="output.url"
       :label="outputLabel"
+      :hide-info="hideInfo"
       :class="
         cn(
           'flex-1 object-contain md:p-3 md:contain-size',

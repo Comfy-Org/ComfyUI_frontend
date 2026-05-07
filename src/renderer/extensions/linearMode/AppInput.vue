@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { useElementBounding, useRafFn } from '@vueuse/core'
 import { remove } from 'es-toolkit'
-import { computed } from 'vue'
+import { computed, useTemplateRef, watch } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
+import SelectionChrome from '@/renderer/extensions/linearMode/SelectionChrome.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@comfyorg/tailwind-utils'
+import { useHideInputSelection } from '@/types/widgetTypes'
 
-const { id, name } = defineProps<{
+const { id, enable, name } = defineProps<{
   id: string
   enable: boolean
   name: string
@@ -14,9 +16,18 @@ const { id, name } = defineProps<{
 
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
+const hideInputSelection = useHideInputSelection()
+const showSelection = computed(() => enable && !hideInputSelection)
+
+const wrapperRef = useTemplateRef<HTMLElement>('wrapper')
+const { top, left, width, height, update } = useElementBounding(wrapperRef)
+// RAF keeps teleported chrome glued to the widget — TransformPane's
+// CSS transform doesn't fire resize/scroll observers.
+const { pause, resume } = useRafFn(update, { immediate: false })
+watch(showSelection, (s) => (s ? resume() : pause()), { immediate: true })
 
 function matchesThis([nodeId, widgetName]: LinearInput) {
-  return id == nodeId && name === widgetName
+  return id === String(nodeId) && name === widgetName
 }
 function togglePromotion() {
   if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)
@@ -25,38 +36,19 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="enable"
-    class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
-    @pointerdown.capture.stop.prevent="togglePromotion"
-    @click.capture.stop.prevent
-    @pointerup.capture.stop.prevent
-    @pointermove.capture.stop.prevent
-    @contextmenu.capture.stop.prevent
+    v-if="showSelection"
+    ref="wrapper"
+    class="col-span-2 grid grid-cols-2 items-stretch"
   >
-    <div
-      :class="
-        cn(
-          'm-1 size-4 self-center rounded-sm border border-primary-background',
-          isPromoted && 'flex items-center bg-primary-background'
-        )
-      "
-    >
-      <i
-        v-if="isPromoted"
-        class="bg-primary-foreground place-center icon-[lucide--check]"
-      />
-    </div>
-    <div
-      :class="
-        cn(
-          'pointer-events-none grid flex-1 grid-cols-2 items-stretch rounded-lg ring-primary-background',
-          isPromoted && 'ring-2'
-        )
-      "
-    >
-      <slot />
-    </div>
-    <div class="absolute size-full rounded-lg hover:bg-primary-background/10" />
+    <slot />
+    <SelectionChrome
+      :is-selected="isPromoted"
+      :top="top"
+      :left="left"
+      :width="width"
+      :height="height"
+      @toggle="togglePromotion"
+    />
   </div>
   <slot v-else />
 </template>
