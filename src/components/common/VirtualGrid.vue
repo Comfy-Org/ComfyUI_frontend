@@ -53,7 +53,15 @@ const emit = defineEmits<{
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
-const { width } = useElementSize(container)
+const { width, height } = useElementSize(container)
+
+// Suppress range computation while the container is unmounted/zero-sized.
+// Without this, cols collapses to 1 during the brief width=0 mount window,
+// which makes a small list look near-end and emits a spurious approach-end
+// that double-loads paginated consumers (ManagerDialog).
+const isValidGrid = computed(
+  () => width.value > 0 && height.value > 0 && items.length > 0
+)
 
 const cols = computed(() => {
   if (maxColumns !== Infinity) return maxColumns
@@ -90,7 +98,7 @@ type GridState = {
 
 const state = computed<GridState>(() => {
   const rows = virtualRows.value
-  if (rows.length === 0 || items.length === 0) {
+  if (!isValidGrid.value || rows.length === 0) {
     return { start: 0, end: 0, isNearEnd: false }
   }
   const firstRow = rows[0]
@@ -107,7 +115,7 @@ const state = computed<GridState>(() => {
 })
 
 const renderedItems = computed(() =>
-  items.slice(state.value.start, state.value.end)
+  isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
 
 const topSpacerStyle = computed<CSSProperties>(() => ({

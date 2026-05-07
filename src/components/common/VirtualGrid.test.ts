@@ -322,6 +322,49 @@ describe('VirtualGrid', () => {
     expect(onApproachEnd).toHaveBeenCalledTimes(1)
   })
 
+  it('does not emit approach-end during the width=0 mount transient', async () => {
+    // Regression: with width=0 (pre-mount), cols falls back to 1 and a
+    // small list looks near-end. Without the isValidGrid guard, isNearEnd
+    // flips false→true→false during mount and consumers that increment a
+    // page number (ManagerDialog) double-load and dedupe-fail.
+    mockedWidth.value = 0
+    mockedHeight.value = 0
+    mockedFirstRow.value = 0
+    mockedLastRow.value = 2
+
+    const onApproachEnd = vi.fn()
+
+    render(VirtualGrid, {
+      props: {
+        items: createItems(3),
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 200,
+        defaultItemWidth: 200,
+        bufferRows: 4,
+        onApproachEnd
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+
+    await nextTick()
+    expect(onApproachEnd).not.toHaveBeenCalled()
+
+    // Container measures real width — list is small, all items fit, so
+    // isNearEnd stays false. A spurious mount-time fire would surface here.
+    mockedWidth.value = 800
+    mockedHeight.value = 600
+    mockedFirstRow.value = 0
+    mockedLastRow.value = 0
+    await nextTick()
+
+    expect(onApproachEnd).not.toHaveBeenCalled()
+  })
+
   it('renders correctly after items shrink below previous render window (FE-535)', async () => {
     // Simulate "scrolled deep, then items shrink" scenario
     mockedFirstRow.value = 28
