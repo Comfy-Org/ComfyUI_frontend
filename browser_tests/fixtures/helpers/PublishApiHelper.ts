@@ -102,6 +102,23 @@ export class PublishApiHelper {
     })
   }
 
+  async mockHubWorkflowDetail(
+    shareId: string,
+    detail: Record<string, unknown>
+  ): Promise<void> {
+    await this.addRoute(`**/hub/workflows/${shareId}`, async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.continue()
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detail)
+      })
+    })
+  }
+
   async mockShareableAssets(assets: AssetInfo[] = []): Promise<void> {
     const response: ShareableAssetsResponse = { assets }
     await this.addRoute('**/assets/from-workflow', async (route) => {
