@@ -133,10 +133,9 @@ test.describe('AssetHelper', () => {
       await assetApi.clearMocks()
     })
 
-    test('GET /assets filters by exclude_tags', async ({
-      comfyPage,
-      assetApi
-    }) => {
+    test('GET /assets filters by exclude_tags', async ({ comfyPage }) => {
+      const { assetApi } = comfyPage
+
       assetApi.configure(
         withAsset(STABLE_INPUT_IMAGE),
         withAsset({
@@ -154,6 +153,8 @@ test.describe('AssetHelper', () => {
       expect(data.assets.map((asset) => asset.id)).toEqual([
         STABLE_INPUT_IMAGE.id
       ])
+
+      await assetApi.clearMocks()
     })
 
     test('GET /assets/:id returns single asset or 404', async ({
