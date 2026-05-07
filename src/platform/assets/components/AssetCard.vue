@@ -103,12 +103,9 @@
             <i class="icon-[lucide--download] size-3" />
             {{ asset.stats.downloadCount }}
           </span>
-          <span
-            v-if="asset.stats.formattedDate"
-            class="flex items-center gap-1"
-          >
+          <span v-if="formattedDate" class="flex items-center gap-1">
             <i class="icon-[lucide--clock] size-3" />
-            {{ asset.stats.formattedDate }}
+            {{ formattedDate }}
           </span>
         </div>
         <Button
@@ -162,7 +159,7 @@ const emit = defineEmits<{
   showInfo: [asset: AssetDisplayItem]
 }>()
 
-const { t } = useI18n()
+const { t, d } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
@@ -175,6 +172,15 @@ const titleId = useId()
 const descId = useId()
 
 const displayName = computed(() => getAssetCardTitle(asset))
+
+// Format at render so locale switches re-flow; the upstream WeakMap caches
+// AssetItem -> AssetDisplayItem by reference, which would otherwise pin the
+// formatted string to whichever locale was active when first transformed.
+const formattedDate = computed(() =>
+  asset.created_at
+    ? d(new Date(asset.created_at), { dateStyle: 'short' })
+    : undefined
+)
 
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
