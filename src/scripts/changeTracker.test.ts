@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+vi.mock('@/base/assert', () => ({
+  assert: vi.fn()
+}))
+
 const mockNodeOutputStore = vi.hoisted(() => ({
   snapshotOutputs: vi.fn(() => ({})),
   restoreOutputs: vi.fn()

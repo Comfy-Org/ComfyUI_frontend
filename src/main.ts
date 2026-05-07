@@ -11,6 +11,7 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
+import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
 import {
   configValueOrDefault,
@@ -18,6 +19,8 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
+import { isDesktop, isNightly } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -81,6 +84,21 @@ Sentry.init({
         defaultIntegrations: false
       })
 })
+setAssertReporter((message) => {
+  if (isDesktop) {
+    Sentry.captureMessage(`[Assertion failed]: ${message}`, {
+      level: 'warning'
+    })
+  }
+  if (isNightly) {
+    useToastStore().add({
+      severity: 'warn',
+      summary: 'Assertion failed',
+      detail: message
+    })
+  }
+})
+
 app.directive('tooltip', Tooltip)
 app
   .use(router)
