@@ -17,19 +17,20 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('primevue/slider', () => ({
+vi.mock('@/components/ui/slider/Slider.vue', () => ({
   default: {
-    name: 'Slider',
+    name: 'UiSlider',
     props: ['modelValue', 'min', 'max', 'step'],
     emits: ['update:modelValue'],
     template: `
       <input
         type="range"
-        :value="modelValue"
+        role="slider"
+        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
         :min="min"
         :max="max"
         :step="step"
-        @input="$emit('update:modelValue', Number($event.target.value))"
+        @input="$emit('update:modelValue', [Number($event.target.value)])"
       />
     `
   }
