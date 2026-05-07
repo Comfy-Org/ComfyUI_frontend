@@ -90,6 +90,33 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expectPosChanged(headerPos, afterPos)
   })
 
+  test('should not enter subgraph when dragging by the Enter Subgraph button', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+    const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+    const beforePos = await subgraphNode.getPosition()
+
+    const enterButton = comfyPage.vueNodes.getSubgraphEnterButton('2')
+    const box = await enterButton.boundingBox()
+    if (!box) throw new Error('Enter Subgraph button has no bounding box')
+
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height * 0.75
+
+    await comfyPage.page.mouse.move(startX, startY)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(startX + 120, startY + 80, { steps: 20 })
+    await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
+
+    expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+
+    const afterPos = await subgraphNode.getPosition()
+    await expectPosChanged(beforePos, afterPos)
+  })
+
   test('should move all selected nodes together when dragging one with Meta held', async ({
     comfyPage
   }) => {
