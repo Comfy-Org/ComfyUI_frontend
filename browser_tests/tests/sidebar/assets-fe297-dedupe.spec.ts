@@ -68,11 +68,15 @@ test.describe(
   'FE-297: media asset panel scroll-duplication',
   { tag: '@cloud' },
   () => {
+    // The @cloud comfyPage fixture already navigates with Firebase auth
+    // seeded; a second comfyPage.setup() here clears localStorage and
+    // bounces the page to /cloud/login, so we only register the per-test
+    // route mocks (they still intercept the lazy fetches issued when the
+    // sidebar opens in the test body).
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.assets.mockOutputHistory([STACK_JOB])
       await comfyPage.assets.mockInputFiles([])
       await comfyPage.assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
-      await comfyPage.setup()
     })
 
     test.afterEach(async ({ comfyPage }) => {
