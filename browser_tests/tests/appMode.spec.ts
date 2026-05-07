@@ -7,6 +7,10 @@ import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSele
 test.describe('App mode usage', () => {
   test('Drag and Drop', async ({ comfyPage, comfyFiles }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
     const { centerPanel } = comfyPage.appMode
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
     await expect(centerPanel, 'Enter app mode').toBeVisible()
@@ -20,8 +24,8 @@ test.describe('App mode usage', () => {
     //prep a load image
     await test.step('Add a load image node', async () => {
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
-      comfyFiles.deleteAfterTest({ filename: 'og-image.png', type: 'input' })
+      await comfyPage.page.mouse.dblclick(200, 200, { delay: 5 })
+      await comfyPage.searchBox.fillAndSelectFirstNode('Load Image')
       const loadImage = await comfyPage.vueNodes.getNodeLocator('10')
       await expect(loadImage).toBeVisible()
     })
@@ -59,7 +63,7 @@ test.describe('App mode usage', () => {
         preserveNativePropagation: true
       })
       comfyFiles.deleteAfterTest({
-        filename: 'og-image (1).png',
+        filename: 'og-image.png',
         type: 'input'
       })
       await expect(imageInput.selection).not.toHaveText(secondImage)
