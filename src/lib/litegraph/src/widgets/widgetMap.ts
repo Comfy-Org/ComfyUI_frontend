@@ -165,4 +165,16 @@ export function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
+const NUMERIC_WIDGET_TYPES = new Set<string>([
+  'number',
+  'slider',
+  'gradientslider',
+  'knob'
+])
+
+/** Returns true when the widget's value must be a finite number (rejects null/NaN). */
+export function isNumericWidget(widget: IBaseWidget): boolean {
+  return NUMERIC_WIDGET_TYPES.has(widget.type)
+}
+
 // #endregion Type Guards
