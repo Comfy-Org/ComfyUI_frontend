@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphCanvas,
@@ -76,17 +77,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   return new LGraphCanvas(el, graph, { skip_render: true })
 }
 
-interface MenuEntry {
-  content?: string
-  has_submenu?: boolean
-  value?: string | { value: string }
-  callback?: (
-    v: { value: string },
-    e: Event,
-    me: MouseEvent,
-    cm: unknown
-  ) => void
-}
+type MenuEntry = IContextMenuValue<string>
 
 describe('LGraphCanvas.onMenuAdd category sorting', () => {
   let graph: LGraph
@@ -135,12 +126,9 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
     const entry = top.find((e) => e.content === label)
     expect(entry, `submenu entry "${label}" should exist`).toBeDefined()
     expect(entry!.callback).toBeDefined()
-    entry!.callback!(
-      { value: entry!.value as string },
-      sourceEvent,
-      sourceEvent,
-      {} as never
-    )
+    expect(typeof entry!.value).toBe('string')
+    const callback = entry!.callback!
+    callback({ value: entry!.value }, undefined, sourceEvent, undefined)
   }
 
   it('sorts top-level category submenus alphabetically (case-insensitive)', () => {
