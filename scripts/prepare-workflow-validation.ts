@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { parse as parseYaml } from 'yaml'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
@@ -18,30 +19,30 @@ interface SourcePackage {
   publishConfig?: Record<string, unknown>
 }
 
+interface PnpmWorkspace {
+  catalog?: Record<string, string>
+}
+
 const sourcePackage = JSON.parse(
   fs.readFileSync(path.join(packageDir, 'package.json'), 'utf8')
 ) as SourcePackage
 
-const workspaceYaml =
-  fs
-    .readFileSync(path.join(repoRoot, 'pnpm-workspace.yaml'), 'utf8')
-    .replace(/\r\n/g, '\n') + '\n___end:'
-
-const workspaceCatalog =
-  workspaceYaml.match(/^catalog:\n([\s\S]*?)\n\S/m)?.[1] ?? ''
+const workspace = parseYaml(
+  fs.readFileSync(path.join(repoRoot, 'pnpm-workspace.yaml'), 'utf8')
+) as PnpmWorkspace
+const catalog = workspace.catalog ?? {}
 
 function resolveCatalog(name: string): string {
   const sourceVersion = sourcePackage.dependencies?.[name]
   if (sourceVersion && sourceVersion !== 'catalog:') return sourceVersion
-  const re = new RegExp(`^\\s+'?${name}'?:\\s*([^\\n]+)$`, 'm')
-  const match = workspaceCatalog.match(re)
-  if (!match) {
+  const version = catalog[name]
+  if (!version) {
     throw new Error(
       `Could not resolve catalog version for ${name}. ` +
         `Expected entry under \`catalog:\` in pnpm-workspace.yaml.`
     )
   }
-  return match[1]!.trim()
+  return version
 }
 
 const distPackage = {

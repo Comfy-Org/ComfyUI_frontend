@@ -13,7 +13,6 @@ import { useI18n } from 'vue-i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { clone } from '@/scripts/utils'
 
 interface ValidationResult {
   graphData: ComfyWorkflowJSON | null
@@ -101,7 +100,7 @@ export function useWorkflowValidation() {
     const topologyErrors = validateLinkTopology(graphData as SerialisedGraph)
     reportTopology(topologyErrors, silent)
 
-    const repairTarget = clone(graphData)
+    const repairTarget = structuredClone(graphData)
     const logs: string[] = []
     try {
       const linkValidation = repairLinks(repairTarget as SerialisedGraph, {

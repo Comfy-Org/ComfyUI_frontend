@@ -402,6 +402,9 @@ catalogs:
     wwobjloader2:
       specifier: ^6.2.1
       version: 6.2.1
+    yaml:
+      specifier: ^2.8.2
+      version: 2.8.2
     yjs:
       specifier: ^13.6.27
       version: 13.6.27
@@ -864,6 +867,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
+      yaml:
+        specifier: 'catalog:'
+        version: 2.8.2
       zip-dir:
         specifier: ^2.0.0
         version: 2.0.0

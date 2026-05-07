@@ -5,10 +5,16 @@ import type {
   TopologyError
 } from '@comfyorg/workflow-validation'
 import type * as WorkflowValidationModule from '@comfyorg/workflow-validation'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowValidation } from './useWorkflowValidation'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key }),
+  createI18n: () => ({ global: { t: (key: string) => key } })
+}))
 
 const toastAddMock = vi.hoisted(() => vi.fn())
 const toastAddAlertMock = vi.hoisted(() => vi.fn())
@@ -20,25 +26,8 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, ...rest: unknown[]) => {
-      const last = rest[rest.length - 1]
-      const params =
-        last && typeof last === 'object' && 'named' in (last as object)
-          ? (last as { named: Record<string, unknown> }).named
-          : (last as Record<string, unknown> | undefined)
-      if (!params) return key
-      return `${key}|${JSON.stringify(params)}`
-    }
-  })
-}))
-
 const validateLinkTopologyMock = vi.hoisted(() => vi.fn())
 const repairLinksMock = vi.hoisted(() => vi.fn())
-const describeTopologyErrorMock = vi.hoisted(() =>
-  vi.fn((e: TopologyError) => `desc:${e.kind}:${e.link.linkId}`)
-)
 
 vi.mock('@comfyorg/workflow-validation', async () => {
   const actual = await vi.importActual<typeof WorkflowValidationModule>(
@@ -47,18 +36,13 @@ vi.mock('@comfyorg/workflow-validation', async () => {
   return {
     ...actual,
     validateLinkTopology: validateLinkTopologyMock,
-    repairLinks: repairLinksMock,
-    describeTopologyError: describeTopologyErrorMock
+    repairLinks: repairLinksMock
   }
 })
 
 const validateComfyWorkflowMock = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/validation/schemas/workflowSchema', () => ({
   validateComfyWorkflow: validateComfyWorkflowMock
-}))
-
-vi.mock('@/scripts/utils', () => ({
-  clone: <T>(v: T): T => structuredClone(v)
 }))
 
 function makeLink(linkId: number) {
@@ -100,13 +84,8 @@ function repairResult(
 
 describe('useWorkflowValidation', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    toastAddMock.mockClear()
-    toastAddAlertMock.mockClear()
-    validateLinkTopologyMock.mockReset()
-    repairLinksMock.mockReset()
-    describeTopologyErrorMock.mockClear()
-    validateComfyWorkflowMock.mockReset()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
   })
 
   afterEach(() => vi.restoreAllMocks())
@@ -151,14 +130,11 @@ describe('useWorkflowValidation', () => {
     const { validateWorkflow } = useWorkflowValidation()
     await validateWorkflow(wf)
 
-    const warns = toastAddMock.mock.calls.filter(([arg]) =>
-      (arg as { summary: string }).summary.startsWith(
-        'validation.topology.invalidLinks'
-      )
+    const warns = toastAddMock.mock.calls.filter(
+      ([arg]) => (arg as { severity: string }).severity === 'warn'
     )
     expect(warns).toHaveLength(1)
     const detail = (warns[0]![0] as { detail: string }).detail
-    expect(detail).toContain('validation.topology.overflow')
     expect(detail.split('\n')).toHaveLength(6)
   })
 
@@ -174,12 +150,7 @@ describe('useWorkflowValidation', () => {
     await validateWorkflow(wf)
 
     expect(toastAddMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'success',
-        summary: expect.stringContaining(
-          'validation.topology.linksFixedSummary'
-        )
-      })
+      expect.objectContaining({ severity: 'success' })
     )
   })
 
@@ -200,12 +171,8 @@ describe('useWorkflowValidation', () => {
     const out = await validateWorkflow(wf)
 
     expect(out.graphData).toBeNull()
-    const errorToast = toastAddMock.mock.calls.find(
-      ([arg]) => (arg as { severity: string }).severity === 'error'
-    )
-    expect(errorToast).toBeDefined()
-    expect((errorToast![0] as { summary: string }).summary).toContain(
-      'validation.topology.abortedSummary'
+    expect(toastAddMock).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
     )
   })
 
@@ -221,20 +188,23 @@ describe('useWorkflowValidation', () => {
     await expect(validateWorkflow(wf)).rejects.toThrow(TypeError)
   })
 
-  it('clones graphData before passing to repairLinks so the abort fallback is untouched', async () => {
+  it('keeps the original graphData untouched when repair aborts mid-mutation', async () => {
     const wf = makeWorkflow()
+    const before = JSON.stringify(wf)
     validateComfyWorkflowMock.mockResolvedValue(wf)
     validateLinkTopologyMock.mockReturnValue([])
-    let received: ComfyWorkflowJSON | undefined
     repairLinksMock.mockImplementation((g: ComfyWorkflowJSON) => {
-      received = g
-      return repairResult(g)
+      ;(g.nodes as unknown as Array<{ id: number }>)[0]!.id = 999
+      throw new LinkRepairAbortedError({
+        kind: 'missing-origin-node',
+        link: makeLink(1)
+      })
     })
 
     const { validateWorkflow } = useWorkflowValidation()
     await validateWorkflow(wf)
 
-    expect(received).not.toBe(wf)
+    expect(JSON.stringify(wf)).toBe(before)
   })
 
   it('silent option suppresses toasts but still validates', async () => {

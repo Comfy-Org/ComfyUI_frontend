@@ -205,6 +205,7 @@
     "vue-component-type-helpers": "catalog:",
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
+    "yaml": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
   },
