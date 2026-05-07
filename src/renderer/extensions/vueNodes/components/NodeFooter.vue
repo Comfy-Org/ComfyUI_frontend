@@ -79,6 +79,10 @@
       "
       :style="headerColorStyle"
       @click.stop="$emit('toggleAdvanced')"
+      @pointerenter="$emit('advancedHoverChange', true)"
+      @pointerleave="$emit('advancedHoverChange', false)"
+      @focusin="$emit('advancedHoverChange', true)"
+      @focusout="$emit('advancedHoverChange', false)"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{
@@ -173,6 +177,10 @@
       "
       :style="headerColorStyle"
       @click.stop="$emit('toggleAdvanced')"
+      @pointerenter="$emit('advancedHoverChange', true)"
+      @pointerleave="$emit('advancedHoverChange', false)"
+      @focusin="$emit('advancedHoverChange', true)"
+      @focusout="$emit('advancedHoverChange', false)"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <template v-if="showAdvancedState">
@@ -225,6 +233,7 @@ defineEmits<{
   enterSubgraph: []
   openErrors: []
   toggleAdvanced: []
+  advancedHoverChange: [hovered: boolean]
 }>()
 
 const RADIUS_CLASS = {

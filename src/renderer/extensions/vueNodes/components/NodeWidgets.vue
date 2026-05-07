@@ -96,9 +96,10 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
+  isAdvancedHovered?: boolean
 }
 
-const { nodeData } = defineProps<NodeWidgetsProps>()
+const { nodeData, isAdvancedHovered = false } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -133,5 +134,8 @@ const {
   nodeType,
   processedWidgets,
   showAdvanced
-} = useProcessedWidgets(() => nodeData)
+} = useProcessedWidgets(
+  () => nodeData,
+  () => isAdvancedHovered
+)
 </script>
