@@ -1214,6 +1214,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
         (a.content ?? '').localeCompare(b.content ?? '', undefined, {
+          numeric: true,
           sensitivity: 'base'
         })
       categoryEntries.sort(compareByContent)
