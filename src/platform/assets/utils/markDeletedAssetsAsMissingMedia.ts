@@ -5,7 +5,7 @@ import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaSca
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
-import { findNodesReferencingValues } from './clearNodePreviewCacheForFilenames'
+import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
 
 /**
  * After a successful asset deletion, surface the affected Load Image / Load

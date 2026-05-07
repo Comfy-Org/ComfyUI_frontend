@@ -187,7 +187,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 }))
 
 const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
-vi.mock('../utils/clearNodePreviewCacheForFilenames', () => ({
+vi.mock('../utils/clearNodePreviewCacheForValues', () => ({
   clearNodePreviewCacheForValues: mockClearNodePreviewCache,
   findNodesReferencingValues: vi.fn(() => [])
 }))

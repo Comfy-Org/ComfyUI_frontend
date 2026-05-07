@@ -5,7 +5,7 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   clearNodePreviewCacheForValues,
   findNodesReferencingValues
-} from './clearNodePreviewCacheForFilenames'
+} from './clearNodePreviewCacheForValues'
 
 type MockWidget = { name: string; value: unknown }
 type MockNode = {
