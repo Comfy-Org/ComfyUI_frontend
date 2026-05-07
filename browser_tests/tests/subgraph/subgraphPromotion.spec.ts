@@ -558,5 +558,59 @@ test.describe(
           .toBe(0)
       })
     })
+
+    test.fail(
+      'Promoted text widget is removed when source node is deleted inside the subgraph',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+        await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.vueNodes.waitForNodes()
+
+        const clipFixture = await comfyPage.vueNodes.getFixtureByTitle(
+          'CLIP Text Encode (Prompt)'
+        )
+        await comfyPage.contextMenu.openForVueNode(clipFixture.header)
+        await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
+        await comfyPage.contextMenu.waitForHidden()
+
+        const subgraphNode = comfyPage.vueNodes
+          .getNodeByTitle('New Subgraph')
+          .first()
+        await expect(subgraphNode).toBeVisible()
+
+        const subgraphNodeId =
+          await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
+
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+          .toContain('text')
+        await expect(
+          subgraphNode.getByTestId(TestIds.widgets.domWidgetTextarea)
+        ).toBeVisible()
+
+        await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+        await comfyPage.vueNodes.waitForNodes()
+
+        const interiorClipId = await comfyPage.vueNodes.getNodeIdByTitle(
+          'CLIP Text Encode (Prompt)'
+        )
+        await comfyPage.vueNodes.deleteNode(interiorClipId)
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(interiorClipId)
+        ).toBeHidden()
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.vueNodes.waitForNodes()
+
+        const subgraphNodeAfter =
+          comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
+        await expect(subgraphNodeAfter).toBeVisible()
+        await expect(
+          subgraphNodeAfter.getByTestId(TestIds.widgets.domWidgetTextarea)
+        ).toBeHidden()
+      }
+    )
   }
 )
