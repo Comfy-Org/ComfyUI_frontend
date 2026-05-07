@@ -1,0 +1,125 @@
+import { downloadFile } from '@/base/common/downloadUtil'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
+
+export interface DropIndicatorData {
+  iconClass: string
+  imageUrl?: string
+  videoUrl?: string
+  label?: string
+  onClick?: (e: MouseEvent) => void
+  onMaskEdit?: () => void
+  onDownload?: () => void
+  onRemove?: () => void
+}
+
+function parseNodeMediaValue(node: LGraphNode) {
+  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
+  return stringValue
+    ? parseImageWidgetValue(stringValue)
+    : { filename: '', subfolder: '', type: 'input' }
+}
+
+/**
+ * Build a DropZone indicator for LoadImage or LoadVideo nodes.
+ * Returns undefined for other node types.
+ */
+export function buildDropIndicator(
+  node: LGraphNode,
+  options: {
+    imageLabel?: string
+    videoLabel?: string
+    openMaskEditor?: (node: LGraphNode) => void
+  }
+): DropIndicatorData | undefined {
+  if (node.type === 'LoadImage') {
+    return buildImageDropIndicator(node, options)
+  }
+
+  if (node.type === 'LoadVideo') {
+    return buildVideoDropIndicator(node, options)
+  }
+
+  return undefined
+}
+
+/** Build indicator data for a LoadImage node, including preview URL,
+ *  mask editor action, and download/remove using the original asset URL. */
+function buildImageDropIndicator(
+  node: LGraphNode,
+  options: {
+    imageLabel?: string
+    openMaskEditor?: (node: LGraphNode) => void
+  }
+): DropIndicatorData {
+  const { filename, subfolder, type } = parseNodeMediaValue(node)
+
+  const rawParams = filename
+    ? new URLSearchParams({ filename, subfolder, type })
+    : undefined
+
+  const imageUrl = rawParams
+    ? (() => {
+        const params = new URLSearchParams(rawParams)
+        appendCloudResParam(params, filename)
+        return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
+      })()
+    : undefined
+
+  const originalUrl = rawParams ? api.apiURL(`/view?${rawParams}`) : undefined
+
+  return {
+    iconClass: 'icon-[lucide--image]',
+    imageUrl,
+    label: options.imageLabel,
+    onClick: () => node.widgets?.[1]?.callback?.(undefined),
+    onMaskEdit:
+      imageUrl && options.openMaskEditor
+        ? () => options.openMaskEditor!(node)
+        : undefined,
+    onDownload: originalUrl ? () => downloadFile(originalUrl) : undefined,
+    onRemove: imageUrl
+      ? () => {
+          const imageWidget = node.widgets?.find((w) => w.name === 'image')
+          if (imageWidget) {
+            imageWidget.value = ''
+            imageWidget.callback?.(undefined)
+          }
+        }
+      : undefined
+  }
+}
+
+/** Build indicator data for a LoadVideo node with video preview URL
+ *  and download/remove actions. */
+function buildVideoDropIndicator(
+  node: LGraphNode,
+  options: { videoLabel?: string }
+): DropIndicatorData {
+  const { filename, subfolder, type } = parseNodeMediaValue(node)
+
+  const videoUrl = filename
+    ? api.apiURL(`/view?${new URLSearchParams({ filename, subfolder, type })}`)
+    : undefined
+
+  return {
+    iconClass: 'icon-[lucide--video]',
+    videoUrl,
+    label: options.videoLabel,
+    onClick: () => node.widgets?.[1]?.callback?.(undefined),
+    onDownload: videoUrl ? () => downloadFile(videoUrl) : undefined,
+    onRemove: videoUrl
+      ? () => {
+          const videoWidget = node.widgets?.find((w) => w.name === 'video')
+          if (videoWidget) {
+            videoWidget.value = ''
+            videoWidget.callback?.(undefined)
+          }
+        }
+      : undefined
+  }
+}
