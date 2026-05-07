@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "y",
+      "backToGithubLogin": "Regístrate con Github en su lugar",
       "backToLogin": "Volver al inicio de sesión",
       "backToSocialLogin": "Regístrate con Google o Github en su lugar",
       "confirmPasswordLabel": "Confirmar contraseña",
@@ -835,6 +836,7 @@
     "NOISE": "RUIDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURACIÓN_CHAT_OPENAI",
     "OPENAI_INPUT_FILES": "ARCHIVOS_ENTRADA_OPENAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PLANTILLA PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
