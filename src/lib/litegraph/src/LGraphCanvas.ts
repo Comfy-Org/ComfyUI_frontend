@@ -4013,8 +4013,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // Nodes
         if (item.clonable === false) continue
 
-        const cloned = item.clone()?.serialize()
+        // Serialize the original node directly instead of clone().serialize().
+        // clone() creates a transient node whose state can diverge from the
+        // original (e.g. SubgraphNode promotionStore keyed by wrong id,
+        // PrimitiveNode losing widgets_values). ID deduplication is already
+        // handled on the deserialize side by _deserializeItems. (#9976)
+        const cloned = LiteGraph.cloneObject(item.serialize())
         if (!cloned) continue
+
+        // Clear links on the serialized copy (clone() used to do this).
+        if (cloned.inputs) {
+          for (const input of cloned.inputs) input.link = null
+        }
+        if (cloned.outputs) {
+          for (const output of cloned.outputs) {
+            if (output.links) output.links.length = 0
+          }
+        }
 
         cloned.id = item.id
         serialisable.nodes.push(cloned)
