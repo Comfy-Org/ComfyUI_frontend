@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "および",
+      "backToGithubLogin": "代わりにGithubでサインアップ",
       "backToLogin": "ログインに戻る",
       "backToSocialLogin": "GoogleまたはGithubでサインアップする",
       "confirmPasswordLabel": "パスワードの確認",
@@ -835,6 +836,7 @@
     "NOISE": "ノイズ",
     "OPENAI_CHAT_CONFIG": "OpenAIチャット設定",
     "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverseテンプレート",
     "POSE_KEYPOINT": "POSE_KEYPOINT",

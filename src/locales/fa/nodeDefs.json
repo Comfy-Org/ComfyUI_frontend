@@ -11917,6 +11917,20 @@
       }
     }
   },
+  "OpticalFlowLoader": {
+    "display_name": "بارگذاری مدل Optical Flow",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "مدل optical flow برای بارگذاری. فایل‌ها باید در پوشه 'optical_flow' قرار گیرند. در حال حاضر فقط raft_large.pth از torchvision پشتیبانی می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OptimalStepsScheduler": {
     "display_name": "OptimalStepsScheduler",
     "inputs": {
@@ -17808,6 +17822,127 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "تعداد فریم‌های پیکسلی برای پردازش. برای CogVideoX-Fun-V1.5 (patch_size_t=۲)، latent_t باید زوج باشد — طول‌هایی که latent_t فرد تولید می‌کنند گرد به پایین می‌شوند (مثلاً ۴۹ → ۴۵)."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "quadmask پیش‌پردازش‌شده از VOIDQuadmaskPreprocess [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "فریم‌های ویدیوی منبع [T, H, W, ۳]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "شعاع گسترش برای ناحیه اصلی mask (۰ = بدون گسترش)"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "تعداد فریم‌های پیکسلی. برای زوج بودن latent_t گرد به پایین می‌شود (نیاز patch_size_t=۲)، مثلاً ۴۹ → ۴۵."
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "مدل optical flow از OpticalFlowLoader (RAFT-large)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "خروجی فریم‌های ویدیو از مرحله ۱ [T, H, W, ۳]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "latent نویز تغییرشکل‌یافته از VOIDWarpedNoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
