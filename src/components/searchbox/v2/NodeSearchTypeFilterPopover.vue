@@ -68,7 +68,7 @@
                 cn(
                   'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default',
                   selectedSet.has(option) &&
-                    'text-primary-foreground border-primary bg-primary'
+                    'border-primary bg-primary text-primary-foreground'
                 )
               "
             >

@@ -164,14 +164,14 @@
               <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-foreground" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
               <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-foreground" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
@@ -180,7 +180,7 @@
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
+                class="pi pi-check text-xs text-success-foreground"
               />
               <i v-else class="pi pi-times text-foreground text-xs" />
             </div>

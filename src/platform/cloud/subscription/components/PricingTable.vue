@@ -103,7 +103,7 @@
             {{ t('subscription.soloUseOnly') }}
             <span class="mx-1 text-muted-foreground">–</span>
             <button
-              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              class="cursor-pointer border-none bg-transparent p-0 text-sm font-medium text-primary-foreground underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('chooseTeamWorkspace')"
             >
               {{ t('subscription.needTeamWorkspace') }}
@@ -146,14 +146,14 @@
               <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-foreground" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
               <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-foreground" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
@@ -162,7 +162,7 @@
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
+                class="pi pi-check text-xs text-success-foreground"
               />
               <i v-else class="pi pi-times text-foreground text-xs" />
             </div>
