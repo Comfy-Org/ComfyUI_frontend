@@ -2420,8 +2420,14 @@
       },
       "pro": {
         "name": "Pro"
+      },
+      "team": {
+        "name": "Team"
       }
     },
+    "enterpriseTitle": "Enterprise",
+    "enterpriseDescription": "Looking for custom solutions? For teams running Comfy in production, and at scale.",
+    "learnMoreEnterprise": "Learn more about Enterprise",
     "required": {
       "title": "Subscribe to",
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
@@ -2497,17 +2503,31 @@
     "forTeams": "For Teams",
     "choosePlan": "Choose a Plan",
     "choosePersonalPlan": "Choose a Personal Plan",
-    "personalDisclaimer": "Personal plans are for individual use only. {teamBold}.",
-    "personalDisclaimerTeam": "To add teammates, upgrade to the Team plan",
+    "personalDisclaimer": "Personal workspaces are for individual use only. {teamBold}.",
+    "personalDisclaimerTeam": "To add teammates, create a team workspace",
     "lookingForSimpler": "Looking for simpler fixed plans? See personal plans.",
     "everythingInPlus": "Everything in {tier}, plus:",
+    "whatsIncluded": "What's included:",
     "freeVideoEstimate": "Generates ~{count} 5s videos*",
     "freeTierMaxRuntime": "10-minute max runtime",
     "standardMaxRuntime": "30 minute max workflow runtime",
     "proMaxRuntimeLong": "Longer workflow runtime (up to 1 hr)",
     "addMoreCreditsAnytime": "Add more credits anytime",
     "importOwnLoRAs": "Import your own LoRAs",
-    "teamPlanSubtitle": "For growing teams running Comfy in production. Need more? {learnMore} about enterprise.",
+    "showBreakdown": "Show breakdown",
+    "hideBreakdown": "Hide breakdown",
+    "breakdown": {
+      "platformFee": "Platform fee",
+      "creditsCost": "Credits cost",
+      "volumeDiscount": "Credits volume discount ({percent}%)",
+      "total": "Total"
+    },
+    "teamInviteMembers": "Invite up to {count} members",
+    "teamConcurrency": "Members can run workflows concurrently",
+    "teamCentralizedBilling": "Centralized billing for the whole team",
+    "teamRolePermissions": "Role-based permissions",
+    "teamProjectManagement": "Project & asset management (coming soon)",
+    "teamPlanSubtitle": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
     "teamPlanLearnMore": "Learn more",
     "teamPlan": {
       "title": "Team Plan",
@@ -2517,7 +2537,13 @@
       "save": "Save {percent}%",
       "monthlyCredits": "monthly credits",
       "billedYearlyAmount": "${amount} billed yearly",
+      "chooseCreditsDescription": "Choose your own monthly credit subscription. Get a larger discount with a larger credit subscription.",
       "largerDiscount": "Get a larger discount when you select more credits.",
+      "savingOnCredits": "Save {percent}% (${amount})",
+      "sharedCreditPool": "Shared credit pool for all members",
+      "longerRuntime": "Longer workflow runtime (up to 1 hr)",
+      "subscribeToTeamYearly": "Subscribe to Team Yearly",
+      "subscribeToTeamMonthly": "Subscribe to Team Monthly",
       "generatesVideos": "Generates ~{count} 5s videos*",
       "subscribeToYearly": "Subscribe to Yearly",
       "subscribeToMonthly": "Subscribe to Monthly",
@@ -2531,13 +2557,20 @@
       "projectManagement": "Project & asset management",
       "memberDescription": "Add, remove, and manage up to 30 members in your workspace. All members automatically get Pro tier benefits and their own concurrency.",
       "memberNeedMore": "Need more than 30?",
-      "videoDisclaimer": "*Based on this template. {details}.",
-      "clickForDetails": "Click for details",
+      "videoDisclaimer": "*Based on this template, {details}.",
+      "clickForDetails": "see details",
       "wanTemplate": "Wan 2.2 Image-to-Video template",
       "contactFooter": "Contact us for {questions} or {enterprise}. For more pricing details, {pricing}.",
+      "details": "Details",
       "questions": "questions",
       "enterpriseDiscussions": "enterprise discussions",
-      "clickHere": "click here"
+      "clickHere": "click here",
+      "enterprise": {
+        "title": "Enterprise",
+        "needMoreMembers": "Need more than 30 members?",
+        "customFeatures": "Looking for more flexibility or custom features?",
+        "reachOut": "Reach out to us and let's schedule a chat."
+      }
     },
     "billingComingSoon": {
       "title": "Coming Soon",

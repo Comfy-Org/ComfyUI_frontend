@@ -1,8 +1,10 @@
 <template>
-  <div class="relative flex flex-col">
+  <div
+    class="relative flex flex-col items-center rounded-2xl border border-border-default bg-secondary-background px-4 pt-6 pb-4 drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+  >
     <!-- Close button -->
     <button
-      class="absolute top-0 right-0 z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-muted-foreground hover:text-base-foreground"
+      class="absolute top-[7px] right-[7px] z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-muted-foreground hover:text-base-foreground"
       :aria-label="t('g.close')"
       @click="emit('close')"
     >
@@ -11,17 +13,17 @@
 
     <!-- Title -->
     <h2
-      class="m-0 py-6 text-center font-inter text-2xl font-semibold text-base-foreground"
+      class="m-0 pb-4 text-center font-inter text-2xl font-semibold text-base-foreground"
     >
       {{ t('subscription.choosePlan') }}
     </h2>
 
-    <!-- Tab bar -->
+    <!-- Plan Type Tabs -->
     <div class="flex items-center justify-center">
       <button
         :class="
           cn(
-            'flex h-10 cursor-pointer items-center justify-center rounded-t-lg border-none bg-base-background px-4 py-2 text-sm font-bold',
+            'h-10 cursor-pointer rounded-t-lg border-none bg-base-background px-4 py-2 text-sm font-bold',
             activeTab === 'personal'
               ? 'text-base-foreground'
               : 'text-muted-foreground opacity-50'
@@ -34,296 +36,284 @@
       <button
         :class="
           cn(
-            'flex h-10 cursor-pointer items-center justify-center rounded-t-lg border-none bg-base-background px-4 py-2 text-sm font-bold',
-            activeTab === 'teams'
+            'h-10 cursor-pointer rounded-t-lg border-none bg-base-background px-4 py-2 text-sm font-bold',
+            activeTab === 'team'
               ? 'text-base-foreground'
               : 'text-muted-foreground opacity-50'
           )
         "
-        @click="activeTab = 'teams'"
+        @click="activeTab = 'team'"
       >
         {{ t('subscription.forTeams') }}
       </button>
     </div>
 
-    <!-- Tab content: grid overlay keeps height stable across tab switches -->
-    <div class="grid">
-      <!-- Personal tab content -->
-      <div
-        :class="
-          cn(
-            'col-start-1 row-start-1 flex flex-col',
-            activeTab !== 'personal' && 'invisible'
-          )
-        "
-      >
-        <div
-          class="flex flex-1 flex-col items-center gap-6 rounded-2xl bg-base-background p-8"
-        >
-          <!-- Disclaimer -->
-          <p class="m-0 text-center text-base text-muted-foreground">
-            <i18n-t keypath="subscription.personalDisclaimer">
-              <template #teamBold>
-                <span
-                  class="cursor-pointer text-base-foreground hover:text-muted-foreground"
-                  role="button"
-                  tabindex="0"
-                  @click="activeTab = 'teams'"
-                  @keydown.enter="activeTab = 'teams'"
-                >
-                  {{ t('subscription.personalDisclaimerTeam') }}
-                </span>
-              </template>
-            </i18n-t>
-          </p>
+    <!-- Content Area -->
+    <div
+      ref="contentRef"
+      class="flex flex-col items-center gap-6 rounded-2xl bg-base-background p-8"
+      :style="
+        minContentHeight > 0
+          ? { minHeight: `${minContentHeight}px` }
+          : undefined
+      "
+    >
+      <!-- Personal Tab -->
+      <template v-if="activeTab === 'personal'">
+        <!-- Subtitle -->
+        <p class="m-0 text-center text-base text-muted-foreground">
+          <i18n-t keypath="subscription.personalDisclaimer">
+            <template #teamBold>
+              <button
+                class="cursor-pointer border-none bg-transparent p-0 font-inter text-base text-base-foreground hover:text-muted-foreground"
+                @click="activeTab = 'team'"
+              >
+                {{ t('subscription.personalDisclaimerTeam') }}
+              </button>
+            </template>
+          </i18n-t>
+        </p>
 
-          <!-- Billing toggle -->
-          <SelectButton
-            v-model="currentBillingCycle"
-            :options="billingCycleOptions"
-            option-label="label"
-            option-value="value"
-            :allow-empty="false"
-            unstyled
-            :pt="{
-              root: {
-                class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-              },
-              pcToggleButton: {
-                root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-                  class: [
-                    'w-36 h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-                    context.active
-                      ? 'bg-base-foreground text-base-background'
-                      : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-                  ]
-                }),
-                label: { class: 'flex items-center gap-2' }
-              }
-            }"
+        <!-- Billing toggle -->
+        <SelectButton
+          v-model="currentBillingCycle"
+          :options="billingCycleOptions"
+          option-label="label"
+          option-value="value"
+          :allow-empty="false"
+          unstyled
+          :pt="{
+            root: {
+              class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
+            },
+            pcToggleButton: {
+              root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
+                class: [
+                  'min-w-[167px] h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center px-4',
+                  context.active
+                    ? 'bg-base-foreground text-base-background'
+                    : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
+                ]
+              }),
+              label: { class: 'flex items-center gap-2' }
+            }
+          }"
+        >
+          <template #option="{ option }">
+            <div class="flex items-center gap-2">
+              <span>{{ option.label }}</span>
+              <div
+                v-if="option.value === 'yearly'"
+                class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
+              >
+                {{ t('subscription.teamPlan.save', { percent: 20 }) }}
+              </div>
+            </div>
+          </template>
+        </SelectButton>
+
+        <!-- Tier Cards -->
+        <div
+          class="flex w-full flex-col gap-6 xl:flex-row xl:items-start xl:overflow-x-auto"
+        >
+          <div
+            v-for="tier in personalTiers"
+            :key="tier.id"
+            :class="
+              cn(
+                'flex flex-col self-stretch overflow-clip rounded-2xl border bg-base-background shadow-md xl:w-[320px] xl:shrink-0',
+                tier.isPopular
+                  ? 'border-muted-foreground'
+                  : 'border-border-default'
+              )
+            "
           >
-            <template #option="{ option }">
-              <div class="flex items-center gap-2">
-                <span>{{ option.label }}</span>
-                <div
-                  v-if="option.value === 'yearly'"
-                  class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
+            <!-- Body -->
+            <div class="flex flex-1 flex-col gap-6 p-8">
+              <!-- Plan name + badge -->
+              <div class="flex items-center justify-between">
+                <span
+                  class="font-inter text-base/normal font-bold text-base-foreground"
                 >
-                  {{ t('subscription.teamPlan.save', { percent: 20 }) }}
+                  {{ tier.name }}
+                </span>
+                <div
+                  v-if="tier.isPopular"
+                  class="flex h-4 items-center rounded-full bg-base-foreground px-1 text-2xs font-bold tracking-tight text-base-background uppercase"
+                >
+                  {{ t('subscription.mostPopular') }}
                 </div>
               </div>
-            </template>
-          </SelectButton>
 
-          <!-- 4 Tier Cards -->
-          <div class="flex flex-col items-stretch gap-6 lg:flex-row">
-            <div
-              v-for="tier in tiers"
-              :key="tier.id"
-              :class="
-                cn(
-                  'flex flex-1 flex-col overflow-clip rounded-2xl border bg-base-background shadow-md',
-                  tier.isPopular
-                    ? 'border-muted-foreground'
-                    : 'border-border-default'
-                )
-              "
-            >
-              <!-- Body -->
-              <div class="flex flex-1 flex-col gap-6 p-8">
-                <!-- Plan name + badge -->
-                <div class="flex items-center justify-between">
+              <!-- Amount: price + billed text -->
+              <div class="flex flex-col gap-2">
+                <p class="m-0 flex items-baseline text-base-foreground">
+                  <span class="text-[32px] leading-none font-semibold">
+                    ${{ getPrice(tier) }}
+                  </span>
+                  <span
+                    v-if="
+                      currentBillingCycle === 'yearly' && tier.key !== 'free'
+                    "
+                    class="ml-1 text-base font-normal text-muted-foreground line-through"
+                  >
+                    ${{ tier.pricing.monthly }}
+                  </span>
+                  <span class="text-base font-normal">
+                    &nbsp;{{ t('subscription.usdPerMonth') }}
+                  </span>
+                </p>
+                <!-- Billed text (invisible spacer for free tier) -->
+                <span
+                  :class="
+                    cn(
+                      'text-sm text-muted-foreground',
+                      tier.key === 'free' && 'invisible'
+                    )
+                  "
+                >
+                  {{
+                    tier.key === 'free'
+                      ? '\u00A0'
+                      : currentBillingCycle === 'yearly'
+                        ? t('subscription.billedYearly', {
+                            total: `$${getAnnualTotal(tier)}`
+                          })
+                        : t('subscription.billedMonthly')
+                  }}
+                </span>
+              </div>
+
+              <!-- Divider -->
+              <div class="border-t border-border-default" />
+
+              <!-- Features (flex-1 pushes credit details to bottom) -->
+              <div class="flex flex-1 flex-col gap-4">
+                <span class="text-sm text-muted-foreground">
+                  {{
+                    tier.inheritsFrom
+                      ? t('subscription.everythingInPlus', {
+                          tier: tier.inheritsFrom
+                        })
+                      : t('subscription.whatsIncluded')
+                  }}
+                </span>
+                <div
+                  v-for="feature in tier.features"
+                  :key="feature.label"
+                  class="flex items-center gap-2"
+                >
+                  <i
+                    class="icon-[lucide--check] size-4 shrink-0 text-base-foreground"
+                    aria-hidden="true"
+                  />
+                  <span class="text-sm text-base-foreground">
+                    {{ feature.label }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Credit details (bottom of body) -->
+              <div class="flex flex-col gap-2 pt-2">
+                <div class="flex items-center gap-1">
+                  <i
+                    class="icon-[lucide--component] size-4 text-amber-400"
+                    aria-hidden="true"
+                  />
                   <span
                     class="font-inter text-base/normal font-bold text-base-foreground"
                   >
-                    {{ tier.name }}
+                    {{ n(tier.pricing.credits) }}
                   </span>
-                  <div
-                    v-if="tier.isPopular"
-                    class="flex h-4 items-center rounded-full bg-base-foreground px-1 text-2xs font-bold tracking-tight text-base-background uppercase"
-                  >
-                    {{ t('subscription.mostPopular') }}
-                  </div>
-                </div>
-
-                <!-- Price -->
-                <div class="flex flex-col gap-2">
-                  <p class="m-0 mb-1 flex items-baseline text-base-foreground">
-                    <span class="text-[32px] leading-none font-semibold">
-                      ${{ getPrice(tier) }}
-                    </span>
-                    <span class="text-base font-normal">
-                      &nbsp;{{ t('subscription.usdPerMonth') }}
-                    </span>
-                  </p>
-
-                  <!-- Credits -->
-                  <div class="flex items-center gap-1">
-                    <i
-                      class="icon-[lucide--component] size-4 text-amber-400"
-                      aria-hidden="true"
-                    />
-                    <span
-                      class="font-inter text-base/normal font-bold text-base-foreground"
-                    >
-                      {{ n(tier.pricing.credits) }}
-                    </span>
-                    <span class="text-sm text-base-foreground">
-                      {{ t('subscription.teamPlan.monthlyCredits') }}
-                    </span>
-                  </div>
-
-                  <!-- Billed text (invisible for free tier to keep dividers aligned) -->
-                  <div class="flex items-center pt-1">
-                    <span
-                      :class="
-                        cn(
-                          'text-sm text-muted-foreground',
-                          tier.key === 'free' && 'invisible'
-                        )
-                      "
-                    >
-                      {{
-                        tier.key === 'free'
-                          ? '\u00A0'
-                          : currentBillingCycle === 'yearly'
-                            ? t('subscription.billedYearly', {
-                                total: `$${getAnnualTotal(tier)}`
-                              })
-                            : t('subscription.billedMonthly')
-                      }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Video estimate -->
-                <div class="flex items-center gap-2">
-                  <span class="text-sm text-muted-foreground">
-                    {{
-                      t('subscription.freeVideoEstimate', {
-                        count: n(tier.pricing.videoEstimate)
-                      })
-                    }}
+                  <span class="text-sm text-base-foreground">
+                    {{ t('subscription.teamPlan.monthlyCredits') }}
                   </span>
                 </div>
-
-                <!-- Divider -->
-                <div class="border-t border-border-default" />
-
-                <!-- Features -->
-                <div class="flex flex-col gap-4">
-                  <span
-                    :class="
-                      cn(
-                        'text-sm text-muted-foreground',
-                        !tier.inheritsFrom && 'invisible'
-                      )
-                    "
-                  >
-                    {{
-                      t('subscription.everythingInPlus', {
-                        tier: tier.inheritsFrom ?? tier.name
-                      })
-                    }}
-                  </span>
-                  <div
-                    v-for="feature in tier.features"
-                    :key="feature"
-                    class="flex items-center gap-2"
-                  >
-                    <i
-                      class="icon-[lucide--check] size-4 shrink-0 text-base-foreground"
-                      aria-hidden="true"
-                    />
-                    <span class="text-sm text-base-foreground">
-                      {{ feature }}
-                    </span>
-                  </div>
-                </div>
+                <span class="text-sm text-muted-foreground">
+                  {{
+                    t('subscription.freeVideoEstimate', {
+                      count: n(tier.pricing.videoEstimate)
+                    })
+                  }}
+                </span>
               </div>
+            </div>
 
-              <!-- Subscribe button -->
-              <div class="p-8">
-                <Button
-                  size="lg"
-                  :variant="tier.isPopular ? 'inverted' : 'secondary'"
-                  :disabled="isLoading || isCurrentPlan(tier.key)"
-                  :loading="loadingTier === tier.key"
-                  class="w-full font-bold"
-                  @click="handleSubscribe(tier.key)"
-                >
-                  {{ getButtonLabel(tier) }}
-                </Button>
-              </div>
+            <!-- Subscribe button -->
+            <div class="px-8 pb-8">
+              <Button
+                size="lg"
+                :variant="tier.isPopular ? 'inverted' : 'secondary'"
+                :disabled="isLoading || isCurrentPlan(tier.key)"
+                :loading="loadingTier === tier.key"
+                class="w-full font-bold"
+                @click="handleSubscribe(tier.key)"
+              >
+                {{ getButtonLabel(tier) }}
+              </Button>
             </div>
           </div>
         </div>
+      </template>
 
-        <!-- Footer disclaimer (personal tab) -->
-        <div
-          class="flex items-start gap-4 pt-4 pb-2 text-sm text-muted-foreground"
-        >
-          <p class="m-0">
-            <i18n-t keypath="subscription.teamPlan.videoDisclaimer">
-              <template #details>
-                <button
-                  class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm text-base-foreground no-underline hover:text-muted-foreground"
-                  @click="togglePopover"
-                >
-                  {{ t('subscription.teamPlan.clickForDetails') }}
-                </button>
-              </template>
-            </i18n-t>
-          </p>
-          <p class="m-0">
-            <i18n-t keypath="subscription.teamPlan.contactFooter">
-              <template #questions>
-                <a
-                  href="https://www.comfy.org/discord"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-base-foreground no-underline hover:text-muted-foreground"
-                >
-                  {{ t('subscription.teamPlan.questions') }}
-                </a>
-              </template>
-              <template #enterprise>
-                <a
-                  href="https://www.comfy.org/enterprise"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-base-foreground no-underline hover:text-muted-foreground"
-                >
-                  {{ t('subscription.teamPlan.enterpriseDiscussions') }}
-                </a>
-              </template>
-              <template #pricing>
-                <a
-                  href="https://www.comfy.org/pricing"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-base-foreground no-underline hover:text-muted-foreground"
-                >
-                  {{ t('subscription.teamPlan.clickHere') }}
-                </a>
-              </template>
-            </i18n-t>
-          </p>
-        </div>
-      </div>
-
-      <!-- Teams tab content -->
-      <TeamPlanLayout
-        :class="
-          cn('col-start-1 row-start-1', activeTab !== 'teams' && 'invisible')
-        "
-        :is-loading="isLoading"
-        :loading-tier="loadingTier"
-        :subscribe-button-label="t('subscription.teamPlan.subscribeAndCreate')"
-        @subscribe="handleTeamSubscribe"
-        @contact-us="handleContactUs"
-      />
+      <!-- Team Tab -->
+      <template v-else>
+        <TeamPlanLayout
+          :is-loading="isLoading"
+          :loading-tier="loadingTier"
+          class="flex-1"
+          @subscribe="handleTeamSubscribe"
+          @switch-to-personal="activeTab = 'personal'"
+        />
+      </template>
     </div>
+
+    <!-- Footer disclaimer -->
+    <p class="m-0 pt-4 pb-2 text-center text-sm text-muted-foreground">
+      <i18n-t keypath="subscription.teamPlan.videoDisclaimer">
+        <template #details>
+          <button
+            class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm text-base-foreground no-underline hover:text-muted-foreground"
+            @click="togglePopover"
+          >
+            {{ t('subscription.teamPlan.clickForDetails') }}
+          </button>
+        </template>
+      </i18n-t>
+      &nbsp;
+      <i18n-t keypath="subscription.teamPlan.contactFooter">
+        <template #questions>
+          <a
+            href="https://www.comfy.org/discord"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.teamPlan.questions') }}
+          </a>
+        </template>
+        <template #enterprise>
+          <a
+            href="https://www.comfy.org/enterprise"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.teamPlan.enterpriseDiscussions') }}
+          </a>
+        </template>
+        <template #pricing>
+          <a
+            href="https://www.comfy.org/pricing"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.teamPlan.clickHere') }}
+          </a>
+        </template>
+      </i18n-t>
+    </p>
 
     <!-- Video Estimate Help Popover -->
     <Popover
@@ -364,13 +354,14 @@ import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import TeamPlanLayout from '@/platform/cloud/subscription/components/TeamPlanLayout.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
@@ -389,18 +380,26 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
-import TeamPlanLayout from '@/platform/cloud/subscription/components/TeamPlanLayout.vue'
 
+type PlanTab = 'personal' | 'team'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
-type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
+type ApiCheckoutTierKey = Exclude<CheckoutTierKey, 'team'>
+type ApiCheckoutTier = ApiCheckoutTierKey | `${ApiCheckoutTierKey}-yearly`
 
 const FREE_TIER_CREDITS = 400
 const FREE_TIER_VIDEO_ESTIMATE = 35
 
-const getCheckoutTier = (
+function toApiTierKey(tierKey: CheckoutTierKey): ApiCheckoutTierKey {
+  return tierKey === 'team' ? 'pro' : tierKey
+}
+
+function getApiCheckoutTier(
   tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
-): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+): ApiCheckoutTier {
+  const apiKey = toApiTierKey(tierKey)
+  return billingCycle === 'yearly' ? `${apiKey}-yearly` : apiKey
+}
 
 const getCheckoutAttributionForCloud =
   async (): Promise<CheckoutAttributionMetadata> => {
@@ -419,28 +418,52 @@ interface BillingCycleOption {
   value: BillingCycle
 }
 
+interface TierFeature {
+  label: string
+  icon?: 'check' | 'clock'
+}
+
 interface PricingTierConfig {
   id: SubscriptionTier | 'FREE'
   key: TierKey
   name: string
   pricing: TierPricing
-  features: string[]
+  features: TierFeature[]
   inheritsFrom?: string
   isPopular?: boolean
 }
 
-const { defaultTab = 'personal' } = defineProps<{
-  defaultTab?: 'personal' | 'teams'
+const { initialTab = 'personal' } = defineProps<{
+  initialTab?: PlanTab
 }>()
 
 const emit = defineEmits<{
-  chooseTeamWorkspace: []
   close: []
+  teamSubscribe: [
+    payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }
+  ]
 }>()
 
 const { t, n } = useI18n()
 
-const activeTab = ref<'personal' | 'teams'>(defaultTab)
+const activeTab = ref<PlanTab>(initialTab)
+const contentRef = ref<HTMLElement>()
+const minContentHeight = ref(0)
+
+function updateMinHeight() {
+  if (contentRef.value) {
+    const h = contentRef.value.offsetHeight
+    if (h > minContentHeight.value) {
+      minContentHeight.value = h
+    }
+  }
+}
+
+onMounted(updateMinHeight)
+watch(activeTab, async () => {
+  await nextTick()
+  updateMinHeight()
+})
 
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
@@ -458,7 +481,7 @@ const tiers: PricingTierConfig[] = [
       credits: FREE_TIER_CREDITS,
       videoEstimate: FREE_TIER_VIDEO_ESTIMATE
     },
-    features: [t('subscription.freeTierMaxRuntime')],
+    features: [{ label: t('subscription.freeTierMaxRuntime') }],
     isPopular: false
   },
   {
@@ -467,8 +490,8 @@ const tiers: PricingTierConfig[] = [
     name: t('subscription.tiers.standard.name'),
     pricing: TIER_PRICING.standard,
     features: [
-      t('subscription.standardMaxRuntime'),
-      t('subscription.addMoreCreditsAnytime')
+      { label: t('subscription.standardMaxRuntime') },
+      { label: t('subscription.addMoreCreditsAnytime') }
     ],
     inheritsFrom: t('subscription.tiers.free.name'),
     isPopular: false
@@ -479,8 +502,8 @@ const tiers: PricingTierConfig[] = [
     name: t('subscription.tiers.creator.name'),
     pricing: TIER_PRICING.creator,
     features: [
-      t('subscription.importOwnLoRAs'),
-      t('subscription.addMoreCreditsAnytime')
+      { label: t('subscription.importOwnLoRAs') },
+      { label: t('subscription.addMoreCreditsAnytime') }
     ],
     inheritsFrom: t('subscription.tiers.standard.name'),
     isPopular: true
@@ -490,11 +513,14 @@ const tiers: PricingTierConfig[] = [
     key: 'pro',
     name: t('subscription.tiers.pro.name'),
     pricing: TIER_PRICING.pro,
-    features: [t('subscription.proMaxRuntimeLong')],
+    features: [{ label: t('subscription.proMaxRuntimeLong') }],
     inheritsFrom: t('subscription.tiers.creator.name'),
     isPopular: false
   }
 ]
+
+const personalTiers = tiers
+
 const {
   isActiveSubscription,
   isFreeTier,
@@ -567,12 +593,11 @@ function togglePopover(event: Event) {
   popover.value.toggle(event)
 }
 
-function handleContactUs() {
-  window.open('https://www.comfy.org/discord', '_blank')
-}
-
-function handleTeamSubscribe() {
-  emit('chooseTeamWorkspace')
+function handleTeamSubscribe(payload: {
+  tierKey: CheckoutTierKey
+  billingCycle: BillingCycle
+}) {
+  emit('teamSubscribe', payload)
 }
 
 const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
@@ -580,6 +605,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
   if (tierKey === 'free') return
 
   const checkoutTierKey = tierKey as CheckoutTierKey
+  const apiTierKey = toApiTierKey(checkoutTierKey)
 
   isLoading.value = true
   loadingTier.value = checkoutTierKey
@@ -587,7 +613,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
   try {
     if (hasPaidSubscription.value) {
       const targetPlan = {
-        tierKey: checkoutTierKey,
+        tierKey: apiTierKey,
         billingCycle: currentBillingCycle.value
       } as const
       const previousPlan = currentPlanDescriptor.value
@@ -602,8 +628,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
           ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
         })
       }
-      const checkoutTier = getCheckoutTier(
-        targetPlan.tierKey,
+      const checkoutTier = getApiCheckoutTier(
+        checkoutTierKey,
         targetPlan.billingCycle
       )
       const downgrade =
@@ -631,7 +657,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
       }
     } else {
       await performSubscriptionCheckout(
-        checkoutTierKey,
+        apiTierKey,
         currentBillingCycle.value,
         true
       )
