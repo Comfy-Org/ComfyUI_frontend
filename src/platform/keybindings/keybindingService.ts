@@ -14,6 +14,15 @@ export function useKeybindingService() {
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
 
+  function isTextInputElement(el: HTMLElement): boolean {
+    return (
+      el.tagName === 'TEXTAREA' ||
+      el.tagName === 'INPUT' ||
+      el.contentEditable === 'true' ||
+      (el.tagName === 'SPAN' && el.classList.contains('property_value'))
+    )
+  }
+
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
     if (keyCombo.isModifier) {
@@ -21,14 +30,7 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
-    if (
-      keyCombo.isReservedByTextInput &&
-      (target.tagName === 'TEXTAREA' ||
-        target.tagName === 'INPUT' ||
-        target.contentEditable === 'true' ||
-        (target.tagName === 'SPAN' &&
-          target.classList.contains('property_value')))
-    ) {
+    if (keyCombo.isReservedByTextInput && isTextInputElement(target)) {
       return
     }
 
@@ -41,6 +43,11 @@ export function useKeybindingService() {
       if (targetElementId) {
         const container = document.getElementById(targetElementId)
         if (!container?.contains(target)) {
+          // Prevent browser default (e.g. text selection on Ctrl/Cmd+A) when
+          // a matching keybinding exists but the target is outside the canvas.
+          if (!isTextInputElement(target)) {
+            event.preventDefault()
+          }
           return
         }
       }
