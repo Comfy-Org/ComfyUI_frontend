@@ -249,10 +249,20 @@ const onExecutionSuccess = async () => {
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
 
+const handleReconnected = async () => {
+  onReconnected()
+  await queueStore.update()
+  const activeJobIds = new Set([
+    ...queueStore.runningTasks.map((t) => t.jobId),
+    ...queueStore.pendingTasks.map((t) => t.jobId)
+  ])
+  executionStore.clearActiveJobIfStale(activeJobIds)
+}
+
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
 useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', onReconnected)
+useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()
