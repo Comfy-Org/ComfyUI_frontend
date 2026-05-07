@@ -187,7 +187,8 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       setLightIntensity: vi.fn(),
       setHDRIIntensity: vi.fn(),
       setHDRIAsBackground: vi.fn(),
-      setHDRIEnabled: vi.fn()
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
     } as unknown as Load3d
   }
 
@@ -249,6 +250,52 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
       silentOnNotFound: false
     })
+  })
+
+  it('emits modelReady AFTER setCameraState so thumbnail capture sees the restored view', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    const cameraState = {
+      position: { x: 1, y: 2, z: 3 },
+      target: { x: 0, y: 0, z: 0 },
+      zoom: 1,
+      cameraType: 'perspective' as const
+    }
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output',
+      cameraState: cameraState as unknown as Parameters<
+        Load3DConfiguration['configure']
+      >[0]['cameraState']
+    })
+    await flush()
+
+    const setCameraStateMock = vi.mocked(load3d.setCameraState)
+    const emitModelReadyMock = vi.mocked(load3d.emitModelReady)
+    expect(setCameraStateMock).toHaveBeenCalledWith(cameraState)
+    expect(emitModelReadyMock).toHaveBeenCalledTimes(1)
+    expect(setCameraStateMock.mock.invocationCallOrder[0]).toBeLessThan(
+      emitModelReadyMock.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('emits modelReady even when no saved cameraState is provided', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    config.configure({
+      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      loadFolder: 'output'
+    })
+    await flush()
+    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+  })
+
+  it('configureForSaveMesh also emits modelReady once the load resolves', async () => {
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
+    config.configureForSaveMesh('output', 'model.glb')
+    await flush()
+    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
   })
 })
 

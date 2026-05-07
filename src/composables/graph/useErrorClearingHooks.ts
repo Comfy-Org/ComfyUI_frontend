@@ -162,6 +162,7 @@ function scanAndAddNodeErrors(node: LGraphNode): void {
 
   if (node.isSubgraphNode?.() && node.subgraph) {
     for (const innerNode of collectAllNodes(node.subgraph)) {
+      if (innerNode.isSubgraphNode?.()) continue
       if (isNodeInactive(innerNode.mode)) continue
       scanSingleNodeErrors(innerNode)
     }

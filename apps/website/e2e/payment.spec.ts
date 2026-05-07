@@ -61,7 +61,7 @@ test.describe('Payment failed page @smoke', () => {
   test('shows failure heading and subtitle', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
-        name: /Payment was not completed/i,
+        name: /Unable to complete payment/i,
         level: 1
       })
     ).toBeVisible()
@@ -102,7 +102,7 @@ test.describe('Payment pages zh-CN @smoke', () => {
     await expect(page).toHaveTitle('支付失败 — Comfy')
     await expectNoIndex(page)
     await expect(
-      page.getByRole('heading', { name: '支付未完成', level: 1 })
+      page.getByRole('heading', { name: '无法完成支付', level: 1 })
     ).toBeVisible()
     await expect(page.getByRole('link', { name: '联系支持' })).toHaveAttribute(
       'href',

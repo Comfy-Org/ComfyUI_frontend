@@ -20,27 +20,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-
-function seedSimpleError(
-  store: ReturnType<typeof useExecutionErrorStore>,
-  executionId: string,
-  inputName: string
-) {
-  store.lastNodeErrors = {
-    [executionId]: {
-      errors: [
-        {
-          type: 'required_input_missing',
-          message: 'Missing',
-          details: '',
-          extra_info: { input_name: inputName }
-        }
-      ],
-      dependent_outputs: [],
-      class_type: 'TestNode'
-    }
-  }
-}
+import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 
 describe('Connection error clearing via onConnectionsChange', () => {
   beforeEach(() => {
@@ -63,7 +43,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedSimpleError(store, String(node.id), 'clip')
+    seedRequiredInputMissingNodeError(store, String(node.id), 'clip')
 
     node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
@@ -75,7 +55,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    seedSimpleError(store, String(node.id), 'clip')
+    seedRequiredInputMissingNodeError(store, String(node.id), 'clip')
 
     node.onConnectionsChange!(
       NodeSlotType.INPUT,
@@ -94,7 +74,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    seedSimpleError(store, String(node.id), 'clip')
+    seedRequiredInputMissingNodeError(store, String(node.id), 'clip')
 
     node.onConnectionsChange!(
       NodeSlotType.OUTPUT,
@@ -116,7 +96,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedSimpleError(store, String(node.id), 'model')
+    seedRequiredInputMissingNodeError(store, String(node.id), 'model')
 
     node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
@@ -261,7 +241,11 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     // PromotedWidgetView.name returns displayName ("ckpt_input"), which is
     // passed as errorInputName to clearSimpleNodeErrors. Seed the error
     // with that name so the slot-name filter matches.
-    seedSimpleError(store, interiorExecId, promotedWidget!.name)
+    seedRequiredInputMissingNodeError(
+      store,
+      interiorExecId,
+      promotedWidget!.name
+    )
 
     subgraphNode.onWidgetChanged!.call(
       subgraphNode,
@@ -300,7 +284,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Verify the hooks actually work
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedSimpleError(store, String(lateNode.id), 'value')
+    seedRequiredInputMissingNodeError(store, String(lateNode.id), 'value')
 
     lateNode.onConnectionsChange!(
       NodeSlotType.INPUT,
@@ -830,6 +814,58 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('skips nested subgraph containers during parent subgraph replay scan', async () => {
+    const rootGraph = new LGraph()
+    const outerSubgraph = createTestSubgraph({ rootGraph })
+    const innerSubgraph = createTestSubgraph({ rootGraph })
+    const leafNode = new LGraphNode('UNETLoader')
+    innerSubgraph.add(leafNode)
+
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      parentGraph: outerSubgraph,
+      id: 76
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+      parentGraph: rootGraph,
+      id: 205
+    })
+    rootGraph.add(outerSubgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    const modelScanSpy = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockReturnValue([])
+    const mediaScanSpy = vi
+      .spyOn(missingMediaScan, 'scanNodeMediaCandidates')
+      .mockReturnValue([])
+
+    installErrorClearingHooks(rootGraph)
+
+    rootGraph.onNodeAdded?.(outerSubgraphNode)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(modelScanSpy).toHaveBeenCalledWith(
+      rootGraph,
+      leafNode,
+      expect.any(Function),
+      expect.any(Function)
+    )
+    expect(modelScanSpy).not.toHaveBeenCalledWith(
+      rootGraph,
+      innerSubgraphNode,
+      expect.any(Function),
+      expect.any(Function)
+    )
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode, false)
+    expect(mediaScanSpy).not.toHaveBeenCalledWith(
+      rootGraph,
+      innerSubgraphNode,
+      false
+    )
   })
 })
 
