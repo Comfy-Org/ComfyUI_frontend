@@ -564,15 +564,12 @@ test.describe(
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-        await comfyPage.workflow.loadWorkflow('default')
-        await comfyPage.vueNodes.waitForNodes()
 
         const clipFixture = await comfyPage.vueNodes.getFixtureByTitle(
           'CLIP Text Encode (Prompt)'
         )
         await comfyPage.contextMenu.openForVueNode(clipFixture.header)
         await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
-        await comfyPage.contextMenu.waitForHidden()
 
         const subgraphNode = comfyPage.vueNodes
           .getNodeByTitle('New Subgraph')
@@ -593,16 +590,12 @@ test.describe(
         await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
         await comfyPage.vueNodes.waitForNodes()
 
-        const interiorClipId = await comfyPage.vueNodes.getNodeIdByTitle(
+        const interiorClip = await comfyPage.vueNodes.getFixtureByTitle(
           'CLIP Text Encode (Prompt)'
         )
-        await comfyPage.vueNodes.deleteNode(interiorClipId)
-        await expect(
-          comfyPage.vueNodes.getNodeLocator(interiorClipId)
-        ).toBeHidden()
+        await interiorClip.delete()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.vueNodes.waitForNodes()
 
         const subgraphNodeAfter =
           comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
