@@ -44,9 +44,19 @@ const activeSection = ref(sections[0]?.id ?? '')
 
 const sectionRefs = useTemplateRefsList<HTMLElement>()
 let isScrolling = false
+let scrollSafetyTimer: ReturnType<typeof setTimeout> | undefined
 
 const HEADER_OFFSET = -144
 const BOTTOM_THRESHOLD_PX = 4
+const SCROLL_SAFETY_MS = 1500
+
+function clearScrollLock() {
+  isScrolling = false
+  if (scrollSafetyTimer !== undefined) {
+    clearTimeout(scrollSafetyTimer)
+    scrollSafetyTimer = undefined
+  }
+}
 
 useIntersectionObserver(
   sectionRefs,
@@ -83,20 +93,20 @@ useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 function scrollToSection(id: string) {
   activeSection.value = id
+  clearScrollLock()
   isScrolling = true
+  scrollSafetyTimer = setTimeout(clearScrollLock, SCROLL_SAFETY_MS)
   const el = document.getElementById(id)
   if (el) {
     scrollTo(el, {
       offset: HEADER_OFFSET,
       duration: 0.8,
       immediate: prefersReducedMotion(),
-      onComplete: () => {
-        isScrolling = false
-      }
+      onComplete: clearScrollLock
     })
     return
   }
-  isScrolling = false
+  clearScrollLock()
 }
 </script>
 
