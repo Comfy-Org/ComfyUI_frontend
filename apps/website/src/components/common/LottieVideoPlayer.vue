@@ -25,6 +25,7 @@ const XLINK_NS = 'http://www.w3.org/1999/xlink'
 const lottieContainer = useTemplateRef<HTMLDivElement>('lottieContainer')
 const assetsReady = ref(false)
 let anim: AnimationItem | null = null
+let loadGen = 0
 
 function swapImagesForVideos(container: HTMLElement): HTMLVideoElement[] {
   const svg = container.querySelector('svg')
@@ -77,11 +78,13 @@ function waitForVideosReady(videos: HTMLVideoElement[]): Promise<void> {
 watch(
   [lottieContainer, () => src, () => assetsPath],
   async ([container]) => {
+    const gen = ++loadGen
     anim?.destroy()
     anim = null
     assetsReady.value = false
     if (!container) return
     const { default: lottie } = await import('lottie-web')
+    if (gen !== loadGen) return
     const created = lottie.loadAnimation({
       container,
       renderer: 'svg',
@@ -93,16 +96,18 @@ watch(
     })
     anim = created
     created.addEventListener('DOMLoaded', () => {
+      if (gen !== loadGen || anim !== created) return
       created.goToAndStop(0, true)
       const videos = swapImagesForVideos(container)
-      waitForVideosReady(videos).then(() => {
+      void waitForVideosReady(videos).then(() => {
+        if (gen !== loadGen || anim !== created) return
         assetsReady.value = true
         emit('ready')
       })
     })
     created.addEventListener('data_failed', () => {
+      if (gen !== loadGen || anim !== created) return
       console.error('[LottieVideoPlayer] Lottie data failed to load:', src)
-      assetsReady.value = true
       emit('ready')
     })
   },

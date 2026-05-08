@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
+import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -52,7 +52,11 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
-const videoRefs = useTemplateRefsList<HTMLVideoElement>()
+const videoRefs = new Map<number, HTMLVideoElement>()
+const setVideoRef = (index: number) => (el: unknown) => {
+  if (el instanceof HTMLVideoElement) videoRefs.set(index, el)
+  else videoRefs.delete(index)
+}
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
 
@@ -61,8 +65,8 @@ useIntersectionObserver(sectionRef, ([entry]) => {
 })
 
 watch(activeIndex, (current, previous) => {
-  videoRefs.value[previous]?.pause()
-  const activeVideo = videoRefs.value[current]
+  videoRefs.get(previous)?.pause()
+  const activeVideo = videoRefs.get(current)
   if (activeVideo) {
     activeVideo.currentTime = 0
     activeVideo.play().catch(() => {})
@@ -101,7 +105,7 @@ watch(activeIndex, (current, previous) => {
             <template v-for="(feature, i) in features" :key="feature.title">
               <video
                 v-if="feature.video"
-                :ref="videoRefs.set"
+                :ref="setVideoRef(i)"
                 :src="feature.video"
                 :autoplay="i === 0"
                 :preload="i === 0 ? 'metadata' : 'none'"
