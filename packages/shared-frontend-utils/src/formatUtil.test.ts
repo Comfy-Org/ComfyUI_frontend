@@ -317,6 +317,11 @@ describe('formatUtil', () => {
     it('returns the normalized filename when no subfolder is provided', () => {
       expect(joinFilePath('', 'nested\\file.png')).toBe('nested/file.png')
     })
+
+    it('returns the normalized subfolder without a trailing slash when no filename is provided', () => {
+      expect(joinFilePath('nested\\folder', '')).toBe('nested/folder')
+      expect(joinFilePath('nested\\folder', null)).toBe('nested/folder')
+    })
   })
 
   describe('getFilePathSeparatorVariants', () => {

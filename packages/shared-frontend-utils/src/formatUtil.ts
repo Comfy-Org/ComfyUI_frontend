@@ -266,9 +266,9 @@ export function joinFilePath(
   const normalizedFilename = normalizeFilePathSeparators(
     filename ?? ''
   ).replace(/^\/+/g, '')
-  return normalizedSubfolder
-    ? `${normalizedSubfolder}/${normalizedFilename}`
-    : normalizedFilename
+  if (!normalizedSubfolder) return normalizedFilename
+  if (!normalizedFilename) return normalizedSubfolder
+  return `${normalizedSubfolder}/${normalizedFilename}`
 }
 
 export function getFilePathSeparatorVariants(filepath: string): string[] {
