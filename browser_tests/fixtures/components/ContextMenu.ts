@@ -6,12 +6,16 @@ export class ContextMenu {
   public readonly litegraphMenu: Locator
   public readonly litegraphContextMenu: Locator
   public readonly menuItems: Locator
+  public readonly anyMenu: Locator
 
   constructor(public readonly page: Page) {
     this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
     this.litegraphMenu = page.locator('.litemenu')
     this.litegraphContextMenu = page.locator('.litecontextmenu')
     this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
+    this.anyMenu = this.primeVueMenu
+      .or(this.litegraphMenu)
+      .or(this.litegraphContextMenu)
   }
 
   async clickMenuItem(name: string): Promise<void> {
@@ -36,16 +40,7 @@ export class ContextMenu {
   }
 
   async isVisible(): Promise<boolean> {
-    const primeVueVisible = await this.primeVueMenu
-      .isVisible()
-      .catch(() => false)
-    const litegraphVisible = await this.litegraphMenu
-      .isVisible()
-      .catch(() => false)
-    const litegraphContextVisible = await this.litegraphContextMenu
-      .isVisible()
-      .catch(() => false)
-    return primeVueVisible || litegraphVisible || litegraphContextVisible
+    return await this.anyMenu.isVisible()
   }
 
   async assertHasItems(items: string[]): Promise<void> {
@@ -58,7 +53,7 @@ export class ContextMenu {
 
   async openFor(locator: Locator): Promise<this> {
     await locator.click({ button: 'right' })
-    await expect.poll(() => this.isVisible()).toBe(true)
+    await expect(this.anyMenu).toBeVisible()
     return this
   }
 

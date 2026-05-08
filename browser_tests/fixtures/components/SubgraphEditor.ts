@@ -30,23 +30,22 @@ export class SubgraphEditor {
     nodeId?: string
     widgetName: string
   }): Locator {
-    const labelLocator = this.comfyPage.page
-      .getByTestId(TestIds.subgraphEditor.widgetLabel)
-      .filter({ hasText: options.widgetName })
+    const nodeItems =
+      options.nodeId !== undefined
+        ? this.comfyPage.page.locator(`[data-nodeid="${options.nodeId}"]`)
+        : options.nodeName !== undefined
+          ? this.promotionItems.filter({
+              has: this.comfyPage.page
+                .getByTestId(TestIds.subgraphEditor.nodeName)
+                .filter({ hasText: options.nodeName })
+            })
+          : this.promotionItems
 
-    const named = this.promotionItems.filter({ has: labelLocator })
-    if (!options.nodeName && !options.nodeId) return named
-    if (options.nodeName) {
-      const nodeNameLocator = this.comfyPage.page
-        .getByTestId(TestIds.subgraphEditor.nodeName)
-        .filter({ hasText: options.nodeName })
-      return named.filter({ has: nodeNameLocator })
-    }
-
-    const idLocator = this.comfyPage.page.locator(
-      `[data-nodeid="${options.nodeId}"]`
-    )
-    return named.filter({ has: idLocator })
+    return nodeItems.filter({
+      has: this.comfyPage.page
+        .getByTestId(TestIds.subgraphEditor.widgetLabel)
+        .filter({ hasText: options.widgetName })
+    })
   }
   async togglePromotionOnItem(item: Locator, toState?: boolean) {
     const toggleButton = item.getByTestId(TestIds.subgraphEditor.iconEye)
