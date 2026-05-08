@@ -10,7 +10,6 @@ import {
   hasWidgetError,
   isWidgetVisible
 } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -207,20 +206,15 @@ describe('computeProcessedWidgets borderStyle', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('applies promoted border styling to intermediate promoted widgets', () => {
+  it('does not apply border styling to promoted widgets', () => {
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
       storeNodeId: 'inner-subgraph:1',
       storeName: 'text',
-      slotName: 'text'
-    })
-
-    usePromotionStore().promote('graph-test', '4', {
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
+      slotName: 'text',
+      promotedLabel: 'Text'
     })
 
     const result = computeProcessedWidgets({
@@ -242,13 +236,12 @@ describe('computeProcessedWidgets borderStyle', () => {
       ui: noopUi
     })
 
-    expect(
-      result.some((w) => w.simplified.borderStyle?.includes('promoted'))
-    ).toBe(true)
+    expect(result[0].simplified.borderStyle).toBeUndefined()
+    expect(result[0].simplified.label).toBe('Text')
   })
 
-  it('does not apply promoted border styling to outermost widgets', () => {
-    const promotedWidget = createMockWidget({
+  it('does not apply border styling to regular widgets', () => {
+    const widget = createMockWidget({
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
@@ -257,17 +250,11 @@ describe('computeProcessedWidgets borderStyle', () => {
       slotName: 'text'
     })
 
-    usePromotionStore().promote('graph-test', '4', {
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
-    })
-
     const result = computeProcessedWidgets({
       nodeData: {
         id: '4',
         type: 'SubgraphNode',
-        widgets: [promotedWidget],
+        widgets: [widget],
         title: 'Test',
         mode: 0,
         selected: false,

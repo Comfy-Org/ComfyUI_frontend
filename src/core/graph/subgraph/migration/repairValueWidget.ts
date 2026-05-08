@@ -24,14 +24,17 @@ interface RepairValueWidgetArgs {
 function findHostInputForLinkedSource(
   hostNode: SubgraphNode,
   sourceNodeId: string,
-  sourceWidgetName: string
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
 ) {
   return hostNode.inputs.find((input) => {
     const widget = input._widget
     if (!widget || !isPromotedWidgetView(widget)) return false
     return (
       widget.sourceNodeId === sourceNodeId &&
-      widget.sourceWidgetName === sourceWidgetName
+      widget.sourceWidgetName === sourceWidgetName &&
+      (!disambiguatingSourceNodeId ||
+        widget.disambiguatingSourceNodeId === disambiguatingSourceNodeId)
     )
   })
 }
@@ -51,7 +54,8 @@ function repairAlreadyLinked(
   const hostInput = findHostInputForLinkedSource(
     hostNode,
     entry.normalized.sourceNodeId,
-    entry.normalized.sourceWidgetName
+    entry.normalized.sourceWidgetName,
+    entry.normalized.disambiguatingSourceNodeId
   )
   if (!hostInput?._widget) {
     return { ok: false, reason: 'missingSubgraphInput' }

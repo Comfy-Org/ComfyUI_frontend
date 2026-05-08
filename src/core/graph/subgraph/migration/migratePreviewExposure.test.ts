@@ -108,6 +108,34 @@ describe(migratePreviewExposure, () => {
     expect(store.getExposures(host.rootGraph.id, locator)).toHaveLength(2)
   })
 
+  it('reuses an existing exposure for the same source preview', () => {
+    const host = buildHost()
+    const innerNode = new LGraphNode('Inner')
+    host.subgraph.add(innerNode)
+
+    const store = usePreviewExposureStore()
+    const locator = createNodeLocatorId(host.rootGraph.id, host.id)
+    store.addExposure(host.rootGraph.id, locator, {
+      sourceNodeId: String(innerNode.id),
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+
+    const result = migratePreviewExposure({
+      hostNode: host,
+      entry: buildEntry({
+        sourceNodeId: String(innerNode.id),
+        sourcePreviewName: '$$canvas-image-preview'
+      }),
+      store
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      previewName: '$$canvas-image-preview'
+    })
+    expect(store.getExposures(host.rootGraph.id, locator)).toHaveLength(1)
+  })
+
   it('returns missingSourceNode when the source node is absent', () => {
     const host = buildHost()
     const store = usePreviewExposureStore()

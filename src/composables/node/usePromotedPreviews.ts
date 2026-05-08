@@ -5,7 +5,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
@@ -20,17 +19,13 @@ interface PromotedPreview {
 /**
  * Returns reactive preview media exposed by a host SubgraphNode.
  *
- * Reads first from the host-scoped {@link usePreviewExposureStore} (the
- * canonical post-ADR-0009 source). Falls back to the legacy promotion-store
- * `$$`-prefixed entries when no exposures have been migrated yet — the
- * configure-time flush will normalize both into the exposure store on next
- * load.
+ * Reads from the host-scoped {@link usePreviewExposureStore}, the canonical
+ * post-ADR-0009 source for display-only preview promotion.
  */
 export function usePromotedPreviews(
   lgraphNode: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
   const previewExposureStore = usePreviewExposureStore()
-  const promotionStore = usePromotionStore()
   const nodeOutputStore = useNodeOutputStore()
 
   const promotedPreviews = computed((): PromotedPreview[] => {
@@ -45,18 +40,10 @@ export function usePromotedPreviews(
       hostLocator
     )
 
-    const exposurePairs = exposures.length
-      ? exposures.map((exposure) => ({
-          sourceNodeId: exposure.sourceNodeId,
-          sourceWidgetName: exposure.sourcePreviewName
-        }))
-      : promotionStore
-          .getPromotions(rootGraphId, node.id)
-          .filter((entry) => entry.sourceWidgetName.startsWith('$$'))
-          .map((entry) => ({
-            sourceNodeId: entry.sourceNodeId,
-            sourceWidgetName: entry.sourceWidgetName
-          }))
+    const exposurePairs = exposures.map((exposure) => ({
+      sourceNodeId: exposure.sourceNodeId,
+      sourceWidgetName: exposure.sourcePreviewName
+    }))
 
     if (!exposurePairs.length) return []
 

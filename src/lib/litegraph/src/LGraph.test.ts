@@ -13,6 +13,7 @@ import {
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
@@ -280,7 +281,7 @@ describe('Graph Clearing and Callbacks', () => {
     expect(graph.nodes.length).toBe(0)
   })
 
-  test('clear() removes graph-scoped promotion and widget-value state', () => {
+  test('clear() removes graph-scoped promotion, preview, and widget-value state', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     const graph = new LGraph()
@@ -291,6 +292,12 @@ describe('Graph Clearing and Callbacks', () => {
     promotionStore.promote(graphId, 1 as NodeId, {
       sourceNodeId: '10',
       sourceWidgetName: 'seed'
+    })
+
+    const previewExposureStore = usePreviewExposureStore()
+    previewExposureStore.addExposure(graphId, `${graphId}:1`, {
+      sourceNodeId: '10',
+      sourcePreviewName: '$$canvas-image-preview'
     })
 
     const widgetValueStore = useWidgetValueStore()
@@ -314,6 +321,9 @@ describe('Graph Clearing and Callbacks', () => {
     expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
       expect.objectContaining({ value: 1 })
     )
+    expect(
+      previewExposureStore.getExposures(graphId, `${graphId}:1`)
+    ).toHaveLength(1)
 
     graph.clear()
 
@@ -326,6 +336,9 @@ describe('Graph Clearing and Callbacks', () => {
     expect(
       widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
     ).toBeUndefined()
+    expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
+      []
+    )
   })
 })
 

@@ -39,9 +39,14 @@ function buildHost(): SubgraphNode {
 
 function makeSource(
   sourceNodeId: string,
-  sourceWidgetName: string
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
 ): PromotedWidgetSource {
-  return { sourceNodeId, sourceWidgetName }
+  return {
+    sourceNodeId,
+    sourceWidgetName,
+    ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
+  }
 }
 
 describe(classifyProxyEntry, () => {
@@ -71,6 +76,42 @@ describe(classifyProxyEntry, () => {
       expect(result.plan).toEqual({
         kind: 'alreadyLinked',
         subgraphInputName: 'seed_link'
+      })
+    })
+
+    it('matches already-linked inputs by disambiguatingSourceNodeId when provided', () => {
+      const host = buildHost()
+      const innerNode = new LGraphNode('Inner')
+      innerNode.addWidget('number', 'seed', 0, () => {})
+      host.subgraph.add(innerNode)
+
+      const firstInput = host.addInput('first_seed', '*')
+      firstInput._widget = fromPartial<PromotedWidgetView>({
+        node: host,
+        name: 'seed',
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'seed',
+        disambiguatingSourceNodeId: 'first'
+      })
+      const secondInput = host.addInput('second_seed', '*')
+      secondInput._widget = fromPartial<PromotedWidgetView>({
+        node: host,
+        name: 'seed',
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'seed',
+        disambiguatingSourceNodeId: 'second'
+      })
+
+      const normalized = makeSource(String(innerNode.id), 'seed', 'second')
+      const result = classifyProxyEntry({
+        hostNode: host,
+        normalized,
+        cohort: [normalized]
+      })
+
+      expect(result.plan).toEqual({
+        kind: 'alreadyLinked',
+        subgraphInputName: 'second_seed'
       })
     })
   })

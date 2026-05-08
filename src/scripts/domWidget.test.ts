@@ -3,18 +3,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
-const isPromotedByAnyMock = vi.hoisted(() => vi.fn())
-
 // Mock dependencies
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({
     unregisterWidget: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/promotionStore', () => ({
-  usePromotionStore: () => ({
-    isPromotedByAny: isPromotedByAnyMock
   })
 }))
 
@@ -114,41 +106,12 @@ describe('DOMWidget Y Position Preservation', () => {
   })
 })
 
-describe('DOMWidget draw promotion behavior', () => {
+describe('DOMWidget draw behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  test('draws promoted outline for visible promoted widgets', () => {
-    isPromotedByAnyMock.mockReturnValue(true)
-
-    const node = new LGraphNode('test-node')
-    const rootGraph = { id: 'root-graph-id' }
-    node.graph = { rootGraph } as never
-    const onDraw = vi.fn()
-
-    const widget = new DOMWidgetImpl({
-      node,
-      name: 'seed',
-      type: 'text',
-      element: document.createElement('div'),
-      options: { onDraw }
-    })
-    const ctx = createMockContext()
-
-    widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
-
-    expect(isPromotedByAnyMock).toHaveBeenCalledWith('root-graph-id', {
-      sourceNodeId: '-1',
-      sourceWidgetName: 'seed'
-    })
-    expect(ctx.strokeRect).toHaveBeenCalledOnce()
-    expect(onDraw).toHaveBeenCalledWith(widget)
-  })
-
-  test('does not draw promoted outline when widget is not promoted', () => {
-    isPromotedByAnyMock.mockReturnValue(false)
-
+  test('does not draw an outline for visible widgets', () => {
     const node = new LGraphNode('test-node')
     const rootGraph = { id: 'root-graph-id' }
     node.graph = { rootGraph } as never
@@ -187,7 +150,6 @@ describe('DOMWidget draw promotion behavior', () => {
 
     widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
 
-    expect(isPromotedByAnyMock).not.toHaveBeenCalled()
     expect(ctx.strokeRect).not.toHaveBeenCalled()
     expect(onDraw).toHaveBeenCalledWith(widget)
   })

@@ -35,7 +35,10 @@ function findLinkedSubgraphInputName(
     if (!widget || !isPromotedWidgetView(widget)) continue
     if (
       widget.sourceNodeId === normalized.sourceNodeId &&
-      widget.sourceWidgetName === normalized.sourceWidgetName
+      widget.sourceWidgetName === normalized.sourceWidgetName &&
+      (!normalized.disambiguatingSourceNodeId ||
+        widget.disambiguatingSourceNodeId ===
+          normalized.disambiguatingSourceNodeId)
     ) {
       return input.name
     }

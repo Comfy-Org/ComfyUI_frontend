@@ -39,13 +39,17 @@ function buildHost(): SubgraphNode {
 function buildEntry(args: {
   sourceNodeId: string
   sourceWidgetName: string
+  disambiguatingSourceNodeId?: string
   plan: PendingMigrationEntry['plan']
   hostValue?: PendingMigrationEntry['hostValue']
 }): PendingMigrationEntry {
   return {
     normalized: {
       sourceNodeId: args.sourceNodeId,
-      sourceWidgetName: args.sourceWidgetName
+      sourceWidgetName: args.sourceWidgetName,
+      ...(args.disambiguatingSourceNodeId && {
+        disambiguatingSourceNodeId: args.disambiguatingSourceNodeId
+      })
     },
     legacyOrderIndex: 0,
     hostValue: args.hostValue ?? HOST_VALUE_HOLE,
@@ -111,6 +115,47 @@ describe(repairValueWidget, () => {
 
       expect(result).toEqual({ ok: true, subgraphInputName: 'seed_link' })
       expect(inputSlot._widget?.value).toBe(7)
+    })
+
+    it('applies host value to the linked input with the matching disambiguator', () => {
+      const host = buildHost()
+      const innerNode = new LGraphNode('Inner')
+      innerNode.addWidget('number', 'seed', 0, () => {})
+      host.subgraph.add(innerNode)
+
+      const firstInput = host.addInput('first_seed', '*')
+      firstInput._widget = fromPartial<PromotedWidgetView>({
+        node: host,
+        name: 'seed',
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'seed',
+        disambiguatingSourceNodeId: 'first',
+        value: 1
+      })
+      const secondInput = host.addInput('second_seed', '*')
+      secondInput._widget = fromPartial<PromotedWidgetView>({
+        node: host,
+        name: 'seed',
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'seed',
+        disambiguatingSourceNodeId: 'second',
+        value: 2
+      })
+
+      const result = repairValueWidget({
+        hostNode: host,
+        entry: buildEntry({
+          sourceNodeId: String(innerNode.id),
+          sourceWidgetName: 'seed',
+          disambiguatingSourceNodeId: 'second',
+          plan: { kind: 'alreadyLinked', subgraphInputName: 'second_seed' },
+          hostValue: 99
+        })
+      })
+
+      expect(result).toEqual({ ok: true, subgraphInputName: 'second_seed' })
+      expect(firstInput._widget?.value).toBe(1)
+      expect(secondInput._widget?.value).toBe(99)
     })
 
     it('returns missingSubgraphInput when the linked SubgraphInput is gone', () => {

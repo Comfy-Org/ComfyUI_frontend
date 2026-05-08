@@ -57,7 +57,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -70,6 +70,7 @@ import {
   isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
@@ -187,11 +188,13 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const promotionStore = usePromotionStore()
-    const promotions = promotionStore.getPromotionsRef(
-      node.rootGraph.id,
-      node.id
-    )
+    const hostLocator = createNodeLocatorId(node.rootGraph.id, node.id)
+    const promotions = usePreviewExposureStore()
+      .getExposures(node.rootGraph.id, hostLocator)
+      .map((exposure) => ({
+        sourceNodeId: exposure.sourceNodeId,
+        sourceWidgetName: exposure.sourcePreviewName
+      }))
     const resolved = resolveSubgraphPseudoWidgetCache({
       cache: subgraphPseudoWidgetCache.get(node) ?? null,
       promotions,

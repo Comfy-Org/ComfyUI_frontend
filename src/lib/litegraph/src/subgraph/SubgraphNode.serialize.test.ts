@@ -152,6 +152,33 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
   })
 
   describe('previewExposures round-trip', () => {
+    it('hydrates previewExposures into the store during configure', () => {
+      const subgraph = createTestSubgraph()
+      const hostNode = createTestSubgraphNode(subgraph)
+      const rootGraphId = hostNode.rootGraph.id
+      const hostLocator = createNodeLocatorId(rootGraphId, hostNode.id)
+
+      hostNode.properties.previewExposures = [
+        {
+          name: 'preview',
+          sourceNodeId: '12',
+          sourcePreviewName: '$$canvas-image-preview'
+        }
+      ]
+
+      hostNode._internalConfigureAfterSlots()
+
+      expect(
+        usePreviewExposureStore().getExposures(rootGraphId, hostLocator)
+      ).toEqual([
+        {
+          name: 'preview',
+          sourceNodeId: '12',
+          sourcePreviewName: '$$canvas-image-preview'
+        }
+      ])
+    })
+
     it('writes previewExposures from the store on serialize', () => {
       const subgraph = createTestSubgraph()
       const hostNode = createTestSubgraphNode(subgraph)

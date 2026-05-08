@@ -3,10 +3,10 @@ import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { usePromotionStore } from '@/stores/promotionStore'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -70,8 +70,6 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
-const promotionStore = usePromotionStore()
-
 function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
@@ -83,13 +81,13 @@ function isWidgetShownOnParents(
           ? widget.sourceNodeId
           : String(widgetNode.id)
 
-      return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+      return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
         sourceWidgetName: widget.sourceWidgetName,
         disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
       })
     }
-    return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+    return isWidgetPromotedOnSubgraphNode(parent, {
       sourceNodeId: String(widgetNode.id),
       sourceWidgetName: widget.name
     })

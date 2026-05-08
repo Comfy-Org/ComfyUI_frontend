@@ -29,7 +29,6 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -167,7 +166,6 @@ export function computeProcessedWidgets({
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
 
-  const promotionStore = usePromotionStore()
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
   const widgetValueStore = useWidgetValueStore()
@@ -249,13 +247,9 @@ export function computeProcessedWidgets({
     widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const hostNodeId = String(nodeId ?? '')
     const bareWidgetId = String(
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
-    const promotionSourceNodeId = widget.storeName
-      ? String(bareWidgetId)
-      : undefined
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -270,17 +264,9 @@ export function computeProcessedWidgets({
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
-    const borderStyle =
-      graphId &&
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: hostNodeId,
-        sourceWidgetName: widget.storeName ?? widget.name,
-        disambiguatingSourceNodeId: promotionSourceNodeId
-      })
-        ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+    const borderStyle = mergedOptions.advanced
+      ? 'ring ring-component-node-widget-advanced'
+      : undefined
 
     const linkedUpstream: LinkedUpstreamInfo | undefined =
       slotMetadata?.linked && slotMetadata.originNodeId

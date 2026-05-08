@@ -9,7 +9,13 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+
+type TestPromotedWidget = IBaseWidget & {
+  sourceNodeId: string
+  sourceWidgetName: string
+}
 
 const updatePreviewsMock = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({
@@ -22,6 +28,7 @@ import {
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
+  promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
   pruneDisconnected
 } from './promotionUtils'
@@ -112,58 +119,67 @@ describe('pruneDisconnected', () => {
     vi.restoreAllMocks()
   })
 
-  it('removes disconnected entries and emits a dev warning', () => {
+  it('removes disconnected linked inputs and emits a dev warning', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const interiorNode = new LGraphNode('TestNode')
     subgraphNode.subgraph.add(interiorNode)
-    interiorNode.addWidget('text', 'kept', 'value', () => {})
+    const keptInput = interiorNode.addInput('kept', 'STRING')
+    const keptWidget = interiorNode.addWidget('text', 'kept', 'value', () => {})
+    keptInput.widget = { name: keptWidget.name }
+    promoteValueWidgetViaSubgraphInput(subgraphNode, interiorNode, keptWidget)
 
-    const store = usePromotionStore()
-    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
-      { sourceNodeId: String(interiorNode.id), sourceWidgetName: 'kept' },
-      {
-        sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: 'missing-widget'
-      },
-      { sourceNodeId: '9999', sourceWidgetName: 'missing-node' }
-    ])
+    const missingWidgetInput = subgraph.addInput('missing-widget', 'STRING')
+    missingWidgetInput._widget = fromPartial<TestPromotedWidget>({
+      sourceNodeId: String(interiorNode.id),
+      sourceWidgetName: 'missing-widget'
+    })
+    const missingNodeInput = subgraph.addInput('missing-node', 'STRING')
+    missingNodeInput._widget = fromPartial<TestPromotedWidget>({
+      sourceNodeId: '9999',
+      sourceWidgetName: 'missing-node'
+    })
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     pruneDisconnected(subgraphNode)
 
-    expect(
-      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
-    ).toEqual([
-      { sourceNodeId: String(interiorNode.id), sourceWidgetName: 'kept' }
-    ])
+    expect(subgraph.inputs.map((input) => input.name)).toEqual(['kept'])
     expect(warnSpy).toHaveBeenCalledOnce()
   })
 
-  it('keeps virtual canvas preview promotions for PreviewImage nodes', () => {
+  it('does not prune preview exposures for PreviewImage nodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const interiorNode = new LGraphNode('PreviewImage')
     interiorNode.type = 'PreviewImage'
     subgraphNode.subgraph.add(interiorNode)
 
-    const store = usePromotionStore()
-    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
+    const hostLocator = createNodeLocatorId(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    usePreviewExposureStore().addExposure(
+      subgraphNode.rootGraph.id,
+      hostLocator,
       {
         sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
-    ])
+    )
 
     pruneDisconnected(subgraphNode)
 
     expect(
-      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        hostLocator
+      )
     ).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     ])
   })
@@ -232,6 +248,53 @@ describe('promoteRecommendedWidgets', () => {
     updatePreviewsMock.mockReset()
   })
 
+  it('promotes recommended value widgets through linked subgraph inputs', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Sampler')
+    const input = interiorNode.addInput('seed', 'INT')
+    const seedWidget = interiorNode.addWidget('number', 'seed', 123, () => {})
+    input.widget = { name: seedWidget.name }
+    subgraph.add(interiorNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    const linkedInput = subgraph.inputs.find((slot) => slot.name === 'seed')
+    expect(linkedInput).toBeDefined()
+    expect(input.link).not.toBeNull()
+    expect(linkedInput?.linkIds).toContain(input.link)
+    expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
+  })
+
+  it('promotes virtual previews through preview exposures', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    const hostLocator = createNodeLocatorId(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        hostLocator
+      )
+    ).toEqual([
+      {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceNodeId: String(glslNode.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
+    expect(subgraph.inputs).toHaveLength(0)
+    expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
+  })
+
   it('skips deferred updatePreviews when a preview widget already exists', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -252,7 +315,7 @@ describe('promoteRecommendedWidgets', () => {
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
 
-  it('eagerly promotes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
+  it('eagerly exposes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const glslNode = new LGraphNode('GLSLShader')
@@ -261,17 +324,24 @@ describe('promoteRecommendedWidgets', () => {
 
     promoteRecommendedWidgets(subgraphNode)
 
-    const store = usePromotionStore()
+    const hostLocator = createNodeLocatorId(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
     expect(
-      store.isPromoted(subgraphNode.rootGraph.id, subgraphNode.id, {
-        sourceNodeId: String(glslNode.id),
-        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
-      })
-    ).toBe(true)
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        hostLocator
+      )
+    ).toContainEqual({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      sourceNodeId: String(glslNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
 
-  it('registers $$canvas-image-preview on configure for GLSLShader in saved workflow', () => {
+  it('hydrates $$canvas-image-preview exposure on configure for GLSLShader in saved workflow', () => {
     // Simulate loading a saved workflow where proxyWidgets does NOT contain
     // the $$canvas-image-preview entry (e.g. blueprint authored before the
     // promotion system, or old workflow save).
@@ -284,13 +354,20 @@ describe('promoteRecommendedWidgets', () => {
     // which eagerly registers $$canvas-image-preview for supported node types
     const subgraphNode = createTestSubgraphNode(subgraph)
 
-    const store = usePromotionStore()
+    const hostLocator = createNodeLocatorId(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
     expect(
-      store.isPromoted(subgraphNode.rootGraph.id, subgraphNode.id, {
-        sourceNodeId: String(glslNode.id),
-        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
-      })
-    ).toBe(true)
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        hostLocator
+      )
+    ).toContainEqual({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      sourceNodeId: String(glslNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
   })
 })
 
@@ -314,12 +391,11 @@ describe('hasUnpromotedWidgets', () => {
     const subgraphNode = createTestSubgraphNode(subgraph)
     const interiorNode = new LGraphNode('InnerNode')
     subgraph.add(interiorNode)
-    interiorNode.addWidget('text', 'seed', '123', () => {})
+    const input = interiorNode.addInput('seed', 'STRING')
+    const widget = interiorNode.addWidget('text', 'seed', '123', () => {})
+    input.widget = { name: widget.name }
 
-    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
-      sourceNodeId: String(interiorNode.id),
-      sourceWidgetName: 'seed'
-    })
+    subgraph.addInput('seed', 'STRING').connect(input, interiorNode)
 
     expect(hasUnpromotedWidgets(subgraphNode)).toBe(false)
   })

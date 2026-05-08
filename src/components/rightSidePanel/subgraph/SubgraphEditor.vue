@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -22,23 +21,17 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
-const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const promotionStore = usePromotionStore()
+const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
-
-const promotionEntries = computed(() => {
-  const node = activeNode.value
-  if (!node) return []
-  return promotionStore.getPromotions(node.rootGraph.id, node.id)
-})
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -51,34 +44,26 @@ const activeWidgets = computed<WidgetItem[]>({
     const node = activeNode.value
     if (!node) return []
 
-    return promotionEntries.value.flatMap(
-      ({
-        sourceNodeId,
-        sourceWidgetName,
-        disambiguatingSourceNodeId
-      }): WidgetItem[] => {
-        if (sourceNodeId === '-1') {
-          const widget = node.widgets.find((w) => w.name === sourceWidgetName)
-          if (!widget) return []
-          return [
-            [{ id: -1, title: t('subgraphStore.linked'), type: '' }, widget]
-          ]
-        }
-        const wNode = node.subgraph._nodes_by_id[sourceNodeId]
-        if (!wNode) return []
-        const widget = getPromotableWidgets(wNode).find((w) => {
-          if (w.name !== sourceWidgetName) return false
-          if (disambiguatingSourceNodeId && isPromotedWidgetView(w))
-            return (
-              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
-              disambiguatingSourceNodeId
-            )
-          return true
-        })
-        if (!widget) return []
-        return [[wNode, widget]]
-      }
-    )
+    const linkedWidgets = node.widgets.flatMap((widget): WidgetItem[] => {
+      if (!isPromotedWidgetView(widget)) return []
+      const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
+      if (!sourceNode) return []
+      return [[sourceNode, widget]]
+    })
+
+    const hostLocator = createNodeLocatorId(node.rootGraph.id, node.id)
+    const previewWidgets = previewExposureStore
+      .getExposures(node.rootGraph.id, hostLocator)
+      .flatMap((exposure): WidgetItem[] => {
+        const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
+        if (!sourceNode) return []
+        const widget = getPromotableWidgets(sourceNode).find(
+          (candidate) => candidate.name === exposure.sourcePreviewName
+        )
+        return widget ? [[sourceNode, widget]] : []
+      })
+
+    return [...linkedWidgets, ...previewWidgets]
   },
   set(value: WidgetItem[]) {
     const node = activeNode.value
@@ -86,17 +71,15 @@ const activeWidgets = computed<WidgetItem[]>({
       console.error('Attempted to toggle widgets with no node selected')
       return
     }
-    promotionStore.setPromotions(
-      node.rootGraph.id,
-      node.id,
-      value.map(([n, w]) => ({
-        sourceNodeId: String(n.id),
-        sourceWidgetName: getWidgetName(w),
-        disambiguatingSourceNodeId: isPromotedWidgetView(w)
-          ? w.disambiguatingSourceNodeId
-          : undefined
-      }))
-    )
+    const currentItems = activeWidgets.value
+    const currentKeys = new Set(currentItems.map(toKey))
+    const nextKeys = new Set(value.map(toKey))
+    for (const item of value) {
+      if (!currentKeys.has(toKey(item))) promote(item)
+    }
+    for (const item of currentItems) {
+      if (!nextKeys.has(toKey(item))) demote(item)
+    }
     refreshPromotedWidgetRendering()
   }
 })
@@ -119,14 +102,8 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
   return interiorWidgets.value.filter(
-    ([n, w]: WidgetItem) =>
-      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
-        sourceNodeId: String(n.id),
-        sourceWidgetName: getWidgetName(w),
-        disambiguatingSourceNodeId: isPromotedWidgetView(w)
-          ? w.disambiguatingSourceNodeId
-          : undefined
-      })
+    (item: WidgetItem) =>
+      !activeWidgets.value.some((active) => toKey(active) === toKey(item))
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {

@@ -9,7 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { usePromotedPreviews } from './usePromotedPreviews'
@@ -83,6 +83,18 @@ function seedPreviewImages(
   }
 }
 
+function exposePreview(
+  setup: ReturnType<typeof createSetup>,
+  sourceNodeId: string,
+  sourcePreviewName = '$$canvas-image-preview'
+) {
+  usePreviewExposureStore().addExposure(
+    setup.subgraphNode.rootGraph.id,
+    createNodeLocatorId(setup.subgraphNode.rootGraph.id, setup.subgraphNode.id),
+    { sourceNodeId, sourcePreviewName }
+  )
+}
+
 describe(usePromotedPreviews, () => {
   let nodeOutputStore: MockNodeOutputStore
 
@@ -109,11 +121,6 @@ describe(usePromotedPreviews, () => {
   it('returns empty array when no $$ promotions exist', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: 'seed' }
-    )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([])
@@ -122,11 +129,7 @@ describe(usePromotedPreviews, () => {
   it('returns image preview for promoted $$ widget with outputs', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     const mockUrls = ['/view?filename=output.png']
     seedOutputs(setup.subgraph.id, [10])
@@ -146,11 +149,7 @@ describe(usePromotedPreviews, () => {
   it('returns video type when interior node has video previewMediaType', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'video' })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     seedOutputs(setup.subgraph.id, [10])
     getNodeImageUrls.mockReturnValue(['/view?filename=output.webm'])
@@ -162,11 +161,7 @@ describe(usePromotedPreviews, () => {
   it('returns audio type when interior node has audio previewMediaType', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'audio' })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     seedOutputs(setup.subgraph.id, [10])
     getNodeImageUrls.mockReturnValue(['/view?filename=output.mp3'])
@@ -185,16 +180,8 @@ describe(usePromotedPreviews, () => {
       id: 20,
       previewMediaType: 'image'
     })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '20', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
+    exposePreview(setup, '20')
 
     seedOutputs(setup.subgraph.id, [10, 20])
     getNodeImageUrls.mockImplementation((node: LGraphNode) => {
@@ -212,11 +199,7 @@ describe(usePromotedPreviews, () => {
   it('returns preview when only nodePreviewImages exist (e.g. GLSL live preview)', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
     seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
@@ -236,11 +219,7 @@ describe(usePromotedPreviews, () => {
   it('recomputes when preview images are populated after first evaluation', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([])
@@ -262,11 +241,7 @@ describe(usePromotedPreviews, () => {
   it('skips interior nodes with no image output', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([])
@@ -274,29 +249,16 @@ describe(usePromotedPreviews, () => {
 
   it('skips missing interior nodes', () => {
     const setup = createSetup()
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '99', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '99')
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([])
   })
 
-  it('ignores non-$$ promoted widgets', () => {
+  it('uses preview exposures by source preview name', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: 'seed' }
-    )
-    usePromotionStore().promote(
-      setup.subgraphNode.rootGraph.id,
-      setup.subgraphNode.id,
-      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
-    )
+    exposePreview(setup, '10')
 
     const mockUrls = ['/view?filename=img.png']
     seedOutputs(setup.subgraph.id, [10])
