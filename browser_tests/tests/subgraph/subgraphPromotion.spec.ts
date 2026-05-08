@@ -652,10 +652,7 @@ test('@vue-nodes Promote/Demote by side panel', async ({ comfyPage }) => {
   await expect(steps, 'Un-promote widget').toBeHidden()
 })
 
-test('@vue-nodes Can intermix linked and proxy', async ({
-  comfyPage,
-  comfyMouse
-}) => {
+test('@vue-nodes Can intermix linked and proxy', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
   const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
 
@@ -682,17 +679,12 @@ test('@vue-nodes Can intermix linked and proxy', async ({
 
   const { editor } = comfyPage.subgraph
   await editor.open(subgraphNode)
-  const stepsItem = editor.resolvePromotionItem({ widgetName: 'steps' })
-  const cfgItem = editor.resolvePromotionItem({ widgetName: 'cfg' })
 
-  await comfyMouse.move(await comfyMouse.getCenter(stepsItem))
-  await comfyMouse.down()
-  const { x, y, width, height } = (await cfgItem.boundingBox())!
-  await comfyMouse.move({ x: x + width / 2, y: y + height })
-  await comfyMouse.up()
-
-  const firstItem = editor.resolvePromotionItem({ widgetName: '' }).first()
-  await expect(firstItem, 'Swap widget order').toContainText('cfg')
+  await editor.dragItem(0, 1)
+  await expect(
+    editor.promotionItems.first(),
+    'Swap widget order'
+  ).toContainText('cfg')
 
   // TODO: fix actual bug.
   await expect(
