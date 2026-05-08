@@ -287,7 +287,7 @@ function getPreviewOutput(job: JobListItem) {
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
   if (preview?.isImage || preview?.isVideo) {
-    return preview.url
+    return preview.previewUrl
   }
   return job.iconImageUrl
 }
