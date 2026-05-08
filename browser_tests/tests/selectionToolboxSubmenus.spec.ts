@@ -90,11 +90,14 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Shape', { exact: true }).hover()
-      await expect(
-        comfyPage.page.getByText('Box', { exact: true })
-      ).toBeVisible()
-      await comfyPage.page.getByText('Box', { exact: true }).click()
+      // Shape now opens via body-appended popover (FE-570); a hover no
+      // longer reveals the submenu — match the Color flow and click.
+      await comfyPage.page.getByText('Shape', { exact: true }).click()
+      const shapePopover = comfyPage.page
+        .locator('.p-popover')
+        .filter({ hasText: 'Default' })
+      await expect(shapePopover.getByText('Box', { exact: true })).toBeVisible()
+      await shapePopover.getByText('Box', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)

@@ -49,10 +49,12 @@ test.describe(
 
     async function expectShapePopoverVisible(comfyPage: ComfyPage) {
       // Shape popover renders via PrimeVue Popover (body-appended), so it
-      // escapes the context menu's overflow container. We assert by content.
+      // escapes the context menu's overflow container. Filter by 'Default'
+      // (the localized label of the RenderShape.ROUND option) to scope to
+      // the shape popover, not the still-open context menu.
       const popover = comfyPage.page
         .locator('.p-popover')
-        .filter({ hasText: 'Round' })
+        .filter({ hasText: 'Default' })
       await expect(popover).toBeVisible()
       await expect(popover).toContainText('Box')
       await expect(popover).toContainText('Card')
