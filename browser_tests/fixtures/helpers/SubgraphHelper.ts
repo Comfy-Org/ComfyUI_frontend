@@ -9,12 +9,17 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class SubgraphHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly editor: SubgraphEditor
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.editor = new SubgraphEditor(comfyPage)
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -325,50 +330,6 @@ export class SubgraphHelper {
       await targetSlot.getPosition()
     )
     await this.comfyPage.nextFrame()
-  }
-
-  async toggleContainedWidgetPromotion(
-    subgraphNode: Locator,
-    options: (
-      | { nodeName: string; nodeId?: undefined }
-      | { nodeName?: undefined; nodeId: string }
-    ) & { widgetName: string; toState?: boolean }
-  ) {
-    await this.comfyPage.vueNodes.selectNodeByLocator(subgraphNode)
-    await this.comfyPage.command.executeCommand(
-      'Comfy.Graph.EditSubgraphWidgets'
-    )
-    const { root } = this.comfyPage.menu.propertiesPanel
-    await expect(root, 'Open Properties Panel').toBeVisible()
-
-    const resolvePromotionItem: () => Locator = () => {
-      const labelLocator = this.comfyPage.page
-        .getByTestId(TestIds.subgraphEditor.widgetLabel)
-        .filter({ hasText: options.widgetName })
-
-      const named = root
-        .getByTestId(TestIds.subgraphEditor.widgetItem)
-        .filter({ has: labelLocator })
-      if (options.nodeName !== undefined) {
-        const nodeNameLocator = this.comfyPage.page
-          .getByTestId(TestIds.subgraphEditor.nodeName)
-          .filter({ hasText: options.nodeName })
-        return named.filter({ has: nodeNameLocator })
-      }
-
-      const idLocator = this.comfyPage.page.locator(
-        `[data-nodeid="${options.nodeId}"]`
-      )
-      return named.filter({ has: idLocator })
-    }
-    const item = resolvePromotionItem()
-
-    const toggleButton = item.getByTestId(TestIds.subgraphEditor.iconEye)
-    if (options.toState !== undefined) {
-      const expectedIcon = `icon-[lucide--eye${options.toState ? '-off' : ''}]`
-      await expect(toggleButton).toContainClass(expectedIcon)
-    }
-    await toggleButton.click()
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
