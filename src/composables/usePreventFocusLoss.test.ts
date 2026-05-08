@@ -81,6 +81,17 @@ describe('usePreventFocusLoss', () => {
     expect(event.defaultPrevented).toBe(false)
   })
 
+  it('does not prevent default when clicking a select', () => {
+    const container = document.createElement('div')
+    const select = document.createElement('select')
+    container.appendChild(select)
+    teardown = setup(container)
+
+    const event = fireMousedown(select)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
   describe('excludeSelector', () => {
     it('does not prevent default when target matches the exclude selector', () => {
       const container = document.createElement('div')
