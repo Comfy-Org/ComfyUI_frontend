@@ -11,6 +11,7 @@ declare global {
   const __ALGOLIA_APP_ID__: string
   const __ALGOLIA_API_KEY__: string
   const __USE_PROD_CONFIG__: boolean
+  const __DEV_SERVER_COMFYUI_URL__: string
   const __DISTRIBUTION__: 'desktop' | 'localhost' | 'cloud'
   const __IS_NIGHTLY__: boolean
 }
@@ -22,6 +23,7 @@ type GlobalWithDefines = typeof globalThis & {
   __ALGOLIA_APP_ID__: string
   __ALGOLIA_API_KEY__: string
   __USE_PROD_CONFIG__: boolean
+  __DEV_SERVER_COMFYUI_URL__: string
   __DISTRIBUTION__: 'desktop' | 'localhost' | 'cloud'
   __IS_NIGHTLY__: boolean
   window?: Record<string, unknown>
@@ -37,6 +39,7 @@ globalWithDefines.__SENTRY_DSN__ = ''
 globalWithDefines.__ALGOLIA_APP_ID__ = ''
 globalWithDefines.__ALGOLIA_API_KEY__ = ''
 globalWithDefines.__USE_PROD_CONFIG__ = false
+globalWithDefines.__DEV_SERVER_COMFYUI_URL__ = ''
 globalWithDefines.__DISTRIBUTION__ = 'localhost'
 globalWithDefines.__IS_NIGHTLY__ = false
 
