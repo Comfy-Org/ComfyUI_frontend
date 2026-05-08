@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "e",
+      "backToGithubLogin": "Cadastre-se com o Github",
       "backToLogin": "Voltar para login",
       "backToSocialLogin": "Cadastre-se com Google ou Github em vez disso",
       "confirmPasswordLabel": "Confirmar senha",
@@ -292,7 +293,9 @@
       "title": "Reautenticação necessária"
     },
     "signOut": {
+      "saveFailed": "Saída cancelada porque salvar \"{workflow}\" falhou.",
       "signOut": "Sair",
+      "signOutAnyway": "Sair mesmo assim",
       "success": "Logout realizado com sucesso",
       "successDetail": "Você saiu da sua conta.",
       "unsavedChangesMessage": "Você tem alterações não salvas que serão perdidas ao sair. Deseja continuar?",
@@ -835,6 +838,7 @@
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
+    "OPTICAL_FLOW": "FLUX ÓPTICO",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "MODELO PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -3162,6 +3166,7 @@
       "deleteFailedTitle": "Falha ao excluir",
       "deleted": "Workflow excluído",
       "dirtyClose": "Os arquivos abaixo foram alterados. Deseja salvá-los antes de fechar?",
+      "dirtyCloseAnyway": "Fechar mesmo assim",
       "dirtyCloseHint": "Segure Shift para fechar sem perguntar",
       "dirtyCloseTitle": "Salvar alterações?",
       "workflowTreeType": {

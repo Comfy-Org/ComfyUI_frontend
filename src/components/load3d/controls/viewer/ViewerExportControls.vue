@@ -1,11 +1,18 @@
 <template>
   <div class="space-y-4">
-    <Select
-      v-model="exportFormat"
-      :options="exportFormats"
-      option-label="label"
-      option-value="value"
-    >
+    <Select v-model="exportFormat">
+      <SelectTrigger size="md">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem
+          v-for="fmt in exportFormats"
+          :key="fmt.value"
+          :value="fmt.value"
+        >
+          {{ fmt.label }}
+        </SelectItem>
+      </SelectContent>
     </Select>
 
     <Button
@@ -19,10 +26,14 @@
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Select from '@/components/ui/select/Select.vue'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void

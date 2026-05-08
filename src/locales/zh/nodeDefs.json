@@ -4171,6 +4171,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "通过 Google Vertex API 同步生成或编辑图像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述要生成图像或要应用编辑的文本提示。请包含模型应遵循的任何约束、风格或细节。"
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "当 seed 固定为特定值时，模型会尽力为重复请求提供相同的响应，但不保证输出完全一致。此外，即使使用相同的 seed，修改模型或参数设置（如 temperature）也可能导致响应变化。默认情况下，使用随机 seed 值。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定 AI 行为的基础性指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "模型思考过程中的第一张图像。仅在 thinking_level 设为 HIGH 且 response_modalities 为 IMAGE+TEXT 时可用。"
+      }
+    }
+  },
   "GeminiNode": {
     "description": "使用 Google 的 Gemini AI 模型生成文本响应。您可以提供多种类型的输入（文本、图像、音频、视频）作为上下文，以生成更相关和有意义的响应。",
     "display_name": "Google Gemini",
@@ -11917,6 +11965,20 @@
       }
     }
   },
+  "OpticalFlowLoader": {
+    "display_name": "加载光流模型",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "要加载的光流模型。文件必须放在 'optical_flow' 文件夹中。目前仅支持 torchvision 的 raft_large.pth。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OptimalStepsScheduler": {
     "display_name": "OptimalSteps调度器",
     "inputs": {
@@ -17808,6 +17870,127 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "要处理的像素帧数。对于 CogVideoX-Fun-V1.5（patch_size_t=2），latent_t 必须为偶数——产生奇数 latent_t 的长度会向下取整（如 49 → 45）。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "来自 VOIDQuadmaskPreprocess 的预处理 quadmask [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "源视频帧 [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "主 mask 区域的膨胀半径（0 = 不膨胀）"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "像素帧数。为满足 patch_size_t=2 的要求，向下取整使 latent_t 为偶数，例如 49 → 45。"
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "来自 OpticalFlowLoader 的光流模型（RAFT-large）。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "第一步输出的视频帧 [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "来自 VOIDWarpedNoise 的 warped noise latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
