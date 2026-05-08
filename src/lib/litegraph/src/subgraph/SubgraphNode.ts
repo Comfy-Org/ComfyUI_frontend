@@ -296,10 +296,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._cacheVersion++
   }
 
-  private _syncPromotions(): void {
-    this._invalidatePromotedViewsCache()
-  }
-
   private _buildLinkedReconcileEntries(
     linkedEntries: LinkedPromotionEntry[]
   ): Array<{
@@ -450,7 +446,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         this.removeInput(e.detail.index)
         this._invalidatePromotedViewsCache()
-        this._syncPromotions()
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -584,7 +579,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             e.detail.node
           )
 
-        this._syncPromotions()
+        this._invalidatePromotedViewsCache()
       },
       { signal }
     )
@@ -599,7 +594,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) {
           this._resolveInputWidget(subgraphInput, input)
-          this._syncPromotions()
+          this._invalidatePromotedViewsCache()
           return
         }
 
@@ -608,7 +603,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         delete input.pos
         delete input.widget
         input._widget = undefined
-        this._syncPromotions()
+        this._invalidatePromotedViewsCache()
       },
       { signal }
     )
@@ -771,7 +766,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._resolveInputWidget(subgraphInput, input)
     }
 
-    this._syncPromotions()
+    this._invalidatePromotedViewsCache()
 
     for (const node of this.subgraph.nodes) {
       if (!supportsVirtualCanvasImagePreview(node)) continue
@@ -810,7 +805,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._resolveInputWidget(subgraphInput, input)
     }
 
-    this._syncPromotions()
+    this._invalidatePromotedViewsCache()
   }
 
   private _resolveInputWidget(
@@ -932,7 +927,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onAdded(_graph: LGraph): void {
-    this._syncPromotions()
+    this._invalidatePromotedViewsCache()
   }
 
   /**
@@ -1140,7 +1135,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       subgraphNode: this
     })
 
-    this._syncPromotions()
+    this._invalidatePromotedViewsCache()
   }
 
   override onRemoved(): void {

@@ -19,15 +19,16 @@ interface DeduplicationResult {
  * they are configured. This prevents widget store key collisions when
  * multiple subgraph copies contain nodes with the same IDs.
  *
- * Also patches proxyWidgets in root-level nodes that reference the
- * remapped inner node IDs.
+ * Also patches legacy proxyWidgets in root-level nodes that reference the
+ * remapped inner node IDs. The ADR 0009 migration flush consumes these tuples
+ * after configure.
  *
  * Returns deep clones of the inputs — the originals are never mutated.
  *
  * @param subgraphs - Serialized subgraph definitions to deduplicate
  * @param reservedNodeIds - Node IDs already in use by root-level nodes
  * @param state - Graph state containing the `lastNodeId` counter (mutated)
- * @param rootNodes - Optional root-level nodes with proxyWidgets to patch
+ * @param rootNodes - Optional root-level nodes with legacy proxyWidgets to patch
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
@@ -197,7 +198,7 @@ export function topologicalSortSubgraphs(
   return sorted
 }
 
-/** Patches proxyWidgets in root-level SubgraphNode instances. */
+/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
 function patchProxyWidgets(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,

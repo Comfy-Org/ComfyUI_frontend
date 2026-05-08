@@ -103,24 +103,6 @@ export function isWidgetPromotedOnSubgraphNode(
   )
 }
 
-export function isWidgetPromotedByAnySubgraphNode(
-  node: PartialNode,
-  widgetName: string
-): boolean {
-  if (!('graph' in node)) return false
-  const graph = (node as LGraphNode).graph
-  if (!graph) return false
-
-  return graph.rootGraph.nodes.some(
-    (candidate) =>
-      candidate.isSubgraphNode() &&
-      isWidgetPromotedOnSubgraphNode(candidate, {
-        sourceNodeId: String(node.id),
-        sourceWidgetName: widgetName
-      })
-  )
-}
-
 function toPromotionSource(
   node: PartialNode,
   widget: IBaseWidget
@@ -176,7 +158,7 @@ export function promoteValueWidgetViaSubgraphInput(
   return { ok: true }
 }
 
-export function promotePreviewViaExposure(
+function promotePreviewViaExposure(
   subgraphNode: SubgraphNode,
   sourceNode: LGraphNode,
   sourcePreviewName: string
@@ -487,7 +469,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
 
   if (removedEntries.length > 0 && import.meta.env.DEV) {
     console.warn(
-      '[proxyWidgetUtils] Pruned disconnected promotions',
+      '[subgraphInputs] Pruned disconnected promoted widget inputs',
       removedEntries,
       {
         graphId: subgraphNode.rootGraph.id,
@@ -499,7 +481,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   refreshPromotedWidgetRendering([subgraphNode])
   Sentry.addBreadcrumb({
     category: 'subgraph',
-    message: `Pruned ${removedEntries.length} disconnected promotion(s) from subgraph node ${subgraphNode.id}`,
+    message: `Pruned ${removedEntries.length} disconnected promoted widget input(s) from subgraph node ${subgraphNode.id}`,
     level: 'info'
   })
 }
