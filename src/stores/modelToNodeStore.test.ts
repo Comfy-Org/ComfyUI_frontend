@@ -31,7 +31,6 @@ const EXPECTED_DEFAULT_TYPES = [
   'latent_upscale_models',
   'sam2',
   'sams',
-  'ultralytics',
   'depthanything',
   'ipadapter',
   'segformer_b2_clothes',
@@ -84,7 +83,6 @@ const MOCK_NODE_NAMES = [
   'LatentUpscaleModelLoader',
   'DownloadAndLoadSAM2Model',
   'SAMLoader',
-  'UltralyticsDetectorProvider',
   'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
   'LS_LoadSegformerModel',
@@ -260,8 +258,6 @@ describe('useModelToNodeStore', () => {
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
-      ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-      ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
       ['FlashVSR', 'FlashVSRNode', ''],
       ['FlashVSR-v1.1', 'FlashVSRNode', ''],
       ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
@@ -275,6 +271,16 @@ describe('useModelToNodeStore', () => {
         const provider = modelToNodeStore.getNodeProvider(modelType)
         expect(provider?.nodeDef?.name).toBe(expectedNodeName)
         expect(provider?.key).toBe(expectedKey)
+      }
+    )
+
+    it.each([['ultralytics'], ['ultralytics/bbox'], ['ultralytics/segm']])(
+      'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
+      (modelType) => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.registerDefaults()
+
+        expect(modelToNodeStore.getNodeProvider(modelType)).toBeUndefined()
       }
     )
   })
