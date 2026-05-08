@@ -32,6 +32,10 @@ let dragStart: { x: number; y: number; pointerId: number } | null = null
 let dragging = false
 
 function handlePointerDown(e: PointerEvent) {
+  // Re-entrance guard: a second pointerdown during an active drag
+  // (multi-touch, second mouse button) would overwrite dragStart and
+  // leak the prior pointer-capture session.
+  if (dragStart !== null) return
   if (e.button !== 0 && e.button !== 1) return
   e.preventDefault()
   dragStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId }

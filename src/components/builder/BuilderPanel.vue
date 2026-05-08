@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -7,16 +8,24 @@ import FloatingPanel from '@/components/appMode/layout/panels/FloatingPanel.vue'
 import PanelBlockList from '@/components/appMode/layout/panels/PanelBlockList.vue'
 import { useAppPanelLayout } from '@/components/appMode/layout/panels/useAppPanelLayout'
 import { useAppMode } from '@/composables/useAppMode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { getPathDetails } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
+const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 const { panelPreset, panelCollapsed, panelRows } = storeToRefs(appModeStore)
 const { isSelectInputsMode, isSelectOutputsMode } = useAppMode()
 const { inputEntryMap, moveBlock } = useAppPanelLayout()
+
+// Reserve sidebar gutter on the side the user has it pinned to so the
+// floating-panel bounds don't overlap with a right-side sidebar.
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') !== 'right'
+)
 
 const panelTitle = computed(() => {
   const path = workflowStore.activeWorkflow?.path
@@ -35,9 +44,17 @@ const emptyCopy = computed(() => {
 </script>
 
 <template>
-  <!-- Positioned ancestor for FloatingPanel; offset past sidebar. -->
+  <!-- Positioned ancestor for FloatingPanel; offset past whichever
+       side the sidebar is pinned to. -->
   <div
-    class="pointer-events-none fixed top-(--workflow-tabs-height) right-0 bottom-0 left-(--sidebar-width,0px) z-100"
+    :class="
+      cn(
+        'pointer-events-none fixed top-(--workflow-tabs-height) bottom-0 z-100',
+        sidebarOnLeft
+          ? 'right-0 left-(--sidebar-width,0px)'
+          : 'right-(--sidebar-width,0px) left-0'
+      )
+    "
   >
     <FloatingPanel
       v-model:preset="panelPreset"

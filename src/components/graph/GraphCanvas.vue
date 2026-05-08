@@ -18,7 +18,12 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI" #side-toolbar>
+    <!-- Builder mode hides sidebar panel content via
+         LiteGraphCanvasSplitterOverlay's `sidebarPanelVisible`
+         (`activeSidebarTab !== null && !isBuilderMode`), so suppress
+         the side-toolbar buttons too — otherwise they're orphan
+         clicks that can't open anything. -->
+    <template v-if="showUI && !isBuilderMode" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="showUI" #side-bar-panel>

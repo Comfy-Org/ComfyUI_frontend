@@ -120,7 +120,7 @@ function dragDrop(e: DragEvent) {
       v-if="showLayoutView"
       class="flex h-[calc(100%-var(--workflow-tabs-height))] w-full"
     >
-      <SideToolbar />
+      <SideToolbar v-if="sidebarOnLeft" />
       <Splitter
         v-if="activeTab"
         class="flex-1 border-none bg-transparent"
@@ -128,7 +128,10 @@ function dragDrop(e: DragEvent) {
         state-storage="local"
         @resizestart="$event.originalEvent.preventDefault()"
       >
+        <!-- sidebarOnLeft: Extension | LayoutView.
+             !sidebarOnLeft: LayoutView | Extension. -->
         <SplitterPanel
+          v-if="sidebarOnLeft"
           :size="SIDE_PANEL_SIZE"
           :min-size="SIDEBAR_MIN_SIZE"
           class="min-w-78 overflow-hidden"
@@ -139,13 +142,29 @@ function dragDrop(e: DragEvent) {
             <ExtensionSlot :extension="activeTab" />
           </div>
         </SplitterPanel>
-        <SplitterPanel :size="100 - SIDE_PANEL_SIZE" class="relative">
+        <SplitterPanel
+          :size="sidebarOnLeft ? 100 - SIDE_PANEL_SIZE : SIDE_PANEL_SIZE"
+          class="relative"
+        >
           <LayoutView />
+        </SplitterPanel>
+        <SplitterPanel
+          v-if="!sidebarOnLeft"
+          :size="SIDE_PANEL_SIZE"
+          :min-size="SIDEBAR_MIN_SIZE"
+          class="min-w-78 overflow-hidden"
+        >
+          <div
+            class="size-full overflow-x-hidden border-l border-border-subtle"
+          >
+            <ExtensionSlot :extension="activeTab" />
+          </div>
         </SplitterPanel>
       </Splitter>
       <div v-else class="relative flex-1">
         <LayoutView />
       </div>
+      <SideToolbar v-if="!sidebarOnLeft" />
     </div>
     <Splitter
       v-else

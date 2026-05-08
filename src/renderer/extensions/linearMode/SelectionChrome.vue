@@ -16,6 +16,9 @@ defineEmits<{ toggle: [] }>()
   <Teleport v-if="width > 0 && height > 0" to="body">
     <div
       class="group pointer-events-auto fixed flex cursor-pointer flex-row items-stretch gap-2"
+      role="button"
+      tabindex="0"
+      :aria-pressed="isSelected"
       :style="{
         top: `${top}px`,
         left: `${left - 32}px`,
@@ -24,6 +27,8 @@ defineEmits<{ toggle: [] }>()
         zIndex: 5
       }"
       @pointerdown.capture.stop.prevent="$emit('toggle')"
+      @keydown.enter.capture.stop.prevent="$emit('toggle')"
+      @keydown.space.capture.stop.prevent="$emit('toggle')"
       @click.capture.stop.prevent
       @pointerup.capture.stop.prevent
       @pointermove.capture.stop.prevent
