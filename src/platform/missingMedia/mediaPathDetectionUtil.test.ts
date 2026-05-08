@@ -10,6 +10,7 @@ describe('normalizeAnnotatedMediaPathForDetection', () => {
   it.each([
     ['photo.png [input]', 'photo.png'],
     ['result.png [output]', 'result.png'],
+    ['photo.png   [input]', 'photo.png'],
     ['with spaces.png [output]', 'with spaces.png'],
     ['nested/folder/video.mp4 [output]', 'nested/folder/video.mp4']
   ])('strips Core-style annotation from %s', (value, expected) => {

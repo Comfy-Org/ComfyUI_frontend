@@ -18,12 +18,11 @@ import {
 } from './missingMediaScan'
 import type { MissingMediaCandidate } from './types'
 
-const { mockGetInputAssetsIncludingPublic, mockGetAllAssetsByTag } = vi.hoisted(
-  () => ({
+const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
+  vi.hoisted(() => ({
     mockGetInputAssetsIncludingPublic: vi.fn(),
-    mockGetAllAssetsByTag: vi.fn()
-  })
-)
+    mockGetAssetsPageByTag: vi.fn()
+  }))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
@@ -47,7 +46,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     assetService: {
       ...actual.assetService,
       getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
-      getAllAssetsByTag: mockGetAllAssetsByTag
+      getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
 })
@@ -127,6 +126,17 @@ function makeAssetResolver(
   generatedAssets: AssetItem[] = []
 ): MissingMediaAssetResolver {
   return vi.fn(async () => ({ inputAssets, generatedAssets }))
+}
+
+function makeAssetPage(
+  assets: AssetItem[],
+  options: { hasMore?: boolean; total?: number } = {}
+) {
+  return {
+    assets,
+    total: options.total ?? assets.length,
+    has_more: options.hasMore ?? false
+  }
 }
 
 function makeHistoryJob(
@@ -443,7 +453,7 @@ describe('verifyMediaCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
-    mockGetAllAssetsByTag.mockResolvedValue([])
+    mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue({
       jobs: [],
       total: 0,
@@ -708,17 +718,23 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', `${outputHash} [output]`, { isMissing: undefined })
     ]
-    mockGetAllAssetsByTag.mockResolvedValue([makeAsset(outputHash)])
+    mockGetAssetsPageByTag.mockResolvedValue(
+      makeAssetPage([makeAsset(outputHash)])
+    )
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
       expect.any(AbortSignal)
     )
-    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledWith(
       'output',
       true,
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
+      expect.objectContaining({
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
     )
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
     expect(candidates[0].isMissing).toBe(false)

@@ -7,6 +7,7 @@ import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
+const CLOUD_OUTPUT_ASSETS_PAGE_SIZE = 500
 
 interface MediaPathDetectionOptions {
   allowCompactSuffix: boolean
@@ -89,7 +90,6 @@ export function getAssetDetectionNames(
 
   const subfolder = asset.user_metadata?.subfolder
   if (typeof subfolder === 'string' && subfolder) {
-    addSubfolderPathDetectionNames(names, subfolder, asset.asset_hash, options)
     addSubfolderPathDetectionNames(names, subfolder, asset.name, options)
   }
 
@@ -101,7 +101,11 @@ async function fetchGeneratedAssets(
   { isCloud, generatedMatchNames, pathOptions }: FetchGeneratedAssetsOptions
 ): Promise<AssetItem[]> {
   if (isCloud) {
-    return await assetService.getAllAssetsByTag('output', true, { signal })
+    return await fetchCloudGeneratedAssets(
+      signal,
+      generatedMatchNames,
+      pathOptions
+    )
   }
 
   return await fetchGeneratedHistoryAssets(
@@ -109,6 +113,50 @@ async function fetchGeneratedAssets(
     generatedMatchNames,
     pathOptions
   )
+}
+
+async function fetchCloudGeneratedAssets(
+  signal: AbortSignal | undefined,
+  targetNames: ReadonlySet<string>,
+  pathOptions: MediaPathDetectionOptions
+): Promise<AssetItem[]> {
+  const assets: AssetItem[] = []
+  const foundTargetNames = new Set<string>()
+  let offset = 0
+
+  while (true) {
+    signal?.throwIfAborted()
+
+    const assetPage = await assetService.getAssetsPageByTag('output', true, {
+      limit: CLOUD_OUTPUT_ASSETS_PAGE_SIZE,
+      offset,
+      signal
+    })
+
+    signal?.throwIfAborted()
+
+    const batch = assetPage.assets
+    if (batch.length === 0) return assets
+
+    for (const asset of batch) {
+      assets.push(asset)
+      rememberResolvedTargetNames(
+        asset,
+        targetNames,
+        foundTargetNames,
+        pathOptions
+      )
+    }
+
+    if (
+      !assetPage.has_more ||
+      hasResolvedAllTargetNames(targetNames, foundTargetNames)
+    ) {
+      return assets
+    }
+
+    offset += batch.length
+  }
 }
 
 async function fetchGeneratedHistoryAssets(
