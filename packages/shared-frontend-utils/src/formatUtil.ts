@@ -38,6 +38,7 @@ export function appendJsonExt(path: string) {
   return path
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type WorkflowSuffix = typeof JSON_SUFFIX | typeof APP_JSON_SUFFIX
 
 export function getWorkflowSuffix(
@@ -668,6 +669,7 @@ const TEXT_EXTENSIONS = [
 ] as const
 
 const MEDIA_TYPES = ['image', 'video', 'audio', '3D', 'text', 'other'] as const
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
