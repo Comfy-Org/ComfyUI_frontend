@@ -10,34 +10,68 @@ const STAGING_API_BASE_URL = 'https://stagingapi.comfy.org'
 const PROD_PLATFORM_BASE_URL = 'https://platform.comfy.org'
 const STAGING_PLATFORM_BASE_URL = 'https://stagingplatform.comfy.org'
 
-const BUILD_TIME_API_BASE_URL = __USE_PROD_CONFIG__
-  ? PROD_API_BASE_URL
-  : STAGING_API_BASE_URL
+type ComfyApiEnvironment = {
+  isCloudDistribution: boolean
+  isDev: boolean
+  devServerComfyUIUrl?: string
+  useProdConfig: boolean
+}
 
-const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
-  ? PROD_PLATFORM_BASE_URL
-  : STAGING_PLATFORM_BASE_URL
+const localOriginPattern =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/
 
-export function getComfyApiBaseUrl(): string {
-  if (!isCloud) {
-    return BUILD_TIME_API_BASE_URL
+function buildTimeApiBaseUrl(useProdConfig: boolean): string {
+  return useProdConfig ? PROD_API_BASE_URL : STAGING_API_BASE_URL
+}
+
+function buildTimePlatformBaseUrl(useProdConfig: boolean): string {
+  return useProdConfig ? PROD_PLATFORM_BASE_URL : STAGING_PLATFORM_BASE_URL
+}
+
+function isLocalDevServer(url?: string): boolean {
+  return url ? localOriginPattern.test(url) : false
+}
+
+export function getComfyApiBaseUrlForEnvironment({
+  isCloudDistribution,
+  isDev,
+  devServerComfyUIUrl,
+  useProdConfig
+}: ComfyApiEnvironment): string {
+  const buildTimeApiBaseUrlValue = buildTimeApiBaseUrl(useProdConfig)
+  if (!isCloudDistribution) {
+    return buildTimeApiBaseUrlValue
+  }
+  if (isDev && isLocalDevServer(devServerComfyUIUrl)) {
+    return ''
   }
 
   return configValueOrDefault(
     remoteConfig.value,
     'comfy_api_base_url',
-    BUILD_TIME_API_BASE_URL
+    buildTimeApiBaseUrlValue
   )
 }
 
+export function getComfyApiBaseUrl(): string {
+  return getComfyApiBaseUrlForEnvironment({
+    isCloudDistribution: isCloud,
+    isDev: import.meta.env.DEV,
+    devServerComfyUIUrl: __DEV_SERVER_COMFYUI_URL__,
+    useProdConfig: __USE_PROD_CONFIG__
+  })
+}
+
 export function getComfyPlatformBaseUrl(): string {
+  const buildTimePlatformBaseUrlValue =
+    buildTimePlatformBaseUrl(__USE_PROD_CONFIG__)
   if (!isCloud) {
-    return BUILD_TIME_PLATFORM_BASE_URL
+    return buildTimePlatformBaseUrlValue
   }
 
   return configValueOrDefault(
     remoteConfig.value,
     'comfy_platform_base_url',
-    BUILD_TIME_PLATFORM_BASE_URL
+    buildTimePlatformBaseUrlValue
   )
 }

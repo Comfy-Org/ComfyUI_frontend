@@ -5,6 +5,7 @@ declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
+declare const __DEV_SERVER_COMFYUI_URL__: string
 
 interface ImpactQueueFunction {
   (...args: unknown[]): void
