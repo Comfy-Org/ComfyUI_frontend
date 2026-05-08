@@ -2,6 +2,7 @@ import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
+import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -11,7 +12,10 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
-import { getFirebaseConfig } from '@/config/firebase'
+import {
+  getFirebaseAuthEmulatorUrl,
+  getFirebaseConfig
+} from '@/config/firebase'
 import {
   configValueOrDefault,
   remoteConfig
@@ -48,6 +52,14 @@ const ComfyUIPreset = definePreset(Aura, {
 })
 
 const firebaseApp = initializeApp(getFirebaseConfig())
+const firebaseAuthEmulatorUrl = getFirebaseAuthEmulatorUrl(
+  import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST
+)
+if (firebaseAuthEmulatorUrl) {
+  connectAuthEmulator(getAuth(firebaseApp), firebaseAuthEmulatorUrl, {
+    disableWarnings: true
+  })
+}
 
 const app = createApp(App)
 const pinia = createPinia()

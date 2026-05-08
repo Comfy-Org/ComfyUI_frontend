@@ -141,6 +141,11 @@ import { useRoute, useRouter } from 'vue-router'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import {
+  captureOAuthRequestId,
+  getOAuthRequestId
+} from '@/platform/cloud/oauth/oauthState'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { isCloud } from '@/platform/distribution/types'
@@ -154,6 +159,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useAuthActions()
+const sessionCookie = useSessionCookie()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
@@ -178,6 +184,17 @@ const onSuccess = async () => {
     summary: 'Sign up Completed',
     life: 2000
   })
+
+  captureOAuthRequestId(route.query)
+  const oauthRequestId = getOAuthRequestId()
+  if (oauthRequestId) {
+    await sessionCookie.createSessionOrThrow()
+    await router.push({
+      name: 'cloud-oauth-consent',
+      query: { oauth_request_id: oauthRequestId }
+    })
+    return
+  }
 
   const previousFullPath = getSafePreviousFullPath(route.query)
   if (previousFullPath) {

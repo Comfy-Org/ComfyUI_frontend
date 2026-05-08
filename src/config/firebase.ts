@@ -25,7 +25,54 @@ const PROD_CONFIG: FirebaseOptions = {
   measurementId: 'G-3ZBD3MBTG4'
 }
 
-const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
+type FirebaseEnvironment = {
+  isCloudBuild: boolean
+  useProdConfig: boolean
+  authEmulatorHost?: string
+  localProjectId?: string
+}
+
+function buildLocalEmulatorConfig(
+  buildTimeConfig: FirebaseOptions,
+  localProjectId: string | undefined
+): FirebaseOptions {
+  if (!localProjectId) {
+    throw new Error(
+      'VITE_FIREBASE_PROJECT_ID is required when VITE_FIREBASE_AUTH_EMULATOR_HOST is set'
+    )
+  }
+
+  return {
+    ...buildTimeConfig,
+    projectId: localProjectId,
+    authDomain: `${localProjectId}.firebaseapp.com`
+  }
+}
+
+export function getFirebaseAuthEmulatorUrl(
+  host: string | undefined
+): string | null {
+  return host ? `http://${host}` : null
+}
+
+export function getFirebaseConfigForEnvironment({
+  isCloudBuild,
+  useProdConfig,
+  authEmulatorHost,
+  localProjectId
+}: FirebaseEnvironment): FirebaseOptions {
+  const buildTimeConfig = useProdConfig ? PROD_CONFIG : DEV_CONFIG
+  if (authEmulatorHost) {
+    return buildLocalEmulatorConfig(buildTimeConfig, localProjectId)
+  }
+
+  if (!isCloudBuild) {
+    return buildTimeConfig
+  }
+
+  const runtimeConfig = remoteConfig.value.firebase_config
+  return runtimeConfig ?? buildTimeConfig
+}
 
 /**
  * Returns the Firebase configuration for the current environment.
@@ -33,10 +80,10 @@ const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
  * - OSS / localhost builds fall back to the build-time config determined by __USE_PROD_CONFIG__
  */
 export function getFirebaseConfig(): FirebaseOptions {
-  if (!isCloud) {
-    return BUILD_TIME_CONFIG
-  }
-
-  const runtimeConfig = remoteConfig.value.firebase_config
-  return runtimeConfig ?? BUILD_TIME_CONFIG
+  return getFirebaseConfigForEnvironment({
+    isCloudBuild: isCloud,
+    useProdConfig: __USE_PROD_CONFIG__,
+    authEmulatorHost: import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST,
+    localProjectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
+  })
 }
