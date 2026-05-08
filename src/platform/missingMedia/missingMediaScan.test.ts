@@ -256,7 +256,7 @@ describe('scanNodeMediaCandidates', () => {
     {
       nodeType: 'LoadVideo',
       widgetName: 'file',
-      value: 'clip.mp4 [temp]'
+      value: 'clip.mp4 [output]'
     },
     {
       nodeType: 'LoadAudio',
@@ -264,7 +264,7 @@ describe('scanNodeMediaCandidates', () => {
       value: 'sound.wav [output]'
     }
   ])(
-    'leaves OSS $nodeType output/temp annotations pending when not in options',
+    'leaves OSS $nodeType output annotations pending when not in options',
     ({ nodeType, widgetName, value }) => {
       const graph = makeGraph([])
       const node = makeMediaNode(
@@ -657,11 +657,11 @@ describe('verifyMediaCandidates', () => {
 
   it('matches when the asset identifier itself is annotated', async () => {
     const candidates = [
-      makeCandidate('1', 'clip.mp4[temp]', { isMissing: undefined })
+      makeCandidate('1', 'clip.mp4[output]', { isMissing: undefined })
     ]
     const resolveAssetSources = makeAssetResolver(
       [],
-      [makeAsset('clip.mp4 [temp]')]
+      [makeAsset('clip.mp4 [output]')]
     )
 
     await verifyMediaCandidates(candidates, {

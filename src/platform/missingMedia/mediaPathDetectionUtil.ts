@@ -1,8 +1,8 @@
 // Missing-media-scoped helpers for deriving comparison keys from media widget paths.
-const CORE_ANNOTATED_MEDIA_PATTERN = / \[(input|output|temp)\]$/
-const CLOUD_ANNOTATED_MEDIA_PATTERN = /\s*\[(input|output|temp)\]$/
+const CORE_ANNOTATED_MEDIA_PATTERN = / \[(input|output)\]$/
+const CLOUD_ANNOTATED_MEDIA_PATTERN = /\s*\[(input|output)\]$/
 
-type AnnotatedMediaPathType = 'input' | 'output' | 'temp'
+type AnnotatedMediaPathType = 'input' | 'output'
 
 interface AnnotatedMediaPathOptions {
   allowCompactSuffix?: boolean

@@ -10,9 +10,8 @@ describe('normalizeAnnotatedMediaPathForDetection', () => {
   it.each([
     ['photo.png [input]', 'photo.png'],
     ['result.png [output]', 'result.png'],
-    ['audio/clip.wav [temp]', 'audio/clip.wav'],
     ['with spaces.png [output]', 'with spaces.png'],
-    ['nested/folder/video.mp4 [temp]', 'nested/folder/video.mp4']
+    ['nested/folder/video.mp4 [output]', 'nested/folder/video.mp4']
   ])('strips Core-style annotation from %s', (value, expected) => {
     expect(normalizeAnnotatedMediaPathForDetection(value)).toBe(expected)
   })
@@ -20,7 +19,6 @@ describe('normalizeAnnotatedMediaPathForDetection', () => {
   it.each([
     ['photo.png[input]', 'photo.png'],
     ['result.png[output]', 'result.png'],
-    ['audio/clip.wav[temp]', 'audio/clip.wav'],
     ['with spaces.png   [output]', 'with spaces.png']
   ])('strips Cloud compact annotation from %s', (value, expected) => {
     expect(
@@ -60,8 +58,7 @@ describe('getMediaPathDetectionNames', () => {
 describe('getAnnotatedMediaPathTypeForDetection', () => {
   it.each([
     ['photo.png [input]', 'input'],
-    ['photo.png [output]', 'output'],
-    ['photo.png [temp]', 'temp']
+    ['photo.png [output]', 'output']
   ])('returns the Core-style annotation type from %s', (value, expected) => {
     expect(getAnnotatedMediaPathTypeForDetection(value)).toBe(expected)
   })

@@ -50,7 +50,7 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
  * Scan combo widgets on media nodes for file values that may be missing.
  *
  * OSS: `isMissing` is resolved immediately via widget options unless an
- * output/temp annotation needs generated-history verification.
+ * output annotation needs generated-history verification.
  * Cloud: `isMissing` left `undefined` for async verification.
  */
 export function scanAllMediaCandidates(
@@ -104,7 +104,7 @@ export function scanNodeMediaCandidates(
       isMissing = undefined
     } else {
       const type = getAnnotatedMediaPathTypeForDetection(value)
-      if (type === 'output' || type === 'temp') {
+      if (type === 'output') {
         isMissing = undefined
       } else {
         const options = resolveComboValues(widget)
@@ -140,10 +140,10 @@ interface MediaVerificationOptions {
  *
  * A candidate's `name` may be either a filename or an opaque asset hash.
  * Cloud-side `asset_hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.asset_hash`. Output/temp
+ * match against the union of `asset.name` and `asset.asset_hash`. Output
  * candidates are matched against Cloud output assets or Core generated-history
- * assets because Core resolves those annotations against output/temp folders,
- * not input files.
+ * assets because Core resolves those annotations against output folders, not
+ * input files.
  * Cloud accepts compact annotated media paths, so only Cloud verification
  * normalizes compact suffixes.
  */
@@ -202,9 +202,7 @@ export async function verifyMediaCandidates(
       pathOptions
     )
     const identifiers =
-      type === 'output' || type === 'temp'
-        ? outputAssetIdentifiers
-        : inputAssetIdentifiers
+      type === 'output' ? outputAssetIdentifiers : inputAssetIdentifiers
     candidate.isMissing = !detectionNames.some((name) => identifiers.has(name))
   }
 }
@@ -232,7 +230,7 @@ function isGeneratedCandidate(
     candidate.name,
     pathOptions
   )
-  return type === 'output' || type === 'temp'
+  return type === 'output'
 }
 
 function addAssetIdentifiers(
