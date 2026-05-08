@@ -293,7 +293,9 @@
       "title": "إعادة المصادقة مطلوبة"
     },
     "signOut": {
+      "saveFailed": "تم إلغاء تسجيل الخروج بسبب فشل حفظ \"{workflow}\".",
       "signOut": "تسجيل الخروج",
+      "signOutAnyway": "تسجيل الخروج على أي حال",
       "success": "تم تسجيل الخروج بنجاح",
       "successDetail": "لقد تم تسجيل خروجك من حسابك.",
       "unsavedChangesMessage": "لديك تغييرات غير محفوظة ستفقد عند تسجيل الخروج. هل ترغب في المتابعة؟",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "فشل الحذف",
       "deleted": "تم حذف سير العمل",
       "dirtyClose": "تم تعديل الملفات أدناه. هل تريد حفظها قبل الإغلاق؟",
+      "dirtyCloseAnyway": "إغلاق على أي حال",
       "dirtyCloseHint": "اضغط Shift للإغلاق بدون تنبيه",
       "dirtyCloseTitle": "حفظ التغييرات؟",
       "workflowTreeType": {

@@ -4171,6 +4171,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_thinking_level": {
+        "name": "niveau de réflexion"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant l'image à générer ou les modifications à appliquer. Incluez toutes contraintes, styles ou détails que le modèle doit respecter."
+      },
+      "response_modalities": {
+        "name": "modalités de réponse"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle s'efforce de fournir la même réponse pour des requêtes répétées. Un résultat déterministe n'est pas garanti. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations de la réponse même avec la même valeur de graine. Par défaut, une valeur de graine aléatoire est utilisée."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l'IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "image de réflexion",
+        "tooltip": "Première image issue du processus de réflexion du modèle. Disponible uniquement avec le niveau de réflexion ÉLEVÉ et la modalité IMAGE+TEXTE."
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Génère des réponses textuelles avec le modèle d'IA Gemini de Google. Vous pouvez fournir plusieurs types d'entrées (texte, images, audio, vidéo) comme contexte pour générer des réponses plus pertinentes et significatives.",
     "display_name": "Google Gemini",
