@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -41,5 +42,44 @@ describe('ConfirmationDialogContent', () => {
       'workflow_checkpoint_' + 'a'.repeat(200) + '.safetensors'
     renderComponent({ message: longFilename })
     expect(screen.getByText(longFilename)).toBeInTheDocument()
+  })
+
+  it('omits the Cancel button when type is dirtyClose', () => {
+    renderComponent({ type: 'dirtyClose' })
+    expect(screen.queryByText('g.cancel')).not.toBeInTheDocument()
+    expect(screen.getByText('g.save')).toBeInTheDocument()
+  })
+
+  it('uses the provided denyLabel for the deny button on dirtyClose', () => {
+    renderComponent({ type: 'dirtyClose', denyLabel: 'Sign out anyway' })
+    expect(screen.getByText('Sign out anyway')).toBeInTheDocument()
+    expect(screen.queryByText('g.no')).not.toBeInTheDocument()
+  })
+
+  it('calls onConfirm(false) when deny is clicked on dirtyClose', async () => {
+    const onConfirm = vi.fn()
+    renderComponent({
+      type: 'dirtyClose',
+      denyLabel: 'Close anyway',
+      onConfirm
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close anyway' }))
+
+    expect(onConfirm).toHaveBeenCalledWith(false)
+  })
+
+  it('calls onConfirm(true) when save is clicked on dirtyClose', async () => {
+    const onConfirm = vi.fn()
+    renderComponent({ type: 'dirtyClose', onConfirm })
+
+    await userEvent.click(screen.getByRole('button', { name: 'g.save' }))
+
+    expect(onConfirm).toHaveBeenCalledWith(true)
+  })
+
+  it('falls back to "no" label when denyLabel is not provided', () => {
+    renderComponent({ type: 'dirtyClose' })
+    expect(screen.getByText('g.no')).toBeInTheDocument()
   })
 })

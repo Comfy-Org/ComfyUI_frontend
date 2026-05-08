@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "и",
+      "backToGithubLogin": "Зарегистрироваться через Github",
       "backToLogin": "Вернуться к входу",
       "backToSocialLogin": "Зарегистрируйтесь через Google или Github",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -292,7 +293,9 @@
       "title": "Требуется повторная аутентификация"
     },
     "signOut": {
+      "saveFailed": "Выход отменён, так как не удалось сохранить «{workflow}».",
       "signOut": "Выйти",
+      "signOutAnyway": "Выйти всё равно",
       "success": "Вы успешно вышли из системы",
       "successDetail": "Вы вышли из своей учетной записи.",
       "unsavedChangesMessage": "У вас есть несохранённые изменения, которые будут потеряны при выходе из системы. Вы хотите продолжить?",
@@ -835,6 +838,7 @@
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -3150,6 +3154,7 @@
       "deleteFailedTitle": "Не удалось удалить",
       "deleted": "Рабочий процесс удалён",
       "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
+      "dirtyCloseAnyway": "Закрыть всё равно",
       "dirtyCloseHint": "Удерживайте Shift, чтобы закрыть без подсказки",
       "dirtyCloseTitle": "Сохранить изменения?",
       "workflowTreeType": {
