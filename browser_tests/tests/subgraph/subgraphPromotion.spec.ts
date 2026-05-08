@@ -637,17 +637,66 @@ test('@vue-nodes Promote/Demote by side panel', async ({ comfyPage }) => {
   const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
   const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
 
-  await comfyPage.subgraph.toggleContainedWidgetPromotion(subgraphNode, {
+  await comfyPage.subgraph.editor.togglePromotion(subgraphNode, {
     nodeName: 'KSampler',
     widgetName: 'steps',
     toState: true
   })
   await expect(steps, 'Promote widget').toBeVisible()
 
-  await comfyPage.subgraph.toggleContainedWidgetPromotion(subgraphNode, {
+  await comfyPage.subgraph.editor.togglePromotion(subgraphNode, {
     nodeName: 'KSampler',
     widgetName: 'steps',
     toState: false
   })
   await expect(steps, 'Un-promote widget').toBeHidden()
+})
+
+test('@vue-nodes Can intermix linked and proxy', async ({
+  comfyPage,
+  comfyMouse
+}) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+
+  await test.step('Enter subgraph and link widget to input', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+
+    const ksampler = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    await comfyPage.subgraph.promoteWidget(ksampler, 'cfg')
+
+    const fromSlot = await comfyPage.vueNodes.getSlot('steps', ksampler)
+    const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
+    await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+
+    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    await expect.poll(isConnected).toBe(true)
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+  })
+
+  await expect(
+    subgraphNode.locator('.lg-node-widget').first(),
+    'linked widgets are first by default'
+  ).toHaveText('steps')
+
+  const { editor } = comfyPage.subgraph
+  await editor.open(subgraphNode)
+  const stepsItem = editor.resolvePromotionItem({ widgetName: 'steps' })
+  const cfgItem = editor.resolvePromotionItem({ widgetName: 'cfg' })
+
+  await comfyMouse.move(await comfyMouse.getCenter(stepsItem))
+  await comfyMouse.down()
+  const { x, y, width, height } = (await cfgItem.boundingBox())!
+  await comfyMouse.move({ x: x + width / 2, y: y + height })
+  await comfyMouse.up()
+
+  const firstItem = editor.resolvePromotionItem({ widgetName: '' }).first()
+  await expect(firstItem, 'Swap widget order').toContainText('cfg')
+
+  // TODO: fix actual bug.
+  await expect(
+    subgraphNode.locator('.lg-node-widget').first(),
+    'Linked widget is first on node'
+  ).not.toHaveText('cfg')
 })
