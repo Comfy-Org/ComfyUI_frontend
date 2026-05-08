@@ -293,7 +293,9 @@
       "title": "再認証が必要です"
     },
     "signOut": {
+      "saveFailed": "「{workflow}」の保存に失敗したため、サインアウトがキャンセルされました。",
       "signOut": "ログアウト",
+      "signOutAnyway": "とにかくサインアウト",
       "success": "正常にサインアウトしました",
       "successDetail": "アカウントからサインアウトしました。",
       "unsavedChangesMessage": "サインアウトすると未保存の変更が失われます。続行しますか？",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "削除に失敗しました",
       "deleted": "ワークフローが削除されました",
       "dirtyClose": "以下のファイルが変更されました。閉じる前に保存しますか？",
+      "dirtyCloseAnyway": "とにかく閉じる",
       "dirtyCloseHint": "Shiftキーを押しながら閉じると、プロンプトなしで閉じます",
       "dirtyCloseTitle": "変更を保存しますか？",
       "workflowTreeType": {

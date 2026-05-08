@@ -293,7 +293,9 @@
       "title": "Réauthentification requise"
     },
     "signOut": {
+      "saveFailed": "Déconnexion annulée car l’enregistrement de « {workflow} » a échoué.",
       "signOut": "Se déconnecter",
+      "signOutAnyway": "Se déconnecter quand même",
       "success": "Déconnexion réussie",
       "successDetail": "Vous avez été déconnecté de votre compte.",
       "unsavedChangesMessage": "Vous avez des modifications non enregistrées qui seront perdues si vous vous déconnectez. Voulez-vous continuer ?",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "Échec de la suppression",
       "deleted": "Flux de travail supprimé",
       "dirtyClose": "Les fichiers ci-dessous ont été modifiés. Souhaitez-vous les enregistrer avant de fermer ?",
+      "dirtyCloseAnyway": "Fermer quand même",
       "dirtyCloseHint": "Maintenez Shift pour fermer sans invite",
       "dirtyCloseTitle": "Enregistrer les modifications ?",
       "workflowTreeType": {

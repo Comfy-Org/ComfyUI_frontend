@@ -4063,6 +4063,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "display_name": "Nano Banana 2",
+    "description": "Generate or edit images synchronously via Google Vertex API.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the image to generate or the edits to apply. Include any constraints, styles, or details the model should follow."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "When the seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "First image from the model's thinking process. Only available with thinking_level HIGH and IMAGE+TEXT modality."
+      }
+    }
+  },
   "GeminiNode": {
     "display_name": "Google Gemini",
     "description": "Generate text responses with Google's Gemini AI model. You can provide multiple types of inputs (text, images, audio, video) as context for generating more relevant and meaningful responses.",
@@ -14137,11 +14185,11 @@
       },
       "detection_threshold": {
         "name": "detection_threshold",
-        "tooltip": "Score threshold for text-prompted detection"
+        "tooltip": "Score threshold for text-prompted detection."
       },
       "max_objects": {
         "name": "max_objects",
-        "tooltip": "Max tracked objects (0=unlimited). Initial masks count toward this limit."
+        "tooltip": "Max tracked objects. Initial masks count toward this limit. 0 uses the internal cap of 64."
       },
       "detect_interval": {
         "name": "detect_interval",
