@@ -69,6 +69,8 @@ const DEFAULT_DISABLED_EVENTS = [
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
   Object.values(TelemetryEvents) as TelemetryEventName[]
 )
+const localOriginPattern =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -96,6 +98,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
+    if (isLocalCloudDev()) {
+      console.warn('Mixpanel telemetry disabled in local cloud dev')
+      this.isEnabled = false
+      return
+    }
+
     this.configureDisabledEvents(
       (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
     )
@@ -445,4 +453,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
+}
+
+function isLocalCloudDev(): boolean {
+  return (
+    import.meta.env.DEV && localOriginPattern.test(__DEV_SERVER_COMFYUI_URL__)
+  )
 }

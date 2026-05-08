@@ -75,6 +75,7 @@ const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
+type DefineGlobal = typeof globalThis & { __DEV_SERVER_COMFYUI_URL__: string }
 
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
@@ -103,6 +104,7 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    ;(globalThis as DefineGlobal).__DEV_SERVER_COMFYUI_URL__ = ''
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -110,6 +112,26 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
       config?.loaded?.()
     })
     mockNormalizeSurveyResponses.mockImplementation((responses) => responses)
+  })
+
+  it('does not initialize Mixpanel for loopback cloud dev', () => {
+    ;(globalThis as DefineGlobal).__DEV_SERVER_COMFYUI_URL__ =
+      'http://localhost:8188'
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    try {
+      const provider = new MixpanelTelemetryProvider()
+      provider.trackUserLoggedIn()
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('disabled in local cloud dev')
+      )
+      expect(mockMixpanel.init).not.toHaveBeenCalled()
+      expect(mockMixpanel.track).not.toHaveBeenCalled()
+    } finally {
+      warn.mockRestore()
+      ;(globalThis as DefineGlobal).__DEV_SERVER_COMFYUI_URL__ = ''
+    }
   })
 
   it('initializes Mixpanel and tracks events synchronously after the loaded callback fires', async () => {
