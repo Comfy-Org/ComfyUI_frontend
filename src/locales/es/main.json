@@ -293,7 +293,9 @@
       "title": "Reautenticación requerida"
     },
     "signOut": {
+      "saveFailed": "Cierre de sesión cancelado porque falló el guardado de \"{workflow}\".",
       "signOut": "Cerrar sesión",
+      "signOutAnyway": "Cerrar sesión de todos modos",
       "success": "Sesión cerrada correctamente",
       "successDetail": "Has cerrado sesión en tu cuenta.",
       "unsavedChangesMessage": "Tienes cambios no guardados que se perderán al cerrar sesión. ¿Quieres continuar?",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "Eliminación fallida",
       "deleted": "Flujo de trabajo eliminado",
       "dirtyClose": "Los archivos a continuación han sido modificados. ¿Te gustaría guardarlos antes de cerrar?",
+      "dirtyCloseAnyway": "Cerrar de todos modos",
       "dirtyCloseHint": "Mantén presionada la tecla Shift para cerrar sin preguntar",
       "dirtyCloseTitle": "¿Guardar cambios?",
       "workflowTreeType": {
