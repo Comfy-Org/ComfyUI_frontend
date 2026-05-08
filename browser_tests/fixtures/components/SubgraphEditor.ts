@@ -47,13 +47,18 @@ export class SubgraphEditor {
         .filter({ hasText: options.widgetName })
     })
   }
+
+  getToggleButton(item: Locator) {
+    return item.getByTestId(TestIds.subgraphEditor.widgetToggle)
+  }
+
   async togglePromotionOnItem(item: Locator, toState?: boolean) {
-    const toggleButton = item.getByTestId(TestIds.subgraphEditor.iconEye)
+    const toggleIcon = item.getByTestId(TestIds.subgraphEditor.iconEye)
     if (toState !== undefined) {
       const expectedIcon = `icon-[lucide--eye${toState ? '-off' : ''}]`
-      await expect(toggleButton).toContainClass(expectedIcon)
+      await expect(toggleIcon).toContainClass(expectedIcon)
     }
-    await toggleButton.click()
+    await toggleIcon.click()
   }
 
   async togglePromotion(
