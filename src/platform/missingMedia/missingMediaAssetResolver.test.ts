@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
+import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type * as ApiModule from '@/scripts/api'
 import {
   getAssetDetectionNames,
   resolveMissingMediaAssetSources
@@ -17,8 +17,8 @@ const { mockGetInputAssetsIncludingPublic, mockGetAllAssetsByTag } = vi.hoisted(
   })
 )
 
-const { mockGetHistoryPage } = vi.hoisted(() => ({
-  mockGetHistoryPage: vi.fn()
+const { mockFetchHistoryPage } = vi.hoisted(() => ({
+  mockFetchHistoryPage: vi.fn()
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
@@ -36,17 +36,14 @@ vi.mock('@/platform/assets/services/assetService', async () => {
   }
 })
 
-vi.mock('@/scripts/api', async () => {
-  const actual = await vi.importActual<typeof ApiModule>('@/scripts/api')
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
+  const actual = await vi.importActual<typeof FetchJobsModule>(
+    '@/platform/remote/comfyui/jobs/fetchJobs'
+  )
 
   return {
     ...actual,
-    api: new Proxy(actual.api, {
-      get(target, prop, receiver) {
-        if (prop === 'getHistoryPage') return mockGetHistoryPage
-        return Reflect.get(target, prop, receiver)
-      }
-    })
+    fetchHistoryPage: mockFetchHistoryPage
   }
 })
 
@@ -97,7 +94,7 @@ describe('resolveMissingMediaAssetSources', () => {
     vi.clearAllMocks()
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
     mockGetAllAssetsByTag.mockResolvedValue([])
-    mockGetHistoryPage.mockResolvedValue(makeHistoryPage([]))
+    mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
   it('loads cloud input assets when requested', async () => {
@@ -116,7 +113,7 @@ describe('resolveMissingMediaAssetSources', () => {
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
       expect.any(AbortSignal)
     )
-    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
   it('loads cloud output assets by tag when generated candidates need verification', async () => {
@@ -136,7 +133,7 @@ describe('resolveMissingMediaAssetSources', () => {
       true,
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
-    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
   it('aborts cloud output asset loading when input asset loading fails', async () => {
@@ -173,12 +170,12 @@ describe('resolveMissingMediaAssetSources', () => {
     const outputSignal = mockGetAllAssetsByTag.mock.calls[0]?.[2]?.signal
     expect(outputSignal).toBeInstanceOf(AbortSignal)
     expect(outputSignal.aborted).toBe(true)
-    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
   it('stops reading generated history once all requested names are found', async () => {
     const target = 'target.png'
-    mockGetHistoryPage.mockResolvedValueOnce(
+    mockFetchHistoryPage.mockResolvedValueOnce(
       makeHistoryPage([makeHistoryJob(target)], {
         hasMore: true,
         total: 400
@@ -194,12 +191,12 @@ describe('resolveMissingMediaAssetSources', () => {
 
     expect(result.generatedAssets).toHaveLength(1)
     expect(result.generatedAssets[0].name).toBe(target)
-    expect(mockGetHistoryPage).toHaveBeenCalledOnce()
+    expect(mockFetchHistoryPage).toHaveBeenCalledOnce()
   })
 
   it('advances pagination from the requested offset, not the echoed offset', async () => {
     const target = 'target.png'
-    mockGetHistoryPage
+    mockFetchHistoryPage
       .mockResolvedValueOnce(
         makeHistoryPage(
           Array.from({ length: 200 }, (_, index) =>
@@ -223,12 +220,22 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
-    expect(mockGetHistoryPage).toHaveBeenNthCalledWith(1, 200, { offset: 0 })
-    expect(mockGetHistoryPage).toHaveBeenNthCalledWith(2, 200, { offset: 200 })
+    expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Function),
+      200,
+      0
+    )
+    expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Function),
+      200,
+      200
+    )
   })
 
   it('stops if history reports hasMore but returns an empty page', async () => {
-    mockGetHistoryPage.mockResolvedValueOnce(
+    mockFetchHistoryPage.mockResolvedValueOnce(
       makeHistoryPage([], { hasMore: true, total: 1 })
     )
 
@@ -240,12 +247,12 @@ describe('resolveMissingMediaAssetSources', () => {
     })
 
     expect(result.generatedAssets).toEqual([])
-    expect(mockGetHistoryPage).toHaveBeenCalledOnce()
+    expect(mockFetchHistoryPage).toHaveBeenCalledOnce()
   })
 
   it('stops if history repeats the same job page', async () => {
     const repeatedJob = makeHistoryJob('other.png', { id: 'same-job' })
-    mockGetHistoryPage
+    mockFetchHistoryPage
       .mockResolvedValueOnce(
         makeHistoryPage([repeatedJob], { hasMore: true, total: 2 })
       )
@@ -261,7 +268,7 @@ describe('resolveMissingMediaAssetSources', () => {
     })
 
     expect(result.generatedAssets).toHaveLength(1)
-    expect(mockGetHistoryPage).toHaveBeenCalledTimes(2)
+    expect(mockFetchHistoryPage).toHaveBeenCalledTimes(2)
   })
 
   it('includes slash and backslash subfolder identifiers for detection', () => {

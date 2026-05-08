@@ -6,8 +6,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
+import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type * as ApiModule from '@/scripts/api'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
   scanAllMediaCandidates,
@@ -25,8 +25,8 @@ const { mockGetInputAssetsIncludingPublic, mockGetAllAssetsByTag } = vi.hoisted(
   })
 )
 
-const { mockGetHistoryPage } = vi.hoisted(() => ({
-  mockGetHistoryPage: vi.fn()
+const { mockFetchHistoryPage } = vi.hoisted(() => ({
+  mockFetchHistoryPage: vi.fn()
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -52,17 +52,14 @@ vi.mock('@/platform/assets/services/assetService', async () => {
   }
 })
 
-vi.mock('@/scripts/api', async () => {
-  const actual = await vi.importActual<typeof ApiModule>('@/scripts/api')
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
+  const actual = await vi.importActual<typeof FetchJobsModule>(
+    '@/platform/remote/comfyui/jobs/fetchJobs'
+  )
 
   return {
     ...actual,
-    api: new Proxy(actual.api, {
-      get(target, prop, receiver) {
-        if (prop === 'getHistoryPage') return mockGetHistoryPage
-        return Reflect.get(target, prop, receiver)
-      }
-    })
+    fetchHistoryPage: mockFetchHistoryPage
   }
 })
 
@@ -447,7 +444,7 @@ describe('verifyMediaCandidates', () => {
     vi.clearAllMocks()
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
     mockGetAllAssetsByTag.mockResolvedValue([])
-    mockGetHistoryPage.mockResolvedValue({
+    mockFetchHistoryPage.mockResolvedValue({
       jobs: [],
       total: 0,
       offset: 0,
@@ -615,7 +612,7 @@ describe('verifyMediaCandidates', () => {
       })
     ]
 
-    mockGetHistoryPage.mockResolvedValueOnce({
+    mockFetchHistoryPage.mockResolvedValueOnce({
       jobs: [makeHistoryJob('photo.png', { subfolder: 'subfolder' })],
       total: 1,
       offset: 0,
@@ -626,7 +623,11 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { isCloud: false })
 
     expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
-    expect(mockGetHistoryPage).toHaveBeenCalledWith(200, { offset: 0 })
+    expect(mockFetchHistoryPage).toHaveBeenCalledWith(
+      expect.any(Function),
+      200,
+      0
+    )
     expect(candidates[0]).toMatchObject({
       name: 'subfolder/photo.png [output]',
       isMissing: false
@@ -698,7 +699,7 @@ describe('verifyMediaCandidates', () => {
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
       expect.any(AbortSignal)
     )
-    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
   it('reads cloud output assets by tag for output candidates', async () => {
@@ -719,7 +720,7 @@ describe('verifyMediaCandidates', () => {
       true,
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
-    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
     expect(candidates[0].isMissing).toBe(false)
   })
 
@@ -729,7 +730,7 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', `${outputHash} [output]`, { isMissing: undefined })
     ]
-    mockGetHistoryPage
+    mockFetchHistoryPage
       .mockResolvedValueOnce({
         jobs: Array.from({ length: 200 }, (_, index) =>
           makeHistoryJob(`other-${index}.png`)
@@ -749,8 +750,18 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: false })
 
-    expect(mockGetHistoryPage).toHaveBeenNthCalledWith(1, 200, { offset: 0 })
-    expect(mockGetHistoryPage).toHaveBeenNthCalledWith(2, 200, { offset: 200 })
+    expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Function),
+      200,
+      0
+    )
+    expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Function),
+      200,
+      200
+    )
     expect(candidates[0].isMissing).toBe(false)
   })
 
@@ -760,7 +771,7 @@ describe('verifyMediaCandidates', () => {
         isMissing: undefined
       })
     ]
-    mockGetHistoryPage.mockResolvedValueOnce({
+    mockFetchHistoryPage.mockResolvedValueOnce({
       jobs: Array.from({ length: 200 }, (_, index) =>
         makeHistoryJob(`other-${index}.png`)
       ),
@@ -772,7 +783,7 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: false })
 
-    expect(mockGetHistoryPage).toHaveBeenCalledOnce()
+    expect(mockFetchHistoryPage).toHaveBeenCalledOnce()
     expect(candidates[0].isMissing).toBe(true)
   })
 

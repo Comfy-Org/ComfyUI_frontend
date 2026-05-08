@@ -1,5 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
@@ -123,11 +124,10 @@ async function fetchGeneratedHistoryAssets(
     signal?.throwIfAborted()
 
     const requestedOffset = offset
-    const historyPage = await api.getHistoryPage(
+    const historyPage = await fetchHistoryPage(
+      api.fetchApi.bind(api),
       HISTORY_MEDIA_ASSETS_PAGE_SIZE,
-      {
-        offset: requestedOffset
-      }
+      requestedOffset
     )
 
     signal?.throwIfAborted()
