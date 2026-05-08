@@ -659,13 +659,12 @@ test('@vue-nodes Can intermix linked and proxy', async ({ comfyPage }) => {
   await test.step('Enter subgraph and link widget to input', async () => {
     await comfyPage.vueNodes.enterSubgraph('2')
 
-    const ksampler = comfyPage.vueNodes.getNodeByTitle('KSampler')
-    await comfyPage.subgraph.promoteWidget(ksampler, 'cfg')
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await comfyPage.subgraph.promoteWidget(ksampler.root, 'cfg')
 
-    const fromSlot = await comfyPage.vueNodes.getSlot('steps', ksampler)
+    const fromSlot = ksampler.getSlot('steps')
     const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
     await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
-
     const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
     await expect.poll(isConnected).toBe(true)
 
@@ -686,7 +685,7 @@ test('@vue-nodes Can intermix linked and proxy', async ({ comfyPage }) => {
     'Swap widget order'
   ).toContainText('cfg')
 
-  // TODO: fix actual bug.
+  // FIXME: solve actual bug and remove the not
   await expect(
     subgraphNode.locator('.lg-node-widget').first(),
     'Linked widget is first on node'

@@ -249,21 +249,6 @@ export class VueNodeHelpers {
       position: { x: box.width / 2, y: box.height * 0.75 }
     })
   }
-  getSlot(name: string | Locator, node?: string | Locator) {
-    const parentLocator = !node
-      ? this.page
-      : typeof node === 'string'
-        ? this.getNodeByTitle(node)
-        : node
-    const slotLocators = parentLocator
-      .getByTestId('node-widget')
-      .or(parentLocator.locator('.lg-slot'))
-    const filteredLocator =
-      typeof name === 'string'
-        ? slotLocators.filter({ hasText: name })
-        : slotLocators.filter({ has: name })
-    return filteredLocator.getByTestId('slot-dot').locator('..')
-  }
   async isSlotConnected(slot: Locator) {
     const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
     if (!key) return false
