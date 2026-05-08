@@ -88,6 +88,19 @@ const DEV_SEVER_FALLBACK_URL =
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
+/** When cloud dev proxies the frontend at :5173 to a loopback ingest, registry routes must not hit ingest. */
+const LOCAL_LOOPBACK_COMFY_BACKEND_PATTERN =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/i
+
+const CLOUD_REGISTRY_API_TARGET =
+  process.env.USE_PROD_CONFIG === 'true'
+    ? 'https://api.comfy.org'
+    : 'https://stagingapi.comfy.org'
+
+const PROXY_REGISTRY_FOR_LOCAL_CLOUD =
+  DISTRIBUTION === 'cloud' &&
+  LOCAL_LOOPBACK_COMFY_BACKEND_PATTERN.test(DEV_SERVER_COMFYUI_URL)
+
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
@@ -203,6 +216,14 @@ export default defineConfig({
             return false
           }
 
+          // Cloud ingest does not host OSS ComfyUI /api/i18n; avoid hard-failing bootstrap.
+          const pathOnly = req.url?.split('?')[0]
+          if (DISTRIBUTION === 'cloud' && pathOnly === '/api/i18n') {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({}))
+            return false
+          }
+
           // Bypass multi-user auth check from staging (cloud only)
           if (DISTRIBUTION === 'cloud' && req.url === '/api/users') {
             res.setHeader('Content-Type', 'application/json')
@@ -219,10 +240,20 @@ export default defineConfig({
         ...cloudProxyConfig
       },
 
-      '/customers': {
-        target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
-      },
+      ...(PROXY_REGISTRY_FOR_LOCAL_CLOUD
+        ? {
+            '/customers': {
+              target: CLOUD_REGISTRY_API_TARGET,
+              changeOrigin: true,
+              secure: true
+            },
+            '/releases': {
+              target: CLOUD_REGISTRY_API_TARGET,
+              changeOrigin: true,
+              secure: true
+            }
+          }
+        : {}),
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
