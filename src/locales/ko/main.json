@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "및",
+      "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",
@@ -292,7 +293,9 @@
       "title": "재인증 필요"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" 저장에 실패하여 로그아웃이 취소되었습니다.",
       "signOut": "로그아웃",
+      "signOutAnyway": "그래도 로그아웃하기",
       "success": "성공적으로 로그아웃되었습니다",
       "successDetail": "계정에서 로그아웃되었습니다.",
       "unsavedChangesMessage": "저장되지 않은 변경 사항이 있습니다. 로그아웃하면 변경 사항이 사라집니다. 계속하시겠습니까?",
@@ -835,6 +838,7 @@
     "NOISE": "노이즈",
     "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -3150,6 +3154,7 @@
       "deleteFailedTitle": "삭제 실패",
       "deleted": "워크플로가 삭제되었습니다.",
       "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseAnyway": "그래도 닫기",
       "dirtyCloseHint": "프롬프트 없이 닫으려면 Shift를 누르세요",
       "dirtyCloseTitle": "변경 사항 저장",
       "workflowTreeType": {

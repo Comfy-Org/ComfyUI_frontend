@@ -36,6 +36,7 @@ interface AssetPaginationOptions extends PaginationOptions {
 
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
+  excludeTags?: string[]
   includePublic?: boolean
   signal?: AbortSignal
 }
@@ -181,26 +182,11 @@ const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 export const MODELS_TAG = 'models'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
+const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
 
-/** Result of a HEAD lookup against an exact asset hash. */
-export type AssetHashStatus = 'exists' | 'missing' | 'invalid'
-
-const BLAKE3_ASSET_HASH_PATTERN = /^blake3:[0-9a-f]{64}$/i
-const BLAKE3_HEX_PATTERN = /^[0-9a-f]{64}$/i
 const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
-
-/** Returns true for a prefixed BLAKE3 asset hash: `blake3:<64 hex>`. */
-export function isBlake3AssetHash(value: string): boolean {
-  return BLAKE3_ASSET_HASH_PATTERN.test(value)
-}
-
-/** Converts a raw 64-character BLAKE3 hex digest into an asset hash. */
-export function toBlake3AssetHash(hash: string | undefined): string | null {
-  if (!hash || !BLAKE3_HEX_PATTERN.test(hash)) return null
-  return `blake3:${hash}`
-}
 
 function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
@@ -208,6 +194,10 @@ function createAbortError(): DOMException {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw createAbortError()
+}
+
+function normalizeAssetTags(tags: string[]): string[] {
+  return tags.map((tag) => tag.trim()).filter(Boolean)
 }
 
 async function withCallerAbort<T>(
@@ -290,15 +280,22 @@ function createAssetService() {
   ): Promise<AssetResponse> {
     const {
       includeTags,
+      excludeTags = DEFAULT_EXCLUDED_ASSET_TAGS,
       limit = DEFAULT_LIMIT,
       offset,
       includePublic,
       signal
     } = options
+    const normalizedIncludeTags = normalizeAssetTags(includeTags)
+    const normalizedExcludeTags = normalizeAssetTags(excludeTags)
+
     const queryParams = new URLSearchParams({
-      include_tags: includeTags.join(','),
+      include_tags: normalizedIncludeTags.join(','),
       limit: limit.toString()
     })
+    if (normalizedExcludeTags.length > 0) {
+      queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
+    }
     if (offset !== undefined && offset > 0) {
       queryParams.set('offset', offset.toString())
     }
@@ -337,15 +334,10 @@ function createAssetService() {
     // Blacklist directories we don't want to show
     const blacklistedDirectories = new Set(['configs'])
 
-    // Extract directory names from assets that actually exist, exclude missing assets
-    const discoveredFolders = new Set<string>(
-      data?.assets
-        ?.filter((asset) => !asset.tags.includes(MISSING_TAG))
-        ?.flatMap((asset) => asset.tags)
-        ?.filter(
-          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag)
-        ) ?? []
-    )
+    const folderTags = data.assets
+      .flatMap((asset) => asset.tags)
+      .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
+    const discoveredFolders = new Set<string>(folderTags)
 
     // Return only discovered folders in alphabetical order
     const sortedFolders = Array.from(discoveredFolders).toSorted()
@@ -363,17 +355,10 @@ function createAssetService() {
       `models for ${folder}`
     )
 
-    return (
-      data?.assets
-        ?.filter(
-          (asset) =>
-            !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
-        )
-        ?.map((asset) => ({
-          name: asset.name,
-          pathIndex: 0
-        })) ?? []
-    )
+    return data.assets.map((asset) => ({
+      name: asset.name,
+      pathIndex: 0
+    }))
   }
 
   /**
@@ -449,12 +434,7 @@ function createAssetService() {
     )
 
     // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return (
-      data?.assets?.filter(
-        (asset) =>
-          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
-      ) ?? []
-    )
+    return data.assets
   }
 
   /**
@@ -473,11 +453,8 @@ function createAssetService() {
     }
     const data = await res.json()
 
-    // Validate the single asset response against our schema
-    const result = assetResponseSchema.safeParse({ assets: [data] })
-    if (result.success && result.data.assets?.[0]) {
-      return result.data.assets[0]
-    }
+    const result = assetItemSchema.safeParse(data)
+    if (result.success) return result.data
 
     const error = result.error
       ? fromZodError(result.error)
@@ -508,13 +485,12 @@ function createAssetService() {
       `assets for tag ${tag}`
     )
 
-    return (
-      data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
-    )
+    return data.assets
   }
 
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
+   * Pagination follows the required server-provided `has_more` flag.
    *
    * @param tag - The tag to filter by (e.g., 'models', 'input')
    * @param includePublic - Whether to include public assets (default: true)
@@ -545,13 +521,14 @@ function createAssetService() {
         },
         `assets for tag ${tag}`
       )
-      const batch = data.assets ?? []
-      assets.push(...batch.filter((asset) => !asset.tags.includes(MISSING_TAG)))
+      const batch = data.assets
+      if (batch.length === 0) {
+        return assets
+      }
 
-      const noMoreFromServer = data.has_more === false
-      const inferredLastPage =
-        data.has_more === undefined && batch.length < pageSize
-      if (batch.length === 0 || noMoreFromServer || inferredLastPage) {
+      assets.push(...batch)
+
+      if (!data.has_more) {
         return assets
       }
 
@@ -596,31 +573,6 @@ function createAssetService() {
       pendingInputAssetsIncludingPublic ??
       startInputAssetsIncludingPublicRequest()
     return await withCallerAbort(request, signal)
-  }
-
-  /**
-   * Checks whether an asset exists for an exact asset hash.
-   *
-   * Uses the HEAD /assets/hash/{hash} endpoint and maps status-only responses:
-   * 200 -> exists, 404 -> missing, and 400 -> invalid hash format.
-   */
-  async function checkAssetHash(
-    assetHash: string,
-    signal?: AbortSignal
-  ): Promise<AssetHashStatus> {
-    const response = await api.fetchApi(
-      `${ASSETS_ENDPOINT}/hash/${encodeURIComponent(assetHash)}`,
-      {
-        method: 'HEAD',
-        signal
-      }
-    )
-
-    if (response.status === 200) return 'exists'
-    if (response.status === 404) return 'missing'
-    if (response.status === 400) return 'invalid'
-
-    throw new Error(`Unexpected asset hash check status: ${response.status}`)
   }
 
   /**
@@ -986,7 +938,6 @@ function createAssetService() {
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
-    checkAssetHash,
     deleteAsset,
     updateAsset,
     addAssetTags,
