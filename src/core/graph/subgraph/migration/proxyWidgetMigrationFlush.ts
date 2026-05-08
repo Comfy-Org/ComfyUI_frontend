@@ -1,5 +1,5 @@
-import { HOST_VALUE_HOLE } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes';
-import type { PendingMigrationEntry } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes';
+import { HOST_VALUE_HOLE } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
+import type { PendingMigrationEntry } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
 import { migratePreviewExposure } from '@/core/graph/subgraph/migration/migratePreviewExposure'
 import { planProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanner'
 import {
