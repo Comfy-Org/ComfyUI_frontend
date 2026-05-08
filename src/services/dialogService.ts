@@ -601,9 +601,16 @@ export const useDialogService = () => {
     const { flags } = useFeatureFlags()
 
     if (flags.churnkeyCancellationEnabled) {
-      const { launchChurnkeyCancellation } =
-        await import('@/platform/cloud/churnkey/launchChurnkeyCancellation')
-      return launchChurnkeyCancellation()
+      const { useChurnkey } =
+        await import('@/platform/cloud/churnkey/useChurnkey')
+      if (useChurnkey().isConfigured) {
+        const { launchChurnkeyCancellation } =
+          await import('@/platform/cloud/churnkey/launchChurnkeyCancellation')
+        return launchChurnkeyCancellation()
+      }
+      console.warn(
+        '[Churnkey] Cancellation flag is enabled but VITE_CHURNKEY_APP_ID is not set; falling back to legacy dialog.'
+      )
     }
 
     return showCancelSubscriptionDialog(cancelAt)

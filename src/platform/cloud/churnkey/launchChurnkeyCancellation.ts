@@ -7,11 +7,12 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ChurnkeySessionResults } from './types'
 import { useChurnkey } from './useChurnkey'
 
-let canceledThisSession = false
+type CancellationOutcome = 'canceled' | 'reconsidered' | 'unknown'
 
 function deriveOutcome(
-  results: ChurnkeySessionResults
-): 'canceled' | 'reconsidered' | 'unknown' {
+  results: ChurnkeySessionResults,
+  canceledThisSession: boolean
+): CancellationOutcome {
   if (canceledThisSession) return 'canceled'
   if (results.status === 'canceled') return 'canceled'
   if (results.status === 'closed') return 'reconsidered'
@@ -25,11 +26,11 @@ export async function launchChurnkeyCancellation(): Promise<void> {
   const toast = useToast()
 
   if (!churnkey.isConfigured) {
-    console.error('Churnkey is not configured; falling back to legacy flow')
     throw new Error('Churnkey is not configured')
   }
 
-  canceledThisSession = false
+  let canceledThisSession = false
+  let lastSurveyResponse: string | undefined
   telemetry?.trackCancellationFlowOpened()
 
   try {
@@ -51,14 +52,14 @@ export async function launchChurnkeyCancellation(): Promise<void> {
       },
       onCancel: (surveyResponse) => {
         canceledThisSession = true
-        telemetry?.trackCancellationFlowClosed({
-          outcome: 'canceled',
-          survey_response: surveyResponse
-        })
+        lastSurveyResponse = surveyResponse
       },
       onClose: (results) => {
-        const outcome = deriveOutcome(results)
-        telemetry?.trackCancellationFlowClosed({ outcome })
+        const outcome = deriveOutcome(results, canceledThisSession)
+        telemetry?.trackCancellationFlowClosed({
+          outcome,
+          survey_response: lastSurveyResponse
+        })
         if (outcome === 'reconsidered') {
           telemetry?.trackCancellationReconsidered()
         }
@@ -72,6 +73,5 @@ export async function launchChurnkeyCancellation(): Promise<void> {
       detail,
       life: 5000
     })
-    throw err
   }
 }
