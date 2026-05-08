@@ -632,19 +632,42 @@ test('@vue-nodes Promote/Demote by Context Menu', async ({ comfyPage }) => {
   })
 })
 
-test('@vue-nodes Promote/Demote by side panel', async ({ comfyPage }) => {
+test('@vue-nodes Properties panel operations', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
   const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
   const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+  const cfg = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'cfg')
 
-  await comfyPage.subgraph.editor.togglePromotion(subgraphNode, {
+  await editor.togglePromotion(subgraphNode, {
     nodeName: 'KSampler',
     widgetName: 'steps',
     toState: true
   })
   await expect(steps, 'Promote widget').toBeVisible()
+  await editor.togglePromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'cfg',
+    toState: true
+  })
+  await expect(cfg, 'Promote widget').toBeVisible()
 
-  await comfyPage.subgraph.editor.togglePromotion(subgraphNode, {
+  await test.step('widgets display in order promoted', async () => {
+    await expect(editor.promotionItems.first()).toContainText('steps')
+    await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
+      'steps'
+    )
+  })
+
+  await test.step('Reorder widgets', async () => {
+    await editor.dragItem(0, 1)
+    await expect(editor.promotionItems.first()).toContainText('cfg')
+    await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
+      'cfg'
+    )
+  })
+
+  await editor.togglePromotion(subgraphNode, {
     nodeName: 'KSampler',
     widgetName: 'steps',
     toState: false
@@ -654,6 +677,7 @@ test('@vue-nodes Promote/Demote by side panel', async ({ comfyPage }) => {
 
 test('@vue-nodes Can intermix linked and proxy', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
   const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
 
   await test.step('Enter subgraph and link widget to input', async () => {
@@ -676,7 +700,6 @@ test('@vue-nodes Can intermix linked and proxy', async ({ comfyPage }) => {
     'linked widgets are first by default'
   ).toHaveText('steps')
 
-  const { editor } = comfyPage.subgraph
   await editor.open(subgraphNode)
 
   await editor.dragItem(0, 1)
