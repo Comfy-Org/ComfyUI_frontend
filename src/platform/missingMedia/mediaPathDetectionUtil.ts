@@ -1,3 +1,4 @@
+// Missing-media-scoped helpers for deriving comparison keys from media widget paths.
 const CORE_ANNOTATED_MEDIA_PATTERN = / \[(input|output|temp)\]$/
 const CLOUD_ANNOTATED_MEDIA_PATTERN = /\s*\[(input|output|temp)\]$/
 

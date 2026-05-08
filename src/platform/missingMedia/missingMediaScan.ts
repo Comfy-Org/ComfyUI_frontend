@@ -26,7 +26,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
   getAnnotatedMediaPathTypeForDetection,
   getMediaPathDetectionNames
-} from './annotatedMediaPath'
+} from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
 

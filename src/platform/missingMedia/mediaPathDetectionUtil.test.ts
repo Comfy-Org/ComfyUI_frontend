@@ -4,7 +4,7 @@ import {
   getAnnotatedMediaPathTypeForDetection,
   getMediaPathDetectionNames,
   normalizeAnnotatedMediaPathForDetection
-} from './annotatedMediaPath'
+} from './mediaPathDetectionUtil'
 
 describe('normalizeAnnotatedMediaPathForDetection', () => {
   it.each([
