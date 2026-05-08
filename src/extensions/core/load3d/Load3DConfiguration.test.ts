@@ -521,7 +521,8 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
       setLightIntensity: vi.fn(),
       setHDRIIntensity: vi.fn(),
       setHDRIAsBackground: vi.fn(),
-      setHDRIEnabled: vi.fn()
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
     } as unknown as Load3d
   }
 

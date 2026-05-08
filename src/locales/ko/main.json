@@ -293,7 +293,9 @@
       "title": "재인증 필요"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" 저장에 실패하여 로그아웃이 취소되었습니다.",
       "signOut": "로그아웃",
+      "signOutAnyway": "그래도 로그아웃하기",
       "success": "성공적으로 로그아웃되었습니다",
       "successDetail": "계정에서 로그아웃되었습니다.",
       "unsavedChangesMessage": "저장되지 않은 변경 사항이 있습니다. 로그아웃하면 변경 사항이 사라집니다. 계속하시겠습니까?",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "삭제 실패",
       "deleted": "워크플로가 삭제되었습니다.",
       "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseAnyway": "그래도 닫기",
       "dirtyCloseHint": "프롬프트 없이 닫으려면 Shift를 누르세요",
       "dirtyCloseTitle": "변경 사항 저장",
       "workflowTreeType": {

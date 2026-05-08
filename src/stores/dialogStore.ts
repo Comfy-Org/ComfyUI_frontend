@@ -4,7 +4,7 @@ import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
-import type { Component } from 'vue'
+import type { Component, HTMLAttributes } from 'vue'
 
 import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
@@ -43,6 +43,11 @@ interface CustomDialogComponentProps {
   headless?: boolean
   renderer?: DialogRenderer
   size?: DialogContentSize
+  /**
+   * Class applied to the Reka-UI `DialogContent` element. Ignored on the
+   * PrimeVue path — use `pt` for that renderer.
+   */
+  contentClass?: HTMLAttributes['class']
 }
 
 export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
