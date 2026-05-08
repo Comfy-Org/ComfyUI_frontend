@@ -15,9 +15,11 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { getAssetOutputCount } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -680,6 +682,12 @@ export function useMediaAssetActions() {
                   }
                 })
                 if (deletedValues.size > 0) {
+                  const nodeOutputStore = useNodeOutputStore()
+                  clearNodePreviewCacheForValues(
+                    rootGraph,
+                    deletedValues,
+                    (node) => nodeOutputStore.removeNodeOutputs(node.id)
+                  )
                   markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
                 }
               }

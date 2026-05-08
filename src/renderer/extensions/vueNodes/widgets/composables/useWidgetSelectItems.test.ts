@@ -4,7 +4,6 @@ import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
@@ -874,7 +873,9 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-230 missing-media filtering', () => {
-    it('drops input items whose name is in the missing-media store', () => {
+    it('drops input items whose name is in the missing-media store', async () => {
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -912,6 +913,8 @@ describe('useWidgetSelectItems', () => {
         } as AssetItem
       ]
 
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -949,6 +952,8 @@ describe('useWidgetSelectItems', () => {
         } as AssetItem
       ]
 
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -974,6 +979,8 @@ describe('useWidgetSelectItems', () => {
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
       const modelValue = ref<string | undefined>('gone.png [output]')
 
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
