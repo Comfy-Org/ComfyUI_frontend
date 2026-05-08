@@ -34,13 +34,14 @@ function jobsResponse(jobs: RawJobListItem[]): JobsListResponse {
 async function mockJobsRoute(
   comfyPage: ComfyPage,
   pattern: RegExp,
-  body: string
+  body: string,
+  status: number = 200
 ): Promise<() => number> {
   let count = 0
   await comfyPage.page.route(pattern, async (route) => {
     count += 1
     await route.fulfill({
-      status: 200,
+      status,
       contentType: 'application/json',
       body
     })
@@ -127,6 +128,48 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
         }
       })
     }
+
+    test('preserves active job when the queue endpoint fails on reconnect', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+
+      const jobId = await exec.run()
+      exec.executionStart(jobId)
+
+      const firstSkeleton = comfyPage.appMode.outputHistory.skeletons.first()
+      await expect(firstSkeleton).toBeVisible()
+
+      await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+
+      // Prime queueStore.runningTasks with the active job — a WS status
+      // event drives GraphView.onStatus -> queueStore.update().
+      const primer = await mockJobsRoute(
+        comfyPage,
+        QUEUE_ROUTE,
+        JSON.stringify(
+          jobsResponse([
+            { id: jobId, status: 'in_progress', create_time: Date.now() }
+          ])
+        )
+      )
+      exec.status(1)
+      await expect.poll(primer).toBeGreaterThanOrEqual(1)
+
+      // Swap to a failing handler so the reconnect-driven fetch 500s.
+      // The fix should preserve runningTasks from the priming call rather
+      // than overwriting it with empty/error state.
+      await comfyPage.page.unroute(QUEUE_ROUTE)
+      const failed = await mockJobsRoute(comfyPage, QUEUE_ROUTE, '{}', 500)
+
+      const before = failed()
+      await ws.close()
+      await expect.poll(failed).toBeGreaterThan(before)
+
+      await expect(firstSkeleton).toBeVisible()
+    })
   })
 
   test.describe('vue node executing class', { tag: '@vue-nodes' }, () => {
