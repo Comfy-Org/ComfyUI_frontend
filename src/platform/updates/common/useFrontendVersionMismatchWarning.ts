@@ -41,24 +41,41 @@ export function useFrontendVersionMismatchWarning(
   // Track if we've already shown the warning
   let hasShownWarning = false
 
+  const emitAlert = (detail: string) => {
+    const fullMessage = t('g.versionMismatchWarningMessage', {
+      warning: t('g.versionMismatchWarning'),
+      detail
+    })
+    toastStore.addAlert(fullMessage)
+  }
+
   const showWarning = () => {
     // Prevent showing the warning multiple times
     if (hasShownWarning) return
 
     const message = versionCompatibilityStore.warningMessage
-    if (!message) return
+    const packageMessages = versionCompatibilityStore.packageWarningMessages
+    if (!message && packageMessages.length === 0) return
 
-    const detailMessage = t('g.frontendOutdated', {
-      frontendVersion: message.frontendVersion,
-      requiredVersion: message.requiredVersion
-    })
+    if (message) {
+      emitAlert(
+        t('g.frontendOutdated', {
+          frontendVersion: message.frontendVersion,
+          requiredVersion: message.requiredVersion
+        })
+      )
+    }
 
-    const fullMessage = t('g.versionMismatchWarningMessage', {
-      warning: t('g.versionMismatchWarning'),
-      detail: detailMessage
-    })
+    for (const pkg of packageMessages) {
+      emitAlert(
+        t('g.comfyPackageOutdated', {
+          name: pkg.name,
+          installedVersion: pkg.installedVersion,
+          requiredVersion: pkg.requiredVersion
+        })
+      )
+    }
 
-    toastStore.addAlert(fullMessage)
     hasShownWarning = true
 
     // Automatically dismiss the warning so it won't show again for 7 days

@@ -238,6 +238,12 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
+const zComfyPackageVersion = z.object({
+  name: z.string(),
+  installed: z.string().nullable(),
+  required: z.string().nullable()
+})
+
 const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
@@ -254,7 +260,8 @@ const zSystemStats = z.object({
     comfyui_frontend_version: z.string().optional(),
     workflow_templates_version: z.string().optional(),
     installed_templates_version: z.string().optional(),
-    required_templates_version: z.string().optional()
+    required_templates_version: z.string().optional(),
+    comfy_package_versions: z.array(zComfyPackageVersion).optional()
   }),
   devices: z.array(zDeviceStats)
 })
@@ -483,6 +490,7 @@ export type PromptError = z.infer<typeof zPromptError>
 export type NodeError = z.infer<typeof zNodeError>
 export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>
+export type ComfyPackageVersion = z.infer<typeof zComfyPackageVersion>
 export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
 export type UserData = z.infer<typeof zUserData>

@@ -5,9 +5,14 @@ import { computed } from 'vue'
 
 import config from '@/config'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyPackageVersion } from '@/schemas/apiSchema'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+// Already covered by the dedicated frontend warning, which uses the
+// running bundle's version rather than the installed pip version.
+const FRONTEND_PACKAGE_NAME = 'comfyui-frontend-package'
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
@@ -43,19 +48,36 @@ export const useVersionCompatibilityStore = defineStore(
       return false
     })
 
+    const outdatedComfyPackages = computed<ComfyPackageVersion[]>(() => {
+      const packages =
+        systemStatsStore.systemStats?.system?.comfy_package_versions ?? []
+      return packages.filter((pkg) => {
+        if (pkg.name === FRONTEND_PACKAGE_NAME) return false
+        if (!pkg.installed || !pkg.required) return false
+        if (!valid(pkg.installed) || !valid(pkg.required)) return false
+        return gt(pkg.required, pkg.installed)
+      })
+    })
+
     const hasVersionMismatch = computed(() => {
-      return isFrontendOutdated.value
+      return isFrontendOutdated.value || outdatedComfyPackages.value.length > 0
     })
 
     const versionKey = computed(() => {
       if (
         !frontendVersion.value ||
         !backendVersion.value ||
-        !requiredFrontendVersion.value
+        (!requiredFrontendVersion.value &&
+          outdatedComfyPackages.value.length === 0)
       ) {
         return null
       }
-      return `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+      const baseKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+      if (outdatedComfyPackages.value.length === 0) return baseKey
+      const packageKey = outdatedComfyPackages.value
+        .map((pkg) => `${pkg.name}@${pkg.installed}->${pkg.required}`)
+        .join(',')
+      return `${baseKey}-${packageKey}`
     })
 
     // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
@@ -111,6 +133,15 @@ export const useVersionCompatibilityStore = defineStore(
       return null
     })
 
+    const packageWarningMessages = computed(() =>
+      outdatedComfyPackages.value.map((pkg) => ({
+        type: 'packageOutdated' as const,
+        name: pkg.name,
+        installedVersion: pkg.installed ?? '',
+        requiredVersion: pkg.required ?? ''
+      }))
+    )
+
     async function checkVersionCompatibility() {
       if (!systemStatsStore.systemStats) {
         await until(systemStatsStore.isInitialized)
@@ -138,6 +169,8 @@ export const useVersionCompatibilityStore = defineStore(
       hasVersionMismatch,
       shouldShowWarning,
       warningMessage,
+      packageWarningMessages,
+      outdatedComfyPackages,
       isFrontendOutdated,
       isFrontendNewer,
       checkVersionCompatibility,

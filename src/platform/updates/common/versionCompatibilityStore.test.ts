@@ -381,4 +381,108 @@ describe('useVersionCompatibilityStore', () => {
       expect(vi.mocked(until)).not.toHaveBeenCalled()
     })
   })
+
+  describe('comfy package version warnings', () => {
+    it('should detect outdated comfy packages and skip comfyui-frontend-package', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfyui-frontend-package',
+              installed: '1.0.0',
+              required: '2.0.0'
+            },
+            {
+              name: 'comfyui-workflow-templates',
+              installed: '0.9.0',
+              required: '0.9.5'
+            },
+            {
+              name: 'comfyui-embedded-docs',
+              installed: '0.5.0',
+              required: '0.5.0'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.outdatedComfyPackages).toEqual([
+        {
+          name: 'comfyui-workflow-templates',
+          installed: '0.9.0',
+          required: '0.9.5'
+        }
+      ])
+      expect(store.hasVersionMismatch).toBe(true)
+      expect(store.shouldShowWarning).toBe(true)
+      expect(store.packageWarningMessages).toEqual([
+        {
+          type: 'packageOutdated',
+          name: 'comfyui-workflow-templates',
+          installedVersion: '0.9.0',
+          requiredVersion: '0.9.5'
+        }
+      ])
+    })
+
+    it('should ignore packages with missing or invalid versions', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfy-kitchen',
+              installed: null,
+              required: '1.0.0'
+            },
+            {
+              name: 'comfy-aimdo',
+              installed: 'not-a-version',
+              required: '1.0.0'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.outdatedComfyPackages).toEqual([])
+      expect(store.hasVersionMismatch).toBe(false)
+    })
+
+    it('should include outdated packages in dismissal key', async () => {
+      const mockNow = 1000000
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfyui-workflow-templates',
+              installed: '0.9.0',
+              required: '0.9.5'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+
+      expect(mockDismissalStorage.value).toEqual({
+        '1.24.0-1.24.0-1.24.0-comfyui-workflow-templates@0.9.0->0.9.5':
+          mockNow + 7 * 24 * 60 * 60 * 1000
+      })
+    })
+  })
 })
