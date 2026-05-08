@@ -60,4 +60,14 @@ export class VueNodeFixture {
   boundingBox(): ReturnType<Locator['boundingBox']> {
     return this.locator.boundingBox()
   }
+  getSlot(name: string | Locator) {
+    const slotLocators = this.root
+      .getByTestId('node-widget')
+      .or(this.root.locator('.lg-slot'))
+    const filteredLocator =
+      typeof name === 'string'
+        ? slotLocators.filter({ hasText: name })
+        : slotLocators.filter({ has: name })
+    return filteredLocator.getByTestId('slot-dot').locator('..')
+  }
 }
