@@ -799,3 +799,26 @@ test('Can promote multiple previews @vue-nodes', async ({ comfyPage }) => {
     await expect(subgraph.content).toHaveCount(1)
   })
 })
+
+test('Linked widgets can not be demoted @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+
+  await test.step('Enter subgraph and link widget to input', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+    const fromSlot = ksampler.getSlot('steps')
+    const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
+    await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    await expect.poll(isConnected).toBe(true)
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+  })
+
+  await editor.open(subgraphNode)
+  const stepsItem = await editor.resolvePromotionItem({ widgetName: 'steps' })
+  await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
+})
