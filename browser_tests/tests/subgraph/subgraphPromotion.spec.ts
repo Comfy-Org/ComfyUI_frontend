@@ -715,7 +715,7 @@ test('Can intermix linked and proxy @vue-nodes', async ({ comfyPage }) => {
   ).not.toHaveText('cfg')
 })
 
-test('Link promoted widget @vue-nodes', async ({ comfyPage }) => {
+test('Link already promoted widget @vue-nodes', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
   const { editor } = comfyPage.subgraph
   const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
@@ -744,7 +744,7 @@ test('Link promoted widget @vue-nodes', async ({ comfyPage }) => {
   await expect(steps).toHaveCount(1)
 })
 
-test('Can Promote multiple previews @vue-nodes', async ({ comfyPage }) => {
+test('Can promote multiple previews @vue-nodes', async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
   await comfyPage.menu.topbar.newWorkflowButton.click()
   await comfyPage.nextFrame()
@@ -769,15 +769,17 @@ test('Can Promote multiple previews @vue-nodes', async ({ comfyPage }) => {
       .then((m) => m.clickMenuItemExact('Convert to Subgraph'))
   })
 
-  await test.step('Promote both image previews', async () => {
-    const { editor } = comfyPage.subgraph
-    const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
 
+  await test.step('Promote both image previews', async () => {
     await editor.togglePromotion(subgraph.root, {
       nodeId: '1',
       widgetName: '$$canvas-image-preview',
       toState: true
     })
+    await expect(subgraph.content).toHaveCount(1)
+
     await editor.togglePromotion(subgraph.root, {
       nodeId: '2',
       widgetName: '$$canvas-image-preview',
@@ -785,5 +787,15 @@ test('Can Promote multiple previews @vue-nodes', async ({ comfyPage }) => {
     })
 
     await expect(subgraph.content).toHaveCount(2)
+  })
+  // FUTURE: Add test for re-ordering previews?
+
+  await test.step('Demote image', async () => {
+    await editor.togglePromotion(subgraph.root, {
+      nodeId: '1',
+      widgetName: '$$canvas-image-preview',
+      toState: false
+    })
+    await expect(subgraph.content).toHaveCount(1)
   })
 })
