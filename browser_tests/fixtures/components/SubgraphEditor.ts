@@ -3,12 +3,17 @@ import type { Locator } from '@playwright/test'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
 
 export class SubgraphEditor {
   public readonly root
+  public readonly promotionItems
 
   constructor(protected readonly comfyPage: ComfyPage) {
     this.root = this.comfyPage.menu.propertiesPanel.root
+    this.promotionItems = this.root.getByTestId(
+      TestIds.subgraphEditor.widgetItem
+    )
   }
 
   async open(subgraphNode: Locator) {
@@ -29,9 +34,7 @@ export class SubgraphEditor {
       .getByTestId(TestIds.subgraphEditor.widgetLabel)
       .filter({ hasText: options.widgetName })
 
-    const named = this.root
-      .getByTestId(TestIds.subgraphEditor.widgetItem)
-      .filter({ has: labelLocator })
+    const named = this.promotionItems.filter({ has: labelLocator })
     if (!options.nodeName && !options.nodeId) return named
     if (options.nodeName) {
       const nodeNameLocator = this.comfyPage.page
@@ -67,5 +70,9 @@ export class SubgraphEditor {
 
     const item = this.resolvePromotionItem(options)
     await this.togglePromotionOnItem(item, options.toState)
+  }
+  async dragItem(fromIndex: number, toIndex: number) {
+    await dragByIndex(this.promotionItems, fromIndex, toIndex)
+    await this.comfyPage.nextFrame()
   }
 }
