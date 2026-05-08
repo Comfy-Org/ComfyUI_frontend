@@ -527,7 +527,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
-    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
+    const node = canvasStore.canvas?.graph?.getNodeById(currentId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
