@@ -18,9 +18,12 @@ import {
 } from './missingMediaScan'
 import type { MissingMediaCandidate } from './types'
 
-const { mockGetInputAssetsIncludingPublic } = vi.hoisted(() => ({
-  mockGetInputAssetsIncludingPublic: vi.fn()
-}))
+const { mockGetInputAssetsIncludingPublic, mockGetAllAssetsByTag } = vi.hoisted(
+  () => ({
+    mockGetInputAssetsIncludingPublic: vi.fn(),
+    mockGetAllAssetsByTag: vi.fn()
+  })
+)
 
 const { mockGetHistoryPage } = vi.hoisted(() => ({
   mockGetHistoryPage: vi.fn()
@@ -43,7 +46,8 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
+      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
+      getAllAssetsByTag: mockGetAllAssetsByTag
     }
   }
 })
@@ -442,6 +446,7 @@ describe('verifyMediaCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetHistoryPage.mockResolvedValue({
       jobs: [],
       total: 0,
@@ -471,7 +476,7 @@ describe('verifyMediaCandidates', () => {
     expect(candidates[2].isMissing).toBe(true)
     expect(resolveAssetSources).toHaveBeenCalledWith({
       signal: undefined,
-      includeCloudInputAssets: true,
+      isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
       allowCompactSuffix: true
@@ -562,7 +567,7 @@ describe('verifyMediaCandidates', () => {
 
     expect(resolveAssetSources).toHaveBeenCalledWith({
       signal: undefined,
-      includeCloudInputAssets: true,
+      isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([
         '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
@@ -641,7 +646,7 @@ describe('verifyMediaCandidates', () => {
 
     expect(resolveAssetSources).toHaveBeenCalledWith({
       signal: undefined,
-      includeCloudInputAssets: false,
+      isCloud: false,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
       allowCompactSuffix: false
@@ -690,32 +695,35 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(false)
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
+    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
+      expect.any(AbortSignal)
+    )
     expect(mockGetHistoryPage).not.toHaveBeenCalled()
   })
 
-  it('reads generated history assets without mutating the assets store for output candidates', async () => {
+  it('reads cloud output assets by tag for output candidates', async () => {
     const outputHash =
       '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
     const candidates = [
       makeCandidate('1', `${outputHash} [output]`, { isMissing: undefined })
     ]
-    mockGetHistoryPage.mockResolvedValueOnce({
-      jobs: [makeHistoryJob(outputHash)],
-      total: 1,
-      offset: 0,
-      limit: 200,
-      hasMore: false
-    })
+    mockGetAllAssetsByTag.mockResolvedValue([makeAsset(outputHash)])
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
-    expect(mockGetHistoryPage).toHaveBeenCalledWith(200, { offset: 0 })
+    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
+      expect.any(AbortSignal)
+    )
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+      'output',
+      true,
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
+    expect(mockGetHistoryPage).not.toHaveBeenCalled()
     expect(candidates[0].isMissing).toBe(false)
   })
 
-  it('walks generated history pages until hasMore is false', async () => {
+  it('walks OSS generated history pages until hasMore is false', async () => {
     const outputHash =
       '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
     const candidates = [
@@ -739,14 +747,14 @@ describe('verifyMediaCandidates', () => {
         hasMore: false
       })
 
-    await verifyMediaCandidates(candidates, { isCloud: true })
+    await verifyMediaCandidates(candidates, { isCloud: false })
 
     expect(mockGetHistoryPage).toHaveBeenNthCalledWith(1, 200, { offset: 0 })
     expect(mockGetHistoryPage).toHaveBeenNthCalledWith(2, 200, { offset: 200 })
     expect(candidates[0].isMissing).toBe(false)
   })
 
-  it('trusts history hasMore instead of page length', async () => {
+  it('trusts OSS history hasMore instead of page length', async () => {
     const candidates = [
       makeCandidate('1', 'missing-output.png [output]', {
         isMissing: undefined
@@ -762,7 +770,7 @@ describe('verifyMediaCandidates', () => {
       hasMore: false
     })
 
-    await verifyMediaCandidates(candidates, { isCloud: true })
+    await verifyMediaCandidates(candidates, { isCloud: false })
 
     expect(mockGetHistoryPage).toHaveBeenCalledOnce()
     expect(candidates[0].isMissing).toBe(true)
@@ -845,7 +853,9 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
+    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
+      expect.any(AbortSignal)
+    )
     expect(candidates[0].isMissing).toBe(false)
   })
 
@@ -879,10 +889,14 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', 'photo.png', { isMissing: undefined })
     ]
-    mockGetInputAssetsIncludingPublic.mockImplementationOnce(async () => {
-      controller.abort()
-      throw abortError
-    })
+    let serviceSignal: AbortSignal | undefined
+    mockGetInputAssetsIncludingPublic.mockImplementationOnce(
+      async (signal?: AbortSignal) => {
+        serviceSignal = signal
+        controller.abort()
+        throw abortError
+      }
+    )
 
     await expect(
       verifyMediaCandidates(candidates, {
@@ -891,9 +905,8 @@ describe('verifyMediaCandidates', () => {
       })
     ).resolves.toBeUndefined()
 
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      controller.signal
-    )
+    expect(serviceSignal).toBeInstanceOf(AbortSignal)
+    expect(serviceSignal?.aborted).toBe(true)
     expect(candidates[0].isMissing).toBeUndefined()
   })
 })

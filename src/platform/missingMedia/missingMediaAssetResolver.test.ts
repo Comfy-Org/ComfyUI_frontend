@@ -10,9 +10,12 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const { mockGetInputAssetsIncludingPublic } = vi.hoisted(() => ({
-  mockGetInputAssetsIncludingPublic: vi.fn()
-}))
+const { mockGetInputAssetsIncludingPublic, mockGetAllAssetsByTag } = vi.hoisted(
+  () => ({
+    mockGetInputAssetsIncludingPublic: vi.fn(),
+    mockGetAllAssetsByTag: vi.fn()
+  })
+)
 
 const { mockGetHistoryPage } = vi.hoisted(() => ({
   mockGetHistoryPage: vi.fn()
@@ -27,7 +30,8 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic
+      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
+      getAllAssetsByTag: mockGetAllAssetsByTag
     }
   }
 })
@@ -92,6 +96,7 @@ describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
@@ -100,7 +105,7 @@ describe('resolveMissingMediaAssetSources', () => {
     mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
-      includeCloudInputAssets: true,
+      isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
       allowCompactSuffix: true
@@ -108,7 +113,66 @@ describe('resolveMissingMediaAssetSources', () => {
 
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
+    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
+      expect.any(AbortSignal)
+    )
+    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+  })
+
+  it('loads cloud output assets by tag when generated candidates need verification', async () => {
+    const outputAsset = makeAsset('output.png')
+    mockGetAllAssetsByTag.mockResolvedValue([outputAsset])
+
+    const result = await resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set(['output.png']),
+      allowCompactSuffix: true
+    })
+
+    expect(result.generatedAssets).toEqual([outputAsset])
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+      'output',
+      true,
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
+    expect(mockGetHistoryPage).not.toHaveBeenCalled()
+  })
+
+  it('aborts cloud output asset loading when input asset loading fails', async () => {
+    const inputError = new Error('input failed')
+    let rejectInputAssets!: (err: Error) => void
+    let resolveOutputAssets!: (assets: AssetItem[]) => void
+    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
+      new Promise<AssetItem[]>((_, reject) => {
+        rejectInputAssets = reject
+      })
+    )
+    mockGetAllAssetsByTag.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOutputAssets = resolve
+      })
+    )
+
+    const promise = resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set(['target.png']),
+      allowCompactSuffix: true
+    })
+
+    await Promise.resolve()
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledOnce()
+
+    rejectInputAssets(inputError)
+    await expect(promise).rejects.toBe(inputError)
+
+    resolveOutputAssets([makeAsset('other.png')])
+    await Promise.resolve()
+
+    const outputSignal = mockGetAllAssetsByTag.mock.calls[0]?.[2]?.signal
+    expect(outputSignal).toBeInstanceOf(AbortSignal)
+    expect(outputSignal.aborted).toBe(true)
     expect(mockGetHistoryPage).not.toHaveBeenCalled()
   })
 
@@ -122,7 +186,7 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const result = await resolveMissingMediaAssetSources({
-      includeCloudInputAssets: false,
+      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -153,7 +217,7 @@ describe('resolveMissingMediaAssetSources', () => {
       )
 
     await resolveMissingMediaAssetSources({
-      includeCloudInputAssets: false,
+      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -169,7 +233,7 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const result = await resolveMissingMediaAssetSources({
-      includeCloudInputAssets: false,
+      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['missing.png']),
       allowCompactSuffix: true
@@ -190,7 +254,7 @@ describe('resolveMissingMediaAssetSources', () => {
       )
 
     const result = await resolveMissingMediaAssetSources({
-      includeCloudInputAssets: false,
+      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['missing.png']),
       allowCompactSuffix: true
@@ -203,17 +267,17 @@ describe('resolveMissingMediaAssetSources', () => {
   it('includes slash and backslash subfolder identifiers for detection', () => {
     const names = getAssetDetectionNames(
       {
-        ...makeAsset('photo.png'),
-        user_metadata: { subfolder: 'nested/folder' }
+        ...makeAsset('child\\photo.png'),
+        user_metadata: { subfolder: 'nested\\folder' }
       },
       { allowCompactSuffix: true }
     )
 
     expect(names).toEqual(
       expect.arrayContaining([
-        'photo.png',
-        'nested/folder/photo.png',
-        'nested\\folder\\photo.png'
+        'child\\photo.png',
+        'nested/folder/child/photo.png',
+        'nested\\folder\\child\\photo.png'
       ])
     )
   })

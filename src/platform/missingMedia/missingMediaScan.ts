@@ -22,7 +22,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isAbortError } from '@/utils/typeGuardUtil'
 import {
   getAnnotatedMediaPathTypeForDetection,
-  getMediaPathDetectionNames
+  getMediaPathDetectionNames,
+  normalizeAnnotatedMediaPathForDetection
 } from './mediaPathDetectionUtil'
 import {
   getAssetDetectionNames,
@@ -140,8 +141,9 @@ interface MediaVerificationOptions {
  * A candidate's `name` may be either a filename or an opaque asset hash.
  * Cloud-side `asset_hash` is not guaranteed to follow a single shape, so we
  * match against the union of `asset.name` and `asset.asset_hash`. Output/temp
- * candidates are matched only against generated history assets because Core
- * resolves those annotations against output/temp folders, not input files.
+ * candidates are matched against Cloud output assets or Core generated-history
+ * assets because Core resolves those annotations against output/temp folders,
+ * not input files.
  * Cloud accepts compact annotated media paths, so only Cloud verification
  * normalizes compact suffixes.
  */
@@ -171,7 +173,7 @@ export async function verifyMediaCandidates(
   try {
     const assetSources = await resolveAssetSources({
       signal,
-      includeCloudInputAssets: isCloud,
+      isCloud,
       includeGeneratedAssets: generatedMatchNames.size > 0,
       generatedMatchNames,
       allowCompactSuffix: isCloud
@@ -215,11 +217,9 @@ function getGeneratedCandidateMatchNames(
   for (const candidate of candidates) {
     if (!isGeneratedCandidate(candidate, pathOptions)) continue
 
-    const detectionNames = getMediaPathDetectionNames(
-      candidate.name,
-      pathOptions
+    names.add(
+      normalizeAnnotatedMediaPathForDetection(candidate.name, pathOptions)
     )
-    names.add(detectionNames.at(-1) ?? candidate.name)
   }
   return names
 }

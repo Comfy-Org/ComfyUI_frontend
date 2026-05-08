@@ -2,6 +2,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
+import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
@@ -17,7 +18,7 @@ export interface MissingMediaAssetSources {
 
 export interface ResolveMissingMediaAssetSourcesOptions {
   signal?: AbortSignal
-  includeCloudInputAssets: boolean
+  isCloud: boolean
   includeGeneratedAssets: boolean
   generatedMatchNames: ReadonlySet<string>
   allowCompactSuffix: boolean
@@ -29,22 +30,51 @@ export type MissingMediaAssetResolver = (
 
 export async function resolveMissingMediaAssetSources({
   signal,
-  includeCloudInputAssets,
+  isCloud,
   includeGeneratedAssets,
   generatedMatchNames,
   allowCompactSuffix
 }: ResolveMissingMediaAssetSourcesOptions): Promise<MissingMediaAssetSources> {
   const pathOptions = { allowCompactSuffix }
-  const [inputAssets, generatedAssets] = await Promise.all([
-    includeCloudInputAssets
-      ? assetService.getInputAssetsIncludingPublic(signal)
-      : Promise.resolve<AssetItem[]>([]),
-    includeGeneratedAssets
-      ? fetchGeneratedHistoryAssets(signal, generatedMatchNames, pathOptions)
-      : Promise.resolve<AssetItem[]>([])
-  ])
 
-  return { inputAssets, generatedAssets }
+  const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(signal?.reason)
+  if (signal?.aborted) {
+    abortFromCaller()
+  } else {
+    signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
+
+  try {
+    const [inputAssets, generatedAssets] = await Promise.all([
+      abortSiblingsOnFailure(
+        isCloud
+          ? assetService.getInputAssetsIncludingPublic(controller.signal)
+          : Promise.resolve<AssetItem[]>([]),
+        controller
+      ),
+      abortSiblingsOnFailure(
+        includeGeneratedAssets
+          ? fetchGeneratedAssets(controller.signal, {
+              isCloud,
+              generatedMatchNames,
+              pathOptions
+            })
+          : Promise.resolve<AssetItem[]>([]),
+        controller
+      )
+    ])
+
+    return { inputAssets, generatedAssets }
+  } finally {
+    signal?.removeEventListener('abort', abortFromCaller)
+  }
+}
+
+interface FetchGeneratedAssetsOptions {
+  isCloud: boolean
+  generatedMatchNames: ReadonlySet<string>
+  pathOptions: MediaPathDetectionOptions
 }
 
 export function getAssetDetectionNames(
@@ -64,6 +94,21 @@ export function getAssetDetectionNames(
   return Array.from(names)
 }
 
+async function fetchGeneratedAssets(
+  signal: AbortSignal | undefined,
+  { isCloud, generatedMatchNames, pathOptions }: FetchGeneratedAssetsOptions
+): Promise<AssetItem[]> {
+  if (isCloud) {
+    return await assetService.getAllAssetsByTag('output', true, { signal })
+  }
+
+  return await fetchGeneratedHistoryAssets(
+    signal,
+    generatedMatchNames,
+    pathOptions
+  )
+}
+
 async function fetchGeneratedHistoryAssets(
   signal: AbortSignal | undefined,
   targetNames: ReadonlySet<string>,
@@ -75,7 +120,7 @@ async function fetchGeneratedHistoryAssets(
   let offset = 0
 
   while (true) {
-    throwIfAborted(signal)
+    signal?.throwIfAborted()
 
     const requestedOffset = offset
     const historyPage = await api.getHistoryPage(
@@ -85,7 +130,7 @@ async function fetchGeneratedHistoryAssets(
       }
     )
 
-    throwIfAborted(signal)
+    signal?.throwIfAborted()
 
     let newJobCount = 0
     for (const job of historyPage.jobs) {
@@ -118,6 +163,18 @@ async function fetchGeneratedHistoryAssets(
   }
 }
 
+async function abortSiblingsOnFailure<T>(
+  promise: Promise<T>,
+  controller: AbortController
+): Promise<T> {
+  try {
+    return await promise
+  } catch (err) {
+    if (!controller.signal.aborted) controller.abort(err)
+    throw err
+  }
+}
+
 function addPathDetectionNames(
   names: Set<string>,
   value: string | null | undefined,
@@ -137,10 +194,10 @@ function addSubfolderPathDetectionNames(
 ) {
   if (!value) return
 
-  const slashSubfolder = subfolder.replace(/\\/g, '/')
-  const backslashSubfolder = subfolder.replace(/\//g, '\\')
-  addPathDetectionNames(names, `${slashSubfolder}/${value}`, options)
-  addPathDetectionNames(names, `${backslashSubfolder}\\${value}`, options)
+  const filePath = joinFilePath(subfolder, value)
+  for (const path of getFilePathSeparatorVariants(filePath)) {
+    addPathDetectionNames(names, path, options)
+  }
 }
 
 function rememberResolvedTargetNames(
@@ -161,10 +218,6 @@ function hasResolvedAllTargetNames(
   foundTargetNames: ReadonlySet<string>
 ): boolean {
   return targetNames.size > 0 && foundTargetNames.size === targetNames.size
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 }
 
 function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
