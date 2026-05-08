@@ -19,6 +19,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { getAssetOutputCount } from '../utils/outputAssetUtil'
@@ -688,6 +689,7 @@ export function useMediaAssetActions() {
                     deletedValues,
                     (node) => nodeOutputStore.removeNodeOutputs(node.id)
                   )
+                  clearDeletedAssetWidgetValues(rootGraph, deletedValues)
                   markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
                 }
               }

@@ -192,6 +192,11 @@ vi.mock('../utils/clearNodePreviewCacheForValues', () => ({
   findNodesReferencingValues: vi.fn(() => [])
 }))
 
+const mockClearWidgetValues = vi.hoisted(() => vi.fn())
+vi.mock('../utils/clearDeletedAssetWidgetValues', () => ({
+  clearDeletedAssetWidgetValues: mockClearWidgetValues
+}))
+
 const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
 vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
   markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
@@ -867,6 +872,11 @@ describe('useMediaAssetActions', () => {
       removeArg({ id: 42 })
       expect(mockRemoveNodeOutputs).toHaveBeenCalledWith(42)
 
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+      )
+
       expect(mockMarkMissingMedia).toHaveBeenCalledWith(
         mockAppGraph.value,
         new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
@@ -912,6 +922,7 @@ describe('useMediaAssetActions', () => {
         expect(mockDeleteAsset).toHaveBeenCalled()
       })
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
     })
   })
