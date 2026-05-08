@@ -2130,6 +2130,19 @@
     "slots": "Node Slots Error",
     "widgets": "Node Widgets Error"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Allow",
+      "deny": "Deny",
+      "genericError": "OAuth request failed. Please restart from the client app.",
+      "loading": "Loading OAuth request...",
+      "missingRequest": "This OAuth request is missing. Please restart from the client app.",
+      "noWorkspaces": "No eligible workspaces are available for this request.",
+      "resourceLabel": "Authorize this app",
+      "scopesTitle": "Requested access",
+      "workspaceTitle": "Choose workspace"
+    }
+  },
   "auth": {
     "apiKey": {
       "title": "API Key",
