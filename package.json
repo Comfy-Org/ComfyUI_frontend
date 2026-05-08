@@ -11,7 +11,7 @@
     "build:cloud": "cross-env DISTRIBUTION=cloud NODE_OPTIONS='--max-old-space-size=8192' nx build",
     "build:desktop": "nx build @comfyorg/desktop-ui",
     "build-storybook": "storybook build",
-    "build:types": "nx build --config vite.types.config.mts && node scripts/prepare-types.js",
+    "build:types": "cross-env NODE_OPTIONS='--max-old-space-size=8192' nx build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
     "build": "cross-env NODE_OPTIONS='--max-old-space-size=8192' pnpm typecheck && nx build",
     "size:collect": "node scripts/size-collect.js",
