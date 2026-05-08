@@ -293,7 +293,9 @@
       "title": "需要重新驗證"
     },
     "signOut": {
+      "saveFailed": "由於儲存「{workflow}」失敗，已取消登出。",
       "signOut": "登出",
+      "signOutAnyway": "仍要登出",
       "success": "成功登出",
       "successDetail": "您已成功登出您的帳戶。",
       "unsavedChangesMessage": "您有尚未儲存的變更，登出後這些變更將會遺失。您確定要繼續嗎？",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "刪除失敗",
       "deleted": "工作流程已刪除",
       "dirtyClose": "下列檔案已被修改。您要在關閉前儲存它們嗎？",
+      "dirtyCloseAnyway": "仍要關閉",
       "dirtyCloseHint": "按住 Shift 可直接關閉不提示",
       "dirtyCloseTitle": "儲存變更？",
       "workflowTreeType": {

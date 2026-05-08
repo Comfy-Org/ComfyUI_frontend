@@ -4171,6 +4171,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "透過 Google Vertex API 同步生成或編輯影像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_thinking_level": {
+        "name": "思考層級"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要生成影像或要套用編輯的文字提示。請包含模型應遵循的任何限制、風格或細節。"
+      },
+      "response_modalities": {
+        "name": "回應型態"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "當種子值固定時，模型會盡力在重複請求時提供相同的回應，但不保證完全一致。更改模型或參數（如溫度）即使使用相同種子值，也可能導致回應有所不同。預設情況下會使用隨機種子值。"
+      },
+      "system_prompt": {
+        "name": "系統提示",
+        "tooltip": "決定 AI 行為的基礎指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "思考影像",
+        "tooltip": "模型思考過程中的第一張影像。僅於思考層級為 HIGH 且回應型態為 IMAGE+TEXT 時提供。"
+      }
+    }
+  },
   "GeminiNode": {
     "description": "使用 Google 的 Gemini AI 模型生成文字回應。您可以提供多種類型的輸入（文字、圖片、音訊、影片）作為上下文，以生成更相關且有意義的回應。",
     "display_name": "Google Gemini",

@@ -293,7 +293,9 @@
       "title": "احراز هویت مجدد لازم است"
     },
     "signOut": {
+      "saveFailed": "خروج لغو شد زیرا ذخیره «{workflow}» با شکست مواجه شد.",
       "signOut": "خروج",
+      "signOutAnyway": "خروج به هر حال",
       "success": "خروج با موفقیت انجام شد",
       "successDetail": "شما با موفقیت از حساب کاربری خود خارج شدید.",
       "unsavedChangesMessage": "شما تغییرات ذخیره‌نشده‌ای دارید که با خروج از حساب از بین خواهند رفت. آیا مایل به ادامه هستید؟",
@@ -3164,6 +3166,7 @@
       "deleteFailedTitle": "حذف ناموفق بود",
       "deleted": "Workflow حذف شد",
       "dirtyClose": "فایل‌های زیر تغییر کرده‌اند. آیا مایل به ذخیره آن‌ها قبل از بستن هستید؟",
+      "dirtyCloseAnyway": "بستن به هر حال",
       "dirtyCloseHint": "برای بستن بدون پیام، Shift را نگه دارید",
       "dirtyCloseTitle": "ذخیره تغییرات؟",
       "workflowTreeType": {

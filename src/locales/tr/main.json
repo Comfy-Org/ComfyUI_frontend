@@ -293,7 +293,9 @@
       "title": "Yeniden Kimlik Doğrulama Gerekli"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" kaydedilemediği için çıkış iptal edildi.",
       "signOut": "Çıkış Yap",
+      "signOutAnyway": "Yine de çıkış yap",
       "success": "Başarıyla çıkış yapıldı",
       "successDetail": "Hesabınızdan başarıyla çıkış yaptınız.",
       "unsavedChangesMessage": "Oturumu kapattığınızda kaydedilmemiş değişiklikleriniz kaybolacak. Devam etmek istiyor musunuz?",
@@ -3152,6 +3154,7 @@
       "deleteFailedTitle": "Silme başarısız oldu",
       "deleted": "İş akışı silindi",
       "dirtyClose": "Aşağıdaki dosyalar değiştirildi. Kapatmadan önce bunları kaydetmek ister misiniz?",
+      "dirtyCloseAnyway": "Yine de kapat",
       "dirtyCloseHint": "Sormadan kapatmak için Shift tuşunu basılı tutun",
       "dirtyCloseTitle": "Değişiklikler Kaydedilsin mi?",
       "workflowTreeType": {
