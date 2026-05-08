@@ -179,7 +179,7 @@ export const useWorkflowService = () => {
       return await saveWorkflowAs(workflow)
     }
 
-    workflow.changeTracker?.prepareForSave()
+    if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
     const isApp = workflow.initialMode === 'app'
     const expectedPath =
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
