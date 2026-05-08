@@ -714,3 +714,32 @@ test('@vue-nodes Can intermix linked and proxy', async ({ comfyPage }) => {
     'Linked widget is first on node'
   ).not.toHaveText('cfg')
 })
+
+test('@vue-nodes Link promoted widget', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+  const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+
+  await editor.togglePromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'steps',
+    toState: true
+  })
+  await expect(steps, 'Promote widget').toBeVisible()
+
+  await test.step('Enter subgraph and link widget to input', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+    const fromSlot = ksampler.getSlot('steps')
+    const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
+    await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    await expect.poll(isConnected).toBe(true)
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+  })
+
+  await expect(steps).toHaveCount(1)
+})
