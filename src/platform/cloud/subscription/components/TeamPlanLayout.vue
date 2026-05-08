@@ -124,7 +124,7 @@
                     :min="SLIDER_MIN"
                     :max="SLIDER_MAX"
                     :step="SLIDER_STEP"
-                    class="w-full **:data-[slot=slider-range]:bg-base-foreground **:data-[slot=slider-thumb]:bg-base-foreground **:data-[slot=slider-thumb]:ring-base-foreground"
+                    class="w-full **:data-[slot=slider-range]:bg-base-foreground **:data-[slot=slider-range]:transition-[width] **:data-[slot=slider-range]:duration-150 **:data-[slot=slider-range]:ease-[cubic-bezier(0.25,1,0.5,1)] **:data-[slot=slider-thumb]:bg-base-foreground **:data-[slot=slider-thumb]:ring-base-foreground **:data-[slot=slider-thumb]:transition-[left] **:data-[slot=slider-thumb]:duration-150 **:data-[slot=slider-thumb]:ease-[cubic-bezier(0.25,1,0.5,1)] **:data-[slot=slider-track]:mx-[7px] **:data-[slot=slider-track]:h-1"
                     @update:model-value="onSliderChange"
                   />
                   <!-- Pop-up discount badges -->
@@ -146,18 +146,23 @@
                   </div>
                   <!-- Tick marks -->
                   <div
-                    v-for="pos in SLIDER_DOT_POSITIONS"
-                    :key="pos"
+                    v-for="(pos, dotIndex) in SLIDER_DOT_POSITIONS"
+                    :key="dotIndex"
                     :class="
                       cn(
-                        'absolute top-1/2 size-1 -translate-1/2 rounded-full',
-                        sliderValue >= pos
+                        'pointer-events-none absolute top-1/2 size-2 -translate-1/2 rounded-full',
+                        sliderValue >= dotIndex
                           ? 'bg-base-foreground'
-                          : 'bg-muted-foreground/40'
+                          : 'bg-node-stroke'
                       )
                     "
                     :style="{
-                      left: `${((pos - SLIDER_MIN) / SLIDER_RANGE) * 100}%`
+                      left:
+                        dotIndex === 0
+                          ? '7px'
+                          : dotIndex === SLIDER_MAX
+                            ? 'calc(100% - 7px)'
+                            : `${pos}%`
                     }"
                   />
                 </div>
@@ -178,7 +183,7 @@
                     :style="
                       index > 0 && index < sliderCreditLabels.length - 1
                         ? {
-                            left: `${((SLIDER_LABEL_POSITIONS[index] - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100}%`
+                            left: `${SLIDER_LABEL_POSITIONS[index]}%`
                           }
                         : undefined
                     "
@@ -187,7 +192,7 @@
                       :class="
                         cn(
                           'icon-[lucide--component] size-4 transition-colors',
-                          sliderValue >= SLIDER_LABEL_POSITIONS[index]
+                          sliderValue === SLIDER_LABEL_INDICES[index]
                             ? 'text-amber-400'
                             : 'text-muted-foreground'
                         )
@@ -198,7 +203,7 @@
                       :class="
                         cn(
                           'text-sm font-bold transition-colors',
-                          sliderValue >= SLIDER_LABEL_POSITIONS[index]
+                          sliderValue === SLIDER_LABEL_INDICES[index]
                             ? 'text-base-foreground'
                             : 'text-muted-foreground'
                         )
@@ -399,10 +404,19 @@ const emit = defineEmits<{
 const { t, n } = useI18n()
 const { subscription, fetchPlans } = useBillingContext()
 
-// Slider constants
-const SLIDER_MIN = 200
-const SLIDER_MAX = 2000
-const SLIDER_STEP = 50
+// 5 preset price tiers with discount percentages (yearly; monthly = half)
+const PRICE_TIERS = [
+  { price: 200, yearlyPercent: 0 },
+  { price: 400, yearlyPercent: 5 },
+  { price: 700, yearlyPercent: 10 },
+  { price: 1400, yearlyPercent: 15 },
+  { price: 2500, yearlyPercent: 20 }
+]
+
+// Slider uses index 0–4 mapped to price tiers
+const SLIDER_MIN = 0
+const SLIDER_MAX = PRICE_TIERS.length - 1
+const SLIDER_STEP = 1
 
 // Credits per dollar at base rate (derived from Pro tier: 21,100 credits / $100)
 const BASE_CREDITS_PER_DOLLAR =
@@ -412,21 +426,11 @@ const CREDITS_PER_VIDEO =
   TIER_PRICING.pro.credits / TIER_PRICING.pro.videoEstimate
 
 // 5 dot positions at 0%, 25%, 50%, 75%, 100%
-const SLIDER_RANGE = SLIDER_MAX - SLIDER_MIN
-const SLIDER_DOT_POSITIONS = Array.from(
-  { length: 5 },
-  (_, i) => SLIDER_MIN + SLIDER_RANGE * (i / 4)
+const SLIDER_DOT_POSITIONS = PRICE_TIERS.map(
+  (_, i) => (i / (PRICE_TIERS.length - 1)) * 100
 )
 
-// Discount thresholds at 25%, 50%, 75%, 100% (yearly %; monthly = half)
-const DISCOUNT_THRESHOLDS = [
-  { min: SLIDER_DOT_POSITIONS[1], yearlyPercent: 5 },
-  { min: SLIDER_DOT_POSITIONS[2], yearlyPercent: 10 },
-  { min: SLIDER_DOT_POSITIONS[3], yearlyPercent: 15 },
-  { min: SLIDER_DOT_POSITIONS[4], yearlyPercent: 20 }
-]
-
-const sliderValue = ref(SLIDER_MIN)
+const sliderValue = ref(2)
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 interface BillingCycleOption {
@@ -443,26 +447,20 @@ onMounted(() => {
   void fetchPlans()
 })
 
-/** Get the discount percentage based on threshold (floor value) */
-function getDiscountPercent(price: number, cycle: BillingCycle): number {
-  let percent = 0
-  for (const threshold of DISCOUNT_THRESHOLDS) {
-    if (price >= threshold.min) {
-      percent = threshold.yearlyPercent
-    }
-  }
-  return cycle === 'yearly' ? percent : percent / 2
-}
+const currentTier = computed(() => PRICE_TIERS[sliderValue.value])
 
-const discountPercent = computed(() =>
-  getDiscountPercent(sliderValue.value, currentBillingCycle.value)
-)
+const discountPercent = computed(() => {
+  const tier = currentTier.value
+  return currentBillingCycle.value === 'yearly'
+    ? tier.yearlyPercent
+    : tier.yearlyPercent / 2
+})
 
-const originalPrice = computed(() => sliderValue.value)
+const originalPrice = computed(() => currentTier.value.price)
 
 const currentPrice = computed(() => {
-  if (discountPercent.value <= 0) return sliderValue.value
-  return Math.round(sliderValue.value * (1 - discountPercent.value / 100))
+  if (discountPercent.value <= 0) return originalPrice.value
+  return Math.round(originalPrice.value * (1 - discountPercent.value / 100))
 })
 
 const savingPercent = computed(() => discountPercent.value)
@@ -479,7 +477,7 @@ const animatedPrice = useTransition(currentPrice, TRANSITION_OPTIONS)
 const displayPrice = computed(() => Math.round(animatedPrice.value))
 
 const currentCredits = computed(() =>
-  Math.round(sliderValue.value * BASE_CREDITS_PER_DOLLAR)
+  Math.round(originalPrice.value * BASE_CREDITS_PER_DOLLAR)
 )
 
 const videoEstimate = computed(() =>
@@ -489,18 +487,17 @@ const videoEstimate = computed(() =>
 function formatCreditsLabel(price: number): string {
   const credits = price * BASE_CREDITS_PER_DOLLAR
   const k = credits / 1000
-  return k >= 100 ? `${Math.round(k)}K` : `${k.toFixed(1)}K`
+  return k >= 100 ? `${Math.floor(k)}K` : `${k.toFixed(1)}K`
 }
 
-// Label positions: min, midpoint, max
-const SLIDER_LABEL_POSITIONS = [
-  SLIDER_MIN,
-  (SLIDER_MIN + SLIDER_MAX) / 2,
-  SLIDER_MAX
-]
+// Label positions: all 5 tier indices
+const SLIDER_LABEL_INDICES = [0, 1, 2, 3, 4]
+const SLIDER_LABEL_POSITIONS = SLIDER_LABEL_INDICES.map(
+  (i) => SLIDER_DOT_POSITIONS[i]
+)
 
 const sliderCreditLabels = computed(() =>
-  SLIDER_LABEL_POSITIONS.map(formatCreditsLabel)
+  SLIDER_LABEL_INDICES.map((i) => formatCreditsLabel(PRICE_TIERS[i].price))
 )
 
 // Pop-up discount badges above slider dots on threshold crossing
@@ -516,19 +513,12 @@ const popBadges = ref<PopBadge[]>([])
 
 watch(discountPercent, async (newVal, oldVal) => {
   if (newVal > oldVal) {
-    const threshold = DISCOUNT_THRESHOLDS.find(
-      (t) => getDiscountPercent(t.min, currentBillingCycle.value) === newVal
-    )
-    if (!threshold) return
-
-    const position = ((threshold.min - SLIDER_MIN) / SLIDER_RANGE) * 100
+    const tierIndex = sliderValue.value
+    const position = SLIDER_DOT_POSITIONS[tierIndex]
     const id = ++popBadgeId
     const badge: PopBadge = {
       id,
-      percent:
-        currentBillingCycle.value === 'yearly'
-          ? threshold.yearlyPercent
-          : threshold.yearlyPercent / 2,
+      percent: newVal,
       position,
       phase: 'pre'
     }
@@ -578,7 +568,12 @@ const resolvedButtonLabel = computed(() => {
 
 function onSliderChange(values?: number[]) {
   if (values?.length) {
-    sliderValue.value = values[0]
+    const clamped = Math.round(
+      Math.min(SLIDER_MAX, Math.max(SLIDER_MIN, values[0]))
+    )
+    if (clamped !== sliderValue.value) {
+      sliderValue.value = clamped
+    }
   }
 }
 
