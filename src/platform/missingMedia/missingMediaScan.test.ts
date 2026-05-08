@@ -8,10 +8,10 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type * as ApiModule from '@/scripts/api'
+import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
   scanAllMediaCandidates,
   scanNodeMediaCandidates,
-  verifyCloudMediaCandidates,
   verifyMediaCandidates,
   groupCandidatesByName,
   groupCandidatesByMediaType
@@ -121,14 +121,11 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   }
 }
 
-function makeOutputAsset(
-  name: string,
-  assetHash: string | null = null
-): AssetItem {
-  return {
-    ...makeAsset(name, assetHash),
-    tags: ['output']
-  }
+function makeAssetResolver(
+  inputAssets: AssetItem[],
+  generatedAssets: AssetItem[] = []
+): MissingMediaAssetResolver {
+  return vi.fn(async () => ({ inputAssets, generatedAssets }))
 }
 
 function makeHistoryJob(
@@ -460,16 +457,25 @@ describe('verifyMediaCandidates', () => {
       makeCandidate('2', existingHash, { isMissing: undefined }),
       makeCandidate('3', missingHash, { isMissing: undefined })
     ]
-    const fetchInputAssets = vi.fn(async () => [
+    const resolveAssetSources = makeAssetResolver([
       makeAsset('photo.png', existingHash)
     ])
 
-    await verifyCloudMediaCandidates(candidates, undefined, fetchInputAssets)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
 
     expect(candidates[0].isMissing).toBe(false)
     expect(candidates[1].isMissing).toBe(false)
     expect(candidates[2].isMissing).toBe(true)
-    expect(fetchInputAssets).toHaveBeenCalledOnce()
+    expect(resolveAssetSources).toHaveBeenCalledWith({
+      signal: undefined,
+      includeCloudInputAssets: true,
+      includeGeneratedAssets: false,
+      generatedMatchNames: new Set(),
+      allowCompactSuffix: true
+    })
   })
 
   it('matches asset names when asset_hash is null', async () => {
@@ -477,11 +483,14 @@ describe('verifyMediaCandidates', () => {
       makeCandidate('1', 'legacy-photo.png', { isMissing: undefined }),
       makeCandidate('2', 'missing-photo.png', { isMissing: undefined })
     ]
-    const fetchInputAssets = vi.fn(async () => [
+    const resolveAssetSources = makeAssetResolver([
       makeAsset('legacy-photo.png', null)
     ])
 
-    await verifyCloudMediaCandidates(candidates, undefined, fetchInputAssets)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
 
     expect(candidates[0].isMissing).toBe(false)
     expect(candidates[1].isMissing).toBe(true)
@@ -503,12 +512,15 @@ describe('verifyMediaCandidates', () => {
         isMissing: undefined
       })
     ]
-    const fetchInputAssets = vi.fn(async () => [
-      makeAsset('photo.png'),
-      makeAsset('clip.mp4')
-    ])
+    const resolveAssetSources = makeAssetResolver(
+      [makeAsset('photo.png'), makeAsset('clip.mp4')],
+      []
+    )
 
-    await verifyCloudMediaCandidates(candidates, undefined, fetchInputAssets)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
 
     expect(candidates[0]).toMatchObject({
       name: 'photo.png [input]',
@@ -534,17 +546,28 @@ describe('verifyMediaCandidates', () => {
         }
       )
     ]
-    const fetchMediaAssets = vi.fn(async () => [
-      makeOutputAsset(
+    const resolveAssetSources = makeAssetResolver(
+      [],
+      [
+        makeAsset(
+          '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
+        )
+      ]
+    )
+
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
+
+    expect(resolveAssetSources).toHaveBeenCalledWith({
+      signal: undefined,
+      includeCloudInputAssets: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([
         '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
-      )
-    ])
-
-    await verifyCloudMediaCandidates(candidates, undefined, fetchMediaAssets)
-
-    expect(fetchMediaAssets).toHaveBeenCalledWith(undefined, {
-      includeOutputAssets: true,
-      includeCloudAssets: true
+      ]),
+      allowCompactSuffix: true
     })
     expect(candidates[0]).toMatchObject({
       name: '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png [output]',
@@ -556,9 +579,12 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', 'photo.png [output]', { isMissing: undefined })
     ]
-    const fetchMediaAssets = vi.fn(async () => [makeAsset('photo.png')])
+    const resolveAssetSources = makeAssetResolver([makeAsset('photo.png')])
 
-    await verifyCloudMediaCandidates(candidates, undefined, fetchMediaAssets)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
 
     expect(candidates[0].isMissing).toBe(true)
   })
@@ -567,9 +593,12 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', 'photo.png', { isMissing: undefined })
     ]
-    const fetchMediaAssets = vi.fn(async () => [makeOutputAsset('photo.png')])
+    const resolveAssetSources = makeAssetResolver([], [makeAsset('photo.png')])
 
-    await verifyCloudMediaCandidates(candidates, undefined, fetchMediaAssets)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
 
     expect(candidates[0].isMissing).toBe(true)
   })
@@ -603,16 +632,19 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', 'photo.png[output]', { isMissing: undefined })
     ]
-    const fetchMediaAssets = vi.fn(async () => [makeAsset('photo.png')])
+    const resolveAssetSources = makeAssetResolver([makeAsset('photo.png')])
 
     await verifyMediaCandidates(candidates, {
       isCloud: false,
-      fetchMediaAssets
+      resolveAssetSources
     })
 
-    expect(fetchMediaAssets).toHaveBeenCalledWith(undefined, {
-      includeOutputAssets: false,
-      includeCloudAssets: false
+    expect(resolveAssetSources).toHaveBeenCalledWith({
+      signal: undefined,
+      includeCloudInputAssets: false,
+      includeGeneratedAssets: false,
+      generatedMatchNames: new Set(),
+      allowCompactSuffix: false
     })
     expect(candidates[0].isMissing).toBe(true)
   })
@@ -621,11 +653,15 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', 'clip.mp4[temp]', { isMissing: undefined })
     ]
-    const fetchMediaAssets = vi.fn(async () => [
-      makeOutputAsset('clip.mp4 [temp]')
-    ])
+    const resolveAssetSources = makeAssetResolver(
+      [],
+      [makeAsset('clip.mp4 [temp]')]
+    )
 
-    await verifyCloudMediaCandidates(candidates, undefined, fetchMediaAssets)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
 
     expect(candidates[0].isMissing).toBe(false)
   })
@@ -635,7 +671,10 @@ describe('verifyMediaCandidates', () => {
       makeCandidate('1', 'photo.png', { isMissing: undefined })
     ]
 
-    await verifyCloudMediaCandidates(candidates, undefined, async () => [])
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources: makeAssetResolver([])
+    })
 
     expect(candidates[0].isMissing).toBe(true)
   })
@@ -648,7 +687,7 @@ describe('verifyMediaCandidates', () => {
       makeAsset('stored-photo.png', existingHash)
     ])
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(false)
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
@@ -669,7 +708,7 @@ describe('verifyMediaCandidates', () => {
       hasMore: false
     })
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
     expect(mockGetHistoryPage).toHaveBeenCalledWith(200, { offset: 0 })
@@ -700,7 +739,7 @@ describe('verifyMediaCandidates', () => {
         hasMore: false
       })
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(mockGetHistoryPage).toHaveBeenNthCalledWith(1, 200, { offset: 0 })
     expect(mockGetHistoryPage).toHaveBeenNthCalledWith(2, 200, { offset: 200 })
@@ -723,7 +762,7 @@ describe('verifyMediaCandidates', () => {
       hasMore: false
     })
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(mockGetHistoryPage).toHaveBeenCalledOnce()
     expect(candidates[0].isMissing).toBe(true)
@@ -737,7 +776,10 @@ describe('verifyMediaCandidates', () => {
       makeCandidate('1', missingHash, { isMissing: undefined })
     ]
 
-    await verifyCloudMediaCandidates(candidates, controller.signal)
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      signal: controller.signal
+    })
 
     expect(candidates[0].isMissing).toBeUndefined()
     expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
@@ -748,16 +790,19 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', existingHash, { isMissing: undefined })
     ]
-    const fetchInputAssets = vi.fn(async () => {
+    const resolveAssetSources: MissingMediaAssetResolver = vi.fn(async () => {
       controller.abort()
-      return [makeAsset('stored-photo.png', existingHash)]
+      return {
+        inputAssets: [makeAsset('stored-photo.png', existingHash)],
+        generatedAssets: []
+      }
     })
 
-    await verifyCloudMediaCandidates(
-      candidates,
-      controller.signal,
-      fetchInputAssets
-    )
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      signal: controller.signal,
+      resolveAssetSources
+    })
 
     expect(candidates[0].isMissing).toBeUndefined()
   })
@@ -765,7 +810,7 @@ describe('verifyMediaCandidates', () => {
   it('skips candidates already resolved as true', async () => {
     const candidates = [makeCandidate('1', missingHash, { isMissing: true })]
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(true)
     expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
@@ -774,7 +819,7 @@ describe('verifyMediaCandidates', () => {
   it('skips candidates already resolved as false', async () => {
     const candidates = [makeCandidate('1', existingHash, { isMissing: false })]
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(false)
     expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
@@ -783,7 +828,7 @@ describe('verifyMediaCandidates', () => {
   it('skips entirely when no pending candidates', async () => {
     const candidates = [makeCandidate('1', missingHash, { isMissing: true })]
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
@@ -798,7 +843,7 @@ describe('verifyMediaCandidates', () => {
     inputAssets[42] = makeAsset('public-asset-record', 'public-photo.png')
     mockGetInputAssetsIncludingPublic.mockResolvedValue(inputAssets)
 
-    await verifyCloudMediaCandidates(candidates)
+    await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(undefined)
     expect(candidates[0].isMissing).toBe(false)
@@ -811,17 +856,17 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', 'photo.png', { isMissing: undefined })
     ]
-    const fetchInputAssets = vi.fn(async () => {
+    const resolveAssetSources: MissingMediaAssetResolver = vi.fn(async () => {
       controller.abort()
       throw abortError
     })
 
     await expect(
-      verifyCloudMediaCandidates(
-        candidates,
-        controller.signal,
-        fetchInputAssets
-      )
+      verifyMediaCandidates(candidates, {
+        isCloud: true,
+        signal: controller.signal,
+        resolveAssetSources
+      })
     ).resolves.toBeUndefined()
 
     expect(candidates[0].isMissing).toBeUndefined()
@@ -840,7 +885,10 @@ describe('verifyMediaCandidates', () => {
     })
 
     await expect(
-      verifyCloudMediaCandidates(candidates, controller.signal)
+      verifyMediaCandidates(candidates, {
+        isCloud: true,
+        signal: controller.signal
+      })
     ).resolves.toBeUndefined()
 
     expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(

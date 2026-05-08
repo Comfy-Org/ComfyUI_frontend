@@ -16,7 +16,9 @@ export interface MissingMediaCandidate {
   /**
    * - `true`  — confirmed missing
    * - `false` — confirmed present
-   * - `undefined` — pending async verification
+   * - `undefined` — pending async verification. Cloud candidates start pending;
+   *   OSS output/temp annotated paths may also be deferred to generated-history
+   *   verification.
    */
   isMissing: boolean | undefined
 }

@@ -19,16 +19,16 @@ import {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 import { isAbortError } from '@/utils/typeGuardUtil'
-import { api } from '@/scripts/api'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
   getAnnotatedMediaPathTypeForDetection,
   getMediaPathDetectionNames
 } from './mediaPathDetectionUtil'
-
-const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
+import {
+  getAssetDetectionNames,
+  resolveMissingMediaAssetSources
+} from './missingMediaAssetResolver'
+import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
 /** Map of node types to their media widget name and media type. */
 const MEDIA_NODE_WIDGETS: Record<
@@ -128,20 +128,10 @@ export function scanNodeMediaCandidates(
   return candidates
 }
 
-interface MediaAssetFetcherOptions {
-  includeOutputAssets?: boolean
-  includeCloudAssets?: boolean
-}
-
-type MediaAssetFetcher = (
-  signal?: AbortSignal,
-  options?: MediaAssetFetcherOptions
-) => Promise<AssetItem[]>
-
 interface MediaVerificationOptions {
   isCloud: boolean
   signal?: AbortSignal
-  fetchMediaAssets?: MediaAssetFetcher
+  resolveAssetSources?: MissingMediaAssetResolver
 }
 
 /**
@@ -160,28 +150,34 @@ export async function verifyMediaCandidates(
   {
     isCloud,
     signal,
-    fetchMediaAssets = fetchMissingMediaAssets
+    resolveAssetSources = resolveMissingMediaAssetSources
   }: MediaVerificationOptions
 ): Promise<void> {
   if (signal?.aborted) return
 
   const pending = candidates.filter((c) => c.isMissing === undefined)
   if (pending.length === 0) return
-  const pathOptions = { allowCompactSuffix: isCloud }
-  const includeOutputAssets = pending.some((candidate) => {
-    const type = getAnnotatedMediaPathTypeForDetection(
-      candidate.name,
-      pathOptions
-    )
-    return type === 'output' || type === 'temp'
-  })
 
-  let mediaAssets: AssetItem[]
+  // Core stores spaced annotations such as `file.png [output]`; Cloud also
+  // accepts compact forms such as `file.png[output]`.
+  const pathOptions = { allowCompactSuffix: isCloud }
+  const generatedMatchNames = getGeneratedCandidateMatchNames(
+    pending,
+    pathOptions
+  )
+
+  let inputAssets: AssetItem[]
+  let generatedAssets: AssetItem[]
   try {
-    mediaAssets = await fetchMediaAssets(signal, {
-      includeOutputAssets,
-      includeCloudAssets: isCloud
+    const assetSources = await resolveAssetSources({
+      signal,
+      includeCloudInputAssets: isCloud,
+      includeGeneratedAssets: generatedMatchNames.size > 0,
+      generatedMatchNames,
+      allowCompactSuffix: isCloud
     })
+    inputAssets = assetSources.inputAssets
+    generatedAssets = assetSources.generatedAssets
   } catch (err) {
     if (signal?.aborted || isAbortError(err)) return
     throw err
@@ -191,34 +187,8 @@ export async function verifyMediaCandidates(
 
   const inputAssetIdentifiers = new Set<string>()
   const outputAssetIdentifiers = new Set<string>()
-  const addInputAssetIdentifier = (value?: string | null) => {
-    if (!value) return
-    for (const name of getMediaPathDetectionNames(value, pathOptions)) {
-      inputAssetIdentifiers.add(name)
-    }
-  }
-  const addOutputAssetIdentifier = (value?: string | null) => {
-    if (!value) return
-    for (const name of getMediaPathDetectionNames(value, pathOptions)) {
-      outputAssetIdentifiers.add(name)
-    }
-  }
-  for (const asset of mediaAssets) {
-    const subfolder = asset.user_metadata?.subfolder
-    if (asset.tags?.includes('output')) {
-      addOutputAssetIdentifier(asset.asset_hash)
-      addOutputAssetIdentifier(asset.name)
-      if (typeof subfolder === 'string' && subfolder) {
-        addOutputAssetIdentifier(`${subfolder}/${asset.name}`)
-      }
-    } else {
-      addInputAssetIdentifier(asset.asset_hash)
-      addInputAssetIdentifier(asset.name)
-      if (typeof subfolder === 'string' && subfolder) {
-        addInputAssetIdentifier(`${subfolder}/${asset.name}`)
-      }
-    }
-  }
+  addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
+  addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
 
   for (const candidate of pending) {
     const detectionNames = getMediaPathDetectionNames(
@@ -237,77 +207,42 @@ export async function verifyMediaCandidates(
   }
 }
 
-export async function verifyCloudMediaCandidates(
+function getGeneratedCandidateMatchNames(
   candidates: MissingMediaCandidate[],
-  signal?: AbortSignal,
-  fetchMediaAssets?: MediaAssetFetcher
-): Promise<void> {
-  return await verifyMediaCandidates(candidates, {
-    isCloud: true,
-    signal,
-    fetchMediaAssets
-  })
-}
+  pathOptions: { allowCompactSuffix: boolean }
+): Set<string> {
+  const names = new Set<string>()
+  for (const candidate of candidates) {
+    if (!isGeneratedCandidate(candidate, pathOptions)) continue
 
-async function fetchMissingMediaAssets(
-  signal?: AbortSignal,
-  {
-    includeOutputAssets = false,
-    includeCloudAssets = true
-  }: MediaAssetFetcherOptions = {}
-): Promise<AssetItem[]> {
-  const inputAssets = includeCloudAssets
-    ? await assetService.getInputAssetsIncludingPublic(signal)
-    : []
-  if (!includeOutputAssets) return inputAssets
-
-  return [...inputAssets, ...(await fetchGeneratedHistoryAssets(signal))]
-}
-
-async function fetchGeneratedHistoryAssets(
-  signal?: AbortSignal
-): Promise<AssetItem[]> {
-  const assets: AssetItem[] = []
-  let offset = 0
-
-  while (true) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-    const historyPage = await api.getHistoryPage(
-      HISTORY_MEDIA_ASSETS_PAGE_SIZE,
-      {
-        offset
-      }
+    const detectionNames = getMediaPathDetectionNames(
+      candidate.name,
+      pathOptions
     )
-
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-    assets.push(
-      ...historyPage.jobs.map(mapHistoryJobToAsset).filter((a) => a !== null)
-    )
-
-    if (!historyPage.hasMore) {
-      return assets
-    }
-
-    const nextOffset = historyPage.offset + historyPage.jobs.length
-    if (nextOffset <= offset) return assets
-    offset = nextOffset
+    names.add(detectionNames.at(-1) ?? candidate.name)
   }
+  return names
 }
 
-function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
-  const output = job.preview_output
-  if (job.status !== 'completed' || !output?.filename) return null
+function isGeneratedCandidate(
+  candidate: MissingMediaCandidate,
+  pathOptions: { allowCompactSuffix: boolean }
+): boolean {
+  const type = getAnnotatedMediaPathTypeForDetection(
+    candidate.name,
+    pathOptions
+  )
+  return type === 'output' || type === 'temp'
+}
 
-  return {
-    id: `${job.id}-${output.filename}`,
-    name: output.filename,
-    display_name: output.display_name,
-    mime_type: null,
-    tags: ['output'],
-    user_metadata: {
-      subfolder: output.subfolder
+function addAssetIdentifiers(
+  identifiers: Set<string>,
+  assets: AssetItem[],
+  pathOptions: { allowCompactSuffix: boolean }
+) {
+  for (const asset of assets) {
+    for (const name of getAssetDetectionNames(asset, pathOptions)) {
+      identifiers.add(name)
     }
   }
 }
