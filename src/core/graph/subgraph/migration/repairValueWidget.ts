@@ -25,9 +25,17 @@ function findHostInputForLinkedSource(
   hostNode: SubgraphNode,
   sourceNodeId: string,
   sourceWidgetName: string,
+  subgraphInputName: string | undefined,
   disambiguatingSourceNodeId?: string
-) {
-  return hostNode.inputs.find((input) => {
+):
+  | { kind: 'none' }
+  | { kind: 'one'; input: INodeInputSlot }
+  | { kind: 'ambiguous' } {
+  const candidates = subgraphInputName
+    ? hostNode.inputs.filter((input) => input.name === subgraphInputName)
+    : hostNode.inputs
+
+  const matches = candidates.filter((input) => {
     const widget = input._widget
     if (!widget || !isPromotedWidgetView(widget)) return false
     return (
@@ -37,6 +45,9 @@ function findHostInputForLinkedSource(
         widget.disambiguatingSourceNodeId === disambiguatingSourceNodeId)
     )
   })
+  if (matches.length === 0) return { kind: 'none' }
+  if (matches.length === 1) return { kind: 'one', input: matches[0] }
+  return { kind: 'ambiguous' }
 }
 
 function applyHostValue(
@@ -55,14 +66,20 @@ function repairAlreadyLinked(
     hostNode,
     entry.normalized.sourceNodeId,
     entry.normalized.sourceWidgetName,
+    entry.plan.kind === 'alreadyLinked'
+      ? entry.plan.subgraphInputName
+      : undefined,
     entry.normalized.disambiguatingSourceNodeId
   )
-  if (!hostInput?._widget) {
+  if (hostInput.kind === 'ambiguous') {
+    return { ok: false, reason: 'ambiguousSubgraphInput' }
+  }
+  if (hostInput.kind === 'none' || !hostInput.input._widget) {
     return { ok: false, reason: 'missingSubgraphInput' }
   }
 
-  applyHostValue(hostInput._widget, entry.hostValue)
-  return { ok: true, subgraphInputName: hostInput.name }
+  applyHostValue(hostInput.input._widget, entry.hostValue)
+  return { ok: true, subgraphInputName: hostInput.input.name }
 }
 
 function repairCreateSubgraphInput(

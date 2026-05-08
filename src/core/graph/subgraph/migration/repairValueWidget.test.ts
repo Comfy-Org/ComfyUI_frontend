@@ -158,6 +158,47 @@ describe(repairValueWidget, () => {
       expect(secondInput._widget?.value).toBe(99)
     })
 
+    it('does not apply host value when already-linked inputs are ambiguous', () => {
+      const host = buildHost()
+      const innerNode = new LGraphNode('Inner')
+      innerNode.addWidget('number', 'seed', 0, () => {})
+      host.subgraph.add(innerNode)
+
+      const firstInput = host.addInput('first_seed', '*')
+      firstInput._widget = fromPartial<PromotedWidgetView>({
+        node: host,
+        name: 'seed',
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'seed',
+        value: 1
+      })
+      const secondInput = host.addInput('second_seed', '*')
+      secondInput._widget = fromPartial<PromotedWidgetView>({
+        node: host,
+        name: 'seed',
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'seed',
+        value: 2
+      })
+
+      const result = repairValueWidget({
+        hostNode: host,
+        entry: buildEntry({
+          sourceNodeId: String(innerNode.id),
+          sourceWidgetName: 'seed',
+          plan: {
+            kind: 'alreadyLinked',
+            subgraphInputName: undefined as never
+          },
+          hostValue: 99
+        })
+      })
+
+      expect(result).toEqual({ ok: false, reason: 'ambiguousSubgraphInput' })
+      expect(firstInput._widget?.value).toBe(1)
+      expect(secondInput._widget?.value).toBe(2)
+    })
+
     it('returns missingSubgraphInput when the linked SubgraphInput is gone', () => {
       const host = buildHost()
       const innerNode = new LGraphNode('Inner')

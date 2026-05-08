@@ -268,4 +268,55 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value).toHaveLength(1)
     expect(promotedPreviews.value[0].urls).toEqual(mockUrls)
   })
+
+  it('renders leaf media exposed through a nested subgraph host', () => {
+    const innerSetup = createSetup()
+    const leafNode = addInteriorNode(innerSetup, {
+      id: 10,
+      previewMediaType: 'image'
+    })
+
+    const outerSetup = createSetup()
+    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
+    outerSetup.subgraph.add(innerHost)
+
+    const store = usePreviewExposureStore()
+    store.addExposure(
+      outerSetup.subgraphNode.rootGraph.id,
+      createNodeLocatorId(outerSetup.subgraphNode.rootGraph.id, innerHost.id),
+      {
+        sourceNodeId: String(leafNode.id),
+        sourcePreviewName: '$$canvas-image-preview'
+      }
+    )
+    store.addExposure(
+      outerSetup.subgraphNode.rootGraph.id,
+      createNodeLocatorId(
+        outerSetup.subgraphNode.rootGraph.id,
+        outerSetup.subgraphNode.id
+      ),
+      {
+        sourceNodeId: String(innerHost.id),
+        sourcePreviewName: '$$canvas-image-preview'
+      }
+    )
+
+    const mockUrls = ['/view?filename=leaf.png']
+    seedOutputs(innerSetup.subgraph.id, [leafNode.id])
+    getNodeImageUrls.mockImplementation((node: LGraphNode) =>
+      node === leafNode ? mockUrls : []
+    )
+
+    const { promotedPreviews } = usePromotedPreviews(
+      () => outerSetup.subgraphNode
+    )
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: mockUrls
+      }
+    ])
+  })
 })

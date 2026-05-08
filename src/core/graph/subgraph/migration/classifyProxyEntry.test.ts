@@ -114,6 +114,35 @@ describe(classifyProxyEntry, () => {
         subgraphInputName: 'second_seed'
       })
     })
+
+    it('quarantines ambiguous already-linked inputs without a disambiguator', () => {
+      const host = buildHost()
+      const innerNode = new LGraphNode('Inner')
+      innerNode.addWidget('number', 'seed', 0, () => {})
+      host.subgraph.add(innerNode)
+
+      for (const inputName of ['first_seed', 'second_seed']) {
+        const input = host.addInput(inputName, '*')
+        input._widget = fromPartial<PromotedWidgetView>({
+          node: host,
+          name: 'seed',
+          sourceNodeId: String(innerNode.id),
+          sourceWidgetName: 'seed'
+        })
+      }
+
+      const normalized = makeSource(String(innerNode.id), 'seed')
+      const result = classifyProxyEntry({
+        hostNode: host,
+        normalized,
+        cohort: [normalized]
+      })
+
+      expect(result).toEqual({
+        classification: 'unknown',
+        plan: { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
+      })
+    })
   })
 
   describe('quarantine branches', () => {

@@ -20,7 +20,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNode, resolveNodeWidget } from '@/utils/litegraphUtil'
 
 export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
@@ -61,12 +61,21 @@ export const useAppModeStore = defineStore('appMode', () => {
         ? rawInputs
             .map(migrateLegacyInputTuple)
             .filter((entry): entry is LinearInput => entry !== null)
-            .filter(([nodeId]) => resolveNode(nodeId))
+            .filter(selectedInputExists)
         : rawInputs,
       outputs: app.rootGraph
         ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
         : rawOutputs
     }
+  }
+
+  function selectedInputExists([nodeId, widgetName]: LinearInput): boolean {
+    if (typeof nodeId === 'string' && nodeId.includes(':')) {
+      if (typeof app.rootGraph?.getNodeById !== 'function') return true
+      const [, widget] = resolveNodeWidget(nodeId, widgetName)
+      return Boolean(widget)
+    }
+    return Boolean(resolveNode(nodeId))
   }
 
   /**
@@ -102,6 +111,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rootGraph = app.rootGraph
     if (!rootGraph) return null
 
+    const matches: Array<{ hostLocator: string; subgraphInputName: string }> =
+      []
+
     for (const node of rootGraph.nodes) {
       if (!(node instanceof SubgraphNode)) continue
 
@@ -112,14 +124,21 @@ export const useAppModeStore = defineStore('appMode', () => {
           widget.sourceNodeId === String(legacySourceNodeId) &&
           widget.sourceWidgetName === legacyWidgetName
         ) {
-          return {
+          matches.push({
             hostLocator: createNodeLocatorId(rootGraph.id, node.id),
             subgraphInputName: inputSlot.name
-          }
+          })
         }
       }
     }
 
+    if (matches.length === 1) return matches[0]
+    if (matches.length > 1) {
+      console.warn(
+        '[appModeStore] dropping ambiguous legacy selectedInput tuple',
+        { storedId: legacySourceNodeId, widgetName: legacyWidgetName }
+      )
+    }
     return null
   }
 

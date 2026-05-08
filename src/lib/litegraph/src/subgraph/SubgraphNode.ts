@@ -726,7 +726,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     let valueIndex = 0
     for (const input of this.inputs) {
       const widget = input._widget
-      if (!widget) continue
+      if (!widget || !isPromotedWidgetView(widget)) continue
       if (valueIndex >= widgetValues.length) return
       widget.value = widgetValues[valueIndex]
       valueIndex += 1
@@ -1232,18 +1232,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const serialized = super.serialize()
     const widgetStore = useWidgetValueStore()
-    const widgetValues = this.inputs.flatMap((input) => {
+    const widgetValues: TWidgetValue[] = []
+    let hasSerializableValue = false
+
+    for (const input of this.inputs) {
       const widget = input._widget
-      if (!widget || !isPromotedWidgetView(widget)) return []
+      if (!widget || !isPromotedWidgetView(widget)) continue
       const state = widgetStore.getWidget(
         rootGraphId,
         this.id,
         getPromotedWidgetHostStateName(widget)
       )
-      return state && isWidgetValue(state.value) ? [state.value] : []
-    })
+      const value =
+        state && isWidgetValue(state.value) ? state.value : undefined
+      widgetValues.push(value)
+      hasSerializableValue ||= value !== undefined
+    }
 
-    if (widgetValues.length > 0) serialized.widgets_values = widgetValues
+    if (hasSerializableValue) serialized.widgets_values = widgetValues
 
     return serialized
   }

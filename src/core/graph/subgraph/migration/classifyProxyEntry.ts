@@ -26,10 +26,16 @@ interface ClassifyProxyEntryArgs {
 
 const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 
-function findLinkedSubgraphInputName(
+type LinkedInputMatch =
+  | { kind: 'none' }
+  | { kind: 'one'; inputName: string }
+  | { kind: 'ambiguous' }
+
+function findLinkedSubgraphInputMatch(
   hostNode: SubgraphNode,
   normalized: PromotedWidgetSource
-): string | undefined {
+): LinkedInputMatch {
+  const matches: string[] = []
   for (const input of hostNode.inputs) {
     const widget = input._widget
     if (!widget || !isPromotedWidgetView(widget)) continue
@@ -40,10 +46,12 @@ function findLinkedSubgraphInputName(
         widget.disambiguatingSourceNodeId ===
           normalized.disambiguatingSourceNodeId)
     ) {
-      return input.name
+      matches.push(input.name)
     }
   }
-  return undefined
+  if (matches.length === 0) return { kind: 'none' }
+  if (matches.length === 1) return { kind: 'one', inputName: matches[0] }
+  return { kind: 'ambiguous' }
 }
 
 function collectPrimitiveTargets(
@@ -84,11 +92,17 @@ export function classifyProxyEntry(
 ): ClassificationResult {
   const { hostNode, normalized, cohort } = args
 
-  const linkedInputName = findLinkedSubgraphInputName(hostNode, normalized)
-  if (linkedInputName !== undefined) {
+  const linkedInput = findLinkedSubgraphInputMatch(hostNode, normalized)
+  if (linkedInput.kind === 'one') {
     return {
       classification: 'value',
-      plan: { kind: 'alreadyLinked', subgraphInputName: linkedInputName }
+      plan: { kind: 'alreadyLinked', subgraphInputName: linkedInput.inputName }
+    }
+  }
+  if (linkedInput.kind === 'ambiguous') {
+    return {
+      classification: 'unknown',
+      plan: { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
     }
   }
 
