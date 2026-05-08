@@ -1,4 +1,10 @@
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  hasAudioType,
+  hasImageType,
+  hasVideoType,
+  isMediaFile
+} from '@/utils/eventUtils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
@@ -55,11 +61,11 @@ describe('eventUtils', () => {
       expect(actual).toEqual([file1, file2])
     })
 
-    it('should filter out bmp files', async () => {
+    it('should filter out synthetic bmp placeholder files', async () => {
       const jsonFile = new File([new Uint8Array()], 'workflow.json', {
         type: 'application/json'
       })
-      const bmpFile = new File([new Uint8Array()], 'image.bmp', {
+      const bmpFile = new File([''], 'image.bmp', {
         type: 'image/bmp'
       })
       const dataTransfer = new DataTransfer()
@@ -70,6 +76,19 @@ describe('eventUtils', () => {
         new FakeDragEvent('drop', { dataTransfer })
       )
       expect(actual).toEqual([jsonFile])
+    })
+
+    it('should keep real bmp files', async () => {
+      const bmpFile = new File(['bmp-data'], 'image.bmp', {
+        type: 'image/bmp'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(bmpFile)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+      expect(actual).toEqual([bmpFile])
     })
 
     it('should return multiple image files from dataTransfer', async () => {
@@ -88,6 +107,25 @@ describe('eventUtils', () => {
         new FakeDragEvent('drop', { dataTransfer })
       )
       expect(actual).toEqual([imageFile1, imageFile2])
+    })
+
+    it('should return files from dataTransfer.items when dataTransfer.files is empty', async () => {
+      const file = new File([new Uint8Array()], 'image.png', {
+        type: 'image/png'
+      })
+
+      const source = new DataTransfer()
+      source.items.add(file)
+
+      Object.defineProperty(source, 'files', {
+        configurable: true,
+        value: new DataTransfer().files
+      })
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer: source })
+      )
+      expect(actual).toEqual([file])
     })
 
     it('should return multiple non-image files from dataTransfer', async () => {
@@ -158,6 +196,52 @@ describe('eventUtils', () => {
       )
 
       expect(actual).toEqual([])
+    })
+  })
+
+  describe('media type helpers', () => {
+    it('falls back to filename extension when image MIME type is empty', () => {
+      const file = new File([''], 'example.jpg', { type: '' })
+      expect(hasImageType(file)).toBe(true)
+      expect(isMediaFile(file)).toBe(true)
+    })
+
+    it('falls back to extended filename extensions when MIME type is empty', () => {
+      expect(hasImageType(new File([''], 'example.heic', { type: '' }))).toBe(
+        true
+      )
+      expect(hasAudioType(new File([''], 'example.m4a', { type: '' }))).toBe(
+        true
+      )
+      expect(hasVideoType(new File([''], 'example.mkv', { type: '' }))).toBe(
+        true
+      )
+    })
+
+    it('falls back to filename extension when audio MIME type is empty', () => {
+      const file = new File([''], 'example.mp3', { type: '' })
+      expect(hasAudioType(file)).toBe(true)
+      expect(isMediaFile(file)).toBe(true)
+    })
+
+    it('falls back to filename extension when video MIME type is empty', () => {
+      const file = new File([''], 'example.mp4', { type: '' })
+      expect(hasVideoType(file)).toBe(true)
+      expect(isMediaFile(file)).toBe(true)
+    })
+
+    it('does not classify unknown extensions as media when MIME type is empty', () => {
+      expect(isMediaFile(new File([''], 'example.bin', { type: '' }))).toBe(
+        false
+      )
+    })
+
+    it('does not override an explicit non-media MIME with the filename extension', () => {
+      const file = new File([''], 'report.jpg', { type: 'application/pdf' })
+      expect(hasImageType(file)).toBe(false)
+      expect(hasAudioType(file)).toBe(false)
+      expect(hasVideoType(file)).toBe(false)
+      expect(isMediaFile(file)).toBe(false)
     })
   })
 })
