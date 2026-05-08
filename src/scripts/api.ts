@@ -67,9 +67,9 @@ import {
   fetchHistory,
   fetchHistoryPage,
   fetchJobDetail,
-  fetchQueue,
-  type FetchHistoryPageResult
+  fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { FetchHistoryPageResult } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
   client_id: string
