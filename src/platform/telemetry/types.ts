@@ -363,6 +363,11 @@ interface EcommerceMetadata {
   items: EcommerceItemMetadata[]
 }
 
+export interface CancellationFlowClosedMetadata {
+  outcome: 'canceled' | 'reconsidered' | 'unknown'
+  survey_response?: string
+}
+
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   user_id?: string
   checkout_attempt_id: string
@@ -461,6 +466,11 @@ export interface TelemetryProvider {
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Cancellation flow events
+  trackCancellationFlowOpened?(): void
+  trackCancellationFlowClosed?(metadata: CancellationFlowClosedMetadata): void
+  trackCancellationReconsidered?(): void
 }
 
 /**
@@ -548,7 +558,12 @@ export const TelemetryEvents = {
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Cancellation Flow
+  CANCELLATION_FLOW_OPENED: 'app:cancellation_flow_opened',
+  CANCELLATION_FLOW_CLOSED: 'app:cancellation_flow_closed',
+  CANCELLATION_RECONSIDERED: 'app:cancellation_reconsidered'
 } as const
 
 export type TelemetryEventName =
@@ -593,3 +608,4 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | CancellationFlowClosedMetadata

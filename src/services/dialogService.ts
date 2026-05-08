@@ -596,6 +596,19 @@ export const useDialogService = () => {
     })
   }
 
+  async function launchCancellationFlow(cancelAt?: string) {
+    const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+    const { flags } = useFeatureFlags()
+
+    if (flags.churnkeyCancellationEnabled) {
+      const { launchChurnkeyCancellation } =
+        await import('@/platform/cloud/churnkey/launchChurnkeyCancellation')
+      return launchChurnkeyCancellation()
+    }
+
+    return showCancelSubscriptionDialog(cancelAt)
+  }
+
   /** Shows one-time cloud notification modal for macOS desktop users. */
   async function showCloudNotification(): Promise<void> {
     const { default: component } = await lazyCloudNotificationContent()
@@ -657,6 +670,7 @@ export const useDialogService = () => {
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
-    showCancelSubscriptionDialog
+    showCancelSubscriptionDialog,
+    launchCancellationFlow
   }
 }

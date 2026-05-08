@@ -27,6 +27,7 @@ export enum ServerFeatureFlag {
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  CHURNKEY_CANCELLATION_ENABLED = 'churnkey_cancellation_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button'
 }
 
@@ -155,6 +156,14 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
         remoteConfig.value.comfyhub_profile_gate_enabled,
+        false
+      )
+    },
+    get churnkeyCancellationEnabled() {
+      if (!isCloud) return false
+      return resolveFlag(
+        ServerFeatureFlag.CHURNKEY_CANCELLATION_ENABLED,
+        remoteConfig.value.churnkey_cancellation_enabled,
         false
       )
     },
