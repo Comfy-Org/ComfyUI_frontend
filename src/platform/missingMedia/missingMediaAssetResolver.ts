@@ -83,6 +83,7 @@ export function getAssetDetectionNames(
   options: MediaPathDetectionOptions
 ): string[] {
   const names = new Set<string>()
+  // Treat names and hashes as opaque match keys because Cloud may use either in widget values.
   addPathDetectionNames(names, asset.asset_hash, options)
   addPathDetectionNames(names, asset.name, options)
 
