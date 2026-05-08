@@ -335,7 +335,7 @@ export class SubgraphHelper {
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
     const widget = nodeLocator.getByLabel(widgetName, { exact: true })
     await this.comfyPage.contextMenu
-      .openForWidget(widget)
+      .openFor(widget)
       .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
   }
 
@@ -345,7 +345,7 @@ export class SubgraphHelper {
   ): Promise<void> {
     const widget = nodeLocator.getByLabel(widgetName, { exact: true })
     await this.comfyPage.contextMenu
-      .openForWidget(widget)
+      .openFor(widget)
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 

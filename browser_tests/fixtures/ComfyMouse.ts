@@ -66,12 +66,6 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.drop(options)
   }
 
-  async getCenter(locator: Locator): Promise<Position> {
-    const bounds = await locator.boundingBox()
-    if (!bounds) throw new Error('Failed to get bounds' + locator)
-    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
-  }
-
   /** @see {@link Mouse.move} */
   async move(to: Position, options = ComfyMouse.defaultOptions) {
     await this.mouse.move(to.x, to.y, options)

@@ -6,8 +6,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
 
 export class SubgraphEditor {
-  public readonly root
-  public readonly promotionItems
+  public readonly root: Locator
+  public readonly promotionItems: Locator
 
   constructor(protected readonly comfyPage: ComfyPage) {
     this.root = this.comfyPage.menu.propertiesPanel.root
