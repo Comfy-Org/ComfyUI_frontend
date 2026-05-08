@@ -158,7 +158,7 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
-usePreventFocusLoss(containerRef)
+usePreventFocusLoss(containerRef, '.workflow-tab')
 
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)

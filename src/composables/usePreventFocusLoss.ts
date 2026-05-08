@@ -13,9 +13,14 @@ const FOCUS_ACCEPTING_SELECTOR =
  * Focus is still allowed to move when the user clicks a genuine text-entry
  * element (input, textarea, contenteditable).
  */
-export function usePreventFocusLoss(el: Ref<HTMLElement | null | undefined>) {
+export function usePreventFocusLoss(
+  el: Ref<HTMLElement | null | undefined>,
+  excludeSelector?: string
+) {
   useEventListener(el, 'mousedown', (event: MouseEvent) => {
-    if (!(event.target as HTMLElement).closest(FOCUS_ACCEPTING_SELECTOR)) {
+    const target = event.target as HTMLElement
+    if (excludeSelector && target.closest(excludeSelector)) return
+    if (!target.closest(FOCUS_ACCEPTING_SELECTOR)) {
       event.preventDefault()
     }
   })

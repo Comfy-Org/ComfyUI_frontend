@@ -3,10 +3,10 @@ import { effectScope, ref } from 'vue'
 
 import { usePreventFocusLoss } from './usePreventFocusLoss'
 
-function setup(container: HTMLElement) {
+function setup(container: HTMLElement, excludeSelector?: string) {
   const scope = effectScope()
   const containerRef = ref<HTMLElement | null>(container)
-  scope.run(() => usePreventFocusLoss(containerRef))
+  scope.run(() => usePreventFocusLoss(containerRef, excludeSelector))
   document.body.appendChild(container)
   return () => {
     scope.stop()
@@ -79,5 +79,47 @@ describe('usePreventFocusLoss', () => {
     const event = fireMousedown(editable)
 
     expect(event.defaultPrevented).toBe(false)
+  })
+
+  describe('excludeSelector', () => {
+    it('does not prevent default when target matches the exclude selector', () => {
+      const container = document.createElement('div')
+      const tab = document.createElement('div')
+      tab.className = 'workflow-tab'
+      container.appendChild(tab)
+      teardown = setup(container, '.workflow-tab')
+
+      const event = fireMousedown(tab)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('still prevents default for elements outside the exclude selector', () => {
+      const container = document.createElement('div')
+      const tab = document.createElement('div')
+      tab.className = 'workflow-tab'
+      const btn = document.createElement('button')
+      container.appendChild(tab)
+      container.appendChild(btn)
+      teardown = setup(container, '.workflow-tab')
+
+      const event = fireMousedown(btn)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('does not prevent default when target is a descendant of an excluded element', () => {
+      const container = document.createElement('div')
+      const tab = document.createElement('div')
+      tab.className = 'workflow-tab'
+      const inner = document.createElement('span')
+      tab.appendChild(inner)
+      container.appendChild(tab)
+      teardown = setup(container, '.workflow-tab')
+
+      const event = fireMousedown(inner)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
   })
 })

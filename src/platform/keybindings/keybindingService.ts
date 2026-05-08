@@ -18,8 +18,16 @@ export function useKeybindingService() {
     return (
       el.tagName === 'TEXTAREA' ||
       el.tagName === 'INPUT' ||
+      el.tagName === 'SELECT' ||
       el.contentEditable === 'true' ||
       (el.tagName === 'SPAN' && el.classList.contains('property_value'))
+    )
+  }
+
+  function hasOpenOverlay(): boolean {
+    return (
+      !!document.querySelector('.litecontextmenu') ||
+      !!document.querySelector('[data-reka-popper-content-wrapper]')
     )
   }
 
@@ -48,6 +56,10 @@ export function useKeybindingService() {
           if (!isTextInputElement(target)) {
             event.preventDefault()
           }
+          return
+        }
+        if (hasOpenOverlay()) {
+          event.preventDefault()
           return
         }
       }
