@@ -296,9 +296,9 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     await expect
       .poll(() => getPromotedWidgetNames(comfyPage, '8'))
       .toContain('$$canvas-image-preview')
-    await expect(
-      nestedSubgraphNode.locator('.lg-node-widgets')
-    ).not.toContainText('$$canvas-image-preview')
+    // A host whose only promoted content is a preview exposure has no
+    // node.widgets entries and renders no `.lg-node-widgets` container; the
+    // pseudo-widget surfaces via usePromotedPreviews instead.
   })
 
   test('Legacy unresolvable proxy entry is omitted and quarantined on save', async ({
@@ -770,14 +770,13 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
+        // Migration dedupes the legacy `proxyWidgets` entry against the
+        // existing linked input, so only the canonical row remains.
         const widgetRows = outerNode.getByTestId(TestIds.widgets.widget)
-        await expect(widgetRows).toHaveCount(2)
-
-        for (const row of await widgetRows.all()) {
-          await expect(
-            row.getByLabel('string_a', { exact: true })
-          ).toBeVisible()
-        }
+        await expect(widgetRows).toHaveCount(1)
+        await expect(
+          widgetRows.first().getByLabel('string_a', { exact: true })
+        ).toBeVisible()
       })
     }
   )

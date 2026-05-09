@@ -101,12 +101,6 @@ export async function getPromotedWidgetCountByName(
   nodeId: string,
   widgetName: string
 ): Promise<number> {
-  return comfyPage.page.evaluate(
-    ([id, name]) => {
-      const node = window.app!.canvas.graph!.getNodeById(id)
-      const widgets = node?.widgets ?? []
-      return widgets.filter((widget) => widget.name === name).length
-    },
-    [nodeId, widgetName] as const
-  )
+  const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
+  return promotedWidgets.filter(([, name]) => name === widgetName).length
 }
